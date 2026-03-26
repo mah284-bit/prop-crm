@@ -6750,7 +6750,6 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
           </div>
         )}
       </div>
-      </div>
 
       {/* Add Enquiry Modal */}
       {showAdd&&(
