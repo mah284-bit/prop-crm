@@ -4113,7 +4113,7 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
                   {c.bank_name&&` · ${c.bank_name}`}
                 </div>
               </div>
-              <div style={{display:"flex",gap:4"}}>
+              <div style={{display:"flex",gap:4}}>
                 <select value={c.status} onChange={e=>updateStatus(c.id,e.target.value)}
                   style={{fontSize:10,padding:"3px 6px",borderRadius:5,border:"1px solid #E2E8F0",background:"#fff"}}>
                   {Object.keys(CHEQ_COLORS).map(s=><option key={s}>{s}</option>)}
