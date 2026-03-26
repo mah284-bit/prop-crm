@@ -90,9 +90,9 @@ const saveAppConfig = (cfg) => {
 };
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","builder","leads","pipeline","discounts","activity","ai","users"],
+  sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","users"],
   leasing: ["dashboard","leasing","discounts","activity","ai","users"],
-  both:    ["dashboard","builder","leads","pipeline","leasing","discounts","activity","ai","users"],
+  both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","users"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -2264,7 +2264,8 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
 const TABS=[
   // ── Sales CRM ──────────────────────────────────────────────────
   {id:"dashboard",  label:"Dashboard",    icon:"⊞",  app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent","viewer"]},
-  {id:"builder",    label:"Inventory",    icon:"🏗", app:"sales",   roles:["super_admin","admin"]},
+  {id:"projects",   label:"Projects",     icon:"🏢", app:"sales",   roles:["super_admin","admin"]},
+  {id:"builder",    label:"Inventory",    icon:"📋", app:"sales",   roles:["super_admin","admin"]},
   {id:"leads",      label:"Leads",        icon:"👤", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"pipeline",   label:"Pipeline",     icon:"⬡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"discounts",  label:"Discounts",    icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager"]},
@@ -2276,7 +2277,8 @@ const TABS=[
   // ── Leasing CRM ────────────────────────────────────────────────
   {id:"l_dashboard",label:"Dashboard",    icon:"⊞",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
   {id:"l_leads",    label:"Enquiries",    icon:"👤", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
-  {id:"l_inventory",label:"Inventory",    icon:"🏗", app:"leasing", roles:["super_admin","admin"]},
+  {id:"l_projects",  label:"Projects",     icon:"🏢", app:"leasing", roles:["super_admin","admin"]},
+  {id:"l_inventory",label:"Inventory",    icon:"📋", app:"leasing", roles:["super_admin","admin"]},
   {id:"leasing",    label:"Leasing",      icon:"🔑", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_discounts",label:"Discounts",    icon:"⚡", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_activity", label:"Activity Log", icon:"📋", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
@@ -2310,6 +2312,8 @@ const SUBTITLES={
   users:"Manage team access and roles",
   l_dashboard:"Your leasing overview at a glance",
   l_leads:"Tenant enquiries — track prospects looking to rent or lease",
+  projects:"Create and manage property projects and developments",
+  l_projects:"Create and manage leasing property projects",
   l_inventory:"Lease inventory — units available for rent and lease",
   leasing:"Tenants · Contracts · Payments · Renewals · Maintenance",
   l_discounts:"Rent reduction approvals — Agent → Manager → Admin",
@@ -2323,661 +2327,944 @@ const SUBTITLES={
 // ══════════════════════════════════════════════════════
 // PROPERTY BUILDER
 // ══════════════════════════════════════════════════════
-function PropertyBuilder({currentUser,showToast,crmContext="sales"}) {
+
+// ══════════════════════════════════════════════════════════════════
+// PROJECTS MODULE — Standalone project management
+// ══════════════════════════════════════════════════════════════════
+function ProjectsModule({ currentUser, showToast, crmContext="sales" }) {
   const [projects,  setProjects]  = useState([]);
   const [units,     setUnits]     = useState([]);
-  const [salePr,    setSalePr]    = useState([]);
-  const [leasePr,   setLeasePr]   = useState([]);
   const [loading,   setLoading]   = useState(true);
-  const [selProj,   setSelProj]   = useState(null);
-  const [selUnit,   setSelUnit]   = useState(null);
-  const [view,      setView]      = useState("builder");
-  const [uTypeTab,  setUTypeTab]  = useState("Residential");
-  const [modal,     setModal]     = useState(null);
+  const [search,    setSearch]    = useState("");
+  const [showAdd,   setShowAdd]   = useState(false);
+  const [editProj,  setEditProj]  = useState(null);
+  const [expanded,  setExpanded]  = useState(null);
   const [saving,    setSaving]    = useState(false);
-  const [fSearch,   setFSearch]   = useState("");
-  const [fStatus,   setFStatus]   = useState("All");
-  const [fPurpose,  setFPurpose]  = useState(()=>crmContext==="leasing"?"Lease":crmContext==="sales"?"Sale":"All");
-  const [fProject,  setFProject]  = useState("All");
-  const [fType,     setFType]     = useState("All");
-  const [fCat,      setFCat]      = useState("All");
-  const [fBeds,     setFBeds]     = useState("All");
-  const [fView,     setFView]     = useState("All");
-  const [fPriceMin, setFPriceMin] = useState("");
-  const [fPriceMax, setFPriceMax] = useState("");
+  const [uploadingBrochure, setUploadingBrochure] = useState(false);
 
-  const canEdit = can(currentUser.role,"write");
-  const canDel  = can(currentUser.role,"delete");
-
-  const RES_CATS  = ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed+","Villa","Townhouse","Penthouse","Duplex","Plot","Loft"];
-  const COM_CATS  = ["Office","Retail / Shop","Warehouse","Labour Camp","Showroom","Restaurant","Medical","Mixed Use"];
-  const VIEWS_L   = ["Sea View","Burj View","Pool View","Garden View","Park View","City View","Golf View","Canal View","Internal"];
-  const UNIT_ST   = ["Available","Reserved","Under Offer","Sold","Leased","Blocked"];
-  const UNIT_C_PB = {Available:{c:"#1A7F5A",bg:"#E6F4EE"},Reserved:{c:"#A06810",bg:"#FDF3DC"},"Under Offer":{c:"#B85C10",bg:"#FDF0E6"},Sold:{c:"#B83232",bg:"#FAEAEA"},Leased:{c:"#1A5FA8",bg:"#E6EFF9"},Blocked:{c:"#718096",bg:"#F0F2F5"}};
-
-  const pBlank = {name:"",developer:"",location:"",community:"",status:"Active",launch_date:"",completion_date:"",website:"",description:""};
-  const uBlank = {unit_ref:"",unit_type:"Residential",sub_type:"1 Bed",purpose:crmContext==="leasing"?"Lease":"Sale",floor_number:"",block_or_tower:"",view:"",facing:"",size_sqft:"",built_up_sqft:"",plot_sqft:"",balcony_sqft:"",bedrooms:"1",bathrooms:"1",parking_spaces:"0",maid_room:false,maid_bathroom:false,driver_room:false,store_room:false,laundry_room:false,study_room:false,garage:false,private_pool:false,private_garden:false,roof_terrace:false,furnishing:"Unfurnished",condition:"Off-plan",handover_date:"",status:"Available",is_featured:false,fit_out:"",notes:"",asking_price:"",price_per_sqft:"",service_charge_sqft:"",gross_yield:"",dld_fee_pct:"4",agency_fee_pct:"2",expected_rent:"",booking_pct:"10",during_construction_pct:"40",on_handover_pct:"50",post_handover_pct:"0",post_handover_years:"0",payment_plan_notes:"",annual_rent:"",rent_per_sqft:"",security_deposit:"",cheques_allowed:"4",chiller_included:false,municipality_tax_pct:"5"};
-  const [pForm,setPForm] = useState(pBlank);
-  const [uForm,setUForm] = useState(uBlank);
+  const pBlank = {
+    name:"", developer:"", location:"", community:"", city:"Dubai",
+    country:"UAE", status:"Active", completion_date:"", launch_date:"",
+    description:"", brochure_url:"", brochure_file_url:"",
+    master_plan_url:"", website_url:""
+  };
+  const [form, setForm] = useState(pBlank);
+  const sf = k => e => setForm(f=>({...f,[k]:e.target.value}));
 
   const load = useCallback(async()=>{
     setLoading(true);
-    const [p,u,sp,lp] = await Promise.all([
-      supabase.from("projects").select("*").order("created_at",{ascending:false}),
-      supabase.from("project_units").select("*").order("unit_ref"),
-      supabase.from("unit_sale_pricing").select("*"),
-      supabase.from("unit_lease_pricing").select("*"),
+    const [p,u] = await Promise.all([
+      supabase.from("projects").select("*").order("name"),
+      supabase.from("project_units").select("id,project_id,status,purpose,unit_type"),
     ]);
-    setProjects(p.data||[]); setUnits(u.data||[]); setSalePr(sp.data||[]); setLeasePr(lp.data||[]);
+    setProjects(p.data||[]);
+    setUnits(u.data||[]);
     setLoading(false);
   },[]);
-  useEffect(()=>{load();},[load]);
 
-  const getSP = id => salePr.find(s=>s.unit_id===id);
-  const getLP = id => leasePr.find(l=>l.unit_id===id);
-  const projUnits = selProj ? units.filter(u=>{
-    if(u.project_id!==selProj.id||u.unit_type!==uTypeTab) return false;
-    if(crmContext==="sales"   && u.purpose==="Lease")   return false;
-    if(crmContext==="leasing" && u.purpose==="Sale")    return false;
-    return true;
-  }) : [];
-  const n0 = v=>(v===""||v===null||v===undefined)?null:Number(v);
-
-  const setU = (k,v)=>setUForm(f=>{
-    const n={...f,[k]:v};
-    if((k==="asking_price"||k==="size_sqft")&&n.asking_price&&n.size_sqft) n.price_per_sqft=Math.round(n.asking_price/n.size_sqft);
-    if((k==="annual_rent"||k==="size_sqft")&&n.annual_rent&&n.size_sqft) n.rent_per_sqft=Math.round(n.annual_rent/n.size_sqft);
-    if(k==="unit_type") n.sub_type=v==="Residential"?"1 Bed":"Office";
-    return n;
-  });
+  useEffect(()=>{ load(); },[load]);
 
   const saveProject = async()=>{
-    if(!pForm.name.trim()){showToast("Project name required","error");return;}
+    if(!form.name.trim()){ showToast("Project name required","error"); return; }
     setSaving(true);
-    try{
-      const {data,error}=await supabase.from("projects").insert({...pForm,launch_date:pForm.launch_date||null,completion_date:pForm.completion_date||null,created_by:currentUser.id}).select().single();
-      if(error)throw error;
-      setProjects(p=>[data,...p]); showToast("Project created","success"); setModal(null); setPForm(pBlank);
-    }catch(e){showToast(e.message,"error");}
+    try {
+      const payload = { ...form, company_id:currentUser.company_id||null, created_by:currentUser.id };
+      if(editProj) {
+        const{error}=await supabase.from("projects").update(payload).eq("id",editProj.id);
+        if(error) throw error;
+        showToast("Project updated","success");
+      } else {
+        const{error}=await supabase.from("projects").insert(payload);
+        if(error) throw error;
+        showToast("Project created","success");
+      }
+      setShowAdd(false); setEditProj(null); setForm(pBlank); load();
+    } catch(e){ showToast(e.message,"error"); }
     setSaving(false);
   };
 
-  const saveUnit = async(isEdit=false)=>{
-    if(!uForm.unit_ref.trim()){showToast("Unit reference required","error");return;}
-    if(!selProj&&!isEdit){showToast("Select a project first","error");return;}
-    setSaving(true);
-    try{
-      const base={project_id:isEdit?selUnit.project_id:selProj.id,company_id:currentUser.company_id||null,unit_ref:uForm.unit_ref.trim(),unit_type:uForm.unit_type,sub_type:uForm.sub_type,purpose:uForm.purpose,floor_number:n0(uForm.floor_number),block_or_tower:uForm.block_or_tower||null,view:uForm.view||null,facing:uForm.facing||null,size_sqft:n0(uForm.size_sqft),built_up_sqft:n0(uForm.built_up_sqft),plot_sqft:n0(uForm.plot_sqft),balcony_sqft:n0(uForm.balcony_sqft),bedrooms:n0(uForm.bedrooms)??1,bathrooms:n0(uForm.bathrooms)??1,parking_spaces:n0(uForm.parking_spaces)??0,maid_room:uForm.maid_room,maid_bathroom:uForm.maid_bathroom,driver_room:uForm.driver_room,store_room:uForm.store_room,laundry_room:uForm.laundry_room,study_room:uForm.study_room,garage:uForm.garage,private_pool:uForm.private_pool,private_garden:uForm.private_garden,roof_terrace:uForm.roof_terrace,furnishing:uForm.furnishing,condition:uForm.condition,handover_date:uForm.handover_date||null,status:uForm.status,is_featured:uForm.is_featured,fit_out:uForm.fit_out||null,notes:uForm.notes||null,created_by:currentUser.id};
-      let uid;
-      if(isEdit){
-        const {data,error}=await supabase.from("project_units").update(base).eq("id",selUnit.id).select().single();
-        if(error)throw error; setUnits(p=>p.map(u=>u.id===selUnit.id?data:u)); setSelUnit(data); uid=selUnit.id;
-      }else{
-        const {data,error}=await supabase.from("project_units").insert(base).select().single();
-        if(error)throw error; setUnits(p=>[...p,data]); uid=data.id;
-      }
-      const pid=isEdit?selUnit.project_id:selProj.id;
-      if(uForm.purpose==="Sale"||uForm.purpose==="Both"){
-        const sp={unit_id:uid,project_id:pid,asking_price:n0(uForm.asking_price),price_per_sqft:n0(uForm.price_per_sqft),service_charge_sqft:n0(uForm.service_charge_sqft),gross_yield:n0(uForm.gross_yield),dld_fee_pct:n0(uForm.dld_fee_pct)??4,agency_fee_pct:n0(uForm.agency_fee_pct)??2,expected_rent:n0(uForm.expected_rent),booking_pct:n0(uForm.booking_pct)??10,during_construction_pct:n0(uForm.during_construction_pct)??40,on_handover_pct:n0(uForm.on_handover_pct)??50,post_handover_pct:n0(uForm.post_handover_pct)??0,post_handover_years:n0(uForm.post_handover_years)??0,payment_plan_notes:uForm.payment_plan_notes||null};
-        const ex=getSP(uid);
-        if(ex){const {data}=await supabase.from("unit_sale_pricing").update(sp).eq("id",ex.id).select().single();if(data)setSalePr(p=>p.map(x=>x.id===ex.id?data:x));}
-        else{const {data}=await supabase.from("unit_sale_pricing").insert(sp).select().single();if(data)setSalePr(p=>[...p,data]);}
-      }
-      if(uForm.purpose==="Lease"||uForm.purpose==="Both"){
-        const lp={unit_id:uid,project_id:pid,annual_rent:n0(uForm.annual_rent),rent_per_sqft:n0(uForm.rent_per_sqft),security_deposit:n0(uForm.security_deposit),cheques_allowed:n0(uForm.cheques_allowed)??4,chiller_included:uForm.chiller_included,municipality_tax_pct:n0(uForm.municipality_tax_pct)??5};
-        const ex=getLP(uid);
-        if(ex){const {data}=await supabase.from("unit_lease_pricing").update(lp).eq("id",ex.id).select().single();if(data)setLeasePr(p=>p.map(x=>x.id===ex.id?data:x));}
-        else{const {data}=await supabase.from("unit_lease_pricing").insert(lp).select().single();if(data)setLeasePr(p=>[...p,data]);}
-      }
-      showToast(isEdit?"Unit updated":"Unit added","success"); setModal(null); setUForm(uBlank);
-    }catch(e){showToast("Save failed: "+e.message,"error");}
-    setSaving(false);
+  const uploadBrochure = async(file, projId)=>{
+    if(!file) return;
+    setUploadingBrochure(true);
+    try {
+      const path = `projects/${projId}/brochure_${Date.now()}_${file.name}`;
+      const{error:ue} = await supabase.storage.from("documents").upload(path, file, {upsert:true});
+      if(ue) throw ue;
+      const{data:{publicUrl}} = supabase.storage.from("documents").getPublicUrl(path);
+      await supabase.from("projects").update({brochure_file_url:publicUrl}).eq("id",projId);
+      setProjects(p=>p.map(x=>x.id===projId?{...x,brochure_file_url:publicUrl}:x));
+      showToast("Brochure uploaded","success");
+    } catch(e){ showToast(e.message,"error"); }
+    setUploadingBrochure(false);
   };
 
-  const openEdit=u=>{
-    const sp=getSP(u.id)||{}; const lp=getLP(u.id)||{};
-    setUForm({...uBlank,...u,floor_number:u.floor_number??"",size_sqft:u.size_sqft??"",built_up_sqft:u.built_up_sqft??"",plot_sqft:u.plot_sqft??"",balcony_sqft:u.balcony_sqft??"",bedrooms:u.bedrooms??1,bathrooms:u.bathrooms??1,parking_spaces:u.parking_spaces??0,handover_date:u.handover_date??"",asking_price:sp.asking_price??"",price_per_sqft:sp.price_per_sqft??"",service_charge_sqft:sp.service_charge_sqft??"",gross_yield:sp.gross_yield??"",dld_fee_pct:sp.dld_fee_pct??4,agency_fee_pct:sp.agency_fee_pct??2,expected_rent:sp.expected_rent??"",booking_pct:sp.booking_pct??10,during_construction_pct:sp.during_construction_pct??40,on_handover_pct:sp.on_handover_pct??50,post_handover_pct:sp.post_handover_pct??0,post_handover_years:sp.post_handover_years??0,payment_plan_notes:sp.payment_plan_notes??"",annual_rent:lp.annual_rent??"",rent_per_sqft:lp.rent_per_sqft??"",security_deposit:lp.security_deposit??"",cheques_allowed:lp.cheques_allowed??4,chiller_included:lp.chiller_included??false,municipality_tax_pct:lp.municipality_tax_pct??5,fit_out:u.fit_out??""});
-    setSelUnit(u); setModal("editunit");
-  };
+  const openEdit = (proj)=>{ setForm({...pBlank,...proj}); setEditProj(proj); setShowAdd(true); };
 
-  const allFiltered = units.filter(u=>{
-    const proj=projects.find(x=>x.id===u.project_id);
-    const sp=getSP(u.id); const lp=getLP(u.id);
-    const q=fSearch.toLowerCase();
-    const price=sp?.asking_price||lp?.annual_rent||0;
-    if(fSearch&&!u.unit_ref?.toLowerCase().includes(q)&&!proj?.name?.toLowerCase().includes(q)&&!u.sub_type?.toLowerCase().includes(q)&&!(u.view||"").toLowerCase().includes(q)) return false;
-    if(fProject!=="All"&&u.project_id!==fProject) return false;
-    if(fType!=="All"&&u.unit_type!==fType) return false;
-    if(fCat!=="All"&&u.sub_type!==fCat) return false;
-    if(fStatus!=="All"&&u.status!==fStatus) return false;
-    if(fPurpose!=="All"&&u.purpose!==fPurpose&&u.purpose!=="Both") return false;
-    if(fBeds!=="All"){if(fBeds==="Studio"&&u.bedrooms!==0)return false;if(fBeds!=="Studio"&&String(u.bedrooms)!==fBeds)return false;}
-    if(fView!=="All"&&u.view!==fView) return false;
-    if(fPriceMin&&price<Number(fPriceMin)) return false;
-    if(fPriceMax&&price>Number(fPriceMax)) return false;
-    return true;
+  const filtered = projects.filter(p=>!search||p.name.toLowerCase().includes(search.toLowerCase())||p.developer?.toLowerCase().includes(search.toLowerCase())||p.location?.toLowerCase().includes(search.toLowerCase()));
+
+  const projStats = (pid)=>({
+    total:     units.filter(u=>u.project_id===pid).length,
+    available: units.filter(u=>u.project_id===pid&&u.status==="Available").length,
+    sold:      units.filter(u=>u.project_id===pid&&(u.status==="Sold"||u.status==="Leased")).length,
+    reserved:  units.filter(u=>u.project_id===pid&&u.status==="Reserved").length,
   });
-  const allSubTypes=[...new Set(units.map(u=>u.sub_type).filter(Boolean))].sort();
-  const allViews=[...new Set(units.map(u=>u.view).filter(Boolean))].sort();
 
-  if(loading) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"#A0AEC0",fontSize:14}}>Loading Inventory…</div>;
-
-  const renderUnitModal=(isEdit)=>(
-    <Modal title={isEdit?`Edit — ${selUnit?.unit_ref}`:`Add Unit — ${selProj?.name}`} onClose={()=>{setModal(null);setUForm(uBlank);}} width={660}>
-      <div style={{maxHeight:"72vh",overflowY:"auto",paddingRight:4}}>
-        {/* Purpose */}
-        <div style={{display:"flex",gap:8,marginBottom:16}}>
-          {[["Sale","🏷 For Sale"],["Lease","🔑 For Lease"],["Both","♻ Sale & Lease"]].map(([v,l])=>(
-            <button key={v} onClick={()=>setU("purpose",v)} style={{flex:1,padding:"10px",borderRadius:8,border:`2px solid ${uForm.purpose===v?"#0B1F3A":"#E2E8F0"}`,background:uForm.purpose===v?"#0B1F3A":"#fff",color:uForm.purpose===v?"#fff":"#4A5568",cursor:"pointer",fontWeight:uForm.purpose===v?600:400,fontSize:13}}>{l}</button>
-          ))}
-        </div>
-        {/* Type & Category */}
-        <div style={{background:"#F7F9FC",border:"1px solid #E2E8F0",borderRadius:10,padding:"14px",marginBottom:14}}>
-          <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:10}}>Property Type & Category</div>
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
-            {[["Residential","🏘 Residential","Apartment · Villa · Studio"],["Commercial","🏢 Commercial","Office · Shop · Warehouse"]].map(([v,l,d])=>(
-              <button key={v} onClick={()=>setU("unit_type",v)} style={{flex:1,padding:"10px",borderRadius:8,border:`2px solid ${uForm.unit_type===v?"#0B1F3A":"#E2E8F0"}`,background:uForm.unit_type===v?"#0B1F3A":"#fff",color:uForm.unit_type===v?"#fff":"#4A5568",cursor:"pointer",textAlign:"left"}}>
-                <div style={{fontSize:13,fontWeight:700}}>{l}</div>
-                <div style={{fontSize:11,opacity:.65,marginTop:2}}>{d}</div>
-              </button>
-            ))}
-          </div>
-          <div style={{marginBottom:6}}>
-            <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Category</label>
-            <select value={uForm.sub_type} onChange={e=>setU("sub_type",e.target.value)} style={{width:"100%",fontSize:14}}>
-              {(uForm.unit_type==="Residential"?RES_CATS:COM_CATS).map(s=><option key={s}>{s}</option>)}
-            </select>
-            <div style={{fontSize:11,color:"#A0AEC0",marginTop:4}}>{uForm.unit_type==="Residential"?"Studio=no bedroom · 1/2/3 Bed=apartment · Villa=standalone house · Townhouse=multi-floor home":"Office=workspace · Retail=shop · Warehouse=storage · Labour Camp=worker housing"}</div>
-          </div>
-        </div>
-        {/* Reference */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-          <div>
-            <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Unit Reference *</label>
-            <input value={uForm.unit_ref} onChange={e=>setU("unit_ref",e.target.value)} placeholder="A-101 / Villa-12 / Shop-G04"/>
-          </div>
-          <div>
-            <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Block / Tower</label>
-            <input value={uForm.block_or_tower} onChange={e=>setU("block_or_tower",e.target.value)} placeholder="Tower A / Block 3"/>
-          </div>
-        </div>
-        {/* Beds & Baths — Residential only / Rooms — Commercial */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:12}}>
-          {uForm.unit_type==="Residential"&&(
-            <>
-              <div>
-                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Bedrooms</label>
-                <select value={uForm.bedrooms} onChange={e=>setU("bedrooms",e.target.value)}>{[0,1,2,3,4,5,6,7].map(n=><option key={n} value={n}>{n===0?"Studio":n}</option>)}</select>
-              </div>
-              <div>
-                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Bathrooms</label>
-                <select value={uForm.bathrooms} onChange={e=>setU("bathrooms",e.target.value)}>{[1,1.5,2,2.5,3,3.5,4,5].map(n=><option key={n} value={n}>{n}</option>)}</select>
-              </div>
-            </>
-          )}
-          <div>
-            <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Parking Spaces</label>
-            <input type="number" value={uForm.parking_spaces} onChange={e=>setU("parking_spaces",e.target.value)} min="0"/>
-          </div>
-          <div>
-            <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Floor</label>
-            <input type="number" value={uForm.floor_number} onChange={e=>setU("floor_number",e.target.value)}/>
-          </div>
-        </div>
-        {/* Sizes */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:12}}>
-          <div>
-            <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Size (sqft)</label>
-            <input type="number" value={uForm.size_sqft} onChange={e=>setU("size_sqft",e.target.value)} placeholder="Total area"/>
-          </div>
-          <div>
-            <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Built-up (sqft)</label>
-            <input type="number" value={uForm.built_up_sqft} onChange={e=>setU("built_up_sqft",e.target.value)}/>
-          </div>
-          {uForm.unit_type==="Residential"&&(
-            <div>
-              <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Plot (sqft)</label>
-              <input type="number" value={uForm.plot_sqft} onChange={e=>setU("plot_sqft",e.target.value)} placeholder="Villas / plots"/>
-            </div>
-          )}
-          {uForm.unit_type==="Residential"&&(
-            <div>
-              <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Balcony (sqft)</label>
-              <input type="number" value={uForm.balcony_sqft} onChange={e=>setU("balcony_sqft",e.target.value)}/>
-            </div>
-          )}
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
-          <div>
-            <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>View</label>
-            <select value={uForm.view} onChange={e=>setU("view",e.target.value)}><option value="">Select…</option>{VIEWS_L.map(v=><option key={v}>{v}</option>)}</select>
-          </div>
-          <div>
-            <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Status</label>
-            <select value={uForm.status} onChange={e=>setU("status",e.target.value)}>{UNIT_ST.map(s=><option key={s}>{s}</option>)}</select>
-          </div>
-        </div>
-        {/* Facilities */}
-        <div style={{background:"#FAFBFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px",marginBottom:14}}>
-          <div style={{fontSize:11,fontWeight:700,color:"#0B1F3A",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>
-            {uForm.unit_type==="Residential"?"🏘 Residential Facilities":"🏢 Commercial Facilities"}
-          </div>
-          {uForm.unit_type==="Residential"?(
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-              {[["maid_room","🧹 Maid Room"],["maid_bathroom","🚿 Maid Bathroom"],["driver_room","🚗 Driver Room"],["store_room","📦 Store Room"],["laundry_room","👕 Laundry Room"],["study_room","📚 Study Room"],["private_pool","🏊 Private Pool"],["private_garden","🌿 Private Garden"],["roof_terrace","🏠 Roof Terrace"],["garage","🚙 Garage"]].map(([k,l])=>(
-                <label key={k} style={{display:"flex",alignItems:"center",gap:7,fontSize:13,color:"#4A5568",cursor:"pointer"}}>
-                  <input type="checkbox" checked={uForm[k]||false} onChange={e=>setU(k,e.target.checked)}/>{l}
-                </label>
-              ))}
-            </div>
-          ):(
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-              {[["store_room","📦 Storage Room"],["garage","🚙 Parking / Garage"],["roof_terrace","🏠 Roof Access"]].map(([k,l])=>(
-                <label key={k} style={{display:"flex",alignItems:"center",gap:7,fontSize:13,color:"#4A5568",cursor:"pointer"}}>
-                  <input type="checkbox" checked={uForm[k]||false} onChange={e=>setU(k,e.target.checked)}/>{l}
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-        {/* Condition */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:14}}>
-          {uForm.unit_type==="Residential"&&(
-            <div>
-              <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Furnishing</label>
-              <select value={uForm.furnishing} onChange={e=>setU("furnishing",e.target.value)}>{["Unfurnished","Semi-Furnished","Furnished"].map(o=><option key={o}>{o}</option>)}</select>
-            </div>
-          )}
-          {uForm.unit_type==="Commercial"&&(
-            <div>
-              <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Fit-out</label>
-              <select value={uForm.fit_out||""} onChange={e=>setU("fit_out",e.target.value)}>
-                <option value="">Select…</option>
-                {["Shell & Core","Category A","Category B","Fully Fitted","Partly Fitted"].map(o=><option key={o}>{o}</option>)}
-              </select>
-            </div>
-          )}
-          <div>
-            <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Condition</label>
-            <select value={uForm.condition} onChange={e=>setU("condition",e.target.value)}>{["Off-plan","Ready","Resale","Renovated"].map(o=><option key={o}>{o}</option>)}</select>
-          </div>
-          <div>
-            <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Handover Date</label>
-            <input type="date" value={uForm.handover_date} onChange={e=>setU("handover_date",e.target.value)}/>
-          </div>
-        </div>
-        {/* Sale Pricing */}
-        {(uForm.purpose==="Sale"||uForm.purpose==="Both")&&(
-          <div style={{background:"#FDF8EC",border:"1px solid #E8C97A",borderRadius:10,padding:"12px",marginBottom:12}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#8A6200",marginBottom:10}}>🏷 SALE PRICING</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
-              {[["Asking Price (AED)","asking_price","2,500,000"],["Price / sqft (AED)","price_per_sqft","Auto-calc"],["Service Charge/sqft/yr","service_charge_sqft",""],["Gross Yield (%)","gross_yield","7.5"],["DLD Fee (%)","dld_fee_pct","4"],["Agency Fee (%)","agency_fee_pct","2"]].map(([l,k,ph])=>(
-                <div key={k}>
-                  <label style={{fontSize:11,fontWeight:600,color:"#8A6200",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:4}}>{l}</label>
-                  <input type="number" value={uForm[k]} onChange={e=>setU(k,e.target.value)} placeholder={ph}/>
-                </div>
-              ))}
-            </div>
-            {uForm.asking_price&&uForm.size_sqft&&(
-              <div style={{background:"#fff",border:"1px solid #E8C97A",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#8A6200",marginBottom:10}}>
-                💡 {Math.round(Number(uForm.asking_price)/Number(uForm.size_sqft)).toLocaleString()} AED/sqft · DLD: AED {Math.round(Number(uForm.asking_price)*Number(uForm.dld_fee_pct||4)/100).toLocaleString()} · Total ≈ AED {Math.round(Number(uForm.asking_price)*(1+(Number(uForm.dld_fee_pct||4)+Number(uForm.agency_fee_pct||2))/100)).toLocaleString()}
-              </div>
-            )}
-            <div style={{fontSize:11,fontWeight:700,color:"#8A6200",marginBottom:8}}>PAYMENT PLAN (%)</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:8}}>
-              {[["Booking","booking_pct"],["Construction","during_construction_pct"],["Handover","on_handover_pct"],["Post-Handover","post_handover_pct"]].map(([l,k])=>(
-                <div key={k}>
-                  <label style={{fontSize:10,color:"#8A6200",display:"block",marginBottom:4}}>{l}</label>
-                  <input type="number" value={uForm[k]} onChange={e=>setU(k,e.target.value)}/>
-                </div>
-              ))}
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <div>
-                <label style={{fontSize:10,color:"#8A6200",display:"block",marginBottom:4}}>Post-Handover Years</label>
-                <input type="number" value={uForm.post_handover_years} onChange={e=>setU("post_handover_years",e.target.value)}/>
-              </div>
-              <div>
-                <label style={{fontSize:10,color:"#8A6200",display:"block",marginBottom:4}}>Notes</label>
-                <input value={uForm.payment_plan_notes} onChange={e=>setU("payment_plan_notes",e.target.value)} placeholder="e.g. 40/60 over 3 years"/>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* Lease Pricing */}
-        {(uForm.purpose==="Lease"||uForm.purpose==="Both")&&(
-          <div style={{background:"#E6EFF9",border:"1px solid #B5D4F4",borderRadius:10,padding:"12px",marginBottom:12}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#1A5FA8",marginBottom:10}}>🔑 LEASE PRICING</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:8}}>
-              {[["Annual Rent (AED)","annual_rent","120,000"],["Rent / sqft (AED)","rent_per_sqft","Auto"],["Security Deposit","security_deposit","5% of rent"],["Municipality Tax (%)","municipality_tax_pct","5"]].map(([l,k,ph])=>(
-                <div key={k}>
-                  <label style={{fontSize:11,fontWeight:600,color:"#1A5FA8",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:4}}>{l}</label>
-                  <input type="number" value={uForm[k]} onChange={e=>setU(k,e.target.value)} placeholder={ph}/>
-                </div>
-              ))}
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              <div>
-                <label style={{fontSize:11,fontWeight:600,color:"#1A5FA8",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:4}}>Cheques Allowed</label>
-                <select value={uForm.cheques_allowed} onChange={e=>setU("cheques_allowed",e.target.value)}>{[["1","Annual (1)"],["2","Bi-Annual (2)"],["4","Quarterly (4)"],["12","Monthly (12)"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginTop:24}}>
-                <input type="checkbox" checked={uForm.chiller_included} onChange={e=>setU("chiller_included",e.target.checked)}/>
-                <span style={{fontSize:13,color:"#4A5568"}}>Chiller included in rent</span>
-              </div>
-            </div>
-            {uForm.annual_rent&&(
-              <div style={{background:"#fff",border:"1px solid #B5D4F4",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#1A5FA8",marginTop:8}}>
-                💡 Monthly: AED {Math.round(Number(uForm.annual_rent)/12).toLocaleString()}{uForm.size_sqft?` · AED ${Math.round(Number(uForm.annual_rent)/Number(uForm.size_sqft))}/sqft`:""}
-              </div>
-            )}
-          </div>
-        )}
-        <div>
-          <label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Notes</label>
-          <textarea value={uForm.notes} onChange={e=>setU("notes",e.target.value)} rows={2}/>
-        </div>
-      </div>
-      <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:14,paddingTop:14,borderTop:"1px solid #E2E8F0"}}>
-        <button onClick={()=>{setModal(null);setUForm(uBlank);}} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",color:"#0B1F3A",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-        <button onClick={()=>saveUnit(isEdit)} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":isEdit?"Save Changes":"Add Unit"}</button>
-      </div>
-    </Modal>
-  );
-
-  const fmtAED2 = n=>n?`AED ${Number(n).toLocaleString("en-AE")}`:"—";
+  if(loading) return <Spinner msg="Loading projects…"/>;
 
   return (
-    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
       {/* Top bar */}
-      <div style={{display:"flex",gap:8,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
-        <div style={{display:"flex",gap:4}}>
-          {[["builder","🏗 Inventory"],["all","📋 All Units"]].map(([id,l])=>(
-            <button key={id} onClick={()=>setView(id)} style={{padding:"7px 16px",borderRadius:8,border:`1.5px solid ${view===id?"#0B1F3A":"#E2E8F0"}`,background:view===id?"#0B1F3A":"#fff",color:view===id?"#fff":"#4A5568",fontSize:13,fontWeight:view===id?600:400,cursor:"pointer"}}>{l}</button>
-          ))}
-        </div>
-        <span style={{fontSize:12,color:"#A0AEC0",marginLeft:8}}>{projects.length} projects · {units.length} units · {units.filter(u=>u.status==="Available").length} available</span>
-        <div style={{marginLeft:"auto"}}>{canEdit&&<button onClick={()=>{setPForm(pBlank);setModal("proj");}} style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ New Project</button>}</div>
+      <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search projects…" style={{flex:1,minWidth:200}}/>
+        <span style={{fontSize:12,color:"#A0AEC0"}}>{filtered.length} project{filtered.length!==1?"s":""}</span>
+        <button onClick={()=>{setForm(pBlank);setEditProj(null);setShowAdd(true);}}
+          style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+          + New Project
+        </button>
       </div>
 
-      {/* Builder view */}
-      {view==="builder"&&(
-        <div style={{display:"flex",gap:12,flex:1,overflow:"hidden"}}>
-          {/* Projects */}
-          <div style={{width:200,flexShrink:0,overflowY:"auto"}}>
-            <div style={{fontSize:10,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:8}}>Projects ({projects.length})</div>
-            {projects.length===0&&<div style={{textAlign:"center",padding:"2rem 1rem",color:"#A0AEC0"}}><div style={{fontSize:32,marginBottom:8}}>📁</div><div style={{fontSize:13}}>No projects yet<br/>Click + New Project</div></div>}
-            {projects.map(p=>{
-              const isSel=selProj?.id===p.id;
+      {/* Projects table */}
+      <div style={{flex:1,overflowY:"auto"}}>
+        {filtered.length===0&&<div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}><div style={{fontSize:40,marginBottom:8}}>🏢</div><div>No projects yet — click + New Project</div></div>}
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead style={{position:"sticky",top:0,zIndex:1}}>
+            <tr style={{background:"#0B1F3A"}}>
+              {["Project","Developer","Location","Units","Available","Sold","Status",""].map(h=>(
+                <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".5px",whiteSpace:"nowrap"}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((proj,i)=>{
+              const st = projStats(proj.id);
+              const isExp = expanded===proj.id;
+              const projUnits = units.filter(u=>u.project_id===proj.id);
               return (
-                <div key={p.id} onClick={()=>{setSelProj(p);setSelUnit(null);}} style={{padding:"10px 12px",borderRadius:10,border:`1.5px solid ${isSel?"#C9A84C":"#E2E8F0"}`,background:isSel?"#0B1F3A":"#fff",cursor:"pointer",marginBottom:6,transition:"all .15s"}}>
-                  <div style={{fontSize:13,fontWeight:700,color:isSel?"#fff":"#0B1F3A",marginBottom:2}}>{p.name}</div>
-                  <div style={{fontSize:11,color:isSel?"#C9A84C88":"#A0AEC0"}}>{p.developer||"—"}</div>
-                  <div style={{fontSize:11,color:isSel?"#C9A84C88":"#A0AEC0"}}>📍 {p.location||"—"}</div>
-                  <div style={{display:"flex",gap:5,marginTop:5}}>
-                    <span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:isSel?"rgba(201,168,76,.2)":"#E6F4EE",color:isSel?"#C9A84C":"#1A7F5A"}}>{p.status}</span>
-                    <span style={{fontSize:10,color:isSel?"#C9A84C44":"#A0AEC0"}}>{units.filter(u=>u.project_id===p.id).length} units</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Units */}
-          {selProj&&(
-            <div style={{flex:1,display:"flex",flexDirection:"column",minWidth:0}}>
-              <div style={{background:"#0B1F3A",borderRadius:10,padding:"12px 16px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,color:"#fff",fontWeight:700}}>{selProj.name}</div>
-                <span style={{fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:20,background:crmContext==="sales"?"rgba(74,158,232,.25)":"rgba(155,127,212,.25)",color:crmContext==="sales"?"#7EC8F5":"#C4ACEC",border:`1px solid ${crmContext==="sales"?"rgba(74,158,232,.4)":"rgba(155,127,212,.4)"}`}}>
-                  {crmContext==="sales"?"🏷 Sale Units":"🔑 Lease Units"}
-                </span>
-              </div>
-                  <div style={{fontSize:12,color:"#C9A84C",marginTop:2}}>{selProj.developer}{selProj.location?` · 📍 ${selProj.location}`:""}</div>
-                </div>
-                <div style={{display:"flex",gap:8}}>
-                  {canDel&&<button onClick={async()=>{if(!window.confirm("Delete project and all units?"))return;await supabase.from("projects").delete().eq("id",selProj.id);setProjects(p=>p.filter(x=>x.id!==selProj.id));setSelProj(null);setSelUnit(null);showToast("Deleted","info");}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #F0BCBC",background:"#FAEAEA",color:"#B83232",fontSize:12,fontWeight:600,cursor:"pointer"}}>Delete Project</button>}
-                  {canEdit&&<button onClick={()=>{setUForm(uBlank);setModal("unit");}} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#C9A84C",color:"#0B1F3A",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add Unit</button>}
-                </div>
-              </div>
-              <div style={{display:"flex",gap:6,marginBottom:10}}>
-                {["Residential","Commercial"].map(t=>{
-                  const cnt=units.filter(u=>u.project_id===selProj.id&&u.unit_type===t).length;
-                  return <button key={t} onClick={()=>{setUTypeTab(t);setSelUnit(null);}} style={{padding:"5px 16px",borderRadius:8,border:`1.5px solid ${uTypeTab===t?"#0B1F3A":"#E2E8F0"}`,background:uTypeTab===t?"#0B1F3A":"#fff",color:uTypeTab===t?"#fff":"#4A5568",fontSize:12,fontWeight:uTypeTab===t?600:400,cursor:"pointer"}}>{t==="Residential"?"🏘":"🏢"} {t} ({cnt})</button>;
-                })}
-              </div>
-              {projUnits.length===0&&<div style={{textAlign:"center",padding:"3rem 1rem",color:"#A0AEC0"}}><div style={{fontSize:40,marginBottom:10}}>{uTypeTab==="Residential"?"🏘":"🏢"}</div><div style={{fontSize:14}}>No {uTypeTab.toLowerCase()} units yet<br/>Click + Add Unit above</div></div>}
-              <div style={{flex:1,overflowY:"auto",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(210px,1fr))",gap:10,alignContent:"start"}}>
-                {projUnits.map(u=>{
-                  const sp=getSP(u.id); const lp=getLP(u.id);
-                  const sc=UNIT_C_PB[u.status]||{c:"#718096",bg:"#F0F2F5"};
-                  const isSel=selUnit?.id===u.id;
-                  return (
-                    <div key={u.id} onClick={()=>setSelUnit(isSel?null:u)} style={{background:isSel?"#0B1F3A":"#fff",border:`1.5px solid ${isSel?"#C9A84C":"#E2E8F0"}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",transition:"all .15s"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-                        <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:isSel?"#C9A84C":"#0B1F3A"}}>{u.unit_ref}</div>
-                        <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:sc.bg,color:sc.c}}>{u.status}</span>
+                <>
+                  <tr key={proj.id}
+                    style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5",cursor:"pointer",transition:"background .1s"}}
+                    onMouseOver={e=>e.currentTarget.style.background="#F0F7FF"}
+                    onMouseOut={e=>e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC"}>
+                    <td style={{padding:"10px 12px"}} onClick={()=>setExpanded(isExp?null:proj.id)}>
+                      <div style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>{proj.name}</div>
+                      {proj.completion_date&&<div style={{fontSize:11,color:"#A0AEC0"}}>Completion: {new Date(proj.completion_date).toLocaleDateString("en-AE",{month:"short",year:"numeric"})}</div>}
+                    </td>
+                    <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}} onClick={()=>setExpanded(isExp?null:proj.id)}>{proj.developer||"—"}</td>
+                    <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}} onClick={()=>setExpanded(isExp?null:proj.id)}>{proj.location||proj.community||"—"}</td>
+                    <td style={{padding:"10px 12px",fontSize:13,fontWeight:700,color:"#0B1F3A",textAlign:"center"}} onClick={()=>setExpanded(isExp?null:proj.id)}>{st.total}</td>
+                    <td style={{padding:"10px 12px",textAlign:"center"}} onClick={()=>setExpanded(isExp?null:proj.id)}><span style={{fontSize:12,fontWeight:600,color:"#1A7F5A"}}>{st.available}</span></td>
+                    <td style={{padding:"10px 12px",textAlign:"center"}} onClick={()=>setExpanded(isExp?null:proj.id)}><span style={{fontSize:12,fontWeight:600,color:"#1A5FA8"}}>{st.sold}</span></td>
+                    <td style={{padding:"10px 12px"}} onClick={()=>setExpanded(isExp?null:proj.id)}>
+                      <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:proj.status==="Active"?"#E6F4EE":"#F0F2F5",color:proj.status==="Active"?"#1A7F5A":"#718096"}}>{proj.status}</span>
+                    </td>
+                    <td style={{padding:"10px 8px"}}>
+                      <div style={{display:"flex",gap:4}}>
+                        <button onClick={()=>openEdit(proj)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>Edit</button>
+                        <button onClick={()=>setExpanded(isExp?null:proj.id)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:isExp?"#0B1F3A":"#fff",color:isExp?"#fff":"#4A5568",cursor:"pointer"}}>{isExp?"▲":"▼"}</button>
                       </div>
-                      <div style={{display:"flex",gap:4,marginBottom:6,flexWrap:"wrap"}}>
-                        <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:20,background:isSel?"rgba(255,255,255,.1)":"#F0F2F5",color:isSel?"#C9A84C":"#4A5568"}}>{u.sub_type}</span>
-                        <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:20,background:u.purpose==="Sale"?"#E6F4EE":u.purpose==="Lease"?"#E6EFF9":"#FDF3DC",color:u.purpose==="Sale"?"#1A7F5A":u.purpose==="Lease"?"#1A5FA8":"#A06810"}}>{u.purpose}</span>
-                      </div>
-                      <div style={{fontSize:11,color:isSel?"#C9A84C88":"#A0AEC0",marginBottom:6}}>
-                        {u.bedrooms===0?"Studio":`${u.bedrooms} Bed`}{u.bathrooms?` · ${u.bathrooms} Bath`:""}{u.size_sqft?` · ${Number(u.size_sqft).toLocaleString()} sqft`:""}
-                      </div>
-                      <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:6}}>
-                        {u.maid_room&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:20,background:"#EEE8F9",color:"#5B3FAA"}}>Maid</span>}
-                        {u.private_pool&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:20,background:"#E6EFF9",color:"#1A5FA8"}}>Pool</span>}
-                        {u.private_garden&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>Garden</span>}
-                        {u.parking_spaces>0&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:20,background:"#F0F2F5",color:"#4A5568"}}>P:{u.parking_spaces}</span>}
-                      </div>
-                      {sp?.asking_price&&<div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:isSel?"#C9A84C":"#0B1F3A"}}>{fmtAED2(sp.asking_price)}{sp.price_per_sqft&&<span style={{fontSize:10,fontWeight:400,color:isSel?"#C9A84C88":"#A0AEC0"}}> · AED {Number(sp.price_per_sqft).toLocaleString()}/sqft</span>}</div>}
-                      {lp?.annual_rent&&<div style={{fontSize:12,fontWeight:600,color:isSel?"#C9A84C":"#1A5FA8"}}>🔑 {fmtAED2(lp.annual_rent)}/yr</div>}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Unit detail */}
-          {selUnit&&(()=>{
-            const sp=getSP(selUnit.id); const lp=getLP(selUnit.id);
-            const sc=UNIT_C_PB[selUnit.status]||{c:"#718096",bg:"#F0F2F5"};
-            return (
-              <div style={{width:300,flexShrink:0,background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-                <div style={{background:"#0B1F3A",padding:"1.25rem",position:"relative"}}>
-                  <button onClick={()=>setSelUnit(null)} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:"#C9A84C",fontSize:20,cursor:"pointer"}}>×</button>
-                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,color:"#C9A84C",fontWeight:700}}>{selUnit.unit_ref}</div>
-                  <div style={{fontSize:11,color:"rgba(255,255,255,.6)",marginTop:4}}>{selProj?.name} · {selUnit.sub_type}</div>
-                  <div style={{display:"flex",gap:5,marginTop:8}}>
-                    <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:sc.bg,color:sc.c}}>{selUnit.status}</span>
-                    <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:selUnit.purpose==="Sale"?"#E6F4EE":selUnit.purpose==="Lease"?"#E6EFF9":"#FDF3DC",color:selUnit.purpose==="Sale"?"#1A7F5A":selUnit.purpose==="Lease"?"#1A5FA8":"#A06810"}}>{selUnit.purpose}</span>
-                  </div>
-                </div>
-                <div style={{flex:1,overflowY:"auto",padding:"1rem"}}>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,background:"#FAFBFC",borderRadius:10,padding:10,marginBottom:12}}>
-                    {[["Bedrooms",selUnit.bedrooms===0?"Studio":selUnit.bedrooms],["Bathrooms",selUnit.bathrooms],["Size",selUnit.size_sqft?`${Number(selUnit.size_sqft).toLocaleString()} sqft`:"—"],["Floor",selUnit.floor_number||"—"],["Parking",selUnit.parking_spaces||0],["View",selUnit.view||"—"],["Condition",selUnit.condition],["Furnishing",selUnit.furnishing]].map(([l,v])=>(
-                      <div key={l}><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px"}}>{l}</div><div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{v}</div></div>
-                    ))}
-                  </div>
-                  {[selUnit.maid_room&&"Maid Room",selUnit.private_pool&&"Private Pool",selUnit.private_garden&&"Garden",selUnit.roof_terrace&&"Roof Terrace",selUnit.garage&&"Garage",selUnit.store_room&&"Store Room"].filter(Boolean).length>0&&(
-                    <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:12}}>
-                      {[selUnit.maid_room&&"Maid Room",selUnit.private_pool&&"Private Pool",selUnit.private_garden&&"Garden",selUnit.roof_terrace&&"Roof Terrace",selUnit.garage&&"Garage",selUnit.store_room&&"Store Room"].filter(Boolean).map(f=>(
-                        <span key={f} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:"#EEE8F9",color:"#5B3FAA"}}>{f}</span>
-                      ))}
-                    </div>
-                  )}
-                  {sp&&(selUnit.purpose==="Sale"||selUnit.purpose==="Both")&&(
-                    <div style={{background:"#FDF8EC",border:"1px solid #E8C97A",borderRadius:10,padding:"10px 12px",marginBottom:10}}>
-                      <div style={{fontSize:10,fontWeight:700,color:"#8A6200",marginBottom:8}}>🏷 SALE PRICING</div>
-                      <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>{fmtAED2(sp.asking_price)}</div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                        {sp.price_per_sqft&&<div><div style={{fontSize:9,color:"#A0AEC0"}}>PER SQFT</div><div style={{fontSize:12,fontWeight:600}}>AED {Number(sp.price_per_sqft).toLocaleString()}</div></div>}
-                        {sp.gross_yield&&<div><div style={{fontSize:9,color:"#A0AEC0"}}>GROSS YIELD</div><div style={{fontSize:12,fontWeight:600,color:"#1A7F5A"}}>{sp.gross_yield}%</div></div>}
-                        <div><div style={{fontSize:9,color:"#A0AEC0"}}>DLD FEE</div><div style={{fontSize:12,fontWeight:600}}>{sp.dld_fee_pct||4}%</div></div>
-                      </div>
-                      {(sp.booking_pct||sp.during_construction_pct)&&(
-                        <div style={{marginTop:8}}>
-                          <div style={{fontSize:9,color:"#A0AEC0",marginBottom:5}}>PAYMENT PLAN</div>
-                          <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                            {[["Booking",sp.booking_pct],["Build",sp.during_construction_pct],["Handover",sp.on_handover_pct],["Post",sp.post_handover_pct]].filter(([,v])=>v>0).map(([l,v])=>(
-                              <div key={l} style={{background:"#fff",border:"1px solid #E8C97A",borderRadius:6,padding:"3px 7px",textAlign:"center"}}>
-                                <div style={{fontSize:9,color:"#A06810"}}>{l}</div>
-                                <div style={{fontSize:12,fontWeight:700}}>{v}%</div>
+                    </td>
+                  </tr>
+                  {/* Expanded row */}
+                  {isExp&&(
+                    <tr key={proj.id+"_exp"}>
+                      <td colSpan={8} style={{padding:"0 12px 12px",background:"#F7F9FC",borderBottom:"2px solid #E2E8F0"}}>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,padding:"12px 0"}}>
+                          {/* Project info */}
+                          <div style={{background:"#fff",borderRadius:10,padding:"12px",border:"1px solid #E2E8F0"}}>
+                            <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Project Details</div>
+                            {[["Community",proj.community],["City",proj.city],["Country",proj.country],["Launch",proj.launch_date?new Date(proj.launch_date).toLocaleDateString("en-AE",{month:"short",year:"numeric"}):"—"]].map(([l,v])=>(
+                              <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid #F7F9FC",fontSize:12}}>
+                                <span style={{color:"#A0AEC0"}}>{l}</span><span style={{fontWeight:600,color:"#0B1F3A"}}>{v||"—"}</span>
                               </div>
                             ))}
+                            {proj.website_url&&<a href={proj.website_url} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#1A5FA8",display:"block",marginTop:8}}>🌐 Website →</a>}
+                          </div>
+                          {/* Unit breakdown */}
+                          <div style={{background:"#fff",borderRadius:10,padding:"12px",border:"1px solid #E2E8F0"}}>
+                            <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Unit Breakdown</div>
+                            {["Available","Reserved","Sold","Leased"].map(s=>{
+                              const cnt=projUnits.filter(u=>u.status===s).length;
+                              return cnt>0?(
+                                <div key={s} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",fontSize:12}}>
+                                  <span style={{color:"#4A5568"}}>{s}</span><span style={{fontWeight:700,color:"#0B1F3A"}}>{cnt}</span>
+                                </div>
+                              ):null;
+                            })}
+                            <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",fontSize:12,borderTop:"1px solid #E2E8F0",marginTop:4}}>
+                              <span style={{fontWeight:700,color:"#0B1F3A"}}>Total</span><span style={{fontWeight:700,color:"#0B1F3A"}}>{st.total}</span>
+                            </div>
+                          </div>
+                          {/* Brochure + Documents */}
+                          <div style={{background:"#fff",borderRadius:10,padding:"12px",border:"1px solid #E2E8F0"}}>
+                            <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Documents</div>
+                            {proj.brochure_file_url?(
+                              <div style={{marginBottom:8}}>
+                                <a href={proj.brochure_file_url} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#1A5FA8",fontWeight:600}}>📄 Project Brochure →</a>
+                              </div>
+                            ):(
+                              <div style={{fontSize:12,color:"#A0AEC0",marginBottom:8}}>No brochure uploaded</div>
+                            )}
+                            <label style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",borderRadius:7,border:"1.5px dashed #D1D9E6",cursor:"pointer",fontSize:12,color:"#4A5568",background:"#FAFBFC"}}>
+                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:"none"}} onChange={e=>{if(e.target.files[0])uploadBrochure(e.target.files[0],proj.id);}}/>
+                              {uploadingBrochure?"⏳ Uploading…":"⬆ Upload Brochure"}
+                            </label>
+                            {proj.description&&<div style={{fontSize:11,color:"#718096",marginTop:8,lineHeight:1.5}}>{proj.description}</div>}
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </td>
+                    </tr>
                   )}
-                  {lp&&(selUnit.purpose==="Lease"||selUnit.purpose==="Both")&&(
-                    <div style={{background:"#E6EFF9",border:"1px solid #B5D4F4",borderRadius:10,padding:"10px 12px",marginBottom:10}}>
-                      <div style={{fontSize:10,fontWeight:700,color:"#1A5FA8",marginBottom:8}}>🔑 LEASE PRICING</div>
-                      <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>{fmtAED2(lp.annual_rent)}<span style={{fontSize:11,fontWeight:400,color:"#A0AEC0"}}>/year</span></div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                        <div><div style={{fontSize:9,color:"#A0AEC0"}}>MONTHLY</div><div style={{fontSize:12,fontWeight:600}}>AED {Math.round(Number(lp.annual_rent)/12).toLocaleString()}</div></div>
-                        {lp.security_deposit&&<div><div style={{fontSize:9,color:"#A0AEC0"}}>DEPOSIT</div><div style={{fontSize:12,fontWeight:600}}>{fmtAED2(lp.security_deposit)}</div></div>}
-                        <div><div style={{fontSize:9,color:"#A0AEC0"}}>CHEQUES</div><div style={{fontSize:12,fontWeight:600}}>{lp.cheques_allowed}</div></div>
-                        {lp.chiller_included&&<div><div style={{fontSize:9,color:"#A0AEC0"}}>CHILLER</div><div style={{fontSize:12,fontWeight:600,color:"#1A7F5A"}}>Included</div></div>}
-                      </div>
-                    </div>
-                  )}
-                  {canEdit&&(
-                    <div style={{display:"flex",gap:8,marginTop:8}}>
-                      <button onClick={()=>openEdit(selUnit)} style={{flex:1,padding:"8px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Edit</button>
-                      {canDel&&<button onClick={async()=>{if(!window.confirm("Delete?"))return;await supabase.from("project_units").delete().eq("id",selUnit.id);setUnits(p=>p.filter(u=>u.id!==selUnit.id));setSelUnit(null);showToast("Deleted","info");}} style={{padding:"8px 14px",borderRadius:8,border:"1.5px solid #F0BCBC",background:"#FAEAEA",color:"#B83232",fontSize:13,fontWeight:600,cursor:"pointer"}}>Del</button>}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      )}
+                </>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
 
-      {/* All Units table */}
-      {view==="all"&&(
-        <div style={{display:"flex",flex:1,overflow:"hidden",gap:0}}>
-
-          {/* ── LEFT SIDEBAR: Filters ── */}
-          <div className="filter-sidebar" style={{width:210,flexShrink:0,background:"#fff",borderRight:"1px solid #E2E8F0",overflowY:"auto",padding:"14px 12px",display:"flex",flexDirection:"column",gap:12}}>
-            <input value={fSearch} onChange={e=>setFSearch(e.target.value)} placeholder="🔍 Search…" style={{fontSize:12}}/>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{allFiltered.length} <span style={{fontWeight:400,color:"#A0AEC0"}}>of {units.length}</span></span>
-              <button onClick={()=>{setFSearch("");setFProject("All");setFType("All");setFCat("All");setFStatus("All");setFPurpose(crmContext==="leasing"?"Lease":crmContext==="sales"?"Sale":"All");setFBeds("All");setFView("All");setFPriceMin("");setFPriceMax("");}}
-                style={{fontSize:11,fontWeight:600,color:"#B83232",background:"none",border:"none",cursor:"pointer"}}>✕ Reset all</button>
+      {/* Add/Edit Modal */}
+      {showAdd&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:600,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>{editProj?"Edit Project":"New Project"}</span>
+              <button onClick={()=>{setShowAdd(false);setEditProj(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
-            {[
-              {lbl:"Project",     el:<select value={fProject} onChange={e=>setFProject(e.target.value)} style={{width:"100%",fontSize:12}}><option value="All">All Projects</option>{projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>},
-              {lbl:"Type",        el:<select value={fType} onChange={e=>{setFType(e.target.value);setFCat("All");}} style={{width:"100%",fontSize:12}}><option value="All">All Types</option><option value="Residential">🏘 Residential</option><option value="Commercial">🏢 Commercial</option></select>},
-              {lbl:"Category",    el:<select value={fCat} onChange={e=>setFCat(e.target.value)} style={{width:"100%",fontSize:12}}><option value="All">All</option>{allSubTypes.map(s=><option key={s}>{s}</option>)}</select>},
-              {lbl:"Purpose",     el:crmContext==="sales"?(<select value={fPurpose} onChange={e=>setFPurpose(e.target.value)} style={{width:"100%",fontSize:12}}><option value="Sale">For Sale</option><option value="Both">Sale & Lease</option></select>):crmContext==="leasing"?(<select value={fPurpose} onChange={e=>setFPurpose(e.target.value)} style={{width:"100%",fontSize:12}}><option value="Lease">For Lease</option><option value="Both">Sale & Lease</option></select>):(<select value={fPurpose} onChange={e=>setFPurpose(e.target.value)} style={{width:"100%",fontSize:12}}><option value="All">All</option><option value="Sale">For Sale</option><option value="Lease">For Lease</option></select>)},
-              {lbl:"Status",      el:<select value={fStatus} onChange={e=>setFStatus(e.target.value)} style={{width:"100%",fontSize:12}}><option value="All">All</option>{UNIT_ST.map(s=><option key={s}>{s}</option>)}</select>},
-              {lbl:"Bedrooms",    el:<select value={fBeds} onChange={e=>setFBeds(e.target.value)} style={{width:"100%",fontSize:12}}><option value="All">Any</option><option value="Studio">Studio</option>{[1,2,3,4,5,6].map(n=><option key={n} value={String(n)}>{n} Bed</option>)}</select>},
-              {lbl:"View",        el:<select value={fView} onChange={e=>setFView(e.target.value)} style={{width:"100%",fontSize:12}}><option value="All">Any</option>{allViews.map(v=><option key={v}>{v}</option>)}</select>},
-              {lbl:"Min Price",   el:<input type="number" value={fPriceMin} onChange={e=>setFPriceMin(e.target.value)} placeholder="e.g. 1,000,000" style={{width:"100%",fontSize:12}}/>},
-              {lbl:"Max Price",   el:<input type="number" value={fPriceMax} onChange={e=>setFPriceMax(e.target.value)} placeholder="e.g. 5,000,000" style={{width:"100%",fontSize:12}}/>},
-            ].map(({lbl,el})=>(
-              <div key={lbl}>
-                <div style={{fontSize:10,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:5}}>{lbl}</div>
-                {el}
+            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Project Name *</label><input value={form.name} onChange={sf("name")} placeholder="e.g. Emaar Beachfront"/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Developer</label><input value={form.developer||""} onChange={sf("developer")} placeholder="Emaar, Nakheel…"/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Status</label><select value={form.status||"Active"} onChange={sf("status")}>{["Active","Sold Out","On Hold","Cancelled"].map(s=><option key={s}>{s}</option>)}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Location</label><input value={form.location||""} onChange={sf("location")} placeholder="Dubai Marina, Downtown…"/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Community</label><input value={form.community||""} onChange={sf("community")}/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Launch Date</label><input type="date" value={form.launch_date||""} onChange={sf("launch_date")}/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Completion Date</label><input type="date" value={form.completion_date||""} onChange={sf("completion_date")}/></div>
+                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Website URL</label><input value={form.website_url||""} onChange={sf("website_url")} placeholder="https://…"/></div>
+                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Description</label><textarea value={form.description||""} onChange={sf("description")} rows={3} placeholder="Project overview, key highlights…"/></div>
               </div>
-            ))}
-            {/* Active filter pills */}
-            {[
-              fProject!=="All"&&{l:`📁 ${projects.find(p=>p.id===fProject)?.name}`,c:()=>setFProject("All")},
-              fType!=="All"&&{l:fType,c:()=>setFType("All")},
-              fCat!=="All"&&{l:fCat,c:()=>setFCat("All")},
-              fStatus!=="All"&&{l:fStatus,c:()=>setFStatus("All")},
-              fBeds!=="All"&&{l:fBeds==="Studio"?"Studio":`${fBeds} Bed`,c:()=>setFBeds("All")},
-              fView!=="All"&&{l:fView,c:()=>setFView("All")},
-              (fPriceMin||fPriceMax)&&{l:`AED ${fPriceMin||"0"}–${fPriceMax||"∞"}`,c:()=>{setFPriceMin("");setFPriceMax("");}},
-            ].filter(Boolean).map((f,i)=>(
-              <button key={i} onClick={f.c} style={{display:"flex",justifyContent:"space-between",padding:"4px 8px",borderRadius:6,border:"1px solid #E8C97A",background:"#FDF3DC",color:"#8A6200",fontSize:11,fontWeight:600,cursor:"pointer",textAlign:"left",width:"100%"}}>
-                <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{f.l}</span>
-                <span style={{marginLeft:4}}>×</span>
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
+              <button onClick={()=>{setShowAdd(false);setEditProj(null);}} style={{padding:"9px 20px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              <button onClick={saveProject} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+                {saving?"Saving…":editProj?"Save Changes":"Create Project"}
               </button>
-            ))}
-          </div>
-
-          {/* ── RIGHT: Full-width table ── */}
-          <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-            <div style={{flex:1,overflowY:"auto"}}>
-              <table style={{width:"100%",borderCollapse:"collapse"}}>
-                <thead style={{position:"sticky",top:0,zIndex:1}}>
-                  <tr style={{background:"#0B1F3A"}}>
-                    {["Unit Ref","Project","Type","Category","Purpose","Beds","Sqft","Floor","View","Sale Price","AED/sqft","Annual Rent","Status",""].map(h=>(
-                      <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {allFiltered.map((u,i)=>{
-                    const sp=getSP(u.id); const lp=getLP(u.id);
-                    const proj=projects.find(p=>p.id===u.project_id);
-                    const sc=UNIT_C_PB[u.status]||{c:"#718096",bg:"#F0F2F5"};
-                    return (
-                      <tr key={u.id}
-                        onClick={()=>{setSelProj(proj);setUTypeTab(u.unit_type);setSelUnit(u);setView("builder");}}
-                        style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5",cursor:"pointer",transition:"background .1s"}}
-                        onMouseOver={e=>e.currentTarget.style.background="#F0F7FF"}
-                        onMouseOut={e=>e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC"}>
-                        <td style={{padding:"10px 12px",fontWeight:700,color:"#0B1F3A",fontSize:13,whiteSpace:"nowrap"}}>{u.unit_ref}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568",maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{proj?.name||"—"}</td>
-                        <td style={{padding:"10px 12px"}}><span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:20,background:u.unit_type==="Residential"?"#E6F4EE":"#E6EFF9",color:u.unit_type==="Residential"?"#1A7F5A":"#1A5FA8"}}>{u.unit_type}</span></td>
-                        <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{u.sub_type}</td>
-                        <td style={{padding:"10px 12px"}}><span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:20,background:u.purpose==="Sale"?"#E6F4EE":u.purpose==="Lease"?"#E6EFF9":"#FDF3DC",color:u.purpose==="Sale"?"#1A7F5A":u.purpose==="Lease"?"#1A5FA8":"#A06810"}}>{u.purpose}</span></td>
-                        <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568",textAlign:"center"}}>{u.bedrooms===0?"Studio":u.bedrooms||"—"}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{u.size_sqft?Number(u.size_sqft).toLocaleString():"—"}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568",textAlign:"center"}}>{u.floor_number??"—"}</td>
-                        <td style={{padding:"10px 12px",fontSize:11,color:"#718096",maxWidth:100,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.view||"—"}</td>
-                        <td style={{padding:"10px 12px",fontSize:13,fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{sp?.asking_price?fmtAED2(sp.asking_price):"—"}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568",whiteSpace:"nowrap"}}>{sp?.price_per_sqft?`${Number(sp.price_per_sqft).toLocaleString()}`:"—"}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,fontWeight:600,color:"#1A5FA8",whiteSpace:"nowrap"}}>{lp?.annual_rent?fmtAED2(lp.annual_rent):"—"}</td>
-                        <td style={{padding:"10px 12px"}}><span style={{fontSize:10,fontWeight:600,padding:"3px 9px",borderRadius:20,background:sc.bg,color:sc.c,whiteSpace:"nowrap"}}>{u.status}</span></td>
-                        <td style={{padding:"10px 8px"}}><button onClick={e=>{e.stopPropagation();setSelProj(proj);setUTypeTab(u.unit_type);setSelUnit(u);setView("builder");}} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",color:"#4A5568",cursor:"pointer",whiteSpace:"nowrap"}}>Open →</button></td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {allFiltered.length===0&&<div style={{textAlign:"center",padding:"4rem",color:"#A0AEC0"}}><div style={{fontSize:40,marginBottom:10}}>🏠</div><div style={{fontSize:14}}>No units match the selected filters</div></div>}
             </div>
           </div>
         </div>
       )}
-
-      {/* Modals */}
-      {modal==="proj"&&(
-        <Modal title="New Project" onClose={()=>setModal(null)} width={520}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-            <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Project Name *</label><input value={pForm.name} onChange={e=>setPForm(f=>({...f,name:e.target.value}))} placeholder="Emaar Beachfront"/></div>
-            <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Developer</label><input value={pForm.developer} onChange={e=>setPForm(f=>({...f,developer:e.target.value}))} placeholder="Emaar Properties"/></div>
-            <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Location</label><input value={pForm.location} onChange={e=>setPForm(f=>({...f,location:e.target.value}))} placeholder="Dubai Harbour"/></div>
-            <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Community / Area</label><input value={pForm.community} onChange={e=>setPForm(f=>({...f,community:e.target.value}))} placeholder="JVC, Downtown…"/></div>
-            <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Status</label><select value={pForm.status} onChange={e=>setPForm(f=>({...f,status:e.target.value}))}>{["Active","Upcoming","Completed","On Hold"].map(s=><option key={s}>{s}</option>)}</select></div>
-            <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Website</label><input value={pForm.website} onChange={e=>setPForm(f=>({...f,website:e.target.value}))} placeholder="https://…"/></div>
-            <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Launch Date</label><input type="date" value={pForm.launch_date} onChange={e=>setPForm(f=>({...f,launch_date:e.target.value}))}/></div>
-            <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Completion Date</label><input type="date" value={pForm.completion_date} onChange={e=>setPForm(f=>({...f,completion_date:e.target.value}))}/></div>
-          </div>
-          <div style={{marginTop:12}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",display:"block",marginBottom:5}}>Description</label><textarea value={pForm.description} onChange={e=>setPForm(f=>({...f,description:e.target.value}))} rows={2} placeholder="Key highlights…"/></div>
-          <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:14}}>
-            <button onClick={()=>setModal(null)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-            <button onClick={saveProject} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Create Project"}</button>
-          </div>
-        </Modal>
-      )}
-      {(modal==="unit"&&selProj)||( modal==="editunit"&&selUnit) ? renderUnitModal(modal==="editunit") : null}
     </div>
   );
 }
 
-// ══════════════════════════════════════════════════════
-// DISCOUNT APPROVALS
-// ══════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════
+// INVENTORY MODULE — Flat unit list with top filters
+// No left panel. Compact rows. Full unit detail modal.
+// ══════════════════════════════════════════════════════════════════
+
+const UNIT_STATUS_COLORS = {
+  Available:  {c:"#1A7F5A", bg:"#E6F4EE"},
+  Reserved:   {c:"#A06810", bg:"#FDF3DC"},
+  "Under Offer":{c:"#5B3FAA",bg:"#EEE8F9"},
+  Sold:       {c:"#1A5FA8", bg:"#E6EFF9"},
+  Leased:     {c:"#1A5FA8", bg:"#E6EFF9"},
+  Cancelled:  {c:"#718096", bg:"#F0F2F5"},
+};
+
+function InventoryModule({ currentUser, showToast, crmContext="sales" }) {
+  const [units,       setUnits]       = useState([]);
+  const [projects,    setProjects]    = useState([]);
+  const [salePricing, setSalePricing] = useState([]);
+  const [leasePricing,setLeasePricing]= useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [selUnit,     setSelUnit]     = useState(null);
+  const [activeTab,   setActiveTab]   = useState("details");
+  // Filters
+  const [fSearch,  setFSearch]  = useState("");
+  const [fProject, setFProject] = useState("All");
+  const [fType,    setFType]    = useState("All");
+  const [fCat,     setFCat]     = useState("All");
+  const [fStatus,  setFStatus]  = useState("All");
+  const [fBeds,    setFBeds]    = useState("All");
+  const [fPurpose, setFPurpose] = useState(crmContext==="leasing"?"Lease":crmContext==="sales"?"Sale":"All");
+  const [fPriceMin,setFPriceMin]= useState("");
+  const [fPriceMax,setFPriceMax]= useState("");
+  // Unit form
+  const [showUnitForm, setShowUnitForm] = useState(false);
+  const [editUnit,     setEditUnit]     = useState(null);
+  const [saving,       setSaving]       = useState(false);
+  const [uploading,    setUploading]    = useState(false);
+  const [scanResult,   setScanResult]   = useState(null);
+  const [scanning,     setScanning]     = useState(false);
+
+  const canEdit = can(currentUser.role,"manage_inventory")||can(currentUser.role,"write");
+
+  const uBlank = {
+    unit_ref:"",unit_type:"Residential",sub_type:"1 Bed",
+    purpose:crmContext==="leasing"?"Lease":"Sale",
+    floor_number:"",block_or_tower:"",view:"",facing:"",
+    size_sqft:"",bedrooms:"1",bathrooms:"1",parking_spaces:"0",
+    maid_room:false,private_pool:false,private_garden:false,
+    furnishing:"Unfurnished",condition:"Off-plan",handover_date:"",
+    status:"Available",notes:"",fit_out:"",
+    // Sale pricing
+    asking_price:"",price_per_sqft:"",dld_fee_pct:"4",agency_fee_pct:"2",
+    booking_pct:"10",during_construction_pct:"40",on_handover_pct:"50",
+    post_handover_pct:"0",
+    // Lease pricing
+    annual_rent:"",security_deposit:"",cheques_allowed:"4",chiller_included:false,
+    municipality_tax_pct:"5",
+    // Documents
+    floor_plan_url:"",brochure_url:"",render_url:"",
+    project_id:"",
+  };
+  const [uForm, setUForm] = useState(uBlank);
+  const uf = k => e => setUForm(f=>({...f,[k]:typeof e==="boolean"?e:e.target?.value??e}));
+
+  const load = useCallback(async()=>{
+    setLoading(true);
+    const [u,p,sp,lp]=await Promise.all([
+      supabase.from("project_units").select("*").order("unit_ref"),
+      supabase.from("projects").select("*").order("name"),
+      supabase.from("unit_sale_pricing").select("*"),
+      supabase.from("unit_lease_pricing").select("*"),
+    ]);
+    setUnits(u.data||[]);
+    setProjects(p.data||[]);
+    setSalePricing(sp.data||[]);
+    setLeasePricing(lp.data||[]);
+    setLoading(false);
+  },[]);
+
+  useEffect(()=>{ load(); },[load]);
+
+  // Filtered units
+  const allFiltered = units.filter(u=>{
+    if(crmContext==="sales"   && u.purpose==="Lease") return false;
+    if(crmContext==="leasing" && u.purpose==="Sale")  return false;
+    const q=fSearch.toLowerCase();
+    const proj=projects.find(p=>p.id===u.project_id);
+    const sp=salePricing.find(s=>s.unit_id===u.id);
+    const lp=leasePricing.find(l=>l.unit_id===u.id);
+    const price=sp?.asking_price||lp?.annual_rent||0;
+    if(q&&!u.unit_ref?.toLowerCase().includes(q)&&!proj?.name?.toLowerCase().includes(q)&&!u.view?.toLowerCase().includes(q)&&!u.sub_type?.toLowerCase().includes(q)) return false;
+    if(fProject!=="All"&&u.project_id!==fProject) return false;
+    if(fType!=="All"&&u.unit_type!==fType) return false;
+    if(fCat!=="All"&&u.sub_type!==fCat) return false;
+    if(fStatus!=="All"&&u.status!==fStatus) return false;
+    if(fBeds!=="All"){if(fBeds==="Studio"&&u.bedrooms!==0)return false;if(fBeds!=="Studio"&&String(u.bedrooms)!==fBeds)return false;}
+    if(fPurpose!=="All"&&u.purpose!==fPurpose&&u.purpose!=="Both") return false;
+    if(fPriceMin&&price<Number(fPriceMin)) return false;
+    if(fPriceMax&&price>Number(fPriceMax)) return false;
+    return true;
+  });
+
+  const allSubTypes=[...new Set(units.map(u=>u.sub_type).filter(Boolean))].sort();
+  const allViews=[...new Set(units.map(u=>u.view).filter(Boolean))].sort();
+  const getSP=id=>salePricing.find(s=>s.unit_id===id);
+  const getLP=id=>leasePricing.find(l=>l.unit_id===id);
+
+  const resetFilters=()=>{setFSearch("");setFProject("All");setFType("All");setFCat("All");setFStatus("All");setFBeds("All");setFPurpose(crmContext==="leasing"?"Lease":crmContext==="sales"?"Sale":"All");setFPriceMin("");setFPriceMax("");}
+
+  const openUnit=(unit)=>{setSelUnit(unit);setActiveTab("details");}
+  const openAdd=(projId="")=>{setUForm({...uBlank,project_id:projId||projects[0]?.id||""});setEditUnit(null);setShowUnitForm(true);setActiveTab("details");}
+  const openEdit=(unit)=>{
+    const sp=getSP(unit.id); const lp=getLP(unit.id);
+    setUForm({...uBlank,...unit,
+      asking_price:sp?.asking_price||"",price_per_sqft:sp?.price_per_sqft||"",
+      dld_fee_pct:sp?.dld_fee_pct||4,agency_fee_pct:sp?.agency_fee_pct||2,
+      booking_pct:sp?.booking_pct||10,during_construction_pct:sp?.during_construction_pct||40,
+      on_handover_pct:sp?.on_handover_pct||50,post_handover_pct:sp?.post_handover_pct||0,
+      annual_rent:lp?.annual_rent||"",security_deposit:lp?.security_deposit||"",
+      cheques_allowed:lp?.cheques_allowed||4,chiller_included:lp?.chiller_included||false,
+      municipality_tax_pct:lp?.municipality_tax_pct||5,
+    });
+    setEditUnit(unit);setShowUnitForm(true);setActiveTab("details");
+  };
+
+  // Save unit
+  const saveUnit=async()=>{
+    if(!uForm.project_id){showToast("Select a project","error");return;}
+    if(!uForm.unit_ref.trim()){showToast("Unit reference required","error");return;}
+    setSaving(true);
+    try{
+      const unitPayload={
+        project_id:uForm.project_id,company_id:currentUser.company_id||null,
+        unit_ref:uForm.unit_ref.trim(),unit_type:uForm.unit_type,sub_type:uForm.sub_type,
+        purpose:uForm.purpose,floor_number:uForm.floor_number||null,
+        block_or_tower:uForm.block_or_tower||null,view:uForm.view||null,
+        facing:uForm.facing||null,size_sqft:uForm.size_sqft?Number(uForm.size_sqft):null,
+        bedrooms:uForm.unit_type==="Residential"?Number(uForm.bedrooms):null,
+        bathrooms:uForm.bathrooms?Number(uForm.bathrooms):null,
+        parking_spaces:uForm.parking_spaces?Number(uForm.parking_spaces):0,
+        maid_room:!!uForm.maid_room,private_pool:!!uForm.private_pool,private_garden:!!uForm.private_garden,
+        furnishing:uForm.furnishing,condition:uForm.condition,
+        handover_date:uForm.handover_date||null,
+        status:uForm.status,notes:uForm.notes||null,fit_out:uForm.fit_out||null,
+        floor_plan_url:uForm.floor_plan_url||null,
+        brochure_url:uForm.brochure_url||null,
+        render_url:uForm.render_url||null,
+      };
+      let uid=editUnit?.id;
+      if(editUnit){
+        const{error}=await supabase.from("project_units").update(unitPayload).eq("id",editUnit.id);
+        if(error)throw error;
+      } else {
+        const{data,error}=await supabase.from("project_units").insert(unitPayload).select().single();
+        if(error)throw error;
+        uid=data.id;
+      }
+      // Save sale pricing
+      if((uForm.purpose==="Sale"||uForm.purpose==="Both")&&uForm.asking_price){
+        const sp={unit_id:uid,project_id:uForm.project_id,company_id:currentUser.company_id||null,
+          asking_price:Number(uForm.asking_price),
+          price_per_sqft:uForm.size_sqft&&uForm.asking_price?Math.round(Number(uForm.asking_price)/Number(uForm.size_sqft)):null,
+          dld_fee_pct:Number(uForm.dld_fee_pct)||4,agency_fee_pct:Number(uForm.agency_fee_pct)||2,
+          booking_pct:Number(uForm.booking_pct)||10,during_construction_pct:Number(uForm.during_construction_pct)||40,
+          on_handover_pct:Number(uForm.on_handover_pct)||50,post_handover_pct:Number(uForm.post_handover_pct)||0,
+        };
+        await supabase.from("unit_sale_pricing").upsert(sp,{onConflict:"unit_id"});
+      }
+      // Save lease pricing
+      if((uForm.purpose==="Lease"||uForm.purpose==="Both")&&uForm.annual_rent){
+        const lp={unit_id:uid,project_id:uForm.project_id,company_id:currentUser.company_id||null,
+          annual_rent:Number(uForm.annual_rent),
+          security_deposit:uForm.security_deposit?Number(uForm.security_deposit):Math.round(Number(uForm.annual_rent)*0.05),
+          cheques_allowed:Number(uForm.cheques_allowed)||4,
+          chiller_included:!!uForm.chiller_included,
+          municipality_tax_pct:Number(uForm.municipality_tax_pct)||5,
+        };
+        await supabase.from("unit_lease_pricing").upsert(lp,{onConflict:"unit_id"});
+      }
+      showToast(editUnit?"Unit updated":"Unit added","success");
+      setShowUnitForm(false);setEditUnit(null);setSelUnit(null);load();
+    }catch(e){showToast(e.message,"error");}
+    setSaving(false);
+  };
+
+  // Upload document to Supabase Storage
+  const uploadDoc=async(file,field,unitId)=>{
+    if(!file)return;
+    setUploading(true);
+    try{
+      const path=`units/${unitId||"new"}/${field}_${Date.now()}_${file.name}`;
+      const{error:ue}=await supabase.storage.from("documents").upload(path,file,{upsert:true});
+      if(ue)throw ue;
+      const{data:{publicUrl}}=supabase.storage.from("documents").getPublicUrl(path);
+      setUForm(f=>({...f,[field+"_url"]:publicUrl}));
+      if(unitId){
+        await supabase.from("project_units").update({[field+"_url"]:publicUrl}).eq("id",unitId);
+      }
+      showToast("File uploaded","success");
+    }catch(e){showToast(e.message,"error");}
+    setUploading(false);
+  };
+
+  // AI Brochure Scanner
+  const scanBrochure=async(file)=>{
+    if(!file)return;
+    const apiKey=localStorage.getItem("claude_api_key")||localStorage.getItem("ai_keys")?JSON.parse(localStorage.getItem("ai_keys")||"{}").claude:"";
+    if(!apiKey){showToast("Add Claude API key in AI Assistant tab first","error");return;}
+    setScanning(true);setScanResult(null);
+    try{
+      // Convert file to base64
+      const reader=new FileReader();
+      const b64=await new Promise(res=>{reader.onload=e=>res(e.target.result.split(",")[1]);reader.readAsDataURL(file);});
+      const isImage=file.type.startsWith("image/");
+      const response=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-20250514",
+          max_tokens:1500,
+          messages:[{role:"user",content:[
+            ...(isImage?[{type:"image",source:{type:"base64",media_type:file.type,data:b64}}]:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}}]),
+            {type:"text",text:`Extract property/unit details from this builder brochure. Return ONLY a JSON object with these fields (use null for unknown):
+{
+  "unit_ref": "unit reference/number",
+  "sub_type": "Studio/1 Bed/2 Bed/3 Bed/4 Bed/Villa/Penthouse/Townhouse/Office/Retail",
+  "size_sqft": number,
+  "bedrooms": number (0 for studio),
+  "bathrooms": number,
+  "floor_number": "floor number or range",
+  "view": "sea view/city view/pool view/garden view etc",
+  "asking_price": number in AED,
+  "annual_rent": number in AED,
+  "booking_pct": number (booking deposit %),
+  "during_construction_pct": number,
+  "on_handover_pct": number,
+  "developer": "developer name",
+  "project_name": "project/building name",
+  "handover_date": "YYYY-MM-DD or year",
+  "furnishing": "Furnished/Unfurnished/Semi-Furnished",
+  "notes": "any other relevant details"
+}
+Return ONLY the JSON, no explanation.`}
+          ]}]
+        })
+      });
+      if(!response.ok)throw new Error("AI scan failed");
+      const data=await response.json();
+      const text=data.content[0]?.text||"{}";
+      const clean=text.replace(/```json|```/g,"").trim();
+      const parsed=JSON.parse(clean);
+      setScanResult(parsed);
+      showToast("Brochure scanned — review and apply","success");
+    }catch(e){showToast(`Scan error: ${e.message}`,"error");}
+    setScanning(false);
+  };
+
+  const applyScanResult=()=>{
+    if(!scanResult)return;
+    setUForm(f=>({...f,
+      unit_ref:       scanResult.unit_ref||f.unit_ref,
+      sub_type:       scanResult.sub_type||f.sub_type,
+      size_sqft:      scanResult.size_sqft||f.size_sqft,
+      bedrooms:       scanResult.bedrooms!=null?scanResult.bedrooms:f.bedrooms,
+      bathrooms:      scanResult.bathrooms||f.bathrooms,
+      floor_number:   scanResult.floor_number||f.floor_number,
+      view:           scanResult.view||f.view,
+      asking_price:   scanResult.asking_price||f.asking_price,
+      annual_rent:    scanResult.annual_rent||f.annual_rent,
+      booking_pct:    scanResult.booking_pct||f.booking_pct,
+      during_construction_pct:scanResult.during_construction_pct||f.during_construction_pct,
+      on_handover_pct:scanResult.on_handover_pct||f.on_handover_pct,
+      handover_date:  scanResult.handover_date||f.handover_date,
+      furnishing:     scanResult.furnishing||f.furnishing,
+      notes:          scanResult.notes||f.notes,
+    }));
+    setScanResult(null);
+    showToast("Fields pre-filled — review before saving","success");
+    setActiveTab("details");
+  };
+
+  const updateUnitStatus=async(uid,status)=>{
+    await supabase.from("project_units").update({status}).eq("id",uid);
+    setUnits(p=>p.map(u=>u.id===uid?{...u,status}:u));
+    if(selUnit?.id===uid)setSelUnit(s=>({...s,status}));
+    showToast(`Marked ${status}`,"success");
+  };
+
+  if(loading)return <Spinner msg="Loading inventory…"/>;
+
+  const UNIT_ST=["Available","Reserved","Under Offer","Sold","Leased","Cancelled"];
+  const PurposeBadge=({p})=>{const c={Sale:{c:"#1A7F5A",bg:"#E6F4EE"},Lease:{c:"#1A5FA8",bg:"#E6EFF9"},Both:{c:"#8A6200",bg:"#FDF3DC"}}[p]||{c:"#718096",bg:"#F0F2F5"};return <span style={{fontSize:10,fontWeight:600,padding:"2px 6px",borderRadius:20,background:c.bg,color:c.c}}>{p}</span>;};
+
+  return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      {/* Top filter bar */}
+      <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
+        <input value={fSearch} onChange={e=>setFSearch(e.target.value)} placeholder="🔍 Search ref, project, view…" style={{flex:1,minWidth:150}}/>
+        <select value={fProject} onChange={e=>setFProject(e.target.value)} style={{width:"auto",fontSize:12}}>
+          <option value="All">All Projects</option>
+          {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+        </select>
+        <select value={fType} onChange={e=>{setFType(e.target.value);setFCat("All");}} style={{width:"auto",fontSize:12}}>
+          <option value="All">All Types</option>
+          <option value="Residential">Residential</option>
+          <option value="Commercial">Commercial</option>
+        </select>
+        <select value={fCat} onChange={e=>setFCat(e.target.value)} style={{width:"auto",fontSize:12}}>
+          <option value="All">All Categories</option>
+          <optgroup label="Residential">
+            {["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed","Villa","Townhouse","Penthouse","Duplex"].map(s=><option key={s}>{s}</option>)}
+          </optgroup>
+          <optgroup label="Commercial">
+            {["Office","Retail / Shop","Warehouse","Restaurant","Hotel Apartment","Labour Camp"].map(s=><option key={s}>{s}</option>)}
+          </optgroup>
+        </select>
+        <select value={fStatus} onChange={e=>setFStatus(e.target.value)} style={{width:"auto",fontSize:12}}>
+          <option value="All">All Status</option>
+          {UNIT_ST.map(s=><option key={s}>{s}</option>)}
+        </select>
+        {crmContext==="both"&&<select value={fPurpose} onChange={e=>setFPurpose(e.target.value)} style={{width:"auto",fontSize:12}}>
+          <option value="All">All</option>
+          <option value="Sale">For Sale</option>
+          <option value="Lease">For Lease</option>
+        </select>}
+        <input type="number" value={fPriceMin} onChange={e=>setFPriceMin(e.target.value)} placeholder="Min AED" style={{width:90,fontSize:12}}/>
+        <input type="number" value={fPriceMax} onChange={e=>setFPriceMax(e.target.value)} placeholder="Max AED" style={{width:90,fontSize:12}}/>
+        <button onClick={resetFilters} style={{padding:"6px 12px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#F0F2F5",color:"#4A5568",fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>✕ Reset</button>
+        <span style={{fontSize:11,color:"#A0AEC0",whiteSpace:"nowrap"}}>{allFiltered.length}/{units.length}</span>
+      </div>
+      {/* Action bar: Add Unit aligned right, same visual row as title */}
+      {canEdit&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:8,marginTop:-4}}>
+        <button onClick={()=>openAdd()} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Unit</button>
+      </div>}
+
+
+
+      <div style={{display:"flex",gap:0,flex:1,overflow:"hidden"}}>
+        {/* Unit table */}
+        <div style={{flex:1,overflowY:"auto",overflowX:"auto"}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+            <thead style={{position:"sticky",top:0,zIndex:1}}>
+              <tr style={{background:"#0B1F3A"}}>
+                {["Ref","Project","Type","Category","Purpose","Beds","Sqft","Floor","View","Sale Price","Rent/yr","Status",""].map(h=>(
+                  <th key={h} style={{padding:"8px 10px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {allFiltered.length===0&&(
+                <tr><td colSpan={13} style={{textAlign:"center",padding:"2rem",color:"#A0AEC0"}}>No units match filters</td></tr>
+              )}
+              {allFiltered.map((u,i)=>{
+                const sp=getSP(u.id); const lp=getLP(u.id);
+                const proj=projects.find(p=>p.id===u.project_id);
+                const sc=UNIT_STATUS_COLORS[u.status]||{c:"#718096",bg:"#F0F2F5"};
+                const isSel=selUnit?.id===u.id;
+                return (
+                  <tr key={u.id}
+                    onClick={()=>openUnit(u)}
+                    style={{background:isSel?"#EEF2FF":i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5",cursor:"pointer",transition:"background .1s"}}
+                    onMouseOver={e=>{if(!isSel)e.currentTarget.style.background="#F0F7FF";}}
+                    onMouseOut={e=>{if(!isSel)e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC";}}>
+                    <td style={{padding:"6px 10px",fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{u.unit_ref}</td>
+                    <td style={{padding:"6px 10px",color:"#4A5568",maxWidth:130,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{proj?.name||"—"}</td>
+                    <td style={{padding:"6px 10px"}}><span style={{fontSize:10,fontWeight:600,padding:"2px 6px",borderRadius:20,background:u.unit_type==="Residential"?"#E6F4EE":"#E6EFF9",color:u.unit_type==="Residential"?"#1A7F5A":"#1A5FA8"}}>{u.unit_type==="Residential"?"Res":"Com"}</span></td>
+                    <td style={{padding:"6px 10px",color:"#4A5568",whiteSpace:"nowrap"}}>{u.sub_type}</td>
+                    <td style={{padding:"6px 10px"}}><PurposeBadge p={u.purpose}/></td>
+                    <td style={{padding:"6px 10px",color:"#4A5568",textAlign:"center"}}>{u.bedrooms===0?"S":u.bedrooms||"—"}</td>
+                    <td style={{padding:"6px 10px",color:"#4A5568",whiteSpace:"nowrap"}}>{u.size_sqft?Number(u.size_sqft).toLocaleString():""}</td>
+                    <td style={{padding:"6px 10px",color:"#4A5568",textAlign:"center"}}>{u.floor_number??""}</td>
+                    <td style={{padding:"6px 10px",color:"#718096",maxWidth:90,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.view||""}</td>
+                    <td style={{padding:"6px 10px",fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{sp?.asking_price?`AED ${Math.round(sp.asking_price/1000)}K`:""}</td>
+                    <td style={{padding:"6px 10px",fontWeight:600,color:"#1A5FA8",whiteSpace:"nowrap"}}>{lp?.annual_rent?`AED ${Math.round(lp.annual_rent/1000)}K`:""}</td>
+                    <td style={{padding:"6px 10px"}}><span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:20,background:sc.bg,color:sc.c,whiteSpace:"nowrap"}}>{u.status}</span></td>
+                    <td style={{padding:"6px 6px"}} onClick={e=>e.stopPropagation()}>
+                      {canEdit&&<button onClick={()=>openEdit(u)} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>Edit</button>}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Unit detail side panel */}
+        {selUnit&&(()=>{
+          const sp=getSP(selUnit.id); const lp=getLP(selUnit.id);
+          const proj=projects.find(p=>p.id===selUnit.project_id);
+          const sc=UNIT_STATUS_COLORS[selUnit.status]||{c:"#718096",bg:"#F0F2F5"};
+          return (
+            <div className="slide-in" style={{width:340,flexShrink:0,background:"#fff",borderLeft:"1px solid #E2E8F0",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+              {/* Panel header */}
+              <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",padding:"14px 16px",position:"relative"}}>
+                <button onClick={()=>setSelUnit(null)} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:"#C9A84C",fontSize:20,cursor:"pointer"}}>×</button>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>{selUnit.unit_ref}</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:2}}>{proj?.name} · {selUnit.sub_type}</div>
+                <span style={{fontSize:10,fontWeight:600,padding:"3px 10px",borderRadius:20,background:sc.bg,color:sc.c,marginTop:6,display:"inline-block"}}>{selUnit.status}</span>
+              </div>
+              {/* Tabs */}
+              <div style={{display:"flex",borderBottom:"1px solid #E2E8F0"}}>
+                {["Details","Pricing","Documents"].map(t=>(
+                  <button key={t} onClick={()=>setActiveTab(t.toLowerCase())}
+                    style={{flex:1,padding:"8px 4px",border:"none",borderBottom:activeTab===t.toLowerCase()?"2.5px solid #0B1F3A":"2.5px solid transparent",background:"transparent",fontSize:12,fontWeight:activeTab===t.toLowerCase()?700:400,color:activeTab===t.toLowerCase()?"#0B1F3A":"#718096",cursor:"pointer"}}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <div style={{flex:1,overflowY:"auto",padding:"12px"}}>
+                {/* Details tab */}
+                {activeTab==="details"&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                    {/* Key specs */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                      {[
+                        ["Type",    selUnit.unit_type],
+                        ["Category",selUnit.sub_type],
+                        ["Bedrooms",selUnit.bedrooms===0?"Studio":(selUnit.bedrooms||"—")],
+                        ["Bathrooms",selUnit.bathrooms||"—"],
+                        ["Size",    selUnit.size_sqft?`${Number(selUnit.size_sqft).toLocaleString()} sqft`:"—"],
+                        ["Floor",   selUnit.floor_number||"—"],
+                        ["View",    selUnit.view||"—"],
+                        ["Facing",  selUnit.facing||"—"],
+                        ["Parking", selUnit.parking_spaces||"0"],
+                        ["Handover",selUnit.handover_date?new Date(selUnit.handover_date).toLocaleDateString("en-AE",{month:"short",year:"numeric"}):"—"],
+                      ].map(([l,v])=>(
+                        <div key={l} style={{background:"#FAFBFC",borderRadius:7,padding:"8px 10px"}}>
+                          <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
+                          <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{v}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Features */}
+                    <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                      {selUnit.maid_room&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:20,background:"#F0F2F5",color:"#4A5568"}}>Maid Room</span>}
+                      {selUnit.private_pool&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:20,background:"#E6EFF9",color:"#1A5FA8"}}>Private Pool</span>}
+                      {selUnit.private_garden&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>Private Garden</span>}
+                    </div>
+                    {/* Status changer */}
+                    {canEdit&&(
+                      <div>
+                        <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>Update Status</div>
+                        <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                          {UNIT_ST.map(s=>{
+                            const sc2=UNIT_STATUS_COLORS[s]||{c:"#718096",bg:"#F0F2F5"};
+                            return <button key={s} onClick={()=>updateUnitStatus(selUnit.id,s)}
+                              style={{fontSize:10,padding:"4px 9px",borderRadius:20,border:`1.5px solid ${selUnit.status===s?sc2.c:"#E2E8F0"}`,background:selUnit.status===s?sc2.bg:"#fff",color:selUnit.status===s?sc2.c:"#4A5568",cursor:"pointer",fontWeight:selUnit.status===s?700:400}}>
+                              {s}
+                            </button>;
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {selUnit.notes&&<div style={{fontSize:12,color:"#4A5568",padding:"8px 10px",background:"#F7F9FC",borderRadius:8,lineHeight:1.6}}>{selUnit.notes}</div>}
+                    {canEdit&&<button onClick={()=>openEdit(selUnit)} style={{padding:"8px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit Unit</button>}
+                  </div>
+                )}
+                {/* Pricing tab */}
+                {activeTab==="pricing"&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                    {sp&&(
+                      <div>
+                        <div style={{fontSize:11,fontWeight:700,color:"#1A7F5A",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>🏷 Sale Pricing</div>
+                        <div style={{background:"#0B1F3A",borderRadius:10,padding:"12px",marginBottom:8,textAlign:"center"}}>
+                          <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#C9A84C"}}>AED {Number(sp.asking_price).toLocaleString()}</div>
+                          {sp.price_per_sqft&&<div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Number(sp.price_per_sqft).toLocaleString()}/sqft</div>}
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                          {[["DLD Fee",`${sp.dld_fee_pct}%`],["Agency Fee",`${sp.agency_fee_pct}%`],["Booking",`${sp.booking_pct}%`],["Construction",`${sp.during_construction_pct}%`],["Handover",`${sp.on_handover_pct}%`],sp.post_handover_pct>0&&["Post Handover",`${sp.post_handover_pct}%`]].filter(Boolean).map(([l,v])=>(
+                            <div key={l} style={{background:"#FAFBFC",borderRadius:7,padding:"7px 9px"}}>
+                              <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:1}}>{l}</div>
+                              <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {lp&&(
+                      <div>
+                        <div style={{fontSize:11,fontWeight:700,color:"#1A5FA8",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>🔑 Lease Pricing</div>
+                        <div style={{background:"#1A0B3A",borderRadius:10,padding:"12px",marginBottom:8,textAlign:"center"}}>
+                          <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#C9A84C"}}>AED {Number(lp.annual_rent).toLocaleString()}/yr</div>
+                          <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Math.round(lp.annual_rent/12).toLocaleString()}/month</div>
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                          {[["Deposit",`AED ${Number(lp.security_deposit||0).toLocaleString()}`],["Cheques",lp.cheques_allowed],["Municipality",`${lp.municipality_tax_pct}%`],["Chiller",lp.chiller_included?"Included":"Excluded"]].map(([l,v])=>(
+                            <div key={l} style={{background:"#FAFBFC",borderRadius:7,padding:"7px 9px"}}>
+                              <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:1}}>{l}</div>
+                              <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {!sp&&!lp&&<div style={{textAlign:"center",padding:"1.5rem",color:"#A0AEC0"}}>No pricing set — edit unit to add pricing</div>}
+                  </div>
+                )}
+                {/* Documents tab */}
+                {activeTab==="documents"&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                    {[
+                      {label:"Floor Plan",     field:"floor_plan",     icon:"📐", accept:".pdf,.jpg,.jpeg,.png"},
+                      {label:"Unit Brochure",  field:"brochure",       icon:"📄", accept:".pdf,.jpg,.jpeg,.png"},
+                      {label:"3D Render",      field:"render",         icon:"🖼", accept:".jpg,.jpeg,.png"},
+                    ].map(({label,field,icon,accept})=>{
+                      const url=selUnit[field+"_url"];
+                      return (
+                        <div key={field} style={{background:"#FAFBFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px"}}>
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+                            <span style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{icon} {label}</span>
+                            {url&&<a href={url} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#1A5FA8",fontWeight:600}}>View →</a>}
+                          </div>
+                          {url?(
+                            <div style={{fontSize:11,color:"#1A7F5A"}}>✓ File uploaded</div>
+                          ):(
+                            <div style={{fontSize:11,color:"#A0AEC0"}}>No file uploaded</div>
+                          )}
+                          {canEdit&&(
+                            <label style={{display:"flex",alignItems:"center",gap:6,marginTop:8,padding:"6px 10px",borderRadius:7,border:"1.5px dashed #D1D9E6",cursor:"pointer",fontSize:11,color:"#4A5568",background:"#fff"}}>
+                              <input type="file" accept={accept} style={{display:"none"}} onChange={e=>{if(e.target.files[0])uploadDoc(e.target.files[0],field,selUnit.id);}}/>
+                              {uploading?"⏳ Uploading…":"⬆ Upload"}
+                            </label>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {/* AI Scanner */}
+                    <div style={{background:"#E6EFF9",border:"1px solid #B5D4F4",borderRadius:10,padding:"12px"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>✦ AI Brochure Scanner</div>
+                      <div style={{fontSize:11,color:"#4A5568",marginBottom:8,lineHeight:1.5}}>Upload a builder brochure (PDF or image) and AI will extract all unit details automatically.</div>
+                      <label style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:7,border:"1.5px dashed #B5D4F4",cursor:"pointer",fontSize:12,color:"#1A5FA8",background:"#fff",fontWeight:600}}>
+                        <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:"none"}} onChange={e=>{if(e.target.files[0]){openEdit(selUnit);scanBrochure(e.target.files[0]);}}}/>
+                        {scanning?"⏳ Scanning brochure…":"📤 Scan Builder Brochure"}
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Add/Edit Unit Modal */}
+      {showUnitForm&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:640,maxWidth:"100%",maxHeight:"94vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>{editUnit?"Edit Unit":"Add New Unit"}</span>
+              <div style={{display:"flex",gap:8}}>
+                {["Details","Pricing","Documents","AI Scanner"].map(t=>(
+                  <button key={t} onClick={()=>setActiveTab(t.toLowerCase().replace(" ","_"))}
+                    style={{padding:"5px 12px",borderRadius:6,border:"none",background:activeTab===t.toLowerCase().replace(" ","_")?"rgba(201,168,76,.3)":"transparent",color:activeTab===t.toLowerCase().replace(" ","_")?"#C9A84C":"rgba(255,255,255,.5)",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    {t}
+                  </button>
+                ))}
+                <button onClick={()=>{setShowUnitForm(false);setEditUnit(null);setScanResult(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",marginLeft:8}}>×</button>
+              </div>
+            </div>
+            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem",flex:1}}>
+
+              {/* DETAILS */}
+              {activeTab==="details"&&(
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Project *</label><select value={uForm.project_id} onChange={uf("project_id")}><option value="">Select…</option>{projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Unit Ref *</label><input value={uForm.unit_ref} onChange={uf("unit_ref")} placeholder="e.g. A-101"/></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Type</label><select value={uForm.unit_type} onChange={uf("unit_type")}><option>Residential</option><option>Commercial</option></select></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Category</label>
+                    <select value={uForm.sub_type} onChange={uf("sub_type")}>
+                      {uForm.unit_type==="Residential"?["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed","Villa","Townhouse","Penthouse","Duplex"].map(s=><option key={s}>{s}</option>):["Office","Retail / Shop","Warehouse","Restaurant","Hotel Apartment","Labour Camp"].map(s=><option key={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Purpose</label><select value={uForm.purpose} onChange={uf("purpose")}><option>Sale</option><option>Lease</option><option>Both</option></select></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Status</label><select value={uForm.status} onChange={uf("status")}>{UNIT_ST.map(s=><option key={s}>{s}</option>)}</select></div>
+                  {uForm.unit_type==="Residential"&&<div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Bedrooms</label><select value={uForm.bedrooms} onChange={uf("bedrooms")}><option value="0">Studio</option>{[1,2,3,4,5,6,7].map(n=><option key={n} value={n}>{n}</option>)}</select></div>}
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Bathrooms</label><input type="number" value={uForm.bathrooms} onChange={uf("bathrooms")}/></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Size (sqft)</label><input type="number" value={uForm.size_sqft} onChange={uf("size_sqft")}/></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Floor</label><input value={uForm.floor_number} onChange={uf("floor_number")} placeholder="e.g. 12"/></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>View</label><input value={uForm.view} onChange={uf("view")} placeholder="Sea View, City View…"/></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Parking</label><input type="number" value={uForm.parking_spaces} onChange={uf("parking_spaces")}/></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Furnishing</label><select value={uForm.furnishing} onChange={uf("furnishing")}>{["Unfurnished","Furnished","Semi-Furnished"].map(s=><option key={s}>{s}</option>)}</select></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Condition</label><select value={uForm.condition} onChange={uf("condition")}>{["Off-plan","Ready","Under Construction","Renovation"].map(s=><option key={s}>{s}</option>)}</select></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Handover Date</label><input type="date" value={uForm.handover_date} onChange={uf("handover_date")}/></div>
+                  <div style={{gridColumn:"1/-1",display:"flex",gap:16,flexWrap:"wrap"}}>
+                    {[["Maid Room","maid_room"],["Private Pool","private_pool"],["Private Garden","private_garden"]].map(([l,f])=>(
+                      <label key={f} style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:13}}>
+                        <input type="checkbox" checked={!!uForm[f]} onChange={e=>setUForm(x=>({...x,[f]:e.target.checked}))} style={{width:15,height:15,accentColor:"#1A7F5A"}}/>
+                        {l}
+                      </label>
+                    ))}
+                  </div>
+                  <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Notes</label><textarea value={uForm.notes} onChange={uf("notes")} rows={2}/></div>
+                </div>
+              )}
+
+              {/* PRICING */}
+              {activeTab==="pricing"&&(
+                <div style={{display:"flex",flexDirection:"column",gap:16}}>
+                  {(uForm.purpose==="Sale"||uForm.purpose==="Both")&&(
+                    <div>
+                      <div style={{fontSize:12,fontWeight:700,color:"#1A7F5A",marginBottom:12,padding:"8px 12px",background:"#E6F4EE",borderRadius:8}}>🏷 Sale Pricing</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Asking Price (AED)</label><input type="number" value={uForm.asking_price} onChange={uf("asking_price")} placeholder="2500000"/></div>
+                        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>DLD Fee %</label><input type="number" value={uForm.dld_fee_pct} onChange={uf("dld_fee_pct")}/></div>
+                        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Agency Fee %</label><input type="number" value={uForm.agency_fee_pct} onChange={uf("agency_fee_pct")}/></div>
+                        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Booking %</label><input type="number" value={uForm.booking_pct} onChange={uf("booking_pct")}/></div>
+                        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>During Construction %</label><input type="number" value={uForm.during_construction_pct} onChange={uf("during_construction_pct")}/></div>
+                        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>On Handover %</label><input type="number" value={uForm.on_handover_pct} onChange={uf("on_handover_pct")}/></div>
+                        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Post Handover %</label><input type="number" value={uForm.post_handover_pct} onChange={uf("post_handover_pct")}/></div>
+                      </div>
+                    </div>
+                  )}
+                  {(uForm.purpose==="Lease"||uForm.purpose==="Both")&&(
+                    <div>
+                      <div style={{fontSize:12,fontWeight:700,color:"#1A5FA8",marginBottom:12,padding:"8px 12px",background:"#E6EFF9",borderRadius:8}}>🔑 Lease Pricing</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Annual Rent (AED)</label><input type="number" value={uForm.annual_rent} onChange={uf("annual_rent")} placeholder="120000"/></div>
+                        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Security Deposit (AED)</label><input type="number" value={uForm.security_deposit} onChange={uf("security_deposit")}/></div>
+                        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Cheques Allowed</label><select value={uForm.cheques_allowed} onChange={uf("cheques_allowed")}>{[1,2,3,4,6,12].map(n=><option key={n} value={n}>{n}</option>)}</select></div>
+                        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Municipality Tax %</label><input type="number" value={uForm.municipality_tax_pct} onChange={uf("municipality_tax_pct")}/></div>
+                        <div style={{gridColumn:"1/-1"}}>
+                          <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13}}>
+                            <input type="checkbox" checked={!!uForm.chiller_included} onChange={e=>setUForm(f=>({...f,chiller_included:e.target.checked}))} style={{width:15,height:15,accentColor:"#1A5FA8"}}/>
+                            Chiller (District Cooling) Included
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* DOCUMENTS */}
+              {activeTab==="documents"&&(
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  {[{label:"Floor Plan",field:"floor_plan",icon:"📐"},{label:"Unit Brochure",field:"brochure",icon:"📄"},{label:"3D Render / Photo",field:"render",icon:"🖼"}].map(({label,field,icon})=>(
+                    <div key={field} style={{background:"#FAFBFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px"}}>
+                      <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A",marginBottom:8}}>{icon} {label}</div>
+                      {uForm[field+"_url"]?(
+                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                          <span style={{fontSize:12,color:"#1A7F5A"}}>✓ File ready</span>
+                          <a href={uForm[field+"_url"]} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#1A5FA8"}}>Preview →</a>
+                          <button onClick={()=>setUForm(f=>({...f,[field+"_url"]:""}))} style={{fontSize:11,color:"#B83232",background:"none",border:"none",cursor:"pointer"}}>× Remove</button>
+                        </div>
+                      ):(
+                        <div style={{fontSize:12,color:"#A0AEC0",marginBottom:8}}>No file uploaded</div>
+                      )}
+                      <label style={{display:"flex",alignItems:"center",gap:6,padding:"7px 12px",borderRadius:7,border:"1.5px dashed #D1D9E6",cursor:"pointer",fontSize:12,color:"#4A5568",background:"#fff"}}>
+                        <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:"none"}} onChange={e=>{if(e.target.files[0])uploadDoc(e.target.files[0],field,editUnit?.id);}}/>
+                        {uploading?"⏳ Uploading…":"⬆ Upload "+label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* AI SCANNER */}
+              {activeTab==="ai_scanner"&&(
+                <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                  <div style={{background:"#E6EFF9",borderRadius:10,padding:"14px"}}>
+                    <div style={{fontSize:14,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>✦ AI Brochure Scanner</div>
+                    <div style={{fontSize:13,color:"#4A5568",lineHeight:1.7,marginBottom:12}}>
+                      Upload a builder brochure, floor plan PDF, or any document. Claude AI will read it and automatically extract all property details — size, beds, views, pricing, payment plan — ready for you to review and save.
+                    </div>
+                    <label style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,padding:"16px",borderRadius:10,border:"2px dashed #B5D4F4",cursor:"pointer",fontSize:13,color:"#1A5FA8",fontWeight:600,background:"#fff"}}>
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:"none"}} onChange={e=>{if(e.target.files[0])scanBrochure(e.target.files[0]);}}/>
+                      {scanning?"⏳ Scanning…":"📤 Upload PDF or Image to Scan"}
+                    </label>
+                    <div style={{fontSize:11,color:"#718096",marginTop:8,textAlign:"center"}}>Supports: PDF · JPG · PNG · Up to 5MB · Requires Claude API key in AI Assistant settings</div>
+                  </div>
+
+                  {scanResult&&(
+                    <div style={{background:"#E6F4EE",border:"1.5px solid #A8D5BE",borderRadius:10,padding:"14px"}}>
+                      <div style={{fontWeight:700,fontSize:13,color:"#1A7F5A",marginBottom:10}}>✓ Extracted from brochure — review and apply</div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
+                        {Object.entries(scanResult).filter(([k,v])=>v!=null&&v!=="").map(([k,v])=>(
+                          <div key={k} style={{background:"#fff",borderRadius:7,padding:"8px 10px"}}>
+                            <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{k.replace(/_/g," ")}</div>
+                            <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{String(v)}</div>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{display:"flex",gap:8}}>
+                        <button onClick={applyScanResult} style={{flex:1,padding:"9px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                          ✓ Apply to Form
+                        </button>
+                        <button onClick={()=>setScanResult(null)} style={{padding:"9px 14px",borderRadius:8,border:"1.5px solid #A8D5BE",background:"#fff",fontSize:13,cursor:"pointer"}}>
+                          Discard
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
+              <button onClick={()=>{setShowUnitForm(false);setEditUnit(null);setScanResult(null);}} style={{padding:"9px 20px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              <button onClick={saveUnit} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+                {saving?"Saving…":editUnit?"Save Changes":"Add Unit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
   const [filter, setFilter] = useState("Pending");
   const [saving, setSaving] = useState(false);
@@ -5545,9 +5832,21 @@ export default function App(){
         {/* Top bar: logo + app switcher + user */}
         <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:48,gap:8}}>
 
-          {/* Logo */}
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,whiteSpace:"nowrap",marginRight:4,flexShrink:0}}>
-            <span style={{color:"#C9A84C"}}>◆</span> {appConfig?.company||"PropCRM"}
+          {/* Logo + Company */}
+          <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0,marginRight:4}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,whiteSpace:"nowrap"}}>
+              <span style={{color:"#C9A84C"}}>◆</span> PropCRM
+            </div>
+            {companies.length>0&&(()=>{
+              const activeCo=companies.find(c=>c.id===activeCompanyId)||companies[0];
+              if(!activeCo)return null;
+              return (
+                <div style={{display:"flex",alignItems:"center",gap:5,padding:"3px 8px",borderRadius:6,background:"rgba(255,255,255,.07)",maxWidth:160}}>
+                  {activeCo.logo_url&&<img src={activeCo.logo_url} alt="" style={{width:18,height:18,borderRadius:3,objectFit:"cover"}}/>}
+                  <span style={{fontSize:11,color:"rgba(255,255,255,.7)",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{activeCo.name}</span>
+                </div>
+              );
+            })()}
           </div>
 
           {/* App Switcher — only for admin + managers */}
@@ -5632,9 +5931,13 @@ export default function App(){
       </div>
 
       {/* Page title */}
-      <div style={{padding:"12px 1rem 8px",flexShrink:0}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:21,fontWeight:700,color:"#0B1F3A"}}>{visibleTabs.find(t=>t.id===tab)?.label||""}</div>
-        <div style={{fontSize:12,color:"#A0AEC0",marginTop:2}}>{SUBTITLES[tab]||""}</div>
+      <div style={{padding:"8px 1rem 6px",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+        <div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A"}}>{visibleTabs.find(t=>t.id===tab)?.label||""}</div>
+          <div style={{fontSize:11,color:"#A0AEC0"}}>{SUBTITLES[tab]||""}</div>
+        </div>
+        {/* Per-tab action button */}
+        <div id="page-action-slot" style={{flexShrink:0}}/>
       </div>
 
       {/* Content */}
@@ -5643,7 +5946,8 @@ export default function App(){
           {/* ── Sales CRM tabs ─────────────────────── */}
           {tab==="dashboard"   &&<Dashboard leads={leads} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr}/>}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
-          {tab==="builder"     &&<PropertyBuilder currentUser={currentUser} showToast={showToast} crmContext="sales"/>}
+          {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales"/>}
+          {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales"/>}
           {tab==="pipeline"    &&<Pipeline leads={leads} setLeads={setLeads} currentUser={currentUser} showToast={showToast}/>}
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
@@ -5653,7 +5957,8 @@ export default function App(){
           {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {/* ── Leasing CRM tabs ────────────────────── */}
           {tab==="l_leads"    &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
-          {tab==="l_inventory" &&<PropertyBuilder currentUser={currentUser} showToast={showToast} crmContext="leasing"/>}
+          {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing"/>}
+          {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing"/>}
           {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} key="l_dash"/>}
           {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast}/>}
           {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
