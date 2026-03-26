@@ -2896,43 +2896,63 @@ Return ONLY the JSON, no explanation.`}
       <div style={{display:"flex",gap:0,flex:1,overflow:"hidden"}}>
         {/* Unit table */}
         <div style={{flex:1,overflowY:"auto",overflowX:"auto"}}>
-          <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+          <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,tableLayout:"fixed"}}>
+            <colgroup>
+              <col style={{width:90}}/>{/* Ref */}
+              <col style={{width:140}}/>{/* Project */}
+              <col style={{width:50}}/>{/* Type */}
+              <col style={{width:100}}/>{/* Category */}
+              <col style={{width:60}}/>{/* Purpose */}
+              <col style={{width:36}}/>{/* Beds */}
+              <col style={{width:70}}/>{/* Sqft */}
+              <col style={{width:46}}/>{/* Floor */}
+              <col style={{width:90}}/>{/* View */}
+              <col style={{width:90}}/>{/* Sale Price */}
+              <col style={{width:80}}/>{/* Rent/yr */}
+              <col style={{width:70}}/>{/* Handover */}
+              <col style={{width:80}}/>{/* Status */}
+              <col style={{width:40}}/>{/* Edit */}
+            </colgroup>
             <thead style={{position:"sticky",top:0,zIndex:1}}>
               <tr style={{background:"#0B1F3A"}}>
-                {["Ref","Project","Type","Category","Purpose","Beds","Sqft","Floor","View","Sale Price","Rent/yr","Status",""].map(h=>(
-                  <th key={h} style={{padding:"8px 10px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>
+                {["Ref","Project","T","Category","For","Bd","Sqft","Fl","View","Sale","Rent/yr","Handover","Status",""].map(h=>(
+                  <th key={h} style={{padding:"7px 8px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".3px",whiteSpace:"nowrap",overflow:"hidden"}}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {allFiltered.length===0&&(
-                <tr><td colSpan={13} style={{textAlign:"center",padding:"2rem",color:"#A0AEC0"}}>No units match filters</td></tr>
+                <tr><td colSpan={14} style={{textAlign:"center",padding:"2rem",color:"#A0AEC0"}}>No units match filters</td></tr>
               )}
               {allFiltered.map((u,i)=>{
                 const sp=getSP(u.id); const lp=getLP(u.id);
                 const proj=projects.find(p=>p.id===u.project_id);
                 const sc=UNIT_STATUS_COLORS[u.status]||{c:"#718096",bg:"#F0F2F5"};
                 const isSel=selUnit?.id===u.id;
+                // Use unit handover_date first, then project completion_date
+                const hdDate = u.handover_date||proj?.completion_date;
+                const hdStr  = hdDate?new Date(hdDate).toLocaleDateString("en-AE",{month:"short",year:"2-digit"}):"";
                 return (
                   <tr key={u.id}
                     onClick={()=>openUnit(u)}
                     style={{background:isSel?"#EEF2FF":i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5",cursor:"pointer",transition:"background .1s"}}
                     onMouseOver={e=>{if(!isSel)e.currentTarget.style.background="#F0F7FF";}}
                     onMouseOut={e=>{if(!isSel)e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC";}}>
-                    <td style={{padding:"6px 10px",fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{u.unit_ref}</td>
-                    <td style={{padding:"6px 10px",color:"#4A5568",maxWidth:130,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{proj?.name||"—"}</td>
-                    <td style={{padding:"6px 10px"}}><span style={{fontSize:10,fontWeight:600,padding:"2px 6px",borderRadius:20,background:u.unit_type==="Residential"?"#E6F4EE":"#E6EFF9",color:u.unit_type==="Residential"?"#1A7F5A":"#1A5FA8"}}>{u.unit_type==="Residential"?"Res":"Com"}</span></td>
-                    <td style={{padding:"6px 10px",color:"#4A5568",whiteSpace:"nowrap"}}>{u.sub_type}</td>
-                    <td style={{padding:"6px 10px"}}><PurposeBadge p={u.purpose}/></td>
-                    <td style={{padding:"6px 10px",color:"#4A5568",textAlign:"center"}}>{u.bedrooms===0?"S":u.bedrooms||"—"}</td>
-                    <td style={{padding:"6px 10px",color:"#4A5568",whiteSpace:"nowrap"}}>{u.size_sqft?Number(u.size_sqft).toLocaleString():""}</td>
-                    <td style={{padding:"6px 10px",color:"#4A5568",textAlign:"center"}}>{u.floor_number??""}</td>
-                    <td style={{padding:"6px 10px",color:"#718096",maxWidth:90,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.view||""}</td>
-                    <td style={{padding:"6px 10px",fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{sp?.asking_price?`AED ${Math.round(sp.asking_price/1000)}K`:""}</td>
-                    <td style={{padding:"6px 10px",fontWeight:600,color:"#1A5FA8",whiteSpace:"nowrap"}}>{lp?.annual_rent?`AED ${Math.round(lp.annual_rent/1000)}K`:""}</td>
-                    <td style={{padding:"6px 10px"}}><span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:20,background:sc.bg,color:sc.c,whiteSpace:"nowrap"}}>{u.status}</span></td>
-                    <td style={{padding:"6px 6px"}} onClick={e=>e.stopPropagation()}>
-                      {canEdit&&<button onClick={()=>openEdit(u)} style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>Edit</button>}
+                    <td style={{padding:"5px 8px",fontWeight:700,color:"#0B1F3A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.unit_ref}</td>
+                    <td style={{padding:"5px 8px",color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{proj?.name||"—"}</td>
+                    <td style={{padding:"5px 8px"}}><span style={{fontSize:9,fontWeight:700,padding:"1px 5px",borderRadius:20,background:u.unit_type==="Residential"?"#E6F4EE":"#E6EFF9",color:u.unit_type==="Residential"?"#1A7F5A":"#1A5FA8"}}>{u.unit_type==="Residential"?"R":"C"}</span></td>
+                    <td style={{padding:"5px 8px",color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.sub_type}</td>
+                    <td style={{padding:"5px 8px"}}><PurposeBadge p={u.purpose}/></td>
+                    <td style={{padding:"5px 8px",color:"#4A5568",textAlign:"center",fontWeight:600}}>{u.bedrooms===0?"S":u.bedrooms||"—"}</td>
+                    <td style={{padding:"5px 8px",color:"#4A5568",whiteSpace:"nowrap"}}>{u.size_sqft?Number(u.size_sqft).toLocaleString():""}</td>
+                    <td style={{padding:"5px 8px",color:"#4A5568",textAlign:"center"}}>{u.floor_number??""}</td>
+                    <td style={{padding:"5px 8px",color:"#718096",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.view||""}</td>
+                    <td style={{padding:"5px 8px",fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{sp?.asking_price?`${Math.round(sp.asking_price/1000)}K`:""}</td>
+                    <td style={{padding:"5px 8px",fontWeight:600,color:"#1A5FA8",whiteSpace:"nowrap"}}>{lp?.annual_rent?`${Math.round(lp.annual_rent/1000)}K`:""}</td>
+                    <td style={{padding:"5px 8px",color:"#718096",whiteSpace:"nowrap",fontSize:11}}>{hdStr}</td>
+                    <td style={{padding:"5px 8px"}}><span style={{fontSize:9,fontWeight:600,padding:"2px 6px",borderRadius:20,background:sc.bg,color:sc.c,whiteSpace:"nowrap"}}>{u.status}</span></td>
+                    <td style={{padding:"5px 4px"}} onClick={e=>e.stopPropagation()}>
+                      {canEdit&&<button onClick={()=>openEdit(u)} style={{fontSize:10,padding:"2px 7px",borderRadius:5,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>✏</button>}
                     </td>
                   </tr>
                 );
