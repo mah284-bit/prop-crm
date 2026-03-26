@@ -1655,7 +1655,7 @@ function Dashboard({leads,properties,activities,currentUser,meetings=[],followup
   );
 
   return(
-    <div className="fade-in" style={{display:"flex",flexDirection:"column",gap:12}}>
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",gap:16}}>
       {/* Overdue alert */}
       {overdueFollowups.length>0&&(
         <div style={{background:"#FAEAEA",border:"1.5px solid #F0BCBC",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:12}}>
@@ -1670,7 +1670,7 @@ function Dashboard({leads,properties,activities,currentUser,meetings=[],followup
       {/* Hero */}
       <div style={{background:"linear-gradient(135deg,#0B1F3A 0%,#1A3558 100%)",borderRadius:14,padding:"1.5rem 2rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>Good morning, {currentUser.full_name?.split(" ")[0]} ☀️</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:"#fff",fontWeight:700}}>Good morning, {currentUser.full_name?.split(" ")[0]} ☀️</div>
           <div style={{color:"#C9A84C",fontSize:13,marginTop:4}}>{new Date().toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
           <div style={{display:"flex",gap:8,marginTop:6,alignItems:"center"}}>
             <RoleBadge role={currentUser.role}/>
@@ -1683,7 +1683,7 @@ function Dashboard({leads,properties,activities,currentUser,meetings=[],followup
           <div style={{color:"rgba(255,255,255,0.5)",fontSize:11,textTransform:"uppercase",letterSpacing:"0.6px"}}>
             {crmContext==="sales"?"Sales Pipeline":"Annual Rent"}
           </div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,color:"#C9A84C",fontWeight:700,marginTop:2}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:30,color:"#C9A84C",fontWeight:700,marginTop:2}}>
             {crmContext==="sales"?fmtM(pipeVal):fmtM(totalRentAnnual)}
           </div>
         </div>
@@ -4125,7 +4125,7 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
       {/* Hero */}
       <div style={{background:"linear-gradient(135deg,#1A0B3A 0%,#2D1558 100%)",borderRadius:14,padding:"1.5rem 2rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>Good morning, {currentUser.full_name?.split(" ")[0]} ☀️</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:"#fff",fontWeight:700}}>Good morning, {currentUser.full_name?.split(" ")[0]} ☀️</div>
           <div style={{color:"#C9A84C",fontSize:13,marginTop:4}}>{new Date().toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
           <div style={{display:"flex",gap:8,marginTop:6,alignItems:"center"}}>
             <RoleBadge role={currentUser.role}/>
@@ -5466,7 +5466,7 @@ export default function App(){
               <RoleBadge role={currentUser.role}/>
             </div>
             <Av name={currentUser.full_name||currentUser.email} size={32} bg="#C9A84C" tc="#0B1F3A"/>
-            <button onClick={handleLogout} style={{fontSize:11,color:"rgba(255,255,255,.4)",background:"none",border:"1px solid rgba(255,255,255,.1)",borderRadius:6,padding:"4px 8px",cursor:"pointer",whiteSpace:"nowrap"}}>↩</button>
+            <button onClick={handleLogout} style={{fontSize:11,color:"rgba(255,255,255,.4)",background:"none",border:"1px solid rgba(255,255,255,.1)",borderRadius:6,padding:"4px 10px",cursor:"pointer"}}>Sign Out</button>
           </div>
         </div>
 
@@ -5495,7 +5495,7 @@ export default function App(){
           {/* Company switcher — super admin only */}
           {currentUser?.is_super_admin&&companies.length>1&&(
             <div style={{display:"flex",alignItems:"center",gap:6,marginRight:6}}>
-              <span style={{fontSize:10,color:"rgba(255,255,255,.4)",fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",display:"none"}}>Company:</span>
+              <span style={{fontSize:10,color:"rgba(255,255,255,.4)",fontWeight:600,textTransform:"uppercase",letterSpacing:".5px"}}>Company:</span>
               <select value={activeCompanyId||""} onChange={e=>{setActiveCompanyId(e.target.value);localStorage.setItem("propccrm_company_id",e.target.value);}}
                 style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:6,color:"#C9A84C",fontSize:12,fontWeight:600,padding:"3px 8px",cursor:"pointer",outline:"none"}}>
                 {companies.map(c=><option key={c.id} value={c.id} style={{background:"#0B1F3A"}}>{c.name}</option>)}
@@ -5516,10 +5516,10 @@ export default function App(){
       </div>
 
       {/* Content */}
-      <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"0 1rem 1rem",WebkitOverflowScrolling:"touch",minHeight:0}}>
+      <div style={{flex:1,overflow:"auto",padding:"0 1rem 1rem",WebkitOverflowScrolling:"touch"}}>
         {dataLoading?<Spinner msg="Loading your data…"/>:(<>
           {/* ── Sales CRM tabs ─────────────────────── */}
-          {tab==="dashboard"   &&<Dashboard leads={leads} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr}/>}
+          {tab==="dashboard"   &&<div style={{height:"100%",overflowY:"auto",paddingRight:4}}><Dashboard leads={leads} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr}/></div>}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
           {tab==="builder"     &&<PropertyBuilder currentUser={currentUser} showToast={showToast} crmContext="sales"/>}
           {tab==="pipeline"    &&<Pipeline leads={leads} setLeads={setLeads} currentUser={currentUser} showToast={showToast}/>}
