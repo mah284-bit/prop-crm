@@ -1377,19 +1377,19 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
                 <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
                   <Av name={l.name} size={42}/>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
-                      <span style={{fontWeight:700,fontSize:15,color:"#0B1F3A"}}>{l.name}</span>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2,flexWrap:"wrap"}}>
+                      <span style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>{l.name}</span>
                       <span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:m.bg,color:m.c}}>{l.stage}</span>
                       {l.property_type&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:"#F0F2F5",color:"#4A5568"}}>{l.property_type}</span>}
                     </div>
-                    <div style={{display:"flex",gap:12,fontSize:12,color:"#718096",flexWrap:"wrap"}}>
+                    <div style={{display:"flex",gap:10,fontSize:11,color:"#718096",flexWrap:"wrap"}}>
                       {l.phone&&<span>📞 {l.phone}</span>}
                       {l.email&&<span>✉ {l.email}</span>}
                       {l.nationality&&<span>🌍 {l.nationality}</span>}
                     </div>
                   </div>
                   <div style={{textAlign:"right",flexShrink:0}}>
-                    {l.budget>0&&<div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0B1F3A"}}>AED {fmtM(l.budget)}</div>}
+                    {l.budget>0&&<div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#0B1F3A"}}>{fmtM(l.budget)}</div>}
                     <div style={{fontSize:11,color:"#A0AEC0",marginTop:2}}>{assignedTo?.full_name||"Unassigned"}</div>
                     <div style={{fontSize:10,color:daysSince>14?"#B83232":"#A0AEC0",marginTop:2}}>{daysSince}d in stage</div>
                   </div>
@@ -2194,58 +2194,140 @@ function Dashboard({leads,properties,activities,currentUser,meetings=[],followup
 // ══════════════════════════════════════════════════════
 // PIPELINE (same as v2)
 // ══════════════════════════════════════════════════════
+
 function Pipeline({leads,setLeads,currentUser,showToast}){
-  const[dragging,setDragging]=useState(null);const[dropTarget,setDropTarget]=useState(null);
-  const canEdit=can(currentUser.role,"write");
-  const visible=can(currentUser.role,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id);
-  const byStage=STAGES.reduce((a,s)=>({...a,[s]:visible.filter(l=>l.stage===s)}),{});
-  const onDrop=async stage=>{
-    if(!dragging||!canEdit)return;
-    const errors=checkGate(stage,dragging);
-    if(errors.length>0){showToast(`Cannot move: ${errors[0]}`,"error");setDragging(null);setDropTarget(null);return;}
-    const{error}=await supabase.from("leads").update({stage}).eq("id",dragging.id);
-    if(!error){setLeads(p=>p.map(l=>l.id===dragging.id?{...l,stage}:l));}
-    else showToast(error.message,"error");
-    setDragging(null);setDropTarget(null);
+  const canEdit = can(currentUser.role,"write");
+  const visible = can(currentUser.role,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id);
+  const active  = visible.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
+
+  const moveStage = async(lead, toStage)=>{
+    if(!canEdit) return;
+    const gates={
+      "Contacted":     lead.phone&&lead.email,
+      "Site Visit":    lead.meeting_scheduled,
+      "Proposal Sent": lead.unit_id&&lead.budget_confirmed,
+      "Negotiation":   lead.proposal_notes,
+      "Closed Won":    lead.final_price&&lead.payment_plan_agreed,
+    };
+    if(gates[toStage]===false||(gates[toStage]!==undefined&&!gates[toStage])){
+      const msgs={"Contacted":"Add phone + email","Site Visit":"Mark meeting scheduled","Proposal Sent":"Link unit + confirm budget","Negotiation":"Add proposal notes","Closed Won":"Enter final price + payment plan"};
+      showToast(msgs[toStage]||"Fill required fields first","error");
+      return;
+    }
+    const{error}=await supabase.from("leads").update({stage:toStage,stage_updated_at:new Date().toISOString()}).eq("id",lead.id);
+    if(error){showToast(error.message,"error");return;}
+    setLeads(p=>p.map(l=>l.id===lead.id?{...l,stage:toStage}:l));
+    showToast(`Moved to ${toStage}`,"success");
   };
+
+  const stageOrder = STAGES.filter(s=>!["Closed Lost"].includes(s));
+
   return(
-    <div className="fade-in" style={{height:"100%",overflowX:"auto"}}>
-      <div style={{display:"flex",gap:10,height:"100%",minWidth:STAGES.length*188}}>
-        {STAGES.map(stage=>{
-          const m=STAGE_META[stage];const items=byStage[stage]||[];const total=items.reduce((s,l)=>s+(l.budget||0),0);const isDrop=dropTarget===stage;
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}}>
+      {/* Stage summary strip */}
+      <div style={{display:"flex",gap:6,marginBottom:10,overflowX:"auto",paddingBottom:4,flexShrink:0}}>
+        {STAGES.map(s=>{
+          const cnt=visible.filter(l=>l.stage===s).length;
+          const val=visible.filter(l=>l.stage===s).reduce((a,l)=>a+(l.budget||0),0);
+          const m=STAGE_META[s]||{c:"#718096",bg:"#F0F2F5"};
           return(
-            <div key={stage} onDragOver={e=>{e.preventDefault();setDropTarget(stage);}} onDragLeave={()=>setDropTarget(null)} onDrop={()=>onDrop(stage)}
-              style={{flex:1,minWidth:182,display:"flex",flexDirection:"column",background:isDrop?"#FDF8EE":"#F7F9FC",border:`1.5px ${isDrop?"dashed":"solid"} ${isDrop?"#C9A84C":"#E2E8F0"}`,borderRadius:12,overflow:"hidden",transition:"all 0.15s"}}>
-              <div style={{padding:"10px 12px",background:"#fff",borderBottom:"1px solid #F0F2F5"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
-                  <span style={{fontSize:10,fontWeight:700,color:m.c,textTransform:"uppercase",letterSpacing:"0.7px"}}>{stage}</span>
-                  <span style={{fontSize:12,fontWeight:700,background:m.bg,color:m.c,width:22,height:22,borderRadius:"50%",display:"inline-flex",alignItems:"center",justifyContent:"center"}}>{items.length}</span>
-                </div>
-                <div style={{fontSize:11,color:"#A0AEC0"}}>{total>0?fmtM(total):"No value"}</div>
-              </div>
-              <div style={{flex:1,overflowY:"auto",padding:"8px"}}>
-                {items.length===0&&<div style={{textAlign:"center",padding:"1.5rem 0.5rem",color:"#D1D9E6",fontSize:12}}>Drop here</div>}
-                {items.map(lead=>(
-                  <div key={lead.id} draggable={canEdit} className="dcard" onDragStart={()=>setDragging(lead)} onDragEnd={()=>{setDragging(null);setDropTarget(null);}}
-                    style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 11px",marginBottom:8,userSelect:"none",opacity:dragging?.id===lead.id?0.45:1,borderLeft:`3px solid ${m.c}`}}>
-                    <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}><Av name={lead.name} size={26}/><div style={{fontWeight:600,fontSize:12,color:"#0B1F3A",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{lead.name}</div></div>
-                    <TypeBadge type={lead.property_type}/>
-                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#0B1F3A",marginTop:7}}>{fmtM(lead.budget)}</div>
-                    <div style={{fontSize:10,color:"#A0AEC0",marginTop:3}}>{fmtDate(lead.updated_at||lead.created_at)}</div>
-                  </div>
-                ))}
-              </div>
+            <div key={s} style={{flexShrink:0,padding:"6px 12px",borderRadius:8,background:m.bg,border:`1.5px solid ${m.c}22`,textAlign:"center",minWidth:100}}>
+              <div style={{fontWeight:700,fontSize:18,color:m.c,lineHeight:1}}>{cnt}</div>
+              <div style={{fontSize:9,color:m.c,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",marginTop:2}}>{s}</div>
+              {val>0&&<div style={{fontSize:10,color:m.c,opacity:.7}}>{fmtM(val)}</div>}
             </div>
           );
         })}
       </div>
+
+      {/* Table */}
+      <div style={{flex:1,overflowY:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+          <thead style={{position:"sticky",top:0,zIndex:1}}>
+            <tr style={{background:"#0B1F3A"}}>
+              {["Lead","Type","Budget","Stage","Days","Move to →",""].map(h=>(
+                <th key={h} style={{padding:"8px 10px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {active.length===0&&(
+              <tr><td colSpan={7} style={{textAlign:"center",padding:"2rem",color:"#A0AEC0"}}>No active leads</td></tr>
+            )}
+            {active.sort((a,b)=>STAGES.indexOf(a.stage)-STAGES.indexOf(b.stage)).map((lead,i)=>{
+              const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F0F2F5"};
+              const days=lead.stage_updated_at?Math.floor((new Date()-new Date(lead.stage_updated_at))/(864e5)):0;
+              const nextStage=stageOrder[stageOrder.indexOf(lead.stage)+1];
+              const prevStage=stageOrder[stageOrder.indexOf(lead.stage)-1];
+              return(
+                <tr key={lead.id} style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5"}}
+                  onMouseOver={e=>e.currentTarget.style.background="#F0F7FF"}
+                  onMouseOut={e=>e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC"}>
+                  <td style={{padding:"7px 10px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <Av name={lead.name} size={26}/>
+                      <div>
+                        <div style={{fontWeight:700,fontSize:12,color:"#0B1F3A"}}>{lead.name}</div>
+                        <div style={{fontSize:10,color:"#A0AEC0"}}>{lead.nationality||""}{lead.phone?` · ${lead.phone}`:""}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{padding:"7px 10px"}}>
+                    <span style={{fontSize:10,padding:"2px 7px",borderRadius:20,background:"#F0F2F5",color:"#4A5568"}}>{lead.property_type||"—"}</span>
+                  </td>
+                  <td style={{padding:"7px 10px",fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{lead.budget?fmtM(lead.budget):"—"}</td>
+                  <td style={{padding:"7px 10px"}}>
+                    <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:m.bg,color:m.c,whiteSpace:"nowrap"}}>{lead.stage}</span>
+                  </td>
+                  <td style={{padding:"7px 10px",fontSize:11,color:days>14?"#B83232":days>7?"#A06810":"#718096",fontWeight:days>7?700:400}}>
+                    {days}d
+                  </td>
+                  <td style={{padding:"7px 10px"}}>
+                    <div style={{display:"flex",gap:4"}}>
+                      {prevStage&&(
+                        <button onClick={()=>moveStage(lead,prevStage)}
+                          style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer",color:"#4A5568"}}>
+                          ← {prevStage}
+                        </button>
+                      )}
+                      {nextStage&&(
+                        <button onClick={()=>moveStage(lead,nextStage)}
+                          style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"none",background:m.bg,color:m.c,cursor:"pointer",fontWeight:600}}>
+                          {nextStage} →
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                  <td style={{padding:"7px 6px"}}>
+                    <select value={lead.stage} onChange={e=>moveStage(lead,e.target.value)}
+                      style={{fontSize:10,padding:"3px 6px",borderRadius:5,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>
+                      {STAGES.map(s=><option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Closed summary */}
+      {(visible.filter(l=>l.stage==="Closed Won").length>0||visible.filter(l=>l.stage==="Closed Lost").length>0)&&(
+        <div style={{flexShrink:0,display:"flex",gap:10,padding:"10px 0 0",borderTop:"1px solid #E2E8F0",marginTop:8}}>
+          <div style={{flex:1,padding:"8px 12px",borderRadius:8,background:"#E6F4EE",textAlign:"center"}}>
+            <span style={{fontSize:13,fontWeight:700,color:"#1A7F5A"}}>{visible.filter(l=>l.stage==="Closed Won").length} Won</span>
+            <span style={{fontSize:11,color:"#1A7F5A",marginLeft:8}}>{fmtM(visible.filter(l=>l.stage==="Closed Won").reduce((s,l)=>s+(l.budget||0),0))}</span>
+          </div>
+          <div style={{flex:1,padding:"8px 12px",borderRadius:8,background:"#FAEAEA",textAlign:"center"}}>
+            <span style={{fontSize:13,fontWeight:700,color:"#B83232"}}>{visible.filter(l=>l.stage==="Closed Lost").length} Lost</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// ══════════════════════════════════════════════════════
-// ACTIVITY LOG
-// ══════════════════════════════════════════════════════
+
 function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
   const[fType,setFType]=useState("All");const[fLead,setFLead]=useState("All");const[showAdd,setShowAdd]=useState(false);const[saving,setSaving]=useState(false);
   const[form,setForm]=useState({lead_id:"",type:"Call",note:""});
@@ -6514,38 +6596,53 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
             )}
           </div>
           <div style={{fontSize:12,color:"#A0AEC0",marginBottom:8}}>{filtered.length} enquir{filtered.length!==1?"ies":"y"}</div>
-          <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:7}}>
-            {filtered.length===0&&<div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}><div style={{fontSize:36,marginBottom:8}}>👤</div><div>No enquiries found</div></div>}
-            {filtered.map(l=>{
-              const m = LEASE_STAGE_META[l.stage]||{c:"#718096",bg:"#F0F2F5"};
-              const isSel = sel===l.id;
-              return (
-                <div key={l.id} onClick={()=>setSel(isSel?null:l.id)}
-                  style={{background:isSel?"#1A0B3A":"#fff",border:`1.5px solid ${isSel?"#9B7FD4":"#E2E8F0"}`,borderRadius:10,padding:"11px 14px",cursor:"pointer",transition:"all .15s"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <div style={{width:36,height:36,borderRadius:"50%",background:isSel?"#9B7FD4":"#1A0B3A",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:isSel?"#1A0B3A":"#9B7FD4",flexShrink:0}}>
-                      {(l.name||"?").split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()}
-                    </div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontWeight:600,fontSize:14,color:isSel?"#fff":"#0B1F3A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l.name}</div>
-                      <div style={{fontSize:12,color:isSel?"#9B7FD4":"#A0AEC0"}}>{l.phone||l.email||"—"}</div>
-                    </div>
-                    <div style={{textAlign:"right",flexShrink:0}}>
-                      <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:m.bg,color:m.c}}>{l.stage}</span>
-                      {l.budget>0&&<div style={{fontSize:11,color:isSel?"#9B7FD4":"#1A7F5A",fontWeight:600,marginTop:3}}>
-                        AED {Number(l.budget).toLocaleString()}/yr
-                      </div>}
-                    </div>
-                  </div>
-                  {(l.preferred_area||l.preferred_bedrooms)&&(
-                    <div style={{display:"flex",gap:6,marginTop:6}}>
-                      {l.preferred_area&&<span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:isSel?"rgba(155,127,212,.2)":"#F0F2F5",color:isSel?"#C4ACEC":"#4A5568"}}>📍 {l.preferred_area}</span>}
-                      {l.preferred_bedrooms&&<span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:isSel?"rgba(155,127,212,.2)":"#F0F2F5",color:isSel?"#C4ACEC":"#4A5568"}}>🛏 {l.preferred_bedrooms} bed</span>}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div style={{flex:1,overflowY:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+              <thead style={{position:"sticky",top:0,zIndex:1}}>
+                <tr style={{background:"#1A0B3A"}}>
+                  {["Enquiry","Budget","Stage","Phone","Nationality","Move To"].map(h=>(
+                    <th key={h} style={{padding:"8px 10px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C4ACEC",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length===0&&<tr><td colSpan={6} style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>No enquiries found</td></tr>}
+                {filtered.map((l,i)=>{
+                  const m=LEASE_STAGE_META[l.stage]||{c:"#718096",bg:"#F0F2F5"};
+                  const isSel=sel===l.id;
+                  return(
+                    <tr key={l.id} onClick={()=>setSel(isSel?null:l.id)}
+                      style={{background:isSel?"#EEE8F9":i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5",cursor:"pointer",borderLeft:isSel?"3px solid #9B7FD4":"3px solid transparent"}}
+                      onMouseOver={e=>{if(!isSel)e.currentTarget.style.background="#F5F0FF";}}
+                      onMouseOut={e=>{if(!isSel)e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC";}}>
+                      <td style={{padding:"7px 10px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:7}}>
+                          <Av name={l.name} size={26}/>
+                          <div>
+                            <div style={{fontWeight:700,fontSize:12,color:"#0B1F3A"}}>{l.name}</div>
+                            {l.email&&<div style={{fontSize:10,color:"#A0AEC0"}}>{l.email}</div>}
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{padding:"7px 10px",fontWeight:700,color:"#5B3FAA",whiteSpace:"nowrap"}}>{l.budget?fmtM(l.budget):"—"}</td>
+                      <td style={{padding:"7px 10px"}}><span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:m.bg,color:m.c,whiteSpace:"nowrap"}}>{l.stage}</span></td>
+                      <td style={{padding:"7px 10px",color:"#718096",fontSize:11}}>{l.phone||"—"}</td>
+                      <td style={{padding:"7px 10px",color:"#718096",fontSize:11}}>{l.nationality||"—"}</td>
+                      <td style={{padding:"7px 6px"}} onClick={e=>e.stopPropagation()}>
+                        {can(currentUser.role,"write")&&(
+                          <select value="" onChange={e=>{if(!e.target.value)return;moveStage(l,e.target.value);}}
+                            style={{fontSize:11,padding:"3px 6px",borderRadius:6,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer",maxWidth:130}}>
+                            <option value="">Move to…</option>
+                            {LEASE_STAGES.filter(s=>s!==l.stage).map(s=><option key={s} value={s}>{s}</option>)}
+                          </select>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
           </div>
         </div>
 
