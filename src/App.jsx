@@ -5472,6 +5472,209 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
 // ══════════════════════════════════════════════════════════════════
 // COMPANIES MODULE — Super Admin only
 // ══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// USER MANAGEMENT
+// ══════════════════════════════════════════════════════════════════
+function UserManagement({currentUser, leads=[], activities=[], showToast, appConfig={}, onConfigChange=()=>{}}) {
+  const [subTab, setSubTab] = useState("users");
+  return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{display:"flex",gap:4,marginBottom:14}}>
+        {[["users","👥 Users"],["settings","⚙ Settings"]].map(([id,l])=>(
+          <button key={id} onClick={()=>setSubTab(id)}
+            style={{padding:"7px 16px",borderRadius:8,border:`1.5px solid ${subTab===id?"#0B1F3A":"#E2E8F0"}`,background:subTab===id?"#0B1F3A":"#fff",color:subTab===id?"#fff":"#4A5568",fontSize:13,fontWeight:subTab===id?600:400,cursor:"pointer"}}>
+            {l}
+          </button>
+        ))}
+      </div>
+      {subTab==="users"  && <UsersTab currentUser={currentUser} showToast={showToast}/>}
+      {subTab==="settings" && <SettingsTab appConfig={appConfig} onConfigChange={onConfigChange} currentUser={currentUser} showToast={showToast}/>}
+    </div>
+  );
+}
+
+function UsersTab({currentUser, showToast}) {
+  const [users,   setUsers]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showAdd, setShowAdd] = useState(false);
+  const [editUser,setEditUser]= useState(null);
+  const [saving,  setSaving]  = useState(false);
+  const blank = {full_name:"",email:"",role:"sales_agent",is_active:true,company_id:currentUser.company_id||null,password:""};
+  const [form, setForm] = useState(blank);
+  const sf = k => e => setForm(f=>({...f,[k]:e.target?.value??e}));
+
+  const loadUsers = useCallback(async()=>{
+    setLoading(true);
+    const{data}=await supabase.from("profiles").select("*").order("created_at",{ascending:false});
+    setUsers(data||[]);
+    setLoading(false);
+  },[]);
+  useEffect(()=>{loadUsers();},[loadUsers]);
+
+  const saveUser=async()=>{
+    if(!form.full_name.trim()||!form.email.trim()){showToast("Name and email required","error");return;}
+    setSaving(true);
+    try{
+      if(editUser){
+        const{error}=await supabase.from("profiles").update({
+          full_name:form.full_name,role:form.role,is_active:form.is_active,
+          company_id:form.company_id||currentUser.company_id||null,
+        }).eq("id",editUser.id);
+        if(error)throw error;
+        showToast("User updated","success");
+      } else {
+        // Create auth user + profile
+        const{data:authData,error:authErr}=await supabase.auth.admin?.createUser?.({
+          email:form.email,password:form.password||Math.random().toString(36).slice(-8),
+          email_confirm:true,
+        });
+        if(authErr){
+          // Fallback: just create profile entry
+          const{error}=await supabase.from("profiles").insert({
+            full_name:form.full_name,email:form.email,role:form.role,
+            is_active:true,company_id:form.company_id||currentUser.company_id||null,
+          });
+          if(error)throw error;
+        }
+        showToast("User added — they need to sign up with this email","success");
+      }
+      setShowAdd(false);setEditUser(null);setForm(blank);loadUsers();
+    }catch(e){showToast(e.message,"error");}
+    setSaving(false);
+  };
+
+  const toggleActive=async(user)=>{
+    await supabase.from("profiles").update({is_active:!user.is_active}).eq("id",user.id);
+    setUsers(p=>p.map(u=>u.id===user.id?{...u,is_active:!u.is_active}:u));
+    showToast(user.is_active?"User deactivated":"User activated","success");
+  };
+
+  if(loading)return <Spinner msg="Loading users…"/>;
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <span style={{fontSize:13,color:"#718096"}}>{users.length} users · {users.filter(u=>u.is_active).length} active</span>
+        <button onClick={()=>{setForm(blank);setEditUser(null);setShowAdd(true);}}
+          style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+          + Add User
+        </button>
+      </div>
+      <div style={{flex:1,overflowY:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead style={{position:"sticky",top:0}}>
+            <tr style={{background:"#0B1F3A"}}>
+              {["Name","Email","Role","Status","Actions"].map(h=>(
+                <th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".5px"}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u,i)=>(
+              <tr key={u.id} style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5"}}>
+                <td style={{padding:"9px 12px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <Av name={u.full_name||u.email} size={28}/>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{u.full_name||"—"}</div>
+                      {u.is_super_admin&&<span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:20,background:"#FDF3DC",color:"#8A6200"}}>Super Admin</span>}
+                    </div>
+                  </div>
+                </td>
+                <td style={{padding:"9px 12px",fontSize:12,color:"#4A5568"}}>{u.email}</td>
+                <td style={{padding:"9px 12px"}}><RoleBadge role={u.role}/></td>
+                <td style={{padding:"9px 12px"}}>
+                  <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:u.is_active?"#E6F4EE":"#F0F2F5",color:u.is_active?"#1A7F5A":"#718096"}}>
+                    {u.is_active?"Active":"Inactive"}
+                  </span>
+                </td>
+                <td style={{padding:"9px 12px"}}>
+                  <div style={{display:"flex",gap:6}}>
+                    <button onClick={()=>{setForm({...blank,...u});setEditUser(u);setShowAdd(true);}}
+                      style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>Edit</button>
+                    {!u.is_super_admin&&u.id!==currentUser.id&&(
+                      <button onClick={()=>toggleActive(u)}
+                        style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1.5px solid ${u.is_active?"#F0BCBC":"#A8D5BE"}`,background:u.is_active?"#FAEAEA":"#E6F4EE",color:u.is_active?"#B83232":"#1A7F5A",cursor:"pointer"}}>
+                        {u.is_active?"Deactivate":"Activate"}
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {showAdd&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>{editUser?"Edit User":"Add New User"}</span>
+              <button onClick={()=>{setShowAdd(false);setEditUser(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Full Name *</label><input value={form.full_name} onChange={sf("full_name")}/></div>
+                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Email *</label><input type="email" value={form.email} onChange={sf("email")} disabled={!!editUser}/></div>
+                {!editUser&&<div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Temporary Password</label><input type="password" value={form.password} onChange={sf("password")} placeholder="Leave blank to auto-generate"/></div>}
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Role</label>
+                  <select value={form.role} onChange={sf("role")}>
+                    {["super_admin","admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"].map(r=><option key={r} value={r}>{r.replace(/_/g," ")}</option>)}
+                  </select>
+                </div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Status</label>
+                  <select value={form.is_active?"active":"inactive"} onChange={e=>setForm(f=>({...f,is_active:e.target.value==="active"}))}>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
+              <button onClick={()=>{setShowAdd(false);setEditUser(null);}} style={{padding:"9px 20px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              <button onClick={saveUser} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editUser?"Save Changes":"Add User"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SettingsTab({appConfig={}, onConfigChange, currentUser, showToast}) {
+  const [form, setForm] = useState({
+    mode:     appConfig.mode||"both",
+    company:  appConfig.company||"PropCRM",
+    currency: appConfig.currency||"AED",
+    country:  appConfig.country||"UAE",
+  });
+  const save=()=>{
+    const cfg={...appConfig,...form,updatedAt:new Date().toISOString()};
+    onConfigChange(cfg);
+    showToast("Settings saved","success");
+  };
+  return(
+    <div style={{maxWidth:480}}>
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>CRM Mode</label>
+          <select value={form.mode} onChange={e=>setForm(f=>({...f,mode:e.target.value}))}>
+            <option value="sales">Sales Only</option>
+            <option value="leasing">Leasing Only</option>
+            <option value="both">Sales & Leasing</option>
+          </select>
+        </div>
+        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Company Name</label><input value={form.company} onChange={e=>setForm(f=>({...f,company:e.target.value}))}/></div>
+        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Currency</label>
+          <select value={form.currency} onChange={e=>setForm(f=>({...f,currency:e.target.value}))}>
+            {["AED","USD","GBP","EUR","SAR","QAR","KWD"].map(c=><option key={c}>{c}</option>)}
+          </select>
+        </div>
+        <button onClick={save} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",alignSelf:"flex-start"}}>Save Settings</button>
+      </div>
+    </div>
+  );
+}
+
 function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompanyId }) {
   const [companies,  setCompanies]  = useState([]);
   const [loading,    setLoading]    = useState(true);
