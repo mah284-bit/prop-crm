@@ -1690,7 +1690,7 @@ function Dashboard({leads,properties,activities,currentUser,meetings=[],followup
       </div>
 
       {/* Stats */}
-      <div className="stat-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+      <div className="stat-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
         {crmContext==="sales"?(
           <>
             <SC label="Active Leads"      value={active.length}            sub={`of ${visible.length} total`}           accent="#0B1F3A" icon="👤"/>
@@ -1709,7 +1709,7 @@ function Dashboard({leads,properties,activities,currentUser,meetings=[],followup
       </div>
 
       {/* Pipeline (Sales) / Lease summary (Leasing) */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 320px",gap:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr)",gap:12}}>
         {crmContext==="sales"?(
           <>
             <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1.125rem"}}>
@@ -1847,7 +1847,7 @@ function UserManagement({currentUser,leads,activities,showToast}){
             <SC l="Inactive"    v={analytics.inactive} accent="#B83232" icon="🚫"/>
             <SC l="Expiring"    v={analytics.expiring} accent="#A06810" icon="⏳"/>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+          <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr)",gap:12}}>
             <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1.125rem"}}>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#0B1F3A",marginBottom:14}}>Users by Role</div>
               {analytics.byRole.map(({role,count})=>{const m=ROLE_META[role];const pct=analytics.total?Math.round(count/analytics.total*100):0;return(<div key={role} style={{marginBottom:12}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><RoleBadge role={role}/><span style={{fontSize:12,color:"#4A5568"}}>{count} · {pct}%</span></div><div style={{height:6,background:"#F0F2F5",borderRadius:4,overflow:"hidden"}}><div style={{width:`${pct}%`,height:"100%",background:m.color,borderRadius:4}}/></div></div>);})}
@@ -4147,7 +4147,7 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
       </div>
 
       {/* Leases + Activity */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr)",gap:12}}>
         {/* Expiring leases */}
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1.125rem"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:14}}>⏰ Expiring / Needs Renewal</div>
@@ -5416,7 +5416,7 @@ export default function App(){
 
   return(
     <><GlobalStyle/>
-    <div style={{display:"flex",flexDirection:"column",height:"100vh",background:"#F0F2F5",overflow:"hidden"}}>
+    <div style={{display:"flex",flexDirection:"column",height:"100dvh",minHeight:"-webkit-fill-available",background:"#F0F2F5",overflow:"hidden"}}>
       {/* ── NAV ───────────────────────────────────────────────────── */}
       <div style={{background:"#0B1F3A",flexShrink:0,boxShadow:"0 2px 16px rgba(11,31,58,.5)"}}>
 
@@ -5424,7 +5424,7 @@ export default function App(){
         <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:48,gap:8}}>
 
           {/* Logo */}
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,color:"#fff",fontWeight:700,whiteSpace:"nowrap",marginRight:8,flexShrink:0}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,whiteSpace:"nowrap",marginRight:4,flexShrink:0}}>
             <span style={{color:"#C9A84C"}}>◆</span> {appConfig?.company||"PropCRM"}
           </div>
 
@@ -5444,11 +5444,11 @@ export default function App(){
                     loadAIData();
                     setTab(defaultTab);
                   }} style={{
-                    padding:"6px 16px",borderRadius:8,border:"none",
+                    padding:"5px 10px",borderRadius:8,border:"none",
                     background:isActive?"#fff":"transparent",
                     color:isActive?a.accent:"rgba(255,255,255,.5)",
-                    fontSize:13,fontWeight:isActive?700:400,cursor:"pointer",
-                    display:"flex",alignItems:"center",gap:6,
+                    fontSize:12,fontWeight:isActive?700:400,cursor:"pointer",
+                    display:"flex",alignItems:"center",gap:4,
                     transition:"all .2s",whiteSpace:"nowrap",
                     boxShadow:isActive?"0 1px 6px rgba(0,0,0,.15)":"none",
                   }}>
@@ -5510,13 +5510,13 @@ export default function App(){
       </div>
 
       {/* Page title */}
-      <div style={{padding:"16px 1.5rem 10px",flexShrink:0}}>
+      <div style={{padding:"12px 1rem 8px",flexShrink:0}}>
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:21,fontWeight:700,color:"#0B1F3A"}}>{visibleTabs.find(t=>t.id===tab)?.label||""}</div>
         <div style={{fontSize:12,color:"#A0AEC0",marginTop:2}}>{SUBTITLES[tab]||""}</div>
       </div>
 
       {/* Content */}
-      <div style={{flex:1,overflow:"hidden",padding:"0 1.5rem 1.5rem"}}>
+      <div style={{flex:1,overflow:"auto",padding:"0 1rem 1rem",WebkitOverflowScrolling:"touch"}}>
         {dataLoading?<Spinner msg="Loading your data…"/>:(<>
           {/* ── Sales CRM tabs ─────────────────────── */}
           {tab==="dashboard"   &&<div style={{height:"100%",overflowY:"auto",paddingRight:4}}><Dashboard leads={leads} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr}/></div>}
