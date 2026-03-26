@@ -2377,9 +2377,9 @@ const SUBTITLES={
 // PROJECTS MODULE — Standalone project management
 // ══════════════════════════════════════════════════════════════════
 function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedProjects=null, preloadedUnits=null }) {
-  const [projects,  setProjects]  = useState([]);
-  const [units,     setUnits]     = useState([]);
-  const [loading,   setLoading]   = useState(true);
+  const [projects,  setProjects]  = useState(preloadedProjects||[]);
+  const [units,     setUnits]     = useState(preloadedUnits||[]);
+  const [loading,   setLoading]   = useState(!preloadedProjects);
   const [search,    setSearch]    = useState("");
   const [showAdd,   setShowAdd]   = useState(false);
   const [editProj,  setEditProj]  = useState(null);
@@ -3047,11 +3047,11 @@ const UNIT_STATUS_COLORS = {
 };
 
 function InventoryModule({ currentUser, showToast, crmContext="sales", preloadedUnits=null, preloadedProjects=null, preloadedSalePricing=null, preloadedLeasePricing=null }) {
-  const [units,       setUnits]       = useState([]);
-  const [projects,    setProjects]    = useState([]);
-  const [salePricing, setSalePricing] = useState([]);
-  const [leasePricing,setLeasePricing]= useState([]);
-  const [loading,     setLoading]     = useState(true);
+  const [units,       setUnits]       = useState(preloadedUnits||[]);
+  const [projects,    setProjects]    = useState(preloadedProjects||[]);
+  const [salePricing, setSalePricing] = useState(preloadedSalePricing||[]);
+  const [leasePricing,setLeasePricing]= useState(preloadedLeasePricing||[]);
+  const [loading,     setLoading]     = useState(!preloadedUnits);
   const [selUnit,     setSelUnit]     = useState(null);
   const [activeTab,   setActiveTab]   = useState("details");
   // Filters
@@ -3103,23 +3103,24 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
   const uf = k => e => setUForm(f=>({...f,[k]:typeof e==="boolean"?e:e.target?.value??e}));
 
   const load = useCallback(async(force=false)=>{
-    // Use pre-loaded central data if available — instant render
-    if(!force && preloadedUnits && preloadedUnits.length >= 0) {
+    // Use pre-loaded central data — render instantly, fetch small tables in background
+    if(!force && preloadedUnits && preloadedProjects) {
       setUnits(preloadedUnits);
-      setProjects(preloadedProjects||[]);
+      setProjects(preloadedProjects);
       setSalePricing(preloadedSalePricing||[]);
       setLeasePricing(preloadedLeasePricing||[]);
-      // Still load reservations/leads/tenants as they are not in central state
+      setLoading(false); // Show immediately
+      // Load small tables in background (non-blocking)
       const safe = q => q.catch(()=>({data:[]}));
-      const [res,lds,tns] = await Promise.all([
+      Promise.all([
         safe(supabase.from("reservations").select("*").in("status",["Active","Extended","Confirmed"])),
         safe(supabase.from("leads").select("id,name,phone,email,nationality,stage")),
         safe(supabase.from("tenants").select("id,full_name,phone,email")),
-      ]);
-      setReservations(res.data||[]);
-      setLeads(lds.data||[]);
-      setTenants(tns.data||[]);
-      setLoading(false);
+      ]).then(([res,lds,tns])=>{
+        setReservations(res.data||[]);
+        setLeads(lds.data||[]);
+        setTenants(tns.data||[]);
+      });
       return;
     }
     // Fallback: fetch everything
