@@ -3399,7 +3399,7 @@ function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
 // ══════════════════════════════════════════════════════
 // LEASING MODULE
 // ══════════════════════════════════════════════════════
-function LeasingModule({currentUser,showToast}) {
+function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=null}) {
   const [tab,setTab]               = useState("dashboard");
   const [tenants,setTenants]       = useState([]);
   const [leases,setLeases]         = useState([]);
@@ -3424,7 +3424,18 @@ function LeasingModule({currentUser,showToast}) {
   const [pForm,setPForm]=useState(pBlank);
   const [mForm,setMForm]=useState(mBlank);
 
-  const load=useCallback(async()=>{
+  const load=useCallback(async(force=false)=>{
+    // Use pre-loaded central data if available
+    if(!force && leasingData?.loaded){
+      setTenants(leasingData.tenants);
+      setLeases(leasingData.leases);
+      setPayments(leasingData.payments);
+      setMaintenance(leasingData.maintenance);
+      const u=await supabase.from("project_units").select("id,unit_ref,sub_type");
+      setUnits(u.data||[]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const [t,l,p,m,u]=await Promise.all([
       supabase.from("tenants").select("*").order("full_name"),
@@ -3433,9 +3444,11 @@ function LeasingModule({currentUser,showToast}) {
       supabase.from("maintenance").select("*").order("created_at",{ascending:false}),
       supabase.from("project_units").select("id,unit_ref,sub_type"),
     ]);
-    setTenants(t.data||[]);setLeases(l.data||[]);setPayments(p.data||[]);setMaintenance(m.data||[]);setUnits(u.data||[]);
+    const updated={tenants:t.data||[],leases:l.data||[],payments:p.data||[],maintenance:m.data||[],loaded:true};
+    setTenants(updated.tenants);setLeases(updated.leases);setPayments(updated.payments);setMaintenance(updated.maintenance);setUnits(u.data||[]);
+    if(setLeasingData)setLeasingData(updated);
     setLoading(false);
-  },[]);
+  },[leasingData]);
   useEffect(()=>{load();},[load]);
 
   const today=new Date();
@@ -4462,7 +4475,7 @@ function SetupWizard({ onComplete }) {
 // ══════════════════════════════════════════════════════════════════
 // LEASING DASHBOARD
 // ══════════════════════════════════════════════════════════════════
-function LeasingDashboard({currentUser, activities, units=[], salePricing=[], leasePricing=[]}) {
+function LeasingDashboard({currentUser, activities, units=[], salePricing=[], leasePricing=[], leasingData=null}) {
   const [leases,     setLeases]     = useState([]);
   const [tenants,    setTenants]    = useState([]);
   const [payments,   setPayments]   = useState([]);
@@ -4470,6 +4483,16 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
   const [loading,    setLoading]    = useState(true);
 
   useEffect(()=>{
+    // Use pre-loaded data if available — instant render
+    if(leasingData?.loaded){
+      setLeases(leasingData.leases);
+      setTenants(leasingData.tenants);
+      setPayments(leasingData.payments);
+      setMaintenance(leasingData.maintenance);
+      setLoading(false);
+      return;
+    }
+    // Fallback: fetch own data
     const load = async () => {
       setLoading(true);
       const [l,t,p,m] = await Promise.all([
@@ -4483,7 +4506,7 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
       setLoading(false);
     };
     load();
-  },[]);
+  },[leasingData]);
 
   if(loading) return <Spinner msg="Loading Leasing Dashboard…"/>;
 
@@ -5737,6 +5760,8 @@ export default function App(){
       setAiProjects(p.data||[]);setAiUnits(u.data||[]);setAiSalePr(sp.data||[]);setAiLeasePr(lp.data||[]);
     }catch(e){console.log(e);}
   },[aiProjects.length]);
+  // Central leasing data — loaded once, passed to all leasing modules
+  const[leasingData,setLeasingData]=useState({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
   const[toast,setToast]=useState(null);
   const showToast=(msg,type="success")=>setToast({msg,type});
 
@@ -5771,14 +5796,19 @@ export default function App(){
           safe(supabase.from("discount_requests").select("*").order("created_at",{ascending:false})),
         ]);
         setLeads(l.data);setProperties(pr.data);setActivities(a.data);setUsers(u.data);setDiscounts(d.data);
-        // Also load inventory data eagerly so CRM switch is instant
-        const[proj,units2,sp2,lp2]=await Promise.all([
+        // Load inventory + leasing data eagerly so CRM switch is instant
+        const[proj,units2,sp2,lp2,lt,ll,lp_,lm]=await Promise.all([
           safe(supabase.from("projects").select("*")),
           safe(supabase.from("project_units").select("*")),
           safe(supabase.from("unit_sale_pricing").select("*")),
           safe(supabase.from("unit_lease_pricing").select("*")),
+          safe(supabase.from("tenants").select("*").order("full_name")),
+          safe(supabase.from("leases").select("*").order("end_date")),
+          safe(supabase.from("rent_payments").select("*").order("due_date")),
+          safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
         ]);
         setAiProjects(proj.data);setAiUnits(units2.data);setAiSalePr(sp2.data);setAiLeasePr(lp2.data);
+        setLeasingData({tenants:lt.data,leases:ll.data,payments:lp_.data,maintenance:lm.data,loaded:true});
       }catch(e){console.error("Load error:",e);}
       setDataLoading(false);
     };
@@ -5965,8 +5995,8 @@ export default function App(){
           {tab==="l_leads"    &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
           {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing"/>}
           {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing"/>}
-          {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} key="l_dash"/>}
-          {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast}/>}
+          {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} key="l_dash"/>}
+          {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData}/>}
           {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="l_ai"        &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
