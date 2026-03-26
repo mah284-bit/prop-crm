@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PropCRM — Test Data Seeder</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0B1F3A;min-height:100vh;padding:2rem;color:#fff}
+  .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:1.5rem;margin-bottom:1rem}
+  h1{font-size:24px;font-weight:700;color:#C9A84C;margin-bottom:4px}
+  h2{font-size:16px;font-weight:600;color:#fff;margin-bottom:12px}
+  .sub{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:1.5rem}
+  .btn{padding:10px 24px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+  .btn-gold{background:#C9A84C;color:#0B1F3A}
+  .btn-outline{background:transparent;color:#C9A84C;border:1.5px solid #C9A84C}
+  .btn:hover{opacity:.85}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:1rem}
+  .stat{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:12px;text-align:center}
+  .stat .num{font-size:28px;font-weight:700;color:#C9A84C;font-family:Georgia,serif}
+  .stat .lbl{font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+  .log{background:#000;border-radius:8px;padding:12px;height:300px;overflow-y:auto;font-family:monospace;font-size:12px;margin-top:12px}
+  .log .ok{color:#4ADE80}
+  .log .err{color:#F87171}
+  .log .info{color:#60A5FA}
+  .log .warn{color:#FBBF24}
+  .progress{background:rgba(255,255,255,.1);border-radius:6px;height:8px;overflow:hidden;margin:8px 0}
+  .progress-bar{height:100%;background:linear-gradient(90deg,#C9A84C,#E8C97A);border-radius:6px;transition:width .3s}
+  input,select{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:9px 12px;font-size:13px;color:#fff;width:100%;outline:none}
+  input:focus,select:focus{border-color:#C9A84C}
+  label{font-size:11px;color:rgba(255,255,255,.5);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+  .section-check{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.04);margin-bottom:6px;cursor:pointer}
+  .section-check input[type=checkbox]{width:16px;height:16px;accent-color:#C9A84C}
+  .section-check .count{margin-left:auto;font-size:12px;color:#C9A84C;font-weight:600}
+  .badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600}
+  .badge-green{background:#E6F4EE;color:#1A7F5A}
+  .badge-blue{background:#E6EFF9;color:#1A5FA8}
+</style>
+</head>
+<body>
+
+<div style="max-width:860px;margin:0 auto">
+  <h1>◆ PropCRM Test Data Seeder</h1>
+  <p class="sub">Loads realistic UAE real estate data into your Supabase database for testing</p>
+
+  <!-- Connection -->
+  <div class="card">
+    <h2>🔗 Connection</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end">
+      <div>
+        <label>Supabase URL</label>
+        <input id="sb-url" value="https://ysceukgpimzfqixtnbnp.supabase.co"/>
+      </div>
+      <div>
+        <label>Anon Key</label>
+        <input id="sb-key" type="password" value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzY2V1a2dwaW16ZnFpeHRuYm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNDI5OTQsImV4cCI6MjA4OTkxODk5NH0.WZSyGeOEbiRo1wt13syheTOyiAToMWXInxIaBgaqq8k"/>
+      </div>
+      <button class="btn btn-gold" onclick="connect()">Connect</button>
+    </div>
+    <div id="conn-status" style="margin-top:10px;font-size:13px"></div>
+  </div>
+
+  <!-- What to seed -->
+  <div class="card">
+    <h2>📦 Select Data to Seed</h2>
+    <div id="sections">
+      <label class="section-check"><input type="checkbox" id="chk-projects" checked><span>🏗 Projects & Units (5 projects, 60+ units with full pricing)</span><span class="count">65 records</span></label>
+      <label class="section-check"><input type="checkbox" id="chk-leads" checked><span>👤 Sales Leads (30 leads across all stages)</span><span class="count">30 records</span></label>
+      <label class="section-check"><input type="checkbox" id="chk-tenants" checked><span>🔑 Tenants (20 tenants with full details)</span><span class="count">20 records</span></label>
+      <label class="section-check"><input type="checkbox" id="chk-leases" checked><span>📄 Leases (15 active lease contracts)</span><span class="count">15 records</span></label>
+      <label class="section-check"><input type="checkbox" id="chk-enquiries" checked><span>👤 Leasing Enquiries (20 tenant enquiries)</span><span class="count">20 records</span></label>
+      <label class="section-check"><input type="checkbox" id="chk-activities" checked><span>📋 Activities & History (50+ logged activities)</span><span class="count">55 records</span></label>
+      <label class="section-check"><input type="checkbox" id="chk-discounts" checked><span>⚡ Discount Requests (10 requests, mixed statuses)</span><span class="count">10 records</span></label>
+      <label class="section-check"><input type="checkbox" id="chk-payments" checked><span>💰 Rent Payments (30 payment records)</span><span class="count">30 records</span></label>
+      <label class="section-check"><input type="checkbox" id="chk-maintenance" checked><span>🔧 Maintenance Requests (15 requests)</span><span class="count">15 records</span></label>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+      <button class="btn btn-gold" id="seed-btn" onclick="seedAll()" disabled>🚀 Seed All Selected Data</button>
+      <button class="btn btn-outline" onclick="clearAll()">🗑 Clear All Test Data</button>
+      <span style="font-size:12px;color:rgba(255,255,255,.4)">Safe to run multiple times — uses upsert</span>
+    </div>
+  </div>
+
+  <!-- Progress -->
+  <div class="card" id="progress-card" style="display:none">
+    <h2>⏳ Seeding Progress</h2>
+    <div class="progress"><div class="progress-bar" id="prog-bar" style="width:0%"></div></div>
+    <div id="prog-text" style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:8px"></div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <!-- Summary -->
+  <div id="summary" style="display:none">
+    <div class="card">
+      <h2>✅ Data Seeded Successfully</h2>
+      <div class="grid" id="summary-grid"></div>
+      <p style="font-size:13px;color:rgba(255,255,255,.5);margin-top:10px">Go to your PropCRM app and refresh — all test data is now loaded.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let sb = null;
+let companyId = '00000000-0000-0000-0000-000000000001';
+let seededCounts = {};
+
+// ── Connect ───────────────────────────────────────────────────────
+async function connect() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  sb = supabase.createClient(url, key);
+  try {
+    const { data, error } = await sb.from('companies').select('id,name').limit(5);
+    if (error) throw error;
+    companyId = data?.[0]?.id || companyId;
+    document.getElementById('conn-status').innerHTML = `<span style="color:#4ADE80">✓ Connected — company: ${data?.[0]?.name || 'Default'} (${companyId.slice(0,8)}…)</span>`;
+    document.getElementById('seed-btn').disabled = false;
+  } catch(e) {
+    document.getElementById('conn-status').innerHTML = `<span style="color:#F87171">✕ ${e.message}</span>`;
+  }
+}
+
+// ── Logging ───────────────────────────────────────────────────────
+function log(msg, cls='info') {
+  const el = document.getElementById('log');
+  const d = document.createElement('div');
+  d.className = cls; d.textContent = msg;
+  el.appendChild(d); el.scrollTop = el.scrollHeight;
+}
+function setProgress(pct, msg) {
+  document.getElementById('prog-bar').style.width = pct + '%';
+  document.getElementById('prog-text').textContent = msg;
+}
+
+// ── Data definitions ──────────────────────────────────────────────
+const PROJECTS_DATA = [
+  { name:'Emaar Beachfront', developer:'Emaar Properties', location:'Dubai Harbour', community:'Dubai Marina', status:'Active', completion_date:'2025-12-31' },
+  { name:'Downtown Views II', developer:'Emaar Properties', location:'Downtown Dubai', community:'Downtown', status:'Active', completion_date:'2026-06-30' },
+  { name:'Sobha Hartland II', developer:'Sobha Realty', location:'MBR City', community:'Sobha Hartland', status:'Active', completion_date:'2026-03-31' },
+  { name:'Damac Hills 2', developer:'Damac Properties', location:'Dubailand', community:'Damac Hills', status:'Active', completion_date:'2025-09-30' },
+  { name:'Nakheel Bay Residences', developer:'Nakheel', location:'Palm Jumeirah', community:'Palm Jumeirah', status:'Active', completion_date:'2027-01-31' },
+];
+
+const UNITS_DATA = [
+  // Emaar Beachfront
+  { proj:0, ref:'EB-101', type:'Residential', cat:'1 Bed', purpose:'Sale', beds:1, baths:1, sqft:750, floor:1, view:'Sea View', status:'Available', ask:1800000, dld:4, agency:2, book:10, build:40, hand:50 },
+  { proj:0, ref:'EB-202', type:'Residential', cat:'2 Bed', purpose:'Sale', beds:2, baths:2, sqft:1200, floor:2, view:'Sea View', status:'Available', ask:2800000, dld:4, agency:2, book:10, build:40, hand:50 },
+  { proj:0, ref:'EB-305', type:'Residential', cat:'3 Bed', purpose:'Sale', beds:3, baths:3, sqft:1800, floor:3, view:'Sea View', status:'Reserved', ask:4200000, dld:4, agency:2, book:10, build:40, hand:50 },
+  { proj:0, ref:'EB-410', type:'Residential', cat:'2 Bed', purpose:'Both', beds:2, baths:2, sqft:1150, floor:4, view:'Sea View', status:'Available', ask:2650000, rent:130000, dld:4, agency:2, book:10, build:40, hand:50, cheques:4 },
+  { proj:0, ref:'EB-PH1', type:'Residential', cat:'Penthouse', purpose:'Sale', beds:4, baths:4, sqft:3500, floor:10, view:'Sea View', status:'Available', ask:9500000, dld:4, agency:2, book:20, build:30, hand:50 },
+  { proj:0, ref:'EB-SH1', type:'Commercial', cat:'Retail / Shop', purpose:'Lease', sqft:450, floor:0, view:'Sea View', status:'Available', rent:180000, cheques:2 },
+  // Downtown Views II
+  { proj:1, ref:'DV-A01', type:'Residential', cat:'Studio', purpose:'Both', beds:0, baths:1, sqft:480, floor:5, view:'Burj View', status:'Available', ask:900000, rent:65000, dld:4, agency:2, book:10, build:40, hand:50, cheques:4 },
+  { proj:1, ref:'DV-B12', type:'Residential', cat:'1 Bed', purpose:'Both', beds:1, baths:1, sqft:720, floor:12, view:'Burj View', status:'Available', ask:1400000, rent:90000, dld:4, agency:2, book:10, build:40, hand:50, cheques:4 },
+  { proj:1, ref:'DV-C08', type:'Residential', cat:'2 Bed', purpose:'Sale', beds:2, baths:2, sqft:1100, floor:8, view:'City View', status:'Sold', ask:2100000, dld:4, agency:2, book:10, build:40, hand:50 },
+  { proj:1, ref:'DV-D15', type:'Residential', cat:'3 Bed', purpose:'Sale', beds:3, baths:3, sqft:1650, floor:15, view:'Burj View', status:'Available', ask:3200000, dld:4, agency:2, book:10, build:40, hand:50 },
+  { proj:1, ref:'DV-OF1', type:'Commercial', cat:'Office', purpose:'Lease', sqft:800, floor:3, view:'City View', status:'Available', rent:160000, cheques:4 },
+  { proj:1, ref:'DV-OF2', type:'Commercial', cat:'Office', purpose:'Lease', sqft:1200, floor:4, view:'City View', status:'Leased', rent:220000, cheques:2 },
+  // Sobha Hartland
+  { proj:2, ref:'SH-V01', type:'Residential', cat:'Villa', purpose:'Sale', beds:4, baths:5, sqft:4200, floor:0, view:'Golf View', status:'Available', ask:7500000, pool:true, garden:true, dld:4, agency:2, book:10, build:40, hand:50 },
+  { proj:2, ref:'SH-V02', type:'Residential', cat:'Villa', purpose:'Sale', beds:5, baths:6, sqft:5100, floor:0, view:'Golf View', status:'Reserved', ask:9200000, pool:true, garden:true, dld:4, agency:2, book:10, build:40, hand:50 },
+  { proj:2, ref:'SH-TH1', type:'Residential', cat:'Townhouse', purpose:'Sale', beds:3, baths:3, sqft:2200, floor:0, view:'Park View', status:'Available', ask:3800000, dld:4, agency:2, book:10, build:40, hand:50 },
+  { proj:2, ref:'SH-A05', type:'Residential', cat:'2 Bed', purpose:'Both', beds:2, baths:2, sqft:1050, floor:5, view:'Pool View', status:'Available', ask:1950000, rent:110000, dld:4, agency:2, book:10, build:40, hand:50, cheques:4 },
+  { proj:2, ref:'SH-A12', type:'Residential', cat:'1 Bed', purpose:'Lease', beds:1, baths:1, sqft:680, floor:12, view:'Canal View', status:'Available', rent:80000, cheques:4 },
+  // Damac Hills 2
+  { proj:3, ref:'DH-V10', type:'Residential', cat:'Villa', purpose:'Both', beds:3, baths:4, sqft:2800, floor:0, view:'Community View', status:'Available', ask:2900000, rent:160000, garden:true, dld:4, agency:2, book:10, build:40, hand:50, cheques:2 },
+  { proj:3, ref:'DH-V11', type:'Residential', cat:'Villa', purpose:'Sale', beds:4, baths:5, sqft:3600, floor:0, view:'Golf View', status:'Sold', ask:3800000, dld:4, agency:2, book:10, build:40, hand:50 },
+  { proj:3, ref:'DH-TH5', type:'Residential', cat:'Townhouse', purpose:'Sale', beds:3, baths:3, sqft:1900, floor:0, view:'Community View', status:'Available', ask:2100000, dld:4, agency:2, book:10, build:40, hand:50 },
+  { proj:3, ref:'DH-TH6', type:'Residential', cat:'Townhouse', purpose:'Lease', beds:3, baths:3, sqft:1850, floor:0, view:'Community View', status:'Available', rent:140000, cheques:4 },
+  { proj:3, ref:'DH-WH1', type:'Commercial', cat:'Warehouse', purpose:'Lease', sqft:5000, floor:0, view:'Internal', status:'Available', rent:280000, cheques:2 },
+  // Palm Jumeirah
+  { proj:4, ref:'PJ-S01', type:'Residential', cat:'Studio', purpose:'Lease', beds:0, baths:1, sqft:520, floor:2, view:'Sea View', status:'Available', rent:75000, cheques:4 },
+  { proj:4, ref:'PJ-1B1', type:'Residential', cat:'1 Bed', purpose:'Both', beds:1, baths:1, sqft:850, floor:4, view:'Sea View', status:'Available', ask:2200000, rent:130000, dld:4, agency:2, book:10, build:40, hand:50, cheques:4 },
+  { proj:4, ref:'PJ-2B1', type:'Residential', cat:'2 Bed', purpose:'Both', beds:2, baths:2, sqft:1400, floor:6, view:'Sea View', status:'Reserved', ask:3500000, rent:200000, dld:4, agency:2, book:10, build:40, hand:50, cheques:4 },
+  { proj:4, ref:'PJ-PH2', type:'Residential', cat:'Penthouse', purpose:'Sale', beds:5, baths:6, sqft:6000, floor:20, view:'Sea View', status:'Available', ask:18000000, pool:true, dld:4, agency:2, book:20, build:30, hand:50 },
+  { proj:4, ref:'PJ-RT1', type:'Commercial', cat:'Restaurant', purpose:'Lease', sqft:600, floor:0, view:'Sea View', status:'Available', rent:350000, cheques:2 },
+];
+
+const LEAD_NAMES = [
+  {name:'Ahmed Al Rashid',email:'ahmed.rashid@gmail.com',phone:'+971501234567',nat:'UAE',src:'Referral',budget:2500000},
+  {name:'Sarah Johnson',email:'sarah.j@hotmail.com',phone:'+447700900100',nat:'UK',src:'Website',budget:1800000},
+  {name:'Mohammed Al Farsi',email:'mfarsi@outlook.com',phone:'+971521234568',nat:'UAE',src:'Portal',budget:4200000},
+  {name:'Priya Sharma',email:'priya.sharma@gmail.com',phone:'+919876543210',nat:'India',src:'Referral',budget:1200000},
+  {name:'James Williams',email:'jwilliams@email.com',phone:'+14155552671',nat:'USA',src:'Social Media',budget:3500000},
+  {name:'Fatima Al Zaabi',email:'fatima.z@gmail.com',phone:'+971561234569',nat:'UAE',src:'Event',budget:5000000},
+  {name:'Rajesh Kumar',email:'rajesh.k@yahoo.com',phone:'+919988776655',nat:'India',src:'Portal',budget:950000},
+  {name:'Elena Petrov',email:'elena.p@gmail.com',phone:'+79161234567',nat:'Russia',src:'Referral',budget:2800000},
+  {name:'Omar Al Mansoori',email:'omar.m@gmail.com',phone:'+971581234570',nat:'UAE',src:'Cold Call',budget:6500000},
+  {name:'Lisa Chen',email:'lisa.chen@outlook.com',phone:'+8613812345678',nat:'China',src:'Website',budget:3200000},
+  {name:'Khalid Al Qahtani',email:'khalid.q@gmail.com',phone:'+966501234567',nat:'Saudi Arabia',src:'Referral',budget:4800000},
+  {name:'Maria Rodriguez',email:'maria.r@gmail.com',phone:'+12125551234',nat:'USA',src:'Portal',budget:1600000},
+  {name:'Yusuf Al Hamad',email:'yusuf.h@outlook.com',phone:'+971591234571',nat:'UAE',src:'Event',budget:7200000},
+  {name:'Aisha Mohammed',email:'aisha.m@gmail.com',phone:'+971501234572',nat:'UAE',src:'Referral',budget:2100000},
+  {name:'David Thompson',email:'d.thompson@gmail.com',phone:'+447911123456',nat:'UK',src:'Website',budget:2900000},
+  {name:'Nadia Al Sayed',email:'nadia.s@gmail.com',phone:'+971521234573',nat:'UAE',src:'Social Media',budget:3800000},
+  {name:'Vijay Nair',email:'vijay.n@gmail.com',phone:'+919823456789',nat:'India',src:'Referral',budget:1450000},
+  {name:'Robert Mueller',email:'r.mueller@gmail.com',phone:'+4917612345678',nat:'Other',src:'Portal',budget:2600000},
+  {name:'Mariam Al Hashimi',email:'mariam.h@gmail.com',phone:'+971561234574',nat:'UAE',src:'Event',budget:5500000},
+  {name:'Wang Wei',email:'wang.w@outlook.com',phone:'+8618912345678',nat:'China',src:'Referral',budget:4100000},
+  {name:'Hassan Al Blooshi',email:'hassan.b@gmail.com',phone:'+971581234575',nat:'UAE',src:'Cold Call',budget:1900000},
+  {name:'Emma Davies',email:'emma.d@gmail.com',phone:'+447800900200',nat:'UK',src:'Website',budget:2300000},
+  {name:'Sanjay Patel',email:'sanjay.p@yahoo.com',phone:'+919765432109',nat:'India',src:'Portal',budget:1100000},
+  {name:'Tariq Al Mazrouei',email:'tariq.m@gmail.com',phone:'+971501234576',nat:'UAE',src:'Referral',budget:8500000},
+  {name:'Anna Ivanova',email:'anna.i@gmail.com',phone:'+79151234567',nat:'Russia',src:'Social Media',budget:2200000},
+  {name:'Abdullah Al Shehri',email:'abdullah.s@gmail.com',phone:'+966551234567',nat:'Saudi Arabia',src:'Event',budget:3600000},
+  {name:'Jennifer Park',email:'j.park@gmail.com',phone:'+18005551234',nat:'USA',src:'Website',budget:1750000},
+  {name:'Rashid Al Nuaimi',email:'rashid.n@outlook.com',phone:'+971521234577',nat:'UAE',src:'Referral',budget:4500000},
+  {name:'Deepika Singh',email:'deepika.s@gmail.com',phone:'+919654321098',nat:'India',src:'Portal',budget:1300000},
+  {name:'Michael Brown',email:'m.brown@gmail.com',phone:'+447700800300',nat:'UK',src:'Cold Call',budget:3100000},
+];
+
+const STAGES = ['New Lead','Contacted','Site Visit','Proposal Sent','Negotiation','Closed Won','Closed Lost'];
+const STAGE_DIST = [5,6,5,5,4,3,2]; // distribution
+
+const TENANTS_DATA = [
+  {name:'Sara Al Mulla',nat:'UAE',id_type:'Emirates ID',id:'784-1985-1234567-1',phone:'+971501112233',email:'sara.m@gmail.com',type:'Individual'},
+  {name:'John Smith',nat:'UK',id_type:'Passport',id:'AB123456',phone:'+447911234567',email:'john.s@email.com',type:'Individual'},
+  {name:'Pradeep Nair',nat:'India',id_type:'Passport',id:'J1234567',phone:'+919811234567',email:'pradeep.n@gmail.com',type:'Individual'},
+  {name:'Layla Al Hassan',nat:'UAE',id_type:'Emirates ID',id:'784-1990-2345678-2',phone:'+971521112234',email:'layla.h@outlook.com',type:'Individual'},
+  {name:'TechCorp DMCC',nat:'UAE',id_type:'Emirates ID',id:'784-2000-3456789-3',phone:'+97144001234',email:'info@techcorp.ae',type:'Company',company:'TechCorp DMCC',trade:'TL-2020-12345'},
+  {name:'Nikolai Volkov',nat:'Russia',id_type:'Passport',id:'7234567890',phone:'+79161112233',email:'n.volkov@gmail.com',type:'Individual'},
+  {name:'Fatima Khalid',nat:'UAE',id_type:'Emirates ID',id:'784-1988-4567890-4',phone:'+971561112235',email:'fatima.k@gmail.com',type:'Individual'},
+  {name:'James Lee',nat:'USA',id_type:'Passport',id:'C12345678',phone:'+14151112233',email:'j.lee@gmail.com',type:'Individual'},
+  {name:'Sunita Menon',nat:'India',id_type:'Passport',id:'P2345678',phone:'+919921234567',email:'sunita.m@yahoo.com',type:'Individual'},
+  {name:'Khalifa Al Dhaheri',nat:'UAE',id_type:'Emirates ID',id:'784-1982-5678901-5',phone:'+971581112236',email:'khalifa.d@gmail.com',type:'Individual'},
+  {name:'Global Ventures LLC',nat:'UAE',id_type:'Emirates ID',id:'784-2005-6789012-6',phone:'+97143002345',email:'admin@globalventures.ae',type:'Company',company:'Global Ventures LLC',trade:'TL-2018-67890'},
+  {name:'Sophie Martin',nat:'Other',id_type:'Passport',id:'15AB12345',phone:'+33612345678',email:'s.martin@gmail.com',type:'Individual'},
+  {name:'Hamad Al Marri',nat:'UAE',id_type:'Emirates ID',id:'784-1975-7890123-7',phone:'+971501112237',email:'hamad.m@outlook.com',type:'Individual'},
+  {name:'Amit Gupta',nat:'India',id_type:'Passport',id:'K3456789',phone:'+919831234567',email:'amit.g@gmail.com',type:'Individual'},
+  {name:'Rebecca Wilson',nat:'UK',id_type:'Passport',id:'CD234567',phone:'+447812345678',email:'r.wilson@gmail.com',type:'Individual'},
+  {name:'Maryam Al Naqbi',nat:'UAE',id_type:'Emirates ID',id:'784-1993-8901234-8',phone:'+971521112238',email:'maryam.n@gmail.com',type:'Individual'},
+  {name:'Chen Wei',nat:'China',id_type:'Passport',id:'E12345678',phone:'+8613912345678',email:'chen.w@outlook.com',type:'Individual'},
+  {name:'Saeed Al Ketbi',nat:'UAE',id_type:'Emirates ID',id:'784-1980-9012345-9',phone:'+971561112239',email:'saeed.k@gmail.com',type:'Individual'},
+  {name:'Anita Sharma',nat:'India',id_type:'Passport',id:'M4567890',phone:'+919841234567',email:'anita.s@gmail.com',type:'Individual'},
+  {name:'Lucas Müller',nat:'Other',id_type:'Passport',id:'C01234567',phone:'+4917123456789',email:'l.muller@gmail.com',type:'Individual'},
+];
+
+const ENQUIRY_DATA = [
+  {name:'Ali Al Suwaidi',phone:'+971501234590',email:'ali.s@gmail.com',nat:'UAE',src:'Portal',budget:120000,area:'Downtown Dubai',beds:'2 Bed',stage:'New Enquiry'},
+  {name:'Emma Thompson',phone:'+447800900400',email:'emma.t@gmail.com',nat:'UK',src:'Website',budget:85000,area:'Dubai Marina',beds:'1 Bed',stage:'Contacted'},
+  {name:'Vikram Mehta',phone:'+919712345678',email:'vikram.m@gmail.com',nat:'India',src:'Referral',budget:70000,area:'JVC',beds:'Studio',stage:'Viewing Scheduled'},
+  {name:'Hessa Al Muhairi',phone:'+971521234591',email:'hessa.m@gmail.com',nat:'UAE',src:'Social Media',budget:200000,area:'Palm Jumeirah',beds:'3 Bed',stage:'Offer Made'},
+  {name:'Carlos Mendez',phone:'+5219123456789',email:'carlos.m@gmail.com',nat:'Other',src:'Cold Call',budget:95000,area:'Business Bay',beds:'1 Bed',stage:'New Enquiry'},
+  {name:'Noura Al Rashidi',phone:'+971561234592',email:'noura.r@outlook.com',nat:'UAE',src:'Referral',budget:160000,area:'JBR',beds:'2 Bed',stage:'Lease Signed'},
+  {name:'Ravi Shankar',phone:'+919823456790',email:'ravi.s@yahoo.com',nat:'India',src:'Portal',budget:60000,area:'Al Barsha',beds:'Studio',stage:'Contacted'},
+  {name:'Olga Kuznetsova',phone:'+79161234590',email:'olga.k@gmail.com',nat:'Russia',src:'Website',budget:130000,area:'Dubai Hills',beds:'2 Bed',stage:'Viewing Scheduled'},
+  {name:'Mansoor Al Falasi',phone:'+971581234593',email:'mansoor.f@gmail.com',nat:'UAE',src:'Event',budget:250000,area:'Emirates Hills',beds:'4 Bed',stage:'New Enquiry'},
+  {name:'Hannah Schmidt',phone:'+4917234567890',email:'h.schmidt@gmail.com',nat:'Other',src:'Referral',budget:90000,area:'DIFC',beds:'1 Bed',stage:'Contacted'},
+  {name:'Zayed Al Ameri',phone:'+971501234594',email:'zayed.a@gmail.com',nat:'UAE',src:'Portal',budget:175000,area:'Mirdif',beds:'3 Bed',stage:'Offer Made'},
+  {name:'Pooja Verma',phone:'+919934567890',email:'pooja.v@gmail.com',nat:'India',src:'Social Media',budget:65000,area:'International City',beds:'Studio',stage:'New Enquiry'},
+  {name:'Thomas Dubois',phone:'+33623456789',email:'t.dubois@gmail.com',nat:'Other',src:'Website',budget:140000,area:'City Walk',beds:'2 Bed',stage:'Viewing Scheduled'},
+  {name:'Shaikha Al Mazrouei',phone:'+971521234595',email:'shaikha.m@outlook.com',nat:'UAE',src:'Referral',budget:220000,area:'Jumeirah',beds:'4 Bed',stage:'Lease Signed'},
+  {name:'Anand Krishnan',phone:'+919845678901',email:'anand.k@gmail.com',nat:'India',src:'Cold Call',budget:75000,area:'Silicon Oasis',beds:'1 Bed',stage:'Contacted'},
+  {name:'Irina Sokolova',phone:'+79171234567',email:'irina.s@gmail.com',nat:'Russia',src:'Portal',budget:110000,area:'Motor City',beds:'2 Bed',stage:'New Enquiry'},
+  {name:'Abdulla Al Blooshi',phone:'+971561234596',email:'abdulla.b@gmail.com',nat:'UAE',src:'Event',budget:190000,area:'The Springs',beds:'3 Bed',stage:'Viewing Scheduled'},
+  {name:'Grace Kim',phone:'+82101234567',email:'grace.k@gmail.com',nat:'Other',src:'Website',budget:80000,area:'JBR',beds:'1 Bed',stage:'New Enquiry'},
+  {name:'Saif Al Shamsi',phone:'+971581234597',email:'saif.s@outlook.com',nat:'UAE',src:'Referral',budget:300000,area:'Palm Jumeirah',beds:'5 Bed+',stage:'Offer Made'},
+  {name:'Meera Pillai',phone:'+919756789012',email:'meera.p@gmail.com',nat:'India',src:'Social Media',budget:55000,area:'Discovery Gardens',beds:'Studio',stage:'Contacted'},
+];
+
+// ── Helper functions ──────────────────────────────────────────────
+const rnd = (arr) => arr[Math.floor(Math.random()*arr.length)];
+const rndDate = (start, end) => {
+  const s = new Date(start), e = new Date(end);
+  return new Date(s.getTime() + Math.random()*(e.getTime()-s.getTime())).toISOString().split('T')[0];
+};
+const past = (days) => new Date(Date.now()-days*86400000).toISOString().split('T')[0];
+const future = (days) => new Date(Date.now()+days*86400000).toISOString().split('T')[0];
+
+// ── Main seed function ────────────────────────────────────────────
+let totalSeeded = 0;
+
+async function seedAll() {
+  document.getElementById('progress-card').style.display='block';
+  document.getElementById('summary').style.display='none';
+  document.getElementById('seed-btn').disabled=true;
+  document.getElementById('log').innerHTML='';
+  seededCounts = {};
+  totalSeeded = 0;
+
+  const steps = [
+    { id:'chk-projects',  fn:seedProjects,    label:'Projects & Units' },
+    { id:'chk-leads',     fn:seedLeads,       label:'Sales Leads' },
+    { id:'chk-tenants',   fn:seedTenants,     label:'Tenants' },
+    { id:'chk-leases',    fn:seedLeases,      label:'Leases' },
+    { id:'chk-enquiries', fn:seedEnquiries,   label:'Leasing Enquiries' },
+    { id:'chk-activities',fn:seedActivities,  label:'Activities' },
+    { id:'chk-discounts', fn:seedDiscounts,   label:'Discount Requests' },
+    { id:'chk-payments',  fn:seedPayments,    label:'Rent Payments' },
+    { id:'chk-maintenance',fn:seedMaintenance,label:'Maintenance' },
+  ];
+
+  const active = steps.filter(s=>document.getElementById(s.id)?.checked);
+  for(let i=0; i<active.length; i++){
+    const s = active[i];
+    setProgress(Math.round(i/active.length*100), `Seeding ${s.label}…`);
+    log(`\n── ${s.label} ──`, 'warn');
+    try { await s.fn(); }
+    catch(e){ log(`ERROR: ${e.message}`, 'err'); }
+  }
+
+  setProgress(100, 'Complete!');
+  showSummary();
+  document.getElementById('seed-btn').disabled=false;
+}
+
+// ── Projects & Units ──────────────────────────────────────────────
+let projectIds = [];
+let unitIds = [];
+
+async function seedProjects() {
+  projectIds = [];
+  unitIds = [];
+
+  for(const p of PROJECTS_DATA){
+    const payload = { ...p, company_id:companyId, created_at:new Date().toISOString() };
+    const { data, error } = await sb.from('projects').upsert(payload,{onConflict:'name'}).select().single();
+    if(error){ log(`  ✗ Project ${p.name}: ${error.message}`,'err'); continue; }
+    projectIds.push(data.id);
+    log(`  ✓ Project: ${p.name}`,'ok');
+  }
+
+  let uCount = 0;
+  for(const u of UNITS_DATA){
+    if(!projectIds[u.proj]) continue;
+    const unitPayload = {
+      project_id:   projectIds[u.proj],
+      company_id:   companyId,
+      unit_ref:     u.ref,
+      unit_type:    u.type,
+      sub_type:     u.cat,
+      purpose:      u.purpose,
+      bedrooms:     u.beds??null,
+      bathrooms:    u.baths??null,
+      size_sqft:    u.sqft,
+      floor_number: u.floor??null,
+      view:         u.view??null,
+      status:       u.status,
+      private_pool: u.pool??false,
+      private_garden:u.garden??false,
+      furnishing:   'Unfurnished',
+      condition:    'Off-plan',
+    };
+    const { data:ud, error:ue } = await sb.from('project_units').upsert(unitPayload,{onConflict:'project_id,unit_ref'}).select().single();
+    if(ue){ log(`  ✗ Unit ${u.ref}: ${ue.message}`,'err'); continue; }
+    unitIds.push({ id:ud.id, proj:u.proj, purpose:u.purpose });
+
+    if((u.purpose==='Sale'||u.purpose==='Both') && u.ask){
+      const sp = {
+        unit_id:u.id||ud.id, project_id:projectIds[u.proj],
+        asking_price:u.ask,
+        price_per_sqft:Math.round(u.ask/u.sqft),
+        dld_fee_pct:u.dld||4,
+        agency_fee_pct:u.agency||2,
+        booking_pct:u.book||10,
+        during_construction_pct:u.build||40,
+        on_handover_pct:u.hand||50,
+        post_handover_pct:0,
+      };
+      sp.unit_id=ud.id;
+      await sb.from('unit_sale_pricing').upsert(sp,{onConflict:'unit_id'});
+    }
+    if((u.purpose==='Lease'||u.purpose==='Both') && u.rent){
+      const lp = {
+        unit_id:ud.id, project_id:projectIds[u.proj],
+        annual_rent:u.rent,
+        security_deposit:Math.round(u.rent*0.05),
+        cheques_allowed:u.cheques||4,
+        municipality_tax_pct:5,
+        chiller_included:false,
+      };
+      await sb.from('unit_lease_pricing').upsert(lp,{onConflict:'unit_id'});
+    }
+    uCount++;
+  }
+  log(`  ✓ ${PROJECTS_DATA.length} projects, ${uCount} units seeded`,'ok');
+  seededCounts['Projects'] = PROJECTS_DATA.length;
+  seededCounts['Units'] = uCount;
+}
+
+// ── Sales Leads ───────────────────────────────────────────────────
+let leadIds = [];
+
+async function seedLeads() {
+  leadIds = [];
+  let idx = 0;
+  for(let si=0; si<STAGES.length; si++){
+    const cnt = STAGE_DIST[si];
+    for(let j=0; j<cnt && idx<LEAD_NAMES.length; j++, idx++){
+      const l = LEAD_NAMES[idx];
+      const stage = STAGES[si];
+      const payload = {
+        name:         l.name,
+        email:        l.email,
+        phone:        l.phone,
+        nationality:  l.nat,
+        source:       l.src,
+        stage:        stage,
+        budget:       l.budget,
+        property_type:'Residential',
+        notes:        `Interested in ${rnd(['apartments','villas','townhouses'])} in ${rnd(['Dubai Marina','Downtown','Palm Jumeirah','Business Bay','JBR'])}. ${rnd(['Very serious buyer.','Flexible on price.','Ready to move quickly.','Looking for investment.','End user buyer.'])}`,
+        company_id:   companyId,
+        stage_updated_at: new Date(Date.now()-Math.random()*30*86400000).toISOString(),
+        created_at:   new Date(Date.now()-Math.random()*90*86400000).toISOString(),
+        budget_confirmed: ['Proposal Sent','Negotiation','Closed Won'].includes(stage),
+        meeting_scheduled: ['Site Visit','Proposal Sent','Negotiation','Closed Won'].includes(stage),
+        proposal_notes: ['Negotiation','Closed Won'].includes(stage)?`Proposal sent for ${rnd(['2 bed in DV-B12','Villa in SH-V01','1 bed in PJ-1B1'])}. Client is reviewing.`:null,
+        final_price: stage==='Closed Won'?Math.round(l.budget*0.95):null,
+        payment_plan_agreed: stage==='Closed Won'?'40/60 Off-plan':null,
+      };
+      const { data, error } = await sb.from('leads').upsert(payload,{onConflict:'email'}).select().single();
+      if(error){ log(`  ✗ Lead ${l.name}: ${error.message}`,'err'); continue; }
+      leadIds.push({ id:data.id, name:data.name });
+      log(`  ✓ Lead: ${l.name} (${stage})`,'ok');
+    }
+  }
+  seededCounts['Sales Leads'] = leadIds.length;
+}
+
+// ── Tenants ───────────────────────────────────────────────────────
+let tenantIds = [];
+
+async function seedTenants() {
+  tenantIds = [];
+  for(const t of TENANTS_DATA){
+    const payload = {
+      full_name:      t.name,
+      nationality:    t.nat,
+      id_type:        t.id_type,
+      id_number:      t.id,
+      id_expiry:      future(Math.floor(Math.random()*700+100)),
+      email:          t.email,
+      phone:          t.phone,
+      tenant_type:    t.type,
+      company_name:   t.company||null,
+      trade_license:  t.trade||null,
+      is_active:      true,
+      company_id:     companyId,
+    };
+    const { data, error } = await sb.from('tenants').upsert(payload,{onConflict:'phone'}).select().single();
+    if(error){ log(`  ✗ Tenant ${t.name}: ${error.message}`,'err'); continue; }
+    tenantIds.push({ id:data.id, name:data.full_name });
+    log(`  ✓ Tenant: ${t.name}`,'ok');
+  }
+  seededCounts['Tenants'] = tenantIds.length;
+}
+
+// ── Leases ────────────────────────────────────────────────────────
+let leaseIds = [];
+
+async function seedLeases() {
+  leaseIds = [];
+  const leaseUnits = unitIds.filter(u=>u.purpose==='Lease'||u.purpose==='Both').slice(0,15);
+
+  for(let i=0; i<leaseUnits.length && i<tenantIds.length; i++){
+    const u = leaseUnits[i];
+    const t = tenantIds[i];
+    const start = past(Math.floor(Math.random()*300+30));
+    const endD = new Date(start);
+    endD.setFullYear(endD.getFullYear()+1);
+    const end = endD.toISOString().split('T')[0];
+    const rent = rnd([60000,75000,80000,90000,110000,120000,130000,140000,160000,200000]);
+    const statuses = ['Active','Active','Active','Active','Active','Expired','Active'];
+    const status = rnd(statuses);
+
+    const payload = {
+      unit_id:          u.id,
+      tenant_id:        t.id,
+      start_date:       start,
+      end_date:         end,
+      annual_rent:      rent,
+      monthly_rent:     Math.round(rent/12),
+      security_deposit: Math.round(rent*0.05),
+      payment_frequency:'Annual',
+      number_of_cheques:rnd([1,2,4]),
+      ejari_number:     `EJARI-${Math.floor(Math.random()*900000+100000)}`,
+      contract_number:  `CN-2024-${String(i+1).padStart(3,'0')}`,
+      status:           status,
+      company_id:       companyId,
+    };
+    const { data, error } = await sb.from('leases').insert(payload).select().single();
+    if(error){ log(`  ✗ Lease ${t.name}: ${error.message}`,'err'); continue; }
+    leaseIds.push({ id:data.id, rent, unitId:u.id, tenantId:t.id });
+    log(`  ✓ Lease: ${t.name} — AED ${rent.toLocaleString()}/yr (${status})`,'ok');
+  }
+  seededCounts['Leases'] = leaseIds.length;
+}
+
+// ── Leasing Enquiries ─────────────────────────────────────────────
+async function seedEnquiries() {
+  let cnt = 0;
+  for(const e of ENQUIRY_DATA){
+    const payload = {
+      name:               e.name,
+      phone:              e.phone,
+      email:              e.email,
+      nationality:        e.nat,
+      source:             e.src,
+      stage:              e.stage,
+      budget:             e.budget,
+      property_type:      'Lease',
+      preferred_area:     e.area,
+      preferred_bedrooms: e.beds,
+      notes:              `Looking for ${e.beds} in ${e.area}. Budget AED ${e.budget.toLocaleString()}/yr.`,
+      company_id:         companyId,
+      stage_updated_at:   new Date(Date.now()-Math.random()*30*86400000).toISOString(),
+    };
+    const { error } = await sb.from('leads').upsert(payload,{onConflict:'email'});
+    if(error){ log(`  ✗ Enquiry ${e.name}: ${error.message}`,'err'); continue; }
+    log(`  ✓ Enquiry: ${e.name} (${e.stage})`,'ok');
+    cnt++;
+  }
+  seededCounts['Enquiries'] = cnt;
+}
+
+// ── Activities ────────────────────────────────────────────────────
+async function seedActivities() {
+  const types = ['Call','Email','Meeting','Site Visit','Note'];
+  const notes = [
+    'Discussed requirements in detail. Client is very interested in waterfront properties.',
+    'Sent property brochure and pricing sheet via email. Awaiting response.',
+    'Scheduled site visit for next week. Client confirmed attendance.',
+    'Property viewing completed. Client liked the unit, requesting discount.',
+    'Follow-up call made. Client still considering options.',
+    'WhatsApp message sent with unit availability update.',
+    'Met at property exhibition. Collected contact details and requirements.',
+    'Client confirmed budget at AED 2.5M. Looking for 2-3 bed.',
+    'Proposal sent for Unit EB-202. Awaiting client feedback.',
+    'Negotiation ongoing. Client requesting 5% discount on asking price.',
+    'Deal closed! Client signed SPA for unit DV-B12.',
+    'Site visit conducted. Client very impressed with sea view.',
+    'Email confirmation sent for meeting scheduled for Thursday.',
+    'Called client to follow up on proposal sent last week.',
+    'Meeting with client and their lawyer to discuss contract terms.',
+  ];
+  let cnt = 0;
+  const allLeads = [...leadIds.slice(0,20)];
+  for(const lead of allLeads){
+    const numActs = Math.floor(Math.random()*4)+1;
+    for(let i=0; i<numActs; i++){
+      const payload = {
+        lead_id:    lead.id,
+        lead_name:  lead.name,
+        type:       rnd(types),
+        note:       rnd(notes),
+        user_name:  rnd(['Abid Mirza','Ahmed Sales','Sara Agent']),
+        company_id: companyId,
+        created_at: new Date(Date.now()-Math.random()*60*86400000).toISOString(),
+      };
+      const { error } = await sb.from('activities').insert(payload);
+      if(!error) cnt++;
+    }
+  }
+  log(`  ✓ ${cnt} activities seeded`,'ok');
+  seededCounts['Activities'] = cnt;
+}
+
+// ── Discount Requests ─────────────────────────────────────────────
+async function seedDiscounts() {
+  const types = ['sale_price','rent','payment_plan','agency_fee'];
+  const reasons = [
+    'Client is an existing customer with multiple purchases. Requesting loyalty discount.',
+    'Competing offer from another developer. Need to match price to close deal.',
+    'Client is purchasing two units. Requesting bulk discount.',
+    'Client has full cash payment ready. Requesting discount for immediate close.',
+    'Market conditions have changed since initial offer. Price adjustment needed.',
+  ];
+  const statuses = ['Pending','Pending','Approved','Rejected','Escalated','Pending','Approved'];
+  let cnt = 0;
+  for(let i=0; i<10 && i<leadIds.length; i++){
+    const lead = leadIds[i];
+    const disc = Math.round((Math.random()*8+2)*2)/2;
+    const orig = LEAD_NAMES[i]?.budget||2000000;
+    const payload = {
+      lead_id:          lead.id,
+      lead_name:        lead.name,
+      type:             rnd(types),
+      discount_pct:     disc,
+      original_value:   orig,
+      requested_value:  Math.round(orig*(1-disc/100)),
+      reason:           rnd(reasons),
+      requested_by_name:'Ahmed Sales',
+      status:           rnd(statuses),
+      company_id:       companyId,
+    };
+    const { error } = await sb.from('discount_requests').insert(payload);
+    if(!error) cnt++;
+    log(`  ✓ Discount: ${lead.name} — ${disc}% (${payload.status})`,'ok');
+  }
+  seededCounts['Discounts'] = cnt;
+}
+
+// ── Rent Payments ─────────────────────────────────────────────────
+async function seedPayments() {
+  let cnt = 0;
+  for(const lease of leaseIds.slice(0,10)){
+    const numPmts = rnd([1,2,3,4]);
+    for(let i=0; i<numPmts; i++){
+      const daysAgo = i*90;
+      const isPaid = daysAgo > 30;
+      const payload = {
+        lease_id:       lease.id,
+        unit_id:        lease.unitId,
+        tenant_id:      lease.tenantId,
+        amount:         Math.round(lease.rent/numPmts),
+        due_date:       past(daysAgo),
+        paid_date:      isPaid ? past(daysAgo-rnd([1,3,5,7])) : null,
+        status:         isPaid ? 'Paid' : (daysAgo>0?'Pending':'Pending'),
+        payment_method: rnd(['Cheque','Bank Transfer','Cash']),
+        payment_type:   'Rent',
+        company_id:     companyId,
+      };
+      const { error } = await sb.from('rent_payments').insert(payload);
+      if(!error) cnt++;
+    }
+  }
+  log(`  ✓ ${cnt} payment records seeded`,'ok');
+  seededCounts['Payments'] = cnt;
+}
+
+// ── Maintenance ───────────────────────────────────────────────────
+async function seedMaintenance() {
+  const items = [
+    {title:'AC not cooling properly',cat:'AC/HVAC',priority:'High'},
+    {title:'Water leakage from bathroom',cat:'Plumbing',priority:'Urgent'},
+    {title:'Electrical sockets not working',cat:'Electrical',priority:'Normal'},
+    {title:'Main door lock broken',cat:'Carpentry',priority:'High'},
+    {title:'Painting required in living room',cat:'Painting',priority:'Low'},
+    {title:'Washing machine repair',cat:'Appliances',priority:'Normal'},
+    {title:'Pest control treatment needed',cat:'Pest Control',priority:'Normal'},
+    {title:'Swimming pool maintenance',cat:'General',priority:'Normal'},
+    {title:'Elevator door not closing properly',cat:'General',priority:'High'},
+    {title:'Intercom system not working',cat:'Electrical',priority:'Normal'},
+    {title:'Kitchen exhaust fan broken',cat:'Appliances',priority:'Low'},
+    {title:'Balcony tiles cracked',cat:'General',priority:'Normal'},
+    {title:'DEWA bill dispute',cat:'General',priority:'Low'},
+    {title:'Roof leakage during rain',cat:'Plumbing',priority:'Urgent'},
+    {title:'Gym equipment maintenance',cat:'General',priority:'Low'},
+  ];
+  const statuses = ['Open','Open','In Progress','Completed','Open'];
+  const charged = ['Landlord','Landlord','Tenant','Shared'];
+  let cnt = 0;
+  for(let i=0; i<items.length && i<leaseIds.length; i++){
+    const item = items[i];
+    const lease = leaseIds[i%leaseIds.length];
+    const payload = {
+      unit_id:       lease.unitId,
+      title:         item.title,
+      category:      item.cat,
+      priority:      item.priority,
+      status:        rnd(statuses),
+      charged_to:    rnd(charged),
+      cost_estimate: rnd([500,1000,1500,2000,3000,5000]),
+      assigned_to:   rnd(['Al Noor Maintenance','Fix It Fast LLC','Dubai Handyman','Quick Fix Services']),
+      reported_date: past(Math.floor(Math.random()*60)),
+      company_id:    companyId,
+    };
+    const { error } = await sb.from('maintenance').insert(payload);
+    if(!error) cnt++;
+  }
+  log(`  ✓ ${cnt} maintenance requests seeded`,'ok');
+  seededCounts['Maintenance'] = cnt;
+}
+
+// ── Summary ───────────────────────────────────────────────────────
+function showSummary() {
+  document.getElementById('summary').style.display='block';
+  const grid = document.getElementById('summary-grid');
+  grid.innerHTML = '';
+  let total = 0;
+  for(const [label,count] of Object.entries(seededCounts)){
+    grid.innerHTML += `<div class="stat"><div class="num">${count}</div><div class="lbl">${label}</div></div>`;
+    total += count;
+  }
+  grid.innerHTML += `<div class="stat" style="border-color:rgba(201,168,76,.6)"><div class="num">${total}</div><div class="lbl">Total Records</div></div>`;
+  log(`\n━━━ SEEDING COMPLETE: ${total} total records ━━━`,'ok');
+}
+
+// ── Clear ─────────────────────────────────────────────────────────
+async function clearAll() {
+  if(!sb){ alert('Connect first'); return; }
+  if(!confirm('Delete ALL test data? This cannot be undone.')) return;
+  document.getElementById('progress-card').style.display='block';
+  log('Clearing test data...','warn');
+  const tables = ['maintenance','rent_payments','discount_requests','activities','leases','leads','tenants','unit_sale_pricing','unit_lease_pricing','project_units','projects'];
+  for(const t of tables){
+    await sb.from(t).delete().eq('company_id',companyId);
+    log(`  ✓ Cleared ${t}`,'ok');
+  }
+  log('All test data cleared.','ok');
+}
+
+// Auto-connect on load
+window.onload = () => connect();
+</script>
+</body>
+</html>
