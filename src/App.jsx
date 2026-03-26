@@ -2283,7 +2283,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
                     {days}d
                   </td>
                   <td style={{padding:"7px 10px"}}>
-                    <div style={{display:"flex",gap:4"}}>
+                    <div style={{display:"flex",gap:4}}>
                       {prevStage&&(
                         <button onClick={()=>moveStage(lead,prevStage)}
                           style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer",color:"#4A5568"}}>
@@ -5577,25 +5577,31 @@ function UserManagement({currentUser, leads=[], activities=[], showToast, appCon
 }
 
 function UsersTab({currentUser, showToast}) {
-  const [users,   setUsers]   = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
-  const [editUser,setEditUser]= useState(null);
-  const [saving,  setSaving]  = useState(false);
-  const blank = {full_name:"",email:"",role:"sales_agent",is_active:true,company_id:currentUser.company_id||null,password:""};
+  const [users,     setUsers]     = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [showAdd,   setShowAdd]   = useState(false);
+  const [editUser,  setEditUser]  = useState(null);
+  const [saving,    setSaving]    = useState(false);
+  const isSuperAdmin = currentUser.is_super_admin || currentUser.role === "super_admin";
+  const blank = {full_name:"",email:"",role:"sales_agent",is_active:true,company_id:currentUser.company_id||"",password:""};
   const [form, setForm] = useState(blank);
   const sf = k => e => setForm(f=>({...f,[k]:e.target?.value??e}));
 
   const loadUsers = useCallback(async()=>{
     setLoading(true);
-    const{data}=await supabase.from("profiles").select("*").order("created_at",{ascending:false});
-    setUsers(data||[]);
+    const queries = [supabase.from("profiles").select("*").order("created_at",{ascending:false})];
+    if(isSuperAdmin) queries.push(supabase.from("companies").select("id,name,business_type").order("name"));
+    const [u, co] = await Promise.all(queries);
+    setUsers(u.data||[]);
+    if(co) setCompanies(co.data||[]);
     setLoading(false);
   },[]);
   useEffect(()=>{loadUsers();},[loadUsers]);
 
   const saveUser=async()=>{
     if(!form.full_name.trim()||!form.email.trim()){showToast("Name and email required","error");return;}
+    if(!form.company_id&&!currentUser.company_id){showToast("Please select a company","error");return;}
     setSaving(true);
     try{
       if(editUser){
@@ -5647,7 +5653,7 @@ function UsersTab({currentUser, showToast}) {
         <table style={{width:"100%",borderCollapse:"collapse"}}>
           <thead style={{position:"sticky",top:0}}>
             <tr style={{background:"#0B1F3A"}}>
-              {["Name","Email","Role","Status","Actions"].map(h=>(
+              {["Name","Email","Role","Company","Status","Actions"].map(h=>(
                 <th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".5px"}}>{h}</th>
               ))}
             </tr>
@@ -5666,6 +5672,9 @@ function UsersTab({currentUser, showToast}) {
                 </td>
                 <td style={{padding:"9px 12px",fontSize:12,color:"#4A5568"}}>{u.email}</td>
                 <td style={{padding:"9px 12px"}}><RoleBadge role={u.role}/></td>
+                <td style={{padding:"9px 12px",fontSize:12,color:"#4A5568",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {companies.find(c=>c.id===u.company_id)?.name||<span style={{color:"#A0AEC0"}}>—</span>}
+                </td>
                 <td style={{padding:"9px 12px"}}>
                   <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:u.is_active?"#E6F4EE":"#F0F2F5",color:u.is_active?"#1A7F5A":"#718096"}}>
                     {u.is_active?"Active":"Inactive"}
@@ -5710,6 +5719,19 @@ function UsersTab({currentUser, showToast}) {
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                   </select>
+                </div>
+                {/* Company selector — super admin sees all companies, others see their own */}
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Company *</label>
+                  {isSuperAdmin && companies.length > 0 ? (
+                    <select value={form.company_id} onChange={sf("company_id")} style={{border: !form.company_id?"1.5px solid #B83232":undefined}}>
+                      <option value="">— Select Company —</option>
+                      {companies.map(c=><option key={c.id} value={c.id}>{c.name} ({c.business_type})</option>)}
+                    </select>
+                  ) : (
+                    <input value={companies.find(c=>c.id===currentUser.company_id)?.name || currentUser.company_id || "Your Company"} disabled style={{background:"#F7F9FC",color:"#718096"}}/>
+                  )}
+                  {!form.company_id && <div style={{fontSize:10,color:"#B83232",marginTop:3}}>⚠ Company is required</div>}
                 </div>
               </div>
             </div>
