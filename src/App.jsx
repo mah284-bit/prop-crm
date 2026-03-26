@@ -36,6 +36,24 @@ const GlobalStyle = () => (
     .dcard:hover{box-shadow:0 3px 14px #0B1F3A22}
     @keyframes spin{to{transform:rotate(360deg)}}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+    /* ── MOBILE ──────────────────────────────────────────────── */
+    html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+    body{overflow-x:hidden}
+    @media(max-width:768px){
+      .tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important}
+      .tab-bar::-webkit-scrollbar{display:none}
+      .filter-sidebar{display:none!important}
+      .filter-sidebar.open{display:flex!important}
+      .table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}
+      .pipeline-board{overflow-x:auto!important;flex-wrap:nowrap!important}
+      .mob-stack{grid-template-columns:1fr!important}
+      .hide-mobile{display:none!important}
+      button{min-height:38px}
+    }
+    @media(max-width:480px){
+      .stat-grid{grid-template-columns:1fr 1fr!important}
+    }
   `}</style>
 );
 
@@ -1672,7 +1690,7 @@ function Dashboard({leads,properties,activities,currentUser,meetings=[],followup
       </div>
 
       {/* Stats */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+      <div className="stat-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
         {crmContext==="sales"?(
           <>
             <SC label="Active Leads"      value={active.length}            sub={`of ${visible.length} total`}           accent="#0B1F3A" icon="👤"/>
@@ -2723,7 +2741,7 @@ function PropertyBuilder({currentUser,showToast,crmContext="sales"}) {
         <div style={{display:"flex",flex:1,overflow:"hidden",gap:0}}>
 
           {/* ── LEFT SIDEBAR: Filters ── */}
-          <div style={{width:210,flexShrink:0,background:"#fff",borderRight:"1px solid #E2E8F0",overflowY:"auto",padding:"14px 12px",display:"flex",flexDirection:"column",gap:12}}>
+          <div className="filter-sidebar" style={{width:210,flexShrink:0,background:"#fff",borderRight:"1px solid #E2E8F0",overflowY:"auto",padding:"14px 12px",display:"flex",flexDirection:"column",gap:12}}>
             <input value={fSearch} onChange={e=>setFSearch(e.target.value)} placeholder="🔍 Search…" style={{fontSize:12}}/>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{allFiltered.length} <span style={{fontWeight:400,color:"#A0AEC0"}}>of {units.length}</span></span>
@@ -5453,7 +5471,7 @@ export default function App(){
         </div>
 
         {/* Tab bar — second row */}
-        <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:38,gap:2,borderTop:"1px solid rgba(255,255,255,.07)",overflowX:"auto"}}>
+        <div className="tab-bar" style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:38,gap:2,borderTop:"1px solid rgba(255,255,255,.07)",overflowX:"auto"}}>
           {visibleTabs.map(t=>(
             <button key={t.id} onClick={()=>{setTab(t.id);if(t.id==="ai"||t.id==="l_ai")loadAIData();}}
               style={{
