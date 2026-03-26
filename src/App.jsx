@@ -5771,6 +5771,14 @@ export default function App(){
           safe(supabase.from("discount_requests").select("*").order("created_at",{ascending:false})),
         ]);
         setLeads(l.data);setProperties(pr.data);setActivities(a.data);setUsers(u.data);setDiscounts(d.data);
+        // Also load inventory data eagerly so CRM switch is instant
+        const[proj,units2,sp2,lp2]=await Promise.all([
+          safe(supabase.from("projects").select("*")),
+          safe(supabase.from("project_units").select("*")),
+          safe(supabase.from("unit_sale_pricing").select("*")),
+          safe(supabase.from("unit_lease_pricing").select("*")),
+        ]);
+        setAiProjects(proj.data);setAiUnits(units2.data);setAiSalePr(sp2.data);setAiLeasePr(lp2.data);
       }catch(e){console.error("Load error:",e);}
       setDataLoading(false);
     };
@@ -5860,9 +5868,7 @@ export default function App(){
                 return (
                   <button key={a.id} onClick={()=>{
                     setActiveApp(a.id);
-                    // Set default tab for this app
                     const defaultTab = a.id==="sales"?"dashboard":"l_dashboard";
-                    loadAIData();
                     setTab(defaultTab);
                   }} style={{
                     padding:"5px 10px",borderRadius:8,border:"none",
@@ -5942,7 +5948,7 @@ export default function App(){
 
       {/* Content */}
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"0 1rem 1rem",WebkitOverflowScrolling:"touch",minHeight:0}}>
-        {dataLoading?<Spinner msg="Loading your data…"/>:(<>
+        {(dataLoading&&leads.length===0&&aiUnits.length===0)?<Spinner msg="Loading your data…"/>:(<>
           {/* ── Sales CRM tabs ─────────────────────── */}
           {tab==="dashboard"   &&<Dashboard leads={leads} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr}/>}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
