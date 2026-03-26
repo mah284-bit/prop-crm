@@ -925,20 +925,9 @@ function PropertyMaster({currentUser,showToast}){
 // ══════════════════════════════════════════════════════
 // LEADS (v3 — stage gates, comms, meetings, followups)
 // ══════════════════════════════════════════════════════
-
 // ══════════════════════════════════════════════════════════════════
 // LEADS — Full-page redesign with proposal, payments & contracts
 // ══════════════════════════════════════════════════════════════════
-
-// Status colour helpers
-const PAYMENT_STATUS_META = {
-  Pending:   { c:"#8A6200", bg:"#FDF3DC" },
-  Received:  { c:"#1A5FA8", bg:"#E6EFF9" },
-  Deposited: { c:"#5B3FAA", bg:"#EEE8F9" },
-  Cleared:   { c:"#1A7F5A", bg:"#E6F4EE" },
-  Bounced:   { c:"#B83232", bg:"#FAEAEA" },
-  Cancelled: { c:"#718096", bg:"#F0F2F5" },
-};
 
 
 // ══════════════════════════════════════════════════════════════════
@@ -2075,7 +2064,7 @@ function Dashboard({leads,properties,activities,currentUser,meetings=[],followup
           <RoleBadge role={currentUser.role}/>
         </div>
         <div style={{textAlign:"right"}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:30,color:"#C9A84C",fontWeight:700}}>{fmtAED2(pipeVal)}</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:30,color:"#C9A84C",fontWeight:700}}>{fmtAED(pipeVal)}</div>
           <div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>Pipeline Value</div>
         </div>
       </div>
@@ -2387,7 +2376,7 @@ const SUBTITLES={
 // ══════════════════════════════════════════════════════════════════
 // PROJECTS MODULE — Standalone project management
 // ══════════════════════════════════════════════════════════════════
-function ProjectsModule({ currentUser, showToast, crmContext="sales" }) {
+function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedProjects=null, preloadedUnits=null }) {
   const [projects,  setProjects]  = useState([]);
   const [units,     setUnits]     = useState([]);
   const [loading,   setLoading]   = useState(true);
@@ -2407,16 +2396,24 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales" }) {
   const [form, setForm] = useState(pBlank);
   const sf = k => e => setForm(f=>({...f,[k]:e.target.value}));
 
-  const load = useCallback(async()=>{
+  const load = useCallback(async(force=false)=>{
+    if(!force && preloadedProjects && preloadedProjects.length >= 0) {
+      setProjects(preloadedProjects);
+      setUnits((preloadedUnits||[]).map(u=>({id:u.id,project_id:u.project_id,status:u.status,purpose:u.purpose,unit_type:u.unit_type})));
+      setLoading(false);
+      return;
+    }
     setLoading(true);
-    const [p,u] = await Promise.all([
-      supabase.from("projects").select("*").order("name"),
-      supabase.from("project_units").select("id,project_id,status,purpose,unit_type"),
-    ]);
-    setProjects(p.data||[]);
-    setUnits(u.data||[]);
+    try {
+      const [p,u] = await Promise.all([
+        supabase.from("projects").select("*").order("name").catch(()=>({data:[]})),
+        supabase.from("project_units").select("id,project_id,status,purpose,unit_type").catch(()=>({data:[]})),
+      ]);
+      setProjects(p.data||[]);
+      setUnits(u.data||[]);
+    } catch(e) { console.error("Projects load:", e); }
     setLoading(false);
-  },[]);
+  },[preloadedProjects, preloadedUnits]);
 
   useEffect(()=>{ load(); },[load]);
 
@@ -3049,7 +3046,7 @@ const UNIT_STATUS_COLORS = {
   Cancelled:  {c:"#718096", bg:"#F0F2F5"},
 };
 
-function InventoryModule({ currentUser, showToast, crmContext="sales" }) {
+function InventoryModule({ currentUser, showToast, crmContext="sales", preloadedUnits=null, preloadedProjects=null, preloadedSalePricing=null, preloadedLeasePricing=null }) {
   const [units,       setUnits]       = useState([]);
   const [projects,    setProjects]    = useState([]);
   const [salePricing, setSalePricing] = useState([]);
@@ -3105,29 +3102,51 @@ function InventoryModule({ currentUser, showToast, crmContext="sales" }) {
   const [uForm, setUForm] = useState(uBlank);
   const uf = k => e => setUForm(f=>({...f,[k]:typeof e==="boolean"?e:e.target?.value??e}));
 
-  const load = useCallback(async()=>{
+  const load = useCallback(async(force=false)=>{
+    // Use pre-loaded central data if available — instant render
+    if(!force && preloadedUnits && preloadedUnits.length >= 0) {
+      setUnits(preloadedUnits);
+      setProjects(preloadedProjects||[]);
+      setSalePricing(preloadedSalePricing||[]);
+      setLeasePricing(preloadedLeasePricing||[]);
+      // Still load reservations/leads/tenants as they are not in central state
+      const safe = q => q.catch(()=>({data:[]}));
+      const [res,lds,tns] = await Promise.all([
+        safe(supabase.from("reservations").select("*").in("status",["Active","Extended","Confirmed"])),
+        safe(supabase.from("leads").select("id,name,phone,email,nationality,stage")),
+        safe(supabase.from("tenants").select("id,full_name,phone,email")),
+      ]);
+      setReservations(res.data||[]);
+      setLeads(lds.data||[]);
+      setTenants(tns.data||[]);
+      setLoading(false);
+      return;
+    }
+    // Fallback: fetch everything
     setLoading(true);
-    const [u,p,sp,lp]=await Promise.all([
-      supabase.from("project_units").select("*").order("unit_ref"),
-      supabase.from("projects").select("*").order("name"),
-      supabase.from("unit_sale_pricing").select("*"),
-      supabase.from("unit_lease_pricing").select("*"),
-    ]);
-    setUnits(u.data||[]);
-    setProjects(p.data||[]);
-    setSalePricing(sp.data||[]);
-    setLeasePricing(lp.data||[]);
-    // Load active reservations
-    const [res, lds, tns] = await Promise.all([
-      supabase.from("reservations").select("*").in("status",["Active","Extended","Confirmed"]).catch(()=>({data:[]})),
-      supabase.from("leads").select("id,name,phone,email,nationality,stage").catch(()=>({data:[]})),
-      supabase.from("tenants").select("id,full_name,phone,email").catch(()=>({data:[]})),
-    ]);
-    setReservations(res.data||[]);
-    setLeads(lds.data||[]);
-    setTenants(tns.data||[]);
+    try {
+      const safe = q => q.catch(()=>({data:[]}));
+      const [u,p,sp,lp,res,lds,tns] = await Promise.all([
+        safe(supabase.from("project_units").select("*").order("unit_ref")),
+        safe(supabase.from("projects").select("*").order("name")),
+        safe(supabase.from("unit_sale_pricing").select("*")),
+        safe(supabase.from("unit_lease_pricing").select("*")),
+        safe(supabase.from("reservations").select("*").in("status",["Active","Extended","Confirmed"])),
+        safe(supabase.from("leads").select("id,name,phone,email,nationality,stage")),
+        safe(supabase.from("tenants").select("id,full_name,phone,email")),
+      ]);
+      setUnits(u.data||[]);
+      setProjects(p.data||[]);
+      setSalePricing(sp.data||[]);
+      setLeasePricing(lp.data||[]);
+      setReservations(res.data||[]);
+      setLeads(lds.data||[]);
+      setTenants(tns.data||[]);
+    } catch(e) {
+      console.error("Inventory load error:", e);
+    }
     setLoading(false);
-  },[]);
+  },[preloadedUnits, preloadedProjects, preloadedSalePricing, preloadedLeasePricing]);
 
   useEffect(()=>{ load(); },[load]);
 
@@ -6771,8 +6790,8 @@ export default function App(){
           {/* ── Sales CRM tabs ─────────────────────── */}
           {tab==="dashboard"   &&<Dashboard leads={leads} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={setTab}/>}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
-          {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales"/>}
-          {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales"/>}
+          {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
+          {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr}/>}
           {tab==="pipeline"    &&<Pipeline leads={leads} setLeads={setLeads} currentUser={currentUser} showToast={showToast}/>}
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
@@ -6782,8 +6801,8 @@ export default function App(){
           {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {/* ── Leasing CRM tabs ────────────────────── */}
           {tab==="l_leads"    &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
-          {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing"/>}
-          {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing"/>}
+          {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
+          {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr}/>}
           {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={setTab} followupAlerts={followupAlerts} key="l_dash"/>}
           {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData}/>}
           {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
