@@ -203,8 +203,8 @@ function PermSetSelector({ companyId, value, onChange }) {
   useEffect(()=>{
     if(!companyId) return;
     Promise.all([
-      safe(supabase.from("permission_sets").select("id,name,color").eq("company_id",companyId).order("name")),
-      safe(supabase.from("permission_sets").select("id,name,color").is("company_id",null).order("name")),
+      supabase.from("permission_sets").select("id,name,color").eq("company_id",companyId).order("name"),
+      supabase.from("permission_sets").select("id,name,color").is("company_id",null).order("name"),
     ]).then(([s,t])=>{ setSets(s.data||[]); setTemplates(t.data||[]); });
   },[companyId]);
 
@@ -636,10 +636,10 @@ function PropertyMaster({currentUser,showToast}){
   const load=useCallback(async()=>{
     setLoading(true);
     const[p,c,b,u]=await Promise.all([
-      safe(supabase.from("projects").select("*").order("name")),
-      safe(supabase.from("project_categories").select("*").order("name")),
-      safe(supabase.from("project_buildings").select("*").order("name")),
-      safe(supabase.from("units").select("*").order("unit_number")),
+      supabase.from("projects").select("*").order("name"),
+      supabase.from("project_categories").select("*").order("name"),
+      supabase.from("project_buildings").select("*").order("name"),
+      supabase.from("units").select("*").order("unit_number"),
     ]);
     setProjects(p.data||[]);setCategories(c.data||[]);setBuildings(b.data||[]);setUnits(u.data||[]);
     setLoading(false);
@@ -2323,7 +2323,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
     try {
       const [p,u] = await Promise.all([
         safe(supabase.from("projects").select("*").order("name")),
-        safe(supabase.from("project_units").select("id,project_id,status,purpose,unit_type")),
+        supabase.from("project_units").select("id,project_id,status,purpose,unit_type")),
       ]);
       setProjects(p.data||[]);
       setUnits(u.data||[]);
@@ -4137,11 +4137,11 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
     }
     setLoading(true);
     const [t,l,p,m,u]=await Promise.all([
-      safe(supabase.from("tenants").select("*").order("full_name")),
-      safe(supabase.from("leases").select("*").order("end_date")),
-      safe(supabase.from("rent_payments").select("*").order("due_date"),
-      safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false}),
-      safe(supabase.from("project_units").select("id,unit_ref,sub_type"),
+      supabase.from("tenants").select("*").order("full_name"),
+      supabase.from("leases").select("*").order("end_date"),
+      supabase.from("rent_payments").select("*").order("due_date"),
+      supabase.from("maintenance").select("*").order("created_at",{ascending:false}),
+      supabase.from("project_units").select("id,unit_ref,sub_type"),
     ]);
     const updated={tenants:t.data||[],leases:l.data||[],payments:p.data||[],maintenance:m.data||[],loaded:true};
     setTenants(updated.tenants);setLeases(updated.leases);setPayments(updated.payments);setMaintenance(updated.maintenance);setUnits(u.data||[]);
@@ -5826,7 +5826,7 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
         safe(supabase.from("leases").select("*").order("end_date")),
         safe(supabase.from("tenants").select("*")),
         safe(supabase.from("rent_payments").select("*").order("due_date")),
-        safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
+        supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
       ]);
       setLeases(l.data||[]); setTenants(t.data||[]);
       setPayments(p.data||[]); setMaintenance(m.data||[]);
@@ -6586,9 +6586,9 @@ function PermissionSetsModule({ currentUser, showToast }) {
   const load = useCallback(async () => {
     setLoading(true);
     const [s, t, u] = await Promise.all([
-      safe(supabase.from("permission_sets").select("*").eq("company_id", currentUser.company_id||"").order("name"),
-      safe(supabase.from("permission_sets").select("*").is("company_id", null).order("name"),
-      safe(supabase.from("profiles").select("id,full_name,permission_set_id").eq("company_id", currentUser.company_id||""),
+      supabase.from("permission_sets").select("*").eq("company_id", currentUser.company_id||"").order("name"),
+      supabase.from("permission_sets").select("*").is("company_id", null).order("name"),
+      supabase.from("profiles").select("id,full_name,permission_set_id").eq("company_id", currentUser.company_id||""),
     ]);
     setSets(s.data||[]);
     setTemplates(t.data||[]);
@@ -7157,10 +7157,10 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
   useEffect(()=>{
     Promise.all([
       await safe(supabase.from("tenants").select("*").order("full_name"),
-      safe(supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false}),
-      safe(supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft"),
-      safe(supabase.from("projects").select("id,name"),
-      safe(supabase.from("unit_lease_pricing").select("*")),
+      supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false}),
+      supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft"),
+      supabase.from("projects").select("id,name"),
+      supabase.from("unit_lease_pricing").select("*")),
     ]).then(([t,lo,u,p,lp])=>{
       setTenants(t.data||[]);
       setLOpps(lo.data||[]);
@@ -7519,7 +7519,7 @@ export default function App(){
     await supabase.from("profiles").update({company_id:id}).eq("id",currentUser.id);
     setActiveCompanyId(id);
     localStorage.setItem("propccrm_company_id",id);
-    // Full page reload to re-fetch everything with new RLS context
+    // Update companies list display then reload
     window.location.reload();
   };
   const[leasingData,setLeasingData]=useState({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
@@ -7532,10 +7532,10 @@ export default function App(){
     if(aiProjects.length>0)return;
     try{
       const[p,u,sp,lp]=await Promise.all([
-        safe(supabase.from("projects").select("*"),
-        safe(supabase.from("project_units").select("*"),
-        safe(supabase.from("unit_sale_pricing").select("*"),
-        safe(supabase.from("unit_lease_pricing").select("*"),
+        supabase.from("projects").select("*"),
+        supabase.from("project_units").select("*"),
+        supabase.from("unit_sale_pricing").select("*"),
+        supabase.from("unit_lease_pricing").select("*"),
       ]);
       setAiProjects(p.data||[]);setAiUnits(u.data||[]);setAiSalePr(sp.data||[]);setAiLeasePr(lp.data||[]);
     }catch(e){console.log(e);}
@@ -7674,19 +7674,25 @@ export default function App(){
         <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:48,gap:8}}>
 
           {/* Logo + Company */}
-          <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0,marginRight:4}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,marginRight:6}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,whiteSpace:"nowrap"}}>
               <span style={{color:"#C9A84C"}}>◆</span> PropCRM
             </div>
             {(()=>{
-              const activeCo = companies.find(c=>c.id===activeCompanyId) || (companies.length>0?companies[0]:null);
-              if(!activeCo) return null;
+              // Show active company — check localStorage first, then companies array
+              const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id");
+              const activeCo = companies.find(c=>c.id===storedId) || currentUser?.company_name_display || null;
+              if(!activeCo && companies.length===0) return null;
+              const co = activeCo || companies[0];
+              if(!co) return null;
               return (
-                <div style={{display:"flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:6,background:"rgba(201,168,76,.15)",border:"1px solid rgba(201,168,76,.3)",maxWidth:180,cursor:"pointer"}}
-                  onClick={()=>setTab("companies")} title="Click to switch company">
-                  {activeCo.logo_url&&<img src={activeCo.logo_url} alt="" style={{width:16,height:16,borderRadius:3,objectFit:"cover"}}/>}
-                  <span style={{fontSize:11,color:"#C9A84C",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{activeCo.name}</span>
-                  <span style={{fontSize:9,color:"rgba(201,168,76,.6)"}}>▼</span>
+                <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:8,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)",cursor:"pointer",transition:"all .15s"}}
+                  onClick={()=>setTab("companies")}
+                  onMouseOver={e=>e.currentTarget.style.background="rgba(255,255,255,.14)"}
+                  onMouseOut={e=>e.currentTarget.style.background="rgba(255,255,255,.08)"}>
+                  {co.logo_url&&<img src={co.logo_url} alt="" style={{width:18,height:18,borderRadius:4,objectFit:"cover"}}/>}
+                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#C9A84C",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>{co.name}</span>
+                  <span style={{fontSize:10,color:"rgba(201,168,76,.5)"}}>▼</span>
                 </div>
               );
             })()}
