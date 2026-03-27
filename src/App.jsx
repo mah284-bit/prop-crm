@@ -6921,16 +6921,590 @@ function PermissionSetsModule({ currentUser, showToast }) {
 // Stages: New Enquiry → Contacted → Viewing Scheduled → Offer Made → Lease Signed → Lost
 // ══════════════════════════════════════════════════════════════════
 
-const LEASE_STAGES = ["New Enquiry","Contacted","Viewing Scheduled","Offer Made","Lease Signed","Lost"];
 
+// ══════════════════════════════════════════════════════════════════
+// LEASING ENQUIRIES — Tenant contacts + Lease Opportunities
+// Same architecture as Sales Leads + Opportunities
+// ══════════════════════════════════════════════════════════════════
+
+const LEASE_STAGES = ["New Enquiry","Contacted","Viewing","Offer Made","Reserved","Lease Signed","Lost"];
 const LEASE_STAGE_META = {
-  "New Enquiry":       {c:"#1A5FA8", bg:"#E6EFF9"},
-  "Contacted":         {c:"#5B3FAA", bg:"#EEE8F9"},
-  "Viewing Scheduled": {c:"#A06810", bg:"#FDF3DC"},
-  "Offer Made":        {c:"#B85C10", bg:"#FDF0E6"},
-  "Lease Signed":      {c:"#1A7F5A", bg:"#E6F4EE"},
-  "Lost":              {c:"#B83232", bg:"#FAEAEA"},
+  "New Enquiry":   {c:"#1A5FA8", bg:"#E6EFF9"},
+  "Contacted":     {c:"#5B3FAA", bg:"#EEE8F9"},
+  "Viewing":       {c:"#A06810", bg:"#FDF3DC"},
+  "Offer Made":    {c:"#B83232", bg:"#FAEAEA"},
+  "Reserved":      {c:"#1A7F5A", bg:"#E6F4EE"},
+  "Lease Signed":  {c:"#0B1F3A", bg:"#E2E8F0"},
+  "Lost":          {c:"#718096", bg:"#F0F2F5"},
 };
+
+// ── Lease Opportunity Detail ──────────────────────────────────────
+function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, users, currentUser, showToast, onBack, onUpdated }) {
+  const [activeTab,  setActiveTab]  = useState("details");
+  const [activities, setActivities] = useState([]);
+  const [saving,     setSaving]     = useState(false);
+  const [showLog,    setShowLog]    = useState(false);
+  const [logForm,    setLogForm]    = useState({type:"Call",note:""});
+  const canEdit = can(currentUser.role,"write");
+  const isSigned = opp.stage==="Lease Signed";
+
+  const unit  = units.find(u=>u.id===opp.unit_id);
+  const proj  = unit ? projects.find(p=>p.id===unit.project_id) : null;
+  const lp    = unit ? leasePricing.find(l=>l.unit_id===unit.id) : null;
+  const agent = users.find(u=>u.id===opp.assigned_to);
+  const sm    = LEASE_STAGE_META[opp.stage]||LEASE_STAGE_META["New Enquiry"];
+
+  useEffect(()=>{
+    supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
+  },[opp.id]);
+
+  const moveStage = async(toStage)=>{
+    const curIdx = LEASE_STAGES.indexOf(opp.stage);
+    const toIdx  = LEASE_STAGES.indexOf(toStage);
+    if(["Reserved","Lease Signed"].includes(opp.stage) && toIdx<curIdx && toStage!=="Lost"){
+      showToast(`Cannot go back from ${opp.stage}`,"error"); return;
+    }
+    const newStatus = toStage==="Lease Signed"?"Won":toStage==="Lost"?"Lost":"Active";
+    const extra = toStage==="Lease Signed"?{won_at:new Date().toISOString()}:toStage==="Lost"?{lost_at:new Date().toISOString()}:{};
+    const{error}=await supabase.from("lease_opportunities").update({stage:toStage,status:newStatus,stage_updated_at:new Date().toISOString(),...extra}).eq("id",opp.id);
+    if(!error){
+      onUpdated({...opp,stage:toStage,status:newStatus,...extra});
+      if(toStage==="Reserved"&&opp.unit_id) await supabase.from("project_units").update({status:"Reserved"}).eq("id",opp.unit_id);
+      if(toStage==="Lease Signed"&&opp.unit_id) await supabase.from("project_units").update({status:"Leased"}).eq("id",opp.unit_id);
+      showToast(`Moved to ${toStage}`,"success");
+    }
+  };
+
+  const saveLog = async()=>{
+    if(!logForm.note.trim()){showToast("Note required","error");return;}
+    setSaving(true);
+    const{data,error}=await supabase.from("activities").insert({
+      opportunity_id:opp.id, lead_id:tenant.id,
+      type:logForm.type, note:logForm.note,
+      user_id:currentUser.id, user_name:currentUser.full_name,
+      lead_name:tenant.full_name, company_id:currentUser.company_id||null,
+    }).select().single();
+    if(!error){setActivities(p=>[data,...p]);showToast("Logged","success");setShowLog(false);setLogForm({type:"Call",note:""});}
+    setSaving(false);
+  };
+
+  return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+        <button onClick={onBack} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||`Lease Enquiry — ${tenant.full_name}`}</span>
+            <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>{opp.stage}</span>
+          </div>
+          <div style={{fontSize:12,color:"#718096",marginTop:2}}>{tenant.full_name} · {tenant.phone||""} {unit?`· ${unit.unit_ref} — ${unit.sub_type}`:""}</div>
+        </div>
+        {canEdit&&<button onClick={()=>setShowLog(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Activity</button>}
+      </div>
+
+      {/* Summary strip */}
+      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+        {[
+          ["🏠 Unit",      unit?`${unit.unit_ref} — ${unit.sub_type}`:"Not linked",  "#F7F9FC","#4A5568"],
+          ["💰 Annual Rent",lp?`AED ${Number(lp.annual_rent).toLocaleString()}`:"—",  "#0B1F3A","#C9A84C"],
+          ["👤 Agent",     agent?.full_name||"Unassigned",                            "#F7F9FC","#4A5568"],
+          ["📋 Budget",    opp.budget?`AED ${Number(opp.budget).toLocaleString()}`:"—","#F7F9FC","#4A5568"],
+          isSigned&&["✅ Lease",     "Signed",                                         "#E6F4EE","#1A7F5A"],
+        ].filter(Boolean).map(([l,v,bg,col])=>(
+          <div key={l} style={{background:bg,borderRadius:8,padding:"8px 14px",flex:1,minWidth:120}}>
+            <div style={{fontSize:9,color:bg==="#0B1F3A"?"rgba(255,255,255,.5)":"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
+            <div style={{fontSize:13,fontWeight:700,color:col,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid #E2E8F0"}}>
+        {["details","activities"].map(id=>(
+          <button key={id} onClick={()=>setActiveTab(id)}
+            style={{padding:"8px 16px",borderRadius:"8px 8px 0 0",border:"none",borderBottom:activeTab===id?"2.5px solid #5B3FAA":"2.5px solid transparent",background:"transparent",fontSize:13,fontWeight:activeTab===id?700:400,color:activeTab===id?"#5B3FAA":"#718096",cursor:"pointer",textTransform:"capitalize"}}>
+            {id}{id==="activities"&&activities.length>0?` (${activities.length})`:""}
+          </button>
+        ))}
+      </div>
+
+      <div style={{flex:1,overflowY:"auto"}}>
+
+        {activeTab==="details"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            {/* Workflow bar */}
+            <div style={{background:"linear-gradient(135deg,#1A0B3A,#2D1558)",borderRadius:12,padding:"14px 16px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.4)",textTransform:"uppercase",letterSpacing:".6px",marginBottom:10}}>Leasing Workflow</div>
+              <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0}}>
+                {LEASE_STAGES.filter(s=>s!=="Lost").map((s,i,arr)=>{
+                  const curIdx=LEASE_STAGES.indexOf(opp.stage);
+                  const thisIdx=LEASE_STAGES.indexOf(s);
+                  const isDone=curIdx>thisIdx;
+                  const isCur=opp.stage===s;
+                  return (
+                    <div key={s} style={{display:"flex",alignItems:"center",flexShrink:0}}>
+                      <div onClick={()=>moveStage(s)}
+                        style={{padding:"5px 12px",borderRadius:20,background:isCur?"#C9A84C":isDone?"rgba(26,127,90,.3)":"rgba(255,255,255,.08)",color:isCur?"#0B1F3A":isDone?"#4ADE80":"rgba(255,255,255,.4)",fontSize:11,fontWeight:isCur||isDone?700:400,cursor:"pointer",whiteSpace:"nowrap",transition:"all .15s"}}>
+                        {isDone?"✓ ":""}{s}
+                      </div>
+                      {i<arr.length-1&&<div style={{width:16,height:1,background:"rgba(255,255,255,.1)",flexShrink:0}}/>}
+                    </div>
+                  );
+                })}
+                <div style={{width:16,height:1,background:"rgba(255,255,255,.1)",flexShrink:0}}/>
+                <div onClick={()=>moveStage("Lost")}
+                  style={{padding:"5px 12px",borderRadius:20,background:opp.stage==="Lost"?"#B83232":"rgba(255,255,255,.05)",color:opp.stage==="Lost"?"#fff":"rgba(255,255,255,.3)",fontSize:11,cursor:"pointer",whiteSpace:"nowrap"}}>
+                  ✗ Lost
+                </div>
+              </div>
+              {isSigned&&<div style={{marginTop:10,padding:"6px 10px",background:"rgba(201,168,76,.15)",borderRadius:6,fontSize:11,color:"#C9A84C",fontWeight:600}}>🎉 Lease Signed — proceed to create lease contract in Leasing module</div>}
+            </div>
+
+            {/* Unit */}
+            <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Property</div>
+              {unit?(
+                <div style={{display:"flex",gap:12,alignItems:"flex-start",flexWrap:"wrap"}}>
+                  <div style={{flex:1,minWidth:200}}>
+                    <div style={{fontWeight:700,fontSize:15,color:"#0B1F3A",marginBottom:4}}>{unit.unit_ref} — {unit.sub_type}</div>
+                    <div style={{fontSize:12,color:"#718096",marginBottom:6}}>{proj?.name||"—"} · Floor {unit.floor_number||"—"} · {unit.view||"—"}</div>
+                    {lp&&<div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#5B3FAA"}}>AED {Number(lp.annual_rent).toLocaleString()} / yr</div>}
+                    {lp?.monthly_rent&&<div style={{fontSize:12,color:"#718096"}}>AED {Number(lp.monthly_rent).toLocaleString()} / mo</div>}
+                  </div>
+                </div>
+              ):(
+                <div style={{color:"#A0AEC0",fontSize:12,textAlign:"center",padding:"1rem"}}>No unit linked yet</div>
+              )}
+            </div>
+
+            {/* Tenant info */}
+            <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Tenant Details</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}>
+                {[["Name",tenant.full_name],["Phone",tenant.phone||"—"],["Email",tenant.email||"—"],["Nationality",tenant.nationality||"—"],["ID Type",tenant.id_type||"—"],["ID Number",tenant.id_number||"—"]].map(([l,v])=>(
+                  <div key={l} style={{background:"#FAFBFC",borderRadius:8,padding:"8px 10px"}}>
+                    <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {opp.notes&&<div style={{background:"#F7F9FC",borderRadius:12,padding:"14px 16px",fontSize:12,color:"#4A5568",lineHeight:1.7}}>{opp.notes}</div>}
+          </div>
+        )}
+
+        {activeTab==="activities"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <button onClick={()=>setShowLog(true)} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Activity</button>
+            {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No activities yet</div>}
+            {activities.map(a=>{
+              const icons={Call:"📞",Email:"✉",Meeting:"🤝",Visit:"🏠",WhatsApp:"💬",Note:"📝"};
+              return (
+                <div key={a.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",display:"flex",gap:10}}>
+                  <div style={{width:32,height:32,borderRadius:"50%",background:"#EEE8F9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{icons[a.type]||"📋"}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                      <span style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{a.type}</span>
+                      <span style={{fontSize:11,color:"#A0AEC0"}}>{fmtDT(a.created_at)}</span>
+                    </div>
+                    <div style={{fontSize:12,color:"#4A5568",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{a.note}</div>
+                    <div style={{fontSize:11,color:"#A0AEC0",marginTop:4}}>{a.user_name}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Log Activity Modal */}
+      {showLog&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:420,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>Log Activity</span>
+              <button onClick={()=>setShowLog(false)} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{padding:"1.25rem 1.5rem"}}>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+                {["Call","Email","Meeting","Visit","WhatsApp","Note"].map(t=>(
+                  <button key={t} onClick={()=>setLogForm(f=>({...f,type:t}))}
+                    style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${logForm.type===t?"#5B3FAA":"#E2E8F0"}`,background:logForm.type===t?"#5B3FAA":"#fff",color:logForm.type===t?"#fff":"#4A5568",fontSize:11,cursor:"pointer",fontWeight:logForm.type===t?600:400}}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <textarea value={logForm.note} onChange={e=>setLogForm(f=>({...f,note:e.target.value}))} rows={4} placeholder="What happened? Key details…" style={{width:"100%",marginBottom:12}}/>
+              <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+                <button onClick={()=>setShowLog(false)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+                <button onClick={saveLog} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save"}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main LeasingLeads (Tenant Contacts + Lease Opportunities) ─────
+function LeasingLeads({ currentUser, showToast, users=[] }) {
+  const [tenants,    setTenants]    = useState([]);
+  const [lOpps,      setLOpps]      = useState([]);
+  const [units,      setUnits]      = useState([]);
+  const [projects,   setProjects]   = useState([]);
+  const [leasePricing,setLeasePricing]=useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [search,     setSearch]     = useState("");
+  const [fStage,     setFStage]     = useState("All");
+  const [view,       setView]       = useState("list");  // list | tenant | opportunity
+  const [selTenantId,setSelTenantId]= useState(null);
+  const [selOpp,     setSelOpp]     = useState(null);
+  const [showAddTenant,setShowAddTenant]=useState(false);
+  const [showAddOpp,setShowAddOpp]  = useState(false);
+  const [editTenant, setEditTenant] = useState(null);
+  const [saving,     setSaving]     = useState(false);
+  const [oppForm,    setOppForm]    = useState({title:"",unit_id:"",budget:"",assigned_to:"",notes:""});
+  const canEdit = can(currentUser.role,"write");
+  const tBlank = {full_name:"",phone:"",email:"",nationality:"",id_type:"Emirates ID",id_number:"",id_expiry:"",passport_number:"",tenant_type:"Individual",notes:""};
+  const [tForm, setTForm] = useState(tBlank);
+  const tf = k => e => setTForm(f=>({...f,[k]:e.target?.value??e}));
+
+  useEffect(()=>{
+    Promise.all([
+      supabase.from("tenants").select("*").order("full_name"),
+      supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false}),
+      supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft").catch(()=>({data:[]})),
+      supabase.from("projects").select("id,name").catch(()=>({data:[]})),
+      supabase.from("unit_lease_pricing").select("*").catch(()=>({data:[]})),
+    ]).then(([t,lo,u,p,lp])=>{
+      setTenants(t.data||[]);
+      setLOpps(lo.data||[]);
+      setUnits(u.data||[]);
+      setProjects(p.data||[]);
+      setLeasePricing(lp.data||[]);
+      setLoading(false);
+    }).catch(()=>setLoading(false));
+  },[]);
+
+  const selTenant   = tenants.find(t=>t.id===selTenantId);
+  const tenantOpps  = selTenantId ? lOpps.filter(o=>o.tenant_id===selTenantId) : [];
+
+  const tenantBestStage = tid => {
+    const lo = lOpps.filter(o=>o.tenant_id===tid&&o.status==="Active");
+    if(!lo.length) return lOpps.find(o=>o.tenant_id===tid)?.stage||"New Enquiry";
+    const order = ["Reserved","Lease Signed","Offer Made","Viewing","Contacted","New Enquiry"];
+    for(const s of order){ if(lo.find(o=>o.stage===s)) return s; }
+    return lo[0]?.stage||"New Enquiry";
+  };
+
+  const saveTenant = async()=>{
+    if(!tForm.full_name.trim()){showToast("Name required","error");return;}
+    setSaving(true);
+    try{
+      const payload={...tForm,company_id:currentUser.company_id||null,created_by:currentUser.id};
+      let data,error;
+      if(editTenant){
+        ({data,error}=await supabase.from("tenants").update(tForm).eq("id",editTenant.id).select().single());
+        setTenants(p=>p.map(t=>t.id===editTenant.id?data:t));
+      }else{
+        ({data,error}=await supabase.from("tenants").insert(payload).select().single());
+        setTenants(p=>[...p,data].sort((a,b)=>a.full_name.localeCompare(b.full_name)));
+      }
+      if(error)throw error;
+      showToast(editTenant?"Tenant updated":"Tenant added","success");
+      setShowAddTenant(false);setEditTenant(null);setTForm(tBlank);
+    }catch(e){showToast(e.message,"error");}
+    setSaving(false);
+  };
+
+  const saveOpp = async()=>{
+    if(!selTenantId)return;
+    setSaving(true);
+    try{
+      const unit=units.find(u=>u.id===oppForm.unit_id);
+      const payload={
+        tenant_id:selTenantId,
+        company_id:currentUser.company_id||null,
+        title:oppForm.title||(unit?`${unit.unit_ref} — ${selTenant?.full_name}`:`Enquiry — ${selTenant?.full_name}`),
+        unit_id:oppForm.unit_id||null,
+        budget:oppForm.budget?Number(oppForm.budget):null,
+        assigned_to:oppForm.assigned_to||currentUser.id,
+        notes:oppForm.notes||null,
+        stage:"New Enquiry",status:"Active",
+        created_by:currentUser.id,
+      };
+      const{data,error}=await supabase.from("lease_opportunities").insert(payload).select().single();
+      if(error)throw error;
+      setLOpps(p=>[data,...p]);
+      showToast("Lease enquiry created","success");
+      setShowAddOpp(false);
+      setOppForm({title:"",unit_id:"",budget:"",assigned_to:"",notes:""});
+      setSelOpp(data);setView("opportunity");
+    }catch(e){showToast(e.message,"error");}
+    setSaving(false);
+  };
+
+  const visible = (can(currentUser.role,"see_all")?tenants:tenants.filter(t=>{
+    const myOpps=lOpps.filter(o=>o.tenant_id===t.id&&o.assigned_to===currentUser.id);
+    return myOpps.length>0;
+  }));
+  const filtered = visible.filter(t=>{
+    const q=search.toLowerCase();
+    return(!q||t.full_name?.toLowerCase().includes(q)||t.phone?.includes(q)||t.email?.toLowerCase().includes(q));
+  });
+
+  if(loading) return <Spinner msg="Loading leasing enquiries…"/>;
+
+  // ── LIST VIEW ─────────────────────────────────────────────────
+  if(view==="list") return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      {/* Toolbar */}
+      <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+        <div style={{position:"relative",flex:1,minWidth:160}}>
+          <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:14}}>🔍</span>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone, email…" style={{paddingLeft:32,width:"100%"}}/>
+        </div>
+        <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
+        {canEdit&&<button onClick={()=>{setTForm(tBlank);setEditTenant(null);setShowAddTenant(true);}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Tenant</button>}
+      </div>
+
+      {/* Stage filter strip */}
+      <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",paddingBottom:4,flexShrink:0}}>
+        {["All",...LEASE_STAGES].map(s=>{
+          const cnt=s==="All"?filtered.length:filtered.filter(t=>tenantBestStage(t.id)===s).length;
+          const m=s==="All"?{c:"#5B3FAA",bg:"#EEE8F9"}:LEASE_STAGE_META[s]||{c:"#718096",bg:"#F0F2F5"};
+          return (
+            <button key={s} onClick={()=>setFStage(s)}
+              style={{flexShrink:0,padding:"5px 12px",borderRadius:8,border:`1.5px solid ${fStage===s?m.c:"#E2E8F0"}`,background:fStage===s?m.bg:"#fff",color:m.c,fontSize:11,fontWeight:600,cursor:"pointer"}}>
+              {s} <span style={{fontWeight:700}}>{cnt}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tenants table */}
+      <div style={{flex:1,overflowY:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+          <thead style={{position:"sticky",top:0,zIndex:1}}>
+            <tr style={{background:"#1A0B3A"}}>
+              {["Tenant","Phone","Email","Nationality","Enquiries","Best Stage","Action"].map(h=>(
+                <th key={h} style={{padding:"8px 10px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length===0&&<tr><td colSpan={7} style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>No tenants found</td></tr>}
+            {filtered.map((t,i)=>{
+              const lo=lOpps.filter(o=>o.tenant_id===t.id);
+              const activeOpps=lo.filter(o=>o.status==="Active");
+              const bestStage=tenantBestStage(t.id);
+              const sm2=LEASE_STAGE_META[bestStage]||{c:"#718096",bg:"#F0F2F5"};
+              if(fStage!=="All"&&bestStage!==fStage)return null;
+              return (
+                <tr key={t.id}
+                  style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5",cursor:"pointer",transition:"background .1s"}}
+                  onMouseOver={e=>e.currentTarget.style.background="#F5F0FF"}
+                  onMouseOut={e=>e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC"}>
+                  <td style={{padding:"8px 10px"}} onClick={()=>{setSelTenantId(t.id);setView("tenant");}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <Av name={t.full_name} size={28} bg="#5B3FAA"/>
+                      <div>
+                        <div style={{fontWeight:600,fontSize:13,color:"#0B1F3A"}}>{t.full_name}</div>
+                        {t.tenant_type&&<div style={{fontSize:10,color:"#A0AEC0"}}>{t.tenant_type}</div>}
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{padding:"8px 10px",color:"#4A5568"}} onClick={()=>{setSelTenantId(t.id);setView("tenant");}}>{t.phone||"—"}</td>
+                  <td style={{padding:"8px 10px",color:"#4A5568",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} onClick={()=>{setSelTenantId(t.id);setView("tenant");}}>{t.email||"—"}</td>
+                  <td style={{padding:"8px 10px",color:"#4A5568"}} onClick={()=>{setSelTenantId(t.id);setView("tenant");}}>{t.nationality||"—"}</td>
+                  <td style={{padding:"8px 10px",textAlign:"center"}} onClick={()=>{setSelTenantId(t.id);setView("tenant");}}>
+                    <span style={{fontWeight:700,color:"#5B3FAA"}}>{activeOpps.length}</span>
+                    {lo.filter(o=>o.status==="Won").length>0&&<span style={{fontSize:10,color:"#1A7F5A",marginLeft:4}}>+{lo.filter(o=>o.status==="Won").length}✓</span>}
+                  </td>
+                  <td style={{padding:"8px 10px"}} onClick={()=>{setSelTenantId(t.id);setView("tenant");}}>
+                    <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:sm2.bg,color:sm2.c}}>{bestStage}</span>
+                  </td>
+                  <td style={{padding:"8px 10px"}} onClick={e=>e.stopPropagation()}>
+                    <button onClick={()=>{setTForm({...tBlank,...t});setEditTenant(t);setShowAddTenant(true);}} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>✏</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Add/Edit Tenant Modal */}
+      {showAddTenant&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:520,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>{editTenant?"Edit":"New"} Tenant</span>
+              <button onClick={()=>{setShowAddTenant(false);setEditTenant(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Full Name *</label><input value={tForm.full_name} onChange={tf("full_name")}/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Phone</label><input value={tForm.phone} onChange={tf("phone")}/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Email</label><input type="email" value={tForm.email} onChange={tf("email")}/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Nationality</label><input value={tForm.nationality} onChange={tf("nationality")}/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Tenant Type</label>
+                  <select value={tForm.tenant_type} onChange={tf("tenant_type")}><option>Individual</option><option>Company</option></select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>ID Type</label>
+                  <select value={tForm.id_type} onChange={tf("id_type")}><option>Emirates ID</option><option>Passport</option><option>Trade License</option></select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>ID Number</label><input value={tForm.id_number} onChange={tf("id_number")}/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>ID Expiry</label><input type="date" value={tForm.id_expiry} onChange={tf("id_expiry")}/></div>
+                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label><textarea value={tForm.notes} onChange={tf("notes")} rows={2}/></div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
+              <button onClick={()=>{setShowAddTenant(false);setEditTenant(null);}} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              <button onClick={saveTenant} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editTenant?"Save":"Add Tenant"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ── TENANT DETAIL VIEW ────────────────────────────────────────
+  if(view==="tenant"&&selTenant) return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap"}}>
+        <button onClick={()=>setView("list")} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Tenants</button>
+        <Av name={selTenant.full_name} size={40} bg="#5B3FAA"/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A"}}>{selTenant.full_name}</div>
+          <div style={{fontSize:12,color:"#718096"}}>{selTenant.phone} {selTenant.email?`· ${selTenant.email}`:""} {selTenant.nationality?`· ${selTenant.nationality}`:""}</div>
+        </div>
+        <div style={{display:"flex",gap:6}}>
+          {canEdit&&<button onClick={()=>{setTForm({...tBlank,...selTenant});setEditTenant(selTenant);setShowAddTenant(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
+          {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:""});setShowAddOpp(true);}} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Enquiry</button>}
+        </div>
+      </div>
+
+      {/* Tenant info strip */}
+      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+        {[["📞",selTenant.phone||"—"],["✉",selTenant.email||"—"],["🌍",selTenant.nationality||"—"],["🪪",selTenant.id_type||"—"],["🏢",selTenant.tenant_type||"—"]].map(([l,v])=>(
+          <div key={l} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 14px",flex:1,minWidth:100}}>
+            <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
+            <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:12}}>Lease Enquiries ({tenantOpps.length})</div>
+
+      <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8}}>
+        {tenantOpps.length===0&&(
+          <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
+            <div style={{fontSize:36,marginBottom:10}}>🔑</div>
+            <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>No enquiries yet</div>
+            <div style={{fontSize:12,marginBottom:16}}>Add an enquiry for each unit this tenant is interested in</div>
+            {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:""});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Enquiry</button>}
+          </div>
+        )}
+        {tenantOpps.map(opp=>{
+          const unit=units.find(u=>u.id===opp.unit_id);
+          const proj=unit?projects.find(p=>p.id===unit.project_id):null;
+          const lp=unit?leasePricing.find(l=>l.unit_id===unit.id):null;
+          const sm3=LEASE_STAGE_META[opp.stage]||{c:"#718096",bg:"#F0F2F5"};
+          const agent=users.find(u=>u.id===opp.assigned_to);
+          return (
+            <div key={opp.id} onClick={()=>{setSelOpp(opp);setView("opportunity");}}
+              style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",borderLeft:`4px solid ${sm3.c}`,transition:"all .12s"}}
+              onMouseOver={e=>{e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.08)";e.currentTarget.style.transform="translateY(-1px)";}}
+              onMouseOut={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
+                    <span style={{fontWeight:700,fontSize:14,color:"#0B1F3A"}}>{opp.title||"Lease Enquiry"}</span>
+                    <span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:sm3.bg,color:sm3.c}}>{opp.stage}</span>
+                    {opp.status==="Won"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ Signed</span>}
+                  </div>
+                  {unit&&<div style={{fontSize:12,color:"#4A5568",marginBottom:2}}>🏠 {unit.unit_ref} — {unit.sub_type}{proj?` · ${proj.name}`:""}</div>}
+                  {lp&&<div style={{fontSize:13,fontWeight:700,color:"#5B3FAA"}}>AED {Number(lp.annual_rent).toLocaleString()} / yr</div>}
+                </div>
+                <div style={{textAlign:"right",flexShrink:0}}>
+                  <div style={{fontSize:11,color:"#A0AEC0"}}>{agent?.full_name||"Unassigned"}</div>
+                  <div style={{fontSize:11,color:"#A0AEC0",marginTop:2}}>{opp.stage_updated_at?Math.floor((new Date()-new Date(opp.stage_updated_at))/864e5)+"d in stage":""}</div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Add Enquiry Modal */}
+      {showAddOpp&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
+              <div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>🔑 New Lease Enquiry</div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>for {selTenant.full_name}</div>
+              </div>
+              <button onClick={()=>setShowAddOpp(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem",flex:1}}>
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Title</label><input value={oppForm.title} onChange={e=>setOppForm(f=>({...f,title:e.target.value}))} placeholder="Auto-filled from unit"/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Unit *</label>
+                  <select value={oppForm.unit_id} onChange={e=>{
+                    const u=units.find(x=>x.id===e.target.value);
+                    setOppForm(f=>({...f,unit_id:e.target.value,title:u&&!f.title?`${u.unit_ref} — ${selTenant?.full_name||""}`:f.title}));
+                  }}>
+                    <option value="">— Select unit —</option>
+                    {units.filter(u=>u.status==="Available"&&(u.purpose==="Lease"||u.purpose==="Both")).map(u=>{
+                      const lp2=leasePricing.find(l=>l.unit_id===u.id);
+                      const pr=projects.find(p=>p.id===u.project_id);
+                      return <option key={u.id} value={u.id}>{u.unit_ref} · {u.sub_type} · {pr?.name||"—"}{lp2?` · AED ${Math.round(lp2.annual_rent/1000)}K/yr`:""}</option>;
+                    })}
+                  </select>
+                </div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Budget (AED/yr)</label><input type="number" value={oppForm.budget} onChange={e=>setOppForm(f=>({...f,budget:e.target.value}))} placeholder="Annual budget"/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Assign To</label>
+                  <select value={oppForm.assigned_to} onChange={e=>setOppForm(f=>({...f,assigned_to:e.target.value}))}>
+                    {users.filter(u=>u.is_active).map(u=><option key={u.id} value={u.id}>{u.full_name}</option>)}
+                  </select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label><textarea value={oppForm.notes} onChange={e=>setOppForm(f=>({...f,notes:e.target.value}))} rows={3}/></div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
+              <button onClick={()=>setShowAddOpp(false)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              <button onClick={saveOpp} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":"Create Enquiry"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ── OPPORTUNITY DETAIL ────────────────────────────────────────
+  if(view==="opportunity"&&selOpp) return (
+    <LeaseOpportunityDetail
+      opp={selOpp}
+      tenant={selTenant||tenants.find(t=>t.id===selOpp.tenant_id)||{full_name:"Tenant"}}
+      units={units}
+      projects={projects}
+      leasePricing={leasePricing}
+      users={users}
+      currentUser={currentUser}
+      showToast={showToast}
+      onBack={()=>{setView("tenant");setSelOpp(null);}}
+      onUpdated={(updated)=>{
+        setSelOpp(updated);
+        setLOpps(p=>p.map(o=>o.id===updated.id?updated:o));
+      }}
+    />
+  );
+
+  return null;
+}
+
 
 function LeasingLeads({ currentUser, showToast, users=[] }) {
   const [leads,      setLeads]      = useState([]);
