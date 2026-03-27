@@ -2962,7 +2962,7 @@ const UNIT_STATUS_COLORS = {
   Cancelled:  {c:"#718096", bg:"#F0F2F5"},
 };
 
-function InventoryModule({ currentUser, showToast, crmContext="sales", preloadedUnits=null, preloadedProjects=null, preloadedSalePricing=null, preloadedLeasePricing=null }) {
+function InventoryModule({ currentUser, showToast, crmContext="sales", preloadedUnits=null, preloadedProjects=null, preloadedSalePricing=null, preloadedLeasePricing=null, activeCompanyId=null }) {
   const [units,       setUnits]       = useState(preloadedUnits||[]);
   const [projects,    setProjects]    = useState(preloadedProjects||[]);
   const [salePricing, setSalePricing] = useState(preloadedSalePricing||[]);
@@ -7515,6 +7515,15 @@ export default function App(){
   const[dataLoading,setDataLoading]=useState(false);
   const[companies, setCompanies] = useState([]);
   const[activeCompanyId,setActiveCompanyId]=useState(()=>localStorage.getItem("propccrm_company_id")||null);
+  // Reload inventory when company changes
+  const switchCompany = (id) => {
+    setActiveCompanyId(id);
+    localStorage.setItem("propccrm_company_id",id);
+    // Reset preloaded data so modules re-fetch for new company
+    setAiProjects([]);setAiUnits([]);setAiSalePr([]);setAiLeasePr([]);
+    setLeads([]);setOpps([]);setDiscounts([]);
+    setLeasingData({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
+  };
   const[leasingData,setLeasingData]=useState({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
   const[followupAlerts,setFollowupAlerts]=useState({staleLeads:[],overduePayments:[],expiringLeases:[]});
   const[opps,setOpps]=useState([]);
@@ -7557,18 +7566,19 @@ export default function App(){
   useEffect(()=>{
     if(!currentUser)return;
     const safe=async(q)=>{ try{const r=await q;return{data:(r.data||[])};}catch(e){return{data:[]};} };
+    const cid = activeCompanyId || currentUser.company_id || null;
     const load=async()=>{
       setDataLoading(true);
       try{
         const[l,pr,a,u,d]=await Promise.all([
-          safe(activeCompanyId
-            ? supabase.from("leads").select("*").eq("company_id",activeCompanyId).order("created_at",{ascending:false})
+          safe(cid
+            ? supabase.from("leads").select("*").eq("company_id",cid).order("created_at",{ascending:false})
             : supabase.from("leads").select("*").order("created_at",{ascending:false})),
           safe(supabase.from("properties").select("*").order("created_at",{ascending:false})),
           safe(supabase.from("activities").select("*").order("created_at",{ascending:false})),
           safe(supabase.from("profiles").select("*").order("full_name")),
-          safe(activeCompanyId
-            ? supabase.from("discount_requests").select("*").eq("company_id",activeCompanyId).order("created_at",{ascending:false})
+          safe(cid
+            ? supabase.from("discount_requests").select("*").eq("company_id",cid).order("created_at",{ascending:false})
             : supabase.from("discount_requests").select("*").order("created_at",{ascending:false})),
         ]);
         setLeads(l.data);setProperties(pr.data);setActivities(a.data);setUsers(u.data);setDiscounts(d.data);
@@ -7577,10 +7587,10 @@ export default function App(){
         setOpps(oppRes.data||[]);
         // Load inventory + leasing data eagerly
         const[proj,units2,sp2,lp2,lt,ll,lp_,lm]=await Promise.all([
-          safe(activeCompanyId ? supabase.from("projects").select("*").eq("company_id",activeCompanyId) : supabase.from("projects").select("*")),
-          safe(activeCompanyId ? supabase.from("project_units").select("*").eq("company_id",activeCompanyId) : supabase.from("project_units").select("*")),
-          safe(activeCompanyId ? supabase.from("unit_sale_pricing").select("*").eq("company_id",activeCompanyId) : supabase.from("unit_sale_pricing").select("*")),
-          safe(activeCompanyId ? supabase.from("unit_lease_pricing").select("*").eq("company_id",activeCompanyId) : supabase.from("unit_lease_pricing").select("*")),
+          safe(cid ? supabase.from("projects").select("*").eq("company_id",cid).order("name") : supabase.from("projects").select("*").order("name")),
+          safe(cid ? supabase.from("project_units").select("*").eq("company_id",cid) : supabase.from("project_units").select("*")),
+          safe(cid ? supabase.from("unit_sale_pricing").select("*").eq("company_id",cid) : supabase.from("unit_sale_pricing").select("*")),
+          safe(cid ? supabase.from("unit_lease_pricing").select("*").eq("company_id",cid) : supabase.from("unit_lease_pricing").select("*")),
           safe(supabase.from("tenants").select("*").order("full_name")),
           safe(supabase.from("leases").select("*").order("end_date")),
           safe(supabase.from("rent_payments").select("*").order("due_date")),
@@ -7597,13 +7607,13 @@ export default function App(){
       setDataLoading(false);
     };
     load();
-    const ch=supabase.channel("v3-changes")
+    const ch=supabase.channel("v3-changes-"+cid)
       .on("postgres_changes",{event:"*",schema:"public",table:"leads"},p=>{if(p.eventType==="INSERT")setLeads(x=>[p.new,...x]);if(p.eventType==="UPDATE")setLeads(x=>x.map(l=>l.id===p.new.id?p.new:l));if(p.eventType==="DELETE")setLeads(x=>x.filter(l=>l.id!==p.old.id));})
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"activities"},p=>setActivities(x=>[p.new,...x]))
       .on("postgres_changes",{event:"*",schema:"public",table:"opportunities"},p=>{if(p.eventType==="INSERT")setOpps(x=>[p.new,...x]);if(p.eventType==="UPDATE")setOpps(x=>x.map(o=>o.id===p.new.id?p.new:o));if(p.eventType==="DELETE")setOpps(x=>x.filter(o=>o.id!==p.old.id));})
       .subscribe();
     return()=>supabase.removeChannel(ch);
-  },[currentUser]);
+  },[currentUser, activeCompanyId]);
 
   const handleLogin=user=>{
     setCurrentUser(user);
