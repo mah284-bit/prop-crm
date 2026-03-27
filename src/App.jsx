@@ -90,9 +90,9 @@ const saveAppConfig = (cfg) => {
 };
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","users"],
+  sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","reports","users"],
   leasing: ["dashboard","leasing","discounts","activity","ai","users"],
-  both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","users"],
+  both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","reports","l_reports","users"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -1033,6 +1033,8 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
   const visible = canSeeAll ? leads : leads.filter(l=>l.assigned_to===currentUser.id);
   const filtered = visible.filter(l=>{
     const q=search.toLowerCase();
+    // Sales CRM only shows Sale leads — Lease leads belong in Leasing Enquiries
+    if(l.property_type==="Lease") return false;
     return(!q||l.name?.toLowerCase().includes(q)||l.email?.toLowerCase().includes(q)||l.phone?.includes(q))
       &&(fStage==="All"||l.stage===fStage)
       &&(fType==="All"||l.property_type===fType);
@@ -1178,6 +1180,52 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
     const{data}=await supabase.from("sales_payments").insert(inserts).select();
     setPayments(data||[]);
     showToast(`${inserts.length} payment milestones generated`,"success");
+  };
+
+  // Print payment receipt
+  const printPaymentReceipt=(pay)=>{
+    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <style>
+      body{font-family:Arial,sans-serif;max-width:400px;margin:40px auto;color:#1a2535}
+      .header{background:#0B1F3A;color:#fff;padding:20px;text-align:center;border-radius:8px 8px 0 0}
+      .logo{font-size:22px;font-weight:700;color:#C9A84C;margin-bottom:4px}
+      .title{font-size:14px;color:rgba(255,255,255,.7)}
+      .body{border:1px solid #E2E8F0;border-top:none;padding:20px;border-radius:0 0 8px 8px}
+      .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0F2F5;font-size:13px}
+      .label{color:#718096}
+      .value{font-weight:600;color:#0B1F3A}
+      .amount{font-size:28px;font-weight:700;color:#0B1F3A;text-align:center;padding:16px 0;border-bottom:2px solid #0B1F3A;margin-bottom:16px}
+      .cheque-img{width:100%;border-radius:6px;border:1px solid #E2E8F0;margin-top:12px}
+      .footer{text-align:center;font-size:10px;color:#A0AEC0;margin-top:16px}
+      .stamp{border:3px solid #1A7F5A;color:#1A7F5A;padding:6px 16px;border-radius:6px;font-size:14px;font-weight:700;display:inline-block;margin-top:12px;transform:rotate(-5deg)}
+    </style></head><body>
+    <div class="header">
+      <div class="logo">◆ PropCRM</div>
+      <div class="title">Payment Receipt</div>
+    </div>
+    <div class="body">
+      <div class="amount">AED ${Number(pay.amount).toLocaleString()}</div>
+      ${[
+        ["Client",        selLead?.name||"—"],
+        ["Milestone",     pay.milestone],
+        ["Payment Type",  pay.payment_type],
+        pay.cheque_number?["Cheque No.",  pay.cheque_number]:[],
+        pay.cheque_date  ?["Cheque Date", new Date(pay.cheque_date).toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})  ]:[],
+        pay.bank_name    ?["Bank",         pay.bank_name]:[],
+        ["Status",        pay.status],
+        ["Date",          new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})],
+        pay.percentage   ?["Percentage",   pay.percentage+"%"]:[],
+      ].filter(r=>r.length).map(([l,v])=>`<div class="row"><span class="label">${l}</span><span class="value">${v}</span></div>`).join("")}
+      ${pay.cheque_file_url?`<div style="margin-top:12px;font-size:11px;color:#718096;margin-bottom:6px">Cheque Copy:</div><img src="${pay.cheque_file_url}" class="cheque-img"/>`:""  }
+      <div style="text-align:center">
+        <div class="stamp">${pay.status==="Cleared"?"✓ CLEARED":pay.status==="Received"?"✓ RECEIVED":"PENDING"}</div>
+      </div>
+      ${pay.notes?`<div style="margin-top:12px;font-size:12px;color:#718096;padding:8px;background:#F7F9FC;border-radius:6px">${pay.notes}</div>`:""}
+      <div class="footer">This is a computer-generated receipt · PropCRM · ${new Date().toLocaleDateString("en-AE")}</div>
+    </div>
+    </body></html>`;
+    const w = window.open("","_blank","width=500,height=700");
+    if(w){ w.document.write(html); w.document.close(); setTimeout(()=>w.print(),500); }
   };
 
   // Save payment
@@ -1493,12 +1541,19 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
       <div style={{display:"grid",gridTemplateColumns:"minmax(0,2fr) minmax(0,1fr)",gap:14,flex:1,overflow:"hidden",minHeight:0}}>
         {/* LEFT: Main content */}
         <div style={{display:"flex",flexDirection:"column",overflow:"hidden"}}>
-          {/* Tabs */}
+          {/* Tabs — Payments and Contract only unlock at Closed Won */}
           <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid #E2E8F0",paddingBottom:0}}>
-            {["details","activities","payments","contract"].map(t=>(
-              <button key={t} onClick={()=>setActiveTab(t)}
-                style={{padding:"8px 16px",borderRadius:"8px 8px 0 0",border:"none",borderBottom:activeTab===t?"2.5px solid #0B1F3A":"2.5px solid transparent",background:"transparent",fontSize:13,fontWeight:activeTab===t?700:400,color:activeTab===t?"#0B1F3A":"#718096",cursor:"pointer",textTransform:"capitalize"}}>
-                {t}{t==="activities"&&leadActs.length>0?` (${leadActs.length})`:""}{t==="payments"&&payments.length>0?` (${payments.length})`:""}{t==="contract"&&selContract?" ✓":""}
+            {[
+              {id:"details",  label:"Details",   locked:false},
+              {id:"payments", label:"Payments",  locked:selLead?.stage!=="Closed Won", lockMsg:"Unlocks at Closed Won"},
+              {id:"contract", label:"Contract",  locked:selLead?.stage!=="Closed Won", lockMsg:"Unlocks at Closed Won"},
+            ].map(({id,label,locked,lockMsg})=>(
+              <button key={id}
+                onClick={()=>{ if(locked){showToast(`${lockMsg} — complete all stages first`,"error");return;} setActiveTab(id); }}
+                title={locked?lockMsg:""}
+                style={{padding:"8px 16px",borderRadius:"8px 8px 0 0",border:"none",borderBottom:activeTab===id?"2.5px solid #0B1F3A":"2.5px solid transparent",background:"transparent",fontSize:13,fontWeight:activeTab===id?700:400,color:locked?"#CBD5E0":activeTab===id?"#0B1F3A":"#718096",cursor:locked?"not-allowed":"pointer",textTransform:"capitalize",display:"flex",alignItems:"center",gap:5}}>
+                {locked?"🔒":""} {label}
+                {id==="payments"&&payments.length>0?` (${payments.length})`:""}{id==="contract"&&selContract?" ✓":""}
               </button>
             ))}
           </div>
@@ -1508,6 +1563,30 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
             {/* DETAILS TAB */}
             {activeTab==="details"&&(
               <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                {/* Workflow progress */}
+                <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:12,padding:"14px 16px"}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.5)",textTransform:"uppercase",letterSpacing:".6px",marginBottom:10}}>Sales Workflow</div>
+                  <div style={{display:"flex",alignItems:"center",gap:0,overflowX:"auto"}}>
+                    {["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won"].map((s,i,arr)=>{
+                      const m=STAGE_META[s]||{c:"#718096",bg:"#F0F2F5"};
+                      const stages=["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
+                      const curIdx=stages.indexOf(selLead?.stage);
+                      const thisIdx=stages.indexOf(s);
+                      const isDone=curIdx>thisIdx;
+                      const isCur=selLead?.stage===s;
+                      return (
+                        <div key={s} style={{display:"flex",alignItems:"center",flexShrink:0}}>
+                          <div onClick={()=>moveStage(s)} style={{padding:"5px 10px",borderRadius:20,background:isCur?"#C9A84C":isDone?"rgba(26,127,90,.3)":"rgba(255,255,255,.08)",color:isCur?"#0B1F3A":isDone?"#4ADE80":"rgba(255,255,255,.4)",fontSize:10,fontWeight:isCur||isDone?700:400,cursor:"pointer",whiteSpace:"nowrap",transition:"all .15s"}}>
+                            {isDone?"✓ ":""}{s}
+                          </div>
+                          {i<arr.length-1&&<div style={{width:16,height:1,background:"rgba(255,255,255,.15)",flexShrink:0}}/>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {selLead?.stage==="Closed Won"&&<div style={{marginTop:10,padding:"6px 10px",background:"rgba(201,168,76,.15)",borderRadius:6,fontSize:11,color:"#C9A84C",fontWeight:600}}>🎉 Deal won — Contract and Payments are now unlocked</div>}
+                  {selLead?.stage==="Closed Lost"&&<div style={{marginTop:10,padding:"6px 10px",background:"rgba(184,50,50,.15)",borderRadius:6,fontSize:11,color:"#F87171"}}>Deal marked as lost</div>}
+                </div>
                 {/* Stage pipeline */}
                 <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
                   <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Move Stage</div>
@@ -1663,19 +1742,25 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
                 )}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                   <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>Payment Schedule</div>
-                  <button onClick={()=>{setPayForm(blankPayment);setEditPayment(null);setShowPayment(true);}}
+                  {selLead?.stage==="Closed Won"&&<button onClick={()=>{setPayForm(blankPayment);setEditPayment(null);setShowPayment(true);}}
                     style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>
                     + Add Payment
-                  </button>
+                  </button>}
                 </div>
-                {payments.length===0&&(
+                {selLead?.stage!=="Closed Won"?(
+                  <div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>
+                    <div style={{fontSize:40,marginBottom:10}}>🔒</div>
+                    <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>Payments locked</div>
+                    <div style={{fontSize:12}}>Move this lead to <strong>Closed Won</strong> to enable payment tracking</div>
+                  </div>
+                ):payments.length===0?(
                   <div style={{textAlign:"center",padding:"2rem",color:"#A0AEC0"}}>
                     <div style={{fontSize:36,marginBottom:8}}>💰</div>
                     <div style={{marginBottom:8}}>No payments yet</div>
                     {selContract&&<div style={{fontSize:12}}>Contract created — payments auto-generated</div>}
-                    {!selContract&&selLead.stage==="Closed Won"&&<div style={{fontSize:12}}>Create a contract first to auto-generate payment schedule</div>}
+                    {!selContract&&<div style={{fontSize:12}}>Create a contract first to auto-generate the payment schedule</div>}
                   </div>
-                )}
+                ):null}
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   {payments.sort((a,b)=>a.milestone_order-b.milestone_order).map(pay=>{
                     const pm=PAYMENT_STATUS_META[pay.status]||PAYMENT_STATUS_META.Pending;
@@ -1703,6 +1788,10 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
                             <button onClick={()=>{setPayForm({...blankPayment,...pay});setEditPayment(pay);setShowPayment(true);}}
                               style={{fontSize:11,padding:"4px 8px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>
                               Edit
+                            </button>
+                            <button onClick={()=>printPaymentReceipt(pay)}
+                              style={{fontSize:11,padding:"4px 8px",borderRadius:6,border:"none",background:"#1A5FA8",color:"#fff",cursor:"pointer"}}>
+                              🖨
                             </button>
                           </div>
                         </div>
@@ -1946,37 +2035,127 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
       {/* Payment Modal */}
       {showPayment&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0B1F3A"}}>💰 {editPayment?"Edit":"Add"} Payment</span>
-              <button onClick={()=>{setShowPayment(false);setEditPayment(null);}} style={{background:"none",border:"none",fontSize:22,color:"#A0AEC0",cursor:"pointer"}}>×</button>
+          <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>💰 {editPayment?"Edit":"Add"} Payment</span>
+              <button onClick={()=>{setShowPayment(false);setEditPayment(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
             <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Milestone *</label>
+                {/* Milestone */}
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Milestone *</label>
                   <select value={payForm.milestone} onChange={e=>setPayForm(f=>({...f,milestone:e.target.value}))}>
                     {["Booking Deposit","SPA Signing","1st Installment","2nd Installment","3rd Installment","4th Installment","On Handover","Post Handover 1","Post Handover 2","Other"].map(m=><option key={m}>{m}</option>)}
                   </select>
                 </div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Amount (AED) *</label><input type="number" value={payForm.amount} onChange={e=>setPayForm(f=>({...f,amount:e.target.value}))} placeholder="250000"/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Percentage %</label><input type="number" value={payForm.percentage} onChange={e=>setPayForm(f=>({...f,percentage:e.target.value}))} placeholder="10"/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Due Date</label><input type="date" value={payForm.due_date} onChange={e=>setPayForm(f=>({...f,due_date:e.target.value}))}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Payment Type</label>
+
+                {/* Percentage → auto-calculates amount */}
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>
+                    Percentage %
+                    {selLead?.final_price&&<span style={{fontSize:10,color:"#A0AEC0",fontWeight:400,marginLeft:6}}>of AED {Number(selLead.final_price).toLocaleString()}</span>}
+                  </label>
+                  <input type="number" value={payForm.percentage} placeholder="e.g. 10"
+                    onChange={e=>{
+                      const pct = Number(e.target.value)||0;
+                      const base = selLead?.final_price||selLead?.budget||0;
+                      setPayForm(f=>({...f,
+                        percentage: e.target.value,
+                        amount: pct>0&&base>0 ? Math.round(base*(pct/100)) : f.amount,
+                      }));
+                    }}/>
+                  {payForm.percentage>0&&selLead?.final_price&&(
+                    <div style={{fontSize:11,color:"#1A7F5A",marginTop:3,fontWeight:600}}>
+                      = AED {Math.round(Number(selLead.final_price)*(Number(payForm.percentage)/100)).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+
+                {/* Amount — editable, syncs with % */}
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Amount (AED) *</label>
+                  <input type="number" value={payForm.amount} placeholder="e.g. 250000"
+                    onChange={e=>{
+                      const amt = Number(e.target.value)||0;
+                      const base = selLead?.final_price||selLead?.budget||0;
+                      setPayForm(f=>({...f,
+                        amount: e.target.value,
+                        percentage: amt>0&&base>0 ? Math.round(amt/base*1000)/10 : f.percentage,
+                      }));
+                    }}
+                    style={{fontWeight:700,fontSize:14}}/>
+                </div>
+
+                {/* Due date + Payment type */}
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Due Date</label>
+                  <input type="date" value={payForm.due_date} onChange={e=>setPayForm(f=>({...f,due_date:e.target.value}))}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Payment Type</label>
                   <select value={payForm.payment_type} onChange={e=>setPayForm(f=>({...f,payment_type:e.target.value}))}>
                     {["Cheque","Cash","Bank Transfer","Credit Card"].map(t=><option key={t}>{t}</option>)}
                   </select>
                 </div>
+
+                {/* Cheque fields */}
                 {payForm.payment_type==="Cheque"&&<>
-                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Cheque Number</label><input value={payForm.cheque_number} onChange={e=>setPayForm(f=>({...f,cheque_number:e.target.value}))}/></div>
-                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Cheque Date</label><input type="date" value={payForm.cheque_date} onChange={e=>setPayForm(f=>({...f,cheque_date:e.target.value}))}/></div>
-                  <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Bank Name</label><input value={payForm.bank_name} onChange={e=>setPayForm(f=>({...f,bank_name:e.target.value}))} placeholder="Emirates NBD, ADCB…"/></div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Cheque Number</label>
+                    <input value={payForm.cheque_number} onChange={e=>setPayForm(f=>({...f,cheque_number:e.target.value}))} placeholder="e.g. 001234"/>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Cheque Date</label>
+                    <input type="date" value={payForm.cheque_date} onChange={e=>setPayForm(f=>({...f,cheque_date:e.target.value}))}/>
+                  </div>
+                  <div style={{gridColumn:"1/-1"}}>
+                    <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Bank Name</label>
+                    <input value={payForm.bank_name} onChange={e=>setPayForm(f=>({...f,bank_name:e.target.value}))} placeholder="Emirates NBD, ADCB, FAB…"/>
+                  </div>
+                  {/* Cheque image upload */}
+                  <div style={{gridColumn:"1/-1"}}>
+                    <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Cheque Image / Scan</label>
+                    {payForm.cheque_file_url?(
+                      <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:"#E6F4EE",borderRadius:8,border:"1px solid #A8D5BE"}}>
+                        <span style={{fontSize:12,color:"#1A7F5A",fontWeight:600}}>✓ Cheque uploaded</span>
+                        <a href={payForm.cheque_file_url} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#1A5FA8",marginLeft:4}}>View →</a>
+                        <button onClick={()=>setPayForm(f=>({...f,cheque_file_url:""}))} style={{marginLeft:"auto",fontSize:11,color:"#B83232",background:"none",border:"none",cursor:"pointer"}}>× Remove</button>
+                      </div>
+                    ):(
+                      <label style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",borderRadius:8,border:"1.5px dashed #D1D9E6",cursor:"pointer",background:"#FAFBFC",fontSize:12,color:"#4A5568"}}>
+                        <input type="file" accept="image/*,.pdf" style={{display:"none"}} onChange={async e=>{
+                          const file=e.target.files[0]; if(!file)return;
+                          setSaving(true);
+                          try{
+                            const path=`payments/${selId||"lead"}/${Date.now()}_${file.name}`;
+                            const{error:ue}=await supabase.storage.from("documents").upload(path,file,{upsert:true});
+                            if(ue)throw ue;
+                            const{data:{publicUrl}}=supabase.storage.from("documents").getPublicUrl(path);
+                            setPayForm(f=>({...f,cheque_file_url:publicUrl}));
+                            showToast("Cheque uploaded","success");
+                          }catch(err){showToast(err.message,"error");}
+                          setSaving(false);
+                        }}/>
+                        📷 Upload cheque photo or scan (JPG, PNG, PDF)
+                      </label>
+                    )}
+                  </div>
                 </>}
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Status</label>
+
+                {/* Status */}
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Status</label>
                   <select value={payForm.status} onChange={e=>setPayForm(f=>({...f,status:e.target.value}))}>
                     {Object.keys(PAYMENT_STATUS_META).map(s=><option key={s}>{s}</option>)}
                   </select>
                 </div>
-                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Notes</label><textarea value={payForm.notes} onChange={e=>setPayForm(f=>({...f,notes:e.target.value}))} rows={2}/></div>
+
+                {/* Notes */}
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label>
+                  <textarea value={payForm.notes} onChange={e=>setPayForm(f=>({...f,notes:e.target.value}))} rows={2} placeholder="Any additional notes…"/>
+                </div>
               </div>
             </div>
             <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
@@ -2441,6 +2620,8 @@ const SUBTITLES={
   l_leads:"Tenant enquiries — track prospects looking to rent or lease",
   projects:"Create and manage property projects and developments",
   l_projects:"Create and manage leasing property projects",
+  reports:    "Generate and export reports — pipeline, payments, rent roll, inventory",
+  l_reports:  "Generate and export leasing reports — rent roll, PDC schedule, performance",
   l_inventory:"Lease inventory — units available for rent and lease",
   leasing:"Tenants · Contracts · Payments · Renewals · Maintenance",
   l_discounts:"Rent reduction approvals — Agent → Manager → Admin",
@@ -4812,6 +4993,396 @@ Respond concisely. Use bullet points for lists. Match the user's language.`;
 }
 
 // ── AI Assistant component ────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════════
+// REPORTS MODULE — 6 reports, Excel + PDF export
+// ══════════════════════════════════════════════════════════════════
+
+// ── Excel export helper (no external library needed) ─────────────
+function exportToExcel(rows, headers, filename) {
+  const escape = v => {
+    if(v === null || v === undefined) return "";
+    const s = String(v);
+    return s.includes(",") || s.includes('"') || s.includes('\n')
+      ? `"${s.replace(/"/g,'""')}"` : s;
+  };
+  const csv = [headers.map(escape).join(","), ...rows.map(r=>r.map(escape).join(","))].join("\n");
+  const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8"});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href=url; a.download=filename+".csv"; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── PDF export helper ─────────────────────────────────────────────
+function exportToPDF(title, subtitle, headers, rows, filename) {
+  const colW = Math.floor(90/headers.length);
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;color:#1a2535;font-size:11px}
+    .header{background:#0B1F3A;color:#fff;padding:20px 24px;margin-bottom:0}
+    .title{font-size:20px;font-weight:700;color:#C9A84C;margin-bottom:4px}
+    .subtitle{font-size:12px;color:rgba(255,255,255,.6)}
+    .meta{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px}
+    table{width:100%;border-collapse:collapse;margin:0}
+    th{background:#0B1F3A;color:#C9A84C;padding:7px 8px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.4px}
+    td{padding:6px 8px;border-bottom:1px solid #F0F2F5;font-size:10px;vertical-align:top}
+    tr:nth-child(even) td{background:#FAFBFC}
+    .footer{margin-top:16px;text-align:center;font-size:9px;color:#A0AEC0}
+    @media print{@page{margin:12mm}}
+  </style></head><body>
+  <div class="header">
+    <div class="title">◆ PropCRM — ${title}</div>
+    <div class="subtitle">${subtitle}</div>
+    <div class="meta">Generated: ${new Date().toLocaleString("en-AE",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
+  </div>
+  <table>
+    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c===null||c===undefined?"—":c}</td>`).join("")}</tr>`).join("")}</tbody>
+  </table>
+  <div class="footer">PropCRM · Confidential · ${rows.length} records</div>
+  </body></html>`;
+  const blob = new Blob([html], {type:"text/html"});
+  const url  = URL.createObjectURL(blob);
+  const w    = window.open(url,"_blank");
+  if(w) { w.onload = () => { w.print(); URL.revokeObjectURL(url); }; }
+  else { const a=document.createElement("a"); a.href=url; a.download=filename+".html"; a.click(); URL.revokeObjectURL(url); }
+}
+
+// ── Main Reports Module ───────────────────────────────────────────
+function ReportsModule({ currentUser, showToast }) {
+  const [activeReport, setActiveReport] = useState("pipeline");
+  const [loading,      setLoading]      = useState(false);
+  const [data,         setData]         = useState({});
+  const [filters,      setFilters]      = useState({ dateFrom:"", dateTo:"", status:"All", agent:"All" });
+
+  // Load all data needed for reports
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const safe = q => q.catch(()=>({data:[]}));
+      const [leads,acts,users,units,projs,sp,lp,leases,tenants,payments,cheques] = await Promise.all([
+        safe(supabase.from("leads").select("*").order("created_at",{ascending:false})),
+        safe(supabase.from("activities").select("*")),
+        safe(supabase.from("profiles").select("id,full_name,role,email")),
+        safe(supabase.from("project_units").select("*")),
+        safe(supabase.from("projects").select("*")),
+        safe(supabase.from("unit_sale_pricing").select("*")),
+        safe(supabase.from("unit_lease_pricing").select("*")),
+        safe(supabase.from("leases").select("*").order("end_date")),
+        safe(supabase.from("tenants").select("*")),
+        safe(supabase.from("sales_payments").select("*").order("due_date")),
+        safe(supabase.from("lease_cheques").select("*").order("cheque_date")),
+      ]);
+      setData({
+        leads:   leads.data||[],   activities: acts.data||[],
+        users:   users.data||[],   units:      units.data||[],
+        projects:projs.data||[],   salePricing:sp.data||[],
+        leasePricing:lp.data||[], leases:     leases.data||[],
+        tenants: tenants.data||[], payments:   payments.data||[],
+        cheques: cheques.data||[],
+      });
+    } catch(e) { showToast("Error loading report data","error"); }
+    setLoading(false);
+  },[]);
+
+  useEffect(()=>{ loadData(); },[loadData]);
+
+  const fmt = n => n ? `AED ${Number(n).toLocaleString()}` : "—";
+  const fmtD = d => d ? new Date(d).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"}) : "—";
+  const today = new Date();
+
+  // ── Report definitions ──────────────────────────────────────────
+  const REPORTS = {
+
+    // 1. PIPELINE
+    pipeline: {
+      label:"Pipeline Report", icon:"📊",
+      description:"All leads by stage with values and conversion rates",
+      generate: () => {
+        const { leads=[], users=[] } = data;
+        const userName = id => users.find(u=>u.id===id)?.full_name||"Unassigned";
+        const rows = leads.map(l=>([
+          l.name, l.phone||"—", l.email||"—", l.nationality||"—",
+          l.stage, l.property_type||"—", l.source||"—",
+          l.budget ? `AED ${Number(l.budget).toLocaleString()}` : "—",
+          l.final_price ? `AED ${Number(l.final_price).toLocaleString()}` : "—",
+          userName(l.assigned_to),
+          fmtD(l.created_at),
+          l.stage_updated_at ? Math.floor((today-new Date(l.stage_updated_at))/864e5)+"d" : "—",
+        ]));
+        const headers = ["Name","Phone","Email","Nationality","Stage","Type","Source","Budget","Final Price","Agent","Created","Days in Stage"];
+        // Summary by stage
+        const summary = ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"].map(s=>{
+          const sl=leads.filter(l=>l.stage===s);
+          const val=sl.reduce((a,l)=>a+(l.budget||0),0);
+          return [s, sl.length, `AED ${(val/1e6).toFixed(2)}M`, sl.length&&leads.length?Math.round(sl.length/leads.length*100)+"%":"0%"];
+        });
+        return { rows, headers, summary, summaryHeaders:["Stage","Count","Value","% of Total"] };
+      }
+    },
+
+    // 2. SALES PAYMENTS
+    sales_payments: {
+      label:"Sales Payments Report", icon:"💰",
+      description:"Payment collections vs outstanding per lead/contract",
+      generate: () => {
+        const { payments=[], leads=[] } = data;
+        const leadName = id => leads.find(l=>l.id===id)?.name||"—";
+        const rows = payments.map(p=>([
+          leadName(p.lead_id), p.milestone,
+          fmt(p.amount), p.percentage?p.percentage+"%":"—",
+          p.payment_type||"—", p.cheque_number||"—", p.bank_name||"—",
+          fmtD(p.due_date), fmtD(p.received_date||p.cleared_date),
+          p.status,
+          p.status==="Bounced" ? (p.bounce_reason||"—") : "—",
+        ]));
+        const headers = ["Lead","Milestone","Amount","%","Type","Cheque No.","Bank","Due Date","Received","Status","Bounce Reason"];
+        const cleared  = payments.filter(p=>p.status==="Cleared").reduce((s,p)=>s+(p.amount||0),0);
+        const pending  = payments.filter(p=>["Pending","Received","Deposited"].includes(p.status)).reduce((s,p)=>s+(p.amount||0),0);
+        const bounced  = payments.filter(p=>p.status==="Bounced").reduce((s,p)=>s+(p.amount||0),0);
+        const summary  = [["Cleared",payments.filter(p=>p.status==="Cleared").length,fmt(cleared)],["Pending",payments.filter(p=>p.status==="Pending").length,fmt(pending)],["Bounced",payments.filter(p=>p.status==="Bounced").length,fmt(bounced)]];
+        return { rows, headers, summary, summaryHeaders:["Status","Count","Value"] };
+      }
+    },
+
+    // 3. RENT ROLL
+    rent_roll: {
+      label:"Rent Roll", icon:"🔑",
+      description:"All active leases with annual value and expiry",
+      generate: () => {
+        const { leases=[], tenants=[], units=[] } = data;
+        const tenantName = id => tenants.find(t=>t.id===id)?.full_name||"—";
+        const unitRef    = id => units.find(u=>u.id===id)?.unit_ref||"—";
+        const active     = leases.filter(l=>l.status==="Active");
+        const rows       = active.map(l=>{
+          const daysToExp = Math.ceil((new Date(l.end_date)-today)/864e5);
+          return [
+            tenantName(l.tenant_id), unitRef(l.unit_id),
+            fmt(l.annual_rent), fmt(l.annual_rent?Math.round(l.annual_rent/12):0),
+            fmt(l.security_deposit), l.number_of_cheques||"—",
+            fmtD(l.start_date), fmtD(l.end_date),
+            daysToExp>0 ? daysToExp+"d" : "EXPIRED",
+            daysToExp<=30&&daysToExp>0 ? "⚠ Expiring Soon" : daysToExp<=0 ? "⚠ Expired" : "Active",
+            l.ejari_number||"—", l.contract_number||"—",
+          ];
+        });
+        const headers = ["Tenant","Unit","Annual Rent","Monthly","Deposit","Cheques","Start","End","Days Left","Status","Ejari","Contract"];
+        const totalRent = active.reduce((s,l)=>s+(l.annual_rent||0),0);
+        const expiring  = active.filter(l=>Math.ceil((new Date(l.end_date)-today)/864e5)<=30).length;
+        const summary   = [["Total Active Leases",active.length,""],["Total Annual Rent Roll",fmt(totalRent),""],["Expiring in 30 days",expiring,"⚠ Action needed"]];
+        return { rows, headers, summary, summaryHeaders:["Metric","Value","Note"] };
+      }
+    },
+
+    // 4. PDC SCHEDULE
+    pdc_schedule: {
+      label:"PDC Cheque Schedule", icon:"📋",
+      description:"All post-dated cheques sorted by deposit date",
+      generate: () => {
+        const { cheques=[], leases=[], tenants=[], units=[] } = data;
+        const lease    = id => leases.find(l=>l.id===id);
+        const tenant   = id => tenants.find(t=>t.id===id)?.full_name||"—";
+        const unitRef  = id => units.find(u=>u.id===id)?.unit_ref||"—";
+        const upcoming = [...cheques].sort((a,b)=>new Date(a.cheque_date)-new Date(b.cheque_date));
+        const rows = upcoming.map(c=>{
+          const l = lease(c.lease_id);
+          const isOverdue = c.status==="Pending"&&new Date(c.cheque_date)<today;
+          return [
+            l ? tenant(l.tenant_id) : "—",
+            c.unit_id ? unitRef(c.unit_id) : "—",
+            fmt(c.amount), c.cheque_number||"—", c.bank_name||"—",
+            fmtD(c.cheque_date), `${c.cheque_sequence}/${c.total_cheques}`,
+            c.status, isOverdue?"⚠ OVERDUE":"",
+            fmtD(c.deposit_date), fmtD(c.cleared_date),
+          ];
+        });
+        const headers = ["Tenant","Unit","Amount","Cheque No.","Bank","Date","Seq","Status","Alert","Deposited","Cleared"];
+        const pending  = cheques.filter(c=>c.status==="Pending");
+        const overdue  = pending.filter(c=>new Date(c.cheque_date)<today);
+        const summary  = [
+          ["Total Cheques",cheques.length,""],
+          ["Pending",pending.length, fmt(pending.reduce((s,c)=>s+(c.amount||0),0))],
+          ["Overdue",overdue.length, overdue.length>0?"⚠ Immediate action":""],
+          ["Cleared",cheques.filter(c=>c.status==="Cleared").length,""],
+          ["Bounced",cheques.filter(c=>c.status==="Bounced").length,""],
+        ];
+        return { rows, headers, summary, summaryHeaders:["Status","Count","Value"] };
+      }
+    },
+
+    // 5. INVENTORY
+    inventory: {
+      label:"Inventory Availability", icon:"🏠",
+      description:"All units by project with status and pricing",
+      generate: () => {
+        const { units=[], projects=[], salePricing=[], leasePricing=[] } = data;
+        const proj = id => projects.find(p=>p.id===id)?.name||"—";
+        const sp   = id => salePricing.find(s=>s.unit_id===id);
+        const lp   = id => leasePricing.find(l=>l.unit_id===id);
+        const rows = units.map(u=>([
+          proj(u.project_id), u.unit_ref, u.unit_type, u.sub_type,
+          u.purpose||"—", u.bedrooms===0?"Studio":u.bedrooms||"—",
+          u.size_sqft?Number(u.size_sqft).toLocaleString():"—",
+          u.floor_number||"—", u.view||"—",
+          sp(u.id)?.asking_price ? fmt(sp(u.id).asking_price) : "—",
+          sp(u.id)?.price_per_sqft ? `AED ${Number(sp(u.id).price_per_sqft).toLocaleString()}` : "—",
+          lp(u.id)?.annual_rent ? fmt(lp(u.id).annual_rent) : "—",
+          u.status, u.handover_date ? fmtD(u.handover_date) : "—",
+        ]));
+        const headers = ["Project","Ref","Type","Category","Purpose","Beds","Sqft","Floor","View","Sale Price","AED/sqft","Annual Rent","Status","Handover"];
+        const byStatus = ["Available","Reserved","Under Offer","Sold","Leased","Cancelled"].map(s=>([s, units.filter(u=>u.status===s).length, ""]));
+        return { rows, headers, summary:byStatus, summaryHeaders:["Status","Count",""] };
+      }
+    },
+
+    // 6. AGENT PERFORMANCE
+    agent_perf: {
+      label:"Agent Performance", icon:"👤",
+      description:"Leads, conversions and pipeline value per agent",
+      generate: () => {
+        const { leads=[], users=[], activities=[] } = data;
+        const agents = users.filter(u=>["sales_agent","sales_manager","leasing_agent","leasing_manager","admin"].includes(u.role));
+        const rows = agents.map(u=>{
+          const myLeads    = leads.filter(l=>l.assigned_to===u.id);
+          const won        = myLeads.filter(l=>l.stage==="Closed Won");
+          const lost       = myLeads.filter(l=>l.stage==="Closed Lost");
+          const active     = myLeads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
+          const pipeVal    = active.reduce((s,l)=>s+(l.budget||0),0);
+          const wonVal     = won.reduce((s,l)=>s+(l.final_price||l.budget||0),0);
+          const myActs     = activities.filter(a=>a.user_id===u.id);
+          const convRate   = myLeads.length>0 ? Math.round(won.length/myLeads.length*100) : 0;
+          return [
+            u.full_name, u.role.replace(/_/g," "), u.email||"—",
+            myLeads.length, active.length, won.length, lost.length,
+            convRate+"%", fmt(pipeVal), fmt(wonVal), myActs.length,
+          ];
+        });
+        const headers = ["Agent","Role","Email","Total Leads","Active","Won","Lost","Conv %","Pipeline Value","Won Value","Activities"];
+        return { rows, headers, summary:[], summaryHeaders:[] };
+      }
+    },
+  };
+
+  const currentReport = REPORTS[activeReport];
+  const reportData    = !loading && Object.keys(data).length > 0 ? currentReport?.generate() : null;
+
+  const handleExportExcel = () => {
+    if(!reportData) return;
+    exportToExcel(reportData.rows, reportData.headers, currentReport.label.replace(/\s+/g,"_")+"_"+new Date().toISOString().slice(0,10));
+    showToast("Excel exported — check your Downloads","success");
+  };
+
+  const handleExportPDF = () => {
+    if(!reportData) return;
+    exportToPDF(currentReport.label, currentReport.description, reportData.headers, reportData.rows, currentReport.label.replace(/\s+/g,"_"));
+    showToast("PDF opening — use Print to save as PDF","success");
+  };
+
+  return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+
+      {/* Report selector */}
+      <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
+        {Object.entries(REPORTS).map(([key,r])=>(
+          <button key={key} onClick={()=>setActiveReport(key)}
+            style={{padding:"7px 14px",borderRadius:8,border:`1.5px solid ${activeReport===key?"#0B1F3A":"#E2E8F0"}`,background:activeReport===key?"#0B1F3A":"#fff",color:activeReport===key?"#fff":"#4A5568",fontSize:12,fontWeight:activeReport===key?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .15s"}}>
+            <span>{r.icon}</span> {r.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Report header */}
+      <div style={{background:"#0B1F3A",borderRadius:12,padding:"14px 18px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+        <div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>{currentReport?.icon} {currentReport?.label}</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,.5)",marginTop:2}}>{currentReport?.description}</div>
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={handleExportExcel} disabled={loading||!reportData}
+            style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6,opacity:loading||!reportData?.rows?.length?.toString()?0.5:1}}>
+            📊 Export Excel
+          </button>
+          <button onClick={handleExportPDF} disabled={loading||!reportData}
+            style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#C9A84C",color:"#0B1F3A",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6,opacity:loading||!reportData?.rows?.length?.toString()?0.5:1}}>
+            📄 Export PDF
+          </button>
+          <button onClick={loadData}
+            style={{padding:"8px 12px",borderRadius:8,border:"1.5px solid rgba(255,255,255,.2)",background:"transparent",color:"rgba(255,255,255,.6)",fontSize:12,cursor:"pointer"}}>
+            ↻ Refresh
+          </button>
+        </div>
+      </div>
+
+      {loading && <Spinner msg="Loading report data…"/>}
+
+      {!loading && reportData && (
+        <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",gap:12}}>
+
+          {/* Summary cards */}
+          {reportData.summary?.length>0&&(
+            <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:10}}>Summary</div>
+              <div style={{overflowX:"auto"}}>
+                <table style={{borderCollapse:"collapse",fontSize:12,width:"100%"}}>
+                  <thead>
+                    <tr style={{background:"#F7F9FC"}}>
+                      {reportData.summaryHeaders.map(h=><th key={h} style={{padding:"6px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:"#4A5568",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.summary.map((row,i)=>(
+                      <tr key={i} style={{borderBottom:"1px solid #F0F2F5"}}>
+                        {row.map((cell,j)=><td key={j} style={{padding:"7px 12px",fontSize:12,color:String(cell).includes("⚠")?"#B83232":"#0B1F3A",fontWeight:j===0?600:400}}>{cell}</td>)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Data table */}
+          <div style={{flex:1,overflowY:"auto",overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:12}}>
+            <div style={{padding:"10px 16px",borderBottom:"1px solid #F0F2F5",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{reportData.rows.length} records</span>
+              <span style={{fontSize:11,color:"#A0AEC0"}}>Generated {new Date().toLocaleString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
+            </div>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+              <thead style={{position:"sticky",top:0,zIndex:1}}>
+                <tr style={{background:"#0B1F3A"}}>
+                  <th style={{padding:"8px 10px",textAlign:"left",fontSize:9,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>#</th>
+                  {reportData.headers.map(h=>(
+                    <th key={h} style={{padding:"8px 10px",textAlign:"left",fontSize:9,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {reportData.rows.length===0&&(
+                  <tr><td colSpan={reportData.headers.length+1} style={{padding:"2rem",textAlign:"center",color:"#A0AEC0"}}>No data for this report</td></tr>
+                )}
+                {reportData.rows.map((row,i)=>(
+                  <tr key={i} style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5"}}
+                    onMouseOver={e=>e.currentTarget.style.background="#F0F7FF"}
+                    onMouseOut={e=>e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC"}>
+                    <td style={{padding:"5px 10px",fontSize:10,color:"#A0AEC0",fontWeight:600}}>{i+1}</td>
+                    {row.map((cell,j)=>(
+                      <td key={j} style={{padding:"5px 10px",color:String(cell||"").includes("⚠")?"#B83232":String(cell||"").includes("AED")?"#0B1F3A":"#4A5568",fontWeight:String(cell||"").includes("AED")?700:400,whiteSpace:"nowrap",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis"}}>
+                        {cell===null||cell===undefined?"—":cell}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,currentUser,showToast}){
   const [messages,    setMessages]    = useState([]);
   const [input,       setInput]       = useState("");
@@ -6891,7 +7462,23 @@ export default function App(){
   useEffect(()=>{
     const restore=async()=>{
       const{data:{session}}=await supabase.auth.getSession();
-      if(session?.user){const{data:profile}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();if(profile&&profile.is_active)setCurrentUser({...session.user,...profile});else await supabase.auth.signOut();}
+      if(session?.user){
+        const{data:profile}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
+        if(profile&&profile.is_active){
+          setCurrentUser({...session.user,...profile});
+          // Load companies on restore for super admin
+          if(profile.is_super_admin||profile.role==="super_admin"){
+            supabase.from("companies").select("*").order("name").then(({data})=>{
+              if(data){
+                setCompanies(data);
+                const saved=localStorage.getItem("propccrm_company_id");
+                const co=saved?data.find(c=>c.id===saved):data[0];
+                if(co){setActiveCompanyId(co.id);localStorage.setItem("propccrm_company_id",co.id);}
+              }
+            });
+          }
+        } else await supabase.auth.signOut();
+      }
       setChecking(false);
     };
     restore();
@@ -7005,13 +7592,17 @@ export default function App(){
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,whiteSpace:"nowrap"}}>
               <span style={{color:"#C9A84C"}}>◆</span> PropCRM
             </div>
-            {companies.length>0&&(()=>{
-              const activeCo=companies.find(c=>c.id===activeCompanyId)||companies[0];
-              if(!activeCo)return null;
+            {(companies.length>0||currentUser.company_id)&&(()=>{
+              const activeCo = companies.find(c=>c.id===activeCompanyId)
+                || companies.find(c=>c.id===currentUser.company_id)
+                || companies[0];
+              const coName = activeCo?.name || appConfig?.company || null;
+              if(!coName) return null;
               return (
-                <div style={{display:"flex",alignItems:"center",gap:5,padding:"3px 8px",borderRadius:6,background:"rgba(255,255,255,.07)",maxWidth:160}}>
-                  {activeCo.logo_url&&<img src={activeCo.logo_url} alt="" style={{width:18,height:18,borderRadius:3,objectFit:"cover"}}/>}
-                  <span style={{fontSize:11,color:"rgba(255,255,255,.7)",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{activeCo.name}</span>
+                <div style={{display:"flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:6,background:"rgba(255,255,255,.07)",maxWidth:180,cursor:"pointer"}}
+                  title={coName}>
+                  {activeCo?.logo_url&&<img src={activeCo.logo_url} alt="" style={{width:18,height:18,borderRadius:3,objectFit:"cover"}}/>}
+                  <span style={{fontSize:11,color:"rgba(255,255,255,.8)",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>🏢 {coName}</span>
                 </div>
               );
             })()}
@@ -7118,6 +7709,7 @@ export default function App(){
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast}/>}
           {(tab==="permsets"||tab==="l_permsets")&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
           {(tab==="companies"||tab==="l_companies")&&currentUser?.is_super_admin&&<CompaniesModule currentUser={currentUser} showToast={showToast} activeCompanyId={activeCompanyId} onSwitchCompany={c=>{setActiveCompanyId(c.id);localStorage.setItem("propccrm_company_id",c.id);showToast(`Switched to ${c.name}`,"success");}}/>}
           {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
@@ -7130,6 +7722,7 @@ export default function App(){
           {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="l_ai"        &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast}/>}
           {tab==="l_users"     &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
         </>)}
       </div>
