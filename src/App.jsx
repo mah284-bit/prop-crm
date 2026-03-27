@@ -1539,8 +1539,7 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
             <button onClick={()=>{
               // Pre-fill email
               const unitList = leadUnits.length>0
-                ? leadUnits.map(lu=>{const u=units.find(x=>x.id===lu.unit_id);const p=projects.find(x=>x.id===u?.project_id);return u?`${u.unit_ref} — ${u.sub_type} (${p?.name||"—"})`:""}).filter(Boolean).join("
-")
+                ? leadUnits.map(lu=>{const u=units.find(x=>x.id===lu.unit_id);const p=projects.find(x=>x.id===u?.project_id);return u?`${u.unit_ref} — ${u.sub_type} (${p?.name||"—"})`:""}).filter(Boolean).join("\n")
                 : selUnit?`${selUnit.unit_ref} — ${selUnit.sub_type} (${selProj?.name||"—"})`:"";
               setEmailForm({
                 to: selLead.email||"",
