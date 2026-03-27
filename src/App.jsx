@@ -91,7 +91,7 @@ const saveAppConfig = (cfg) => {
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
   sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","reports","pay_plans","companies","users","permissions"],
-  leasing: ["l_dashboard","l_enquiries","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions"],
+  leasing: ["l_dashboard","l_leads","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions"],
   both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","reports","pay_plans","l_reports","companies","users","permissions"],
 };
 // Which roles each mode makes available
@@ -7679,11 +7679,8 @@ export default function App(){
               <span style={{color:"#C9A84C"}}>◆</span> PropCRM
             </div>
             {(()=>{
-              // Show active company — check localStorage first, then companies array
               const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id");
-              const activeCo = companies.find(c=>c.id===storedId) || currentUser?.company_name_display || null;
-              if(!activeCo && companies.length===0) return null;
-              const co = activeCo || companies[0];
+              const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || null;
               if(!co) return null;
               return (
                 <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:8,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)",cursor:"pointer",transition:"all .15s"}}
@@ -7784,7 +7781,7 @@ export default function App(){
 
           {/* ── Leasing CRM ───────────────────────────────────── */}
           {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={setTab} followupAlerts={followupAlerts} key="l_dash"/>}
-          {tab==="l_enquiries" &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
+          {tab==="l_leads"     &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
           {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId}/>}
           {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData}/>}
