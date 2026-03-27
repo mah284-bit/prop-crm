@@ -90,9 +90,9 @@ const saveAppConfig = (cfg) => {
 };
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","reports","pay_plans","users"],
-  leasing: ["dashboard","leasing","discounts","activity","ai","users"],
-  both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","reports","pay_plans","l_reports","users"],
+  sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","reports","pay_plans","companies","users","permissions"],
+  leasing: ["l_dashboard","l_enquiries","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions"],
+  both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","reports","pay_plans","l_reports","companies","users","permissions"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -7552,13 +7552,15 @@ export default function App(){
 
   useEffect(()=>{
     const restore=async()=>{
-      const{data:{session}}=await supabase.auth.getSession();
-      if(session?.user){
-        const{data:profile}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
-        if(profile&&profile.is_active)setCurrentUser({...session.user,...profile});
-        else await supabase.auth.signOut();
-      }
-      setChecking(false);
+      try{
+        const{data:{session}}=await supabase.auth.getSession();
+        if(session?.user){
+          const{data:profile}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
+          if(profile&&profile.is_active)setCurrentUser({...session.user,...profile});
+          else await supabase.auth.signOut();
+        }
+      }catch(e){console.error("Session restore error:",e);}
+      finally{setChecking(false);}
     };
     restore();
     const{data:{subscription}}=supabase.auth.onAuthStateChange(async(event,session)=>{
