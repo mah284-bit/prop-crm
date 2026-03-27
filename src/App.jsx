@@ -2322,8 +2322,8 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
     setLoading(true);
     try {
       const [p,u] = await Promise.all([
-        supabase.from("projects").select("*").order("name"),
-        supabase.from("project_units").select("id,project_id,status,purpose,unit_type"),
+        safe(supabase.from("projects").select("*").order("name")),
+        supabase.from("project_units").select("id,project_id,status,purpose,unit_type"))
       ]);
       setProjects(p.data||[]);
       setUnits(u.data||[]);
@@ -2867,11 +2867,11 @@ function ReservationsWidget({ currentUser, units=[], onManage }) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from("reservations")
-      .select("*")
-      .in("status", ["Active","Extended"])
-      .order("expires_at")
-      
+    try {
+      const { data } = await supabase.from("reservations")
+        .select("*").in("status", ["Active","Extended"]).order("expires_at");
+      setReservations(data || []);
+    } catch(e) { setReservations([]); }
     setLoading(false);
   }, []);
 
@@ -3026,7 +3026,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
       setLeasePricing(preloadedLeasePricing||[]);
       setLoading(false); // Show immediately
       // Load small tables in background (non-blocking)
-      const safe = q => q;
+      const safe = q => q.catch(()=>({data:[]}));
       Promise.all([
         safe(supabase.from("reservations").select("*").in("status",["Active","Extended","Confirmed"])),
         safe(supabase.from("leads").select("id,name,phone,email,nationality,stage")),
@@ -3041,7 +3041,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
     // Fallback: fetch everything
     setLoading(true);
     try {
-      const safe = q => q;
+      const safe = q => q.catch(()=>({data:[]}));
       const [u,p,sp,lp,res,lds,tns] = await Promise.all([
         safe(supabase.from("project_units").select("*").order("unit_ref")),
         safe(supabase.from("projects").select("*").order("name")),
@@ -4729,10 +4729,9 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
 
   const load = useCallback(async()=>{
     setLoading(true);
-    const{data}=await supabase.from("payment_plan_templates")
-      .select("*").order("project_id").order("name")
-      
-    setTemplates(data||[]);
+    let data=[];
+    try{const r=await supabase.from("payment_plan_templates").select("*").order("project_id").order("name");data=r.data||[];}catch(e){}
+    setTemplates(data);
     setLoading(false);
   },[]);
   useEffect(()=>{load();},[load]);
@@ -4941,7 +4940,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[] }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const safe = q => q;
+      const safe = q => q.catch(()=>({data:[]}));
       const [leads,acts,users,units,projs,sp,lp,leases,tenants,payments,cheques] = await Promise.all([
         safe(supabase.from("leads").select("*").order("created_at",{ascending:false})),
         safe(supabase.from("activities").select("*")),
@@ -5824,10 +5823,10 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
     const load = async () => {
       setLoading(true);
       const [l,t,p,m] = await Promise.all([
-        supabase.from("leases").select("*").order("end_date"),
-        supabase.from("tenants").select("*"),
-        supabase.from("rent_payments").select("*").order("due_date"),
-        supabase.from("maintenance").select("*").order("created_at",{ascending:false}),
+        safe(supabase.from("leases").select("*").order("end_date")),
+        safe(supabase.from("tenants").select("*")),
+        safe(supabase.from("rent_payments").select("*").order("due_date")),
+        supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
       ]);
       setLeases(l.data||[]); setTenants(t.data||[]);
       setPayments(p.data||[]); setMaintenance(m.data||[]);
@@ -7157,11 +7156,11 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
 
   useEffect(()=>{
     Promise.all([
-      supabase.from("tenants").select("*").order("full_name"),
+      await safe(supabase.from("tenants").select("*").order("full_name"),
       supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false}),
       supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft"),
       supabase.from("projects").select("id,name"),
-      supabase.from("unit_lease_pricing").select("*"),
+      supabase.from("unit_lease_pricing").select("*")),
     ]).then(([t,lo,u,p,lp])=>{
       setTenants(t.data||[]);
       setLOpps(lo.data||[]);
@@ -7520,7 +7519,7 @@ export default function App(){
     await supabase.from("profiles").update({company_id:id}).eq("id",currentUser.id);
     setActiveCompanyId(id);
     localStorage.setItem("propccrm_company_id",id);
-    // Full page reload to re-fetch everything with new RLS context
+    // Update companies list display then reload
     window.location.reload();
   };
   const[leasingData,setLeasingData]=useState({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
@@ -7564,7 +7563,7 @@ export default function App(){
 
   useEffect(()=>{
     if(!currentUser)return;
-    const safe=async(q)=>{ try{const r=await q;return{data:(r.data||[])};}catch(e){return{data:[]};} };
+    const safe=async(q)=>{ try{const r=await q;return{data:(r.data||[])};}catch(e){console.warn("Query error:",e);return{data:[]};} };
     const cid = activeCompanyId || currentUser.company_id || null;
     const load=async()=>{
       setDataLoading(true);
@@ -7588,7 +7587,7 @@ export default function App(){
         setUsers(u.data);
         setDiscounts(filterByCo(d.data));
         // Load opportunities globally
-        const oppRes = await supabase.from("opportunities").select("*").order("created_at",{ascending:false});
+        const oppRes = await safe(supabase.from("opportunities").select("*").order("created_at",{ascending:false}));
         setOpps(filterByCo(oppRes.data||[]));
         // Load inventory + leasing data eagerly
         const[proj,units2,sp2,lp2,lt,ll,lp_,lm]=await Promise.all([
@@ -7675,17 +7674,25 @@ export default function App(){
         <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:48,gap:8}}>
 
           {/* Logo + Company */}
-          <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0,marginRight:4}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,marginRight:6}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,whiteSpace:"nowrap"}}>
               <span style={{color:"#C9A84C"}}>◆</span> PropCRM
             </div>
-            {companies.length>0&&(()=>{
-              const activeCo=companies.find(c=>c.id===activeCompanyId)||companies[0];
-              if(!activeCo)return null;
+            {(()=>{
+              // Show active company — check localStorage first, then companies array
+              const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id");
+              const activeCo = companies.find(c=>c.id===storedId) || currentUser?.company_name_display || null;
+              if(!activeCo && companies.length===0) return null;
+              const co = activeCo || companies[0];
+              if(!co) return null;
               return (
-                <div style={{display:"flex",alignItems:"center",gap:5,padding:"3px 8px",borderRadius:6,background:"rgba(255,255,255,.07)",maxWidth:160}}>
-                  {activeCo.logo_url&&<img src={activeCo.logo_url} alt="" style={{width:18,height:18,borderRadius:3,objectFit:"cover"}}/>}
-                  <span style={{fontSize:11,color:"rgba(255,255,255,.7)",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{activeCo.name}</span>
+                <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:8,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)",cursor:"pointer",transition:"all .15s"}}
+                  onClick={()=>setTab("companies")}
+                  onMouseOver={e=>e.currentTarget.style.background="rgba(255,255,255,.14)"}
+                  onMouseOut={e=>e.currentTarget.style.background="rgba(255,255,255,.08)"}>
+                  {co.logo_url&&<img src={co.logo_url} alt="" style={{width:18,height:18,borderRadius:4,objectFit:"cover"}}/>}
+                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#C9A84C",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>{co.name}</span>
+                  <span style={{fontSize:10,color:"rgba(201,168,76,.5)"}}>▼</span>
                 </div>
               );
             })()}
