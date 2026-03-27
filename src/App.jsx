@@ -7516,13 +7516,13 @@ export default function App(){
   const[companies, setCompanies] = useState([]);
   const[activeCompanyId,setActiveCompanyId]=useState(()=>localStorage.getItem("propccrm_company_id")||null);
   // Reload inventory when company changes
-  const switchCompany = (id) => {
+  const switchCompany = async (id) => {
+    // Update profile company_id in Supabase so RLS works correctly
+    await supabase.from("profiles").update({company_id:id}).eq("id",currentUser.id);
     setActiveCompanyId(id);
     localStorage.setItem("propccrm_company_id",id);
-    // Reset preloaded data so modules re-fetch for new company
-    setAiProjects([]);setAiUnits([]);setAiSalePr([]);setAiLeasePr([]);
-    setLeads([]);setOpps([]);setDiscounts([]);
-    setLeasingData({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
+    // Full page reload to re-fetch everything with new RLS context
+    window.location.reload();
   };
   const[leasingData,setLeasingData]=useState({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
   const[followupAlerts,setFollowupAlerts]=useState({staleLeads:[],overduePayments:[],expiringLeases:[]});
