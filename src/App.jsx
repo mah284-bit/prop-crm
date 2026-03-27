@@ -203,8 +203,8 @@ function PermSetSelector({ companyId, value, onChange }) {
   useEffect(()=>{
     if(!companyId) return;
     Promise.all([
-      supabase.from("permission_sets").select("id,name,color").eq("company_id",companyId).order("name"),
-      supabase.from("permission_sets").select("id,name,color").is("company_id",null).order("name"),
+      safe(supabase.from("permission_sets").select("id,name,color").eq("company_id",companyId).order("name")),
+      safe(supabase.from("permission_sets").select("id,name,color").is("company_id",null).order("name")),
     ]).then(([s,t])=>{ setSets(s.data||[]); setTemplates(t.data||[]); });
   },[companyId]);
 
@@ -636,10 +636,10 @@ function PropertyMaster({currentUser,showToast}){
   const load=useCallback(async()=>{
     setLoading(true);
     const[p,c,b,u]=await Promise.all([
-      supabase.from("projects").select("*").order("name"),
-      supabase.from("project_categories").select("*").order("name"),
-      supabase.from("project_buildings").select("*").order("name"),
-      supabase.from("units").select("*").order("unit_number"),
+      safe(supabase.from("projects").select("*").order("name")),
+      safe(supabase.from("project_categories").select("*").order("name")),
+      safe(supabase.from("project_buildings").select("*").order("name")),
+      safe(supabase.from("units").select("*").order("unit_number")),
     ]);
     setProjects(p.data||[]);setCategories(c.data||[]);setBuildings(b.data||[]);setUnits(u.data||[]);
     setLoading(false);
@@ -983,9 +983,9 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const sm       = OPP_STAGE_META[opp.stage]||OPP_STAGE_META["New"];
 
   useEffect(()=>{
-    supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
-    supabase.from("sales_payments").select("*").eq("opportunity_id",opp.id).order("created_at").then(({data})=>setPayments(data||[]));
-    supabase.from("sales_contracts").select("*").eq("opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
+    safe(supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));)
+    safe(supabase.from("sales_payments").select("*").eq("opportunity_id",opp.id).order("created_at").then(({data})=>setPayments(data||[]));)
+    safe(supabase.from("sales_contracts").select("*").eq("opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));)
   },[opp.id]);
 
   const moveStage = async(toStage)=>{
@@ -1480,10 +1480,10 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
 
   // Load data
   useEffect(()=>{
-    supabase.from("opportunities").select("*").order("created_at",{ascending:false}).then(({data})=>setOpps(data||[]));
-    supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms").then(({data})=>setUnits(data||[]));
-    supabase.from("projects").select("id,name").then(({data})=>setProjects(data||[]));
-    supabase.from("unit_sale_pricing").select("unit_id,asking_price").then(({data})=>setSalePricing(data||[]));
+    safe(supabase.from("opportunities").select("*").order("created_at",{ascending:false}).then(({data})=>setOpps(data||[]));)
+    safe(supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms").then(({data})=>setUnits(data||[]));)
+    safe(supabase.from("projects").select("id,name").then(({data})=>setProjects(data||[]));)
+    safe(supabase.from("unit_sale_pricing").select("unit_id,asking_price").then(({data})=>setSalePricing(data||[]));)
   },[]);
 
   const selLead = leads.find(l=>l.id===selLeadId);
@@ -2323,7 +2323,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
     try {
       const [p,u] = await Promise.all([
         safe(supabase.from("projects").select("*").order("name")),
-        supabase.from("project_units").select("id,project_id,status,purpose,unit_type")),
+        safe(supabase.from("project_units").select("id,project_id,status,purpose,unit_type")),
       ]);
       setProjects(p.data||[]);
       setUnits(u.data||[]);
@@ -4137,11 +4137,11 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
     }
     setLoading(true);
     const [t,l,p,m,u]=await Promise.all([
-      supabase.from("tenants").select("*").order("full_name"),
-      supabase.from("leases").select("*").order("end_date"),
-      supabase.from("rent_payments").select("*").order("due_date"),
-      supabase.from("maintenance").select("*").order("created_at",{ascending:false}),
-      supabase.from("project_units").select("id,unit_ref,sub_type"),
+      safe(supabase.from("tenants").select("*").order("full_name")),
+      safe(supabase.from("leases").select("*").order("end_date")),
+      safe(supabase.from("rent_payments").select("*").order("due_date")),
+      safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
+      safe(supabase.from("project_units").select("id,unit_ref,sub_type")),
     ]);
     const updated={tenants:t.data||[],leases:l.data||[],payments:p.data||[],maintenance:m.data||[],loaded:true};
     setTenants(updated.tenants);setLeases(updated.leases);setPayments(updated.payments);setMaintenance(updated.maintenance);setUnits(u.data||[]);
@@ -5826,7 +5826,7 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
         safe(supabase.from("leases").select("*").order("end_date")),
         safe(supabase.from("tenants").select("*")),
         safe(supabase.from("rent_payments").select("*").order("due_date")),
-        supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
+        safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
       ]);
       setLeases(l.data||[]); setTenants(t.data||[]);
       setPayments(p.data||[]); setMaintenance(m.data||[]);
@@ -6586,9 +6586,9 @@ function PermissionSetsModule({ currentUser, showToast }) {
   const load = useCallback(async () => {
     setLoading(true);
     const [s, t, u] = await Promise.all([
-      supabase.from("permission_sets").select("*").eq("company_id", currentUser.company_id||"").order("name"),
-      supabase.from("permission_sets").select("*").is("company_id", null).order("name"),
-      supabase.from("profiles").select("id,full_name,permission_set_id").eq("company_id", currentUser.company_id||""),
+      safe(supabase.from("permission_sets").select("*").eq("company_id", currentUser.company_id||"").order("name")),
+      safe(supabase.from("permission_sets").select("*").is("company_id", null).order("name")),
+      safe(supabase.from("profiles").select("id,full_name,permission_set_id").eq("company_id", currentUser.company_id||"")),
     ]);
     setSets(s.data||[]);
     setTemplates(t.data||[]);
@@ -6937,7 +6937,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
   const sm    = LEASE_STAGE_META[opp.stage]||LEASE_STAGE_META["New Enquiry"];
 
   useEffect(()=>{
-    supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
+    safe(supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));)
   },[opp.id]);
 
   const moveStage = async(toStage)=>{
@@ -7157,10 +7157,10 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
   useEffect(()=>{
     Promise.all([
       await safe(supabase.from("tenants").select("*").order("full_name"),
-      supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false}),
-      supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft"),
-      supabase.from("projects").select("id,name"),
-      supabase.from("unit_lease_pricing").select("*")),
+      safe(supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false})),
+      safe(supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft")),
+      safe(supabase.from("projects").select("id,name")),
+      safe(supabase.from("unit_lease_pricing").select("*")),
     ]).then(([t,lo,u,p,lp])=>{
       setTenants(t.data||[]);
       setLOpps(lo.data||[]);
@@ -7532,10 +7532,10 @@ export default function App(){
     if(aiProjects.length>0)return;
     try{
       const[p,u,sp,lp]=await Promise.all([
-        supabase.from("projects").select("*"),
-        supabase.from("project_units").select("*"),
-        supabase.from("unit_sale_pricing").select("*"),
-        supabase.from("unit_lease_pricing").select("*"),
+        safe(supabase.from("projects").select("*")),
+        safe(supabase.from("project_units").select("*")),
+        safe(supabase.from("unit_sale_pricing").select("*")),
+        safe(supabase.from("unit_lease_pricing").select("*")),
       ]);
       setAiProjects(p.data||[]);setAiUnits(u.data||[]);setAiSalePr(sp.data||[]);setAiLeasePr(lp.data||[]);
     }catch(e){console.log(e);}
@@ -7571,13 +7571,13 @@ export default function App(){
         const[l,pr,a,u,d]=await Promise.all([
           safe(cid
             ? supabase.from("leads").select("*").eq("company_id",cid).order("created_at",{ascending:false})
-            : supabase.from("leads").select("*").order("created_at",{ascending:false})),
+            : supabase.from("leads").select("*").order("created_at",{ascending:false}),
           safe(supabase.from("properties").select("*").order("created_at",{ascending:false})),
           safe(supabase.from("activities").select("*").order("created_at",{ascending:false})),
           safe(supabase.from("profiles").select("*").order("full_name")),
           safe(cid
             ? supabase.from("discount_requests").select("*").eq("company_id",cid).order("created_at",{ascending:false})
-            : supabase.from("discount_requests").select("*").order("created_at",{ascending:false})),
+            : supabase.from("discount_requests").select("*").order("created_at",{ascending:false}),
         ]);
         // SECURITY: filter all data by active company client-side
         const filterByCo = (arr) => cid ? arr.filter(x=>x.company_id===cid) : arr;
@@ -7591,10 +7591,10 @@ export default function App(){
         setOpps(filterByCo(oppRes.data||[]));
         // Load inventory + leasing data eagerly
         const[proj,units2,sp2,lp2,lt,ll,lp_,lm]=await Promise.all([
-          safe(cid ? supabase.from("projects").select("*").eq("company_id",cid).order("name") : supabase.from("projects").select("*").order("name")),
-          safe(cid ? supabase.from("project_units").select("*").eq("company_id",cid) : supabase.from("project_units").select("*")),
-          safe(cid ? supabase.from("unit_sale_pricing").select("*").eq("company_id",cid) : supabase.from("unit_sale_pricing").select("*")),
-          safe(cid ? supabase.from("unit_lease_pricing").select("*").eq("company_id",cid) : supabase.from("unit_lease_pricing").select("*")),
+          safe(cid ? supabase.from("projects").select("*").eq("company_id",cid).order("name") : supabase.from("projects").select("*").order("name"),
+          safe(cid ? supabase.from("project_units").select("*").eq("company_id",cid) : supabase.from("project_units").select("*"),
+          safe(cid ? supabase.from("unit_sale_pricing").select("*").eq("company_id",cid) : supabase.from("unit_sale_pricing").select("*"),
+          safe(cid ? supabase.from("unit_lease_pricing").select("*").eq("company_id",cid) : supabase.from("unit_lease_pricing").select("*"),
           safe(supabase.from("tenants").select("*").order("full_name")),
           safe(supabase.from("leases").select("*").order("end_date")),
           safe(supabase.from("rent_payments").select("*").order("due_date")),
@@ -7635,7 +7635,7 @@ export default function App(){
     setActiveApp(app);
     setTab(app==="leasing"?"l_dashboard":"dashboard");
     if(user.is_super_admin||user.role==="super_admin"){
-      supabase.from("companies").select("*").order("name").then(({data})=>{
+      safe(supabase.from("companies").select("*").order("name").then(({data})=>{)
         if(data){
           setCompanies(data);
           const saved=localStorage.getItem("propccrm_company_id");
