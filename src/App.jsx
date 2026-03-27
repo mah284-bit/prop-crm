@@ -7506,443 +7506,136 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
 }
 
 
-function LeasingLeads({ currentUser, showToast, users=[] }) {
-  const [leads,      setLeads]      = useState([]);
-  const [activities, setActivities] = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [search,     setSearch]     = useState("");
-  const [fStage,     setFStage]     = useState("All");
-  const [sel,        setSel]        = useState(null);
-  const [showAdd,    setShowAdd]    = useState(false);
-  const [saving,     setSaving]     = useState(false);
-  const [showLog,    setShowLog]    = useState(false);
 
-  const canSeeAll = can(currentUser.role,"see_all");
+// ══════════════════════════════════════════════════════════════════
+// MAIN APP
+// ══════════════════════════════════════════════════════════════════
 
-  const blank = {
-    name:"", email:"", phone:"", whatsapp:"", nationality:"",
-    source:"Referral", stage:"New Enquiry", budget:"",
-    notes:"", assigned_to:currentUser.id,
-    property_type:"Lease",   // ← key field that marks this as leasing lead
-    preferred_bedrooms:"", preferred_area:"", move_in_date:"",
-  };
-  const [form, setForm]       = useState(blank);
-  const [logForm, setLogForm] = useState({type:"Call", note:""});
+const TABS = [
+  {id:"dashboard",  label:"Dashboard",    icon:"📊", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent","viewer"]},
+  {id:"projects",   label:"Projects",     icon:"🏗",  app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent","viewer"]},
+  {id:"builder",    label:"Inventory",    icon:"🏠", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent","viewer"]},
+  {id:"leads",      label:"Leads",        icon:"👤", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"pipeline",   label:"Pipeline",     icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"discounts",  label:"Discounts",    icon:"🏷", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"activity",   label:"Activity Log", icon:"📋", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"ai",         label:"AI Assistant", icon:"✦",  app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"reports",    label:"Reports",      icon:"📊", app:"sales",   roles:["super_admin","admin","sales_manager"]},
+  {id:"pay_plans",  label:"Pay Plans",    icon:"📋", app:"sales",   roles:["super_admin","admin","sales_manager"]},
+  {id:"companies",  label:"Companies",    icon:"🏢", app:"sales",   roles:["super_admin"]},
+  {id:"users",      label:"Users",        icon:"👥", app:"sales",   roles:["super_admin","admin"]},
+  {id:"permissions",label:"Permissions",  icon:"🔑", app:"sales",   roles:["super_admin","admin"]},
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      // Load only leasing enquiries
-      const q = supabase.from("leads").select("*")
-        .eq("property_type","Lease")
-        .order("created_at",{ascending:false});
-      const { data } = await q;
-      setLeads(data||[]);
-      // Load activities for these leads
-      const ids = (data||[]).map(l=>l.id);
-      if (ids.length > 0) {
-        const { data:acts } = await supabase.from("activities").select("*").in("lead_id",ids).order("created_at",{ascending:false});
-        setActivities(acts||[]);
-      }
-    } catch(e) { console.error(e); }
-    setLoading(false);
-  },[]);
+  {id:"l_dashboard",label:"Dashboard",    icon:"📊", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
+  {id:"l_enquiries",label:"Enquiries",    icon:"🔑", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
+  {id:"l_projects", label:"Projects",     icon:"🏗",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
+  {id:"l_inventory",label:"Inventory",    icon:"🏠", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
+  {id:"leasing",    label:"Leasing",      icon:"📄", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
+  {id:"l_discounts",label:"Discounts",    icon:"🏷", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
+  {id:"l_activity", label:"Activity Log", icon:"📋", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
+  {id:"l_ai",       label:"AI Assistant", icon:"✦",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
+  {id:"l_reports",  label:"Reports",      icon:"📊", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
+  {id:"l_companies",label:"Companies",    icon:"🏢", app:"leasing", roles:["super_admin"]},
+  {id:"l_users",    label:"Users",        icon:"👥", app:"leasing", roles:["super_admin","admin"]},
+  {id:"l_permissions",label:"Permissions",icon:"🔑", app:"leasing", roles:["super_admin","admin"]},
+];
 
-  useEffect(() => { load(); }, [load]);
+const MODE_TABS = {
+  sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","reports","pay_plans","companies","users","permissions"],
+  leasing: ["l_dashboard","l_enquiries","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions"],
+  both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","reports","pay_plans","l_reports","companies","users","permissions"],
+};
 
-  const visible = canSeeAll ? leads : leads.filter(l=>l.assigned_to===currentUser.id);
-  const filtered = visible.filter(l => {
-    const q = search.toLowerCase();
-    const matchQ = !q || l.name?.toLowerCase().includes(q) || l.phone?.includes(q) || l.email?.toLowerCase().includes(q);
-    const matchS  = fStage==="All" || l.stage===fStage;
-    return matchQ && matchS;
-  });
+const SUBTITLES = {
+  dashboard:    "Overview of your sales pipeline and key metrics",
+  projects:     "Manage development projects and track unit inventory",
+  builder:      "Manage your property inventory — units, pricing and availability",
+  leads:        "Manage contacts and track opportunities through the sales cycle",
+  pipeline:     "Visual pipeline — drag opportunities across stages",
+  discounts:    "Review and approve discount requests",
+  activity:     "Full activity log — calls, emails, meetings and notes",
+  ai:           "AI-powered assistant — ask anything about your CRM data",
+  reports:      "Generate and export reports — pipeline, payments, rent roll, inventory",
+  pay_plans:    "Manage payment plan templates per project",
+  companies:    "Manage companies and switch active company",
+  users:        "Manage users, roles and settings",
+  permissions:  "Configure permission sets and role access",
+  l_dashboard:  "Leasing overview — active leases, rent roll and maintenance",
+  l_enquiries:  "Tenant contacts and lease enquiries — manage your leasing pipeline",
+  l_projects:   "Leasing projects — units available for rent",
+  l_inventory:  "Lease inventory — units available for rent and lease",
+  leasing:      "Active leases, tenants, payments and maintenance",
+  l_discounts:  "Leasing discount requests and approvals",
+  l_activity:   "Leasing activity log",
+  l_ai:         "AI assistant for leasing data",
+  l_reports:    "Generate and export leasing reports — rent roll, PDC schedule, performance",
+  l_companies:  "Manage companies",
+  l_users:      "Manage users and settings",
+  l_permissions:"Configure permission sets",
+};
 
-  const selLead = sel ? leads.find(l=>l.id===sel) : null;
-  const leadActs = sel ? activities.filter(a=>a.lead_id===sel).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)) : [];
-  const assignedName = selLead ? (users.find(u=>u.id===selLead.assigned_to)?.full_name||"Unassigned") : "";
+const DEFAULT_APP = {
+  super_admin:"sales", admin:"sales",
+  sales_manager:"sales", sales_agent:"sales",
+  leasing_manager:"leasing", leasing_agent:"leasing",
+  viewer:"sales",
+};
 
-  const saveLead = async () => {
-    if (!form.name.trim()) { showToast("Name required","error"); return; }
-    setSaving(true);
-    try {
-      const payload = {
-        name:form.name, email:form.email||null, phone:form.phone||null,
-        whatsapp:form.whatsapp||null, nationality:form.nationality||null,
-        source:form.source, stage:form.stage, budget:Number(form.budget)||0,
-        notes:form.notes||null, assigned_to:form.assigned_to||currentUser.id,
-        property_type:"Lease",
-        preferred_bedrooms:form.preferred_bedrooms||null,
-        preferred_area:form.preferred_area||null,
-        move_in_date:form.move_in_date||null,
-        created_by:currentUser.id,
-        stage_updated_at:new Date().toISOString(),
-        company_id:currentUser.company_id||null,
-      };
-      const { data, error } = await supabase.from("leads").insert(payload).select().single();
-      if (error) throw error;
-      setLeads(p=>[data,...p]);
-      showToast("Enquiry added","success"); setShowAdd(false); setForm(blank);
-    } catch(e) { showToast(e.message,"error"); }
-    setSaving(false);
-  };
-
-  const moveStage = async (toStage) => {
-    if (!selLead) return;
-    const { error } = await supabase.from("leads").update({stage:toStage, stage_updated_at:new Date().toISOString()}).eq("id",sel);
-    if (error) { showToast(error.message,"error"); return; }
-    setLeads(p=>p.map(l=>l.id===sel?{...l,stage:toStage}:l));
-    showToast("Stage updated","success");
-  };
-
-  const saveLog = async () => {
-    if (!logForm.note.trim()) { showToast("Enter a note","error"); return; }
-    setSaving(true);
-    try {
-      const { data, error } = await supabase.from("activities").insert({
-        lead_id:sel, type:logForm.type, note:logForm.note,
-        user_id:currentUser.id, user_name:currentUser.full_name,
-        lead_name:selLead.name, company_id:currentUser.company_id||null
-      }).select().single();
-      if (error) throw error;
-      setActivities(p=>[data,...p]);
-      showToast("Activity logged","success"); setShowLog(false); setLogForm({type:"Call",note:""});
-    } catch(e) { showToast(e.message,"error"); }
-    setSaving(false);
-  };
-
-  // Stage summary counts
-  const stageCounts = LEASE_STAGES.reduce((acc,s)=>({...acc,[s]:visible.filter(l=>l.stage===s).length}),{});
-
-  if (loading) return <Spinner msg="Loading enquiries…"/>;
-
-  return (
-    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
-
-      {/* Stage overview strip */}
-      <div style={{display:"flex",gap:8,marginBottom:14,overflowX:"auto",paddingBottom:4}}>
-        {LEASE_STAGES.map(s=>{
-          const m = LEASE_STAGE_META[s];
-          const cnt = stageCounts[s]||0;
-          return (
-            <div key={s} onClick={()=>setFStage(fStage===s?"All":s)}
-              style={{flexShrink:0,padding:"8px 14px",borderRadius:10,border:`2px solid ${fStage===s?m.c:"#E2E8F0"}`,background:fStage===s?m.bg:"#fff",cursor:"pointer",textAlign:"center",minWidth:110,transition:"all .15s"}}>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:m.c}}>{cnt}</div>
-              <div style={{fontSize:11,fontWeight:600,color:fStage===s?m.c:"#718096",marginTop:2}}>{s}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div style={{display:"flex",gap:14,flex:1,overflow:"hidden"}}>
-        {/* List */}
-        <div style={{flex:1,display:"flex",flexDirection:"column",minWidth:0}}>
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search enquiries…" style={{flex:1}}/>
-            {can(currentUser.role,"write")&&(
-              <button onClick={()=>{setForm(blank);setShowAdd(true);}}
-                style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
-                + Add Enquiry
-              </button>
-            )}
-          </div>
-          <div style={{fontSize:12,color:"#A0AEC0",marginBottom:8}}>{filtered.length} enquir{filtered.length!==1?"ies":"y"}</div>
-          <div style={{flex:1,overflowY:"auto"}}>
-            <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-              <thead style={{position:"sticky",top:0,zIndex:1}}>
-                <tr style={{background:"#1A0B3A"}}>
-                  {["Enquiry","Budget","Stage","Phone","Nationality","Move To"].map(h=>(
-                    <th key={h} style={{padding:"8px 10px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C4ACEC",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.length===0&&<tr><td colSpan={6} style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>No enquiries found</td></tr>}
-                {filtered.map((l,i)=>{
-                  const m=LEASE_STAGE_META[l.stage]||{c:"#718096",bg:"#F0F2F5"};
-                  const isSel=sel===l.id;
-                  return(
-                    <tr key={l.id} onClick={()=>setSel(isSel?null:l.id)}
-                      style={{background:isSel?"#EEE8F9":i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5",cursor:"pointer",borderLeft:isSel?"3px solid #9B7FD4":"3px solid transparent"}}
-                      onMouseOver={e=>{if(!isSel)e.currentTarget.style.background="#F5F0FF";}}
-                      onMouseOut={e=>{if(!isSel)e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC";}}>
-                      <td style={{padding:"7px 10px"}}>
-                        <div style={{display:"flex",alignItems:"center",gap:7}}>
-                          <Av name={l.name} size={26}/>
-                          <div>
-                            <div style={{fontWeight:700,fontSize:12,color:"#0B1F3A"}}>{l.name}</div>
-                            {l.email&&<div style={{fontSize:10,color:"#A0AEC0"}}>{l.email}</div>}
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{padding:"7px 10px",fontWeight:700,color:"#5B3FAA",whiteSpace:"nowrap"}}>{l.budget?fmtM(l.budget):"—"}</td>
-                      <td style={{padding:"7px 10px"}}><span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:m.bg,color:m.c,whiteSpace:"nowrap"}}>{l.stage}</span></td>
-                      <td style={{padding:"7px 10px",color:"#718096",fontSize:11}}>{l.phone||"—"}</td>
-                      <td style={{padding:"7px 10px",color:"#718096",fontSize:11}}>{l.nationality||"—"}</td>
-                      <td style={{padding:"7px 6px"}} onClick={e=>e.stopPropagation()}>
-                        {can(currentUser.role,"write")&&(
-                          <select value="" onChange={e=>{if(!e.target.value)return;moveStage(l,e.target.value);}}
-                            style={{fontSize:11,padding:"3px 6px",borderRadius:6,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer",maxWidth:130}}>
-                            <option value="">Move to…</option>
-                            {LEASE_STAGES.filter(s=>s!==l.stage).map(s=><option key={s} value={s}>{s}</option>)}
-                          </select>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          </div>
-        </div>
-
-        {/* Detail panel */}
-        {selLead&&(
-          <div style={{width:320,background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden"}}>
-            <div style={{background:"linear-gradient(135deg,#1A0B3A,#2D1558)",padding:"1.25rem",position:"relative"}}>
-              <button onClick={()=>setSel(null)} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:"#9B7FD4",fontSize:20,cursor:"pointer"}}>×</button>
-              <div style={{width:44,height:44,borderRadius:"50%",background:"#9B7FD4",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:"#1A0B3A",marginBottom:10}}>
-                {(selLead.name||"?").split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase()}
-              </div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,color:"#fff",fontWeight:700}}>{selLead.name}</div>
-              <div style={{fontSize:12,color:"#9B7FD4",marginTop:2}}>{selLead.phone}</div>
-              <div style={{fontSize:12,color:"#9B7FD488"}}>{selLead.email}</div>
-            </div>
-
-            <div style={{flex:1,overflowY:"auto",padding:"1rem"}}>
-              {/* Stage badge */}
-              <div style={{marginBottom:12}}>
-                {(()=>{const m=LEASE_STAGE_META[selLead.stage]||{c:"#718096",bg:"#F0F2F5"};return <span style={{fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:20,background:m.bg,color:m.c}}>{selLead.stage}</span>})()}
-              </div>
-
-              {/* Key details */}
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,background:"#FAFBFC",borderRadius:10,padding:"10px",marginBottom:12}}>
-                {[
-                  ["Budget/yr", selLead.budget>0?`AED ${Number(selLead.budget).toLocaleString()}`:"—"],
-                  ["Source",    selLead.source||"—"],
-                  ["Area",      selLead.preferred_area||"—"],
-                  ["Bedrooms",  selLead.preferred_bedrooms||"—"],
-                  ["Move-in",   selLead.move_in_date?new Date(selLead.move_in_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"}):"—"],
-                  ["Assigned",  assignedName],
-                ].map(([l,v])=>(
-                  <div key={l}>
-                    <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px"}}>{l}</div>
-                    <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{v}</div>
-                  </div>
-                ))}
-              </div>
-
-              {selLead.notes&&<div style={{borderLeft:"3px solid #9B7FD4",padding:"8px 10px 8px 12px",marginBottom:12,background:"#F5F0FF",borderRadius:"0 8px 8px 0",fontSize:13,color:"#4A5568",lineHeight:1.6}}>{selLead.notes}</div>}
-
-              {/* Move stage */}
-              {can(currentUser.role,"write")&&(
-                <div style={{marginBottom:12}}>
-                  <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:7,fontWeight:600}}>Move Stage</div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                    {LEASE_STAGES.map(s=>{
-                      const m = LEASE_STAGE_META[s];
-                      const isCur = selLead.stage===s;
-                      return (
-                        <button key={s} onClick={()=>moveStage(s)}
-                          style={{fontSize:10,padding:"4px 9px",borderRadius:20,border:`1.5px solid ${isCur?m.c:"#E2E8F0"}`,background:isCur?m.bg:"#fff",color:isCur?m.c:"#4A5568",cursor:"pointer",fontWeight:isCur?700:400}}>
-                          {s}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Activities */}
-              {leadActs.length>0&&(
-                <div style={{marginBottom:12}}>
-                  <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:7,fontWeight:600}}>Activity History</div>
-                  {leadActs.slice(0,4).map(a=>(
-                    <div key={a.id} style={{padding:"7px 10px",background:"#FAFBFC",borderRadius:8,border:"1px solid #F0F2F5",marginBottom:5}}>
-                      <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{a.type}</div>
-                      <div style={{fontSize:11,color:"#718096",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.note}</div>
-                      <div style={{fontSize:10,color:"#A0AEC0"}}>{a.user_name} · {new Date(a.created_at).toLocaleDateString("en-AE",{day:"numeric",month:"short"})}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Actions */}
-              {can(currentUser.role,"write")&&(
-                <button onClick={()=>setShowLog(true)}
-                  style={{width:"100%",padding:"9px",borderRadius:8,border:"none",background:"#9B7FD4",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
-                  + Log Activity
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-      {/* Add Enquiry Modal */}
-      {showAdd&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:520,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1.125rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>Add Tenant Enquiry</span>
-              <button onClick={()=>setShowAdd(false)} style={{background:"none",border:"none",fontSize:22,color:"#9B7FD4",cursor:"pointer"}}>×</button>
-            </div>
-            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
-                <div style={{gridColumn:"1/-1"}}>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Full Name *</label>
-                  <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Ahmed Al Mansoori"/>
-                </div>
-                <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Phone</label>
-                  <input value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value}))} placeholder="+971 50 000 0000"/>
-                </div>
-                <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Email</label>
-                  <input type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}/>
-                </div>
-                <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Annual Budget (AED)</label>
-                  <input type="number" value={form.budget} onChange={e=>setForm(f=>({...f,budget:e.target.value}))} placeholder="120,000"/>
-                </div>
-                <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Source</label>
-                  <select value={form.source} onChange={e=>setForm(f=>({...f,source:e.target.value}))}>
-                    {["Referral","Website","Portal","Walk-in","Cold Call","Social Media"].map(s=><option key={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Preferred Bedrooms</label>
-                  <select value={form.preferred_bedrooms} onChange={e=>setForm(f=>({...f,preferred_bedrooms:e.target.value}))}>
-                    <option value="">Any</option>
-                    {["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed+"].map(b=><option key={b}>{b}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Preferred Area</label>
-                  <input value={form.preferred_area} onChange={e=>setForm(f=>({...f,preferred_area:e.target.value}))} placeholder="Downtown, JBR, Marina…"/>
-                </div>
-                <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Move-in Date</label>
-                  <input type="date" value={form.move_in_date} onChange={e=>setForm(f=>({...f,move_in_date:e.target.value}))}/>
-                </div>
-                <div style={{gridColumn:"1/-1"}}>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label>
-                  <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} rows={2} placeholder="Requirements, preferences…"/>
-                </div>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
-              <button onClick={()=>setShowAdd(false)} style={{padding:"9px 20px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={saveLead} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
-                {saving?"Saving…":"Add Enquiry"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Log Activity Modal */}
-      {showLog&&selLead&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:420,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0B1F3A"}}>Log Activity — {selLead.name}</span>
-              <button onClick={()=>setShowLog(false)} style={{background:"none",border:"none",fontSize:22,color:"#A0AEC0",cursor:"pointer"}}>×</button>
-            </div>
-            <div style={{padding:"1.25rem 1.5rem"}}>
-              <div style={{marginBottom:12}}>
-                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Type</label>
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {["Call","Email","Viewing","WhatsApp","Meeting","Note"].map(t=>(
-                    <button key={t} onClick={()=>setLogForm(f=>({...f,type:t}))}
-                      style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${logForm.type===t?"#5B3FAA":"#E2E8F0"}`,background:logForm.type===t?"#5B3FAA":"#fff",color:logForm.type===t?"#fff":"#4A5568",fontSize:12,cursor:"pointer",fontWeight:logForm.type===t?600:400}}>
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div style={{marginBottom:14}}>
-                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Note *</label>
-                <textarea value={logForm.note} onChange={e=>setLogForm(f=>({...f,note:e.target.value}))} rows={3} placeholder="What happened?"/>
-              </div>
-              <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-                <button onClick={()=>setShowLog(false)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                <button onClick={saveLog} disabled={saving} style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save"}</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
+function getAppConfig(){ try{const s=localStorage.getItem("propccrm_config");return s?JSON.parse(s):null;}catch{return null;} }
+function saveAppConfig(cfg){ try{localStorage.setItem("propccrm_config",JSON.stringify(cfg));}catch{} }
 
 export default function App(){
-  const[currentUser,setCurrentUser]=useState(null);const[checking,setChecking]=useState(true);
-  const[leads,setLeads]=useState([]);const[properties,setProperties]=useState([]);
-  const[activities,setActivities]=useState([]);const[users,setUsers]=useState([]);
-  const[meetings,setMeetings]=useState([]);const[followups,setFollowups]=useState([]);const[discounts,setDiscounts]=useState([]);
-  const[aiUnits,setAiUnits]=useState([]);const[aiProjects,setAiProjects]=useState([]);const[aiSalePr,setAiSalePr]=useState([]);const[aiLeasePr,setAiLeasePr]=useState([]);
+  const[checking,  setChecking]  = useState(true);
+  const[currentUser,setCurrentUser]=useState(null);
+  const[leads,     setLeads]     = useState([]);
+  const[properties,setProperties]= useState([]);
+  const[activities,setActivities]= useState([]);
+  const[meetings,  setMeetings]  = useState([]);
+  const[followups, setFollowups] = useState([]);
+  const[discounts, setDiscounts] = useState([]);
+  const[users,     setUsers]     = useState([]);
+  const[aiProjects,setAiProjects]= useState([]);
+  const[aiUnits,   setAiUnits]   = useState([]);
+  const[aiSalePr,  setAiSalePr]  = useState([]);
+  const[aiLeasePr, setAiLeasePr] = useState([]);
+  const[tab,       setTab]       = useState("dashboard");
+  const[activeApp, setActiveApp] = useState("sales");
+  const[appConfig, setAppConfig] = useState(()=>getAppConfig());
+  const[dataLoading,setDataLoading]=useState(false);
+  const[companies, setCompanies] = useState([]);
   const[activeCompanyId,setActiveCompanyId]=useState(()=>localStorage.getItem("propccrm_company_id")||null);
-  const[companies,setCompanies]=useState([]);
-  const[tab,setTab]=useState(()=>{
-    const role=localStorage.getItem("propccrm_role")||"sales_agent";
-    return DEFAULT_APP[role]==="leasing"?"l_dashboard":"dashboard";
-  });const[dataLoading,setDataLoading]=useState(false);
-  const[activeApp,setActiveApp]=useState(()=>DEFAULT_APP[localStorage.getItem("propccrm_role")||"sales"]||"sales");
-  const[appConfig,setAppConfig]=useState(()=>{
-    const stored = getAppConfig();
-    if(stored) return stored;
-    // Check if current user is super_admin (from localStorage role)
-    const role = localStorage.getItem("propccrm_role")||"";
-    if(role==="super_admin"){
-      const defaultCfg={mode:"both",company:"PropCRM",currency:"AED",country:"UAE",setupAt:new Date().toISOString()};
-      saveAppConfig(defaultCfg);
-      return defaultCfg;
-    }
-    return null;
-  });
+  const[leasingData,setLeasingData]=useState({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
+  const[followupAlerts,setFollowupAlerts]=useState({staleLeads:[],overduePayments:[],expiringLeases:[]});
+  const[opps,setOpps]=useState([]);
+  const[toast,setToast]=useState(null);
+  const showToast=(msg,type="success")=>setToast({msg,type});
+
   const loadAIData=useCallback(async()=>{
     if(aiProjects.length>0)return;
     try{
-      const[p,u,sp,lp]=await Promise.all([supabase.from("projects").select("*"),supabase.from("project_units").select("*"),supabase.from("unit_sale_pricing").select("*"),supabase.from("unit_lease_pricing").select("*")]);
+      const[p,u,sp,lp]=await Promise.all([
+        supabase.from("projects").select("*"),
+        supabase.from("project_units").select("*"),
+        supabase.from("unit_sale_pricing").select("*"),
+        supabase.from("unit_lease_pricing").select("*"),
+      ]);
       setAiProjects(p.data||[]);setAiUnits(u.data||[]);setAiSalePr(sp.data||[]);setAiLeasePr(lp.data||[]);
     }catch(e){console.log(e);}
   },[aiProjects.length]);
-  // Central leasing data — loaded once, passed to all leasing modules
-  const[leasingData,setLeasingData]=useState({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
-  const[followupAlerts,setFollowupAlerts]=useState({staleLeads:[],overduePayments:[],expiringLeases:[]});
-  const[opps,setOpps]=useState([]); // global opportunities — loaded on login
-  const[toast,setToast]=useState(null);
-  const showToast=(msg,type="success")=>setToast({msg,type});
 
   useEffect(()=>{
     const restore=async()=>{
       const{data:{session}}=await supabase.auth.getSession();
       if(session?.user){
         const{data:profile}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
-        if(profile&&profile.is_active){
-          setCurrentUser({...session.user,...profile});
-          // Load companies on restore for super admin
-          if(profile.is_super_admin||profile.role==="super_admin"){
-            supabase.from("companies").select("*").order("name").then(({data})=>{
-              if(data){
-                setCompanies(data);
-                const saved=localStorage.getItem("propccrm_company_id");
-                const co=saved?data.find(c=>c.id===saved):data[0];
-                if(co){setActiveCompanyId(co.id);localStorage.setItem("propccrm_company_id",co.id);}
-              }
-            });
-          }
-        } else await supabase.auth.signOut();
+        if(profile&&profile.is_active)setCurrentUser({...session.user,...profile});
+        else await supabase.auth.signOut();
       }
       setChecking(false);
     };
     restore();
     const{data:{subscription}}=supabase.auth.onAuthStateChange(async(event,session)=>{
-      if(event==="SIGNED_OUT"){setCurrentUser(null);setLeads([]);setProperties([]);setActivities([]);setMeetings([]);setFollowups([]);}
+      if(event==="SIGNED_OUT"){setCurrentUser(null);setLeads([]);setProperties([]);setActivities([]);setMeetings([]);setFollowups([]);setOpps([]);}
       if(event==="TOKEN_REFRESHED"&&session?.user){const{data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();if(p)setCurrentUser(u=>({...u,...p}));}
     });
     return()=>subscription.unsubscribe();
@@ -7950,10 +7643,7 @@ export default function App(){
 
   useEffect(()=>{
     if(!currentUser)return;
-    const safe=async(q)=>{
-      try{ const r=await q; return {data:(r.data||[])}; }
-      catch(e){ return {data:[]}; }
-    };
+    const safe=async(q)=>{ try{const r=await q;return{data:(r.data||[])};}catch(e){return{data:[]};} };
     const load=async()=>{
       setDataLoading(true);
       try{
@@ -7968,7 +7658,7 @@ export default function App(){
         // Load opportunities globally
         const oppRes = await supabase.from("opportunities").select("*").order("created_at",{ascending:false}).catch(()=>({data:[]}));
         setOpps(oppRes.data||[]);
-        // Load inventory + leasing data eagerly so CRM switch is instant
+        // Load inventory + leasing data eagerly
         const[proj,units2,sp2,lp2,lt,ll,lp_,lm]=await Promise.all([
           safe(supabase.from("projects").select("*")),
           safe(supabase.from("project_units").select("*")),
@@ -7981,12 +7671,10 @@ export default function App(){
         ]);
         setAiProjects(proj.data);setAiUnits(units2.data);setAiSalePr(sp2.data);setAiLeasePr(lp2.data);
         setLeasingData({tenants:lt.data,leases:ll.data,payments:lp_.data,maintenance:lm.data,loaded:true});
-        // Auto follow-up: generate alerts for stale leads (7+ days no activity) and overdue payments
         const today2=new Date();
         const stale=(l.data||[]).filter(lead=>!["Closed Won","Closed Lost"].includes(lead.stage)&&lead.stage_updated_at&&Math.floor((today2-new Date(lead.stage_updated_at))/(864e5))>=7);
         const overdueRent=(lp_.data||[]).filter(p=>p.status==="Pending"&&p.due_date&&new Date(p.due_date)<today2);
         const expiringLeases30=(ll.data||[]).filter(l2=>l2.status==="Active"&&l2.end_date&&Math.ceil((new Date(l2.end_date)-today2)/864e5)<=30&&Math.ceil((new Date(l2.end_date)-today2)/864e5)>0);
-        // Store alerts in state for dashboard
         setFollowupAlerts({staleLeads:stale,overduePayments:overdueRent,expiringLeases:expiringLeases30});
       }catch(e){console.error("Load error:",e);}
       setDataLoading(false);
@@ -7995,8 +7683,7 @@ export default function App(){
     const ch=supabase.channel("v3-changes")
       .on("postgres_changes",{event:"*",schema:"public",table:"leads"},p=>{if(p.eventType==="INSERT")setLeads(x=>[p.new,...x]);if(p.eventType==="UPDATE")setLeads(x=>x.map(l=>l.id===p.new.id?p.new:l));if(p.eventType==="DELETE")setLeads(x=>x.filter(l=>l.id!==p.old.id));})
       .on("postgres_changes",{event:"INSERT",schema:"public",table:"activities"},p=>setActivities(x=>[p.new,...x]))
-      .on("postgres_changes",{event:"*",schema:"public",table:"meetings"},p=>{if(p.eventType==="INSERT")setMeetings(x=>[p.new,...x]);if(p.eventType==="UPDATE")setMeetings(x=>x.map(m=>m.id===p.new.id?p.new:m));})
-      .on("postgres_changes",{event:"*",schema:"public",table:"followups"},p=>{if(p.eventType==="INSERT")setFollowups(x=>[p.new,...x]);if(p.eventType==="UPDATE")setFollowups(x=>x.map(f=>f.id===p.new.id?p.new:f));})
+      .on("postgres_changes",{event:"*",schema:"public",table:"opportunities"},p=>{if(p.eventType==="INSERT")setOpps(x=>[p.new,...x]);if(p.eventType==="UPDATE")setOpps(x=>x.map(o=>o.id===p.new.id?p.new:o));if(p.eventType==="DELETE")setOpps(x=>x.filter(o=>o.id!==p.old.id));})
       .subscribe();
     return()=>supabase.removeChannel(ch);
   },[currentUser]);
@@ -8004,11 +7691,9 @@ export default function App(){
   const handleLogin=user=>{
     setCurrentUser(user);
     localStorage.setItem("propccrm_role", user.role||"viewer");
-    // Route to correct app based on role
     const app = DEFAULT_APP[user.role]||"sales";
     setActiveApp(app);
     setTab(app==="leasing"?"l_dashboard":"dashboard");
-    // Load companies if super admin
     if(user.is_super_admin||user.role==="super_admin"){
       supabase.from("companies").select("*").order("name").then(({data})=>{
         if(data){
@@ -8020,33 +7705,32 @@ export default function App(){
       });
     }
   };
+
   const handleLogout=async()=>{await supabase.auth.signOut();setCurrentUser(null);};
-  const userRole=currentUser?.role||"viewer";
+  const currentApp = activeApp;
+  const userRole   = currentUser?.role||"viewer";
+  const canSwitch  = ["super_admin","admin","sales_manager","leasing_manager"].includes(userRole);
+
+  if(checking) return(
+    <div style={{height:"100dvh",background:"#0B1F3A",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}>
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#fff"}}><span style={{color:"#C9A84C"}}>◆</span> PropCRM</div>
+      <div style={{width:32,height:32,border:"2px solid rgba(255,255,255,.15)",borderTopColor:"#C9A84C",borderRadius:"50%",animation:"spin 1s linear infinite"}}/>
+    </div>
+  );
+
+  if(!currentUser) return <LoginScreen onLogin={handleLogin}/>;
+
   const cfg=appConfig||{mode:"both"};
-  // Determine which app this user can access
-  const userDefaultApp = DEFAULT_APP[userRole]||"sales";
-  const canSwitch = CAN_SWITCH_APP.includes(userRole);
-  const currentApp = canSwitch ? activeApp : userDefaultApp;
-  // Filter tabs to current app + role
-  const visibleTabs = TABS.filter(t=>t.app===currentApp && t.roles.includes(userRole));
+  const allowedTabs=MODE_TABS[cfg.mode]||MODE_TABS.both;
+  const visibleTabs=TABS.filter(t=>t.app===currentApp&&t.roles.includes(userRole)&&allowedTabs.includes(t.id));
 
-  // Gate order: checking → login → wizard (non-superadmin only) → app
-  if(checking) return(<><GlobalStyle/><div style={{minHeight:"100vh",background:"#0B1F3A",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{textAlign:"center"}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:32,color:"#fff",marginBottom:20}}><span style={{color:"#C9A84C"}}>◆</span> PropCRM</div><Spinner msg=""/></div></div></>);
-  if(!currentUser) return <><GlobalStyle/><LoginScreen onLogin={handleLogin}/></>;
-  // Super admin skips wizard — they manage config from inside the app
-  if(!appConfig && !currentUser?.is_super_admin && userRole!=="super_admin") {
-    return(<><GlobalStyle/><SetupWizard onComplete={cfg=>setAppConfig(cfg)}/></>);
-  }
-  // Auto-create minimal config for super_admin if none exists
-  if(!appConfig) { saveAppConfig({mode:"both",company:"PropCRM",currency:"AED",country:"UAE",setupAt:new Date().toISOString()}); }
+  return (
+    <>
+    <GlobalStyle/>
+    <div style={{display:"flex",flexDirection:"column",height:"100dvh",background:"#F0F2F5",overflow:"hidden"}}>
 
-  return(
-    <><GlobalStyle/>
-    <div style={{display:"flex",flexDirection:"column",height:"100dvh",minHeight:"-webkit-fill-available",background:"#F0F2F5",overflow:"hidden"}}>
-      {/* ── NAV ───────────────────────────────────────────────────── */}
-      <div style={{background:"#0B1F3A",flexShrink:0,boxShadow:"0 2px 16px rgba(11,31,58,.5)"}}>
-
-        {/* Top bar: logo + app switcher + user */}
+      {/* Top bar */}
+      <div style={{background:"#0B1F3A",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:48,gap:8}}>
 
           {/* Logo + Company */}
@@ -8054,35 +7738,30 @@ export default function App(){
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,whiteSpace:"nowrap"}}>
               <span style={{color:"#C9A84C"}}>◆</span> PropCRM
             </div>
-            {(companies.length>0||currentUser.company_id)&&(()=>{
-              const activeCo = companies.find(c=>c.id===activeCompanyId)
-                || companies.find(c=>c.id===currentUser.company_id)
-                || companies[0];
-              const coName = activeCo?.name || appConfig?.company || null;
-              if(!coName) return null;
+            {companies.length>0&&(()=>{
+              const activeCo=companies.find(c=>c.id===activeCompanyId)||companies[0];
+              if(!activeCo)return null;
               return (
-                <div style={{display:"flex",alignItems:"center",gap:5,padding:"3px 10px",borderRadius:6,background:"rgba(255,255,255,.07)",maxWidth:180,cursor:"pointer"}}
-                  title={coName}>
-                  {activeCo?.logo_url&&<img src={activeCo.logo_url} alt="" style={{width:18,height:18,borderRadius:3,objectFit:"cover"}}/>}
-                  <span style={{fontSize:11,color:"rgba(255,255,255,.8)",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>🏢 {coName}</span>
+                <div style={{display:"flex",alignItems:"center",gap:5,padding:"3px 8px",borderRadius:6,background:"rgba(255,255,255,.07)",maxWidth:160}}>
+                  {activeCo.logo_url&&<img src={activeCo.logo_url} alt="" style={{width:18,height:18,borderRadius:3,objectFit:"cover"}}/>}
+                  <span style={{fontSize:11,color:"rgba(255,255,255,.7)",fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{activeCo.name}</span>
                 </div>
               );
             })()}
           </div>
 
-          {/* App Switcher — only for admin + managers */}
+          {/* CRM Switcher */}
           {canSwitch&&(
             <div style={{display:"flex",background:"rgba(255,255,255,.07)",borderRadius:10,padding:3,gap:3,flexShrink:0}}>
               {[
                 {id:"sales",   label:"Sales CRM",   icon:"🏷", accent:"#4A9EE8"},
                 {id:"leasing", label:"Leasing CRM", icon:"🔑", accent:"#9B7FD4"},
               ].map(a=>{
-                const isActive = currentApp===a.id;
+                const isActive=currentApp===a.id;
                 return (
                   <button key={a.id} onClick={()=>{
                     setActiveApp(a.id);
-                    const defaultTab = a.id==="sales"?"dashboard":"l_dashboard";
-                    setTab(defaultTab);
+                    setTab(a.id==="sales"?"dashboard":"l_dashboard");
                   }} style={{
                     padding:"5px 10px",borderRadius:8,border:"none",
                     background:isActive?"#fff":"transparent",
@@ -8099,7 +7778,7 @@ export default function App(){
             </div>
           )}
 
-          {/* Right: user info */}
+          {/* User info */}
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
             <div style={{textAlign:"right"}}>
               <div style={{fontSize:12,color:"#fff",fontWeight:500}}>{currentUser.full_name}</div>
@@ -8110,42 +7789,21 @@ export default function App(){
           </div>
         </div>
 
-        {/* Tab bar — second row */}
+        {/* Tab bar */}
         <div className="tab-bar" style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:38,gap:2,borderTop:"1px solid rgba(255,255,255,.07)",overflowX:"auto"}}>
           {visibleTabs.map(t=>(
             <button key={t.id} onClick={()=>{setTab(t.id);if(t.id==="ai"||t.id==="l_ai")loadAIData();}}
               style={{
                 padding:"5px 12px",borderRadius:"6px 6px 0 0",border:"none",
-                background:tab===t.id
-                  ?(currentApp==="sales"?"rgba(74,158,232,.18)":"rgba(155,127,212,.18)")
-                  :"transparent",
-                color:tab===t.id
-                  ?(currentApp==="sales"?"#7EC8F5":"#C4ACEC")
-                  :"rgba(255,255,255,.5)",
-                fontSize:12,fontWeight:tab===t.id?700:400,cursor:"pointer",
-                display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",
-                transition:"all .15s",flexShrink:0,
-                borderBottom:tab===t.id
-                  ?`2px solid ${currentApp==="sales"?"#4A9EE8":"#9B7FD4"}`
-                  :"2px solid transparent",
+                background:tab===t.id?(currentApp==="sales"?"rgba(74,158,232,.18)":"rgba(155,127,212,.18)"):"transparent",
+                color:tab===t.id?"#fff":"rgba(255,255,255,.45)",
+                fontSize:12,fontWeight:tab===t.id?600:400,cursor:"pointer",
+                whiteSpace:"nowrap",transition:"all .15s",flexShrink:0,
+                borderBottom:tab===t.id?`2px solid ${currentApp==="sales"?"#4A9EE8":"#9B7FD4"}`:"2px solid transparent",
               }}>
-              <span style={{fontSize:12}}>{t.icon}</span>{t.label}
+              {t.icon} {t.label}
             </button>
           ))}
-          {/* Company switcher — super admin only */}
-          {currentUser?.is_super_admin&&companies.length>1&&(
-            <div style={{display:"flex",alignItems:"center",gap:6,marginRight:6}}>
-              <span style={{fontSize:10,color:"rgba(255,255,255,.4)",fontWeight:600,textTransform:"uppercase",letterSpacing:".5px",display:"none"}}>Company:</span>
-              <select value={activeCompanyId||""} onChange={e=>{setActiveCompanyId(e.target.value);localStorage.setItem("propccrm_company_id",e.target.value);}}
-                style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.2)",borderRadius:6,color:"#C9A84C",fontSize:12,fontWeight:600,padding:"3px 8px",cursor:"pointer",outline:"none"}}>
-                {companies.map(c=><option key={c.id} value={c.id} style={{background:"#0B1F3A"}}>{c.name}</option>)}
-              </select>
-            </div>
-          )}
-          {/* App context pill */}
-          <div style={{marginLeft:"auto",flexShrink:0,padding:"2px 10px",borderRadius:20,background:currentApp==="sales"?"rgba(74,158,232,.15)":"rgba(155,127,212,.15)",color:currentApp==="sales"?"#7EC8F5":"#C4ACEC",fontSize:10,fontWeight:700,letterSpacing:".5px",textTransform:"uppercase"}}>
-            {currentApp==="sales"?"🏷 Sales CRM":"🔑 Leasing CRM"}
-          </div>
         </div>
       </div>
 
@@ -8155,14 +7813,13 @@ export default function App(){
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A"}}>{visibleTabs.find(t=>t.id===tab)?.label||""}</div>
           <div style={{fontSize:11,color:"#A0AEC0"}}>{SUBTITLES[tab]||""}</div>
         </div>
-        {/* Per-tab action button */}
-        <div id="page-action-slot" style={{flexShrink:0}}/>
       </div>
 
       {/* Content */}
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"0 1rem 1rem",WebkitOverflowScrolling:"touch",minHeight:0}}>
         {(dataLoading&&leads.length===0&&aiUnits.length===0)?<Spinner msg="Loading your data…"/>:(<>
-          {/* ── Sales CRM tabs ─────────────────────── */}
+
+          {/* ── Sales CRM ─────────────────────────────────────── */}
           {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={setTab}/>}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
@@ -8172,20 +7829,25 @@ export default function App(){
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps}/>}
-          {(tab==="permsets"||tab==="l_permsets")&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
-          {(tab==="companies"||tab==="l_companies")&&currentUser?.is_super_admin&&<CompaniesModule currentUser={currentUser} showToast={showToast} activeCompanyId={activeCompanyId} onSwitchCompany={c=>{setActiveCompanyId(c.id);localStorage.setItem("propccrm_company_id",c.id);showToast(`Switched to ${c.name}`,"success");}}/>}
+          {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
+          {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id)=>{setActiveCompanyId(id);localStorage.setItem("propccrm_company_id",id);}} activeCompanyId={activeCompanyId}/>}
           {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
-          {/* ── Leasing CRM tabs ────────────────────── */}
-          {tab==="l_leads"    &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
+          {tab==="permissions" &&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
+
+          {/* ── Leasing CRM ───────────────────────────────────── */}
+          {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={setTab} followupAlerts={followupAlerts} key="l_dash"/>}
+          {tab==="l_enquiries" &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
           {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr}/>}
-          {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={setTab} followupAlerts={followupAlerts} key="l_dash"/>}
           {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData}/>}
           {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="l_ai"        &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast}/>}
+          {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps}/>}
+          {tab==="l_companies" &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id)=>{setActiveCompanyId(id);localStorage.setItem("propccrm_company_id",id);}} activeCompanyId={activeCompanyId}/>}
           {tab==="l_users"     &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
+          {tab==="l_permissions"&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
+
         </>)}
       </div>
     </div>
