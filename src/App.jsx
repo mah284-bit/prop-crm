@@ -7581,10 +7581,16 @@ export default function App(){
             ? supabase.from("discount_requests").select("*").eq("company_id",cid).order("created_at",{ascending:false})
             : supabase.from("discount_requests").select("*").order("created_at",{ascending:false})),
         ]);
-        setLeads(l.data);setProperties(pr.data);setActivities(a.data);setUsers(u.data);setDiscounts(d.data);
+        // SECURITY: filter all data by active company client-side
+        const filterByCo = (arr) => cid ? arr.filter(x=>x.company_id===cid) : arr;
+        setLeads(filterByCo(l.data));
+        setProperties(pr.data);
+        setActivities(filterByCo(a.data));
+        setUsers(u.data);
+        setDiscounts(filterByCo(d.data));
         // Load opportunities globally
         const oppRes = await supabase.from("opportunities").select("*").order("created_at",{ascending:false}).catch(()=>({data:[]}));
-        setOpps(oppRes.data||[]);
+        setOpps(filterByCo(oppRes.data||[]));
         // Load inventory + leasing data eagerly
         const[proj,units2,sp2,lp2,lt,ll,lp_,lm]=await Promise.all([
           safe(cid ? supabase.from("projects").select("*").eq("company_id",cid).order("name") : supabase.from("projects").select("*").order("name")),
@@ -7596,8 +7602,17 @@ export default function App(){
           safe(supabase.from("rent_payments").select("*").order("due_date")),
           safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
         ]);
-        setAiProjects(proj.data);setAiUnits(units2.data);setAiSalePr(sp2.data);setAiLeasePr(lp2.data);
-        setLeasingData({tenants:lt.data,leases:ll.data,payments:lp_.data,maintenance:lm.data,loaded:true});
+        setAiProjects(filterByCo(proj.data));
+        setAiUnits(filterByCo(units2.data));
+        setAiSalePr(filterByCo(sp2.data));
+        setAiLeasePr(filterByCo(lp2.data));
+        setLeasingData({
+          tenants:filterByCo(lt.data),
+          leases:ll.data.filter(l=>filterByCo(lt.data).map(t=>t.id).includes(l.tenant_id)),
+          payments:lp_.data,
+          maintenance:lm.data,
+          loaded:true
+        });
         const today2=new Date();
         const stale=(l.data||[]).filter(lead=>!["Closed Won","Closed Lost"].includes(lead.stage)&&lead.stage_updated_at&&Math.floor((today2-new Date(lead.stage_updated_at))/(864e5))>=7);
         const overdueRent=(lp_.data||[]).filter(p=>p.status==="Pending"&&p.due_date&&new Date(p.due_date)<today2);
