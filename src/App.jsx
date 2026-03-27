@@ -6327,62 +6327,46 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
       </div>
 
       {/* Company cards */}
-      <div style={{flex:1,overflowY:"auto",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:14,alignContent:"start"}}>
+      <div style={{flex:1,overflowY:"auto",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14,alignContent:"start"}}>
         {companies.map(c => {
           const bm = BIZ_META[c.business_type] || BIZ_META.both;
           const pm = PLAN_META[c.plan] || PLAN_META.professional;
           const isActive = activeCompanyId === c.id;
           return (
-            <div key={c.id} style={{background:"#fff",border:`2px solid ${isActive?"#C9A84C":"#E2E8F0"}`,borderRadius:14,overflow:"hidden",opacity:c.is_active?1:.65,transition:"all .2s"}}>
-              {/* Company colour bar */}
+            <div key={c.id}
+              onClick={()=>{ if(c.is_active&&!isActive){ onSwitchCompany(c.id); showToast(`Switched to ${c.name}`,"success"); } }}
+              style={{background:"#fff",border:`2px solid ${isActive?"#C9A84C":"#E2E8F0"}`,borderRadius:14,overflow:"hidden",opacity:c.is_active?1:.55,transition:"all .2s",cursor:c.is_active&&!isActive?"pointer":"default",boxShadow:isActive?"0 4px 20px rgba(201,168,76,.2)":"none"}}
+              onMouseOver={e=>{ if(c.is_active&&!isActive) e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.1)"; }}
+              onMouseOut={e=>{ e.currentTarget.style.boxShadow=isActive?"0 4px 20px rgba(201,168,76,.2)":"none"; }}>
+              {/* Colour bar */}
               <div style={{height:5,background:`linear-gradient(90deg,${c.brand_color||"#0B1F3A"},${c.brand_accent||"#C9A84C"})`}}/>
               <div style={{padding:"14px 16px"}}>
-                {/* Name + status */}
-                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:10}}>
-                  <div>
-                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{c.name}</div>
-                    {c.city&&<div style={{fontSize:12,color:"#A0AEC0"}}>📍 {c.city}{c.country?`, ${c.country}`:""}</div>}
-                  </div>
-                  <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
-                    <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:c.is_active?"#E6F4EE":"#F0F2F5",color:c.is_active?"#1A7F5A":"#718096"}}>
-                      {c.is_active?"● Active":"○ Inactive"}
-                    </span>
-                    {isActive&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:"#FDF3DC",color:"#8A6200"}}>✦ Current</span>}
+                {/* Name + badges */}
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0B1F3A"}}>{c.name}</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:3,alignItems:"flex-end"}}>
+                    {isActive
+                      ? <span style={{fontSize:10,fontWeight:700,padding:"2px 9px",borderRadius:20,background:"#C9A84C",color:"#0B1F3A"}}>✦ Active</span>
+                      : <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>Click to switch →</span>
+                    }
                   </div>
                 </div>
-
-                {/* Badges */}
-                <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
-                  <span style={{fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:20,background:bm.bg,color:bm.c}}>{bm.icon} {c.business_type==="both"?"Sales & Leasing":c.business_type==="sales"?"Sales Only":"Leasing Only"}</span>
-                  <span style={{fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:20,background:pm.bg,color:pm.c}}>{c.plan?.charAt(0).toUpperCase()+c.plan?.slice(1)||"Professional"}</span>
+                {c.city&&<div style={{fontSize:11,color:"#A0AEC0",marginBottom:8}}>📍 {c.city}{c.country?`, ${c.country}`:""}</div>}
+                <div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}}>
+                  <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:bm.bg,color:bm.c}}>{bm.icon} {c.business_type==="both"?"Sales & Leasing":c.business_type==="sales"?"Sales Only":"Leasing Only"}</span>
+                  <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:pm.bg,color:pm.c}}>{c.plan?.charAt(0).toUpperCase()+c.plan?.slice(1)||"Professional"}</span>
                 </div>
-
-                {/* Contact */}
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:12,fontSize:12,color:"#4A5568"}}>
-                  {c.primary_contact&&<div>👤 {c.primary_contact}</div>}
-                  {c.phone&&<div>📞 {c.phone}</div>}
-                  {c.email&&<div style={{gridColumn:"1/-1",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>✉ {c.email}</div>}
-                </div>
-
-                {/* Actions */}
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {c.is_active&&c.id!==activeCompanyId&&(
-                    <button onClick={()=>{onSwitchCompany(c.id);showToast(`Switched to ${c.name}`,"success");}}
-                      style={{flex:1,padding:"7px 12px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>
-                      Switch to this →
-                    </button>
-                  )}
-                  {c.id===activeCompanyId&&(
-                    <div style={{flex:1,padding:"7px 12px",borderRadius:8,background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:600,textAlign:"center"}}>
-                      ✦ Currently Active
-                    </div>
-                  )}
+                {c.primary_contact&&<div style={{fontSize:11,color:"#4A5568",marginBottom:3}}>👤 {c.primary_contact}</div>}
+                {c.phone&&<div style={{fontSize:11,color:"#4A5568",marginBottom:3}}>📞 {c.phone}</div>}
+                {c.email&&<div style={{fontSize:11,color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:10}}>✉ {c.email}</div>}
+                {/* Edit + Deactivate — stop propagation so card click doesn't trigger */}
+                <div style={{display:"flex",gap:6}} onClick={e=>e.stopPropagation()}>
                   <button onClick={()=>openEdit(c)}
-                    style={{padding:"7px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>
-                    Edit
+                    style={{flex:1,padding:"6px 10px",borderRadius:7,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    ✏ Edit
                   </button>
                   <button onClick={()=>toggleActive(c)}
-                    style={{padding:"7px 14px",borderRadius:8,border:`1.5px solid ${c.is_active?"#F0BCBC":"#A8D5BE"}`,background:c.is_active?"#FAEAEA":"#E6F4EE",color:c.is_active?"#B83232":"#1A7F5A",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                    style={{flex:1,padding:"6px 10px",borderRadius:7,border:`1.5px solid ${c.is_active?"#F0BCBC":"#A8D5BE"}`,background:c.is_active?"#FAEAEA":"#E6F4EE",color:c.is_active?"#B83232":"#1A7F5A",fontSize:11,fontWeight:600,cursor:"pointer"}}>
                     {c.is_active?"Deactivate":"Activate"}
                   </button>
                 </div>
