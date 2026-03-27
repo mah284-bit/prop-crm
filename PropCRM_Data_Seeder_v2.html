@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PropCRM — Data Seeder v2</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0B1F3A;min-height:100vh;padding:2rem;color:#fff}
+  .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:1.5rem;margin-bottom:1rem}
+  h1{font-size:24px;font-weight:700;color:#C9A84C;margin-bottom:4px}
+  h2{font-size:16px;font-weight:600;color:#fff;margin-bottom:12px}
+  .sub{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:1.5rem}
+  .btn{padding:10px 24px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+  .btn-gold{background:#C9A84C;color:#0B1F3A}
+  .btn-red{background:#B83232;color:#fff}
+  .btn-outline{background:transparent;color:#C9A84C;border:1.5px solid #C9A84C}
+  .btn:hover{opacity:.85}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:1rem}
+  .stat{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);border-radius:10px;padding:12px;text-align:center}
+  .stat .num{font-size:28px;font-weight:700;color:#C9A84C;font-family:Georgia,serif}
+  .stat .lbl{font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+  .log{background:#000;border-radius:8px;padding:12px;height:320px;overflow-y:auto;font-family:monospace;font-size:12px;margin-top:12px}
+  .log .ok{color:#4ADE80}.log .err{color:#F87171}.log .info{color:#60A5FA}.log .warn{color:#FBBF24}
+  .progress{background:rgba(255,255,255,.1);border-radius:6px;height:8px;overflow:hidden;margin:8px 0}
+  .progress-bar{height:100%;background:linear-gradient(90deg,#C9A84C,#E8C97A);border-radius:6px;transition:width .3s}
+  input,select{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:9px 12px;font-size:13px;color:#fff;width:100%;outline:none}
+  input:focus,select:focus{border-color:#C9A84C}
+  label{font-size:11px;color:rgba(255,255,255,.5);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+  .row{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .row>div{flex:1;min-width:180px}
+  .warn-box{background:rgba(184,50,50,.15);border:1px solid rgba(184,50,50,.4);border-radius:10px;padding:12px 16px;margin-bottom:1rem;font-size:13px;color:#F87171}
+</style>
+</head>
+<body>
+<div style="max-width:900px;margin:0 auto">
+  <h1>◆ PropCRM — Data Seeder v2</h1>
+  <p class="sub">Loads realistic UAE real estate test data — Leads, Opportunities, Tenants, Lease Enquiries, Projects, Units, Leases</p>
+
+  <!-- Connection -->
+  <div class="card">
+    <h2>🔗 Supabase Connection</h2>
+    <div class="row">
+      <div><label>Supabase URL</label><input id="url" placeholder="https://xxx.supabase.co" value=""/></div>
+      <div><label>Anon Key</label><input id="key" type="password" placeholder="eyJh…"/></div>
+    </div>
+    <div class="row">
+      <div><label>Company ID (your company UUID)</label><input id="company_id" placeholder="paste from Supabase companies table"/></div>
+      <div><label>Your User ID (created_by)</label><input id="user_id" placeholder="paste from Supabase profiles table"/></div>
+    </div>
+    <button class="btn btn-outline" onclick="testConn()">Test Connection</button>
+    <span id="conn_status" style="margin-left:12px;font-size:13px"></span>
+  </div>
+
+  <!-- Clear existing -->
+  <div class="warn-box">
+    ⚠ <strong>Clear before seeding</strong> — recommended to wipe test data first to avoid duplicates.
+    <button class="btn btn-red" style="margin-left:12px;padding:5px 14px;font-size:12px" onclick="clearAll()">🗑 Clear All Test Data</button>
+  </div>
+
+  <!-- Seed options -->
+  <div class="card">
+    <h2>📦 What to Seed</h2>
+    <div class="grid">
+      <label style="cursor:pointer"><input type="checkbox" id="s_projects" checked> Projects (5) + Units (50)</label>
+      <label style="cursor:pointer"><input type="checkbox" id="s_leads" checked> Leads / Contacts (20)</label>
+      <label style="cursor:pointer"><input type="checkbox" id="s_opps" checked> Opportunities (40)</label>
+      <label style="cursor:pointer"><input type="checkbox" id="s_activities" checked> Activities (60)</label>
+      <label style="cursor:pointer"><input type="checkbox" id="s_tenants" checked> Tenants (15)</label>
+      <label style="cursor:pointer"><input type="checkbox" id="s_lopps" checked> Lease Enquiries (20)</label>
+      <label style="cursor:pointer"><input type="checkbox" id="s_leases" checked> Leases (8)</label>
+    </div>
+    <div style="margin-top:1rem;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-gold" id="seed_btn" onclick="runSeed()">🚀 Seed All Data</button>
+    </div>
+    <div class="progress"><div class="progress-bar" id="prog" style="width:0%"></div></div>
+    <div class="log" id="log"><span class="info">Ready — configure connection and click Seed</span></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="card" id="stats_card" style="display:none">
+    <h2>✅ Seeded Successfully</h2>
+    <div class="grid" id="stats_grid"></div>
+  </div>
+</div>
+
+<script>
+let sb = null;
+
+const SUPABASE_URL  = document.getElementById('url');
+const SUPABASE_KEY  = document.getElementById('key');
+const COMPANY_ID    = document.getElementById('company_id');
+const USER_ID       = document.getElementById('user_id');
+const LOG           = document.getElementById('log');
+const PROG          = document.getElementById('prog');
+
+function log(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = type;
+  el.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  LOG.appendChild(el);
+  LOG.scrollTop = LOG.scrollHeight;
+}
+function prog(pct) { PROG.style.width = pct + '%'; }
+
+async function testConn() {
+  sb = supabase.createClient(SUPABASE_URL.value.trim(), SUPABASE_KEY.value.trim());
+  const { data, error } = await sb.from('profiles').select('id').limit(1);
+  const el = document.getElementById('conn_status');
+  if (error) { el.style.color='#F87171'; el.textContent = '✗ ' + error.message; }
+  else        { el.style.color='#4ADE80'; el.textContent = '✓ Connected'; }
+}
+
+function pick(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+function rand(min,max) { return Math.floor(Math.random()*(max-min)+min); }
+function randPrice(min,max,step=50000) { return Math.round(rand(min,max)/step)*step; }
+function daysAgo(d) { const dt=new Date(); dt.setDate(dt.getDate()-d); return dt.toISOString(); }
+function daysFromNow(d) { const dt=new Date(); dt.setDate(dt.getDate()+d); return dt.toISOString(); }
+
+// ── DATA CONSTANTS ─────────────────────────────────────────────────
+const FIRST = ['Mohammed','Ahmed','Sarah','Fatima','Ali','Omar','Layla','Hassan','Aisha','Khalid','Priya','Raj','Emma','James','Nina','Yusuf','Meera','David','Ananya','Lucas'];
+const LAST  = ['Al Mansouri','Al Rashid','Johnson','Sharma','Smith','Al Hamad','Patel','Mueller','Ibrahim','Chen','Ivanova','Kim','Al Zaabi','Williams','Nair','Davies','Krishnan','Al Maktoum','Pillai','Anderson'];
+const NATS  = ['UAE','Indian','British','Pakistani','Egyptian','Lebanese','Filipino','Jordanian','American','German','Russian','Chinese','Saudi','Canadian','Australian'];
+const SOURCES = ['Walk-In','Referral','Website','Social Media','Property Portal','Exhibition','Cold Call','Agency Partner','Billboard','WhatsApp'];
+const VIEWS   = ['Sea View','City View','Pool View','Garden View','Burj View','Park View','Community View','Partial Sea View'];
+const BANKS   = ['Emirates NBD','ADCB','FAB','ENBD','DIB','Mashreq','RAKBANK','CBD','Citibank','HSBC'];
+const ACT_TYPES = ['Call','Email','Meeting','Visit','WhatsApp','Note'];
+const ACT_NOTES = [
+  'Client interested, requested brochure','Followed up — no response yet','Meeting scheduled for next week',
+  'Site visit completed — very interested','Negotiating price, client wants 5% discount',
+  'Proposal sent via email','Client comparing 2 units — needs time','Ready to proceed, finalising documents',
+  'Payment plan discussed — prefers 50/50','Family visiting from abroad, decision next week',
+  'Client asked about post-handover payment','WhatsApp follow-up — client reviewing proposal',
+  'Called twice — no answer, left voicemail','Client very interested in unit on floor 12',
+  'Price negotiation ongoing — AED 50K gap','Client confirmed budget and timeline',
+];
+
+const OPP_STAGES  = ['New','Contacted','Site Visit','Proposal Sent','Negotiation','Closed Won','Closed Lost'];
+const LEASE_STAGES= ['New Enquiry','Contacted','Viewing','Offer Made','Reserved','Lease Signed','Lost'];
+
+// ── PROJECTS & UNITS ─────────────────────────────────────────────
+const PROJECTS_DATA = [
+  { name:'Emaar Beachfront Tower A', developer:'Emaar', location:'Dubai Marina', city:'Dubai', status:'Active', completion_date:'2026-12-01', launch_date:'2024-01-01' },
+  { name:'Sobha Hartland II',        developer:'Sobha', location:'Mohammed Bin Rashid City', city:'Dubai', status:'Active', completion_date:'2027-06-01', launch_date:'2024-03-01' },
+  { name:'DAMAC Hills Lagoon',       developer:'DAMAC', location:'Dubai Hills', city:'Dubai', status:'Active', completion_date:'2026-09-01', launch_date:'2023-11-01' },
+  { name:'Aldar Grove',             developer:'Aldar', location:'Saadiyat Island', city:'Abu Dhabi', status:'Active', completion_date:'2027-03-01', launch_date:'2024-02-01' },
+  { name:'Nshama Town Square',      developer:'Nshama', location:'Town Square', city:'Dubai', status:'Active', completion_date:'2025-12-01', launch_date:'2023-06-01' },
+];
+
+function genUnits(projectId, projectName, purpose='Both') {
+  const units = [];
+  const configs = [
+    {sub:'Studio',  beds:0, baths:1, size:rand(380,520)},
+    {sub:'1 Bed',   beds:1, baths:1, size:rand(650,900)},
+    {sub:'1 Bed',   beds:1, baths:2, size:rand(750,950)},
+    {sub:'2 Bed',   beds:2, baths:2, size:rand(1050,1400)},
+    {sub:'2 Bed',   beds:2, baths:3, size:rand(1200,1600)},
+    {sub:'3 Bed',   beds:3, baths:3, size:rand(1600,2200)},
+    {sub:'4 Bed',   beds:4, baths:4, size:rand(2200,3200)},
+    {sub:'Penthouse',beds:4,baths:5, size:rand(3500,5000)},
+  ];
+  for(let i=0;i<10;i++){
+    const cfg = pick(configs);
+    const floor = rand(2,30);
+    const status = pick(['Available','Available','Available','Available','Sold','Reserved','Available','Leased']);
+    units.push({
+      project_id: projectId,
+      unit_ref: `${projectName.split(' ')[0].substring(0,3).toUpperCase()}-${floor.toString().padStart(2,'0')}-${(i+1).toString().padStart(2,'0')}`,
+      unit_type: ['Penthouse','Office','Retail / Shop'].includes(cfg.sub)?'Commercial':'Residential',
+      sub_type: cfg.sub,
+      purpose,
+      bedrooms: cfg.beds,
+      bathrooms: cfg.baths,
+      size_sqft: cfg.size,
+      floor_number: floor,
+      view: pick(VIEWS),
+      status,
+      condition: 'Off-plan',
+      furnishing: 'Unfurnished',
+    });
+  }
+  return units;
+}
+
+// ── MAIN SEED FUNCTION ────────────────────────────────────────────
+async function runSeed() {
+  if(!sb){ log('Connect first!','err'); return; }
+  const cid = COMPANY_ID.value.trim();
+  const uid = USER_ID.value.trim();
+  if(!cid||!uid){ log('Company ID and User ID required','err'); return; }
+
+  document.getElementById('seed_btn').disabled = true;
+  LOG.innerHTML = '';
+  prog(0);
+
+  const stats = {};
+
+  try {
+    // ── 1. PROJECTS + UNITS ─────────────────────────────────────
+    if(document.getElementById('s_projects').checked) {
+      log('Seeding projects and units…','info');
+      const projInserts = PROJECTS_DATA.map(p=>({...p,company_id:cid,created_by:uid}));
+      const {data:projData,error:pErr} = await sb.from('projects').insert(projInserts).select();
+      if(pErr) throw new Error('Projects: '+pErr.message);
+      log(`✓ ${projData.length} projects created`,'ok');
+      stats.projects = projData.length;
+
+      let totalUnits = 0;
+      for(const proj of projData) {
+        const purpose = proj.name.includes('Aldar')||proj.name.includes('Nshama')?'Lease':'Both';
+        const units = genUnits(proj.id, proj.name, purpose).map(u=>({...u,company_id:cid}));
+        const {data:uData,error:uErr} = await sb.from('project_units').insert(units).select('id,unit_ref,sub_type,status,purpose,asking_price,bedrooms,size_sqft,floor_number,project_id');
+        if(uErr) throw new Error('Units: '+uErr.message);
+
+        // Seed sale pricing for available units
+        const salePrices = uData.filter(u=>u.purpose!=='Lease'&&u.status!=='Leased').map(u=>{
+          const base = u.sub_type==='Studio'?600000:u.sub_type==='1 Bed'?900000:u.sub_type==='2 Bed'?1400000:u.sub_type==='3 Bed'?2200000:u.sub_type==='4 Bed'?3500000:5500000;
+          const price = randPrice(base*0.85, base*1.15);
+          return {unit_id:u.id,company_id:cid,asking_price:price,price_per_sqft:Math.round(price/u.size_sqft),dld_fee_pct:4,agency_fee_pct:2,booking_pct:10,during_construction_pct:40,on_handover_pct:50};
+        });
+        if(salePrices.length) await sb.from('unit_sale_pricing').insert(salePrices);
+
+        // Seed lease pricing
+        const leasePrices = uData.filter(u=>u.purpose!=='Sale').map(u=>{
+          const base = u.sub_type==='Studio'?35000:u.sub_type==='1 Bed'?55000:u.sub_type==='2 Bed'?85000:u.sub_type==='3 Bed'?120000:160000;
+          const annual = randPrice(base*0.9, base*1.1, 1000);
+          return {unit_id:u.id,company_id:cid,annual_rent:annual,monthly_rent:Math.round(annual/12),security_deposit:annual,agency_fee_pct:5};
+        });
+        if(leasePrices.length) await sb.from('unit_lease_pricing').insert(leasePrices);
+
+        totalUnits += uData.length;
+      }
+      log(`✓ ${totalUnits} units created with pricing`,'ok');
+      stats.units = totalUnits;
+      prog(15);
+    }
+
+    // ── 2. LEADS (contacts) ──────────────────────────────────────
+    let leadIds = [];
+    if(document.getElementById('s_leads').checked) {
+      log('Seeding leads / contacts…','info');
+      const leads = Array.from({length:20},(_,i)=>{
+        const fn = pick(FIRST), ln = pick(LAST);
+        return {
+          name: `${fn} ${ln}`,
+          phone: `+971 5${rand(0,9)} ${rand(100,999)} ${rand(1000,9999)}`,
+          email: `${fn.toLowerCase()}.${ln.toLowerCase().replace(' ','')}@${pick(['gmail.com','outlook.com','yahoo.com','hotmail.com'])}`,
+          nationality: pick(NATS),
+          source: pick(SOURCES),
+          property_type: pick(['Sale','Sale','Sale','Both']),
+          stage: pick(['New Lead','Contacted','Contacted','Site Visit','Site Visit','Negotiation','Closed Won']),
+          budget: randPrice(800000,5000000),
+          notes: pick(['Looking for investment property','End user — family home','Urgent — relocating from abroad','Flexible on timing','Pre-approved finance ready','']),
+          company_id: cid,
+          created_by: uid,
+          created_at: daysAgo(rand(1,90)),
+          stage_updated_at: daysAgo(rand(0,14)),
+        };
+      });
+      const {data:lData,error:lErr} = await sb.from('leads').insert(leads).select('id,name');
+      if(lErr) throw new Error('Leads: '+lErr.message);
+      leadIds = lData;
+      log(`✓ ${lData.length} leads created`,'ok');
+      stats.leads = lData.length;
+      prog(30);
+    }
+
+    // ── 3. OPPORTUNITIES ────────────────────────────────────────
+    if(document.getElementById('s_opps').checked && leadIds.length) {
+      log('Seeding opportunities…','info');
+      // Get available units for sale
+      const {data:availUnits} = await sb.from('project_units').select('id,unit_ref,sub_type,project_id').eq('company_id',cid).in('status',['Available']).in('purpose',['Sale','Both']).limit(40);
+      const {data:projs} = await sb.from('projects').select('id,name').eq('company_id',cid);
+
+      const opps = [];
+      for(const lead of leadIds) {
+        const numOpps = rand(1,3);
+        const usedUnits = new Set();
+        for(let o=0;o<numOpps;o++){
+          const unit = availUnits?.filter(u=>!usedUnits.has(u.id))[rand(0,(availUnits?.length||1)-1)];
+          if(!unit) continue;
+          usedUnits.add(unit.id);
+          const proj = projs?.find(p=>p.id===unit.project_id);
+          const stage = pick([...OPP_STAGES.slice(0,5),...['Closed Won','Closed Won']]);
+          const status = stage==='Closed Won'?'Won':stage==='Closed Lost'?'Lost':'Active';
+          const budget = randPrice(800000,4000000);
+          opps.push({
+            lead_id: lead.id,
+            unit_id: unit.id,
+            company_id: cid,
+            title: `${unit.unit_ref} — ${lead.name}`,
+            stage,
+            status,
+            assigned_to: uid,
+            budget,
+            final_price: status==='Won'?randPrice(budget*0.95,budget,10000):null,
+            proposal_sent_at: ['Proposal Sent','Negotiation','Closed Won'].includes(stage)?daysAgo(rand(3,20)):null,
+            stage_updated_at: daysAgo(rand(0,14)),
+            won_at: status==='Won'?daysAgo(rand(1,10)):null,
+            notes: pick(['Strong interest — viewing went well','Budget confirmed','Needs management approval on price','Decision expected this week','']),
+            created_by: uid,
+            created_at: daysAgo(rand(1,60)),
+          });
+        }
+      }
+      const {data:oppData,error:oErr} = await sb.from('opportunities').insert(opps).select('id');
+      if(oErr) throw new Error('Opportunities: '+oErr.message);
+      log(`✓ ${oppData.length} opportunities created`,'ok');
+      stats.opportunities = oppData.length;
+      prog(45);
+    }
+
+    // ── 4. ACTIVITIES ────────────────────────────────────────────
+    if(document.getElementById('s_activities').checked) {
+      log('Seeding activities…','info');
+      const {data:oppList} = await sb.from('opportunities').select('id,lead_id').eq('company_id',cid).limit(40);
+      const {data:leadList} = await sb.from('leads').select('id,name').eq('company_id',cid).limit(20);
+      const leadName = id => leadList?.find(l=>l.id===id)?.name||'Client';
+
+      const acts = [];
+      for(const opp of (oppList||[]).slice(0,30)) {
+        const numActs = rand(1,4);
+        for(let a=0;a<numActs;a++) {
+          acts.push({
+            opportunity_id: opp.id,
+            lead_id: opp.lead_id,
+            type: pick(ACT_TYPES),
+            note: pick(ACT_NOTES),
+            user_id: uid,
+            user_name: 'Agent',
+            lead_name: leadName(opp.lead_id),
+            company_id: cid,
+            created_at: daysAgo(rand(0,30)),
+          });
+        }
+      }
+      const {data:actData,error:aErr} = await sb.from('activities').insert(acts).select('id');
+      if(aErr) throw new Error('Activities: '+aErr.message);
+      log(`✓ ${actData.length} activities created`,'ok');
+      stats.activities = actData.length;
+      prog(60);
+    }
+
+    // ── 5. TENANTS ───────────────────────────────────────────────
+    let tenantIds = [];
+    if(document.getElementById('s_tenants').checked) {
+      log('Seeding tenants…','info');
+      const tenants = Array.from({length:15},()=>{
+        const fn=pick(FIRST),ln=pick(LAST);
+        return {
+          full_name: `${fn} ${ln}`,
+          phone: `+971 5${rand(0,9)} ${rand(100,999)} ${rand(1000,9999)}`,
+          email: `${fn.toLowerCase()}.${ln.toLowerCase().replace(' ','')}@${pick(['gmail.com','outlook.com','yahoo.com'])}`,
+          nationality: pick(NATS),
+          id_type: pick(['Emirates ID','Passport','Emirates ID','Emirates ID']),
+          id_number: `784-${rand(1950,2000)}-${rand(1000000,9999999)}-${rand(1,9)}`,
+          tenant_type: pick(['Individual','Individual','Individual','Company']),
+          company_id: cid,
+          created_by: uid,
+        };
+      });
+      const {data:tData,error:tErr} = await sb.from('tenants').insert(tenants).select('id,full_name');
+      if(tErr) throw new Error('Tenants: '+tErr.message);
+      tenantIds = tData;
+      log(`✓ ${tData.length} tenants created`,'ok');
+      stats.tenants = tData.length;
+      prog(70);
+    }
+
+    // ── 6. LEASE OPPORTUNITIES ───────────────────────────────────
+    if(document.getElementById('s_lopps').checked && tenantIds.length) {
+      log('Seeding lease enquiries…','info');
+      const {data:leaseUnits} = await sb.from('project_units').select('id,unit_ref,sub_type').eq('company_id',cid).in('purpose',['Lease','Both']).in('status',['Available']).limit(30);
+
+      const lopps = [];
+      for(const tenant of tenantIds) {
+        const numEnq = rand(1,2);
+        const usedUnits = new Set();
+        for(let e=0;e<numEnq;e++){
+          const unit = leaseUnits?.filter(u=>!usedUnits.has(u.id))[rand(0,(leaseUnits?.length||1)-1)];
+          if(!unit) continue;
+          usedUnits.add(unit.id);
+          const stage = pick([...LEASE_STAGES.slice(0,5),'Lease Signed','Lease Signed']);
+          const status = stage==='Lease Signed'?'Won':stage==='Lost'?'Lost':'Active';
+          lopps.push({
+            tenant_id: tenant.id,
+            unit_id: unit.id,
+            company_id: cid,
+            title: `${unit.unit_ref} — ${tenant.full_name}`,
+            stage, status,
+            assigned_to: uid,
+            budget: randPrice(40000,150000,1000),
+            stage_updated_at: daysAgo(rand(0,14)),
+            won_at: status==='Won'?daysAgo(rand(1,10)):null,
+            created_by: uid,
+            created_at: daysAgo(rand(1,45)),
+          });
+        }
+      }
+      const {data:loppData,error:loErr} = await sb.from('lease_opportunities').insert(lopps).select('id').catch(e=>({data:[],error:e}));
+      if(loErr) { log('Lease opps table not found — run migration-lease-opportunities.sql first','warn'); }
+      else {
+        log(`✓ ${loppData.length} lease enquiries created`,'ok');
+        stats.lease_enquiries = loppData.length;
+      }
+      prog(85);
+    }
+
+    // ── 7. LEASES ────────────────────────────────────────────────
+    if(document.getElementById('s_leases').checked && tenantIds.length) {
+      log('Seeding active leases…','info');
+      const {data:leasableUnits} = await sb.from('project_units').select('id').eq('company_id',cid).in('purpose',['Lease','Both']).in('status',['Available','Leased']).limit(10);
+
+      const leases = (leasableUnits||[]).slice(0,8).map((u,i)=>{
+        const tenant = tenantIds[i % tenantIds.length];
+        const annual = randPrice(50000,140000,1000);
+        const start = new Date(); start.setMonth(start.getMonth()-rand(2,10));
+        const end = new Date(start); end.setFullYear(end.getFullYear()+1);
+        const freqs = ['Annual','Semi-Annual','Quarterly','Monthly'];
+        const freq = pick(freqs);
+        const cheqs = freq==='Annual'?1:freq==='Semi-Annual'?2:freq==='Quarterly'?4:12;
+        return {
+          unit_id:u.id, tenant_id:tenant.id, company_id:cid,
+          start_date:start.toISOString().split('T')[0],
+          end_date:end.toISOString().split('T')[0],
+          annual_rent:annual, monthly_rent:Math.round(annual/12),
+          security_deposit:annual, agency_fee:Math.round(annual*0.05),
+          payment_frequency:freq, number_of_cheques:cheqs,
+          ejari_number:`EJARI-${rand(100000,999999)}`,
+          contract_number:`LC-${rand(1000,9999)}-${new Date().getFullYear()}`,
+          status:'Active',
+          created_by:uid,
+        };
+      });
+      const {data:lData,error:lErr} = await sb.from('leases').insert(leases).select('id');
+      if(lErr) throw new Error('Leases: '+lErr.message);
+      log(`✓ ${lData.length} leases created`,'ok');
+      stats.leases = lData.length;
+      prog(95);
+    }
+
+    // Done
+    prog(100);
+    log('','info');
+    log('🎉 Seeding complete!','ok');
+
+    // Show stats
+    const statsCard = document.getElementById('stats_card');
+    const statsGrid = document.getElementById('stats_grid');
+    statsGrid.innerHTML = Object.entries(stats).map(([k,v])=>`
+      <div class="stat">
+        <div class="num">${v}</div>
+        <div class="lbl">${k.replace(/_/g,' ')}</div>
+      </div>
+    `).join('');
+    statsCard.style.display = 'block';
+
+  } catch(e) {
+    log('ERROR: '+e.message,'err');
+    prog(0);
+  }
+  document.getElementById('seed_btn').disabled = false;
+}
+
+async function clearAll() {
+  if(!sb){ log('Connect first!','err'); return; }
+  const cid = COMPANY_ID.value.trim();
+  if(!cid){ log('Company ID required','err'); return; }
+  if(!confirm('Clear ALL test data for this company? This cannot be undone.')) return;
+
+  log('Clearing data…','warn');
+  const tables = ['lease_opportunities','opportunities','activities','leases','rent_payments','lease_cheques','sales_payments','sales_contracts','discount_requests','lead_units','reservations','tenants','leads','unit_sale_pricing','unit_lease_pricing','project_units','projects'];
+  for(const t of tables) {
+    const {error} = await sb.from(t).delete().eq('company_id',cid).catch(()=>({error:null}));
+    if(!error) log(`✓ Cleared ${t}`,'ok');
+  }
+  log('All data cleared','warn');
+}
+</script>
+</body>
+</html>
