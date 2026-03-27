@@ -636,10 +636,10 @@ function PropertyMaster({currentUser,showToast}){
   const load=useCallback(async()=>{
     setLoading(true);
     const[p,c,b,u]=await Promise.all([
-      safe(supabase.from("projects").select("*").order("name"),
-      safe(supabase.from("project_categories").select("*").order("name"),
-      safe(supabase.from("project_buildings").select("*").order("name"),
-      safe(supabase.from("units").select("*").order("unit_number"),
+      safe(supabase.from("projects").select("*").order("name")),
+      safe(supabase.from("project_categories").select("*").order("name")),
+      safe(supabase.from("project_buildings").select("*").order("name")),
+      safe(supabase.from("units").select("*").order("unit_number")),
     ]);
     setProjects(p.data||[]);setCategories(c.data||[]);setBuildings(b.data||[]);setUnits(u.data||[]);
     setLoading(false);
@@ -4137,8 +4137,8 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
     }
     setLoading(true);
     const [t,l,p,m,u]=await Promise.all([
-      safe(supabase.from("tenants").select("*").order("full_name"),
-      safe(supabase.from("leases").select("*").order("end_date"),
+      safe(supabase.from("tenants").select("*").order("full_name")),
+      safe(supabase.from("leases").select("*").order("end_date")),
       safe(supabase.from("rent_payments").select("*").order("due_date"),
       safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false}),
       safe(supabase.from("project_units").select("id,unit_ref,sub_type"),
