@@ -2322,8 +2322,8 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
     setLoading(true);
     try {
       const [p,u] = await Promise.all([
-        supabase.from("projects").select("*").order("name").catch(()=>({data:[]})),
-        supabase.from("project_units").select("id,project_id,status,purpose,unit_type").catch(()=>({data:[]})),
+        supabase.from("projects").select("*").order("name"),
+        supabase.from("project_units").select("id,project_id,status,purpose,unit_type"),
       ]);
       setProjects(p.data||[]);
       setUnits(u.data||[]);
@@ -2871,8 +2871,7 @@ function ReservationsWidget({ currentUser, units=[], onManage }) {
       .select("*")
       .in("status", ["Active","Extended"])
       .order("expires_at")
-      .catch(()=>({data:[]}));
-    setReservations(data || []);
+      
     setLoading(false);
   }, []);
 
@@ -4732,7 +4731,7 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
     setLoading(true);
     const{data}=await supabase.from("payment_plan_templates")
       .select("*").order("project_id").order("name")
-      .catch(()=>({data:[]}));
+      
     setTemplates(data||[]);
     setLoading(false);
   },[]);
