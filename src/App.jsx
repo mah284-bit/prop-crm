@@ -3026,7 +3026,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
       setLeasePricing(preloadedLeasePricing||[]);
       setLoading(false); // Show immediately
       // Load small tables in background (non-blocking)
-      const safe = q => q.catch(()=>({data:[]}));
+      const safe = q => q;
       Promise.all([
         safe(supabase.from("reservations").select("*").in("status",["Active","Extended","Confirmed"])),
         safe(supabase.from("leads").select("id,name,phone,email,nationality,stage")),
@@ -3041,7 +3041,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
     // Fallback: fetch everything
     setLoading(true);
     try {
-      const safe = q => q.catch(()=>({data:[]}));
+      const safe = q => q;
       const [u,p,sp,lp,res,lds,tns] = await Promise.all([
         safe(supabase.from("project_units").select("*").order("unit_ref")),
         safe(supabase.from("projects").select("*").order("name")),
@@ -4941,7 +4941,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[] }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const safe = q => q.catch(()=>({data:[]}));
+      const safe = q => q;
       const [leads,acts,users,units,projs,sp,lp,leases,tenants,payments,cheques] = await Promise.all([
         safe(supabase.from("leads").select("*").order("created_at",{ascending:false})),
         safe(supabase.from("activities").select("*")),
@@ -5824,10 +5824,10 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
     const load = async () => {
       setLoading(true);
       const [l,t,p,m] = await Promise.all([
-        supabase.from("leases").select("*").order("end_date").catch(()=>({data:[]})),
-        supabase.from("tenants").select("*").catch(()=>({data:[]})),
-        supabase.from("rent_payments").select("*").order("due_date").catch(()=>({data:[]})),
-        supabase.from("maintenance").select("*").order("created_at",{ascending:false}).catch(()=>({data:[]})),
+        supabase.from("leases").select("*").order("end_date"),
+        supabase.from("tenants").select("*"),
+        supabase.from("rent_payments").select("*").order("due_date"),
+        supabase.from("maintenance").select("*").order("created_at",{ascending:false}),
       ]);
       setLeases(l.data||[]); setTenants(t.data||[]);
       setPayments(p.data||[]); setMaintenance(m.data||[]);
@@ -7159,9 +7159,9 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
     Promise.all([
       supabase.from("tenants").select("*").order("full_name"),
       supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false}),
-      supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft").catch(()=>({data:[]})),
-      supabase.from("projects").select("id,name").catch(()=>({data:[]})),
-      supabase.from("unit_lease_pricing").select("*").catch(()=>({data:[]})),
+      supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft"),
+      supabase.from("projects").select("id,name"),
+      supabase.from("unit_lease_pricing").select("*"),
     ]).then(([t,lo,u,p,lp])=>{
       setTenants(t.data||[]);
       setLOpps(lo.data||[]);
@@ -7588,7 +7588,7 @@ export default function App(){
         setUsers(u.data);
         setDiscounts(filterByCo(d.data));
         // Load opportunities globally
-        const oppRes = await supabase.from("opportunities").select("*").order("created_at",{ascending:false}).catch(()=>({data:[]}));
+        const oppRes = await supabase.from("opportunities").select("*").order("created_at",{ascending:false});
         setOpps(filterByCo(oppRes.data||[]));
         // Load inventory + leasing data eagerly
         const[proj,units2,sp2,lp2,lt,ll,lp_,lm]=await Promise.all([
