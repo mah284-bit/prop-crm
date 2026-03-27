@@ -984,8 +984,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
 
   useEffect(()=>{
     supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
-    safe(supabase.from("sales_payments").select("*").eq("opportunity_id",opp.id).order("created_at").then(({data})=>setPayments(data||[]));
-    safe(supabase.from("sales_contracts").select("*").eq("opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
+    supabase.from("sales_payments").select("*").eq("opportunity_id",opp.id).order("created_at").then(({data})=>setPayments(data||[]));
+    supabase.from("sales_contracts").select("*").eq("opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
   },[opp.id]);
 
   const moveStage = async(toStage)=>{
@@ -1480,10 +1480,10 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
 
   // Load data
   useEffect(()=>{
-    safe(supabase.from("opportunities").select("*").order("created_at",{ascending:false}).then(({data})=>setOpps(data||[]));
-    safe(supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms").then(({data})=>setUnits(data||[]));
-    safe(supabase.from("projects").select("id,name").then(({data})=>setProjects(data||[]));
-    safe(supabase.from("unit_sale_pricing").select("unit_id,asking_price").then(({data})=>setSalePricing(data||[]));
+    supabase.from("opportunities").select("*").order("created_at",{ascending:false}).then(({data})=>setOpps(data||[]));
+    supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms").then(({data})=>setUnits(data||[]));
+    supabase.from("projects").select("id,name").then(({data})=>setProjects(data||[]));
+    supabase.from("unit_sale_pricing").select("unit_id,asking_price").then(({data})=>setSalePricing(data||[]));
   },[]);
 
   const selLead = leads.find(l=>l.id===selLeadId);
@@ -6937,7 +6937,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
   const sm    = LEASE_STAGE_META[opp.stage]||LEASE_STAGE_META["New Enquiry"];
 
   useEffect(()=>{
-    safe(supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
+    supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
   },[opp.id]);
 
   const moveStage = async(toStage)=>{
@@ -7635,7 +7635,7 @@ export default function App(){
     setActiveApp(app);
     setTab(app==="leasing"?"l_dashboard":"dashboard");
     if(user.is_super_admin||user.role==="super_admin"){
-      safe(supabase.from("companies").select("*").order("name").then(({data})=>{
+      supabase.from("companies").select("*").order("name").then(({data})=>{
         if(data){
           setCompanies(data);
           const saved=localStorage.getItem("propccrm_company_id");
