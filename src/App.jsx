@@ -1455,7 +1455,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
 // ══════════════════════════════════════════════════════════════════
 // LEADS — Contact list with opportunities per lead
 // ══════════════════════════════════════════════════════════════════
-function Leads({leads,setLeads,properties,activities,setActivities,discounts,setDiscounts,currentUser,users,showToast}){
+function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpps=()=>{},properties,activities,setActivities,discounts,setDiscounts,currentUser,users,showToast}){
   const [search,   setSearch]   = useState("");
   const [fStage,   setFStage]   = useState("All");
   const [fType,    setFType]    = useState("All");
@@ -1465,7 +1465,7 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
   const [showAdd,  setShowAdd]  = useState(false);
   const [editLead, setEditLead] = useState(null);
   const [saving,   setSaving]   = useState(false);
-  const [opps,     setOpps]     = useState([]);       // all opportunities
+  const [opps,     setOpps]     = useState(globalOppsFromParent); // sync with global
   const [units,    setUnits]    = useState([]);
   const [projects, setProjects] = useState([]);
   const [salePricing,setSalePricing]=useState([]);
@@ -1546,7 +1546,7 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
       };
       const{data,error}=await supabase.from("opportunities").insert(payload).select().single();
       if(error)throw error;
-      setOpps(p=>[data,...p]);
+      setOpps(p=>{const n=[data,...p];setGlobalOpps(n);return n;});
       showToast("Opportunity created","success");
       setShowAddOpp(false);
       setOppForm({title:"",unit_id:"",budget:"",assigned_to:"",notes:""});
@@ -1813,7 +1813,7 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
       onBack={()=>{setView("lead");setSelOpp(null);}}
       onUpdated={(updated)=>{
         setSelOpp(updated);
-        setOpps(p=>p.map(o=>o.id===updated.id?updated:o));
+        setOpps(p=>{const n=p.map(o=>o.id===updated.id?updated:o);setGlobalOpps(n);return n;});
       }}
     />
   );
@@ -1822,12 +1822,14 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
 }
 
 
-function Dashboard({leads,properties,activities,currentUser,meetings=[],followups=[],crmContext="sales",units=[],salePricing=[],leasePricing=[],leases=[],onNavigate=()=>{}}){
+function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],followups=[],crmContext="sales",units=[],salePricing=[],leasePricing=[],leases=[],onNavigate=()=>{}}){
   const visible      = can(currentUser.role,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id);
-  const active       = visible.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
-  const won          = visible.filter(l=>l.stage==="Closed Won");
-  const pipeVal      = active.reduce((s,l)=>s+(l.budget||0),0);
-  const wonVal       = won.reduce((s,l)=>s+(l.budget||0),0);
+  // Use opportunities for pipeline stats
+  const visibleOpps  = can(currentUser.role,"see_all")?opps:opps.filter(o=>o.assigned_to===currentUser.id);
+  const active       = visibleOpps.filter(o=>!["Closed Won","Closed Lost","Won","Lost"].includes(o.stage)&&o.status==="Active");
+  const won          = visibleOpps.filter(o=>o.stage==="Closed Won"||o.status==="Won");
+  const pipeVal      = active.reduce((s,o)=>s+(o.budget||0),0);
+  const wonVal       = won.reduce((s,o)=>s+(o.final_price||o.budget||0),0);
   const saleUnits    = units.filter(u=>u.purpose==="Sale"||u.purpose==="Both");
   const leaseUnits   = units.filter(u=>u.purpose==="Lease"||u.purpose==="Both");
   const ctxUnits     = crmContext==="leasing"?leaseUnits:saleUnits;
@@ -1836,7 +1838,7 @@ function Dashboard({leads,properties,activities,currentUser,meetings=[],followup
   const today        = new Date();
   const recent       = [...activities].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
   const overdueFollowups=[...followups].filter(f=>f.status==="Pending"&&new Date(f.due_at)<today);
-  const staleLeads   = active.filter(l=>l.stage_updated_at&&Math.floor((today-new Date(l.stage_updated_at))/(864e5))>=7);
+  const staleLeads   = active.filter(o=>o.stage_updated_at&&Math.floor((today-new Date(o.stage_updated_at))/(864e5))>=7);
 
   // Clickable stat card
   const SC=({label,value,sub,accent,icon,onClick,badge})=>(
@@ -1877,7 +1879,7 @@ function Dashboard({leads,properties,activities,currentUser,meetings=[],followup
               <span style={{fontSize:18}}>📌</span>
               <div style={{flex:1}}>
                 <div style={{fontWeight:700,color:"#8A6200",fontSize:13}}>{staleLeads.length} lead{staleLeads.length>1?"s":""} with no activity for 7+ days</div>
-                <div style={{fontSize:11,color:"#718096"}}>{staleLeads.slice(0,3).map(l=>l.name).join(", ")}{staleLeads.length>3?` +${staleLeads.length-3} more`:""}</div>
+                <div style={{fontSize:11,color:"#718096"}}>{staleLeads.slice(0,3).map(o=>o.title||"Opportunity").join(", ")}{staleLeads.length>3?` +${staleLeads.length-3} more`:""}</div>
               </div>
               <span style={{fontSize:12,color:"#8A6200",fontWeight:600}}>Review →</span>
             </div>
@@ -1900,8 +1902,8 @@ function Dashboard({leads,properties,activities,currentUser,meetings=[],followup
 
       {/* ── Stat cards ──────────────────────────────────────── */}
       <div className="stat-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
-        <SC label="Active Leads"     value={active.length}         sub={`${won.length} won this period`}   accent="#0B1F3A"  icon="👤"  onClick={()=>onNavigate("leads")}/>
-        <SC label="Won Value"        value={fmtM(wonVal)}          sub="Closed deals AED"                  accent="#1A7F5A"  icon="🏆"  onClick={()=>onNavigate("leads")}/>
+        <SC label="Active Opps"      value={active.length}         sub={`${won.length} won this period`}   accent="#0B1F3A"  icon="🎯"  onClick={()=>onNavigate("leads")}/>
+        <SC label="Won Value"        value={fmtM(wonVal)}          sub={`${won.length} deals closed`}      accent="#1A7F5A"  icon="🏆"  onClick={()=>onNavigate("leads")}/>
         <SC label="Available Units"  value={availUnits.length}     sub={`${ctxUnits.length} total`}        accent="#C9A84C"  icon="🏠"  onClick={()=>onNavigate("builder")}/>
         <SC label="Reserved"         value={reservedUnits.length}  sub="Pending confirmation"              accent="#A06810"  icon="🔒"  onClick={()=>onNavigate("builder")} badge={reservedUnits.length>0?reservedUnits.length:null}/>
       </div>
@@ -1909,14 +1911,14 @@ function Dashboard({leads,properties,activities,currentUser,meetings=[],followup
       {/* ── Stage Pipeline ──────────────────────────────────── */}
       <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#0B1F3A"}}>Pipeline by Stage</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#0B1F3A"}}>Opportunities by Stage</div>
           <button onClick={()=>onNavigate("pipeline")} style={{fontSize:12,color:"#1A5FA8",background:"none",border:"none",cursor:"pointer",fontWeight:600}}>Kanban Board →</button>
         </div>
-        {STAGES.filter(s=>!["Closed Won","Closed Lost"].includes(s)).map(s=>{
-          const cnt=visible.filter(l=>l.stage===s).length;
-          const val=visible.filter(l=>l.stage===s).reduce((a,l)=>a+(l.budget||0),0);
-          const m=STAGE_META[s]||{c:"#718096",bg:"#F0F2F5"};
-          const maxCnt=Math.max(...STAGES.map(st=>visible.filter(l=>l.stage===st).length),1);
+        {OPP_STAGES.filter(s=>!["Closed Won","Closed Lost"].includes(s)).map(s=>{
+          const cnt=visibleOpps.filter(o=>o.stage===s&&o.status==="Active").length;
+          const val=visibleOpps.filter(o=>o.stage===s&&o.status==="Active").reduce((a,o)=>a+(o.budget||0),0);
+          const m=OPP_STAGE_META[s]||{c:"#718096",bg:"#F0F2F5"};
+          const maxCnt=Math.max(...OPP_STAGES.map(st=>visibleOpps.filter(o=>o.stage===st).length),1);
           return (
             <div key={s} onClick={()=>onNavigate("leads")} style={{marginBottom:10,cursor:"pointer"}}
               onMouseOver={e=>e.currentTarget.style.opacity=".85"} onMouseOut={e=>e.currentTarget.style.opacity="1"}>
@@ -1938,12 +1940,12 @@ function Dashboard({leads,properties,activities,currentUser,meetings=[],followup
           <div onClick={()=>onNavigate("leads")} style={{flex:1,padding:"8px 10px",borderRadius:8,background:"#E6F4EE",cursor:"pointer",textAlign:"center"}}
             onMouseOver={e=>e.currentTarget.style.opacity=".85"} onMouseOut={e=>e.currentTarget.style.opacity="1"}>
             <div style={{fontSize:14,fontWeight:700,color:"#1A7F5A"}}>{won.length}</div>
-            <div style={{fontSize:10,color:"#1A7F5A",fontWeight:600}}>Closed Won</div>
+            <div style={{fontSize:10,color:"#1A7F5A",fontWeight:600}}>Won</div>
           </div>
           <div onClick={()=>onNavigate("leads")} style={{flex:1,padding:"8px 10px",borderRadius:8,background:"#FAEAEA",cursor:"pointer",textAlign:"center"}}
             onMouseOver={e=>e.currentTarget.style.opacity=".85"} onMouseOut={e=>e.currentTarget.style.opacity="1"}>
-            <div style={{fontSize:14,fontWeight:700,color:"#B83232"}}>{visible.filter(l=>l.stage==="Closed Lost").length}</div>
-            <div style={{fontSize:10,color:"#B83232",fontWeight:600}}>Closed Lost</div>
+            <div style={{fontSize:14,fontWeight:700,color:"#B83232"}}>{visibleOpps.filter(o=>o.stage==="Closed Lost"||o.status==="Lost").length}</div>
+            <div style={{fontSize:10,color:"#B83232",fontWeight:600}}>Lost</div>
           </div>
         </div>
       </div>
@@ -1998,7 +2000,7 @@ function Dashboard({leads,properties,activities,currentUser,meetings=[],followup
           <div style={{background:"#0B1F3A",borderRadius:12,padding:"14px"}}>
             <div style={{fontSize:12,fontWeight:700,color:"#C9A84C",marginBottom:10}}>Today at a Glance</div>
             {[
-              ["New Leads",      visible.filter(l=>l.created_at&&new Date(l.created_at).toDateString()===today.toDateString()).length, "leads"],
+              ["New Opps",       visibleOpps.filter(o=>o.created_at&&new Date(o.created_at).toDateString()===today.toDateString()).length, "leads"],
               ["Activities",     activities.filter(a=>a.created_at&&new Date(a.created_at).toDateString()===today.toDateString()).length, "activity"],
               ["Reserved Units", reservedUnits.length, "builder"],
             ].map(([l,v,t])=>(
@@ -4930,7 +4932,7 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
   );
 }
 
-function ReportsModule({ currentUser, showToast }) {
+function ReportsModule({ currentUser, showToast, globalOpps=[] }) {
   const [activeReport, setActiveReport] = useState("pipeline");
   const [loading,      setLoading]      = useState(false);
   const [data,         setData]         = useState({});
@@ -4975,28 +4977,30 @@ function ReportsModule({ currentUser, showToast }) {
   // ── Report definitions ──────────────────────────────────────────
   const REPORTS = {
 
-    // 1. PIPELINE
+    // 1. PIPELINE — uses opportunities
     pipeline: {
       label:"Pipeline Report", icon:"📊",
-      description:"All leads by stage with values and conversion rates",
+      description:"All opportunities by stage with values and conversion rates",
       generate: () => {
         const { leads=[], users=[] } = data;
+        const oppsData = globalOpps.length>0 ? globalOpps : (data.opps||[]);
         const userName = id => users.find(u=>u.id===id)?.full_name||"Unassigned";
-        const rows = leads.map(l=>([
-          l.name, l.phone||"—", l.email||"—", l.nationality||"—",
-          l.stage, l.property_type||"—", l.source||"—",
-          l.budget ? `AED ${Number(l.budget).toLocaleString()}` : "—",
-          l.final_price ? `AED ${Number(l.final_price).toLocaleString()}` : "—",
-          userName(l.assigned_to),
-          fmtD(l.created_at),
-          l.stage_updated_at ? Math.floor((today-new Date(l.stage_updated_at))/864e5)+"d" : "—",
+        const leadName = id => leads.find(l=>l.id===id)?.name||"—";
+        const rows = oppsData.map(o=>([
+          o.title||"—", leadName(o.lead_id),
+          o.stage, o.status,
+          o.budget ? `AED ${Number(o.budget).toLocaleString()}` : "—",
+          o.final_price ? `AED ${Number(o.final_price).toLocaleString()}` : "—",
+          userName(o.assigned_to),
+          fmtD(o.created_at),
+          o.stage_updated_at ? Math.floor((today-new Date(o.stage_updated_at))/864e5)+"d" : "—",
+          o.proposal_sent_at ? fmtD(o.proposal_sent_at) : "—",
         ]));
-        const headers = ["Name","Phone","Email","Nationality","Stage","Type","Source","Budget","Final Price","Agent","Created","Days in Stage"];
-        // Summary by stage
-        const summary = ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"].map(s=>{
-          const sl=leads.filter(l=>l.stage===s);
-          const val=sl.reduce((a,l)=>a+(l.budget||0),0);
-          return [s, sl.length, `AED ${(val/1e6).toFixed(2)}M`, sl.length&&leads.length?Math.round(sl.length/leads.length*100)+"%":"0%"];
+        const headers = ["Opportunity","Contact","Stage","Status","Budget","Final Price","Agent","Created","Days in Stage","Proposal Sent"];
+        const summary = OPP_STAGES.map(s=>{
+          const sl=oppsData.filter(o=>o.stage===s);
+          const val=sl.reduce((a,o)=>a+(o.budget||0),0);
+          return [s, sl.length, `AED ${(val/1e6).toFixed(2)}M`, oppsData.length?Math.round(sl.length/oppsData.length*100)+"%":"0%"];
         });
         return { rows, headers, summary, summaryHeaders:["Stage","Count","Value","% of Total"] };
       }
@@ -5123,22 +5127,23 @@ function ReportsModule({ currentUser, showToast }) {
       generate: () => {
         const { leads=[], users=[], activities=[] } = data;
         const agents = users.filter(u=>["sales_agent","sales_manager","leasing_agent","leasing_manager","admin"].includes(u.role));
+        const oppsData = globalOpps.length>0 ? globalOpps : (data.opps||[]);
         const rows = agents.map(u=>{
-          const myLeads    = leads.filter(l=>l.assigned_to===u.id);
-          const won        = myLeads.filter(l=>l.stage==="Closed Won");
-          const lost       = myLeads.filter(l=>l.stage==="Closed Lost");
-          const active     = myLeads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
-          const pipeVal    = active.reduce((s,l)=>s+(l.budget||0),0);
-          const wonVal     = won.reduce((s,l)=>s+(l.final_price||l.budget||0),0);
-          const myActs     = activities.filter(a=>a.user_id===u.id);
-          const convRate   = myLeads.length>0 ? Math.round(won.length/myLeads.length*100) : 0;
+          const myOpps  = oppsData.filter(o=>o.assigned_to===u.id);
+          const won     = myOpps.filter(o=>o.status==="Won"||o.stage==="Closed Won");
+          const lost    = myOpps.filter(o=>o.status==="Lost"||o.stage==="Closed Lost");
+          const active  = myOpps.filter(o=>o.status==="Active");
+          const pipeVal = active.reduce((s,o)=>s+(o.budget||0),0);
+          const wonVal  = won.reduce((s,o)=>s+(o.final_price||o.budget||0),0);
+          const myActs  = activities.filter(a=>a.user_id===u.id);
+          const convRate= myOpps.length>0 ? Math.round(won.length/myOpps.length*100) : 0;
           return [
             u.full_name, u.role.replace(/_/g," "), u.email||"—",
-            myLeads.length, active.length, won.length, lost.length,
+            myOpps.length, active.length, won.length, lost.length,
             convRate+"%", fmt(pipeVal), fmt(wonVal), myActs.length,
           ];
         });
-        const headers = ["Agent","Role","Email","Total Leads","Active","Won","Lost","Conv %","Pipeline Value","Won Value","Activities"];
+        const headers = ["Agent","Role","Email","Total Opps","Active","Won","Lost","Conv %","Pipeline Value","Won Value","Activities"];
         return { rows, headers, summary:[], summaryHeaders:[] };
       }
     },
@@ -7335,6 +7340,7 @@ export default function App(){
   // Central leasing data — loaded once, passed to all leasing modules
   const[leasingData,setLeasingData]=useState({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
   const[followupAlerts,setFollowupAlerts]=useState({staleLeads:[],overduePayments:[],expiringLeases:[]});
+  const[opps,setOpps]=useState([]); // global opportunities — loaded on login
   const[toast,setToast]=useState(null);
   const showToast=(msg,type="success")=>setToast({msg,type});
 
@@ -7385,6 +7391,9 @@ export default function App(){
           safe(supabase.from("discount_requests").select("*").order("created_at",{ascending:false})),
         ]);
         setLeads(l.data);setProperties(pr.data);setActivities(a.data);setUsers(u.data);setDiscounts(d.data);
+        // Load opportunities globally
+        const oppRes = await supabase.from("opportunities").select("*").order("created_at",{ascending:false}).catch(()=>({data:[]}));
+        setOpps(oppRes.data||[]);
         // Load inventory + leasing data eagerly so CRM switch is instant
         const[proj,units2,sp2,lp2,lt,ll,lp_,lm]=await Promise.all([
           safe(supabase.from("projects").select("*")),
@@ -7580,15 +7589,15 @@ export default function App(){
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"0 1rem 1rem",WebkitOverflowScrolling:"touch",minHeight:0}}>
         {(dataLoading&&leads.length===0&&aiUnits.length===0)?<Spinner msg="Loading your data…"/>:(<>
           {/* ── Sales CRM tabs ─────────────────────── */}
-          {tab==="dashboard"   &&<Dashboard leads={leads} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={setTab}/>}
-          {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
+          {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={setTab}/>}
+          {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr}/>}
-          {tab==="pipeline"    &&<Pipeline leads={leads} setLeads={setLeads} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="pipeline"    &&<Pipeline leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} users={users} currentUser={currentUser} showToast={showToast}/>}
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast}/>}
+          {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps}/>}
           {(tab==="permsets"||tab==="l_permsets")&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
           {(tab==="companies"||tab==="l_companies")&&currentUser?.is_super_admin&&<CompaniesModule currentUser={currentUser} showToast={showToast} activeCompanyId={activeCompanyId} onSwitchCompany={c=>{setActiveCompanyId(c.id);localStorage.setItem("propccrm_company_id",c.id);showToast(`Switched to ${c.name}`,"success");}}/>}
           {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
