@@ -2323,7 +2323,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
     try {
       const [p,u] = await Promise.all([
         safe(supabase.from("projects").select("*").order("name")),
-        supabase.from("project_units").select("id,project_id,status,purpose,unit_type"))
+        supabase.from("project_units").select("id,project_id,status,purpose,unit_type")
       ]);
       setProjects(p.data||[]);
       setUnits(u.data||[]);
