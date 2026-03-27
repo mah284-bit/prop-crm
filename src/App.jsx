@@ -203,8 +203,8 @@ function PermSetSelector({ companyId, value, onChange }) {
   useEffect(()=>{
     if(!companyId) return;
     Promise.all([
-      safe(supabase.from("permission_sets").select("id,name,color").eq("company_id",companyId).order("name"),
-      safe(supabase.from("permission_sets").select("id,name,color").is("company_id",null).order("name"),
+      safe(supabase.from("permission_sets").select("id,name,color").eq("company_id",companyId).order("name")),
+      safe(supabase.from("permission_sets").select("id,name,color").is("company_id",null).order("name")),
     ]).then(([s,t])=>{ setSets(s.data||[]); setTemplates(t.data||[]); });
   },[companyId]);
 
