@@ -983,7 +983,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const sm       = OPP_STAGE_META[opp.stage]||OPP_STAGE_META["New"];
 
   useEffect(()=>{
-    safe(supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
+    supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}{data})=>setActivities(data||[]));({data})=>setActivities(data||[]));
     safe(supabase.from("sales_payments").select("*").eq("opportunity_id",opp.id).order("created_at").then(({data})=>setPayments(data||[]));
     safe(supabase.from("sales_contracts").select("*").eq("opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
   },[opp.id]);
