@@ -7156,7 +7156,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
 
   useEffect(()=>{
     Promise.all([
-      await safe(supabase.from("tenants").select("*").order("full_name"),
+      safe(supabase.from("tenants").select("*").order("full_name")),
       safe(supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false})),
       safe(supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft")),
       safe(supabase.from("projects").select("id,name")),
