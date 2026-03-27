@@ -6367,7 +6367,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
                 {/* Actions */}
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                   {c.is_active&&c.id!==activeCompanyId&&(
-                    <button onClick={()=>onSwitchCompany(c)}
+                    <button onClick={()=>{onSwitchCompany(c.id);showToast(`Switched to ${c.name}`,"success");}}
                       style={{flex:1,padding:"7px 12px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>
                       Switch to this →
                     </button>
