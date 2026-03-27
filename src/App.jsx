@@ -959,13 +959,16 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
   const [showPayment, setShowPayment] =useState(false);
   const [editPayment, setEditPayment] =useState(null);
   // Data
-  const [units,    setUnits]    = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [salePricing,setSalePricing]=useState([]);
-  const [contracts,setContracts]=useState([]);
-  const [payments, setPayments] =useState([]);
-  const [saving,   setSaving]   = useState(false);
+  const [units,      setUnits]      = useState([]);
+  const [projects,   setProjects]   = useState([]);
+  const [salePricing,setSalePricing]= useState([]);
+  const [contracts,  setContracts]  = useState([]);
+  const [payments,   setPayments]   = useState([]);
+  const [leadUnits,  setLeadUnits]  = useState([]); // multiple units per lead
+  const [saving,     setSaving]     = useState(false);
   const [stageHistory,setStageHistory]=useState([]);
+  const [showEmail,  setShowEmail]  = useState(false); // send proposal email dialog
+  const [emailForm,  setEmailForm]  = useState({to:"",subject:"Property Proposal",body:""});
 
   const canSeeAll = can(currentUser.role,"see_all");
   const canEdit   = can(currentUser.role,"write");
@@ -1078,13 +1081,27 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
   // Move stage
   const moveStage = async(toStage)=>{
     if(!selLead)return;
+    // Cannot go backwards from Proposal Sent, Negotiation or Closed Won
+    const ORDER = ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
+    const curIdx = ORDER.indexOf(selLead.stage);
+    const toIdx  = ORDER.indexOf(toStage);
+    const lockedFrom = ["Proposal Sent","Negotiation","Closed Won"];
+    if(lockedFrom.includes(selLead.stage) && toIdx < curIdx && toStage !== "Closed Lost"){
+      showToast(`Cannot go back from ${selLead.stage} — contact manager if needed`,"error");
+      return;
+    }
     const gates={
       "Contacted":      selLead.phone&&selLead.email,
       "Site Visit":     selLead.meeting_scheduled,
-      "Proposal Sent":  selLead.unit_id&&selLead.budget_confirmed,
+      "Proposal Sent":  false, // Must use Send Proposal button — cannot manually move here
       "Negotiation":    selLead.proposal_notes,
       "Closed Won":     selLead.final_price&&selLead.payment_plan_agreed,
     };
+    // Special: Proposal Sent can only be reached via the Send Proposal flow
+    if(toStage==="Proposal Sent"){
+      showToast("Use the 📄 Send Proposal button to move to this stage","error");
+      return;
+    }
     if(gates[toStage]===false||(gates[toStage]!==undefined&&!gates[toStage])){
       const msgs={
         "Contacted":"Add phone and email first",
@@ -1411,7 +1428,7 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
       {/* Lead cards */}
       <div style={{flex:1,overflowY:"auto"}}>
         {filtered.length===0&&<div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}><div style={{fontSize:40,marginBottom:8}}>👤</div><div>No leads found</div></div>}
-        <div style={{display:"grid",gap:8}}>
+        <div style={{display:"grid",gap:4}}>
           {filtered.map(l=>{
             const m=STAGE_META[l.stage]||{c:"#718096",bg:"#F0F2F5"};
             const assignedTo=users.find(u=>u.id===l.assigned_to);
@@ -1419,16 +1436,16 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
             const daysSince=l.stage_updated_at?Math.floor((new Date()-new Date(l.stage_updated_at))/(864e5)):0;
             return (
               <div key={l.id} onClick={()=>openLead(l.id)}
-                style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",transition:"all .15s",borderLeft:`4px solid ${m.c}`}}
+                style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:8,padding:"8px 12px",cursor:"pointer",transition:"all .15s",borderLeft:`3px solid ${m.c}`}}
                 onMouseOver={e=>{e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.08)";e.currentTarget.style.transform="translateY(-1px)"}}
                 onMouseOut={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none"}}>
                 <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
-                  <Av name={l.name} size={42}/>
+                  <Av name={l.name} size={32}/>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2,flexWrap:"wrap"}}>
                       <span style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>{l.name}</span>
                       <span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:m.bg,color:m.c}}>{l.stage}</span>
-                      {l.property_type&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:"#F0F2F5",color:"#4A5568"}}>{l.property_type}</span>}
+                      {l.property_type&&<span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:"#F0F2F5",color:"#4A5568",fontSize:9}}>{l.property_type}</span>}
                     </div>
                     <div style={{display:"flex",gap:10,fontSize:11,color:"#718096",flexWrap:"wrap"}}>
                       {l.phone&&<span>📞 {l.phone}</span>}
@@ -1517,10 +1534,40 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
         </div>
         {/* Action buttons */}
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {canEdit&&selLead.unit_id&&["Proposal Sent","Negotiation","Closed Won"].includes(selLead.stage)&&(
+          {/* Send Proposal — shown when unit linked and stage is Site Visit or earlier */}
+          {canEdit&&(leadUnits.length>0||selLead.unit_id)&&["Site Visit","Contacted","New Lead"].includes(selLead.stage)&&(
+            <button onClick={()=>{
+              // Pre-fill email
+              const unitList = leadUnits.length>0
+                ? leadUnits.map(lu=>{const u=units.find(x=>x.id===lu.unit_id);const p=projects.find(x=>x.id===u?.project_id);return u?`${u.unit_ref} — ${u.sub_type} (${p?.name||"—"})`:""}).filter(Boolean).join("
+")
+                : selUnit?`${selUnit.unit_ref} — ${selUnit.sub_type} (${selProj?.name||"—"})`:"";
+              setEmailForm({
+                to: selLead.email||"",
+                subject:`Property Proposal — ${selLead.name}`,
+                body:`Dear ${selLead.name},
+
+Thank you for your interest. Please find attached your personalised property proposal.
+
+Properties viewed:
+${unitList}
+
+Please review and let us know your preferred choice.
+
+Best regards,
+${currentUser.full_name}`,
+              });
+              setShowEmail(true);
+            }}
+              style={{padding:"7px 14px",borderRadius:8,border:"none",background:"#1A5FA8",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+              📤 Send Proposal
+            </button>
+          )}
+          {/* Download proposal if already sent */}
+          {canEdit&&(leadUnits.length>0||selLead.unit_id)&&["Proposal Sent","Negotiation","Closed Won"].includes(selLead.stage)&&(
             <button onClick={generateProposal}
               style={{padding:"7px 14px",borderRadius:8,border:"none",background:"#1A5FA8",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>
-              📄 Proposal
+              📄 Proposal PDF
             </button>
           )}
           {canEdit&&selLead.stage==="Closed Won"&&(
@@ -1643,29 +1690,99 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
                   </div>
                 </div>
 
-                {/* Linked unit */}
+                {/* Multiple Units Manager */}
                 <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
-                  <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Linked Unit</div>
-                  {selUnit?(
-                    <div style={{background:"#E6EFF9",borderRadius:10,padding:"12px 14px"}}>
-                      <div style={{fontWeight:700,fontSize:14,color:"#0B1F3A",marginBottom:4}}>{selUnit.unit_ref} — {selUnit.sub_type}</div>
-                      <div style={{fontSize:12,color:"#4A5568"}}>{selProj?.name||"—"} · Floor {selUnit.floor_number||"—"} · {selUnit.view||"—"}</div>
-                      {selSP&&<div style={{fontSize:13,fontWeight:700,color:"#1A5FA8",marginTop:4}}>AED {Number(selSP.asking_price).toLocaleString()}</div>}
-                      {canEdit&&<button onClick={()=>updateLead({unit_id:null})} style={{marginTop:8,fontSize:11,color:"#B83232",background:"none",border:"none",cursor:"pointer"}}>× Unlink</button>}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>
+                      Properties Viewed ({leadUnits.length||0})
+                      {leadUnits.length===0&&selLead.unit_id?<span style={{marginLeft:6,fontSize:10,color:"#C9A84C"}}>— migrating to new system</span>:""}
                     </div>
-                  ):(
-                    <div>
-                      <select value="" onChange={e=>updateLead({unit_id:e.target.value,project_id:units.find(u=>u.id===e.target.value)?.project_id||null})}
-                        style={{width:"100%"}}>
-                        <option value="">— Select a unit —</option>
-                        {units.filter(u=>u.status==="Available"&&(u.purpose==="Sale"||u.purpose==="Both")).map(u=>{
-                          const sp3=salePricing.find(s=>s.unit_id===u.id);
-                          const pr=projects.find(p=>p.id===u.project_id);
-                          return <option key={u.id} value={u.id}>{u.unit_ref} · {u.sub_type} · {pr?.name||"—"}{sp3?` · AED ${Number(sp3.asking_price).toLocaleString()}`:""}</option>;
-                        })}
-                      </select>
+                    {canEdit&&leadUnits.length<5&&(
+                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                        <select style={{fontSize:11,padding:"3px 6px",borderRadius:6,border:"1px solid #E2E8F0",maxWidth:200}}
+                          defaultValue=""
+                          onChange={async e=>{
+                            if(!e.target.value)return;
+                            const uid=e.target.value;
+                            if(leadUnits.find(lu=>lu.unit_id===uid)){showToast("Unit already added","error");e.target.value="";return;}
+                            const isPrimary=leadUnits.length===0;
+                            const{data,error}=await supabase.from("lead_units").insert({
+                              lead_id:selId,unit_id:uid,company_id:currentUser.company_id||null,
+                              is_primary:isPrimary,status:"Viewing"
+                            }).select().single();
+                            if(error){showToast(error.message,"error");return;}
+                            setLeadUnits(p=>[...p,data]);
+                            // Also update primary unit_id on lead for backwards compat
+                            if(isPrimary)updateLead({unit_id:uid,project_id:units.find(u=>u.id===uid)?.project_id||null});
+                            e.target.value="";
+                            showToast("Unit added","success");
+                          }}>
+                          <option value="">+ Add unit…</option>
+                          {units.filter(u=>u.status==="Available"&&(u.purpose==="Sale"||u.purpose==="Both")).map(u=>{
+                            const sp3=salePricing.find(s=>s.unit_id===u.id);
+                            const pr=projects.find(p=>p.id===u.project_id);
+                            return <option key={u.id} value={u.id}>{u.unit_ref} · {u.sub_type} · {pr?.name||"—"}{sp3?` · AED ${Math.round(sp3.asking_price/1000)}K`:""}</option>;
+                          })}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                  {leadUnits.length===0&&!selLead.unit_id&&(
+                    <div style={{textAlign:"center",padding:"1rem",color:"#A0AEC0",fontSize:12}}>
+                      No units added yet — use the dropdown above to add properties this client is interested in
                     </div>
                   )}
+                  {/* Show legacy single unit if no lead_units yet */}
+                  {leadUnits.length===0&&selLead.unit_id&&selUnit&&(
+                    <div style={{background:"#E6EFF9",borderRadius:8,padding:"10px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div>
+                        <div style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>{selUnit.unit_ref} — {selUnit.sub_type}</div>
+                        <div style={{fontSize:11,color:"#4A5568"}}>{selProj?.name||"—"} · {selUnit.view||"—"}</div>
+                        {selSP&&<div style={{fontSize:12,fontWeight:700,color:"#1A5FA8",marginTop:2}}>AED {Number(selSP.asking_price).toLocaleString()}</div>}
+                      </div>
+                      <span style={{fontSize:9,padding:"2px 7px",borderRadius:20,background:"#C9A84C22",color:"#8A6200",fontWeight:600}}>Primary</span>
+                    </div>
+                  )}
+                  {leadUnits.map(lu=>{
+                    const u=units.find(x=>x.id===lu.unit_id);
+                    const sp3=salePricing.find(s=>s.unit_id===lu.unit_id);
+                    const pr=u?projects.find(p=>p.id===u.project_id):null;
+                    const STATUS_C={Viewing:{c:"#1A5FA8",bg:"#E6EFF9"},Proposed:{c:"#8A6200",bg:"#FDF3DC"},Accepted:{c:"#1A7F5A",bg:"#E6F4EE"},Declined:{c:"#B83232",bg:"#FAEAEA"}};
+                    const sc=STATUS_C[lu.status]||STATUS_C.Viewing;
+                    return (
+                      <div key={lu.id} style={{background:lu.is_primary?"#F0F7FF":"#FAFBFC",borderRadius:8,padding:"10px 12px",border:`1px solid ${lu.is_primary?"#B5D4F4":"#E2E8F0"}`,marginBottom:6,display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                        <div style={{flex:1}}>
+                          <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:2}}>
+                            <span style={{fontWeight:700,fontSize:12,color:"#0B1F3A"}}>{u?.unit_ref||"—"} — {u?.sub_type||"—"}</span>
+                            {lu.is_primary&&<span style={{fontSize:9,padding:"1px 6px",borderRadius:20,background:"#C9A84C22",color:"#8A6200",fontWeight:600}}>Primary</span>}
+                            <span style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:20,background:sc.bg,color:sc.c}}>{lu.status}</span>
+                          </div>
+                          <div style={{fontSize:11,color:"#718096"}}>{pr?.name||"—"} · Floor {u?.floor_number||"—"} · {u?.view||"—"}</div>
+                          {sp3&&<div style={{fontSize:12,fontWeight:700,color:"#1A5FA8",marginTop:2}}>AED {Number(sp3.asking_price).toLocaleString()}</div>}
+                        </div>
+                        <div style={{display:"flex",gap:4,flexDirection:"column",alignItems:"flex-end"}}>
+                          <select value={lu.status} onChange={async e=>{
+                            await supabase.from("lead_units").update({status:e.target.value}).eq("id",lu.id);
+                            setLeadUnits(p=>p.map(x=>x.id===lu.id?{...x,status:e.target.value}:x));
+                          }} style={{fontSize:10,padding:"2px 5px",borderRadius:5,border:"1px solid #E2E8F0",background:"#fff"}}>
+                            <option>Viewing</option><option>Proposed</option><option>Accepted</option><option>Declined</option>
+                          </select>
+                          {canEdit&&!lu.is_primary&&<button onClick={async()=>{
+                            await supabase.from("lead_units").update({is_primary:true}).eq("id",lu.id);
+                            await supabase.from("lead_units").update({is_primary:false}).eq("lead_id",selId).neq("id",lu.id);
+                            setLeadUnits(p=>p.map(x=>({...x,is_primary:x.id===lu.id})));
+                            updateLead({unit_id:lu.unit_id});
+                          }} style={{fontSize:10,padding:"2px 7px",borderRadius:5,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>Set Primary</button>}
+                          {canEdit&&<button onClick={async()=>{
+                            await supabase.from("lead_units").delete().eq("id",lu.id);
+                            setLeadUnits(p=>p.filter(x=>x.id!==lu.id));
+                            if(lu.is_primary)updateLead({unit_id:null});
+                          }} style={{fontSize:10,padding:"2px 7px",borderRadius:5,border:"1px solid #F0BCBC",background:"#FAEAEA",color:"#B83232",cursor:"pointer"}}>Remove</button>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {leadUnits.length>0&&<div style={{fontSize:10,color:"#A0AEC0",marginTop:6,textAlign:"center"}}>{leadUnits.length}/5 units · Primary unit used for proposals</div>}
                 </div>
 
                 {/* Closed Won fields */}
@@ -1961,6 +2078,63 @@ function Leads({leads,setLeads,properties,activities,setActivities,discounts,set
         </div>
       )}
 
+      {/* Send Proposal Email Modal */}
+      {showEmail&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:540,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
+            <div style={{background:"linear-gradient(135deg,#1A5FA8,#0B1F3A)",padding:"1rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>📤 Send Proposal to {selLead?.name}</div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>Stage will move to Proposal Sent after sending</div>
+              </div>
+              <button onClick={()=>setShowEmail(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem",flex:1}}>
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>To *</label>
+                  <input value={emailForm.to} onChange={e=>setEmailForm(f=>({...f,to:e.target.value}))} placeholder="client@email.com"/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Subject</label>
+                  <input value={emailForm.subject} onChange={e=>setEmailForm(f=>({...f,subject:e.target.value}))}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Message</label>
+                  <textarea value={emailForm.body} onChange={e=>setEmailForm(f=>({...f,body:e.target.value}))} rows={8} style={{fontFamily:"inherit",lineHeight:1.6}}/>
+                </div>
+                <div style={{background:"#E6EFF9",borderRadius:8,padding:"10px 12px",fontSize:12,color:"#1A5FA8"}}>
+                  💡 The proposal PDF will be downloaded for you to attach manually. Stage moves to <strong>Proposal Sent</strong> automatically.
+                </div>
+              </div>
+            </div>
+            <div style={{padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0",display:"flex",gap:10,justifyContent:"flex-end"}}>
+              <button onClick={()=>setShowEmail(false)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              <button onClick={async()=>{
+                if(!emailForm.to){showToast("Enter recipient email","error");return;}
+                // 1. Download proposal PDF
+                downloadProposal();
+                // 2. Open email client
+                const mailtoUrl=`mailto:${emailForm.to}?subject=${encodeURIComponent(emailForm.subject)}&body=${encodeURIComponent(emailForm.body)}`;
+                window.open(mailtoUrl);
+                // 3. Log activity
+                await supabase.from("activities").insert({lead_id:selId,type:"Email",note:`Proposal sent to ${emailForm.to}
+
+Subject: ${emailForm.subject}`,user_id:currentUser.id,user_name:currentUser.full_name,lead_name:selLead.name,company_id:currentUser.company_id||null});
+                // 4. Move stage to Proposal Sent
+                const{error}=await supabase.from("leads").update({stage:"Proposal Sent",stage_updated_at:new Date().toISOString(),proposal_notes:emailForm.body}).eq("id",selId);
+                if(!error){
+                  setLeads(p=>p.map(l=>l.id===selId?{...l,stage:"Proposal Sent",proposal_notes:emailForm.body}:l));
+                  showToast("Proposal sent — stage moved to Proposal Sent","success");
+                }
+                setShowEmail(false);
+              }} style={{padding:"9px 24px",borderRadius:8,border:"none",background:"#1A5FA8",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                📤 Send & Move Stage
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Proposal Modal */}
       {showProp&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
