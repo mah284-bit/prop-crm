@@ -6065,16 +6065,19 @@ function UsersTab({currentUser, showToast}) {
         if(error)throw error;
         showToast("User updated","success");
       } else {
-        // Create auth user + profile
-        const{data:authData,error:authErr}=await supabase.auth.admin?.createUser?.({
-          email:form.email,password:form.password||Math.random().toString(36).slice(-8),
-          email_confirm:true,
+        // Insert profile — user must sign up themselves with this email
+        // We pre-create the profile so when they sign up the trigger updates it
+        const tempId = crypto.randomUUID();
+        const{error}=await supabase.from("profiles").insert({
+          id: tempId,
+          full_name:form.full_name,
+          email:form.email,
+          role:form.role,
+          is_active:true,
+          company_id:form.company_id||currentUser.company_id||null,
         });
-        if(authErr){
-          showToast("Could not create auth account: "+authErr.message,"error");
-          return;
-        }
-        showToast("User invited — they will receive an email to set their password","success");
+        if(error){ showToast(error.message,"error"); setSaving(false); return; }
+        showToast(`Profile created. Ask ${form.email} to sign up at the app — their role will be set automatically.`,"success");
       }
       setShowAdd(false);setEditUser(null);setForm(blank);loadUsers();
     }catch(e){showToast(e.message,"error");}
