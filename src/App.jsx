@@ -7160,7 +7160,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
       safe(supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false})),
       safe(supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft")),
       safe(supabase.from("projects").select("id,name")),
-      supabase.from("unit_lease_pricing").select("*")),
+      safe(supabase.from("unit_lease_pricing").select("*")),
     ]).then(([t,lo,u,p,lp])=>{
       setTenants(t.data||[]);
       setLOpps(lo.data||[]);
