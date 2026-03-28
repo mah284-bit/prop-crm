@@ -5826,7 +5826,7 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
         safe(supabase.from("leases").select("*").order("end_date")),
         safe(supabase.from("tenants").select("*")),
         safe(supabase.from("rent_payments").select("*").order("due_date")),
-        supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
+        safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
       ]);
       setLeases(l.data||[]); setTenants(t.data||[]);
       setPayments(p.data||[]); setMaintenance(m.data||[]);
@@ -7532,10 +7532,10 @@ export default function App(){
     if(aiProjects.length>0)return;
     try{
       const[p,u,sp,lp]=await Promise.all([
-        supabase.from("projects").select("*"),
-        supabase.from("project_units").select("*"),
-        supabase.from("unit_sale_pricing").select("*"),
-        supabase.from("unit_lease_pricing").select("*"),
+        safe(supabase.from("projects").select("*"),
+        safe(supabase.from("project_units").select("*"),
+        safe(supabase.from("unit_sale_pricing").select("*"),
+        safe(supabase.from("unit_lease_pricing").select("*"),
       ]);
       setAiProjects(p.data||[]);setAiUnits(u.data||[]);setAiSalePr(sp.data||[]);setAiLeasePr(lp.data||[]);
     }catch(e){console.log(e);}
