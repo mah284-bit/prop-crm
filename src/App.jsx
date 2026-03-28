@@ -91,7 +91,7 @@ const saveAppConfig = (cfg) => {
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
   sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","reports","pay_plans","companies","users","permissions"],
-  leasing: ["l_dashboard","l_leads","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions"],
+  leasing: ["l_dashboard","l_enquiries","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions"],
   both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","reports","pay_plans","l_reports","companies","users","permissions"],
 };
 // Which roles each mode makes available
@@ -203,8 +203,8 @@ function PermSetSelector({ companyId, value, onChange }) {
   useEffect(()=>{
     if(!companyId) return;
     Promise.all([
-      safe(supabase.from("permission_sets").select("id,name,color").eq("company_id",companyId).order("name")),
-      safe(supabase.from("permission_sets").select("id,name,color").is("company_id",null).order("name")),
+      supabase.from("permission_sets").select("id,name,color").eq("company_id",companyId).order("name"),
+      supabase.from("permission_sets").select("id,name,color").is("company_id",null).order("name"),
     ]).then(([s,t])=>{ setSets(s.data||[]); setTemplates(t.data||[]); });
   },[companyId]);
 
@@ -636,10 +636,10 @@ function PropertyMaster({currentUser,showToast}){
   const load=useCallback(async()=>{
     setLoading(true);
     const[p,c,b,u]=await Promise.all([
-      safe(supabase.from("projects").select("*").order("name")),
-      safe(supabase.from("project_categories").select("*").order("name")),
-      safe(supabase.from("project_buildings").select("*").order("name")),
-      safe(supabase.from("units").select("*").order("unit_number")),
+      supabase.from("projects").select("*").order("name"),
+      supabase.from("project_categories").select("*").order("name"),
+      supabase.from("project_buildings").select("*").order("name"),
+      supabase.from("units").select("*").order("unit_number"),
     ]);
     setProjects(p.data||[]);setCategories(c.data||[]);setBuildings(b.data||[]);setUnits(u.data||[]);
     setLoading(false);
@@ -2323,7 +2323,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
     try {
       const [p,u] = await Promise.all([
         safe(supabase.from("projects").select("*").order("name")),
-        safe(supabase.from("project_units").select("id,project_id,status,purpose,unit_type")),
+        supabase.from("project_units").select("id,project_id,status,purpose,unit_type")),
       ]);
       setProjects(p.data||[]);
       setUnits(u.data||[]);
@@ -4137,11 +4137,11 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
     }
     setLoading(true);
     const [t,l,p,m,u]=await Promise.all([
-      safe(supabase.from("tenants").select("*").order("full_name")),
-      safe(supabase.from("leases").select("*").order("end_date")),
-      safe(supabase.from("rent_payments").select("*").order("due_date")),
-      safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
-      safe(supabase.from("project_units").select("id,unit_ref,sub_type")),
+      supabase.from("tenants").select("*").order("full_name"),
+      supabase.from("leases").select("*").order("end_date"),
+      supabase.from("rent_payments").select("*").order("due_date"),
+      supabase.from("maintenance").select("*").order("created_at",{ascending:false}),
+      supabase.from("project_units").select("id,unit_ref,sub_type"),
     ]);
     const updated={tenants:t.data||[],leases:l.data||[],payments:p.data||[],maintenance:m.data||[],loaded:true};
     setTenants(updated.tenants);setLeases(updated.leases);setPayments(updated.payments);setMaintenance(updated.maintenance);setUnits(u.data||[]);
@@ -5826,7 +5826,7 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
         safe(supabase.from("leases").select("*").order("end_date")),
         safe(supabase.from("tenants").select("*")),
         safe(supabase.from("rent_payments").select("*").order("due_date")),
-        safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
+        supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
       ]);
       setLeases(l.data||[]); setTenants(t.data||[]);
       setPayments(p.data||[]); setMaintenance(m.data||[]);
@@ -6065,19 +6065,20 @@ function UsersTab({currentUser, showToast}) {
         if(error)throw error;
         showToast("User updated","success");
       } else {
-        // Insert profile — user must sign up themselves with this email
-        // We pre-create the profile so when they sign up the trigger updates it
-        const tempId = crypto.randomUUID();
-        const{error}=await supabase.from("profiles").insert({
-          id: tempId,
-          full_name:form.full_name,
-          email:form.email,
-          role:form.role,
-          is_active:true,
-          company_id:form.company_id||currentUser.company_id||null,
+        // Create auth user + profile
+        const{data:authData,error:authErr}=await supabase.auth.admin?.createUser?.({
+          email:form.email,password:form.password||Math.random().toString(36).slice(-8),
+          email_confirm:true,
         });
-        if(error){ showToast(error.message,"error"); setSaving(false); return; }
-        showToast(`Profile created. Ask ${form.email} to sign up at the app — their role will be set automatically.`,"success");
+        if(authErr){
+          // Fallback: just create profile entry
+          const{error}=await supabase.from("profiles").insert({
+            full_name:form.full_name,email:form.email,role:form.role,
+            is_active:true,company_id:form.company_id||currentUser.company_id||null,
+          });
+          if(error)throw error;
+        }
+        showToast("User added — they need to sign up with this email","success");
       }
       setShowAdd(false);setEditUser(null);setForm(blank);loadUsers();
     }catch(e){showToast(e.message,"error");}
@@ -6585,9 +6586,9 @@ function PermissionSetsModule({ currentUser, showToast }) {
   const load = useCallback(async () => {
     setLoading(true);
     const [s, t, u] = await Promise.all([
-      safe(supabase.from("permission_sets").select("*").eq("company_id", currentUser.company_id||"").order("name")),
-      safe(supabase.from("permission_sets").select("*").is("company_id", null).order("name")),
-      safe(supabase.from("profiles").select("id,full_name,permission_set_id").eq("company_id", currentUser.company_id||"")),
+      supabase.from("permission_sets").select("*").eq("company_id", currentUser.company_id||"").order("name"),
+      supabase.from("permission_sets").select("*").is("company_id", null).order("name"),
+      supabase.from("profiles").select("id,full_name,permission_set_id").eq("company_id", currentUser.company_id||""),
     ]);
     setSets(s.data||[]);
     setTemplates(t.data||[]);
@@ -7155,11 +7156,11 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
 
   useEffect(()=>{
     Promise.all([
-      safe(supabase.from("tenants").select("*").order("full_name")),
-      safe(supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false})),
-      safe(supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft")),
-      safe(supabase.from("projects").select("id,name")),
-      safe(supabase.from("unit_lease_pricing").select("*")),
+      await safe(supabase.from("tenants").select("*").order("full_name"),
+      supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false}),
+      supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft"),
+      supabase.from("projects").select("id,name"),
+      supabase.from("unit_lease_pricing").select("*")),
     ]).then(([t,lo,u,p,lp])=>{
       setTenants(t.data||[]);
       setLOpps(lo.data||[]);
@@ -7531,10 +7532,10 @@ export default function App(){
     if(aiProjects.length>0)return;
     try{
       const[p,u,sp,lp]=await Promise.all([
-        safe(supabase.from("projects").select("*")),
-        safe(supabase.from("project_units").select("*")),
-        safe(supabase.from("unit_sale_pricing").select("*")),
-        safe(supabase.from("unit_lease_pricing").select("*")),
+        supabase.from("projects").select("*"),
+        supabase.from("project_units").select("*"),
+        supabase.from("unit_sale_pricing").select("*"),
+        supabase.from("unit_lease_pricing").select("*"),
       ]);
       setAiProjects(p.data||[]);setAiUnits(u.data||[]);setAiSalePr(sp.data||[]);setAiLeasePr(lp.data||[]);
     }catch(e){console.log(e);}
@@ -7678,8 +7679,11 @@ export default function App(){
               <span style={{color:"#C9A84C"}}>◆</span> PropCRM
             </div>
             {(()=>{
+              // Show active company — check localStorage first, then companies array
               const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id");
-              const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || null;
+              const activeCo = companies.find(c=>c.id===storedId) || currentUser?.company_name_display || null;
+              if(!activeCo && companies.length===0) return null;
+              const co = activeCo || companies[0];
               if(!co) return null;
               return (
                 <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:8,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)",cursor:"pointer",transition:"all .15s"}}
@@ -7780,7 +7784,7 @@ export default function App(){
 
           {/* ── Leasing CRM ───────────────────────────────────── */}
           {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={setTab} followupAlerts={followupAlerts} key="l_dash"/>}
-          {tab==="l_leads"     &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
+          {tab==="l_enquiries" &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
           {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId}/>}
           {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData}/>}
