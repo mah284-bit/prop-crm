@@ -7532,10 +7532,10 @@ export default function App(){
     if(aiProjects.length>0)return;
     try{
       const[p,u,sp,lp]=await Promise.all([
-        safe(supabase.from("projects").select("*"),
-        safe(supabase.from("project_units").select("*"),
-        safe(supabase.from("unit_sale_pricing").select("*"),
-        safe(supabase.from("unit_lease_pricing").select("*"),
+        safe(supabase.from("projects").select("*")),
+        safe(supabase.from("project_units").select("*")),
+        safe(supabase.from("unit_sale_pricing").select("*")),
+        safe(supabase.from("unit_lease_pricing").select("*")),
       ]);
       setAiProjects(p.data||[]);setAiUnits(u.data||[]);setAiSalePr(sp.data||[]);setAiLeasePr(lp.data||[]);
     }catch(e){console.log(e);}
