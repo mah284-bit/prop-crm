@@ -6071,14 +6071,10 @@ function UsersTab({currentUser, showToast}) {
           email_confirm:true,
         });
         if(authErr){
-          // Fallback: just create profile entry
-          const{error}=await supabase.from("profiles").insert({
-            full_name:form.full_name,email:form.email,role:form.role,
-            is_active:true,company_id:form.company_id||currentUser.company_id||null,
-          });
-          if(error)throw error;
+          showToast("Could not create auth account: "+authErr.message,"error");
+          return;
         }
-        showToast("User added — they need to sign up with this email","success");
+        showToast("User invited — they will receive an email to set their password","success");
       }
       setShowAdd(false);setEditUser(null);setForm(blank);loadUsers();
     }catch(e){showToast(e.message,"error");}
