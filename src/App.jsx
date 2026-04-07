@@ -3441,31 +3441,9 @@ Return ONLY the JSON, no explanation.`}
       {/* Action bar */}
       <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:8,marginTop:-4,flexWrap:"wrap"}}>
         {/* Export current inventory */}
-        {canManageInv&&<button onClick={()=>{
-          const rows = allFiltered.map(u=>{
-            const proj = companyProjects.find(p=>p.id===u.project_id);
-            const sp = salePricing.find(s=>s.unit_id===u.id);
-            const lp = leasePricing.find(l=>l.unit_id===u.id);
-            return [
-              proj?.id||"",proj?.name||"",u.unit_ref||"",u.unit_type||"",
-              u.sub_type||"",u.purpose||"",u.floor_number||"",u.size_sqft||"",
-              u.bedrooms||"",u.bathrooms||"",u.status||"",u.view||"",
-              sp?.asking_price||"",lp?.annual_rent||""
-            ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",");
-          });
-          const headers = "project_id,project_name,unit_ref,unit_type,sub_type,purpose,floor_number,size_sqft,bedrooms,bathrooms,status,view,asking_price,annual_rent";
-          const csv = [headers,...rows].join("\n");
-          const a = document.createElement("a");
-          a.href = "data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
-          a.download = `inventory_export_${new Date().toISOString().split("T")[0]}.csv`;
-          a.click();
-          showToast(`Exported ${allFiltered.length} units`,"success");
-        }} style={{padding:"7px 14px",borderRadius:8,border:"1.5px solid #1A7F5A",background:"#E6F4EE",color:"#1A7F5A",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
-          ⬇ Export Current
-        </button>}
         {canManageInv&&<button onClick={()=>setShowInvExcel(true)}
-          style={{padding:"7px 14px",borderRadius:8,border:"1.5px solid #C9A84C",background:"#FFF9EC",color:"#8A6200",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
-          📤 Upload Excel
+          style={{padding:"7px 18px",borderRadius:8,border:"1.5px solid #C9A84C",background:"#FFF9EC",color:"#8A6200",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+          📋 Download Template / Upload Data
         </button>}
         {canEdit&&<button onClick={()=>openAdd()}
           style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
@@ -3799,57 +3777,10 @@ Return ONLY the JSON, no explanation.`}
               <div style={{border:"2px dashed #C9A84C",borderRadius:10,padding:"2rem",textAlign:"center",background:"#FFFBF0"}}>
                 <div style={{fontSize:36,marginBottom:8}}>📂</div>
                 <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:4}}>Click to select your CSV file</div>
-                <div style={{fontSize:12,color:"#718096",marginBottom:16}}>Accepted formats: .csv · .xlsx · .xls</div>
-                <label style={{display:"inline-block",padding:"12px 32px",borderRadius:8,border:"none",background:"#C9A84C",color:"#0B1F3A",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(201,168,76,.4)"}}>
-                  📤 Choose File & Upload
-                  <input type="file" accept=".csv,.xlsx,.xls" style={{display:"none"}} onChange={async(e)=>{
-                    const projId = invProjId;
-                    if(!projId){ showToast("Please select a project first (Step 1)","error"); return; }
-                    const file = e.target.files[0]; if(!file) return;
-                    const text = await file.text();
-                    const rows = text.trim().split("\n");
-                    const headers = rows[0].split(",").map(h=>h.trim().replace(/"/g,"").toLowerCase());
-                    const records = rows.slice(1).filter(r=>r.trim()).map(row=>{
-                      const vals = row.split(",").map(v=>v.trim().replace(/"/g,""));
-                      const rec = {}; headers.forEach((h,i)=>{ rec[h]=vals[i]||null; });
-                      return rec;
-                    });
-                    if(!records.length){ showToast("No data rows found","error"); return; }
-                    if(!records[0].unit_ref){ showToast("unit_ref column is required","error"); return; }
-                    const unitPayload = records.map(r=>({
-                      unit_ref:r.unit_ref,
-                      project_id:projId,
-                      unit_type:r.unit_type||"Residential",
-                      sub_type:r.sub_type||null,
-                      purpose:r.purpose||"Sale",
-                      floor_number:r.floor_number||null,
-                      size_sqft:r.size_sqft?parseFloat(r.size_sqft):null,
-                      bedrooms:r.bedrooms?parseInt(r.bedrooms):null,
-                      bathrooms:r.bathrooms?parseInt(r.bathrooms):null,
-                      status:r.status||"Available",
-                      view:r.view||null,
-                      company_id:cid,
-                      created_by:currentUser.id
-                    }));
-                    const{data:newUnits,error:ue}=await supabase.from("project_units").insert(unitPayload).select();
-                    if(ue){ showToast(ue.message,"error"); return; }
-                    const salePriceRows = newUnits?.filter((_,i)=>records[i]?.asking_price).map((u,i)=>({
-                      unit_id:u.id, asking_price:parseFloat(records[i].asking_price), company_id:cid
-                    }))||[];
-                    const leasePriceRows = newUnits?.filter((_,i)=>records[i]?.annual_rent).map((u,i)=>({
-                      unit_id:u.id, annual_rent:parseFloat(records[i].annual_rent), company_id:cid
-                    }))||[];
-                    if(salePriceRows.length) await supabase.from("unit_sale_pricing").insert(salePriceRows);
-                    if(leasePriceRows.length) await supabase.from("unit_lease_pricing").insert(leasePriceRows);
-                    showToast(`✓ ${newUnits.length} units uploaded to ${projects.find(p=>p.id===projId)?.name||"project"}`,"success");
-                    setInvProjId("");
-                    setShowInvExcel(false); load(true);
-                  }}/>
-                  Choose File & Upload
-                </label>
-              </div>
-              <div style={{fontSize:11,color:"#A0AEC0",marginTop:10,textAlign:"center"}}>
-                Units are locked to your company account. Other companies cannot see these units.
+              </div>{/* end grid */}
+
+              <div style={{fontSize:11,color:"#A0AEC0",marginTop:12,textAlign:"center"}}>
+                🔒 Units are locked to your company. Other companies cannot see this data.
               </div>
             </div>
           </div>
