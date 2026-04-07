@@ -3699,8 +3699,7 @@ Return ONLY the JSON, no explanation.`}
                   <strong>unit_ref</strong> (required) • project_id • unit_type • sub_type • purpose (Sale/Lease) • floor_number • size_sqft • bedrooms • bathrooms • status • view • asking_price • annual_rent
                 </div>
               </div>
-              <a href={"data:text/csv;charset=utf-8,unit_ref,project_id,unit_type,sub_type,purpose,floor_number,size_sqft,bedrooms,bathrooms,status,view,asking_price,annual_rent
-A-101,,Residential,2 Bed,Sale,1,1200,2,2,Available,Sea View,2500000,"}
+              <a href={"data:text/csv;charset=utf-8,unit_ref,project_id,unit_type,sub_type,purpose,floor_number,size_sqft,bedrooms,bathrooms,status,view,asking_price,annual_rent%0AA-101,,Residential,2 Bed,Sale,1,1200,2,2,Available,Sea View,2500000,"}
                 download="inventory_template.csv"
                 style={{display:"inline-block",padding:"8px 16px",borderRadius:8,background:"#E6EFF9",color:"#1A5FA8",fontSize:12,fontWeight:600,textDecoration:"none",marginBottom:16}}>
                 ⬇ Download Template CSV
