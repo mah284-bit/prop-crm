@@ -91,7 +91,7 @@ const saveAppConfig = (cfg) => {
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
   sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","reports","pay_plans","companies","users","permissions"],
-  leasing: ["l_dashboard","l_enquiries","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions"],
+  leasing: ["l_dashboard","l_leads","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions"],
   both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","reports","pay_plans","l_reports","companies","users","permissions"],
 };
 // Which roles each mode makes available
@@ -551,6 +551,7 @@ function LoginScreen({onLogin}){
       const msg=e.message||"";
       if(msg.includes("Email not confirmed"))setError("Please verify your email first. Check your inbox.");
       else if(msg.includes("Invalid login"))setError("Incorrect email or password.");
+      else if(msg.includes("Failed to fetch")||msg.includes("fetch"))setError("Cannot connect to server. If you see this, the database may be paused — go to supabase.com/dashboard and restore your project.");
       else setError(msg||"Login failed.");
     }finally{setLoading(false);}
   };
@@ -1421,8 +1422,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                           setSaving(true);
                           try{
                             const path=`payments/${opp.id}/${Date.now()}_${file.name}`;
-                            await supabase.storage.from("documents").upload(path,file,{upsert:true});
-                            const{data:{publicUrl}}=supabase.storage.from("documents").getPublicUrl(path);
+                            await supabase.storage.from("propcrm-files").upload(path,file,{upsert:true});
+                            const{data:{publicUrl}}=supabase.storage.from("propcrm-files").getPublicUrl(path);
                             setPayForm(f=>({...f,cheque_file_url:publicUrl}));
                             showToast("Cheque uploaded","success");
                           }catch(err){showToast(err.message,"error");}
@@ -1474,7 +1475,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const canEdit = can(currentUser.role,"write");
   const canDel  = can(currentUser.role,"delete_leads");
 
-  const blank = {name:"",phone:"",email:"",nationality:"",source:"Walk-In",property_type:"Sale",notes:""};
+  const blank = {name:"",phone:"",email:"",nationality:"",source:"Walk-In",property_type:"Sale",notes:"",assigned_to:currentUser.id,budget:""};
   const [form, setForm] = useState(blank);
   const sf = k => e => setForm(f=>({...f,[k]:e.target?.value??e}));
 
@@ -1495,8 +1496,10 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
 
   const filtered = visible.filter(l=>{
     const q=search.toLowerCase();
-    return(!q||l.name?.toLowerCase().includes(q)||l.email?.toLowerCase().includes(q)||l.phone?.includes(q))
-      &&(fType==="All"||l.property_type===fType);
+    const stage = leadBestStage(l.id);
+    return(!q||l.name?.toLowerCase().includes(q)||l.email?.toLowerCase().includes(q)||l.phone?.includes(q)||l.source?.toLowerCase().includes(q))
+      &&(fType==="All"||l.property_type===fType)
+      &&(fStage==="All"||stage===fStage);
   });
 
   // Aggregated stage from opportunities
@@ -1570,6 +1573,10 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           <option value="All">All Types</option>
           <option value="Sale">Sale</option>
           <option value="Both">Both</option>
+        </select>
+        <select value={fStage} onChange={e=>setFStage(e.target.value)} style={{width:"auto"}}>
+          <option value="All">All Stages</option>
+          {OPP_STAGES.map(s=><option key={s}>{s}</option>)}
         </select>
         <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
         {canEdit&&<button onClick={()=>{setForm(blank);setEditLead(null);setShowAdd(true);}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Contact</button>}
@@ -2222,7 +2229,7 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
 const TABS=[
   // ── Sales CRM ──────────────────────────────────────────────────
   {id:"dashboard",  label:"Dashboard",    icon:"⊞",  app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent","viewer"]},
-  {id:"projects",   label:"Projects",     icon:"🏢", app:"sales",   roles:["super_admin","admin"]},
+  {id:"projects",   label:"Projects",     icon:"🏢", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"builder",    label:"Inventory",    icon:"📋", app:"sales",   roles:["super_admin","admin"]},
   {id:"leads",      label:"Leads",        icon:"👤", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"pipeline",   label:"Pipeline",     icon:"⬡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
@@ -2235,7 +2242,7 @@ const TABS=[
   // ── Leasing CRM ────────────────────────────────────────────────
   {id:"l_dashboard",label:"Dashboard",    icon:"⊞",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
   {id:"l_leads",    label:"Enquiries",    icon:"👤", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
-  {id:"l_projects",  label:"Projects",     icon:"🏢", app:"leasing", roles:["super_admin","admin"]},
+  {id:"l_projects",  label:"Projects",     icon:"🏢", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_inventory",label:"Inventory",    icon:"📋", app:"leasing", roles:["super_admin","admin"]},
   {id:"leasing",    label:"Leasing",      icon:"🔑", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_discounts",label:"Discounts",    icon:"⚡", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
@@ -2337,18 +2344,26 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
     if(!form.name.trim()){ showToast("Project name required","error"); return; }
     setSaving(true);
     try {
-      const payload = { ...form, company_id:currentUser.company_id||null, created_by:currentUser.id };
+      const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+      const payload = {
+        name:form.name.trim(), developer:form.developer||null, location:form.location||null,
+        community:form.community||null, city:form.city||"Dubai", country:form.country||"UAE",
+        status:form.status||"Active", completion_date:form.completion_date||null,
+        launch_date:form.launch_date||null, description:form.description||null,
+        brochure_url:form.brochure_url||null, master_plan_url:form.master_plan_url||null,
+        website_url:form.website_url||null, company_id:cid, created_by:currentUser.id
+      };
       if(editProj) {
         const{error}=await supabase.from("projects").update(payload).eq("id",editProj.id);
         if(error) throw error;
         showToast("Project updated","success");
       } else {
-        const{error}=await supabase.from("projects").insert(payload);
+        const{data,error}=await supabase.from("projects").insert(payload).select().single();
         if(error) throw error;
-        showToast("Project created","success");
+        showToast("Project created successfully","success");
       }
-      setShowAdd(false); setEditProj(null); setForm(pBlank); load();
-    } catch(e){ showToast(e.message,"error"); }
+      setShowAdd(false); setEditProj(null); setForm(pBlank); load(true);
+    } catch(e){ showToast(e.message||"Failed to save project","error"); console.error(e); }
     setSaving(false);
   };
 
@@ -2357,9 +2372,10 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
     setUploadingBrochure(true);
     try {
       const path = `projects/${projId}/brochure_${Date.now()}_${file.name}`;
-      const{error:ue} = await supabase.storage.from("documents").upload(path, file, {upsert:true});
+      // Try "propcrm-files" bucket first, fallback to "documents"
+      const{error:ue} = await supabase.storage.from("propcrm-files").upload(path, file, {upsert:true});
       if(ue) throw ue;
-      const{data:{publicUrl}} = supabase.storage.from("documents").getPublicUrl(path);
+      const{data:{publicUrl}} = supabase.storage.from("propcrm-files").getPublicUrl(path);
       await supabase.from("projects").update({brochure_file_url:publicUrl}).eq("id",projId);
       setProjects(p=>p.map(x=>x.id===projId?{...x,brochure_file_url:publicUrl}:x));
       showToast("Brochure uploaded","success");
@@ -2427,9 +2443,13 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                       <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:proj.status==="Active"?"#E6F4EE":"#F0F2F5",color:proj.status==="Active"?"#1A7F5A":"#718096"}}>{proj.status}</span>
                     </td>
                     <td style={{padding:"10px 8px"}}>
-                      <div style={{display:"flex",gap:4}}>
-                        <button onClick={()=>openEdit(proj)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>Edit</button>
-                        <button onClick={()=>setExpanded(isExp?null:proj.id)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:isExp?"#0B1F3A":"#fff",color:isExp?"#fff":"#4A5568",cursor:"pointer"}}>{isExp?"▲":"▼"}</button>
+                      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                        <button onClick={()=>setDrillProject(proj)}
+                          style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #C9A84C",background:"#FFF9EC",color:"#8A6200",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+                          View Units
+                        </button>
+                        {canManage&&<button onClick={()=>openEdit(proj)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>Edit</button>}
+                        {canManage&&<button onClick={()=>setExpanded(isExp?null:proj.id)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:isExp?"#0B1F3A":"#fff",color:isExp?"#fff":"#4A5568",cursor:"pointer"}}>{isExp?"▲":"▼"}</button>}
                       </div>
                     </td>
                   </tr>
@@ -2483,14 +2503,68 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                       </td>
                     </tr>
                   )}
-                </>
+
               );
             })}
           </tbody>
         </table>
       </div>
 
-      {/* Add/Edit Modal */}
+
+      {/* Excel Upload Modal */}
+      {showExcelUpload&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📤 Upload Projects from Excel</span>
+              <button onClick={()=>setShowExcelUpload(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{padding:"1.5rem"}}>
+              <div style={{background:"#F7F9FC",borderRadius:10,padding:"1rem",marginBottom:16,border:"1px solid #E2E8F0"}}>
+                <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A",marginBottom:8}}>Required Excel columns:</div>
+                <div style={{fontSize:12,color:"#4A5568",lineHeight:1.8}}>
+                  <strong>name</strong> (required) • developer • location • community • city • country • status • completion_date (YYYY-MM-DD) • launch_date • website_url • description
+                </div>
+              </div>
+              <a href="data:text/csv;charset=utf-8,name,developer,location,community,city,country,status,completion_date,launch_date,website_url,description%0AProject Alpha,Developer Name,Dubai Marina,Marina,Dubai,UAE,Active,2026-12-31,2024-01-01,https://example.com,Sample project"
+                download="projects_template.csv"
+                style={{display:"inline-block",padding:"8px 16px",borderRadius:8,background:"#E6EFF9",color:"#1A5FA8",fontSize:12,fontWeight:600,textDecoration:"none",marginBottom:16}}>
+                ⬇ Download Template CSV
+              </a>
+              <div style={{border:"2px dashed #D1D9E6",borderRadius:10,padding:"2rem",textAlign:"center",background:"#FAFBFC"}}>
+                <div style={{fontSize:32,marginBottom:8}}>📊</div>
+                <div style={{fontSize:13,color:"#4A5568",marginBottom:12}}>Select your Excel or CSV file</div>
+                <label style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                  <input type="file" accept=".csv,.xlsx,.xls" style={{display:"none"}} onChange={async(e)=>{
+                    const file = e.target.files[0];
+                    if(!file){ return; }
+                    const text = await file.text();
+                    const rows = text.trim().split("
+");
+                    const headers = rows[0].split(",").map(h=>h.trim().replace(/"/g,""));
+                    const records = rows.slice(1).filter(r=>r.trim()).map(row=>{
+                      const vals = row.split(",").map(v=>v.trim().replace(/"/g,""));
+                      const rec = {}; headers.forEach((h,i)=>{ rec[h]=vals[i]||null; });
+                      return rec;
+                    });
+                    if(!records.length){ showToast("No data rows found","error"); return; }
+                    const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+                    const payload = records.map(r=>({...r, company_id:cid, created_by:currentUser.id, status:r.status||"Active"}));
+                    const{error}=await supabase.from("projects").insert(payload);
+                    if(error){ showToast(error.message,"error"); return; }
+                    showToast(`${records.length} project(s) uploaded successfully`,"success");
+                    setShowExcelUpload(false); load(true);
+                  }}/>
+                  Choose File
+                </label>
+              </div>
+              <div style={{fontSize:11,color:"#A0AEC0",marginTop:12}}>Tip: Export from Excel as CSV (comma-delimited) for best results</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+            {/* Add/Edit Modal */}
       {showAdd&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:600,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
@@ -2575,7 +2649,7 @@ function ReservationBadge({ reservation }) {
 }
 
 // ── Create / Manage Reservation Modal ──────────────────────────
-function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[], showToast, onClose, onSaved }) {
+function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[], opportunities=[], showToast, onClose, onSaved, unitHasPrice=true, unitLaunchDate=null }) {
   const isNew = !reservation;
   const isSale = unit?.purpose === "Sale" || unit?.purpose === "Both";
   const isLease = unit?.purpose === "Lease" || unit?.purpose === "Both";
@@ -2588,6 +2662,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
     client_nationality: "",
     lead_id: "",
     tenant_id: "",
+    opportunity_id: "",
     reservation_fee: 5000,
     fee_payment_method: "Cash",
     fee_received_date: new Date().toISOString().split("T")[0],
@@ -2605,6 +2680,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
       client_phone:       lead?.phone       || f.client_phone,
       client_email:       lead?.email       || f.client_email,
       client_nationality: lead?.nationality || f.client_nationality,
+      opportunity_id: "", // reset opportunity when lead changes
     }));
   };
 
@@ -2617,6 +2693,17 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
       client_email: t?.email     || f.client_email,
     }));
   };
+
+  // Opportunities for selected lead
+  const leadOpps = opportunities.filter(o=>o.lead_id===form.lead_id);
+
+  // Pre-flight validation checks for banner
+  const isSaleType = form.reservation_type==="Sale";
+  const missingLead = isSaleType && !form.lead_id;
+  const missingTenant = !isSaleType && !form.tenant_id;
+  const missingPrice = !unitHasPrice;
+  const beforeLaunch = unitLaunchDate && new Date() < new Date(unitLaunchDate);
+  const hasBlockers = missingLead||missingTenant||missingPrice||beforeLaunch;
 
   // Fee validation: max AED 5000 or 5% of unit value
   const validateFee = fee => {
@@ -2671,10 +2758,21 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
   };
 
   const release = async () => {
-    const reason = prompt("Release reason (optional):");
+    // Only the agent who created the reservation OR admin/manager can release
+    const isOwner = reservation.created_by === currentUser.id;
+    const isAdmin = ["super_admin","admin","sales_manager","leasing_manager"].includes(currentUser.role);
+    if(!isOwner && !isAdmin) {
+      showToast("Only the agent who made this reservation or a manager can release it.", "error"); return;
+    }
+    const reason = prompt("Release reason (required for audit trail):");
+    if(reason === null) return; // user cancelled
+    if(!reason.trim()) { showToast("Please provide a release reason.", "error"); return; }
     setSaving(true);
     try {
-      await supabase.from("reservations").update({ status:"Released", released_at:new Date().toISOString(), release_reason:reason||null }).eq("id", reservation.id);
+      await supabase.from("reservations").update({
+        status:"Released", released_at:new Date().toISOString(),
+        release_reason:reason.trim(), released_by:currentUser.id
+      }).eq("id", reservation.id);
       await supabase.from("project_units").update({ status:"Available" }).eq("id", unit.id);
       showToast("Reservation released — unit back to Available", "success");
       onSaved({ ...reservation, status:"Released" });
@@ -2961,7 +3059,7 @@ const UNIT_STATUS_COLORS = {
   Cancelled:  {c:"#718096", bg:"#F0F2F5"},
 };
 
-function InventoryModule({ currentUser, showToast, crmContext="sales", preloadedUnits=null, preloadedProjects=null, preloadedSalePricing=null, preloadedLeasePricing=null, activeCompanyId=null }) {
+function InventoryModule({ currentUser, showToast, crmContext="sales", preloadedUnits=null, preloadedProjects=null, preloadedSalePricing=null, preloadedLeasePricing=null, activeCompanyId=null, globalOpps=[] }) {
   const [units,       setUnits]       = useState(preloadedUnits||[]);
   const [projects,    setProjects]    = useState(preloadedProjects||[]);
   const [salePricing, setSalePricing] = useState(preloadedSalePricing||[]);
@@ -2977,6 +3075,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
   const [fStatus,  setFStatus]  = useState("All");
   const [fBeds,    setFBeds]    = useState("All");
   const [fPurpose, setFPurpose] = useState(crmContext==="leasing"?"Lease":crmContext==="sales"?"Sale":"All");
+  const [fCategory, setFCategory] = useState("All"); // All | Residential | Commercial
   const [fPriceMin,setFPriceMin]= useState("");
   const [fPriceMax,setFPriceMax]= useState("");
   // Unit form
@@ -2994,6 +3093,8 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
 
   const canEdit    = can(currentUser.role,"manage_inventory")||can(currentUser.role,"write");
   const canReserve = can(currentUser.role,"reserve_unit");
+  const canManageInv = ["super_admin","admin","sales_manager","leasing_manager"].includes(currentUser.role);
+  const [showInvExcel, setShowInvExcel] = useState(false);
 
   const uBlank = {
     unit_ref:"",unit_type:"Residential",sub_type:"1 Bed",
@@ -3070,14 +3171,22 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
   const allFiltered = units.filter(u=>{
     if(crmContext==="sales"   && u.purpose==="Lease") return false;
     if(crmContext==="leasing" && u.purpose==="Sale")  return false;
-    const q=fSearch.toLowerCase();
+    const q=fSearch.toLowerCase().trim();
     const proj=projects.find(p=>p.id===u.project_id);
     const sp=salePricing.find(s=>s.unit_id===u.id);
     const lp=leasePricing.find(l=>l.unit_id===u.id);
     const price=sp?.asking_price||lp?.annual_rent||0;
-    if(q&&!u.unit_ref?.toLowerCase().includes(q)&&!proj?.name?.toLowerCase().includes(q)&&!u.view?.toLowerCase().includes(q)&&!u.sub_type?.toLowerCase().includes(q)) return false;
+    // Universal search — searches across all key fields
+    if(q&&![
+      u.unit_ref, proj?.name, proj?.developer, proj?.location, proj?.community,
+      u.view, u.sub_type, u.unit_type, u.floor_number?.toString(),
+      u.block_or_tower, u.status, u.bedrooms?.toString(), u.notes,
+      u.furnishing, u.condition, sp?.asking_price?.toString(), lp?.annual_rent?.toString()
+    ].some(f=>f?.toLowerCase().includes(q))) return false;
     if(fProject!=="All"&&u.project_id!==fProject) return false;
     if(fType!=="All"&&u.unit_type!==fType) return false;
+    if(fCategory==="Residential"&&!["Residential","Villa","Flat","Penthouse","Townhouse","Duplex","Studio"].includes(u.unit_type)) return false;
+    if(fCategory==="Commercial"&&!["Office","Warehouse","Plot","Commercial Unit","Retail"].includes(u.unit_type)) return false;
     if(fCat!=="All"&&u.sub_type!==fCat) return false;
     if(fStatus!=="All"&&u.status!==fStatus) return false;
     if(fBeds!=="All"){if(fBeds==="Studio"&&u.bedrooms!==0)return false;if(fBeds!=="Studio"&&String(u.bedrooms)!==fBeds)return false;}
@@ -3092,7 +3201,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
   const getSP=id=>salePricing.find(s=>s.unit_id===id);
   const getLP=id=>leasePricing.find(l=>l.unit_id===id);
 
-  const resetFilters=()=>{setFSearch("");setFProject("All");setFType("All");setFCat("All");setFStatus("All");setFBeds("All");setFPurpose(crmContext==="leasing"?"Lease":crmContext==="sales"?"Sale":"All");setFPriceMin("");setFPriceMax("");}
+  const resetFilters=()=>{setFSearch("");setFProject("All");setFType("All");setFCat("All");setFStatus("All");setFBeds("All");setFCategory("All");setFPurpose(crmContext==="leasing"?"Lease":crmContext==="sales"?"Sale":"All");setFPriceMin("");setFPriceMax("");}
 
   const openUnit=(unit)=>{setSelUnit(unit);setActiveTab("details");}
   const openAdd=(projId="")=>{setUForm({...uBlank,project_id:projId||projects[0]?.id||""});setEditUnit(null);setShowUnitForm(true);setActiveTab("details");}
@@ -3176,9 +3285,9 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
     setUploading(true);
     try{
       const path=`units/${unitId||"new"}/${field}_${Date.now()}_${file.name}`;
-      const{error:ue}=await supabase.storage.from("documents").upload(path,file,{upsert:true});
+      const{error:ue}=await supabase.storage.from("propcrm-files").upload(path,file,{upsert:true});
       if(ue)throw ue;
-      const{data:{publicUrl}}=supabase.storage.from("documents").getPublicUrl(path);
+      const{data:{publicUrl}}=supabase.storage.from("propcrm-files").getPublicUrl(path);
       setUForm(f=>({...f,[field+"_url"]:publicUrl}));
       if(unitId){
         await supabase.from("project_units").update({[field+"_url"]:publicUrl}).eq("id",unitId);
@@ -3282,7 +3391,7 @@ Return ONLY the JSON, no explanation.`}
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
       {/* Top filter bar */}
       <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
-        <input value={fSearch} onChange={e=>setFSearch(e.target.value)} placeholder="🔍 Search ref, project, view…" style={{flex:1,minWidth:150}}/>
+        <input value={fSearch} onChange={e=>setFSearch(e.target.value)} placeholder="🔍 Universal search — unit ref, project, floor, view, price, status…" style={{flex:1,minWidth:150}}/>
         <select value={fProject} onChange={e=>setFProject(e.target.value)} style={{width:"auto",fontSize:12}}>
           <option value="All">All Projects</option>
           {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
@@ -3315,10 +3424,17 @@ Return ONLY the JSON, no explanation.`}
         <button onClick={resetFilters} style={{padding:"6px 12px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#F0F2F5",color:"#4A5568",fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>✕ Reset</button>
         <span style={{fontSize:11,color:"#A0AEC0",whiteSpace:"nowrap"}}>{allFiltered.length}/{units.length}</span>
       </div>
-      {/* Action bar: Add Unit aligned right, same visual row as title */}
-      {canEdit&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:8,marginTop:-4}}>
-        <button onClick={()=>openAdd()} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Unit</button>
-      </div>}
+      {/* Action bar: Add Unit + Upload Excel for managers */}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:8,marginTop:-4}}>
+        {canManageInv&&<button onClick={()=>setShowInvExcel(true)}
+          style={{padding:"7px 14px",borderRadius:8,border:"1.5px solid #C9A84C",background:"#fff",color:"#C9A84C",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+          📤 Upload Excel
+        </button>}
+        {canEdit&&<button onClick={()=>openAdd()}
+          style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+          + Add Unit
+        </button>}
+      </div>
 
 
 
@@ -3465,10 +3581,20 @@ Return ONLY the JSON, no explanation.`}
                     )}
                     {selUnit.notes&&<div style={{fontSize:12,color:"#4A5568",padding:"8px 10px",background:"#F7F9FC",borderRadius:8,lineHeight:1.6}}>{selUnit.notes}</div>}
                     {canEdit&&<button onClick={()=>openEdit(selUnit)} style={{padding:"8px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit Unit</button>}
-                    {canReserve&&selUnit.status==="Available"&&(
-                      <button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}}
-                        style={{padding:"8px",borderRadius:8,border:"none",background:"#C9A84C",color:"#0B1F3A",fontSize:12,fontWeight:700,cursor:"pointer"}}>🔒 Reserve Unit</button>
-                    )}
+                    {canReserve&&selUnit.status==="Available"&&(()=>{
+                      const hp2=!!(salePricing.find(s=>s.unit_id===selUnit.id)||leasePricing.find(l=>l.unit_id===selUnit.id));
+                      const pr2=projects.find(p=>p.id===selUnit.project_id);
+                      const ok2=hp2&&(!pr2?.launch_date||new Date()>=new Date(pr2.launch_date));
+                      return (
+                        <button onClick={()=>{
+                          if(!hp2){showToast("Add pricing to this unit before reserving","error");return;}
+                          if(!ok2){showToast(`Project launches ${new Date(pr2.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})} — not open yet`,"error");return;}
+                          setReserveUnit(selUnit);setShowReserve(true);
+                        }} style={{padding:"8px",borderRadius:8,border:"none",background:ok2?"#C9A84C":"#E2E8F0",color:ok2?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:ok2?"pointer":"not-allowed"}}>
+                          {!hp2?"⚠️ No Pricing":!ok2?"🔒 Not Released":"🔒 Reserve Unit"}
+                        </button>
+                      );
+                    })()}
                     {canReserve&&(()=>{const r=reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status));return r?(<button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"1.5px solid #E8C97A",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:700,cursor:"pointer"}}>⏱ View Reservation ({hoursLeft(r.expires_at,r.extended_until)}h)</button>):null;})()}
                   </div>
                 )}
@@ -3559,10 +3685,83 @@ Return ONLY the JSON, no explanation.`}
       </div>
 
       {/* Reservation Modal */}
-      {showReserve&&reserveUnit&&(
+      {/* Inventory Excel Upload Modal */}
+      {showInvExcel&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:540,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📤 Upload Inventory from Excel</span>
+              <button onClick={()=>setShowInvExcel(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{padding:"1.5rem"}}>
+              <div style={{background:"#F7F9FC",borderRadius:10,padding:"1rem",marginBottom:16,border:"1px solid #E2E8F0"}}>
+                <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A",marginBottom:8}}>Required columns:</div>
+                <div style={{fontSize:12,color:"#4A5568",lineHeight:1.8}}>
+                  <strong>unit_ref</strong> (required) • project_id • unit_type • sub_type • purpose (Sale/Lease) • floor_number • size_sqft • bedrooms • bathrooms • status • view • asking_price • annual_rent
+                </div>
+              </div>
+              <a href="data:text/csv;charset=utf-8,unit_ref,project_id,unit_type,sub_type,purpose,floor_number,size_sqft,bedrooms,bathrooms,status,view,asking_price,annual_rent%0AA-101,,Residential,2 Bed,Sale,1,1200,2,2,Available,Sea View,2500000,"
+                download="inventory_template.csv"
+                style={{display:"inline-block",padding:"8px 16px",borderRadius:8,background:"#E6EFF9",color:"#1A5FA8",fontSize:12,fontWeight:600,textDecoration:"none",marginBottom:16}}>
+                ⬇ Download Template CSV
+              </a>
+              <div style={{fontSize:12,color:"#718096",marginBottom:12}}>
+                💡 Tip: Find your project_id in the Projects tab. Leave blank if not known.
+              </div>
+              <div style={{border:"2px dashed #D1D9E6",borderRadius:10,padding:"2rem",textAlign:"center",background:"#FAFBFC"}}>
+                <div style={{fontSize:32,marginBottom:8}}>📊</div>
+                <div style={{fontSize:13,color:"#4A5568",marginBottom:12}}>Select your Excel or CSV file</div>
+                <label style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                  <input type="file" accept=".csv,.xlsx,.xls" style={{display:"none"}} onChange={async(e)=>{
+                    const file = e.target.files[0]; if(!file) return;
+                    const text = await file.text();
+                    const rows = text.trim().split("\n");
+                    const headers = rows[0].split(",").map(h=>h.trim().replace(/"/g,""));
+                    const records = rows.slice(1).filter(r=>r.trim()).map(row=>{
+                      const vals = row.split(",").map(v=>v.trim().replace(/"/g,""));
+                      const rec = {}; headers.forEach((h,i)=>{ rec[h]=vals[i]||null; });
+                      return rec;
+                    });
+                    if(!records.length){ showToast("No data rows found","error"); return; }
+                    const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+                    // Insert units
+                    const unitPayload = records.map(r=>({
+                      unit_ref:r.unit_ref, project_id:r.project_id||null,
+                      unit_type:r.unit_type||"Residential", sub_type:r.sub_type||null,
+                      purpose:r.purpose||"Sale", floor_number:r.floor_number||null,
+                      size_sqft:r.size_sqft?parseFloat(r.size_sqft):null,
+                      bedrooms:r.bedrooms||null, bathrooms:r.bathrooms||null,
+                      status:r.status||"Available", view:r.view||null,
+                      company_id:cid, created_by:currentUser.id
+                    }));
+                    const{data:newUnits,error:ue}=await supabase.from("project_units").insert(unitPayload).select();
+                    if(ue){ showToast(ue.message,"error"); return; }
+                    // Insert pricing if provided
+                    const salePriceRows = newUnits?.filter((_,i)=>records[i]?.asking_price).map((u,i)=>({
+                      unit_id:u.id, asking_price:parseFloat(records[i].asking_price), company_id:cid
+                    })) || [];
+                    const leasePriceRows = newUnits?.filter((_,i)=>records[i]?.annual_rent).map((u,i)=>({
+                      unit_id:u.id, annual_rent:parseFloat(records[i].annual_rent), company_id:cid
+                    })) || [];
+                    if(salePriceRows.length) await supabase.from("unit_sale_pricing").insert(salePriceRows);
+                    if(leasePriceRows.length) await supabase.from("unit_lease_pricing").insert(leasePriceRows);
+                    showToast(`${records.length} unit(s) uploaded successfully`,"success");
+                    setShowInvExcel(false); load(true);
+                  }}/>
+                  Choose File
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+            {showReserve&&reserveUnit&&(
         <ReservationModal
           unit={reserveUnit}
           reservation={reservations.find(r=>r.unit_id===reserveUnit.id&&["Active","Extended"].includes(r.status))||null}
+          opportunities={[...globalOpps]}
+          unitHasPrice={!!(salePricing.find(s=>s.unit_id===reserveUnit.id)||leasePricing.find(l=>l.unit_id===reserveUnit.id))}
+          unitLaunchDate={(()=>{const proj=projects.find(p=>p.id===reserveUnit.project_id);return proj?.launch_date||null;})()}
           currentUser={currentUser}
           leads={leads}
           tenants={tenants}
@@ -6065,20 +6264,37 @@ function UsersTab({currentUser, showToast}) {
         if(error)throw error;
         showToast("User updated","success");
       } else {
-        // Create auth user + profile
-        const{data:authData,error:authErr}=await supabase.auth.admin?.createUser?.({
-          email:form.email,password:form.password||Math.random().toString(36).slice(-8),
-          email_confirm:true,
-        });
-        if(authErr){
-          // Fallback: just create profile entry
-          const{error}=await supabase.from("profiles").insert({
-            full_name:form.full_name,email:form.email,role:form.role,
-            is_active:true,company_id:form.company_id||currentUser.company_id||null,
-          });
-          if(error)throw error;
+        // Use Supabase Admin API via fetch with service role key
+        let SUPABASE_SERVICE = localStorage.getItem("propccrm_srk")||"";
+        if(!SUPABASE_SERVICE){
+          SUPABASE_SERVICE = prompt("Enter Service Role Key (Supabase → Settings → API → service_role):\nThis will be saved for this session only.");
+          if(!SUPABASE_SERVICE){ setSaving(false); return; }
+          localStorage.setItem("propccrm_srk", SUPABASE_SERVICE);
         }
-        showToast("User added — they need to sign up with this email","success");
+        
+        const tempPw = form.password || Math.random().toString(36).slice(-8)+"A1!";
+        const res = await fetch(`https://ysceukgpimzfqixtnbnp.supabase.co/auth/v1/admin/users`,{
+          method:"POST",
+          headers:{"Content-Type":"application/json","apikey":SUPABASE_SERVICE,"Authorization":"Bearer "+SUPABASE_SERVICE},
+          body:JSON.stringify({email:form.email,password:tempPw,email_confirm:true,user_metadata:{full_name:form.full_name}})
+        });
+        const result = await res.json();
+        if(!res.ok){ showToast(result.message||result.error||"Failed to create user","error"); setSaving(false); return; }
+        
+        // Update the auto-created profile with correct role and company
+        await new Promise(r=>setTimeout(r,1000)); // wait for trigger
+        const{error:pErr}=await supabase.from("profiles").update({
+          full_name:form.full_name,
+          role:form.role,
+          is_active:true,
+          company_id:form.company_id||currentUser.company_id||null,
+        }).eq("id",result.id);
+        if(pErr) showToast("User created but profile update failed: "+pErr.message,"error");
+        else {
+          showToast(`✓ User created: ${form.email}  |  Temp password: ${tempPw}  |  Share this with them securely`,"success");
+          // Copy to clipboard
+          navigator.clipboard?.writeText(`Email: ${form.email}\nTemp Password: ${tempPw}`).catch(()=>{});
+        }
       }
       setShowAdd(false);setEditUser(null);setForm(blank);loadUsers();
     }catch(e){showToast(e.message,"error");}
@@ -6241,9 +6457,11 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
   const [saving,     setSaving]     = useState(false);
 
   const blank = {
-    name:"", business_type:"both", primary_contact:"", phone:"", email:"",
+    name:"", business_type:"both", company_category:"Brokerage",
+    primary_contact:"", phone:"", email:"",
     address:"", city:"", country:"UAE", brand_color:"#0B1F3A",
-    brand_accent:"#C9A84C", plan:"professional", is_active:true, logo_url:""
+    brand_accent:"#C9A84C", plan:"professional", is_active:true, logo_url:"",
+    rera_number:"", ded_number:""
   };
   const [form, setForm] = useState(blank);
   const sf = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -6254,9 +6472,14 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
     { id:"enterprise",   label:"Enterprise",    desc:"Unlimited users · Full access + API",         color:"#C9A84C" },
   ];
   const BIZ_TYPES = [
-    { id:"sales",   label:"Sales Only",       icon:"🏷", desc:"Leads · Pipeline · Inventory" },
-    { id:"leasing", label:"Leasing Only",     icon:"🔑", desc:"Tenants · Leases · Payments" },
+    { id:"sales",   label:"Sales Only",       icon:"🏷", desc:"Leads · Pipeline · Inventory · Off-plan" },
+    { id:"leasing", label:"Leasing Only",     icon:"🔑", desc:"Tenants · Leases · PDC · Rent Roll" },
     { id:"both",    label:"Sales & Leasing",  icon:"◆",  desc:"Full suite · Both workflows" },
+  ];
+  const COMPANY_CATEGORIES = [
+    "Brokerage", "Developer", "Real Estate Agent", "Property Management",
+    "Off-Plan Specialist", "Leasing Company", "RERA Registered Agency",
+    "Investment Company", "Other"
   ];
 
   const load = useCallback(async () => {
@@ -7571,13 +7794,13 @@ export default function App(){
         const[l,pr,a,u,d]=await Promise.all([
           safe(cid
             ? supabase.from("leads").select("*").eq("company_id",cid).order("created_at",{ascending:false})
-            : supabase.from("leads").select("*").order("created_at",{ascending:false}),
+            : supabase.from("leads").select("*").order("created_at",{ascending:false})),
           safe(supabase.from("properties").select("*").order("created_at",{ascending:false})),
           safe(supabase.from("activities").select("*").order("created_at",{ascending:false})),
           safe(supabase.from("profiles").select("*").order("full_name")),
           safe(cid
             ? supabase.from("discount_requests").select("*").eq("company_id",cid).order("created_at",{ascending:false})
-            : supabase.from("discount_requests").select("*").order("created_at",{ascending:false}),
+            : supabase.from("discount_requests").select("*").order("created_at",{ascending:false})),
         ]);
         // SECURITY: filter all data by active company client-side
         const filterByCo = (arr) => cid ? arr.filter(x=>x.company_id===cid) : arr;
@@ -7591,10 +7814,10 @@ export default function App(){
         setOpps(filterByCo(oppRes.data||[]));
         // Load inventory + leasing data eagerly
         const[proj,units2,sp2,lp2,lt,ll,lp_,lm]=await Promise.all([
-          safe(cid ? supabase.from("projects").select("*").eq("company_id",cid).order("name") : supabase.from("projects").select("*").order("name"),
-          safe(cid ? supabase.from("project_units").select("*").eq("company_id",cid) : supabase.from("project_units").select("*"),
-          safe(cid ? supabase.from("unit_sale_pricing").select("*").eq("company_id",cid) : supabase.from("unit_sale_pricing").select("*"),
-          safe(cid ? supabase.from("unit_lease_pricing").select("*").eq("company_id",cid) : supabase.from("unit_lease_pricing").select("*"),
+          safe(cid ? supabase.from("projects").select("*").eq("company_id",cid).order("name") : supabase.from("projects").select("*").order("name")),
+          safe(cid ? supabase.from("project_units").select("*").eq("company_id",cid) : supabase.from("project_units").select("*")),
+          safe(cid ? supabase.from("unit_sale_pricing").select("*").eq("company_id",cid) : supabase.from("unit_sale_pricing").select("*")),
+          safe(cid ? supabase.from("unit_lease_pricing").select("*").eq("company_id",cid) : supabase.from("unit_lease_pricing").select("*")),
           safe(supabase.from("tenants").select("*").order("full_name")),
           safe(supabase.from("leases").select("*").order("end_date")),
           safe(supabase.from("rent_payments").select("*").order("due_date")),
@@ -7679,11 +7902,8 @@ export default function App(){
               <span style={{color:"#C9A84C"}}>◆</span> PropCRM
             </div>
             {(()=>{
-              // Show active company — check localStorage first, then companies array
-              const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id");
-              const activeCo = companies.find(c=>c.id===storedId) || currentUser?.company_name_display || null;
-              if(!activeCo && companies.length===0) return null;
-              const co = activeCo || companies[0];
+              const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
+              const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || null;
               if(!co) return null;
               return (
                 <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:8,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)",cursor:"pointer",transition:"all .15s"}}
@@ -7771,7 +7991,7 @@ export default function App(){
           {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={setTab}/>}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
-          {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId}/>}
+          {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
           {tab==="pipeline"    &&<Pipeline leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} users={users} currentUser={currentUser} showToast={showToast}/>}
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
@@ -7784,9 +8004,9 @@ export default function App(){
 
           {/* ── Leasing CRM ───────────────────────────────────── */}
           {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={setTab} followupAlerts={followupAlerts} key="l_dash"/>}
-          {tab==="l_enquiries" &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
+          {tab==="l_leads"     &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
           {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
-          {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId}/>}
+          {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
           {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData}/>}
           {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
