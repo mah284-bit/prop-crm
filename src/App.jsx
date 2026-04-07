@@ -127,7 +127,26 @@ const MASTER = {
 };
 // ─── MASTER DATA LISTS ─────────────────────────────────────────
 // All dropdown values used across the app — single source of truth
-
+const MASTER = {
+  unit_type:    ["Residential","Commercial"],
+  sub_type_res: ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed+","Penthouse","Duplex","Triplex","Villa","Townhouse","Loft"],
+  sub_type_com: ["Office","Retail / Shop","Restaurant","Warehouse","Labour Camp","Hotel Apartment","Showroom","Medical Centre"],
+  sub_type_all: ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed+","Penthouse","Duplex","Triplex","Villa","Townhouse","Loft","Office","Retail / Shop","Restaurant","Warehouse","Labour Camp","Hotel Apartment","Showroom"],
+  purpose:      ["Sale","Lease","Both"],
+  status:       ["Available","Reserved","Under Offer","Sold","Leased","Blocked","Cancelled"],
+  view:         ["Sea View","Pool View","Garden View","City View","Golf View","Park View","Community View","Burj View","Creek View","Lake View","Boulevard View","No View"],
+  furnishing:   ["Unfurnished","Semi-Furnished","Fully Furnished","Serviced"],
+  condition:    ["Off-plan","Shell & Core","Ready","Renovated","Brand New"],
+  facing:       ["North","South","East","West","North-East","North-West","South-East","South-West"],
+  nationality:  ["Emirati","Saudi","Egyptian","Indian","Pakistani","British","Russian","Chinese","American","European","Other"],
+  id_type:      ["Emirates ID","Passport","GCC ID","Residence Visa"],
+  tenant_type:  ["Individual","Corporate"],
+  cheques:      ["1","2","4","6","12"],
+  payment_method: ["Cash","Cheque","Bank Transfer","Card","Crypto"],
+  lead_source:  ["Referral","Website","Property Finder","Bayut","Dubizzle","Cold Call","Event","Social Media","WhatsApp","Walk-in","Agency","Developer","Other"],
+  property_type:["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"],
+  company_type: ["Brokerage","Developer","Real Estate Agent","Property Management","Off-Plan Specialist","Leasing Company","RERA Registered Agency","Investment Company","Other"],
+};
 const WA_TEMPLATES= [
   { id:"intro",    label:"Introduction",      text:"Hello {name}, I'm {agent} from PropCRM. I wanted to reach out regarding your interest in {type} properties in Dubai. Could we schedule a brief call to discuss your requirements?" },
   { id:"followup", label:"Follow-up",         text:"Hello {name}, I hope you're well. I wanted to follow up on our previous conversation about the properties we discussed. Do you have any questions or would you like to arrange a viewing?" },
@@ -1519,14 +1538,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const visible = (can(currentUser.role,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id))
     .filter(l=>l.property_type!=="Lease");
 
-  const filtered = visible.filter(l=>{
-    const q=search.toLowerCase();
-    const stage = leadBestStage(l.id);
-    return(!q||l.name?.toLowerCase().includes(q)||l.email?.toLowerCase().includes(q)||l.phone?.includes(q)||l.source?.toLowerCase().includes(q))
-      &&(fType==="All"||l.property_type===fType)
-      &&(fStage==="All"||stage===fStage);
-  });
-
   // Aggregated stage from opportunities
   const leadBestStage = (leadId)=>{
     const lo=opps.filter(o=>o.lead_id===leadId&&o.status==="Active");
@@ -1535,6 +1546,14 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
     for(const s of order){ if(lo.find(o=>o.stage===s)) return s; }
     return lo[0]?.stage||"New";
   };
+
+  const filtered = visible.filter(l=>{
+    const q=search.toLowerCase();
+    const stage = leadBestStage(l.id);
+    return(!q||l.name?.toLowerCase().includes(q)||l.email?.toLowerCase().includes(q)||l.phone?.includes(q)||l.source?.toLowerCase().includes(q))
+      &&(fType==="All"||l.property_type===fType)
+      &&(fStage==="All"||stage===fStage);
+  });
 
   const saveLead = async()=>{
     if(!form.name.trim()){showToast("Name required","error");return;}
