@@ -2311,6 +2311,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
   const [uploadingBrochure, setUploadingBrochure] = useState(false);
   const [drillProject, setDrillProject] = useState(null);
   const [showExcelUpload, setShowExcelUpload] = useState(false);
+  const [drillProject, setDrillProject] = useState(null);
 
   const pBlank = {
     name:"", developer:"", location:"", community:"", city:"Dubai",
@@ -2399,6 +2400,56 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
 
   if(loading) return <Spinner msg="Loading projects…"/>;
 
+  // Drill-down view: show all units for a project
+  if(drillProject){
+    const projUnits = units.filter(u=>u.project_id===drillProject.id);
+    const sc = s=>({Available:{bg:"#E6F4EE",c:"#1A7F5A"},Reserved:{bg:"#FDF3DC",c:"#A06810"},Sold:{bg:"#E6EFF9",c:"#1A5FA8"},Leased:{bg:"#EEE8F9",c:"#5B3FAA"}}[s]||{bg:"#F0F2F5",c:"#718096"});
+    const avail=projUnits.filter(u=>u.status==="Available").length;
+    const res=projUnits.filter(u=>u.status==="Reserved").length;
+    const sold=projUnits.filter(u=>["Sold","Leased"].includes(u.status)).length;
+    return (
+      <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+          <button onClick={()=>setDrillProject(null)} style={{padding:"7px 14px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,cursor:"pointer"}}>← Projects</button>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0B1F3A"}}>{drillProject.name}</div>
+          {drillProject.developer&&<span style={{fontSize:12,color:"#718096"}}>· {drillProject.developer}</span>}
+          <div style={{display:"flex",gap:8,marginLeft:"auto"}}>
+            <span style={{fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>{avail} Available</span>
+            {res>0&&<span style={{fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:20,background:"#FDF3DC",color:"#A06810"}}>{res} Reserved</span>}
+            {sold>0&&<span style={{fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:20,background:"#E6EFF9",color:"#1A5FA8"}}>{sold} Sold/Leased</span>}
+          </div>
+        </div>
+        {projUnits.length===0
+          ?<div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}><div style={{fontSize:40,marginBottom:8}}>🏠</div><div>No units in this project yet</div></div>
+          :<div style={{flex:1,overflowY:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead style={{position:"sticky",top:0,zIndex:1}}>
+                <tr style={{background:"#0B1F3A"}}>
+                  {["Unit Ref","Type","Floor","View","Size sqft","Beds","Status"].map(h=>(
+                    <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".5px"}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {projUnits.map((u,i)=>(
+                  <tr key={u.id} style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5"}}>
+                    <td style={{padding:"10px 12px",fontWeight:700,fontSize:13,color:"#0B1F3A"}}>{u.unit_ref||"—"}</td>
+                    <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{u.sub_type||u.unit_type||"—"}</td>
+                    <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{u.floor_number||"—"}</td>
+                    <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{u.view||"—"}</td>
+                    <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{u.size_sqft?Number(u.size_sqft).toLocaleString():"—"}</td>
+                    <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{u.bedrooms!=null?u.bedrooms:"—"}</td>
+                    <td style={{padding:"10px 12px"}}><span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:sc(u.status).bg,color:sc(u.status).c}}>{u.status}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    );
+  }
+
   return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
       {/* Top bar */}
@@ -2429,7 +2480,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
               const projUnits = units.filter(u=>u.project_id===proj.id);
               return (
                 <>
-                  <tr key={proj.id}
+                  <tr key={proj.id+"_row"}
                     style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5",cursor:"pointer",transition:"background .1s"}}
                     onMouseOver={e=>e.currentTarget.style.background="#F0F7FF"}
                     onMouseOut={e=>e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC"}>
