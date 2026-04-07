@@ -1422,8 +1422,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                           setSaving(true);
                           try{
                             const path=`payments/${opp.id}/${Date.now()}_${file.name}`;
-                            await supabase.storage.from("propcrm-files").upload(path,file,{upsert:true});
-                            const{data:{publicUrl}}=supabase.storage.from("propcrm-files").getPublicUrl(path);
+                            await supabase.storage.from("documents").upload(path,file,{upsert:true});
+                            const{data:{publicUrl}}=supabase.storage.from("documents").getPublicUrl(path);
                             setPayForm(f=>({...f,cheque_file_url:publicUrl}));
                             showToast("Cheque uploaded","success");
                           }catch(err){showToast(err.message,"error");}
@@ -2373,9 +2373,14 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
     try {
       const path = `projects/${projId}/brochure_${Date.now()}_${file.name}`;
       // Try "propcrm-files" bucket first, fallback to "documents"
-      const{error:ue} = await supabase.storage.from("propcrm-files").upload(path, file, {upsert:true});
-      if(ue) throw ue;
-      const{data:{publicUrl}} = supabase.storage.from("propcrm-files").getPublicUrl(path);
+      let bucket = "propcrm-files";
+      let{error:ue} = await supabase.storage.from(bucket).upload(path, file, {upsert:true});
+      if(ue && ue.message?.includes("Bucket")) {
+        bucket = "documents";
+        const r2 = await supabase.storage.from(bucket).upload(path, file, {upsert:true});
+        if(r2.error) throw new Error("Storage bucket not configured. Please create a 'propcrm-files' bucket in Supabase Storage.");
+      } else if(ue) throw ue;
+      const{data:{publicUrl}} = supabase.storage.from(bucket).getPublicUrl(path);
       await supabase.from("projects").update({brochure_file_url:publicUrl}).eq("id",projId);
       setProjects(p=>p.map(x=>x.id===projId?{...x,brochure_file_url:publicUrl}:x));
       showToast("Brochure uploaded","success");
@@ -3285,9 +3290,9 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
     setUploading(true);
     try{
       const path=`units/${unitId||"new"}/${field}_${Date.now()}_${file.name}`;
-      const{error:ue}=await supabase.storage.from("propcrm-files").upload(path,file,{upsert:true});
+      const{error:ue}=await supabase.storage.from("documents").upload(path,file,{upsert:true});
       if(ue)throw ue;
-      const{data:{publicUrl}}=supabase.storage.from("propcrm-files").getPublicUrl(path);
+      const{data:{publicUrl}}=supabase.storage.from("documents").getPublicUrl(path);
       setUForm(f=>({...f,[field+"_url"]:publicUrl}));
       if(unitId){
         await supabase.from("project_units").update({[field+"_url"]:publicUrl}).eq("id",unitId);
