@@ -3067,6 +3067,8 @@ const UNIT_STATUS_COLORS = {
 };
 
 function InventoryModule({ currentUser, showToast, crmContext="sales", preloadedUnits=null, preloadedProjects=null, preloadedSalePricing=null, preloadedLeasePricing=null, activeCompanyId=null, globalOpps=[] }) {
+  // Company ID for all security filtering
+  const activeCid = activeCompanyId || currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
   const [units,       setUnits]       = useState(preloadedUnits||[]);
   const [projects,    setProjects]    = useState(preloadedProjects||[]);
   const [salePricing, setSalePricing] = useState(preloadedSalePricing||[]);
@@ -3135,11 +3137,10 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
       setLeasePricing(preloadedLeasePricing||[]);
       setLoading(false); // Show immediately
       // Load small tables in background (non-blocking)
-      const safe = q => q.catch(()=>({data:[]}));
       Promise.all([
-        safe(supabase.from("reservations").select("*").in("status",["Active","Extended","Confirmed"])),
-        safe(supabase.from("leads").select("id,name,phone,email,nationality,stage")),
-        safe(supabase.from("tenants").select("id,full_name,phone,email")),
+        supabase.from("reservations").select("*").in("status",["Active","Extended","Confirmed"]).then(r=>r).catch(()=>({data:[]})),
+        supabase.from("leads").select("id,name,phone,email,nationality,stage").then(r=>r).catch(()=>({data:[]})),
+        supabase.from("tenants").select("id,full_name,phone,email").then(r=>r).catch(()=>({data:[]})),
       ]).then(([res,lds,tns])=>{
         setReservations(res.data||[]);
         setLeads(lds.data||[]);
@@ -3174,6 +3175,11 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
   },[preloadedUnits, preloadedProjects, preloadedSalePricing, preloadedLeasePricing]);
 
   useEffect(()=>{ load(); },[load]);
+
+  // Security: only show projects belonging to active company
+  const companyProjects = activeCid
+    ? projects.filter(p=>!p.company_id||p.company_id===activeCid)
+    : projects;
 
   // Filtered units
   const allFiltered = units.filter(u=>{
@@ -3402,7 +3408,7 @@ Return ONLY the JSON, no explanation.`}
         <input value={fSearch} onChange={e=>setFSearch(e.target.value)} placeholder="🔍 Universal search — unit ref, project, floor, view, price, status…" style={{flex:1,minWidth:150}}/>
         <select value={fProject} onChange={e=>setFProject(e.target.value)} style={{width:"auto",fontSize:12}}>
           <option value="All">All Projects</option>
-          {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+          {companyProjects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
         <select value={fType} onChange={e=>{setFType(e.target.value);setFCat("All");}} style={{width:"auto",fontSize:12}}>
           <option value="All">All Types</option>
@@ -3710,7 +3716,7 @@ Return ONLY the JSON, no explanation.`}
                 <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Step 1 — Select Project</div>
                 <select data-inv-proj defaultValue="" onChange={e=>{setInvProjId(e.target.value);}} style={{width:"100%",borderColor:"#1A5FA8"}}>
                   <option value="">— Select the project for this upload —</option>
-                  {projects.map(p=><option key={p.id} value={p.id}>{p.name}{p.developer?` · ${p.developer}`:""}</option>)}
+                  {companyProjects.map(p=><option key={p.id} value={p.id}>{p.name}{p.developer?` · ${p.developer}`:""}</option>)}
                 </select>
                 <div style={{fontSize:11,color:"#718096",marginTop:6}}>All units in the uploaded file will be assigned to this project. The project_id column in the template will be ignored.</div>
               </div>
@@ -3801,7 +3807,7 @@ Return ONLY the JSON, no explanation.`}
                 </label>
               </div>
               <div style={{fontSize:11,color:"#A0AEC0",marginTop:10,textAlign:"center"}}>
-                Units are locked to your company ({currentUser.company_id?companies?.find?.(c=>c.id===currentUser.company_id)?.name||"your company":"your company"}). Other companies cannot see these units.
+                Units are locked to your company account. Other companies cannot see these units.
               </div>
             </div>
           </div>
