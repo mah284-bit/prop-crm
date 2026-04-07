@@ -551,7 +551,6 @@ function LoginScreen({onLogin}){
       const msg=e.message||"";
       if(msg.includes("Email not confirmed"))setError("Please verify your email first. Check your inbox.");
       else if(msg.includes("Invalid login"))setError("Incorrect email or password.");
-      else if(msg.includes("Failed to fetch")||msg.includes("fetch"))setError("Cannot connect to server. If you see this, the database may be paused — go to supabase.com/dashboard and restore your project.");
       else setError(msg||"Login failed.");
     }finally{setLoading(false);}
   };
@@ -1475,7 +1474,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const canEdit = can(currentUser.role,"write");
   const canDel  = can(currentUser.role,"delete_leads");
 
-  const blank = {name:"",phone:"",email:"",nationality:"",source:"Walk-In",property_type:"Sale",notes:"",assigned_to:currentUser.id,budget:""};
+  const blank = {name:"",phone:"",email:"",nationality:"",source:"Walk-In",property_type:"Sale",notes:""};
   const [form, setForm] = useState(blank);
   const sf = k => e => setForm(f=>({...f,[k]:e.target?.value??e}));
 
@@ -1496,10 +1495,8 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
 
   const filtered = visible.filter(l=>{
     const q=search.toLowerCase();
-    const stage = leadBestStage(l.id);
-    return(!q||l.name?.toLowerCase().includes(q)||l.email?.toLowerCase().includes(q)||l.phone?.includes(q)||l.source?.toLowerCase().includes(q))
-      &&(fType==="All"||l.property_type===fType)
-      &&(fStage==="All"||stage===fStage);
+    return(!q||l.name?.toLowerCase().includes(q)||l.email?.toLowerCase().includes(q)||l.phone?.includes(q))
+      &&(fType==="All"||l.property_type===fType);
   });
 
   // Aggregated stage from opportunities
@@ -1573,10 +1570,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           <option value="All">All Types</option>
           <option value="Sale">Sale</option>
           <option value="Both">Both</option>
-        </select>
-        <select value={fStage} onChange={e=>setFStage(e.target.value)} style={{width:"auto"}}>
-          <option value="All">All Stages</option>
-          {OPP_STAGES.map(s=><option key={s}>{s}</option>)}
         </select>
         <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
         {canEdit&&<button onClick={()=>{setForm(blank);setEditLead(null);setShowAdd(true);}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Contact</button>}
@@ -2229,7 +2222,7 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
 const TABS=[
   // ── Sales CRM ──────────────────────────────────────────────────
   {id:"dashboard",  label:"Dashboard",    icon:"⊞",  app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent","viewer"]},
-  {id:"projects",   label:"Projects",     icon:"🏢", app:"sales",   roles:["super_admin","admin","sales_manager"]},
+  {id:"projects",   label:"Projects",     icon:"🏢", app:"sales",   roles:["super_admin","admin"]},
   {id:"builder",    label:"Inventory",    icon:"📋", app:"sales",   roles:["super_admin","admin"]},
   {id:"leads",      label:"Leads",        icon:"👤", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"pipeline",   label:"Pipeline",     icon:"⬡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
@@ -2242,7 +2235,7 @@ const TABS=[
   // ── Leasing CRM ────────────────────────────────────────────────
   {id:"l_dashboard",label:"Dashboard",    icon:"⊞",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
   {id:"l_leads",    label:"Enquiries",    icon:"👤", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
-  {id:"l_projects",  label:"Projects",     icon:"🏢", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
+  {id:"l_projects",  label:"Projects",     icon:"🏢", app:"leasing", roles:["super_admin","admin"]},
   {id:"l_inventory",label:"Inventory",    icon:"📋", app:"leasing", roles:["super_admin","admin"]},
   {id:"leasing",    label:"Leasing",      icon:"🔑", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_discounts",label:"Discounts",    icon:"⚡", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
@@ -2654,7 +2647,7 @@ function ReservationBadge({ reservation }) {
 }
 
 // ── Create / Manage Reservation Modal ──────────────────────────
-function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[], opportunities=[], showToast, onClose, onSaved, unitHasPrice=true, unitLaunchDate=null }) {
+function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[], showToast, onClose, onSaved }) {
   const isNew = !reservation;
   const isSale = unit?.purpose === "Sale" || unit?.purpose === "Both";
   const isLease = unit?.purpose === "Lease" || unit?.purpose === "Both";
@@ -2667,7 +2660,6 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
     client_nationality: "",
     lead_id: "",
     tenant_id: "",
-    opportunity_id: "",
     reservation_fee: 5000,
     fee_payment_method: "Cash",
     fee_received_date: new Date().toISOString().split("T")[0],
@@ -2685,7 +2677,6 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
       client_phone:       lead?.phone       || f.client_phone,
       client_email:       lead?.email       || f.client_email,
       client_nationality: lead?.nationality || f.client_nationality,
-      opportunity_id: "", // reset opportunity when lead changes
     }));
   };
 
@@ -2698,17 +2689,6 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
       client_email: t?.email     || f.client_email,
     }));
   };
-
-  // Opportunities for selected lead
-  const leadOpps = opportunities.filter(o=>o.lead_id===form.lead_id);
-
-  // Pre-flight validation checks for banner
-  const isSaleType = form.reservation_type==="Sale";
-  const missingLead = isSaleType && !form.lead_id;
-  const missingTenant = !isSaleType && !form.tenant_id;
-  const missingPrice = !unitHasPrice;
-  const beforeLaunch = unitLaunchDate && new Date() < new Date(unitLaunchDate);
-  const hasBlockers = missingLead||missingTenant||missingPrice||beforeLaunch;
 
   // Fee validation: max AED 5000 or 5% of unit value
   const validateFee = fee => {
@@ -2763,21 +2743,10 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
   };
 
   const release = async () => {
-    // Only the agent who created the reservation OR admin/manager can release
-    const isOwner = reservation.created_by === currentUser.id;
-    const isAdmin = ["super_admin","admin","sales_manager","leasing_manager"].includes(currentUser.role);
-    if(!isOwner && !isAdmin) {
-      showToast("Only the agent who made this reservation or a manager can release it.", "error"); return;
-    }
-    const reason = prompt("Release reason (required for audit trail):");
-    if(reason === null) return; // user cancelled
-    if(!reason.trim()) { showToast("Please provide a release reason.", "error"); return; }
+    const reason = prompt("Release reason (optional):");
     setSaving(true);
     try {
-      await supabase.from("reservations").update({
-        status:"Released", released_at:new Date().toISOString(),
-        release_reason:reason.trim(), released_by:currentUser.id
-      }).eq("id", reservation.id);
+      await supabase.from("reservations").update({ status:"Released", released_at:new Date().toISOString(), release_reason:reason||null }).eq("id", reservation.id);
       await supabase.from("project_units").update({ status:"Available" }).eq("id", unit.id);
       showToast("Reservation released — unit back to Available", "success");
       onSaved({ ...reservation, status:"Released" });
@@ -3064,7 +3033,7 @@ const UNIT_STATUS_COLORS = {
   Cancelled:  {c:"#718096", bg:"#F0F2F5"},
 };
 
-function InventoryModule({ currentUser, showToast, crmContext="sales", preloadedUnits=null, preloadedProjects=null, preloadedSalePricing=null, preloadedLeasePricing=null, activeCompanyId=null, globalOpps=[] }) {
+function InventoryModule({ currentUser, showToast, crmContext="sales", preloadedUnits=null, preloadedProjects=null, preloadedSalePricing=null, preloadedLeasePricing=null, activeCompanyId=null }) {
   const [units,       setUnits]       = useState(preloadedUnits||[]);
   const [projects,    setProjects]    = useState(preloadedProjects||[]);
   const [salePricing, setSalePricing] = useState(preloadedSalePricing||[]);
@@ -3080,7 +3049,6 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
   const [fStatus,  setFStatus]  = useState("All");
   const [fBeds,    setFBeds]    = useState("All");
   const [fPurpose, setFPurpose] = useState(crmContext==="leasing"?"Lease":crmContext==="sales"?"Sale":"All");
-  const [fCategory, setFCategory] = useState("All"); // All | Residential | Commercial
   const [fPriceMin,setFPriceMin]= useState("");
   const [fPriceMax,setFPriceMax]= useState("");
   // Unit form
@@ -3190,8 +3158,6 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
     ].some(f=>f?.toLowerCase().includes(q))) return false;
     if(fProject!=="All"&&u.project_id!==fProject) return false;
     if(fType!=="All"&&u.unit_type!==fType) return false;
-    if(fCategory==="Residential"&&!["Residential","Villa","Flat","Penthouse","Townhouse","Duplex","Studio"].includes(u.unit_type)) return false;
-    if(fCategory==="Commercial"&&!["Office","Warehouse","Plot","Commercial Unit","Retail"].includes(u.unit_type)) return false;
     if(fCat!=="All"&&u.sub_type!==fCat) return false;
     if(fStatus!=="All"&&u.status!==fStatus) return false;
     if(fBeds!=="All"){if(fBeds==="Studio"&&u.bedrooms!==0)return false;if(fBeds!=="Studio"&&String(u.bedrooms)!==fBeds)return false;}
@@ -3206,7 +3172,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
   const getSP=id=>salePricing.find(s=>s.unit_id===id);
   const getLP=id=>leasePricing.find(l=>l.unit_id===id);
 
-  const resetFilters=()=>{setFSearch("");setFProject("All");setFType("All");setFCat("All");setFStatus("All");setFBeds("All");setFCategory("All");setFPurpose(crmContext==="leasing"?"Lease":crmContext==="sales"?"Sale":"All");setFPriceMin("");setFPriceMax("");}
+  const resetFilters=()=>{setFSearch("");setFProject("All");setFType("All");setFCat("All");setFStatus("All");setFBeds("All");setFPurpose(crmContext==="leasing"?"Lease":crmContext==="sales"?"Sale":"All");setFPriceMin("");setFPriceMax("");}
 
   const openUnit=(unit)=>{setSelUnit(unit);setActiveTab("details");}
   const openAdd=(projId="")=>{setUForm({...uBlank,project_id:projId||projects[0]?.id||""});setEditUnit(null);setShowUnitForm(true);setActiveTab("details");}
@@ -3396,7 +3362,7 @@ Return ONLY the JSON, no explanation.`}
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
       {/* Top filter bar */}
       <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
-        <input value={fSearch} onChange={e=>setFSearch(e.target.value)} placeholder="🔍 Universal search — unit ref, project, floor, view, price, status…" style={{flex:1,minWidth:150}}/>
+        <input value={fSearch} onChange={e=>setFSearch(e.target.value)} placeholder="🔍 Search ref, project, view…" style={{flex:1,minWidth:150}}/>
         <select value={fProject} onChange={e=>setFProject(e.target.value)} style={{width:"auto",fontSize:12}}>
           <option value="All">All Projects</option>
           {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
@@ -3429,17 +3395,10 @@ Return ONLY the JSON, no explanation.`}
         <button onClick={resetFilters} style={{padding:"6px 12px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#F0F2F5",color:"#4A5568",fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>✕ Reset</button>
         <span style={{fontSize:11,color:"#A0AEC0",whiteSpace:"nowrap"}}>{allFiltered.length}/{units.length}</span>
       </div>
-      {/* Action bar: Add Unit + Upload Excel for managers */}
-      <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:8,marginTop:-4}}>
-        {canManageInv&&<button onClick={()=>setShowInvExcel(true)}
-          style={{padding:"7px 14px",borderRadius:8,border:"1.5px solid #C9A84C",background:"#fff",color:"#C9A84C",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
-          📤 Upload Excel
-        </button>}
-        {canEdit&&<button onClick={()=>openAdd()}
-          style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
-          + Add Unit
-        </button>}
-      </div>
+      {/* Action bar: Add Unit aligned right, same visual row as title */}
+      {canEdit&&<div style={{display:"flex",justifyContent:"flex-end",marginBottom:8,marginTop:-4}}>
+        <button onClick={()=>openAdd()} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Unit</button>
+      </div>}
 
 
 
@@ -3586,20 +3545,10 @@ Return ONLY the JSON, no explanation.`}
                     )}
                     {selUnit.notes&&<div style={{fontSize:12,color:"#4A5568",padding:"8px 10px",background:"#F7F9FC",borderRadius:8,lineHeight:1.6}}>{selUnit.notes}</div>}
                     {canEdit&&<button onClick={()=>openEdit(selUnit)} style={{padding:"8px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit Unit</button>}
-                    {canReserve&&selUnit.status==="Available"&&(()=>{
-                      const hp2=!!(salePricing.find(s=>s.unit_id===selUnit.id)||leasePricing.find(l=>l.unit_id===selUnit.id));
-                      const pr2=projects.find(p=>p.id===selUnit.project_id);
-                      const ok2=hp2&&(!pr2?.launch_date||new Date()>=new Date(pr2.launch_date));
-                      return (
-                        <button onClick={()=>{
-                          if(!hp2){showToast("Add pricing to this unit before reserving","error");return;}
-                          if(!ok2){showToast(`Project launches ${new Date(pr2.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})} — not open yet`,"error");return;}
-                          setReserveUnit(selUnit);setShowReserve(true);
-                        }} style={{padding:"8px",borderRadius:8,border:"none",background:ok2?"#C9A84C":"#E2E8F0",color:ok2?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:ok2?"pointer":"not-allowed"}}>
-                          {!hp2?"⚠️ No Pricing":!ok2?"🔒 Not Released":"🔒 Reserve Unit"}
-                        </button>
-                      );
-                    })()}
+                    {canReserve&&selUnit.status==="Available"&&(
+                      <button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}}
+                        style={{padding:"8px",borderRadius:8,border:"none",background:"#C9A84C",color:"#0B1F3A",fontSize:12,fontWeight:700,cursor:"pointer"}}>🔒 Reserve Unit</button>
+                    )}
                     {canReserve&&(()=>{const r=reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status));return r?(<button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"1.5px solid #E8C97A",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:700,cursor:"pointer"}}>⏱ View Reservation ({hoursLeft(r.expires_at,r.extended_until)}h)</button>):null;})()}
                   </div>
                 )}
@@ -3765,9 +3714,6 @@ A-101,,Residential,2 Bed,Sale,1,1200,2,2,Available,Sea View,2500000,"}
         <ReservationModal
           unit={reserveUnit}
           reservation={reservations.find(r=>r.unit_id===reserveUnit.id&&["Active","Extended"].includes(r.status))||null}
-          opportunities={[...globalOpps]}
-          unitHasPrice={!!(salePricing.find(s=>s.unit_id===reserveUnit.id)||leasePricing.find(l=>l.unit_id===reserveUnit.id))}
-          unitLaunchDate={(()=>{const proj=projects.find(p=>p.id===reserveUnit.project_id);return proj?.launch_date||null;})()}
           currentUser={currentUser}
           leads={leads}
           tenants={tenants}
@@ -6271,12 +6217,9 @@ function UsersTab({currentUser, showToast}) {
         showToast("User updated","success");
       } else {
         // Use Supabase Admin API via fetch with service role key
-        let SUPABASE_SERVICE = localStorage.getItem("propccrm_srk")||"";
-        if(!SUPABASE_SERVICE){
-          SUPABASE_SERVICE = prompt("Enter Service Role Key (Supabase → Settings → API → service_role):\nThis will be saved for this session only.");
-          if(!SUPABASE_SERVICE){ setSaving(false); return; }
-          localStorage.setItem("propccrm_srk", SUPABASE_SERVICE);
-        }
+        // Service role key is safe here because only super_admin/admin can reach this code
+        const SUPABASE_SERVICE = prompt("Enter service role key to create user (Supabase → Settings → API → service_role):");
+        if(!SUPABASE_SERVICE){ setSaving(false); return; }
         
         const tempPw = form.password || Math.random().toString(36).slice(-8)+"A1!";
         const res = await fetch(`https://ysceukgpimzfqixtnbnp.supabase.co/auth/v1/admin/users`,{
@@ -6296,11 +6239,7 @@ function UsersTab({currentUser, showToast}) {
           company_id:form.company_id||currentUser.company_id||null,
         }).eq("id",result.id);
         if(pErr) showToast("User created but profile update failed: "+pErr.message,"error");
-        else {
-          showToast(`✓ User created: ${form.email}  |  Temp password: ${tempPw}  |  Share this with them securely`,"success");
-          // Copy to clipboard
-          navigator.clipboard?.writeText(`Email: ${form.email}\nTemp Password: ${tempPw}`).catch(()=>{});
-        }
+        else showToast(`User ${form.email} created successfully. Temp password: ${tempPw}`,"success");
       }
       setShowAdd(false);setEditUser(null);setForm(blank);loadUsers();
     }catch(e){showToast(e.message,"error");}
@@ -6463,11 +6402,9 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
   const [saving,     setSaving]     = useState(false);
 
   const blank = {
-    name:"", business_type:"both", company_category:"Brokerage",
-    primary_contact:"", phone:"", email:"",
+    name:"", business_type:"both", primary_contact:"", phone:"", email:"",
     address:"", city:"", country:"UAE", brand_color:"#0B1F3A",
-    brand_accent:"#C9A84C", plan:"professional", is_active:true, logo_url:"",
-    rera_number:"", ded_number:""
+    brand_accent:"#C9A84C", plan:"professional", is_active:true, logo_url:""
   };
   const [form, setForm] = useState(blank);
   const sf = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -6478,14 +6415,9 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
     { id:"enterprise",   label:"Enterprise",    desc:"Unlimited users · Full access + API",         color:"#C9A84C" },
   ];
   const BIZ_TYPES = [
-    { id:"sales",   label:"Sales Only",       icon:"🏷", desc:"Leads · Pipeline · Inventory · Off-plan" },
-    { id:"leasing", label:"Leasing Only",     icon:"🔑", desc:"Tenants · Leases · PDC · Rent Roll" },
+    { id:"sales",   label:"Sales Only",       icon:"🏷", desc:"Leads · Pipeline · Inventory" },
+    { id:"leasing", label:"Leasing Only",     icon:"🔑", desc:"Tenants · Leases · Payments" },
     { id:"both",    label:"Sales & Leasing",  icon:"◆",  desc:"Full suite · Both workflows" },
-  ];
-  const COMPANY_CATEGORIES = [
-    "Brokerage", "Developer", "Real Estate Agent", "Property Management",
-    "Off-Plan Specialist", "Leasing Company", "RERA Registered Agency",
-    "Investment Company", "Other"
   ];
 
   const load = useCallback(async () => {
@@ -7908,7 +7840,7 @@ export default function App(){
               <span style={{color:"#C9A84C"}}>◆</span> PropCRM
             </div>
             {(()=>{
-              const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
+              const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id");
               const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || null;
               if(!co) return null;
               return (
@@ -7997,7 +7929,7 @@ export default function App(){
           {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={setTab}/>}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
-          {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
+          {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId}/>}
           {tab==="pipeline"    &&<Pipeline leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} users={users} currentUser={currentUser} showToast={showToast}/>}
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
@@ -8012,7 +7944,7 @@ export default function App(){
           {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={setTab} followupAlerts={followupAlerts} key="l_dash"/>}
           {tab==="l_leads"     &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
           {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
-          {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
+          {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId}/>}
           {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData}/>}
           {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
