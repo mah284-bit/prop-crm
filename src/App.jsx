@@ -2539,7 +2539,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                     const file = e.target.files[0];
                     if(!file){ return; }
                     const text = await file.text();
-                    const rows = text.trim().split("
+                    const rows = text.trim().split("\n")
 ");
                     const headers = rows[0].split(",").map(h=>h.trim().replace(/"/g,""));
                     const records = rows.slice(1).filter(r=>r.trim()).map(row=>{
