@@ -2311,6 +2311,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
   const [uploadingBrochure, setUploadingBrochure] = useState(false);
   const [drillProject, setDrillProject] = useState(null);
   const [showExcelUpload, setShowExcelUpload] = useState(false);
+  const [drillProject, setDrillProject] = useState(null);
 
   const pBlank = {
     name:"", developer:"", location:"", community:"", city:"Dubai",
@@ -2324,7 +2325,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
   const load = useCallback(async(force=false)=>{
     if(!force && preloadedProjects && preloadedProjects.length >= 0) {
       setProjects(preloadedProjects);
-      setUnits((preloadedUnits||[]).map(u=>({id:u.id,project_id:u.project_id,status:u.status,purpose:u.purpose,unit_type:u.unit_type})));
+      setUnits(preloadedUnits||[]);
       setLoading(false);
       return;
     }
@@ -2332,7 +2333,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
     try {
       const [p,u] = await Promise.all([
         safe(supabase.from("projects").select("*").order("name")),
-        safe(supabase.from("project_units").select("id,project_id,status,purpose,unit_type")),
+        safe(supabase.from("project_units").select("id,project_id,unit_ref,unit_type,sub_type,status,purpose,floor_number,view,size_sqft,bedrooms,bathrooms,block_or_tower")),
       ]);
       setProjects(p.data||[]);
       setUnits(u.data||[]);
@@ -2402,6 +2403,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
   // Drill-down view: show all units for a project
   if(drillProject){
     const projUnits = units.filter(u=>u.project_id===drillProject.id);
+    // Note: preloaded units may have limited fields - show what's available
     const sc = s=>({Available:{bg:"#E6F4EE",c:"#1A7F5A"},Reserved:{bg:"#FDF3DC",c:"#A06810"},Sold:{bg:"#E6EFF9",c:"#1A5FA8"},Leased:{bg:"#EEE8F9",c:"#5B3FAA"}}[s]||{bg:"#F0F2F5",c:"#718096"});
     const avail=projUnits.filter(u=>u.status==="Available").length;
     const res=projUnits.filter(u=>u.status==="Reserved").length;
@@ -2424,7 +2426,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead style={{position:"sticky",top:0,zIndex:1}}>
                 <tr style={{background:"#0B1F3A"}}>
-                  {["Unit Ref","Type","Floor","View","Size sqft","Beds","Status"].map(h=>(
+                  {["Unit Ref","Type","Floor","Beds","Size","View","Status"].map(h=>(
                     <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".5px"}}>{h}</th>
                   ))}
                 </tr>
@@ -2432,12 +2434,15 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
               <tbody>
                 {projUnits.map((u,i)=>(
                   <tr key={u.id} style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5"}}>
-                    <td style={{padding:"10px 12px",fontWeight:700,fontSize:13,color:"#0B1F3A"}}>{u.unit_ref||"—"}</td>
+                    <td style={{padding:"10px 12px",fontWeight:700,fontSize:13,color:"#0B1F3A"}}>
+                      {u.unit_ref||"—"}
+                      {u.block_or_tower&&<div style={{fontSize:10,color:"#A0AEC0"}}>{u.block_or_tower}</div>}
+                    </td>
                     <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{u.sub_type||u.unit_type||"—"}</td>
                     <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{u.floor_number||"—"}</td>
+                    <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{u.bedrooms!=null?u.bedrooms+" bed":"—"}</td>
+                    <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{u.size_sqft?Number(u.size_sqft).toLocaleString()+" sqft":"—"}</td>
                     <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{u.view||"—"}</td>
-                    <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{u.size_sqft?Number(u.size_sqft).toLocaleString():"—"}</td>
-                    <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{u.bedrooms!=null?u.bedrooms:"—"}</td>
                     <td style={{padding:"10px 12px"}}><span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:sc(u.status).bg,color:sc(u.status).c}}>{u.status}</span></td>
                   </tr>
                 ))}
@@ -7384,7 +7389,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
     Promise.all([
       safe(supabase.from("tenants").select("*").order("full_name")),
       safe(supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false})),
-      safe(supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft")),
+      safe(supabase.from("project_units").select("id,unit_ref,unit_type,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms,bathrooms,block_or_tower,asking_price")),
       safe(supabase.from("projects").select("id,name")),
       safe(supabase.from("unit_lease_pricing").select("*")),
     ]).then(([t,lo,u,p,lp])=>{
