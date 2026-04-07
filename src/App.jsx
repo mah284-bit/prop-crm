@@ -2534,10 +2534,10 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                   <strong>name</strong> (required) • developer • location • community • city • country • status • completion_date (YYYY-MM-DD) • launch_date • website_url • description
                 </div>
               </div>
-              <a href="data:text/csv;charset=utf-8,name,developer,location,community,city,country,status,completion_date,launch_date,website_url,description%0AProject Alpha,Developer Name,Dubai Marina,Marina,Dubai,UAE,Active,2026-12-31,2024-01-01,https://example.com,Sample project"
-                download="projects_template.csv"
+              <a href="data:text/csv;charset=utf-8,name,developer,location,community,city,country,status,completion_date,launch_date,website_url,description%0AProject Alpha,Emaar,Dubai Marina,Marina,Dubai,UAE,Active,2026-12-31,2026-01-01,https://example.com,Sample off-plan project%0AProject Beta,Nakheel,Palm Jumeirah,Palm,Dubai,UAE,Active,2027-06-30,2026-03-01,,Luxury villa community"
+                download="propcrm_projects_template.csv"
                 style={{display:"inline-block",padding:"8px 16px",borderRadius:8,background:"#E6EFF9",color:"#1A5FA8",fontSize:12,fontWeight:600,textDecoration:"none",marginBottom:16}}>
-                ⬇ Download Template CSV
+                ⬇ Download Template CSV (2 sample rows)
               </a>
               <div style={{border:"2px dashed #D1D9E6",borderRadius:10,padding:"2rem",textAlign:"center",background:"#FAFBFC"}}>
                 <div style={{fontSize:32,marginBottom:8}}>📊</div>
@@ -3438,10 +3438,33 @@ Return ONLY the JSON, no explanation.`}
         <button onClick={resetFilters} style={{padding:"6px 12px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#F0F2F5",color:"#4A5568",fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>✕ Reset</button>
         <span style={{fontSize:11,color:"#A0AEC0",whiteSpace:"nowrap"}}>{allFiltered.length}/{units.length}</span>
       </div>
-      {/* Action bar: Add Unit + Upload Excel for managers */}
-      <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:8,marginTop:-4}}>
+      {/* Action bar */}
+      <div style={{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:8,marginTop:-4,flexWrap:"wrap"}}>
+        {/* Export current inventory */}
+        {canManageInv&&<button onClick={()=>{
+          const rows = allFiltered.map(u=>{
+            const proj = companyProjects.find(p=>p.id===u.project_id);
+            const sp = salePricing.find(s=>s.unit_id===u.id);
+            const lp = leasePricing.find(l=>l.unit_id===u.id);
+            return [
+              proj?.id||"",proj?.name||"",u.unit_ref||"",u.unit_type||"",
+              u.sub_type||"",u.purpose||"",u.floor_number||"",u.size_sqft||"",
+              u.bedrooms||"",u.bathrooms||"",u.status||"",u.view||"",
+              sp?.asking_price||"",lp?.annual_rent||""
+            ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",");
+          });
+          const headers = "project_id,project_name,unit_ref,unit_type,sub_type,purpose,floor_number,size_sqft,bedrooms,bathrooms,status,view,asking_price,annual_rent";
+          const csv = [headers,...rows].join("\n");
+          const a = document.createElement("a");
+          a.href = "data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+          a.download = `inventory_export_${new Date().toISOString().split("T")[0]}.csv`;
+          a.click();
+          showToast(`Exported ${allFiltered.length} units`,"success");
+        }} style={{padding:"7px 14px",borderRadius:8,border:"1.5px solid #1A7F5A",background:"#E6F4EE",color:"#1A7F5A",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+          ⬇ Export Current
+        </button>}
         {canManageInv&&<button onClick={()=>setShowInvExcel(true)}
-          style={{padding:"7px 14px",borderRadius:8,border:"1.5px solid #C9A84C",background:"#fff",color:"#C9A84C",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+          style={{padding:"7px 14px",borderRadius:8,border:"1.5px solid #C9A84C",background:"#FFF9EC",color:"#8A6200",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
           📤 Upload Excel
         </button>}
         {canEdit&&<button onClick={()=>openAdd()}
@@ -3748,18 +3771,37 @@ Return ONLY the JSON, no explanation.`}
               </div>
 
               {/* Download template */}
-              <a href="data:text/csv;charset=utf-8,unit_ref,unit_type,sub_type,purpose,floor_number,size_sqft,bedrooms,bathrooms,status,view,asking_price,annual_rent%0AA-101,Residential,2 Bed,Sale,5,1250,2,2,Available,Sea View,2500000,%0AB-202,Commercial,Office,Sale,10,800,,,Available,City View,1800000,%0AC-303,Residential,1 Bed,Lease,3,750,1,1,Available,Pool View,,95000"
-                download="inventory_template.csv"
-                style={{display:"inline-block",padding:"8px 16px",borderRadius:8,background:"#E6EFF9",color:"#1A5FA8",fontSize:12,fontWeight:600,textDecoration:"none",marginBottom:14}}>
-                ⬇ Download Template CSV
-              </a>
+              {/* Dynamic template with real project IDs */}
+              <button onClick={()=>{
+                const projRows = companyProjects.slice(0,3).map((p,i)=>[
+                  p.id, p.name,
+                  `UNIT-${String(i+1).padStart(3,"0")}`,
+                  "Residential","2 Bed","Sale",
+                  i+1, 1200, 2, 2, "Available", "Sea View", 2500000, ""
+                ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","));
+                // Add sample rows if no projects
+                if(projRows.length===0) projRows.push('"","Your Project Name","A-101","Residential","2 Bed","Sale","5","1250","2","2","Available","Sea View","2500000",""');
+                const headers = "project_id,project_name,unit_ref,unit_type,sub_type,purpose,floor_number,size_sqft,bedrooms,bathrooms,status,view,asking_price,annual_rent";
+                const csv = [headers,...projRows].join("\n");
+                const a = document.createElement("a");
+                a.href = "data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+                a.download = "propcrm_inventory_template.csv";
+                a.click();
+              }} style={{display:"inline-block",padding:"8px 16px",borderRadius:8,background:"#E6EFF9",color:"#1A5FA8",fontSize:12,fontWeight:600,textDecoration:"none",marginBottom:14,border:"none",cursor:"pointer"}}>
+                ⬇ Download Template (with your project IDs)
+              </button>
 
               {/* Step 3: Upload */}
-              <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Step 3 — Upload File</div>
-              <div style={{border:"2px dashed #D1D9E6",borderRadius:10,padding:"1.5rem",textAlign:"center",background:"#FAFBFC"}}>
-                <div style={{fontSize:28,marginBottom:8}}>📊</div>
-                <div style={{fontSize:13,color:"#4A5568",marginBottom:12}}>CSV or Excel file</div>
-                <label style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Step 3 — Upload Your Completed File</div>
+              <div style={{background:"#FFF9EC",border:"1px solid #E8C97A",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#8A6200"}}>
+                💡 <strong>How to use:</strong> Download the template above → fill in your units in Excel/Google Sheets → save as CSV → upload here
+              </div>
+              <div style={{border:"2px dashed #C9A84C",borderRadius:10,padding:"2rem",textAlign:"center",background:"#FFFBF0"}}>
+                <div style={{fontSize:36,marginBottom:8}}>📂</div>
+                <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:4}}>Click to select your CSV file</div>
+                <div style={{fontSize:12,color:"#718096",marginBottom:16}}>Accepted formats: .csv · .xlsx · .xls</div>
+                <label style={{display:"inline-block",padding:"12px 32px",borderRadius:8,border:"none",background:"#C9A84C",color:"#0B1F3A",fontSize:14,fontWeight:700,cursor:"pointer",boxShadow:"0 2px 8px rgba(201,168,76,.4)"}}>
+                  📤 Choose File & Upload
                   <input type="file" accept=".csv,.xlsx,.xls" style={{display:"none"}} onChange={async(e)=>{
                     const projId = invProjId;
                     if(!projId){ showToast("Please select a project first (Step 1)","error"); return; }
