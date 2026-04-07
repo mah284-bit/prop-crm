@@ -2504,7 +2504,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                     </tr>
                   )}
                 
-              );
+              ];
             })}
           </tbody>
         </table>
