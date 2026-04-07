@@ -2425,7 +2425,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
               const isExp = expanded===proj.id;
               const projUnits = units.filter(u=>u.project_id===proj.id);
               return (
-                <React.Fragment key={proj.id}>
+                
                   <tr key={proj.id}
                     style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5",cursor:"pointer",transition:"background .1s"}}
                     onMouseOver={e=>e.currentTarget.style.background="#F0F7FF"}
@@ -2503,7 +2503,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                       </td>
                     </tr>
                   )}
-                </React.Fragment>
+                
               );
             })}
           </tbody>
