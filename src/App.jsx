@@ -2311,7 +2311,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
   const [uploadingBrochure, setUploadingBrochure] = useState(false);
   const [drillProject, setDrillProject] = useState(null);
   const [showExcelUpload, setShowExcelUpload] = useState(false);
-  const [drillProject, setDrillProject] = useState(null);
+ 
 
   const pBlank = {
     name:"", developer:"", location:"", community:"", city:"Dubai",
