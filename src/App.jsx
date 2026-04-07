@@ -103,6 +103,50 @@ const MODE_ROLES = {
 const VIEWS       = ["Sea View","Pool View","Garden View","City View","Golf View","Park View","Community View","Burj View","Creek View","No View"];
 const MEET_TYPES  = ["Call","Meeting","Site Visit","Video Call","Presentation"];
 const FOLLOW_TYPES= ["Call","WhatsApp","Email","Meeting"];
+
+
+// ─── MASTER DATA LISTS ─────────────────────────────────────────
+const MASTER = {
+  unit_type:    ["Residential","Commercial"],
+  sub_type_res: ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed+","Penthouse","Duplex","Triplex","Villa","Townhouse","Loft"],
+  sub_type_com: ["Office","Retail / Shop","Restaurant","Warehouse","Labour Camp","Hotel Apartment","Showroom","Medical Centre"],
+  sub_type_all: ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed+","Penthouse","Duplex","Triplex","Villa","Townhouse","Loft","Office","Retail / Shop","Restaurant","Warehouse","Labour Camp","Hotel Apartment","Showroom"],
+  purpose:      ["Sale","Lease","Both"],
+  status:       ["Available","Reserved","Under Offer","Sold","Leased","Blocked","Cancelled"],
+  view:         ["Sea View","Pool View","Garden View","City View","Golf View","Park View","Community View","Burj View","Creek View","Lake View","Boulevard View","No View"],
+  furnishing:   ["Unfurnished","Semi-Furnished","Fully Furnished","Serviced"],
+  condition:    ["Off-plan","Shell & Core","Ready","Renovated","Brand New"],
+  facing:       ["North","South","East","West","North-East","North-West","South-East","South-West"],
+  nationality:  ["Emirati","Saudi","Egyptian","Indian","Pakistani","British","Russian","Chinese","American","European","Other"],
+  id_type:      ["Emirates ID","Passport","GCC ID","Residence Visa"],
+  tenant_type:  ["Individual","Corporate"],
+  cheques:      ["1","2","4","6","12"],
+  payment_method: ["Cash","Cheque","Bank Transfer","Card","Crypto"],
+  lead_source:  ["Referral","Website","Property Finder","Bayut","Dubizzle","Cold Call","Event","Social Media","WhatsApp","Walk-in","Agency","Developer","Other"],
+  company_type: ["Brokerage","Developer","Real Estate Agent","Property Management","Off-Plan Specialist","Leasing Company","RERA Registered Agency","Investment Company","Other"],
+};
+// ─── MASTER DATA LISTS ─────────────────────────────────────────
+// All dropdown values used across the app — single source of truth
+const MASTER = {
+  unit_type:    ["Residential","Commercial"],
+  sub_type_res: ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed+","Penthouse","Duplex","Triplex","Villa","Townhouse","Loft"],
+  sub_type_com: ["Office","Retail / Shop","Restaurant","Warehouse","Labour Camp","Hotel Apartment","Showroom","Medical Centre"],
+  sub_type_all: ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed+","Penthouse","Duplex","Triplex","Villa","Townhouse","Loft","Office","Retail / Shop","Restaurant","Warehouse","Labour Camp","Hotel Apartment","Showroom"],
+  purpose:      ["Sale","Lease","Both"],
+  status:       ["Available","Reserved","Under Offer","Sold","Leased","Blocked","Cancelled"],
+  view:         ["Sea View","Pool View","Garden View","City View","Golf View","Park View","Community View","Burj View","Creek View","Lake View","Boulevard View","No View"],
+  furnishing:   ["Unfurnished","Semi-Furnished","Fully Furnished","Serviced"],
+  condition:    ["Off-plan","Shell & Core","Ready","Renovated","Brand New"],
+  facing:       ["North","South","East","West","North-East","North-West","South-East","South-West"],
+  nationality:  ["Emirati","Saudi","Egyptian","Indian","Pakistani","British","Russian","Chinese","American","European","Other"],
+  id_type:      ["Emirates ID","Passport","GCC ID","Residence Visa"],
+  tenant_type:  ["Individual","Corporate"],
+  cheques:      ["1","2","4","6","12"],
+  payment_method: ["Cash","Cheque","Bank Transfer","Card","Crypto"],
+  lead_source:  ["Referral","Website","Property Finder","Bayut","Dubizzle","Cold Call","Event","Social Media","WhatsApp","Walk-in","Agency","Developer","Other"],
+  property_type:["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"],
+  company_type: ["Brokerage","Developer","Real Estate Agent","Property Management","Off-Plan Specialist","Leasing Company","RERA Registered Agency","Investment Company","Other"],
+};
 const WA_TEMPLATES= [
   { id:"intro",    label:"Introduction",      text:"Hello {name}, I'm {agent} from PropCRM. I wanted to reach out regarding your interest in {type} properties in Dubai. Could we schedule a brief call to discuss your requirements?" },
   { id:"followup", label:"Follow-up",         text:"Hello {name}, I hope you're well. I wanted to follow up on our previous conversation about the properties we discussed. Do you have any questions or would you like to arrange a viewing?" },
@@ -896,7 +940,7 @@ function PropertyMaster({currentUser,showToast}){
             <FF label="Bedrooms"><input type="number" value={form.bedrooms||""} onChange={e=>sf("bedrooms",e.target.value)} placeholder="2"/></FF>
             <FF label="Bathrooms"><input type="number" value={form.bathrooms||""} onChange={e=>sf("bathrooms",e.target.value)} placeholder="3"/></FF>
           </G2>
-          <FF label="View"><select value={form.view||""} onChange={e=>sf("view",e.target.value)}><option value="">Select view…</option>{VIEWS.map(v=><option key={v}>{v}</option>)}</select></FF>
+          <FF label="View"><select value={form.view||""} onChange={e=>sf("view",e.target.value)}><option value="">Select view…</option>{MASTER.view.map(v=><option key={v}>{v}</option>)}</select></FF>
           <G3>
             <FF label="Size (sqft)"><input type="number" value={form.size_sqft||""} onChange={e=>sf("size_sqft",e.target.value)} placeholder="1250"/></FF>
             <FF label="Balcony (sqft)"><input type="number" value={form.balcony_sqft||""} onChange={e=>sf("balcony_sqft",e.target.value)} placeholder="200"/></FF>
@@ -1654,7 +1698,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Nationality</label><input value={form.nationality} onChange={sf("nationality")}/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Source</label>
                   <select value={form.source} onChange={sf("source")}>
-                    {SOURCES.map(s=><option key={s}>{s}</option>)}
+                    {MASTER.lead_source.map(s=><option key={s}>{s}</option>)}
                   </select></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Property Type</label>
                   <select value={form.property_type} onChange={sf("property_type")}>
@@ -3412,21 +3456,20 @@ Return ONLY the JSON, no explanation.`}
         </select>
         <select value={fType} onChange={e=>{setFType(e.target.value);setFCat("All");}} style={{width:"auto",fontSize:12}}>
           <option value="All">All Types</option>
-          <option value="Residential">Residential</option>
-          <option value="Commercial">Commercial</option>
+          {MASTER.unit_type.map(t=><option key={t}>{t}</option>)}
         </select>
         <select value={fCat} onChange={e=>setFCat(e.target.value)} style={{width:"auto",fontSize:12}}>
           <option value="All">All Categories</option>
           <optgroup label="Residential">
-            {["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed","Villa","Townhouse","Penthouse","Duplex"].map(s=><option key={s}>{s}</option>)}
+            {MASTER.sub_type_res.map(s=><option key={s}>{s}</option>)}
           </optgroup>
           <optgroup label="Commercial">
-            {["Office","Retail / Shop","Warehouse","Restaurant","Hotel Apartment","Labour Camp"].map(s=><option key={s}>{s}</option>)}
+            {MASTER.sub_type_com.map(s=><option key={s}>{s}</option>)}
           </optgroup>
         </select>
         <select value={fStatus} onChange={e=>setFStatus(e.target.value)} style={{width:"auto",fontSize:12}}>
           <option value="All">All Status</option>
-          {UNIT_ST.map(s=><option key={s}>{s}</option>)}
+          {MASTER.status.map(s=><option key={s}>{s}</option>)}
         </select>
         {crmContext==="both"&&<select value={fPurpose} onChange={e=>setFPurpose(e.target.value)} style={{width:"auto",fontSize:12}}>
           <option value="All">All</option>
@@ -3840,7 +3883,7 @@ Return ONLY the JSON, no explanation.`}
                     </select>
                   </div>
                   <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Purpose</label><select value={uForm.purpose} onChange={uf("purpose")}><option>Sale</option><option>Lease</option><option>Both</option></select></div>
-                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Status</label><select value={uForm.status} onChange={uf("status")}>{UNIT_ST.map(s=><option key={s}>{s}</option>)}</select></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Status</label><select value={uForm.status} onChange={uf("status")}>{MASTER.status.map(s=><option key={s}>{s}</option>)}</select></div>
                   {uForm.unit_type==="Residential"&&<div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Bedrooms</label><select value={uForm.bedrooms} onChange={uf("bedrooms")}><option value="0">Studio</option>{[1,2,3,4,5,6,7].map(n=><option key={n} value={n}>{n}</option>)}</select></div>}
                   <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Bathrooms</label><input type="number" value={uForm.bathrooms} onChange={uf("bathrooms")}/></div>
                   <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Size (sqft)</label><input type="number" value={uForm.size_sqft} onChange={uf("size_sqft")}/></div>
