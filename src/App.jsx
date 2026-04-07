@@ -2424,9 +2424,8 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
               const st = projStats(proj.id);
               const isExp = expanded===proj.id;
               const projUnits = units.filter(u=>u.project_id===proj.id);
-              return (
-                
-                  <tr key={proj.id}
+              return [
+                  <tr key={proj.id+"_r"}
                     style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5",cursor:"pointer",transition:"background .1s"}}
                     onMouseOver={e=>e.currentTarget.style.background="#F0F7FF"}
                     onMouseOut={e=>e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC"}>
@@ -2503,8 +2502,8 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                       </td>
                     </tr>
                   )}
-                
-              ];
+
+];
             })}
           </tbody>
         </table>
@@ -2539,7 +2538,8 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                     const file = e.target.files[0];
                     if(!file){ return; }
                     const text = await file.text();
-                    const rows = text.trim().split("\n");
+                    const rows = text.trim().split("
+");
                     const headers = rows[0].split(",").map(h=>h.trim().replace(/"/g,""));
                     const records = rows.slice(1).filter(r=>r.trim()).map(row=>{
                       const vals = row.split(",").map(v=>v.trim().replace(/"/g,""));
@@ -3699,7 +3699,8 @@ Return ONLY the JSON, no explanation.`}
                   <strong>unit_ref</strong> (required) • project_id • unit_type • sub_type • purpose (Sale/Lease) • floor_number • size_sqft • bedrooms • bathrooms • status • view • asking_price • annual_rent
                 </div>
               </div>
-              <a href={"data:text/csv;charset=utf-8,unit_ref,project_id,unit_type,sub_type,purpose,floor_number,size_sqft,bedrooms,bathrooms,status,view,asking_price,annual_rent%0AA-101,,Residential,2 Bed,Sale,1,1200,2,2,Available,Sea View,2500000,"}
+              <a href={"data:text/csv;charset=utf-8,unit_ref,project_id,unit_type,sub_type,purpose,floor_number,size_sqft,bedrooms,bathrooms,status,view,asking_price,annual_rent
+A-101,,Residential,2 Bed,Sale,1,1200,2,2,Available,Sea View,2500000,"}
                 download="inventory_template.csv"
                 style={{display:"inline-block",padding:"8px 16px",borderRadius:8,background:"#E6EFF9",color:"#1A5FA8",fontSize:12,fontWeight:600,textDecoration:"none",marginBottom:16}}>
                 ⬇ Download Template CSV
