@@ -2311,7 +2311,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
   const [uploadingBrochure, setUploadingBrochure] = useState(false);
   const [drillProject, setDrillProject] = useState(null);
   const [showExcelUpload, setShowExcelUpload] = useState(false);
- 
+  const [drillProject, setDrillProject] = useState(null);
 
   const pBlank = {
     name:"", developer:"", location:"", community:"", city:"Dubai",
@@ -3103,6 +3103,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
   const canReserve = can(currentUser.role,"reserve_unit");
   const canManageInv = ["super_admin","admin","sales_manager","leasing_manager"].includes(currentUser.role);
   const [showInvExcel, setShowInvExcel] = useState(false);
+  const [invProjId, setInvProjId] = useState("");
 
   const uBlank = {
     unit_ref:"",unit_type:"Residential",sub_type:"1 Bed",
@@ -3694,75 +3695,120 @@ Return ONLY the JSON, no explanation.`}
 
       {/* Reservation Modal */}
       {/* Inventory Excel Upload Modal */}
-      {showInvExcel&&(
+      {showInvExcel&&(()=>{
+        const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+        return (
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:540,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+          <div style={{background:"#fff",borderRadius:16,width:580,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📤 Upload Inventory from Excel</span>
-              <button onClick={()=>setShowInvExcel(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
+              <button onClick={()=>{setShowInvExcel(false);setInvProjId("");}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
             <div style={{padding:"1.5rem"}}>
-              <div style={{background:"#F7F9FC",borderRadius:10,padding:"1rem",marginBottom:16,border:"1px solid #E2E8F0"}}>
-                <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A",marginBottom:8}}>Required columns:</div>
-                <div style={{fontSize:12,color:"#4A5568",lineHeight:1.8}}>
-                  <strong>unit_ref</strong> (required) • project_id • unit_type • sub_type • purpose (Sale/Lease) • floor_number • size_sqft • bedrooms • bathrooms • status • view • asking_price • annual_rent
+
+              {/* Step 1: Select Project */}
+              <div style={{background:"#F0F7FF",borderRadius:10,padding:"14px 16px",marginBottom:16,border:"1px solid #D1E4F7"}}>
+                <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Step 1 — Select Project</div>
+                <select data-inv-proj defaultValue="" onChange={e=>{setInvProjId(e.target.value);}} style={{width:"100%",borderColor:"#1A5FA8"}}>
+                  <option value="">— Select the project for this upload —</option>
+                  {projects.map(p=><option key={p.id} value={p.id}>{p.name}{p.developer?` · ${p.developer}`:""}</option>)}
+                </select>
+                <div style={{fontSize:11,color:"#718096",marginTop:6}}>All units in the uploaded file will be assigned to this project. The project_id column in the template will be ignored.</div>
+              </div>
+
+              {/* Step 2: Column guide */}
+              <div style={{background:"#F7F9FC",borderRadius:10,padding:"12px 14px",marginBottom:14,border:"1px solid #E2E8F0"}}>
+                <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Step 2 — Prepare Your File</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:12}}>
+                  {[
+                    ["unit_ref","Unit number e.g. A-101 (required)"],
+                    ["unit_type","Residential / Commercial"],
+                    ["sub_type","1 Bed, 2 Bed, Office…"],
+                    ["purpose","Sale or Lease"],
+                    ["floor_number","Floor number"],
+                    ["size_sqft","Size in sq ft"],
+                    ["bedrooms","Number of bedrooms"],
+                    ["bathrooms","Number of bathrooms"],
+                    ["status","Available / Reserved / Sold"],
+                    ["view","Sea View, City View…"],
+                    ["asking_price","Sale price in AED"],
+                    ["annual_rent","Annual rent in AED"],
+                  ].map(([col,desc])=>(
+                    <div key={col} style={{display:"flex",gap:6,alignItems:"flex-start"}}>
+                      <span style={{fontSize:11,fontWeight:700,color:"#0B1F3A",background:"#E6EFF9",padding:"1px 6px",borderRadius:4,whiteSpace:"nowrap"}}>{col}</span>
+                      <span style={{color:"#718096",fontSize:11}}>{desc}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <a href="data:text/csv;charset=utf-8,unit_ref,project_id,unit_type,sub_type,purpose,floor_number,size_sqft,bedrooms,bathrooms,status,view,asking_price,annual_rent%0AA-101,,Residential,2 Bed,Sale,1,1200,2,2,Available,Sea View,2500000,"
+
+              {/* Download template */}
+              <a href="data:text/csv;charset=utf-8,unit_ref,unit_type,sub_type,purpose,floor_number,size_sqft,bedrooms,bathrooms,status,view,asking_price,annual_rent%0AA-101,Residential,2 Bed,Sale,5,1250,2,2,Available,Sea View,2500000,%0AB-202,Commercial,Office,Sale,10,800,,,Available,City View,1800000,%0AC-303,Residential,1 Bed,Lease,3,750,1,1,Available,Pool View,,95000"
                 download="inventory_template.csv"
-                style={{display:"inline-block",padding:"8px 16px",borderRadius:8,background:"#E6EFF9",color:"#1A5FA8",fontSize:12,fontWeight:600,textDecoration:"none",marginBottom:16}}>
+                style={{display:"inline-block",padding:"8px 16px",borderRadius:8,background:"#E6EFF9",color:"#1A5FA8",fontSize:12,fontWeight:600,textDecoration:"none",marginBottom:14}}>
                 ⬇ Download Template CSV
               </a>
-              <div style={{fontSize:12,color:"#718096",marginBottom:12}}>
-                💡 Tip: Find your project_id in the Projects tab. Leave blank if not known.
-              </div>
-              <div style={{border:"2px dashed #D1D9E6",borderRadius:10,padding:"2rem",textAlign:"center",background:"#FAFBFC"}}>
-                <div style={{fontSize:32,marginBottom:8}}>📊</div>
-                <div style={{fontSize:13,color:"#4A5568",marginBottom:12}}>Select your Excel or CSV file</div>
+
+              {/* Step 3: Upload */}
+              <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Step 3 — Upload File</div>
+              <div style={{border:"2px dashed #D1D9E6",borderRadius:10,padding:"1.5rem",textAlign:"center",background:"#FAFBFC"}}>
+                <div style={{fontSize:28,marginBottom:8}}>📊</div>
+                <div style={{fontSize:13,color:"#4A5568",marginBottom:12}}>CSV or Excel file</div>
                 <label style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
                   <input type="file" accept=".csv,.xlsx,.xls" style={{display:"none"}} onChange={async(e)=>{
+                    const projId = invProjId;
+                    if(!projId){ showToast("Please select a project first (Step 1)","error"); return; }
                     const file = e.target.files[0]; if(!file) return;
                     const text = await file.text();
                     const rows = text.trim().split("\n");
-                    const headers = rows[0].split(",").map(h=>h.trim().replace(/"/g,""));
+                    const headers = rows[0].split(",").map(h=>h.trim().replace(/"/g,"").toLowerCase());
                     const records = rows.slice(1).filter(r=>r.trim()).map(row=>{
                       const vals = row.split(",").map(v=>v.trim().replace(/"/g,""));
                       const rec = {}; headers.forEach((h,i)=>{ rec[h]=vals[i]||null; });
                       return rec;
                     });
                     if(!records.length){ showToast("No data rows found","error"); return; }
-                    const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
-                    // Insert units
+                    if(!records[0].unit_ref){ showToast("unit_ref column is required","error"); return; }
                     const unitPayload = records.map(r=>({
-                      unit_ref:r.unit_ref, project_id:r.project_id||null,
-                      unit_type:r.unit_type||"Residential", sub_type:r.sub_type||null,
-                      purpose:r.purpose||"Sale", floor_number:r.floor_number||null,
+                      unit_ref:r.unit_ref,
+                      project_id:projId,
+                      unit_type:r.unit_type||"Residential",
+                      sub_type:r.sub_type||null,
+                      purpose:r.purpose||"Sale",
+                      floor_number:r.floor_number||null,
                       size_sqft:r.size_sqft?parseFloat(r.size_sqft):null,
-                      bedrooms:r.bedrooms||null, bathrooms:r.bathrooms||null,
-                      status:r.status||"Available", view:r.view||null,
-                      company_id:cid, created_by:currentUser.id
+                      bedrooms:r.bedrooms?parseInt(r.bedrooms):null,
+                      bathrooms:r.bathrooms?parseInt(r.bathrooms):null,
+                      status:r.status||"Available",
+                      view:r.view||null,
+                      company_id:cid,
+                      created_by:currentUser.id
                     }));
                     const{data:newUnits,error:ue}=await supabase.from("project_units").insert(unitPayload).select();
                     if(ue){ showToast(ue.message,"error"); return; }
-                    // Insert pricing if provided
                     const salePriceRows = newUnits?.filter((_,i)=>records[i]?.asking_price).map((u,i)=>({
                       unit_id:u.id, asking_price:parseFloat(records[i].asking_price), company_id:cid
-                    })) || [];
+                    }))||[];
                     const leasePriceRows = newUnits?.filter((_,i)=>records[i]?.annual_rent).map((u,i)=>({
                       unit_id:u.id, annual_rent:parseFloat(records[i].annual_rent), company_id:cid
-                    })) || [];
+                    }))||[];
                     if(salePriceRows.length) await supabase.from("unit_sale_pricing").insert(salePriceRows);
                     if(leasePriceRows.length) await supabase.from("unit_lease_pricing").insert(leasePriceRows);
-                    showToast(`${records.length} unit(s) uploaded successfully`,"success");
+                    showToast(`✓ ${newUnits.length} units uploaded to ${projects.find(p=>p.id===projId)?.name||"project"}`,"success");
+                    setInvProjId("");
                     setShowInvExcel(false); load(true);
                   }}/>
-                  Choose File
+                  Choose File & Upload
                 </label>
+              </div>
+              <div style={{fontSize:11,color:"#A0AEC0",marginTop:10,textAlign:"center"}}>
+                Units are locked to your company ({currentUser.company_id?companies?.find?.(c=>c.id===currentUser.company_id)?.name||"your company":"your company"}). Other companies cannot see these units.
               </div>
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
             {showReserve&&reserveUnit&&(
         <ReservationModal
           unit={reserveUnit}
