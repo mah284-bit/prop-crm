@@ -2500,7 +2500,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                         </div>
                       </td>
                     </tr>
-                  )}
+                  )
 
 ];
             })}
