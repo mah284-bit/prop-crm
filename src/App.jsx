@@ -2451,7 +2451,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                         {canManage&&<button onClick={()=>setExpanded(isExp?null:proj.id)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:isExp?"#0B1F3A":"#fff",color:isExp?"#fff":"#4A5568",cursor:"pointer"}}>{isExp?"▲":"▼"}</button>}
                       </div>
                     </td>
-                  </tr>
+                  </tr>,
                   {/* Expanded row */}
                   {isExp&&(
                     <tr key={proj.id+"_exp"}>
