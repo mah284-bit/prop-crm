@@ -2452,7 +2452,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                       </div>
                     </td>
                   </tr>,
-                  {isExp&&(
+                  isExp&&(
                     <tr key={proj.id+"_exp"}>
                       <td colSpan={8} style={{padding:"0 12px 12px",background:"#F7F9FC",borderBottom:"2px solid #E2E8F0"}}>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,padding:"12px 0"}}>
