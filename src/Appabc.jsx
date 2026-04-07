@@ -91,7 +91,7 @@ const saveAppConfig = (cfg) => {
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
   sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","reports","pay_plans","companies","users","permissions"],
-  leasing: ["l_dashboard","l_leads","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions"],
+  leasing: ["l_dashboard","l_enquiries","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions"],
   both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","reports","pay_plans","l_reports","companies","users","permissions"],
 };
 // Which roles each mode makes available
@@ -203,8 +203,8 @@ function PermSetSelector({ companyId, value, onChange }) {
   useEffect(()=>{
     if(!companyId) return;
     Promise.all([
-      safe(supabase.from("permission_sets").select("id,name,color").eq("company_id",companyId).order("name")),
-      safe(supabase.from("permission_sets").select("id,name,color").is("company_id",null).order("name")),
+      supabase.from("permission_sets").select("id,name,color").eq("company_id",companyId).order("name"),
+      supabase.from("permission_sets").select("id,name,color").is("company_id",null).order("name"),
     ]).then(([s,t])=>{ setSets(s.data||[]); setTemplates(t.data||[]); });
   },[companyId]);
 
@@ -636,10 +636,10 @@ function PropertyMaster({currentUser,showToast}){
   const load=useCallback(async()=>{
     setLoading(true);
     const[p,c,b,u]=await Promise.all([
-      safe(supabase.from("projects").select("*").order("name")),
-      safe(supabase.from("project_categories").select("*").order("name")),
-      safe(supabase.from("project_buildings").select("*").order("name")),
-      safe(supabase.from("units").select("*").order("unit_number")),
+      supabase.from("projects").select("*").order("name"),
+      supabase.from("project_categories").select("*").order("name"),
+      supabase.from("project_buildings").select("*").order("name"),
+      supabase.from("units").select("*").order("unit_number"),
     ]);
     setProjects(p.data||[]);setCategories(c.data||[]);setBuildings(b.data||[]);setUnits(u.data||[]);
     setLoading(false);
@@ -2337,26 +2337,18 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
     if(!form.name.trim()){ showToast("Project name required","error"); return; }
     setSaving(true);
     try {
-      const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
-      const payload = {
-        name:form.name.trim(), developer:form.developer||null, location:form.location||null,
-        community:form.community||null, city:form.city||"Dubai", country:form.country||"UAE",
-        status:form.status||"Active", completion_date:form.completion_date||null,
-        launch_date:form.launch_date||null, description:form.description||null,
-        brochure_url:form.brochure_url||null, master_plan_url:form.master_plan_url||null,
-        website_url:form.website_url||null, company_id:cid, created_by:currentUser.id
-      };
+      const payload = { ...form, company_id:currentUser.company_id||null, created_by:currentUser.id };
       if(editProj) {
         const{error}=await supabase.from("projects").update(payload).eq("id",editProj.id);
         if(error) throw error;
         showToast("Project updated","success");
       } else {
-        const{data,error}=await supabase.from("projects").insert(payload).select().single();
+        const{error}=await supabase.from("projects").insert(payload);
         if(error) throw error;
-        showToast("Project created successfully","success");
+        showToast("Project created","success");
       }
-      setShowAdd(false); setEditProj(null); setForm(pBlank); load(true);
-    } catch(e){ showToast(e.message||"Failed to save project","error"); console.error(e); }
+      setShowAdd(false); setEditProj(null); setForm(pBlank); load();
+    } catch(e){ showToast(e.message,"error"); }
     setSaving(false);
   };
 
@@ -2365,15 +2357,9 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
     setUploadingBrochure(true);
     try {
       const path = `projects/${projId}/brochure_${Date.now()}_${file.name}`;
-      // Try "propcrm-files" bucket first, fallback to "documents"
-      let bucket = "propcrm-files";
-      let{error:ue} = await supabase.storage.from(bucket).upload(path, file, {upsert:true});
-      if(ue && ue.message?.includes("Bucket")) {
-        bucket = "documents";
-        const r2 = await supabase.storage.from(bucket).upload(path, file, {upsert:true});
-        if(r2.error) throw new Error("Storage bucket not configured. Please create a 'propcrm-files' bucket in Supabase Storage.");
-      } else if(ue) throw ue;
-      const{data:{publicUrl}} = supabase.storage.from(bucket).getPublicUrl(path);
+      const{error:ue} = await supabase.storage.from("documents").upload(path, file, {upsert:true});
+      if(ue) throw ue;
+      const{data:{publicUrl}} = supabase.storage.from("documents").getPublicUrl(path);
       await supabase.from("projects").update({brochure_file_url:publicUrl}).eq("id",projId);
       setProjects(p=>p.map(x=>x.id===projId?{...x,brochure_file_url:publicUrl}:x));
       showToast("Brochure uploaded","success");
@@ -2441,13 +2427,9 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                       <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:proj.status==="Active"?"#E6F4EE":"#F0F2F5",color:proj.status==="Active"?"#1A7F5A":"#718096"}}>{proj.status}</span>
                     </td>
                     <td style={{padding:"10px 8px"}}>
-                      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                        <button onClick={()=>setDrillProject(proj)}
-                          style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #C9A84C",background:"#FFF9EC",color:"#8A6200",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
-                          View Units
-                        </button>
-                        {canManage&&<button onClick={()=>openEdit(proj)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>Edit</button>}
-                        {canManage&&<button onClick={()=>setExpanded(isExp?null:proj.id)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:isExp?"#0B1F3A":"#fff",color:isExp?"#fff":"#4A5568",cursor:"pointer"}}>{isExp?"▲":"▼"}</button>}
+                      <div style={{display:"flex",gap:4}}>
+                        <button onClick={()=>openEdit(proj)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>Edit</button>
+                        <button onClick={()=>setExpanded(isExp?null:proj.id)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:isExp?"#0B1F3A":"#fff",color:isExp?"#fff":"#4A5568",cursor:"pointer"}}>{isExp?"▲":"▼"}</button>
                       </div>
                     </td>
                   </tr>
@@ -2508,61 +2490,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
         </table>
       </div>
 
-
-      {/* Excel Upload Modal */}
-      {showExcelUpload&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📤 Upload Projects from Excel</span>
-              <button onClick={()=>setShowExcelUpload(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
-            </div>
-            <div style={{padding:"1.5rem"}}>
-              <div style={{background:"#F7F9FC",borderRadius:10,padding:"1rem",marginBottom:16,border:"1px solid #E2E8F0"}}>
-                <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A",marginBottom:8}}>Required Excel columns:</div>
-                <div style={{fontSize:12,color:"#4A5568",lineHeight:1.8}}>
-                  <strong>name</strong> (required) • developer • location • community • city • country • status • completion_date (YYYY-MM-DD) • launch_date • website_url • description
-                </div>
-              </div>
-              <a href="data:text/csv;charset=utf-8,name,developer,location,community,city,country,status,completion_date,launch_date,website_url,description%0AProject Alpha,Developer Name,Dubai Marina,Marina,Dubai,UAE,Active,2026-12-31,2024-01-01,https://example.com,Sample project"
-                download="projects_template.csv"
-                style={{display:"inline-block",padding:"8px 16px",borderRadius:8,background:"#E6EFF9",color:"#1A5FA8",fontSize:12,fontWeight:600,textDecoration:"none",marginBottom:16}}>
-                ⬇ Download Template CSV
-              </a>
-              <div style={{border:"2px dashed #D1D9E6",borderRadius:10,padding:"2rem",textAlign:"center",background:"#FAFBFC"}}>
-                <div style={{fontSize:32,marginBottom:8}}>📊</div>
-                <div style={{fontSize:13,color:"#4A5568",marginBottom:12}}>Select your Excel or CSV file</div>
-                <label style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
-                  <input type="file" accept=".csv,.xlsx,.xls" style={{display:"none"}} onChange={async(e)=>{
-                    const file = e.target.files[0];
-                    if(!file){ return; }
-                    const text = await file.text();
-                    const rows = text.trim().split("
-");
-                    const headers = rows[0].split(",").map(h=>h.trim().replace(/"/g,""));
-                    const records = rows.slice(1).filter(r=>r.trim()).map(row=>{
-                      const vals = row.split(",").map(v=>v.trim().replace(/"/g,""));
-                      const rec = {}; headers.forEach((h,i)=>{ rec[h]=vals[i]||null; });
-                      return rec;
-                    });
-                    if(!records.length){ showToast("No data rows found","error"); return; }
-                    const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
-                    const payload = records.map(r=>({...r, company_id:cid, created_by:currentUser.id, status:r.status||"Active"}));
-                    const{error}=await supabase.from("projects").insert(payload);
-                    if(error){ showToast(error.message,"error"); return; }
-                    showToast(`${records.length} project(s) uploaded successfully`,"success");
-                    setShowExcelUpload(false); load(true);
-                  }}/>
-                  Choose File
-                </label>
-              </div>
-              <div style={{fontSize:11,color:"#A0AEC0",marginTop:12}}>Tip: Export from Excel as CSV (comma-delimited) for best results</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-            {/* Add/Edit Modal */}
+      {/* Add/Edit Modal */}
       {showAdd&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:600,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
@@ -3066,8 +2994,6 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
 
   const canEdit    = can(currentUser.role,"manage_inventory")||can(currentUser.role,"write");
   const canReserve = can(currentUser.role,"reserve_unit");
-  const canManageInv = ["super_admin","admin","sales_manager","leasing_manager"].includes(currentUser.role);
-  const [showInvExcel, setShowInvExcel] = useState(false);
 
   const uBlank = {
     unit_ref:"",unit_type:"Residential",sub_type:"1 Bed",
@@ -3144,18 +3070,12 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
   const allFiltered = units.filter(u=>{
     if(crmContext==="sales"   && u.purpose==="Lease") return false;
     if(crmContext==="leasing" && u.purpose==="Sale")  return false;
-    const q=fSearch.toLowerCase().trim();
+    const q=fSearch.toLowerCase();
     const proj=projects.find(p=>p.id===u.project_id);
     const sp=salePricing.find(s=>s.unit_id===u.id);
     const lp=leasePricing.find(l=>l.unit_id===u.id);
     const price=sp?.asking_price||lp?.annual_rent||0;
-    // Universal search — searches across all key fields
-    if(q&&![
-      u.unit_ref, proj?.name, proj?.developer, proj?.location, proj?.community,
-      u.view, u.sub_type, u.unit_type, u.floor_number?.toString(),
-      u.block_or_tower, u.status, u.bedrooms?.toString(), u.notes,
-      u.furnishing, u.condition, sp?.asking_price?.toString(), lp?.annual_rent?.toString()
-    ].some(f=>f?.toLowerCase().includes(q))) return false;
+    if(q&&!u.unit_ref?.toLowerCase().includes(q)&&!proj?.name?.toLowerCase().includes(q)&&!u.view?.toLowerCase().includes(q)&&!u.sub_type?.toLowerCase().includes(q)) return false;
     if(fProject!=="All"&&u.project_id!==fProject) return false;
     if(fType!=="All"&&u.unit_type!==fType) return false;
     if(fCat!=="All"&&u.sub_type!==fCat) return false;
@@ -3639,78 +3559,7 @@ Return ONLY the JSON, no explanation.`}
       </div>
 
       {/* Reservation Modal */}
-      {/* Inventory Excel Upload Modal */}
-      {showInvExcel&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:540,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📤 Upload Inventory from Excel</span>
-              <button onClick={()=>setShowInvExcel(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
-            </div>
-            <div style={{padding:"1.5rem"}}>
-              <div style={{background:"#F7F9FC",borderRadius:10,padding:"1rem",marginBottom:16,border:"1px solid #E2E8F0"}}>
-                <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A",marginBottom:8}}>Required columns:</div>
-                <div style={{fontSize:12,color:"#4A5568",lineHeight:1.8}}>
-                  <strong>unit_ref</strong> (required) • project_id • unit_type • sub_type • purpose (Sale/Lease) • floor_number • size_sqft • bedrooms • bathrooms • status • view • asking_price • annual_rent
-                </div>
-              </div>
-              <a href={"data:text/csv;charset=utf-8,unit_ref,project_id,unit_type,sub_type,purpose,floor_number,size_sqft,bedrooms,bathrooms,status,view,asking_price,annual_rent
-A-101,,Residential,2 Bed,Sale,1,1200,2,2,Available,Sea View,2500000,"}
-                download="inventory_template.csv"
-                style={{display:"inline-block",padding:"8px 16px",borderRadius:8,background:"#E6EFF9",color:"#1A5FA8",fontSize:12,fontWeight:600,textDecoration:"none",marginBottom:16}}>
-                ⬇ Download Template CSV
-              </a>
-              <div style={{fontSize:12,color:"#718096",marginBottom:12}}>
-                💡 Tip: Find your project_id in the Projects tab. Leave blank if not known.
-              </div>
-              <div style={{border:"2px dashed #D1D9E6",borderRadius:10,padding:"2rem",textAlign:"center",background:"#FAFBFC"}}>
-                <div style={{fontSize:32,marginBottom:8}}>📊</div>
-                <div style={{fontSize:13,color:"#4A5568",marginBottom:12}}>Select your Excel or CSV file</div>
-                <label style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
-                  <input type="file" accept=".csv,.xlsx,.xls" style={{display:"none"}} onChange={async(e)=>{
-                    const file = e.target.files[0]; if(!file) return;
-                    const text = await file.text();
-                    const rows = text.trim().split("\n");
-                    const headers = rows[0].split(",").map(h=>h.trim().replace(/"/g,""));
-                    const records = rows.slice(1).filter(r=>r.trim()).map(row=>{
-                      const vals = row.split(",").map(v=>v.trim().replace(/"/g,""));
-                      const rec = {}; headers.forEach((h,i)=>{ rec[h]=vals[i]||null; });
-                      return rec;
-                    });
-                    if(!records.length){ showToast("No data rows found","error"); return; }
-                    const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
-                    // Insert units
-                    const unitPayload = records.map(r=>({
-                      unit_ref:r.unit_ref, project_id:r.project_id||null,
-                      unit_type:r.unit_type||"Residential", sub_type:r.sub_type||null,
-                      purpose:r.purpose||"Sale", floor_number:r.floor_number||null,
-                      size_sqft:r.size_sqft?parseFloat(r.size_sqft):null,
-                      bedrooms:r.bedrooms||null, bathrooms:r.bathrooms||null,
-                      status:r.status||"Available", view:r.view||null,
-                      company_id:cid, created_by:currentUser.id
-                    }));
-                    const{data:newUnits,error:ue}=await supabase.from("project_units").insert(unitPayload).select();
-                    if(ue){ showToast(ue.message,"error"); return; }
-                    // Insert pricing if provided
-                    const salePriceRows = newUnits?.filter((_,i)=>records[i]?.asking_price).map((u,i)=>({
-                      unit_id:u.id, asking_price:parseFloat(records[i].asking_price), company_id:cid
-                    })) || [];
-                    const leasePriceRows = newUnits?.filter((_,i)=>records[i]?.annual_rent).map((u,i)=>({
-                      unit_id:u.id, annual_rent:parseFloat(records[i].annual_rent), company_id:cid
-                    })) || [];
-                    if(salePriceRows.length) await supabase.from("unit_sale_pricing").insert(salePriceRows);
-                    if(leasePriceRows.length) await supabase.from("unit_lease_pricing").insert(leasePriceRows);
-                    showToast(`${records.length} unit(s) uploaded successfully`,"success");
-                    setShowInvExcel(false); load(true);
-                  }}/>
-                  Choose File
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-            {showReserve&&reserveUnit&&(
+      {showReserve&&reserveUnit&&(
         <ReservationModal
           unit={reserveUnit}
           reservation={reservations.find(r=>r.unit_id===reserveUnit.id&&["Active","Extended"].includes(r.status))||null}
@@ -4288,11 +4137,11 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
     }
     setLoading(true);
     const [t,l,p,m,u]=await Promise.all([
-      safe(supabase.from("tenants").select("*").order("full_name")),
-      safe(supabase.from("leases").select("*").order("end_date")),
-      safe(supabase.from("rent_payments").select("*").order("due_date")),
-      safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
-      safe(supabase.from("project_units").select("id,unit_ref,sub_type")),
+      supabase.from("tenants").select("*").order("full_name"),
+      supabase.from("leases").select("*").order("end_date"),
+      supabase.from("rent_payments").select("*").order("due_date"),
+      supabase.from("maintenance").select("*").order("created_at",{ascending:false}),
+      supabase.from("project_units").select("id,unit_ref,sub_type"),
     ]);
     const updated={tenants:t.data||[],leases:l.data||[],payments:p.data||[],maintenance:m.data||[],loaded:true};
     setTenants(updated.tenants);setLeases(updated.leases);setPayments(updated.payments);setMaintenance(updated.maintenance);setUnits(u.data||[]);
@@ -6216,30 +6065,20 @@ function UsersTab({currentUser, showToast}) {
         if(error)throw error;
         showToast("User updated","success");
       } else {
-        // Use Supabase Admin API via fetch with service role key
-        // Service role key is safe here because only super_admin/admin can reach this code
-        const SUPABASE_SERVICE = prompt("Enter service role key to create user (Supabase → Settings → API → service_role):");
-        if(!SUPABASE_SERVICE){ setSaving(false); return; }
-        
-        const tempPw = form.password || Math.random().toString(36).slice(-8)+"A1!";
-        const res = await fetch(`https://ysceukgpimzfqixtnbnp.supabase.co/auth/v1/admin/users`,{
-          method:"POST",
-          headers:{"Content-Type":"application/json","apikey":SUPABASE_SERVICE,"Authorization":"Bearer "+SUPABASE_SERVICE},
-          body:JSON.stringify({email:form.email,password:tempPw,email_confirm:true,user_metadata:{full_name:form.full_name}})
+        // Create auth user + profile
+        const{data:authData,error:authErr}=await supabase.auth.admin?.createUser?.({
+          email:form.email,password:form.password||Math.random().toString(36).slice(-8),
+          email_confirm:true,
         });
-        const result = await res.json();
-        if(!res.ok){ showToast(result.message||result.error||"Failed to create user","error"); setSaving(false); return; }
-        
-        // Update the auto-created profile with correct role and company
-        await new Promise(r=>setTimeout(r,1000)); // wait for trigger
-        const{error:pErr}=await supabase.from("profiles").update({
-          full_name:form.full_name,
-          role:form.role,
-          is_active:true,
-          company_id:form.company_id||currentUser.company_id||null,
-        }).eq("id",result.id);
-        if(pErr) showToast("User created but profile update failed: "+pErr.message,"error");
-        else showToast(`User ${form.email} created successfully. Temp password: ${tempPw}`,"success");
+        if(authErr){
+          // Fallback: just create profile entry
+          const{error}=await supabase.from("profiles").insert({
+            full_name:form.full_name,email:form.email,role:form.role,
+            is_active:true,company_id:form.company_id||currentUser.company_id||null,
+          });
+          if(error)throw error;
+        }
+        showToast("User added — they need to sign up with this email","success");
       }
       setShowAdd(false);setEditUser(null);setForm(blank);loadUsers();
     }catch(e){showToast(e.message,"error");}
@@ -6747,9 +6586,9 @@ function PermissionSetsModule({ currentUser, showToast }) {
   const load = useCallback(async () => {
     setLoading(true);
     const [s, t, u] = await Promise.all([
-      safe(supabase.from("permission_sets").select("*").eq("company_id", currentUser.company_id||"").order("name")),
-      safe(supabase.from("permission_sets").select("*").is("company_id", null).order("name")),
-      safe(supabase.from("profiles").select("id,full_name,permission_set_id").eq("company_id", currentUser.company_id||"")),
+      supabase.from("permission_sets").select("*").eq("company_id", currentUser.company_id||"").order("name"),
+      supabase.from("permission_sets").select("*").is("company_id", null).order("name"),
+      supabase.from("profiles").select("id,full_name,permission_set_id").eq("company_id", currentUser.company_id||""),
     ]);
     setSets(s.data||[]);
     setTemplates(t.data||[]);
@@ -7840,8 +7679,11 @@ export default function App(){
               <span style={{color:"#C9A84C"}}>◆</span> PropCRM
             </div>
             {(()=>{
+              // Show active company — check localStorage first, then companies array
               const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id");
-              const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || null;
+              const activeCo = companies.find(c=>c.id===storedId) || currentUser?.company_name_display || null;
+              if(!activeCo && companies.length===0) return null;
+              const co = activeCo || companies[0];
               if(!co) return null;
               return (
                 <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:8,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)",cursor:"pointer",transition:"all .15s"}}
@@ -7942,7 +7784,7 @@ export default function App(){
 
           {/* ── Leasing CRM ───────────────────────────────────── */}
           {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={setTab} followupAlerts={followupAlerts} key="l_dash"/>}
-          {tab==="l_leads"     &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
+          {tab==="l_enquiries" &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
           {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId}/>}
           {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData}/>}
