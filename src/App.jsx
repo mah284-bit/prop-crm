@@ -2309,6 +2309,8 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
   const [expanded,  setExpanded]  = useState(null);
   const [saving,    setSaving]    = useState(false);
   const [uploadingBrochure, setUploadingBrochure] = useState(false);
+  const [drillProject, setDrillProject] = useState(null);
+  const [showExcelUpload, setShowExcelUpload] = useState(false);
 
   const pBlank = {
     name:"", developer:"", location:"", community:"", city:"Dubai",
@@ -2393,6 +2395,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
     sold:      units.filter(u=>u.project_id===pid&&(u.status==="Sold"||u.status==="Leased")).length,
     reserved:  units.filter(u=>u.project_id===pid&&u.status==="Reserved").length,
   });
+  const canManage = ["super_admin","admin","sales_manager","leasing_manager"].includes(currentUser.role);
 
   if(loading) return <Spinner msg="Loading projects…"/>;
 
