@@ -2311,6 +2311,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
   const [uploadingBrochure, setUploadingBrochure] = useState(false);
   const [drillProject, setDrillProject] = useState(null);
   const [showExcelUpload, setShowExcelUpload] = useState(false);
+  const [drillProject, setDrillProject] = useState(null);
 
   const pBlank = {
     name:"", developer:"", location:"", community:"", city:"Dubai",
@@ -2448,64 +2449,14 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                     <td style={{padding:"10px 8px"}}>
                       <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
                         <button onClick={()=>setDrillProject(proj)}
-                          style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #C9A84C",background:"#FFF9EC",color:"#8A6200",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
-                          View Units
+                          style={{fontSize:11,padding:"5px 12px",borderRadius:6,border:"none",background:"#0B1F3A",color:"#C9A84C",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+                          View Units →
                         </button>
-                        {canManage&&<button onClick={()=>openEdit(proj)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>Edit</button>}
-                        {canManage&&<button onClick={()=>setExpanded(isExp?null:proj.id)} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:isExp?"#0B1F3A":"#fff",color:isExp?"#fff":"#4A5568",cursor:"pointer"}}>{isExp?"▲":"▼"}</button>}
+                        {canManage&&<button onClick={()=>openEdit(proj)} style={{fontSize:11,padding:"5px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer",color:"#4A5568"}}>Edit</button>}
                       </div>
                     </td>
                   </tr>
-                  {/* Expanded row */}
-                  {isExp&&(
-                    <tr key={proj.id+"_exp"}>
-                      <td colSpan={8} style={{padding:"0 12px 12px",background:"#F7F9FC",borderBottom:"2px solid #E2E8F0"}}>
-                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,padding:"12px 0"}}>
-                          {/* Project info */}
-                          <div style={{background:"#fff",borderRadius:10,padding:"12px",border:"1px solid #E2E8F0"}}>
-                            <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Project Details</div>
-                            {[["Community",proj.community],["City",proj.city],["Country",proj.country],["Launch",proj.launch_date?new Date(proj.launch_date).toLocaleDateString("en-AE",{month:"short",year:"numeric"}):"—"]].map(([l,v])=>(
-                              <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid #F7F9FC",fontSize:12}}>
-                                <span style={{color:"#A0AEC0"}}>{l}</span><span style={{fontWeight:600,color:"#0B1F3A"}}>{v||"—"}</span>
-                              </div>
-                            ))}
-                            {proj.website_url&&<a href={proj.website_url} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#1A5FA8",display:"block",marginTop:8}}>🌐 Website →</a>}
-                          </div>
-                          {/* Unit breakdown */}
-                          <div style={{background:"#fff",borderRadius:10,padding:"12px",border:"1px solid #E2E8F0"}}>
-                            <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Unit Breakdown</div>
-                            {["Available","Reserved","Sold","Leased"].map(s=>{
-                              const cnt=projUnits.filter(u=>u.status===s).length;
-                              return cnt>0?(
-                                <div key={s} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",fontSize:12}}>
-                                  <span style={{color:"#4A5568"}}>{s}</span><span style={{fontWeight:700,color:"#0B1F3A"}}>{cnt}</span>
-                                </div>
-                              ):null;
-                            })}
-                            <div style={{display:"flex",justifyContent:"space-between",padding:"6px 0",fontSize:12,borderTop:"1px solid #E2E8F0",marginTop:4}}>
-                              <span style={{fontWeight:700,color:"#0B1F3A"}}>Total</span><span style={{fontWeight:700,color:"#0B1F3A"}}>{st.total}</span>
-                            </div>
-                          </div>
-                          {/* Brochure + Documents */}
-                          <div style={{background:"#fff",borderRadius:10,padding:"12px",border:"1px solid #E2E8F0"}}>
-                            <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Documents</div>
-                            {proj.brochure_file_url?(
-                              <div style={{marginBottom:8}}>
-                                <a href={proj.brochure_file_url} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#1A5FA8",fontWeight:600}}>📄 Project Brochure →</a>
-                              </div>
-                            ):(
-                              <div style={{fontSize:12,color:"#A0AEC0",marginBottom:8}}>No brochure uploaded</div>
-                            )}
-                            <label style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",borderRadius:7,border:"1.5px dashed #D1D9E6",cursor:"pointer",fontSize:12,color:"#4A5568",background:"#FAFBFC"}}>
-                              <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:"none"}} onChange={e=>{if(e.target.files[0])uploadBrochure(e.target.files[0],proj.id);}}/>
-                              {uploadingBrochure?"⏳ Uploading…":"⬆ Upload Brochure"}
-                            </label>
-                            {proj.description&&<div style={{fontSize:11,color:"#718096",marginTop:8,lineHeight:1.5}}>{proj.description}</div>}
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
+
 
                 </>
               );
