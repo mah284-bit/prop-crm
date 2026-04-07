@@ -2230,7 +2230,7 @@ const TABS=[
   // ── Sales CRM ──────────────────────────────────────────────────
   {id:"dashboard",  label:"Dashboard",    icon:"⊞",  app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent","viewer"]},
   {id:"projects",   label:"Projects",     icon:"🏢", app:"sales",   roles:["super_admin","admin","sales_manager"]},
-  {id:"builder",    label:"Inventory",    icon:"📋", app:"sales",   roles:["super_admin","admin"]},
+  {id:"builder",    label:"Inventory",    icon:"📋", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"leads",      label:"Leads",        icon:"👤", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"pipeline",   label:"Pipeline",     icon:"⬡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"discounts",  label:"Discounts",    icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager"]},
@@ -2243,7 +2243,7 @@ const TABS=[
   {id:"l_dashboard",label:"Dashboard",    icon:"⊞",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
   {id:"l_leads",    label:"Enquiries",    icon:"👤", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_projects",  label:"Projects",     icon:"🏢", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
-  {id:"l_inventory",label:"Inventory",    icon:"📋", app:"leasing", roles:["super_admin","admin"]},
+  {id:"l_inventory",label:"Inventory",    icon:"📋", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"leasing",    label:"Leasing",      icon:"🔑", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_discounts",label:"Discounts",    icon:"⚡", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_activity", label:"Activity Log", icon:"📋", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
@@ -3100,7 +3100,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
   const [tenants,      setTenants]      = useState([]);
   const [leads,        setLeads]        = useState([]);
 
-  const canEdit    = can(currentUser.role,"manage_inventory")||can(currentUser.role,"write");
+  const canEdit    = ["super_admin","admin","sales_manager","leasing_manager"].includes(currentUser.role);
   const canReserve = can(currentUser.role,"reserve_unit");
   const canManageInv = ["super_admin","admin","sales_manager","leasing_manager"].includes(currentUser.role);
   const [showInvExcel, setShowInvExcel] = useState(false);
