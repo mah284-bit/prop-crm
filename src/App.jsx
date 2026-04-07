@@ -127,7 +127,26 @@ const MASTER = {
 };
 // ─── MASTER DATA LISTS ─────────────────────────────────────────
 // All dropdown values used across the app — single source of truth
-
+const MASTER = {
+  unit_type:    ["Residential","Commercial"],
+  sub_type_res: ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed+","Penthouse","Duplex","Triplex","Villa","Townhouse","Loft"],
+  sub_type_com: ["Office","Retail / Shop","Restaurant","Warehouse","Labour Camp","Hotel Apartment","Showroom","Medical Centre"],
+  sub_type_all: ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed+","Penthouse","Duplex","Triplex","Villa","Townhouse","Loft","Office","Retail / Shop","Restaurant","Warehouse","Labour Camp","Hotel Apartment","Showroom"],
+  purpose:      ["Sale","Lease","Both"],
+  status:       ["Available","Reserved","Under Offer","Sold","Leased","Blocked","Cancelled"],
+  view:         ["Sea View","Pool View","Garden View","City View","Golf View","Park View","Community View","Burj View","Creek View","Lake View","Boulevard View","No View"],
+  furnishing:   ["Unfurnished","Semi-Furnished","Fully Furnished","Serviced"],
+  condition:    ["Off-plan","Shell & Core","Ready","Renovated","Brand New"],
+  facing:       ["North","South","East","West","North-East","North-West","South-East","South-West"],
+  nationality:  ["Emirati","Saudi","Egyptian","Indian","Pakistani","British","Russian","Chinese","American","European","Other"],
+  id_type:      ["Emirates ID","Passport","GCC ID","Residence Visa"],
+  tenant_type:  ["Individual","Corporate"],
+  cheques:      ["1","2","4","6","12"],
+  payment_method: ["Cash","Cheque","Bank Transfer","Card","Crypto"],
+  lead_source:  ["Referral","Website","Property Finder","Bayut","Dubizzle","Cold Call","Event","Social Media","WhatsApp","Walk-in","Agency","Developer","Other"],
+  property_type:["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"],
+  company_type: ["Brokerage","Developer","Real Estate Agent","Property Management","Off-Plan Specialist","Leasing Company","RERA Registered Agency","Investment Company","Other"],
+};
 const WA_TEMPLATES= [
   { id:"intro",    label:"Introduction",      text:"Hello {name}, I'm {agent} from PropCRM. I wanted to reach out regarding your interest in {type} properties in Dubai. Could we schedule a brief call to discuss your requirements?" },
   { id:"followup", label:"Follow-up",         text:"Hello {name}, I hope you're well. I wanted to follow up on our previous conversation about the properties we discussed. Do you have any questions or would you like to arrange a viewing?" },
@@ -2061,128 +2080,195 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
 function Pipeline({leads,setLeads,currentUser,showToast}){
   const canEdit = can(currentUser.role,"write");
   const visible = can(currentUser.role,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id);
-  const active  = visible.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
+  const [selCard, setSelCard] = useState(null);
+  const [fStageP, setFStageP] = useState("All");
+  const [searchP,  setSearchP]  = useState("");
 
   const moveStage = async(lead, toStage)=>{
-    if(!canEdit) return;
-    const gates={
-      "Contacted":     lead.phone&&lead.email,
-      "Site Visit":    lead.meeting_scheduled,
-      "Proposal Sent": lead.unit_id&&lead.budget_confirmed,
-      "Negotiation":   lead.proposal_notes,
-      "Closed Won":    lead.final_price&&lead.payment_plan_agreed,
-    };
-    if(gates[toStage]===false||(gates[toStage]!==undefined&&!gates[toStage])){
-      const msgs={"Contacted":"Add phone + email","Site Visit":"Mark meeting scheduled","Proposal Sent":"Link unit + confirm budget","Negotiation":"Add proposal notes","Closed Won":"Enter final price + payment plan"};
-      showToast(msgs[toStage]||"Fill required fields first","error");
-      return;
-    }
+    if(!canEdit){ showToast("You don't have permission to move leads","error"); return; }
     const{error}=await supabase.from("leads").update({stage:toStage,stage_updated_at:new Date().toISOString()}).eq("id",lead.id);
     if(error){showToast(error.message,"error");return;}
     setLeads(p=>p.map(l=>l.id===lead.id?{...l,stage:toStage}:l));
+    if(selCard?.id===lead.id) setSelCard(s=>({...s,stage:toStage}));
     showToast(`Moved to ${toStage}`,"success");
   };
 
-  const stageOrder = STAGES.filter(s=>!["Closed Lost"].includes(s));
+  const stageOrder = STAGES.filter(s=>s!=="Closed Lost");
+  const active = visible.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
+  const filtered = active.filter(l=>{
+    const q=searchP.toLowerCase();
+    return (!q||l.name?.toLowerCase().includes(q)||l.phone?.includes(q))
+      &&(fStageP==="All"||l.stage===fStageP);
+  });
 
   return(
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}}>
-      {/* Stage summary strip */}
-      <div style={{display:"flex",gap:6,marginBottom:10,overflowX:"auto",paddingBottom:4,flexShrink:0}}>
-        {STAGES.map(s=>{
+
+      {/* Top bar */}
+      <div style={{display:"flex",gap:8,marginBottom:10,alignItems:"center",flexShrink:0,flexWrap:"wrap"}}>
+        <input value={searchP} onChange={e=>setSearchP(e.target.value)} placeholder="🔍 Search leads…" style={{flex:1,minWidth:140,fontSize:12}}/>
+        <select value={fStageP} onChange={e=>setFStageP(e.target.value)} style={{width:"auto",fontSize:12}}>
+          <option value="All">All Stages</option>
+          {STAGES.map(s=><option key={s}>{s}</option>)}
+        </select>
+        <span style={{fontSize:11,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length} leads</span>
+      </div>
+
+      {/* Stage count strip */}
+      <div style={{display:"flex",gap:5,marginBottom:10,overflowX:"auto",paddingBottom:4,flexShrink:0}}>
+        {stageOrder.map(s=>{
           const cnt=visible.filter(l=>l.stage===s).length;
           const val=visible.filter(l=>l.stage===s).reduce((a,l)=>a+(l.budget||0),0);
           const m=STAGE_META[s]||{c:"#718096",bg:"#F0F2F5"};
           return(
-            <div key={s} style={{flexShrink:0,padding:"6px 12px",borderRadius:8,background:m.bg,border:`1.5px solid ${m.c}22`,textAlign:"center",minWidth:100}}>
-              <div style={{fontWeight:700,fontSize:18,color:m.c,lineHeight:1}}>{cnt}</div>
-              <div style={{fontSize:9,color:m.c,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",marginTop:2}}>{s}</div>
-              {val>0&&<div style={{fontSize:10,color:m.c,opacity:.7}}>{fmtM(val)}</div>}
-            </div>
+            <button key={s} onClick={()=>setFStageP(fStageP===s?"All":s)}
+              style={{flexShrink:0,padding:"6px 12px",borderRadius:8,background:fStageP===s?m.c:m.bg,
+                border:`2px solid ${fStageP===s?m.c:m.c+"33"}`,textAlign:"center",minWidth:90,cursor:"pointer",transition:"all .15s"}}>
+              <div style={{fontWeight:700,fontSize:17,color:fStageP===s?"#fff":m.c,lineHeight:1}}>{cnt}</div>
+              <div style={{fontSize:8,color:fStageP===s?"rgba(255,255,255,.9)":m.c,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",marginTop:2}}>{s}</div>
+              {val>0&&<div style={{fontSize:9,color:fStageP===s?"rgba(255,255,255,.7)":m.c,opacity:.8}}>{fmtM(val)}</div>}
+            </button>
           );
         })}
       </div>
 
-      {/* Table */}
-      <div style={{flex:1,overflowY:"auto"}}>
-        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-          <thead style={{position:"sticky",top:0,zIndex:1}}>
-            <tr style={{background:"#0B1F3A"}}>
-              {["Lead","Type","Budget","Stage","Days","Move to →",""].map(h=>(
-                <th key={h} style={{padding:"8px 10px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {active.length===0&&(
-              <tr><td colSpan={7} style={{textAlign:"center",padding:"2rem",color:"#A0AEC0"}}>No active leads</td></tr>
-            )}
-            {active.sort((a,b)=>STAGES.indexOf(a.stage)-STAGES.indexOf(b.stage)).map((lead,i)=>{
-              const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F0F2F5"};
-              const days=lead.stage_updated_at?Math.floor((new Date()-new Date(lead.stage_updated_at))/(864e5)):0;
-              const nextStage=stageOrder[stageOrder.indexOf(lead.stage)+1];
-              const prevStage=stageOrder[stageOrder.indexOf(lead.stage)-1];
-              return(
-                <tr key={lead.id} style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5"}}
-                  onMouseOver={e=>e.currentTarget.style.background="#F0F7FF"}
-                  onMouseOut={e=>e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC"}>
-                  <td style={{padding:"7px 10px"}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      <Av name={lead.name} size={26}/>
-                      <div>
-                        <div style={{fontWeight:700,fontSize:12,color:"#0B1F3A"}}>{lead.name}</div>
-                        <div style={{fontSize:10,color:"#A0AEC0"}}>{lead.nationality||""}{lead.phone?` · ${lead.phone}`:""}</div>
-                      </div>
+      {/* Main content — cards + detail panel */}
+      <div style={{flex:1,overflow:"hidden",display:"flex",gap:12}}>
+
+        {/* Card list */}
+        <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8}}>
+          {filtered.length===0&&(
+            <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
+              <div style={{fontSize:36,marginBottom:8}}>📋</div>
+              <div>No leads in pipeline{fStageP!=="All"?` at ${fStageP}`:""}</div>
+            </div>
+          )}
+          {filtered.sort((a,b)=>STAGES.indexOf(a.stage)-STAGES.indexOf(b.stage)).map(lead=>{
+            const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F0F2F5"};
+            const days=lead.stage_updated_at?Math.floor((new Date()-new Date(lead.stage_updated_at))/(864e5)):0;
+            const isSelected=selCard?.id===lead.id;
+            return(
+              <div key={lead.id} onClick={()=>setSelCard(isSelected?null:lead)}
+                style={{background:"#fff",border:`2px solid ${isSelected?m.c:"#E2E8F0"}`,borderRadius:10,
+                  padding:"10px 14px",cursor:"pointer",transition:"all .15s",
+                  boxShadow:isSelected?`0 2px 12px ${m.c}33`:"0 1px 3px rgba(0,0,0,.04)",
+                  borderLeft:`4px solid ${m.c}`}}
+                onMouseOver={e=>{if(!isSelected)e.currentTarget.style.borderColor=m.c+"66";}}
+                onMouseOut={e=>{if(!isSelected)e.currentTarget.style.borderColor="#E2E8F0";}}>
+                <div style={{display:"flex",alignItems:"center",gap:10}}>
+                  <Av name={lead.name} size={34}/>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                      <span style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>{lead.name}</span>
+                      <span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:m.bg,color:m.c}}>{lead.stage}</span>
+                      {days>7&&<span style={{fontSize:10,fontWeight:700,color:days>14?"#B83232":"#A06810"}}>⏱ {days}d</span>}
                     </div>
-                  </td>
-                  <td style={{padding:"7px 10px"}}>
-                    <span style={{fontSize:10,padding:"2px 7px",borderRadius:20,background:"#F0F2F5",color:"#4A5568"}}>{lead.property_type||"—"}</span>
-                  </td>
-                  <td style={{padding:"7px 10px",fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{lead.budget?fmtM(lead.budget):"—"}</td>
-                  <td style={{padding:"7px 10px"}}>
-                    <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:m.bg,color:m.c,whiteSpace:"nowrap"}}>{lead.stage}</span>
-                  </td>
-                  <td style={{padding:"7px 10px",fontSize:11,color:days>14?"#B83232":days>7?"#A06810":"#718096",fontWeight:days>7?700:400}}>
-                    {days}d
-                  </td>
-                  <td style={{padding:"7px 10px"}}>
-                    <div style={{display:"flex",gap:4}}>
-                      {prevStage&&(
-                        <button onClick={()=>moveStage(lead,prevStage)}
-                          style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer",color:"#4A5568"}}>
-                          ← {prevStage}
-                        </button>
-                      )}
-                      {nextStage&&(
-                        <button onClick={()=>moveStage(lead,nextStage)}
-                          style={{fontSize:10,padding:"3px 8px",borderRadius:5,border:"none",background:m.bg,color:m.c,cursor:"pointer",fontWeight:600}}>
-                          {nextStage} →
-                        </button>
-                      )}
+                    <div style={{fontSize:11,color:"#718096",marginTop:2}}>
+                      {lead.property_type&&<span style={{marginRight:8}}>{lead.property_type}</span>}
+                      {lead.budget&&<span style={{fontWeight:600,color:"#0B1F3A"}}>{fmtM(lead.budget)}</span>}
+                      {lead.phone&&<span style={{marginLeft:8,color:"#A0AEC0"}}>{lead.phone}</span>}
                     </div>
-                  </td>
-                  <td style={{padding:"7px 6px"}}>
-                    <select value={lead.stage} onChange={e=>moveStage(lead,e.target.value)}
-                      style={{fontSize:10,padding:"3px 6px",borderRadius:5,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>
-                      {STAGES.map(s=><option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </div>
+                  <div style={{display:"flex",gap:4,flexShrink:0}}>
+                    {canEdit&&stageOrder.indexOf(lead.stage)>0&&(
+                      <button onClick={e=>{e.stopPropagation();moveStage(lead,stageOrder[stageOrder.indexOf(lead.stage)-1]);}}
+                        title="Move back"
+                        style={{fontSize:14,width:28,height:28,borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer",color:"#718096",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        ←
+                      </button>
+                    )}
+                    {canEdit&&stageOrder.indexOf(lead.stage)<stageOrder.length-1&&(
+                      <button onClick={e=>{e.stopPropagation();moveStage(lead,stageOrder[stageOrder.indexOf(lead.stage)+1]);}}
+                        title={`Move to ${stageOrder[stageOrder.indexOf(lead.stage)+1]}`}
+                        style={{fontSize:14,width:28,height:28,borderRadius:6,border:"none",background:m.c,cursor:"pointer",color:"#fff",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        →
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Detail panel — shown when card selected */}
+        {selCard&&(()=>{
+          const lead=leads.find(l=>l.id===selCard.id)||selCard;
+          const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F0F2F5"};
+          const days=lead.stage_updated_at?Math.floor((new Date()-new Date(lead.stage_updated_at))/(864e5)):0;
+          const curIdx=stageOrder.indexOf(lead.stage);
+          return(
+            <div style={{width:260,flexShrink:0,background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,overflowY:"auto",boxShadow:"0 4px 20px rgba(11,31,58,.08)"}}>
+              {/* Header */}
+              <div style={{background:`linear-gradient(135deg,${m.c},${m.c}CC)`,padding:"14px 16px",borderRadius:"10px 10px 0 0"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:15,color:"#fff"}}>{lead.name}</div>
+                    <div style={{fontSize:11,color:"rgba(255,255,255,.75)",marginTop:2}}>{lead.stage}</div>
+                  </div>
+                  <button onClick={()=>setSelCard(null)} style={{background:"rgba(255,255,255,.2)",border:"none",borderRadius:6,width:24,height:24,cursor:"pointer",color:"#fff",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+                </div>
+                {lead.budget&&<div style={{fontSize:18,fontWeight:700,color:"#fff",marginTop:8}}>{fmtM(lead.budget)}</div>}
+              </div>
+
+              {/* Details */}
+              <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
+                {[
+                  ["Phone",lead.phone],["Email",lead.email],
+                  ["Nationality",lead.nationality],["Source",lead.source],
+                  ["Type",lead.property_type],["Days in stage",`${days}d`],
+                ].filter(([,v])=>v).map(([l,v])=>(
+                  <div key={l} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid #F7F9FC"}}>
+                    <span style={{color:"#A0AEC0"}}>{l}</span>
+                    <span style={{fontWeight:600,color:"#0B1F3A",maxWidth:140,textAlign:"right",wordBreak:"break-word"}}>{v}</span>
+                  </div>
+                ))}
+
+                {/* Move stage buttons */}
+                {canEdit&&(
+                  <div style={{marginTop:4}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Move Stage</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                      {stageOrder.map((s,i)=>(
+                        <button key={s} onClick={()=>moveStage(lead,s)}
+                          disabled={s===lead.stage}
+                          style={{padding:"7px 10px",borderRadius:7,border:`1.5px solid ${s===lead.stage?m.c:"#E2E8F0"}`,
+                            background:s===lead.stage?m.bg:"#fff",color:s===lead.stage?m.c:"#4A5568",
+                            fontSize:11,fontWeight:s===lead.stage?700:400,cursor:s===lead.stage?"default":"pointer",
+                            textAlign:"left",display:"flex",alignItems:"center",gap:6}}>
+                          <span style={{fontSize:9,color:s===lead.stage?m.c:"#A0AEC0"}}>{i+1}.</span>
+                          {s} {s===lead.stage?"← current":""}
+                        </button>
+                      ))}
+                      <button onClick={()=>moveStage(lead,"Closed Lost")}
+                        style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid #FAEAEA",background:"#FAEAEA",color:"#B83232",fontSize:11,fontWeight:600,cursor:"pointer",textAlign:"left",marginTop:4}}>
+                        ✗ Close as Lost
+                      </button>
+                      <button onClick={()=>moveStage(lead,"Closed Won")}
+                        style={{padding:"7px 10px",borderRadius:7,border:"none",background:"#1A7F5A",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",textAlign:"left"}}>
+                        ✓ Close as Won
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {lead.notes&&(
+                  <div style={{fontSize:11,color:"#718096",lineHeight:1.6,padding:"8px",background:"#F7F9FC",borderRadius:7}}>{lead.notes}</div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
-      {/* Closed summary */}
+      {/* Closed summary footer */}
       {(visible.filter(l=>l.stage==="Closed Won").length>0||visible.filter(l=>l.stage==="Closed Lost").length>0)&&(
-        <div style={{flexShrink:0,display:"flex",gap:10,padding:"10px 0 0",borderTop:"1px solid #E2E8F0",marginTop:8}}>
-          <div style={{flex:1,padding:"8px 12px",borderRadius:8,background:"#E6F4EE",textAlign:"center"}}>
-            <span style={{fontSize:13,fontWeight:700,color:"#1A7F5A"}}>{visible.filter(l=>l.stage==="Closed Won").length} Won</span>
-            <span style={{fontSize:11,color:"#1A7F5A",marginLeft:8}}>{fmtM(visible.filter(l=>l.stage==="Closed Won").reduce((s,l)=>s+(l.budget||0),0))}</span>
+        <div style={{flexShrink:0,display:"flex",gap:10,padding:"8px 0 0",borderTop:"1px solid #E2E8F0",marginTop:6}}>
+          <div style={{flex:1,padding:"7px 12px",borderRadius:8,background:"#E6F4EE",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontSize:12,fontWeight:700,color:"#1A7F5A"}}>✓ {visible.filter(l=>l.stage==="Closed Won").length} Won</span>
+            <span style={{fontSize:12,fontWeight:700,color:"#1A7F5A"}}>{fmtM(visible.filter(l=>l.stage==="Closed Won").reduce((s,l)=>s+(l.budget||0),0))}</span>
           </div>
-          <div style={{flex:1,padding:"8px 12px",borderRadius:8,background:"#FAEAEA",textAlign:"center"}}>
-            <span style={{fontSize:13,fontWeight:700,color:"#B83232"}}>{visible.filter(l=>l.stage==="Closed Lost").length} Lost</span>
+          <div style={{flex:1,padding:"7px 12px",borderRadius:8,background:"#FAEAEA",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <span style={{fontSize:12,fontWeight:700,color:"#B83232"}}>✗ {visible.filter(l=>l.stage==="Closed Lost").length} Lost</span>
           </div>
         </div>
       )}
