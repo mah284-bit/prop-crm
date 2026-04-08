@@ -319,7 +319,7 @@ const Toast=({msg,type="success",onDone})=>{
   useEffect(()=>{const t=setTimeout(onDone,3500);return()=>clearTimeout(t)},[]);
   const colors={success:["#E6F4EE","#1A7F5A"],error:["#FAEAEA","#B83232"],info:["#E6EFF9","#1A5FA8"],warning:["#FDF3DC","#A06810"]};
   const[bg,c]=colors[type]||colors.info;
-  return <div style={{position:"fixed",bottom:24,right:24,zIndex:9999,background:bg,color:c,border:`1.5px solid ${c}33`,borderRadius:10,padding:"12px 18px",fontSize:13,fontWeight:600,boxShadow:"0 4px 20px rgba(0,0,0,0.12)",maxWidth:360}}>{type==="success"?"✓ ":type==="error"?"✕ ":type==="warning"?"⚠ ":"ℹ "}{msg}</div>;
+  return <div style={{position:"fixed",bottom:24,right:24,zIndex:9999,background:bg,color:c,border:"1.5px solid "+c+"33",borderRadius:10,padding:"12px 18px",fontSize:13,fontWeight:600,boxShadow:"0 4px 20px rgba(0,0,0,0.12)",maxWidth:360}}>{type==="success"?"✓ ":type==="error"?"✕ ":type==="warning"?"⚠ ":"ℹ "}{msg}</div>;
 };
 
 // ─── AUTH (same as v2) ────────────────────────────────────────
@@ -344,7 +344,7 @@ const PwInput=({value,onChange,placeholder="••••••••",onKeyDown}
 const StrengthBar=({password})=>{
   const s=getStrength(password);
   if(!password)return null;
-  return <div style={{marginTop:6}}><div style={{height:4,background:"#F0F2F5",borderRadius:4,overflow:"hidden"}}><div style={{width:`${s.pct}%`,height:"100%",background:s.color,borderRadius:4,transition:"width 0.3s"}}/></div><div style={{fontSize:11,color:s.color,fontWeight:600,marginTop:4}}>{s.label} password</div></div>;
+  return <div style={{marginTop:6}}><div style={{height:4,background:"#F0F2F5",borderRadius:4,overflow:"hidden"}}><div style={{width:s.pct+"%",height:"100%",background:s.color,borderRadius:4,transition:"width 0.3s"}}/></div><div style={{fontSize:11,color:s.color,fontWeight:600,marginTop:4}}>{s.label} password</div></div>;
 };
 const AuthWrap=({children})=>(
   <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0B1F3A 0%,#1A3558 60%,#0B1F3A 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
@@ -399,14 +399,14 @@ const validatePhone = (phone, nationality = "") => {
   // Must start with +
   if (!cleaned.startsWith("+")) {
     const fmt = PHONE_FORMATS[nationality];
-    return `Phone must start with country code. ${fmt ? `For ${nationality}: ${fmt.example}` : "e.g. +971 50 123 4567"}`;
+    return "Phone must start with country code. "+(fmt ? "For "+nationality+": "+fmt.example : "e.g. +971 50 123 4567");
   }
 
   // Country-specific validation
   const fmt = PHONE_FORMATS[nationality];
   if (fmt) {
     if (!fmt.pattern.test(cleaned)) {
-      return `Invalid ${nationality} number — should be: ${fmt.example}`;
+      return "Invalid "+nationality+" number - should be: "+fmt.example;
     }
     return null;
   }
