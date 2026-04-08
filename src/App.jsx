@@ -2318,35 +2318,27 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
 // Roadmap: MVP Phase — Consolidated reporting across all legal entities
 // See: Plan B architecture — group_id / parent_company_id on companies table
 // ══════════════════════════════════════════════════════════════════
-function GroupConsolidatedView({ currentUser }) {
+
+// ══════════════════════════════════════════════════════════════════
+// GROUP CONSOLIDATED VIEW — Super Admin only — Roadmap: MVP Phase
+// ══════════════════════════════════════════════════════════════════
+function GroupConsolidatedView() {
   return (
-    <div className="fade-in" style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,padding:"2rem"}}>
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,padding:"2rem",textAlign:"center"}}>
       <div style={{fontSize:56}}>🏛</div>
-      <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0B1F3A",textAlign:"center"}}>
-        Group Consolidated View
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0B1F3A"}}>Group Consolidated View</div>
+      <div style={{fontSize:14,color:"#718096",maxWidth:500,lineHeight:1.8}}>
+        This will provide consolidated reporting across all your legal entities — combined pipeline, rent roll, inventory and agent performance in one board-level view.
       </div>
-      <div style={{fontSize:14,color:"#718096",textAlign:"center",maxWidth:500,lineHeight:1.8}}>
-        This feature will provide consolidated reporting across all your legal entities — 
-        combined pipeline, rent roll, inventory and agent performance in one board-level view.
-      </div>
-      <div style={{background:"#FFF9EC",border:"1.5px solid #E8C97A",borderRadius:12,padding:"16px 24px",maxWidth:480,width:"100%"}}>
-        <div style={{fontSize:12,fontWeight:700,color:"#8A6200",marginBottom:10,textTransform:"uppercase",letterSpacing:".5px"}}>📋 Planned Features</div>
-        {[
-          "Consolidated dashboard — KPIs across all companies",
-          "Cross-entity pipeline & rent roll totals",
-          "Per-entity breakdown with drill-down",
-          "Group-level agent performance ranking",
-          "Consolidated PDF/Excel report export",
-          "Parent company / subsidiary structure (group_id)",
-        ].map((f,i)=>(
-          <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:6,fontSize:13,color:"#4A5568"}}>
-            <span style={{color:"#C9A84C",fontWeight:700,flexShrink:0}}>○</span>{f}
+      <div style={{background:"#FFF9EC",border:"1.5px solid #E8C97A",borderRadius:12,padding:"16px 24px",maxWidth:480,width:"100%",textAlign:"left"}}>
+        <div style={{fontSize:12,fontWeight:700,color:"#8A6200",marginBottom:10,textTransform:"uppercase",letterSpacing:".5px"}}>📋 Planned for MVP Phase</div>
+        {["Consolidated KPIs across all companies","Cross-entity pipeline & rent roll totals","Per-entity breakdown with drill-down","Group-level agent performance ranking","Consolidated PDF/Excel report export","Parent company / subsidiary structure"].map((f,i)=>(
+          <div key={i} style={{display:"flex",gap:8,marginBottom:6,fontSize:13,color:"#4A5568"}}>
+            <span style={{color:"#C9A84C",fontWeight:700}}>○</span>{f}
           </div>
         ))}
       </div>
-      <div style={{fontSize:12,color:"#A0AEC0",textAlign:"center"}}>
-        Scheduled for MVP Phase · Requires <code style={{background:"#F0F2F5",padding:"1px 5px",borderRadius:4}}>group_id</code> on companies table
-      </div>
+      <div style={{fontSize:11,color:"#A0AEC0"}}>Requires <code style={{background:"#F0F2F5",padding:"1px 5px",borderRadius:4}}>group_id</code> column on companies table · Scheduled for MVP</div>
     </div>
   );
 }
@@ -8356,6 +8348,10 @@ export default function App(){
     if(["super_admin","admin","sales_manager","leasing_manager"].includes(user.role)){
       supabase.from("companies").select("*").order("name").then(({data})=>{
         if(data){
+          // Cache the active company for instant display on next load
+          const cid = localStorage.getItem("propccrm_company_id") || user.company_id;
+          const activeCo = data.find(c=>c.id===cid) || data[0];
+          if(activeCo) localStorage.setItem("propccrm_company_cache", JSON.stringify({id:activeCo.id,name:activeCo.name,logo_url:activeCo.logo_url||"",business_type:activeCo.business_type||""}));
           setCompanies(data);
           const saved=localStorage.getItem("propccrm_company_id");
           const co=saved?data.find(c=>c.id===saved):data[0];
@@ -8396,7 +8392,8 @@ export default function App(){
           {/* LEFT: Company Logo + Name — hero position */}
           {(()=>{
             const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
-            const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || null;
+            const cachedCo = (()=>{ try{ return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null"); }catch{return null;} })();
+            const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || cachedCo || null;
             const isSA = currentUser?.role==="super_admin";
             const bizLabel = co?.business_type==="both"?"Sales & Leasing":co?.business_type==="sales"?"Sales Only":co?.business_type==="leasing"?"Leasing Only":co?.business_type||"";
 
@@ -8526,6 +8523,7 @@ export default function App(){
           {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id)=>{setActiveCompanyId(id);localStorage.setItem("propccrm_company_id",id);window.location.reload();}} activeCompanyId={activeCompanyId}/>}
           {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {tab==="permissions" &&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
+          {tab==="group_view"  &&<GroupConsolidatedView/>}
 
           {/* ── Leasing CRM ───────────────────────────────────── */}
           {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={setTab} followupAlerts={followupAlerts} key="l_dash"/>}
@@ -8542,6 +8540,7 @@ export default function App(){
           {tab==="l_users"     &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {tab==="l_permissions"&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
 
+          {tab==="l_group_view" &&<GroupConsolidatedView/>}
         </>)}
       </div>
     </div>
