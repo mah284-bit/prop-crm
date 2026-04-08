@@ -3833,8 +3833,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
             </div>
           </div>
         </div>
-        );
-            )}
+        )}
             {showReserve&&reserveUnit&&(
         <ReservationModal
           unit={reserveUnit}
