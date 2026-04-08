@@ -9,7 +9,7 @@ const AI_PROVIDERS = [
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method:"POST",
         headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
-        body:JSON.stringify({model:"llama-3.1-70b-versatile",messages:[{role:"system",content:sys},...msgs],max_tokens:1024,temperature:0.7})
+        body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:sys},...msgs],max_tokens:1024,temperature:0.7})
       });
       if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"Groq error");}
       return (await res.json()).choices[0]?.message?.content||"";
