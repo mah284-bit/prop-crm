@@ -59,7 +59,7 @@ const _globalCSS=""+
 "    }"+
 "  ";
 const _aiCSS="@keyframes ai-pulse{0%,100%{box-shadow:0 4px 20px rgba(201,168,76,.5),0 0 0 4px rgba(201,168,76,.15)}50%{box-shadow:0 4px 28px rgba(201,168,76,.7),0 0 0 8px rgba(201,168,76,.08)}}@keyframes ai-dot{from{transform:translateY(0)}to{transform:translateY(-5px)}}";
-const GlobalStyle=()=>(<><style dangerouslySetInnerHTML={{__html:_globalCSS}}/><style dangerouslySetInnerHTML={{__html:_aiCSS}}/></>);
+const GlobalStyle=()=>(<style dangerouslySetInnerHTML={{__html:_globalCSS+_aiCSS}}/>);
 
 
 // ─── CONSTANTS ────────────────────────────────────────────────
