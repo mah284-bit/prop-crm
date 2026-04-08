@@ -14,7 +14,50 @@ const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ─── STYLES ───────────────────────────────────────────────────
-const _globalCSS='\n    @import url(\'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap\');\n    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}\n    body{font-family:\'DM Sans\',sans-serif;background:#F0F2F5;color:#1a2535}\n    ::-webkit-scrollbar{width:5px;height:5px}\n    ::-webkit-scrollbar-thumb{background:#C9A84C55;border-radius:10px}\n    input,select,textarea{font-family:\'DM Sans\',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:9px 12px;font-size:13px;color:#1a2535;background:#fff;width:100%;transition:border-color 0.2s}\n    input:focus,select:focus,textarea:focus{border-color:#C9A84C}\n    input.error,select.error{border-color:#B83232!important;background:#FFF8F8}\n    textarea{resize:vertical}\n    button{cursor:pointer;font-family:\'DM Sans\',sans-serif}\n    .fade-in{animation:fadeIn 0.25s ease}\n    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}\n    .slide-in{animation:slideIn 0.2s ease}\n    @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}\n    .ch{transition:box-shadow 0.18s,transform 0.18s}\n    .ch:hover{box-shadow:0 4px 20px #C9A84C22;transform:translateY(-1px)}\n    .dcard{transition:box-shadow 0.15s;cursor:grab}\n    .dcard:hover{box-shadow:0 3px 14px #0B1F3A22}\n    @keyframes spin{to{transform:rotate(360deg)}}\n    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}\n\n    /* ── MOBILE ──────────────────────────────────────────────── */\n    html{-webkit-text-size-adjust:100%;touch-action:manipulation}\n    body{overflow-x:hidden}\n    @media(max-width:768px){\n      .tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important;position:relative}\n      .tab-bar::-webkit-scrollbar{display:none}\n      .tab-bar-wrap{position:relative}\n      .tab-bar-wrap::before,.tab-bar-wrap::after{content:"";position:absolute;top:0;bottom:0;width:32px;pointer-events:none;z-index:10}\n      .tab-bar-wrap::before{left:0;background:linear-gradient(to right,#0B1F3A,transparent)}\n      .tab-bar-wrap::after{right:0;background:linear-gradient(to left,#0B1F3A,transparent)}\n      .filter-sidebar{display:none!important}\n      .filter-sidebar.open{display:flex!important}\n      .table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}\n      .pipeline-board{overflow-x:auto!important;flex-wrap:nowrap!important}\n      .mob-stack{grid-template-columns:1fr!important}\n      .hide-mobile{display:none!important}\n      button{min-height:38px}\n    }\n    @media(max-width:480px){\n      .stat-grid{grid-template-columns:1fr 1fr!important}\n    }\n  ';
+const _globalCSS=""+
+"    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');"+
+"    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}"+
+"    body{font-family:'DM Sans',sans-serif;background:#F0F2F5;color:#1a2535}"+
+"    ::-webkit-scrollbar{width:5px;height:5px}"+
+"    ::-webkit-scrollbar-thumb{background:#C9A84C55;border-radius:10px}"+
+"    input,select,textarea{font-family:'DM Sans',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:9px 12px;font-size:13px;color:#1a2535;background:#fff;width:100%;transition:border-color 0.2s}"+
+"    input:focus,select:focus,textarea:focus{border-color:#C9A84C}"+
+"    input.error,select.error{border-color:#B83232!important;background:#FFF8F8}"+
+"    textarea{resize:vertical}"+
+"    button{cursor:pointer;font-family:'DM Sans',sans-serif}"+
+"    .fade-in{animation:fadeIn 0.25s ease}"+
+"    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}"+
+"    .slide-in{animation:slideIn 0.2s ease}"+
+"    @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}"+
+"    .ch{transition:box-shadow 0.18s,transform 0.18s}"+
+"    .ch:hover{box-shadow:0 4px 20px #C9A84C22;transform:translateY(-1px)}"+
+"    .dcard{transition:box-shadow 0.15s;cursor:grab}"+
+"    .dcard:hover{box-shadow:0 3px 14px #0B1F3A22}"+
+"    @keyframes spin{to{transform:rotate(360deg)}}"+
+"    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}"+
+""+
+"    /* ── MOBILE ──────────────────────────────────────────────── */"+
+"    html{-webkit-text-size-adjust:100%;touch-action:manipulation}"+
+"    body{overflow-x:hidden}"+
+"    @media(max-width:768px){"+
+"      .tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important;position:relative}"+
+"      .tab-bar::-webkit-scrollbar{display:none}"+
+"      .tab-bar-wrap{position:relative}"+
+"      .tab-bar-wrap::before,.tab-bar-wrap::after{content:\"\";position:absolute;top:0;bottom:0;width:32px;pointer-events:none;z-index:10}"+
+"      .tab-bar-wrap::before{left:0;background:linear-gradient(to right,#0B1F3A,transparent)}"+
+"      .tab-bar-wrap::after{right:0;background:linear-gradient(to left,#0B1F3A,transparent)}"+
+"      .filter-sidebar{display:none!important}"+
+"      .filter-sidebar.open{display:flex!important}"+
+"      .table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}"+
+"      .pipeline-board{overflow-x:auto!important;flex-wrap:nowrap!important}"+
+"      .mob-stack{grid-template-columns:1fr!important}"+
+"      .hide-mobile{display:none!important}"+
+"      button{min-height:38px}"+
+"    }"+
+"    @media(max-width:480px){"+
+"      .stat-grid{grid-template-columns:1fr 1fr!important}"+
+"    }"+
+"  ";
 const GlobalStyle=()=>(<style dangerouslySetInnerHTML={{__html:_globalCSS}}/>);
 
 
@@ -1032,9 +1075,9 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   };
 
   const printReceipt=(pay)=>{
-    const _rCSS='body{font-family:Arial,sans-serif;max-width:420px;margin:40px auto}.hdr{background:#0B1F3A;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center}.logo{font-size:20px;font-weight:700;color:#C9A84C}.bdy{border:1px solid #E2E8F0;border-top:none;padding:20px;border-radius:0 0 8px 8px}.amt{font-size:30px;font-weight:700;color:#0B1F3A;text-align:center;padding:16px 0;border-bottom:2px solid #0B1F3A;margin-bottom:16px}.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F0F2F5;font-size:13px}.stamp{border:3px solid #1A7F5A;color:#1A7F5A;padding:6px 16px;border-radius:6px;font-size:14px;font-weight:700;display:inline-block}';
-    const _rRows=[["Client",lead.name],["Milestone",pay.milestone],["Type",pay.payment_type],["Status",pay.status]].map(([l,v])=>'<div class="row"><span style="color:#718096">'+l+'</span><span style="font-weight:600">'+v+'</span></div>').join("");
-    const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+_rCSS+'</style></head><body><div class="hdr"><div class="logo">◆ PropCRM</div></div><div class="bdy"><div class="amt">AED '+Number(pay.amount).toLocaleString()+'</div>'+_rRows+'</div></body></html>';
+    const _rCSS="body{font-family:Arial,sans-serif;max-width:420px;margin:40px auto}.hdr{background:#0B1F3A;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center}.logo{font-size:20px;font-weight:700;color:#C9A84C}.bdy{border:1px solid #E2E8F0;border-top:none;padding:20px;border-radius:0 0 8px 8px}.amt{font-size:30px;font-weight:700;color:#0B1F3A;text-align:center;padding:16px 0;border-bottom:2px solid #0B1F3A;margin-bottom:16px}.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F0F2F5;font-size:13px}.stamp{border:3px solid #1A7F5A;color:#1A7F5A;padding:6px 16px;border-radius:6px;font-size:14px;font-weight:700;display:inline-block}";
+    const _rRows=[[lead.name,pay.milestone,pay.payment_type,pay.status]].map(r=>"<tr>"+r.map(c=>"<td>"+c+"</td>").join("")+"</tr>").join("");
+    const html="<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>"+_rCSS+"</style></head><body><h2>AED "+Number(pay.amount).toLocaleString()+"</h2>"+_rRows+"</body></html>";
     const w=window.open("","_blank","width=500,height=700");
     if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
   };
@@ -2136,6 +2179,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
 
         {/* Detail panel — shown when card selected */}
         {_scL&&(
+
             <div style={{width:260,flexShrink:0,background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,overflowY:"auto",boxShadow:"0 4px 20px rgba(11,31,58,.08)"}}>
               {/* Header */}
               <div style={{background:"linear-gradient(135deg,"+m.c+","+m.c+"CC)",padding:"14px 16px",borderRadius:"10px 10px 0 0"}}>
@@ -2194,6 +2238,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
                 )}
               </div>
             </div>
+
           )}
       </div>
 
@@ -3415,7 +3460,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
           max_tokens:1500,
           messages:[{role:"user",content:[
             ...(isImage?[{type:"image",source:{type:"base64",media_type:file.type,data:b64}}]:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}}]),
-            {type:"text",text:"Extract property/unit details. Return ONLY valid JSON: unit_ref,sub_type,size_sqft,bedrooms,bathrooms,floor_number,view,asking_price,annual_rent,booking_pct,during_construction_pct,on_handover_pct,developer,project_name,handover_date,furnishing,notes."}
+            {type:"text",text:"Extract property details. Return ONLY valid JSON: unit_ref,sub_type,size_sqft,bedrooms,bathrooms,asking_price,annual_rent,developer,project_name."}
           ]}]
         })
       });
@@ -3592,6 +3637,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
 
         {/* Unit detail side panel */}
         {selUnit&&(
+
             <div className="slide-in" style={{width:340,flexShrink:0,background:"#fff",borderLeft:"1px solid #E2E8F0",display:"flex",flexDirection:"column",overflow:"hidden"}}>
               {/* Panel header */}
               <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",padding:"14px 16px",position:"relative"}}>
@@ -3752,6 +3798,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                 )}
               </div>
             </div>
+
         )}
       </div>
 
@@ -3838,7 +3885,9 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
             </div>
           </div>
         </div>
-            )}
+        );
+      
+      )}
             {showReserve&&reserveUnit&&(
         <ReservationModal
           unit={reserveUnit}
@@ -4758,7 +4807,9 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                 </div>
               </div>
             </div>
-                    )}
+            );
+          
+          )}
 
           {showAddLease&&(
             <Modal title="New Lease Contract" onClose={()=>setShowAddLease(false)} width={520}>
@@ -4978,7 +5029,6 @@ function buildContext(leads,units,projects,salePricing,leasePricing,activities,c
   const _p=[];
   _p.push("You are an AI assistant for PropCRM.");
   _p.push("User: "+currentUser.full_name);
-  leads.slice(0,5).forEach(l=>_p.push(l.name+" | "+l.stage));
   return _p.join("\n");
 }
 
@@ -5007,8 +5057,8 @@ function exportToExcel(rows, headers, filename) {
 // ── PDF export helper ─────────────────────────────────────────────
 function exportToPDF(title, subtitle, headers, rows, filename) {
   const colW = Math.floor(90/headers.length);
-  const _pCSS='body{font-family:Arial,sans-serif;font-size:11px}table{width:100%;border-collapse:collapse}th{background:#0B1F3A;color:#C9A84C;padding:6px}td{padding:5px;border-bottom:1px solid #eee}';
-  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+_pCSS+'</style></head><body><h2>'+title+'</h2><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+(c==null?'-':c)+'</td>').join('')+'</tr>').join('')+'</tbody></table></body></html>';
+  const _pCSS="body{font-family:Arial,sans-serif;font-size:11px}table{width:100%;border-collapse:collapse}th{background:#0B1F3A;color:#C9A84C;padding:6px}td{padding:5px;border-bottom:1px solid #eee}";
+  const html="<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>"+_pCSS+"</style></head><body><h2>"+title+"</h2><table><thead><tr>"+headers.map(h=>"<th>"+h+"</th>").join("")+"</tr></thead><tbody>"+rows.map(r=>"<tr>"+r.map(c=>"<td>"+(c==null?"-":c)+"</td>").join("")+"</tr>").join("")+"</tbody></table></body></html>";
   const blob = new Blob([html], {type:"text/html"});
   const url  = URL.createObjectURL(blob);
   const w    = window.open(url,"_blank");
@@ -7601,7 +7651,9 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
             </div>
           </div>
         </div>
-            )}
+        );
+      
+      )}
 
       {/* Add/Edit Tenant Modal */}      {showAddTenant&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
