@@ -14,39 +14,53 @@ const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ─── STYLES ───────────────────────────────────────────────────
-const GLOBAL_CSS = [
-  "@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');",
-  "*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}",
-  "body{font-family:'DM Sans',sans-serif;background:#F0F2F5;color:#1a2535}",
-  "::-webkit-scrollbar{width:5px;height:5px}",
-  "::-webkit-scrollbar-thumb{background:#C9A84C55;border-radius:10px}",
-  "input,select,textarea{font-family:'DM Sans',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:8px 12px;width:100%;font-size:13px;color:#1a2535;background:#fff;transition:border-color 0.15s}",
-  "input:focus,select:focus,textarea:focus{border-color:#C9A84C}",
-  "input.error,select.error{border-color:#B83232!important;background:#FFF8F8}",
-  "textarea{resize:vertical}",
-  "button{cursor:pointer;font-family:'DM Sans',sans-serif}",
-  ".fade-in{animation:fadeIn 0.25s ease}",
-  "@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
-  ".slide-in{animation:slideIn 0.2s ease}",
-  "@keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}",
-  ".ch{transition:box-shadow 0.18s,transform 0.18s}",
-  ".ch:hover{box-shadow:0 4px 20px #C9A84C22;transform:translateY(-1px)}",
-  ".dcard{transition:box-shadow 0.15s;cursor:grab}",
-  ".dcard:hover{box-shadow:0 3px 14px #0B1F3A22}",
-  "@keyframes spin{to{transform:rotate(360deg)}}",
-  "@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}",
-  "@keyframes aipulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}",
-  "@keyframes orbpulse{0%,100%{box-shadow:0 4px 20px rgba(201,168,76,.4)}50%{box-shadow:0 4px 32px rgba(201,168,76,.8),0 0 0 8px rgba(201,168,76,.15)}}",
-  "@keyframes slideInRight{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}",
-  "@keyframes fadeIn2{from{opacity:0}to{opacity:1}}",
-  "html{-webkit-text-size-adjust:100%;touch-action:manipulation}",
-  "body{overflow-x:hidden}",
-  "@media(max-width:768px){.tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important}.tab-bar::-webkit-scrollbar{display:none}.tab-bar-wrap{position:relative}.tab-bar-wrap::before,.tab-bar-wrap::after{content:'';position:absolute;top:0;bottom:0;width:32px;pointer-events:none;z-index:10}.tab-bar-wrap::before{left:0;background:linear-gradient(to right,#0B1F3A,transparent)}.tab-bar-wrap::after{right:0;background:linear-gradient(to left,#0B1F3A,transparent)}.filter-sidebar{display:none!important}.filter-sidebar.open{display:flex!important}.table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}.mob-stack{grid-template-columns:1fr!important}.hide-mobile{display:none!important}button{min-height:38px}}",
-  "@media(max-width:480px){.stat-grid{grid-template-columns:1fr 1fr!important}}"
-].join("\n");
 const GlobalStyle = () => (
-  <style dangerouslySetInnerHTML={{__html: GLOBAL_CSS}}/>
+  <style dangerouslySetInnerHTML={{__html:`
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:#F0F2F5;color:#1a2535}
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-thumb{background:#C9A84C55;border-radius:10px}
+    input,select,textarea{font-family:'DM Sans',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:9px 12px;font-size:13px;color:#1a2535;background:#fff;width:100%;transition:border-color 0.2s}
+    input:focus,select:focus,textarea:focus{border-color:#C9A84C}
+    input.error,select.error{border-color:#B83232!important;background:#FFF8F8}
+    textarea{resize:vertical}
+    button{cursor:pointer;font-family:'DM Sans',sans-serif}
+    .fade-in{animation:fadeIn 0.25s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .slide-in{animation:slideIn 0.2s ease}
+    @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+    .ch{transition:box-shadow 0.18s,transform 0.18s}
+    .ch:hover{box-shadow:0 4px 20px #C9A84C22;transform:translateY(-1px)}
+    .dcard{transition:box-shadow 0.15s;cursor:grab}
+    .dcard:hover{box-shadow:0 3px 14px #0B1F3A22}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+    /* ── MOBILE ──────────────────────────────────────────────── */
+    html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+    body{overflow-x:hidden}
+    @media(max-width:768px){
+      .tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important;position:relative}
+      .tab-bar::-webkit-scrollbar{display:none}
+      .tab-bar-wrap{position:relative}
+      .tab-bar-wrap::before,.tab-bar-wrap::after{content:"";position:absolute;top:0;bottom:0;width:32px;pointer-events:none;z-index:10}
+      .tab-bar-wrap::before{left:0;background:linear-gradient(to right,#0B1F3A,transparent)}
+      .tab-bar-wrap::after{right:0;background:linear-gradient(to left,#0B1F3A,transparent)}
+      .filter-sidebar{display:none!important}
+      .filter-sidebar.open{display:flex!important}
+      .table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}
+      .pipeline-board{overflow-x:auto!important;flex-wrap:nowrap!important}
+      .mob-stack{grid-template-columns:1fr!important}
+      .hide-mobile{display:none!important}
+      button{min-height:38px}
+    }
+    @media(max-width:480px){
+      .stat-grid{grid-template-columns:1fr 1fr!important}
+    }
+  `}}/>
 );
+
 // ─── CONSTANTS ────────────────────────────────────────────────
 const STAGES      = ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
@@ -166,8 +180,8 @@ const ROLE_META = {
 };
 
 // ─── UTILS ────────────────────────────────────────────────────
-const fmtM    = n  => n ? "AED "+(n/1e6).toFixed(2)+"M" : "—";
-const fmtAED  = n  => n ? "AED "+Number(n).toLocaleString("en-AE") : "—";
+const fmtM    = n  => n ? `AED ${(n/1e6).toFixed(2)}M` : "—";
+const fmtAED  = n  => n ? `AED ${Number(n).toLocaleString("en-AE")}` : "—";
 const fmtDate = d  => d ? new Date(d).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"}) : "—";
 const fmtDT   = d  => d ? new Date(d).toLocaleString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
 const ini     = n  => (n||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
@@ -315,8 +329,8 @@ const FF=({label,children,required=false,error=""})=>(
     {error&&<div style={{fontSize:11,color:"#B83232",marginTop:4,fontWeight:500}}>⚠ {error}</div>}
   </div>
 );
-const G2=({children})=>(<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>{children}</div>);
-const G3=({children})=>(<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>{children}</div>);
+const G2=({children})=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>{children}</div>;
+const G3=({children})=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>{children}</div>;
 const Badge=({label,c,bg})=>(
   <span style={{display:"inline-flex",alignItems:"center",gap:4,background:bg,color:c,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,whiteSpace:"nowrap"}}>
     <span style={{width:5,height:5,borderRadius:"50%",background:c,display:"inline-block"}}/>
@@ -334,8 +348,7 @@ const Toast=({msg,type="success",onDone})=>{
 // ─── AUTH (same as v2) ────────────────────────────────────────
 const EyeIcon=({open})=>(
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    {open&&(<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>)}
-    {!open&&(<><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>)}
+    {open?<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>:<><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>}
   </svg>
 );
 const getStrength=pw=>{
@@ -354,7 +367,7 @@ const PwInput=({value,onChange,placeholder="••••••••",onKeyDown}
 const StrengthBar=({password})=>{
   const s=getStrength(password);
   if(!password)return null;
-  return <div style={{marginTop:6}}><div style={{height:4,background:"#F0F2F5",borderRadius:4,overflow:"hidden"}}><div style={{width:s.pct+"%",height:"100%",background:s.color,borderRadius:4,transition:"width 0.3s"}}/></div><div style={{fontSize:11,color:s.color,fontWeight:600,marginTop:4}}>{s.label} password</div></div>;
+  return <div style={{marginTop:6}}><div style={{height:4,background:"#F0F2F5",borderRadius:4,overflow:"hidden"}}><div style={{width:""+(s.pct)+"%",height:"100%",background:s.color,borderRadius:4,transition:"width 0.3s"}}/></div><div style={{fontSize:11,color:s.color,fontWeight:600,marginTop:4}}>{s.label} password</div></div>;
 };
 const AuthWrap=({children})=>(
   <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0B1F3A 0%,#1A3558 60%,#0B1F3A 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
@@ -367,7 +380,7 @@ const AuthLogo=({sub})=>(
     <div style={{fontSize:13,color:"#A0AEC0",marginTop:6}}>{sub}</div>
   </div>
 );
-const ErrBox=({msg})=>msg?(<div style={{background:"#FAEAEA",color:"#B83232",border:"1.5px solid #F0BCBC",borderRadius:8,padding:"10px 14px",fontSize:13,marginBottom:16,lineHeight:1.5}}>{msg}</div>):null;
+const ErrBox=({msg})=>msg?<div style={{background:"#FAEAEA",color:"#B83232",border:"1.5px solid #F0BCBC",borderRadius:8,padding:"10px 14px",fontSize:13,marginBottom:16,lineHeight:1.5}}>{msg}</div>:null;
 const AuthTabs=({mode,setMode})=>(
   <div style={{display:"flex",background:"#F0F2F5",borderRadius:10,padding:4,marginBottom:24}}>
     {[["login","Sign In"],["signup","Create Account"]].map(([m,label])=>(
@@ -409,14 +422,14 @@ const validatePhone = (phone, nationality = "") => {
   // Must start with +
   if (!cleaned.startsWith("+")) {
     const fmt = PHONE_FORMATS[nationality];
-    return "Phone must start with country code. "+(fmt ? "For "+nationality+": "+fmt.example : "e.g. +971 50 123 4567");
+    return `Phone must start with country code. ${fmt ? `For ${nationality}: ${fmt.example}` : "e.g. +971 50 123 4567"}`;
   }
 
   // Country-specific validation
   const fmt = PHONE_FORMATS[nationality];
   if (fmt) {
     if (!fmt.pattern.test(cleaned)) {
-      return "Invalid "+nationality+" number - should be: "+fmt.example;
+      return `Invalid ${nationality} number — should be: ${fmt.example}`;
     }
     return null;
   }
@@ -671,7 +684,7 @@ function PropertyMaster({currentUser,showToast}){
       :await supabase.from("projects").insert(payload).select().single();
     if(error){showToast(error.message,"error");return;}
     setProjects(p=>form.id?p.map(x=>x.id===data.id?data:x):[data,...p]);
-    showToast("Project "+(form.id?"updated":"created")+".","success");setModal(null);setForm({});
+    showToast(`Project ${form.id?"updated":"created"}.`,"success");setModal(null);setForm({});
   };
 
   const saveCategory=async()=>{
@@ -682,7 +695,7 @@ function PropertyMaster({currentUser,showToast}){
       :await supabase.from("project_categories").insert(payload).select().single();
     if(error){showToast(error.message,"error");return;}
     setCategories(p=>form.id?p.map(x=>x.id===data.id?data:x):[data,...p]);
-    showToast("Category "+(form.id?"updated":"created")+".","success");setModal(null);setForm({});
+    showToast(`Category ${form.id?"updated":"created"}.`,"success");setModal(null);setForm({});
   };
 
   const saveBuilding=async()=>{
@@ -693,7 +706,7 @@ function PropertyMaster({currentUser,showToast}){
       :await supabase.from("project_buildings").insert(payload).select().single();
     if(error){showToast(error.message,"error");return;}
     setBuildings(p=>form.id?p.map(x=>x.id===data.id?data:x):[data,...p]);
-    showToast("Building "+(form.id?"updated":"created")+".","success");setModal(null);setForm({});
+    showToast(`Building ${form.id?"updated":"created"}.`,"success");setModal(null);setForm({});
   };
 
   const saveUnit=async()=>{
@@ -707,7 +720,7 @@ function PropertyMaster({currentUser,showToast}){
       :await supabase.from("units").insert(payload).select().single();
     if(error){showToast(error.message,"error");return;}
     setUnits(p=>form.id?p.map(x=>x.id===data.id?data:x):[data,...p]);
-    showToast("Unit "+(form.id?"updated":"created")+".","success");setModal(null);setForm({});
+    showToast(`Unit ${form.id?"updated":"created"}.`,"success");setModal(null);setForm({});
   };
 
   const deleteItem=async(table,id,setter)=>{
@@ -799,7 +812,7 @@ function PropertyMaster({currentUser,showToast}){
                 style={{padding:"10px 14px",borderBottom:"1px solid #F0F2F5",cursor:"pointer",background:selBuilding?.id===b.id?"#0B1F3A":"#fff"}}>
                 <div style={{fontWeight:600,fontSize:13,color:selBuilding?.id===b.id?"#fff":"#0B1F3A"}}>{b.name}</div>
                 <div style={{fontSize:11,color:selBuilding?.id===b.id?"#C9A84C":"#A0AEC0",marginTop:2}}>
-                  {b.floors?""+(b.floors)+" floors · ":""}{b.total_units?""+(b.total_units)+" units":""}
+                  {b.floors?""+b.floors+" floors · ":""}{b.total_units?""+b.total_units+" units":""}
                 </div>
                 {canEdit&&<button onClick={e=>{e.stopPropagation();setForm({...b});setModal("building");}} style={{background:"none",border:"none",color:"#A0AEC0",fontSize:11,cursor:"pointer",marginTop:4}}>Edit</button>}
               </div>
@@ -831,7 +844,7 @@ function PropertyMaster({currentUser,showToast}){
                   {isSel&&(
                     <div style={{marginTop:10,padding:"10px",background:"#fff",borderRadius:8,border:"1px solid #E8C97A"}}>
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
-                        {[["Size",""+(u.size_sqft||0)+" sqft"],["Balcony",""+(u.balcony_sqft||0)+" sqft"],["Service Chg",u.service_charge_per_sqft?"AED "+(u.service_charge_per_sqft)+"/sqft":"—"],["Payment",u.payment_plan||"—"],["Handover",fmtDate(u.handover_date)],["Bathrooms",u.bathrooms||"—"]].map(([l,v])=>(
+                        {[["Size",""+(u.size_sqft||0)+" sqft"],["Balcony",""+(u.balcony_sqft||0)+" sqft"],["Service Chg",u.service_charge_per_sqft?"AED "+u.service_charge_per_sqft+"/sqft":"—"],["Payment",u.payment_plan||"—"],["Handover",fmtDate(u.handover_date)],["Bathrooms",u.bathrooms||"—"]].map(([l,v])=>(
                           <div key={l}><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:"0.5px"}}>{l}</div><div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{v}</div></div>
                         ))}
                       </div>
@@ -1008,7 +1021,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
     const curIdx = OPP_STAGES.indexOf(opp.stage);
     const toIdx  = OPP_STAGES.indexOf(toStage);
     if(["Proposal Sent","Negotiation","Closed Won"].includes(opp.stage) && toIdx<curIdx && toStage!=="Closed Lost"){
-      showToast("Cannot go back from "+(opp.stage)+"","error"); return;
+      showToast(`Cannot go back from ${opp.stage}`,"error"); return;
     }
     if(toStage==="Proposal Sent"){
       showToast("Use 📤 Send Proposal to move to this stage","error"); return;
@@ -1073,7 +1086,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
     <div class="hdr"><div class="logo">◆ PropCRM</div><div style="font-size:13px;opacity:.7">Payment Receipt</div></div>
     <div class="bdy">
       <div class="amt">AED ${Number(pay.amount).toLocaleString()}</div>
-      ${[["Client",lead.name],["Opportunity",opp.title||unit?.unit_ref||"—"],["Milestone",pay.milestone],["Type",pay.payment_type],pay.cheque_number&&["Cheque No.",pay.cheque_number],pay.bank_name&&["Bank",pay.bank_name],["Status",pay.status],["Date",new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})]].filter(Boolean).map(([l,v])=>"<div class='row'><span style='color:#718096'>"+l+"</span><span style='font-weight:600'>"+v+"</span></div>").join("")}
+      ${[["Client",lead.name],["Opportunity",opp.title||unit?.unit_ref||"—"],["Milestone",pay.milestone],["Type",pay.payment_type],pay.cheque_number&&["Cheque No.",pay.cheque_number],pay.bank_name&&["Bank",pay.bank_name],["Status",pay.status],["Date",new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})]].filter(Boolean).map(([l,v])=>`<div class="row"><span style="color:#718096">${l}</span><span style="font-weight:600">${v}</span></div>`).join("")}
       ${pay.cheque_file_url?"<img src='"+pay.cheque_file_url+"' style='width:100%;margin-top:12px;border-radius:6px;border:1px solid #E2E8F0'/>":""}
       <div style="text-align:center"><div class="stamp">${pay.status==="Cleared"?"✓ CLEARED":"✓ RECEIVED"}</div></div>
     </div></body></html>`;
@@ -1091,16 +1104,16 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
         <button onClick={onBack} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||"Opportunity — "+(lead.name)+""}</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||`Opportunity — ${lead.name}`}</span>
             <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>{opp.stage}</span>
             {opp.status==="On Hold"&&<span style={{padding:"3px 10px",borderRadius:20,background:"#F0F2F5",color:"#718096",fontSize:11,fontWeight:600}}>On Hold</span>}
           </div>
-          <div style={{fontSize:12,color:"#718096",marginTop:2}}>{lead.name} · {lead.phone||""} {unit?"· "+(unit.unit_ref)+" — "+(unit.sub_type)+"":""}</div>
+          <div style={{fontSize:12,color:"#718096",marginTop:2}}>{lead.name} · {lead.phone||""} {unit?"· "+unit.unit_ref+" — "+unit.sub_type:""}</div>
         </div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
           {canEdit&&["New","Contacted","Site Visit"].includes(opp.stage)&&unit&&(
             <button onClick={()=>{
-              setEmailForm({to:lead.email||"",subject:"Property Proposal — "+(lead.name)+"",
+              setEmailForm({to:lead.email||"",subject:"Property Proposal — "+(lead.name),
                 body:"Dear "+(lead.name)+",\n\nPlease find your personalised property proposal.\n\nProperty: "+(unit.unit_ref)+" — "+(unit.sub_type)+(proj?" ("+proj.name+")":"")+"\n"+(sp?"Price: AED "+Number(sp.asking_price).toLocaleString()+"\n":"")+"\nKindly review and let us know your preferred next step.\n\nBest regards,\n"+(currentUser.full_name)});
               setShowEmail(true);
             }} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#1A5FA8",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>📤 Send Proposal</button>
@@ -1112,11 +1125,11 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       {/* Summary strip */}
       <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
         {[
-          ["💰 Budget",    opp.budget?"AED "+(Number(opp.budget).toLocaleString())+"":"—",    "#0B1F3A","#C9A84C"],
-          ["🏠 Unit",      unit?""+(unit.unit_ref)+" — "+(unit.sub_type)+"":"Not linked",         "#F7F9FC","#4A5568"],
+          ["💰 Budget",    opp.budget?"AED "+Number(opp.budget).toLocaleString():"—",    "#0B1F3A","#C9A84C"],
+          ["🏠 Unit",      unit?""+unit.unit_ref+" — "+unit.sub_type:"Not linked",         "#F7F9FC","#4A5568"],
           ["👤 Agent",     agent?.full_name||"Unassigned",                                  "#F7F9FC","#4A5568"],
           ["📊 Payments",  totalDue>0?""+(totalPaid/totalDue*100|0)+"% collected":"No payments","#F7F9FC","#4A5568"],
-          opp.final_price&&["✅ Final","AED "+(Number(opp.final_price).toLocaleString())+"","#E6F4EE","#1A7F5A"],
+          opp.final_price&&["✅ Final","AED "+Number(opp.final_price).toLocaleString(),"#E6F4EE","#1A7F5A"],
         ].filter(Boolean).map(([l,v,bg,col])=>(
           <div key={l} style={{background:bg,borderRadius:8,padding:"8px 14px",flex:1,minWidth:120}}>
             <div style={{fontSize:9,color:bg==="#0B1F3A"?"rgba(255,255,255,.5)":"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
@@ -1131,9 +1144,9 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
           {id:"details",  label:"Details",   locked:false},
           {id:"activities",label:"Activities"+(activities.length>0?" ("+activities.length+")":""),locked:false},
           {id:"payments", label:"Payments"+(payments.length>0?" ("+payments.length+")":""), locked:!isWon, lockMsg:"Unlocks at Closed Won"},
-          {id:"contract", label:"Contract"+(contract?" ✓":"")+"",  locked:!isWon, lockMsg:"Unlocks at Closed Won"},
+          {id:"contract", label:"Contract"+(contract?" ✓":""),  locked:!isWon, lockMsg:"Unlocks at Closed Won"},
         ].map(({id,label,locked,lockMsg})=>(
-          <button key={id} onClick={()=>{if(locked){showToast(""+(lockMsg)+"","error");return;}setActiveTab(id);}}
+          <button key={id} onClick={()=>{if(locked){showToast(lockMsg,"error");return;}setActiveTab(id);}}
             style={{padding:"8px 16px",borderRadius:"8px 8px 0 0",border:"none",borderBottom:activeTab===id?"2.5px solid #0B1F3A":"2.5px solid transparent",background:"transparent",fontSize:13,fontWeight:activeTab===id?700:400,color:locked?"#CBD5E0":activeTab===id?"#0B1F3A":"#718096",cursor:locked?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:4}}>
             {locked&&"🔒 "}{label}
           </button>
@@ -1180,7 +1193,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                 <div style={{display:"flex",gap:12,alignItems:"flex-start",flexWrap:"wrap"}}>
                   <div style={{flex:1,minWidth:200}}>
                     <div style={{fontWeight:700,fontSize:15,color:"#0B1F3A",marginBottom:4}}>{unit.unit_ref} — {unit.sub_type}</div>
-                    <div style={{fontSize:12,color:"#718096",marginBottom:6}}>{proj?.name||"—"} · Floor {unit.floor_number||"—"} · {unit.view||"—"} · {unit.size_sqft?""+(Number(unit.size_sqft).toLocaleString())+" sqft":""}</div>
+                    <div style={{fontSize:12,color:"#718096",marginBottom:6}}>{proj?.name||"—"} · Floor {unit.floor_number||"—"} · {unit.view||"—"} · {unit.size_sqft?""+Number(unit.size_sqft).toLocaleString()+" sqft":""}</div>
                     {sp&&<div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#1A5FA8"}}>AED {Number(sp.asking_price).toLocaleString()}</div>}
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,minWidth:200}}>
@@ -1204,7 +1217,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                 {[["Budget",opp.budget],["Offer Price",opp.offer_price],["Final Price",opp.final_price],["Discount %",opp.discount_pct?opp.discount_pct+"%":null]].filter(([,v])=>v).map(([l,v])=>(
                   <div key={l} style={{background:"#FAFBFC",borderRadius:8,padding:"10px 12px"}}>
                     <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
-                    <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>{typeof v==="number"?"AED "+(Number(v).toLocaleString())+"":v}</div>
+                    <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>{typeof v==="number"?"AED "+Number(v).toLocaleString():v}</div>
                   </div>
                 ))}
               </div>
@@ -1279,8 +1292,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
                         <div>
                           <div style={{fontWeight:700,fontSize:14,color:"#0B1F3A",marginBottom:2}}>AED {Number(pay.amount).toLocaleString()}</div>
-                          <div style={{fontSize:12,color:"#718096"}}>{pay.milestone}{pay.percentage?" · "+(pay.percentage)+"%":""}</div>
-                          {pay.cheque_number&&<div style={{fontSize:11,color:"#A0AEC0",marginTop:2}}>Cheque #{pay.cheque_number}{pay.bank_name?" · "+(pay.bank_name)+"":""}</div>}
+                          <div style={{fontSize:12,color:"#718096"}}>{pay.milestone}{pay.percentage?" · "+pay.percentage+"%":""}</div>
+                          {pay.cheque_number&&<div style={{fontSize:11,color:"#A0AEC0",marginTop:2}}>Cheque #{pay.cheque_number}{pay.bank_name?" · "+pay.bank_name:""}</div>}
                           {pay.due_date&&<div style={{fontSize:11,color:"#A0AEC0"}}>Due: {fmtDate(pay.due_date)}</div>}
                         </div>
                         <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
@@ -1336,7 +1349,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
                 {["Call","Email","Meeting","Visit","WhatsApp","Note"].map(t=>(
                   <button key={t} onClick={()=>setLogForm(f=>({...f,type:t}))}
-                    style={{padding:"5px 12px",borderRadius:20,border:"1.5px solid "+(logForm.type===t?"#0B1F3A":"#E2E8F0")+"",background:logForm.type===t?"#0B1F3A":"#fff",color:logForm.type===t?"#fff":"#4A5568",fontSize:11,cursor:"pointer",fontWeight:logForm.type===t?600:400}}>
+                    style={{padding:"5px 12px",borderRadius:20,border:"1.5px solid "+(logForm.type===t?"#0B1F3A":"#E2E8F0"),background:logForm.type===t?"#0B1F3A":"#fff",color:logForm.type===t?"#fff":"#4A5568",fontSize:11,cursor:"pointer",fontWeight:logForm.type===t?600:400}}>
                     {t}
                   </button>
                 ))}
@@ -1372,9 +1385,9 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
               <button onClick={()=>setShowEmail(false)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
               <button onClick={async()=>{
                 if(!emailForm.to){showToast("Enter recipient email","error");return;}
-                const mailtoUrl="mailto:"+(emailForm.to)+"?subject="+(encodeURIComponent(emailForm.subject))+"&body="+(encodeURIComponent(emailForm.body))+"";
+                const mailtoUrl=`mailto:${emailForm.to}?subject=${encodeURIComponent(emailForm.subject)}&body=${encodeURIComponent(emailForm.body)}`;
                 window.open(mailtoUrl);
-                await supabase.from("activities").insert({opportunity_id:opp.id,lead_id:lead.id,type:"Email",note:"Proposal sent to "+(emailForm.to)+"",user_id:currentUser.id,user_name:currentUser.full_name,lead_name:lead.name,company_id:currentUser.company_id||null});
+                await supabase.from("activities").insert({opportunity_id:opp.id,lead_id:lead.id,type:"Email",note:"Proposal sent to "+(emailForm.to),user_id:currentUser.id,user_name:currentUser.full_name,lead_name:lead.name,company_id:currentUser.company_id||null});
                 const{error}=await supabase.from("opportunities").update({stage:"Proposal Sent",proposal_sent_at:new Date().toISOString(),stage_updated_at:new Date().toISOString(),status:"Active"}).eq("id",opp.id);
                 if(!error){onUpdated({...opp,stage:"Proposal Sent",proposal_sent_at:new Date().toISOString()});showToast("Proposal sent — stage updated","success");}
                 setShowEmail(false);
@@ -1435,7 +1448,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                           const file=e.target.files[0];if(!file)return;
                           setSaving(true);
                           try{
-                            const path="payments/"+(opp.id)+"/"+(Date.now())+"_"+(file.name)+"";
+                            const path=`payments/${opp.id}/${Date.now()}_${file.name}`;
                             await supabase.storage.from("propcrm-files").upload(path,file,{upsert:true});
                             const{data:{publicUrl}}=supabase.storage.from("propcrm-files").getPublicUrl(path);
                             setPayForm(f=>({...f,cheque_file_url:publicUrl}));
@@ -1553,7 +1566,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       const payload={
         lead_id:selLeadId,
         company_id:currentUser.company_id||null,
-        title:oppForm.title||(unit?""+(unit.unit_ref)+" — "+(selLead?.name)+"":"Opportunity — "+(selLead?.name)+""),
+        title:oppForm.title||(unit?""+unit.unit_ref+" — "+(selLead?.name):"Opportunity — "+(selLead?.name)),
         unit_id:oppForm.unit_id||null,
         budget:oppForm.budget?Number(oppForm.budget):null,
         assigned_to:oppForm.assigned_to||currentUser.id,
@@ -1603,7 +1616,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           const m=s==="All"?{c:"#0B1F3A",bg:"#F0F2F5"}:OPP_STAGE_META[s]||{c:"#718096",bg:"#F0F2F5"};
           return (
             <button key={s} onClick={()=>setFStage(s)}
-              style={{flexShrink:0,padding:"5px 12px",borderRadius:8,border:"1.5px solid "+(fStage===s?m.c:"#E2E8F0")+"",background:fStage===s?m.bg:"#fff",color:m.c,fontSize:11,fontWeight:600,cursor:"pointer"}}>
+              style={{flexShrink:0,padding:"5px 12px",borderRadius:8,border:"1.5px solid "+(fStage===s?m.c:"#E2E8F0"),background:fStage===s?m.bg:"#fff",color:m.c,fontSize:11,fontWeight:600,cursor:"pointer"}}>
               {s} <span style={{fontWeight:700}}>{cnt}</span>
             </button>
           );
@@ -1624,7 +1637,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           if(fStage!=="All"&&bestStage!==fStage)return null;
           return (
             <div key={l.id} onClick={()=>{setSelLeadId(l.id);setView("lead");}}
-              style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 14px",cursor:"pointer",borderLeft:"3px solid "+(sm2.c)+"",transition:"all .12s"}}
+              style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 14px",cursor:"pointer",borderLeft:"3px solid "+sm2.c,transition:"all .12s"}}
               onMouseOver={e=>{e.currentTarget.style.background="#F7F9FC";e.currentTarget.style.boxShadow="0 2px 8px rgba(0,0,0,.06)";}}
               onMouseOut={e=>{e.currentTarget.style.background="#fff";e.currentTarget.style.boxShadow="none";}}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -1696,7 +1709,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         <Av name={selLead.name} size={40}/>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A"}}>{selLead.name}</div>
-          <div style={{fontSize:12,color:"#718096"}}>{selLead.phone} {selLead.email?"· "+(selLead.email)+"":""} {selLead.nationality?"· "+(selLead.nationality)+"":""}</div>
+          <div style={{fontSize:12,color:"#718096"}}>{selLead.phone} {selLead.email?"· "+selLead.email:""} {selLead.nationality?"· "+selLead.nationality:""}</div>
         </div>
         <div style={{display:"flex",gap:6}}>
           {canEdit&&<button onClick={()=>{setForm({...blank,...selLead});setEditLead(selLead);setShowAdd(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
@@ -1735,7 +1748,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           const agent=users.find(u=>u.id===opp.assigned_to);
           return (
             <div key={opp.id} onClick={()=>{setSelOpp(opp);setView("opportunity");}}
-              style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",borderLeft:"4px solid "+(sm3.c)+"",transition:"all .12s"}}
+              style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",borderLeft:"4px solid "+sm3.c,transition:"all .12s"}}
               onMouseOver={e=>{e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.08)";e.currentTarget.style.transform="translateY(-1px)";}}
               onMouseOut={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
@@ -1747,7 +1760,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
                     {opp.status==="Lost"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#F0F2F5",color:"#718096"}}>Lost</span>}
                     {opp.status==="On Hold"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#FDF3DC",color:"#8A6200"}}>On Hold</span>}
                   </div>
-                  {unit&&<div style={{fontSize:12,color:"#4A5568",marginBottom:2}}>🏠 {unit.unit_ref} — {unit.sub_type}{proj?" · "+(proj.name)+"":""}</div>}
+                  {unit&&<div style={{fontSize:12,color:"#4A5568",marginBottom:2}}>🏠 {unit.unit_ref} — {unit.sub_type}{proj?" · "+proj.name:""}</div>}
                   {sp&&<div style={{fontSize:13,fontWeight:700,color:"#1A5FA8"}}>AED {Number(sp.asking_price).toLocaleString()}</div>}
                   {opp.budget&&!sp&&<div style={{fontSize:13,fontWeight:700,color:"#1A5FA8"}}>Budget: AED {Number(opp.budget).toLocaleString()}</div>}
                 </div>
@@ -1784,13 +1797,13 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
                   <select value={oppForm.unit_id} onChange={e=>{
                     const u=units.find(x=>x.id===e.target.value);
                     const p=u?projects.find(x=>x.id===u.project_id):null;
-                    setOppForm(f=>({...f,unit_id:e.target.value,title:u&&!f.title?""+(u.unit_ref)+" — "+(selLead?.name||"")+"":f.title}));
+                    setOppForm(f=>({...f,unit_id:e.target.value,title:u&&!f.title?""+u.unit_ref+" — "+(selLead?.name||""):f.title}));
                   }}>
                     <option value="">— Select a unit —</option>
                     {units.filter(u=>u.status==="Available"&&(u.purpose==="Sale"||u.purpose==="Both")).map(u=>{
                       const sp2=salePricing.find(s=>s.unit_id===u.id);
                       const pr=projects.find(p=>p.id===u.project_id);
-                      return <option key={u.id} value={u.id}>{u.unit_ref} · {u.sub_type} · {pr?.name||"—"}{sp2?" · AED "+(Math.round(sp2.asking_price/1000))+"K":""}</option>;
+                      return <option key={u.id} value={u.id}>{u.unit_ref} · {u.sub_type} · {pr?.name||"—"}{sp2?" · AED "+Math.round(sp2.asking_price/1000)+"K":""}</option>;
                     })}
                   </select>
                 </div>
@@ -1863,7 +1876,7 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
 
   // Clickable stat card
   const SC=({label,value,sub,accent,icon,onClick,badge})=>(
-    <div onClick={onClick} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem 1.125rem",borderTop:"3px solid "+(accent)+"",display:"flex",alignItems:"flex-start",gap:10,cursor:onClick?"pointer":"default",transition:"all .15s",position:"relative"}}
+    <div onClick={onClick} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem 1.125rem",borderTop:"3px solid "+accent,display:"flex",alignItems:"flex-start",gap:10,cursor:onClick?"pointer":"default",transition:"all .15s",position:"relative"}}
       onMouseOver={e=>{if(onClick){e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.1)";e.currentTarget.style.transform="translateY(-2px)";}}}
       onMouseOut={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
       <div style={{fontSize:22}}>{icon}</div>
@@ -1923,9 +1936,9 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
 
       {/* ── Stat cards ──────────────────────────────────────── */}
       <div className="stat-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
-        <SC label="Active Opps"      value={active.length}         sub={""+(won.length)+" won this period"}   accent="#0B1F3A"  icon="🎯"  onClick={()=>onNavigate("leads")}/>
-        <SC label="Won Value"        value={fmtM(wonVal)}          sub={""+(won.length)+" deals closed"}      accent="#1A7F5A"  icon="🏆"  onClick={()=>onNavigate("leads")}/>
-        <SC label="Available Units"  value={availUnits.length}     sub={""+(ctxUnits.length)+" total"}        accent="#C9A84C"  icon="🏠"  onClick={()=>onNavigate("builder")}/>
+        <SC label="Active Opps"      value={active.length}         sub={""+won.length+" won this period"}   accent="#0B1F3A"  icon="🎯"  onClick={()=>onNavigate("leads")}/>
+        <SC label="Won Value"        value={fmtM(wonVal)}          sub={""+won.length+" deals closed"}      accent="#1A7F5A"  icon="🏆"  onClick={()=>onNavigate("leads")}/>
+        <SC label="Available Units"  value={availUnits.length}     sub={""+ctxUnits.length+" total"}        accent="#C9A84C"  icon="🏠"  onClick={()=>onNavigate("builder")}/>
         <SC label="Reserved"         value={reservedUnits.length}  sub="Pending confirmation"              accent="#A06810"  icon="🔒"  onClick={()=>onNavigate("builder")} badge={reservedUnits.length>0?reservedUnits.length:null}/>
       </div>
 
@@ -2060,7 +2073,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
     if(error){showToast(error.message,"error");return;}
     setLeads(p=>p.map(l=>l.id===lead.id?{...l,stage:toStage}:l));
     if(selCard?.id===lead.id) setSelCard(s=>({...s,stage:toStage}));
-    showToast("Moved to "+(toStage)+"","success");
+    showToast(`Moved to ${toStage}`,"success");
   };
 
   const stageOrder = STAGES.filter(s=>s!=="Closed Lost");
@@ -2093,7 +2106,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
           return(
             <button key={s} onClick={()=>setFStageP(fStageP===s?"All":s)}
               style={{flexShrink:0,padding:"6px 12px",borderRadius:8,background:fStageP===s?m.c:m.bg,
-                border:"2px solid "+(fStageP===s?m.c:m.c+"33")+"",textAlign:"center",minWidth:90,cursor:"pointer",transition:"all .15s"}}>
+                border:"2px solid "+(fStageP===s?m.c:m.c+"33"),textAlign:"center",minWidth:90,cursor:"pointer",transition:"all .15s"}}>
               <div style={{fontWeight:700,fontSize:17,color:fStageP===s?"#fff":m.c,lineHeight:1}}>{cnt}</div>
               <div style={{fontSize:8,color:fStageP===s?"rgba(255,255,255,.9)":m.c,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",marginTop:2}}>{s}</div>
               {val>0&&<div style={{fontSize:9,color:fStageP===s?"rgba(255,255,255,.7)":m.c,opacity:.8}}>{fmtM(val)}</div>}
@@ -2110,7 +2123,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
           {filtered.length===0&&(
             <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
               <div style={{fontSize:36,marginBottom:8}}>📋</div>
-              <div>No leads in pipeline{fStageP!=="All"?" at "+(fStageP)+"":""}</div>
+              <div>No leads in pipeline{fStageP!=="All"?" at "+fStageP:""}</div>
             </div>
           )}
           {filtered.sort((a,b)=>STAGES.indexOf(a.stage)-STAGES.indexOf(b.stage)).map(lead=>{
@@ -2119,10 +2132,10 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
             const isSelected=selCard?.id===lead.id;
             return(
               <div key={lead.id} onClick={()=>setSelCard(isSelected?null:lead)}
-                style={{background:"#fff",border:"2px solid "+(isSelected?m.c:"#E2E8F0")+"",borderRadius:10,
+                style={{background:"#fff",border:"2px solid "+(isSelected?m.c:"#E2E8F0"),borderRadius:10,
                   padding:"10px 14px",cursor:"pointer",transition:"all .15s",
-                  boxShadow:isSelected?"0 2px 12px "+(m.c)+"33":"0 1px 3px rgba(0,0,0,.04)",
-                  borderLeft:"4px solid "+(m.c)+""}}
+                  boxShadow:isSelected?"0 2px 12px "+m.c+"33":"0 1px 3px rgba(0,0,0,.04)",
+                  borderLeft:"4px solid "+m.c}}
                 onMouseOver={e=>{if(!isSelected)e.currentTarget.style.borderColor=m.c+"66";}}
                 onMouseOut={e=>{if(!isSelected)e.currentTarget.style.borderColor="#E2E8F0";}}>
                 <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -2149,7 +2162,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
                     )}
                     {canEdit&&stageOrder.indexOf(lead.stage)<stageOrder.length-1&&(
                       <button onClick={e=>{e.stopPropagation();moveStage(lead,stageOrder[stageOrder.indexOf(lead.stage)+1]);}}
-                        title={"Move to "+(stageOrder[stageOrder.indexOf(lead.stage)+1])+""}
+                        title={"Move to "+stageOrder[stageOrder.indexOf(lead.stage)+1]}
                         style={{fontSize:14,width:28,height:28,borderRadius:6,border:"none",background:m.c,cursor:"pointer",color:"#fff",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>
                         →
                       </button>
@@ -2170,7 +2183,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
           return(
             <div style={{width:260,flexShrink:0,background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,overflowY:"auto",boxShadow:"0 4px 20px rgba(11,31,58,.08)"}}>
               {/* Header */}
-              <div style={{background:"linear-gradient(135deg,"+(m.c)+","+(m.c)+"CC)",padding:"14px 16px",borderRadius:"10px 10px 0 0"}}>
+              <div style={{background:"linear-gradient(135deg,"+m.c+","+m.c+"CC)",padding:"14px 16px",borderRadius:"10px 10px 0 0"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                   <div>
                     <div style={{fontWeight:700,fontSize:15,color:"#fff"}}>{lead.name}</div>
@@ -2186,7 +2199,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
                 {[
                   ["Phone",lead.phone],["Email",lead.email],
                   ["Nationality",lead.nationality],["Source",lead.source],
-                  ["Type",lead.property_type],["Days in stage",""+(days)+"d"],
+                  ["Type",lead.property_type],["Days in stage",`${days}d`],
                 ].filter(([,v])=>v).map(([l,v])=>(
                   <div key={l} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid #F7F9FC"}}>
                     <span style={{color:"#A0AEC0"}}>{l}</span>
@@ -2202,7 +2215,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
                       {stageOrder.map((s,i)=>(
                         <button key={s} onClick={()=>moveStage(lead,s)}
                           disabled={s===lead.stage}
-                          style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid "+(s===lead.stage?m.c:"#E2E8F0")+"",
+                          style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid "+(s===lead.stage?m.c:"#E2E8F0"),
                             background:s===lead.stage?m.bg:"#fff",color:s===lead.stage?m.c:"#4A5568",
                             fontSize:11,fontWeight:s===lead.stage?700:400,cursor:s===lead.stage?"default":"pointer",
                             textAlign:"left",display:"flex",alignItems:"center",gap:6}}>
@@ -2291,7 +2304,7 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
       {showAdd&&(
         <Modal title="Log New Activity" onClose={()=>setShowAdd(false)} width={460}>
           <FF label="Lead" required><select value={form.lead_id} onChange={e=>setForm(f=>({...f,lead_id:e.target.value}))}><option value="">Select a lead…</option>{leads.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></FF>
-          <FF label="Activity Type"><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ACT_TYPES.map(t=><button key={t} onClick={()=>setForm(f=>({...f,type:t}))} style={{padding:"6px 14px",borderRadius:20,border:"1.5px solid "+(form.type===t?"#0B1F3A":"#E2E8F0")+"",background:form.type===t?"#0B1F3A":"#fff",color:form.type===t?"#fff":"#4A5568",fontSize:13,cursor:"pointer",fontWeight:form.type===t?600:400}}>{ACT_META[t]?.icon} {t}</button>)}</div></FF>
+          <FF label="Activity Type"><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ACT_TYPES.map(t=><button key={t} onClick={()=>setForm(f=>({...f,type:t}))} style={{padding:"6px 14px",borderRadius:20,border:"1.5px solid "+(form.type===t?"#0B1F3A":"#E2E8F0"),background:form.type===t?"#0B1F3A":"#fff",color:form.type===t?"#fff":"#4A5568",fontSize:13,cursor:"pointer",fontWeight:form.type===t?600:400}}>{ACT_META[t]?.icon} {t}</button>)}</div></FF>
           <FF label="Note / Summary" required><textarea value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))} rows={4} placeholder="What happened?"/></FF>
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
             <Btn variant="outline" onClick={()=>setShowAdd(false)}>Cancel</Btn>
@@ -2493,7 +2506,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
     if(!file) return;
     setUploadingBrochure(true);
     try {
-      const path = "projects/"+(projId)+"/brochure_"+(Date.now())+"_"+(file.name)+"";
+      const path = `projects/${projId}/brochure_${Date.now()}_${file.name}`;
       // Try "propcrm-files" bucket first, fallback to "documents"
       const{error:ue} = await supabase.storage.from("propcrm-files").upload(path, file, {upsert:true});
       if(ue) throw ue;
@@ -2677,7 +2690,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                     const payload = records.map(r=>({...r, company_id:cid, created_by:currentUser.id, status:r.status||"Active"}));
                     const{error}=await supabase.from("projects").insert(payload);
                     if(error){ showToast(error.message,"error"); return; }
-                    showToast(""+(records.length)+" project(s) uploaded successfully","success");
+                    showToast(`${records.length} project(s) uploaded successfully`,"success");
                     setShowExcelUpload(false); load(true);
                   }}/>
                   Choose File
@@ -2767,8 +2780,8 @@ function ReservationBadge({ reservation }) {
   );
   if (reservation.status !== "Active" && reservation.status !== "Extended") return null;
   return (
-    <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:20,background:col.bg,color:col.c,border:"1px solid "+(col.border)+""}}>
-      {urg === "expired" ? "⚠ Expired" : "🔒 "+(hrs)+"h left"}
+    <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:20,background:col.bg,color:col.c,border:"1px solid "+col.border}}>
+      {urg === "expired" ? "⚠ Expired" : `🔒 ${hrs}h left`}
     </span>
   );
 }
@@ -2838,7 +2851,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
   const save = async () => {
     if (!form.client_name.trim()) { showToast("Client name required", "error"); return; }
     if (!validateFee(Number(form.reservation_fee))) {
-      showToast("Reservation fee cannot exceed AED "+(MAX_RESERVATION_FEE.toLocaleString())+"", "error"); return;
+      showToast(`Reservation fee cannot exceed AED ${MAX_RESERVATION_FEE.toLocaleString()}`, "error"); return;
     }
     setSaving(true);
     try {
@@ -2943,7 +2956,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
 
         {/* Expiry warning bar */}
         {!isNew && reservation.status === "Active" && (
-          <div style={{background:col.bg,borderBottom:"2px solid "+(col.border)+"",padding:"8px 16px",fontSize:12,color:col.c,fontWeight:600,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{background:col.bg,borderBottom:"2px solid "+col.border,padding:"8px 16px",fontSize:12,color:col.c,fontWeight:600,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <span>{urg==="expired"?"⚠ Reservation has expired":urg==="critical"?"🔴 Expires in "+(hrs)+" hours — action required":urg==="warning"?"⚠ Expires in "+(hrs)+" hours":"✓ Active — expires "+new Date(reservation.extended_until||reservation.expires_at).toLocaleDateString("en-AE",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
             {(urg==="warning"||urg==="critical"||urg==="expired")&&<button onClick={extend48} style={{fontSize:11,padding:"3px 10px",borderRadius:6,border:"none",background:col.c,color:"#fff",cursor:"pointer"}}>+48h</button>}
           </div>
@@ -2967,7 +2980,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
                   <div style={{display:"flex",gap:8}}>
                     {["Sale","Lease"].map(t=>(
                       <button key={t} onClick={()=>setForm(f=>({...f,reservation_type:t}))}
-                        style={{flex:1,padding:"8px",borderRadius:8,border:"1.5px solid "+(form.reservation_type===t?"#0B1F3A":"#E2E8F0")+"",background:form.reservation_type===t?"#0B1F3A":"#fff",color:form.reservation_type===t?"#fff":"#4A5568",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                        style={{flex:1,padding:"8px",borderRadius:8,border:"1.5px solid "+(form.reservation_type===t?"#0B1F3A":"#E2E8F0"),background:form.reservation_type===t?"#0B1F3A":"#fff",color:form.reservation_type===t?"#fff":"#4A5568",fontSize:13,fontWeight:600,cursor:"pointer"}}>
                         {t==="Sale"?"🏷 For Sale":"🔑 For Lease"}
                       </button>
                     ))}
@@ -3012,7 +3025,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#8A6200",display:"block",marginBottom:5}}>Amount (AED) — Max {MAX_RESERVATION_FEE.toLocaleString()}</label>
                     <input type="number" value={form.reservation_fee} onChange={sf("reservation_fee")} max={MAX_RESERVATION_FEE} min={0}
-                      style={{border:"1.5px solid "+(Number(form.reservation_fee)>MAX_RESERVATION_FEE?"#B83232":"#E8C97A")+""}}/>
+                      style={{border:"1.5px solid "+(Number(form.reservation_fee)>MAX_RESERVATION_FEE?"#B83232":"#E8C97A")}}/>
                     {Number(form.reservation_fee)>MAX_RESERVATION_FEE&&<div style={{fontSize:10,color:"#B83232",marginTop:3}}>⚠ Cannot exceed AED {MAX_RESERVATION_FEE.toLocaleString()}</div>}
                   </div>
                   <div>
@@ -3038,7 +3051,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
                   ["Email",        reservation.client_email||"—"],
                   ["Nationality",  reservation.client_nationality||"—"],
                   ["Type",         reservation.reservation_type],
-                  ["Fee",          "AED "+(Number(reservation.reservation_fee).toLocaleString())+""],
+                  ["Fee",          "AED "+Number(reservation.reservation_fee).toLocaleString()],
                   ["Payment",      reservation.fee_payment_method],
                   ["Reserved",     new Date(reservation.reserved_at).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})],
                   ["Expires",      new Date(reservation.extended_until||reservation.expires_at).toLocaleDateString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})],
@@ -3140,7 +3153,7 @@ function ReservationsWidget({ currentUser, units=[], onManage }) {
         return (
           <div key={res.id}
             onClick={() => onManage && onManage(res, unit)}
-            style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",borderBottom:"1px solid #F7F9FC",cursor:"pointer",borderLeft:"3px solid "+(col.c)+"",transition:"background .1s"}}
+            style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",borderBottom:"1px solid #F7F9FC",cursor:"pointer",borderLeft:"3px solid "+col.c,transition:"background .1s"}}
             onMouseOver={e=>e.currentTarget.style.background="#F7F9FC"}
             onMouseOut={e=>e.currentTarget.style.background="#fff"}>
             {/* Timer */}
@@ -3416,7 +3429,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
     if(!file)return;
     setUploading(true);
     try{
-      const path="units/"+(unitId||"new")+"/"+(field)+"_"+(Date.now())+"_"+(file.name)+"";
+      const path=`units/${unitId||"new"}/${field}_${Date.now()}_${file.name}`;
       const{error:ue}=await supabase.storage.from("propcrm-files").upload(path,file,{upsert:true});
       if(ue)throw ue;
       const{data:{publicUrl}}=supabase.storage.from("propcrm-files").getPublicUrl(path);
@@ -3475,11 +3488,11 @@ Return ONLY the JSON, no explanation.`}
       if(!response.ok)throw new Error("AI scan failed");
       const data=await response.json();
       const text=data.content[0]?.text||"{}";
-      const clean=text.replace(/"""json|"""/g,"").trim();
+      const clean=text.replace(/```json|```/g,"").trim();
       const parsed=JSON.parse(clean);
       setScanResult(parsed);
       showToast("Brochure scanned — review and apply","success");
-    }catch(e){showToast("Scan error: "+(e.message)+"","error");}
+    }catch(e){showToast(`Scan error: ${e.message}`,"error");}
     setScanning(false);
   };
 
@@ -3511,7 +3524,7 @@ Return ONLY the JSON, no explanation.`}
     await supabase.from("project_units").update({status}).eq("id",uid);
     setUnits(p=>p.map(u=>u.id===uid?{...u,status}:u));
     if(selUnit?.id===uid)setSelUnit(s=>({...s,status}));
-    showToast("Marked "+(status)+"","success");
+    showToast(`Marked ${status}`,"success");
   };
 
   if(loading)return <Spinner msg="Loading inventory…"/>;
@@ -3624,8 +3637,8 @@ Return ONLY the JSON, no explanation.`}
                     <td style={{padding:"5px 8px",color:"#4A5568",whiteSpace:"nowrap"}}>{u.size_sqft?Number(u.size_sqft).toLocaleString():""}</td>
                     <td style={{padding:"5px 8px",color:"#4A5568",textAlign:"center"}}>{u.floor_number??""}</td>
                     <td style={{padding:"5px 8px",color:"#718096",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.view||""}</td>
-                    <td style={{padding:"5px 8px",fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{sp?.asking_price?""+(Math.round(sp.asking_price/1000))+"K":""}</td>
-                    <td style={{padding:"5px 8px",fontWeight:600,color:"#1A5FA8",whiteSpace:"nowrap"}}>{lp?.annual_rent?""+(Math.round(lp.annual_rent/1000))+"K":""}</td>
+                    <td style={{padding:"5px 8px",fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{sp?.asking_price?""+Math.round(sp.asking_price/1000)+"K":""}</td>
+                    <td style={{padding:"5px 8px",fontWeight:600,color:"#1A5FA8",whiteSpace:"nowrap"}}>{lp?.annual_rent?""+Math.round(lp.annual_rent/1000)+"K":""}</td>
                     <td style={{padding:"5px 8px",color:"#718096",whiteSpace:"nowrap",fontSize:11}}>{hdStr}</td>
                     <td style={{padding:"5px 8px"}}>
                       <div style={{display:"flex",flexDirection:"column",gap:2}}>
@@ -3677,7 +3690,7 @@ Return ONLY the JSON, no explanation.`}
                         ["Category",selUnit.sub_type],
                         ["Bedrooms",selUnit.bedrooms===0?"Studio":(selUnit.bedrooms||"—")],
                         ["Bathrooms",selUnit.bathrooms||"—"],
-                        ["Size",    selUnit.size_sqft?""+(Number(selUnit.size_sqft).toLocaleString())+" sqft":"—"],
+                        ["Size",    selUnit.size_sqft?""+Number(selUnit.size_sqft).toLocaleString()+" sqft":"—"],
                         ["Floor",   selUnit.floor_number||"—"],
                         ["View",    selUnit.view||"—"],
                         ["Facing",  selUnit.facing||"—"],
@@ -3704,7 +3717,7 @@ Return ONLY the JSON, no explanation.`}
                           {UNIT_ST.map(s=>{
                             const sc2=UNIT_STATUS_COLORS[s]||{c:"#718096",bg:"#F0F2F5"};
                             return <button key={s} onClick={()=>updateUnitStatus(selUnit.id,s)}
-                              style={{fontSize:10,padding:"4px 9px",borderRadius:20,border:"1.5px solid "+(selUnit.status===s?sc2.c:"#E2E8F0")+"",background:selUnit.status===s?sc2.bg:"#fff",color:selUnit.status===s?sc2.c:"#4A5568",cursor:"pointer",fontWeight:selUnit.status===s?700:400}}>
+                              style={{fontSize:10,padding:"4px 9px",borderRadius:20,border:"1.5px solid "+(selUnit.status===s?sc2.c:"#E2E8F0"),background:selUnit.status===s?sc2.bg:"#fff",color:selUnit.status===s?sc2.c:"#4A5568",cursor:"pointer",fontWeight:selUnit.status===s?700:400}}>
                               {s}
                             </button>;
                           })}
@@ -3741,7 +3754,7 @@ Return ONLY the JSON, no explanation.`}
                           {sp.price_per_sqft&&<div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Number(sp.price_per_sqft).toLocaleString()}/sqft</div>}
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                          {[["DLD Fee",""+(sp.dld_fee_pct)+"%"],["Agency Fee",""+(sp.agency_fee_pct)+"%"],["Booking",""+(sp.booking_pct)+"%"],["Construction",""+(sp.during_construction_pct)+"%"],["Handover",""+(sp.on_handover_pct)+"%"],sp.post_handover_pct>0&&["Post Handover",""+(sp.post_handover_pct)+"%"]].filter(Boolean).map(([l,v])=>(
+                          {[["DLD Fee",`${sp.dld_fee_pct}%`],["Agency Fee",`${sp.agency_fee_pct}%`],["Booking",`${sp.booking_pct}%`],["Construction",`${sp.during_construction_pct}%`],["Handover",`${sp.on_handover_pct}%`],sp.post_handover_pct>0&&["Post Handover",`${sp.post_handover_pct}%`]].filter(Boolean).map(([l,v])=>(
                             <div key={l} style={{background:"#FAFBFC",borderRadius:7,padding:"7px 9px"}}>
                               <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:1}}>{l}</div>
                               <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
@@ -3758,7 +3771,7 @@ Return ONLY the JSON, no explanation.`}
                           <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Math.round(lp.annual_rent/12).toLocaleString()}/month</div>
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                          {[["Deposit","AED "+(Number(lp.security_deposit||0).toLocaleString())+""],["Cheques",lp.cheques_allowed],["Municipality",""+(lp.municipality_tax_pct)+"%"],["Chiller",lp.chiller_included?"Included":"Excluded"]].map(([l,v])=>(
+                          {[["Deposit","AED "+Number(lp.security_deposit||0).toLocaleString()],["Cheques",lp.cheques_allowed],["Municipality",`${lp.municipality_tax_pct}%`],["Chiller",lp.chiller_included?"Included":"Excluded"]].map(([l,v])=>(
                             <div key={l} style={{background:"#FAFBFC",borderRadius:7,padding:"7px 9px"}}>
                               <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:1}}>{l}</div>
                               <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
@@ -3834,7 +3847,7 @@ Return ONLY the JSON, no explanation.`}
                 <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Step 1 — Select Project</div>
                 <select data-inv-proj defaultValue="" onChange={e=>{setInvProjId(e.target.value);}} style={{width:"100%",borderColor:"#1A5FA8"}}>
                   <option value="">— Select the project for this upload —</option>
-                  {companyProjects.map(p=><option key={p.id} value={p.id}>{p.name}{p.developer?" · "+(p.developer)+"":""}</option>)}
+                  {companyProjects.map(p=><option key={p.id} value={p.id}>{p.name}{p.developer?" · "+p.developer:""}</option>)}
                 </select>
                 <div style={{fontSize:11,color:"#718096",marginTop:6}}>All units in the uploaded file will be assigned to this project. The project_id column in the template will be ignored.</div>
               </div>
@@ -3870,10 +3883,10 @@ Return ONLY the JSON, no explanation.`}
               <button onClick={()=>{
                 const projRows = companyProjects.slice(0,3).map((p,i)=>[
                   p.id, p.name,
-                  "UNIT-"+(String(i+1).padStart(3,"0"))+"",
+                  `UNIT-${String(i+1).padStart(3,"0")}`,
                   "Residential","2 Bed","Sale",
                   i+1, 1200, 2, 2, "Available", "Sea View", 2500000, ""
-                ].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(","));
+                ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","));
                 // Add sample rows if no projects
                 if(projRows.length===0) projRows.push('"","Your Project Name","A-101","Residential","2 Bed","Sale","5","1250","2","2","Available","Sea View","2500000",""');
                 const headers = "project_id,project_name,unit_ref,unit_type,sub_type,purpose,floor_number,size_sqft,bedrooms,bathrooms,status,view,asking_price,annual_rent";
@@ -4116,7 +4129,7 @@ function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
       const {data,error}=await supabase.from("discount_requests").update({status:newStatus,response_note:responseNote,response_by:user.id,response_by_name:user.full_name,responded_at:new Date().toISOString()}).eq("id",actingOn.id).select().single();
       if(error)throw error;
       setDiscounts(p=>p.map(d=>d.id===actingOn.id?data:d));
-      toast("Discount request "+(newStatus.toLowerCase())+"",action==="approve"?"success":action==="reject"?"info":"warning");
+      toast(`Discount request ${newStatus.toLowerCase()}`,action==="approve"?"success":action==="reject"?"info":"warning");
       setActingOn(null); setAction(null); setResponseNote("");
     }catch(e){toast(e.message,"error");}
     setSaving(false);
@@ -4129,7 +4142,7 @@ function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
       {/* Stats bar */}
       <div style={{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
         {[["All","All",discounts.length],["Pending","Pending",discounts.filter(d=>d.status==="Pending").length],["Escalated","Escalated",discounts.filter(d=>d.status==="Escalated").length],["Approved","Approved",discounts.filter(d=>d.status==="Approved").length],["Rejected","Rejected",discounts.filter(d=>d.status==="Rejected").length]].map(([f,l,cnt])=>(
-          <button key={f} onClick={()=>setFilter(f)} style={{padding:"6px 16px",borderRadius:8,border:"1.5px solid "+(filter===f?"#0B1F3A":"#E2E8F0")+"",background:filter===f?"#0B1F3A":"#fff",color:filter===f?"#fff":"#4A5568",fontSize:12,fontWeight:filter===f?600:400,cursor:"pointer"}}>{l} ({cnt})</button>
+          <button key={f} onClick={()=>setFilter(f)} style={{padding:"6px 16px",borderRadius:8,border:"1.5px solid "+(filter===f?"#0B1F3A":"#E2E8F0"),background:filter===f?"#0B1F3A":"#fff",color:filter===f?"#fff":"#4A5568",fontSize:12,fontWeight:filter===f?600:400,cursor:"pointer"}}>{l} ({cnt})</button>
         ))}
       </div>
 
@@ -4148,7 +4161,7 @@ function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
           const sc={Pending:{c:"#A06810",bg:"#FDF3DC"},Approved:{c:"#1A7F5A",bg:"#E6F4EE"},Rejected:{c:"#B83232",bg:"#FAEAEA"},Escalated:{c:"#5B3FAA",bg:"#EEE8F9"}}[d.status]||{c:"#718096",bg:"#F0F2F5"};
           const canAct = (d.status==="Pending"&&canApproveManager)||(d.status==="Escalated"&&canApproveAdmin);
           return (
-            <div key={d.id} style={{background:"#fff",border:"1px solid "+(d.status==="Escalated"?"#C9A84C":d.status==="Pending"?"#E8C97A":"#E2E8F0")+"",borderRadius:12,padding:"14px 16px"}}>
+            <div key={d.id} style={{background:"#fff",border:"1px solid "+(d.status==="Escalated"?"#C9A84C":d.status==="Pending"?"#E8C97A":"#E2E8F0"),borderRadius:12,padding:"14px 16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
@@ -4166,9 +4179,9 @@ function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
               </div>
 
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,background:"#FAFBFC",borderRadius:8,padding:"10px",marginBottom:10}}>
-                <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Original Value</div><div style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{d.original_value?"AED "+(Number(d.original_value).toLocaleString())+"":"—"}</div></div>
-                <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Requested Value</div><div style={{fontSize:13,fontWeight:600,color:"#1A7F5A"}}>{d.requested_value?"AED "+(Number(d.requested_value).toLocaleString())+"":"—"}</div></div>
-                <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Saving</div><div style={{fontSize:13,fontWeight:600,color:"#B83232"}}>{d.original_value&&d.requested_value?"AED "+(Number(d.original_value-d.requested_value).toLocaleString())+"":"—"}</div></div>
+                <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Original Value</div><div style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{d.original_value?"AED "+Number(d.original_value).toLocaleString():"—"}</div></div>
+                <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Requested Value</div><div style={{fontSize:13,fontWeight:600,color:"#1A7F5A"}}>{d.requested_value?"AED "+Number(d.requested_value).toLocaleString():"—"}</div></div>
+                <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Saving</div><div style={{fontSize:13,fontWeight:600,color:"#B83232"}}>{d.original_value&&d.requested_value?"AED "+Number(d.original_value-d.requested_value).toLocaleString():"—"}</div></div>
               </div>
 
               <div style={{background:"#F7F9FC",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:13,color:"#4A5568",lineHeight:1.6}}>
@@ -4302,7 +4315,7 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
     if(status==="Cleared")   extra.cleared_date=new Date().toISOString().split("T")[0];
     await supabase.from("lease_cheques").update({status,...extra}).eq("id",id);
     setCheques(p=>p.map(c=>c.id===id?{...c,status,...extra}:c));
-    showToast("Cheque marked "+(status)+"","success");
+    showToast(`Cheque marked ${status}`,"success");
   };
 
   // Auto-generate full PDC schedule from lease
@@ -4329,7 +4342,7 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
     const {data,error} = await supabase.from("lease_cheques").insert(inserts).select();
     if(error){showToast(error.message,"error");return;}
     setCheques(data||[]);
-    showToast(""+(n)+" PDC cheques generated","success");
+    showToast(`${n} PDC cheques generated`,"success");
   };
 
   const CHEQ_COLORS = {
@@ -4381,7 +4394,7 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
         const cm=CHEQ_COLORS[c.status]||CHEQ_COLORS.Pending;
         const isOverdue=c.status==="Pending"&&new Date(c.cheque_date)<new Date();
         return (
-          <div key={c.id} style={{background:isOverdue?"#FFF5F5":"#FAFBFC",border:"1px solid "+(isOverdue?"#F0BCBC":"#E2E8F0")+"",borderRadius:8,padding:"9px 11px",marginBottom:6}}>
+          <div key={c.id} style={{background:isOverdue?"#FFF5F5":"#FAFBFC",border:"1px solid "+(isOverdue?"#F0BCBC":"#E2E8F0"),borderRadius:8,padding:"9px 11px",marginBottom:6}}>
             <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",width:24}}>{c.cheque_sequence}/{c.total_cheques}</div>
               <div style={{flex:1,minWidth:0}}>
@@ -4392,8 +4405,8 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
                 </div>
                 <div style={{fontSize:11,color:"#718096",marginTop:2}}>
                   {new Date(c.cheque_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}
-                  {c.cheque_number&&" · #"+(c.cheque_number)+""}
-                  {c.bank_name&&" · "+(c.bank_name)+""}
+                  {c.cheque_number&&` · #${c.cheque_number}`}
+                  {c.bank_name&&` · ${c.bank_name}`}
                 </div>
               </div>
               <div style={{display:"flex",gap:4}}>
@@ -4575,13 +4588,13 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
 
   if(loading) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"#A0AEC0",fontSize:14}}>Loading Leasing…</div>;
 
-  const TABS_L=[["dashboard","📊 Dashboard"],["tenants","👤 Tenants ("+(tenants.length)+")"],["leases","📄 Leases ("+(activeLeases.length)+")"],["payments","💰 Payments ("+(overduePmts.length)+" overdue)"],["maintenance","🔧 Maintenance ("+(openMaint.length)+")"]];
+  const TABS_L=[["dashboard","📊 Dashboard"],["tenants",`👤 Tenants (${tenants.length})`],["leases",`📄 Leases (${activeLeases.length})`],["payments",`💰 Payments (${overduePmts.length} overdue)`],["maintenance",`🔧 Maintenance (${openMaint.length})`]];
 
   return (
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
       <div style={{display:"flex",gap:5,marginBottom:14,flexWrap:"wrap"}}>
         {TABS_L.map(([id,l])=>(
-          <button key={id} onClick={()=>setTab(id)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid "+(tab===id?"#0B1F3A":"#E2E8F0")+"",background:tab===id?"#0B1F3A":"#fff",color:tab===id?"#fff":"#4A5568",fontSize:12,fontWeight:tab===id?600:400,cursor:"pointer"}}>{l}</button>
+          <button key={id} onClick={()=>setTab(id)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid "+(tab===id?"#0B1F3A":"#E2E8F0"),background:tab===id?"#0B1F3A":"#fff",color:tab===id?"#fff":"#4A5568",fontSize:12,fontWeight:tab===id?600:400,cursor:"pointer"}}>{l}</button>
         ))}
       </div>
 
@@ -4589,8 +4602,8 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
       {tab==="dashboard"&&(
         <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:14}}>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
-            {[["Active Leases",activeLeases.length,"#0B1F3A","📄"],["Annual Rent","AED "+((totalRent/1e6).toFixed(1))+"M","#1A7F5A","💰"],["Overdue Payments",overduePmts.length,"#B83232","⚠"],["Open Maintenance",openMaint.length,"#5B3FAA","🔧"]].map(([l,v,c,icon])=>(
-              <div key={l} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem 1.25rem",borderTop:"3px solid "+(c)+""}}>
+            {[["Active Leases",activeLeases.length,"#0B1F3A","📄"],["Annual Rent",`AED ${(totalRent/1e6).toFixed(1)}M`,"#1A7F5A","💰"],["Overdue Payments",overduePmts.length,"#B83232","⚠"],["Open Maintenance",openMaint.length,"#5B3FAA","🔧"]].map(([l,v,c,icon])=>(
+              <div key={l} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem 1.25rem",borderTop:"3px solid "+c}}>
                 <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".7px",fontWeight:600,marginBottom:6}}>{icon} {l}</div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
               </div>
@@ -4712,11 +4725,11 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
               const SC_L={Active:{c:"#1A7F5A",bg:"#E6F4EE"},Expired:{c:"#B83232",bg:"#FAEAEA"},Terminated:{c:"#718096",bg:"#F0F2F5"},Pending:{c:"#A06810",bg:"#FDF3DC"},Renewed:{c:"#1A5FA8",bg:"#E6EFF9"}};
               const sc=SC_L[l.status]||{c:"#718096",bg:"#F0F2F5"};
               return (
-                <div key={l.id} style={{background:"#fff",border:"1px solid "+(isExpiring?"#E8C97A":"#E2E8F0")+"",borderRadius:10,padding:"12px 14px"}}>
+                <div key={l.id} style={{background:"#fff",border:"1px solid "+(isExpiring?"#E8C97A":"#E2E8F0"),borderRadius:10,padding:"12px 14px"}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
                     <div>
                       <div style={{fontSize:14,fontWeight:700,color:"#0B1F3A",marginBottom:2}}>{tenantName(l.tenant_id)}</div>
-                      <div style={{fontSize:12,color:"#A0AEC0"}}>Unit {unitLabel(l.unit_id)}{l.ejari_number?" · Ejari: "+(l.ejari_number)+"":""}</div>
+                      <div style={{fontSize:12,color:"#A0AEC0"}}>Unit {unitLabel(l.unit_id)}{l.ejari_number?" · Ejari: "+l.ejari_number:""}</div>
                     </div>
                     <div style={{textAlign:"right"}}>
                       <span style={{fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:sc.bg,color:sc.c}}>{l.status}</span>
@@ -4724,7 +4737,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                     </div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,background:"#FAFBFC",borderRadius:8,padding:"8px 10px",marginBottom:8}}>
-                    {[["Start",new Date(l.start_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})],["End",new Date(l.end_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})],["Annual Rent","AED "+(Number(l.annual_rent).toLocaleString())+""],["Cheques",l.number_of_cheques]].map(([k,v])=>(
+                    {[["Start",new Date(l.start_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})],["End",new Date(l.end_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})],["Annual Rent","AED "+Number(l.annual_rent).toLocaleString()],["Cheques",l.number_of_cheques]].map(([k,v])=>(
                       <div key={k}><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px"}}>{k}</div><div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{v}</div></div>
                     ))}
                   </div>
@@ -4764,10 +4777,10 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                       <div><div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>Export Current Leases</div><div style={{fontSize:11,color:"#718096"}}>{leases.length} records</div></div>
                       <button onClick={()=>{
                         const headers="tenant_id,unit_id,start_date,end_date,annual_rent,security_deposit,agency_fee,number_of_cheques,ejari_number,status,notes";
-                        const rows=leases.map(l=>[l.tenant_id||"",l.unit_id||"",l.start_date||"",l.end_date||"",l.annual_rent||"",l.security_deposit||"",l.agency_fee||"",l.number_of_cheques||"",l.ejari_number||"",l.status||"",l.notes||""].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(","));
+                        const rows=leases.map(l=>[l.tenant_id||"",l.unit_id||"",l.start_date||"",l.end_date||"",l.annual_rent||"",l.security_deposit||"",l.agency_fee||"",l.number_of_cheques||"",l.ejari_number||"",l.status||"",l.notes||""].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","));
                         const csv=[headers,...rows].join("\n");
-                        const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download="leases_export_"+(new Date().toISOString().split("T")[0])+".csv";a.click();
-                        showToast("Exported "+(leases.length)+" leases","success");
+                        const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download=`leases_export_${new Date().toISOString().split("T")[0]}.csv`;a.click();
+                        showToast(`Exported ${leases.length} leases`,"success");
                       }} style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>⬇ Export Current</button>
                     </div>
                   )}
@@ -4817,7 +4830,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                           const{data:newL,error}=await supabase.from("leases").insert(payload).select();
                           if(error){showToast(error.message,"error");return;}
                           setLeases(p=>[...(newL||[]),...p]);
-                          showToast("✓ "+(newL?.length||0)+" leases uploaded","success");
+                          showToast(`✓ ${newL?.length||0} leases uploaded`,"success");
                           setShowLeaseUpload(false);
                         }}/>
                       </label>
@@ -4920,7 +4933,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
               const pc=PC[m.priority]||{c:"#718096",bg:"#F0F2F5"};
               const sc=SC_M[m.status]||{c:"#718096",bg:"#F0F2F5"};
               return (
-                <div key={m.id} style={{background:"#fff",border:"1px solid "+(m.priority==="Urgent"?"#F0BCBC":"#E2E8F0")+"",borderRadius:10,padding:"12px 14px"}}>
+                <div key={m.id} style={{background:"#fff",border:"1px solid "+(m.priority==="Urgent"?"#F0BCBC":"#E2E8F0"),borderRadius:10,padding:"12px 14px"}}>
                   <div style={{display:"flex",gap:6,marginBottom:8}}>
                     <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:20,background:pc.bg,color:pc.c}}>{m.priority}</span>
                     <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:20,background:sc.bg,color:sc.c}}>{m.status}</span>
@@ -5003,7 +5016,7 @@ const AI_PROVIDERS = [
         role: m.role==="assistant"?"model":"user",
         parts:[{text:m.content}]
       }));
-      const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key="+(key)+"", {
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
@@ -5063,7 +5076,7 @@ ${avail.slice(0,20).map(u=>{
   const p=projects.find(x=>x.id===u.project_id);
   const sp=salePricing.find(s=>s.unit_id===u.id);
   const lp=leasePricing.find(l=>l.unit_id===u.id);
-  const price=sp?.asking_price?`AED ${Number(sp.asking_price).toLocaleString()}`:lp?.annual_rent?`AED ${Number(lp.annual_rent).toLocaleString()}/yr`:"TBD";
+  const price=sp?.asking_price?"AED "+Number(sp.asking_price).toLocaleString():lp?.annual_rent?`AED ${Number(lp.annual_rent).toLocaleString()}/yr`:"TBD";
   return `• #${u.unit_ref} | ${u.sub_type} | ${u.bedrooms===0?"Studio":(u.unit_type==="Residential"?u.bedrooms+"BR":"")} | ${u.size_sqft?Number(u.size_sqft).toLocaleString()+"sqft":""} | ${u.view||""} | ${price} | ${p?.name||"—"}`;
 }).join("\n")}
 
@@ -5091,7 +5104,7 @@ function exportToExcel(rows, headers, filename) {
     if(v === null || v === undefined) return "";
     const s = String(v);
     return s.includes(",") || s.includes('"') || s.includes('\n')
-      ? '"'+s.replace(/"/g,'""')+'"' : s;
+      ? `"${s.replace(/"/g,'""')}"` : s;
   };
   const csv = [headers.map(escape).join(","), ...rows.map(r=>r.map(escape).join(","))].join("\n");
   const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8"});
@@ -5179,7 +5192,7 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
 
   const save = async()=>{
     if(!form.name.trim()){showToast("Template name required","error");return;}
-    if(Math.abs(totalPct-100)>0.1){showToast("Total must be 100% — currently "+(totalPct)+"%","error");return;}
+    if(Math.abs(totalPct-100)>0.1){showToast(`Total must be 100% — currently ${totalPct}%`,"error");return;}
     if(form.milestones.some(m=>!m.label.trim())){showToast("All milestones need a label","error");return;}
     setSaving(true);
     try{
@@ -5260,7 +5273,7 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
                 {ms.map((m,i)=>{
                   const colors=["#0B1F3A","#1A5FA8","#1A7F5A","#5B3FAA","#A06810","#B83232","#718096"];
                   return (
-                    <div key={i} title={""+(m.label)+": "+(m.pct)+"%"}
+                    <div key={i} title={""+m.label+": "+m.pct+"%"}
                       style={{flex:m.pct,background:colors[i%colors.length],display:"flex",alignItems:"center",justifyContent:"center",minWidth:30}}>
                       <span style={{fontSize:9,fontWeight:700,color:"#fff"}}>{m.pct}%</span>
                     </div>
@@ -5429,7 +5442,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
 
   useEffect(()=>{ loadData(); },[loadData]);
 
-  const fmt = n => n ? "AED "+(Number(n).toLocaleString())+"" : "—";
+  const fmt = n => n ? "AED "+Number(n).toLocaleString() : "—";
   const fmtD = d => d ? new Date(d).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"}) : "—";
   const today = new Date();
 
@@ -5448,8 +5461,8 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
         const rows = oppsData.map(o=>([
           o.title||"—", leadName(o.lead_id),
           o.stage, o.status,
-          o.budget ? "AED "+(Number(o.budget).toLocaleString())+"" : "—",
-          o.final_price ? "AED "+(Number(o.final_price).toLocaleString())+"" : "—",
+          o.budget ? "AED "+Number(o.budget).toLocaleString() : "—",
+          o.final_price ? "AED "+Number(o.final_price).toLocaleString() : "—",
           userName(o.assigned_to),
           fmtD(o.created_at),
           o.stage_updated_at ? Math.floor((today-new Date(o.stage_updated_at))/864e5)+"d" : "—",
@@ -5459,7 +5472,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
         const summary = OPP_STAGES.map(s=>{
           const sl=oppsData.filter(o=>o.stage===s);
           const val=sl.reduce((a,o)=>a+(o.budget||0),0);
-          return [s, sl.length, "AED "+((val/1e6).toFixed(2))+"M", oppsData.length?Math.round(sl.length/oppsData.length*100)+"%":"0%"];
+          return [s, sl.length, `AED ${(val/1e6).toFixed(2)}M`, oppsData.length?Math.round(sl.length/oppsData.length*100)+"%":"0%"];
         });
         return { rows, headers, summary, summaryHeaders:["Stage","Count","Value","% of Total"] };
       }
@@ -5535,7 +5548,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
             l ? tenant(l.tenant_id) : "—",
             c.unit_id ? unitRef(c.unit_id) : "—",
             fmt(c.amount), c.cheque_number||"—", c.bank_name||"—",
-            fmtD(c.cheque_date), ""+(c.cheque_sequence)+"/"+(c.total_cheques)+"",
+            fmtD(c.cheque_date), `${c.cheque_sequence}/${c.total_cheques}`,
             c.status, isOverdue?"⚠ OVERDUE":"",
             fmtD(c.deposit_date), fmtD(c.cleared_date),
           ];
@@ -5569,7 +5582,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
           u.size_sqft?Number(u.size_sqft).toLocaleString():"—",
           u.floor_number||"—", u.view||"—",
           sp(u.id)?.asking_price ? fmt(sp(u.id).asking_price) : "—",
-          sp(u.id)?.price_per_sqft ? "AED "+(Number(sp(u.id).price_per_sqft).toLocaleString())+"" : "—",
+          sp(u.id)?.price_per_sqft ? `AED ${Number(sp(u.id).price_per_sqft).toLocaleString()}` : "—",
           lp(u.id)?.annual_rent ? fmt(lp(u.id).annual_rent) : "—",
           u.status, u.handover_date ? fmtD(u.handover_date) : "—",
         ]));
@@ -5632,7 +5645,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
       <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
         {Object.entries(REPORTS).filter(([key])=>crmContext==="leasing"?["rent_roll","pdc_schedule","inventory","agent_perf"].includes(key):true).map(([key,r])=>(
           <button key={key} onClick={()=>setActiveReport(key)}
-            style={{padding:"7px 14px",borderRadius:8,border:"1.5px solid "+(activeReport===key?"#0B1F3A":"#E2E8F0")+"",background:activeReport===key?"#0B1F3A":"#fff",color:activeReport===key?"#fff":"#4A5568",fontSize:12,fontWeight:activeReport===key?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .15s"}}>
+            style={{padding:"7px 14px",borderRadius:8,border:"1.5px solid "+(activeReport===key?"#0B1F3A":"#E2E8F0"),background:activeReport===key?"#0B1F3A":"#fff",color:activeReport===key?"#fff":"#4A5568",fontSize:12,fontWeight:activeReport===key?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .15s"}}>
             <span>{r.icon}</span> {r.label}
           </button>
         ))}
@@ -5810,7 +5823,7 @@ function SetupWizard({ onComplete }) {
               <div style={{display:"flex",flexDirection:"column",gap:12}}>
                 {MODES.map(m=>(
                   <div key={m.id} onClick={()=>setMode(m.id)}
-                    style={{border:"2px solid "+(mode===m.id?m.color:"#E2E8F0")+"",borderRadius:14,padding:"1.25rem 1.5rem",cursor:"pointer",background:mode===m.id?m.bg:"#fff",transition:"all .2s",position:"relative"}}>
+                    style={{border:"2px solid "+(mode===m.id?m.color:"#E2E8F0"),borderRadius:14,padding:"1.25rem 1.5rem",cursor:"pointer",background:mode===m.id?m.bg:"#fff",transition:"all .2s",position:"relative"}}>
                     {m.recommended&&<div style={{position:"absolute",top:-1,right:16,background:"#C9A84C",color:"#0B1F3A",fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:"0 0 8px 8px"}}>RECOMMENDED</div>}
                     <div style={{display:"flex",alignItems:"flex-start",gap:14}}>
                       <div style={{fontSize:28,flexShrink:0}}>{m.icon}</div>
@@ -5909,7 +5922,7 @@ function SetupWizard({ onComplete }) {
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>Ready to launch</div>
               <div style={{fontSize:13,color:"#718096",marginBottom:22}}>Review your configuration below. You can always change this later in Users → Settings.</div>
 
-              <div style={{border:"2px solid "+(sel?.color)+"",borderRadius:14,padding:"1.5rem",marginBottom:18,background:sel?.bg}}>
+              <div style={{border:"2px solid "+(sel?.color),borderRadius:14,padding:"1.5rem",marginBottom:18,background:sel?.bg}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
                   <span style={{fontSize:32}}>{sel?.icon}</span>
                   <div>
@@ -6014,7 +6027,7 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
   const recentActs    = [...activities].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
 
   const SC=({label,value,sub,accent,icon,onClick})=>(
-    <div onClick={onClick} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem 1.25rem",borderTop:"3px solid "+(accent)+"",display:"flex",alignItems:"flex-start",gap:10,cursor:onClick?"pointer":"default",transition:"all .15s",position:"relative"}}
+    <div onClick={onClick} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem 1.25rem",borderTop:"3px solid "+accent,display:"flex",alignItems:"flex-start",gap:10,cursor:onClick?"pointer":"default",transition:"all .15s",position:"relative"}}
       onMouseOver={e=>{if(onClick){e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.1)";e.currentTarget.style.transform="translateY(-2px)";}}}
       onMouseOut={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
       <div style={{fontSize:22}}>{icon}</div>
@@ -6086,10 +6099,10 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
 
       {/* Stats */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
-        <SC label="Active Leases"      value={activeLeases.length}  sub={tenants.length>0?""+(tenants.length)+" tenants":"Add tenants to start"}    accent="#5B3FAA" icon="📄" onClick={()=>onNavigate("leasing")}/>
-        <SC label="Annual Rent Roll"   value={fmtM(totalRent)}      sub={activeLeases.length>0?""+(activeLeases.length)+" contracts":"No active leases"} accent="#1A7F5A" icon="💰" onClick={()=>onNavigate("leasing")}/>
-        <SC label="Available Units"    value={availUnits.length}    sub={""+(leaseUnits.length)+" total for lease"}       accent="#9B7FD4" icon="🔑" onClick={()=>onNavigate("l_inventory")}/>
-        <SC label="Open Maintenance"   value={openMaint.length}     sub={""+(overduePmts.length)+" overdue payments"}     accent={openMaint.length>0?"#B83232":"#A0AEC0"} icon="🔧" onClick={()=>onNavigate("leasing")}/>
+        <SC label="Active Leases"      value={activeLeases.length}  sub={tenants.length>0?""+tenants.length+" tenants":"Add tenants to start"}    accent="#5B3FAA" icon="📄" onClick={()=>onNavigate("leasing")}/>
+        <SC label="Annual Rent Roll"   value={fmtM(totalRent)}      sub={activeLeases.length>0?""+activeLeases.length+" contracts":"No active leases"} accent="#1A7F5A" icon="💰" onClick={()=>onNavigate("leasing")}/>
+        <SC label="Available Units"    value={availUnits.length}    sub={""+leaseUnits.length+" total for lease"}       accent="#9B7FD4" icon="🔑" onClick={()=>onNavigate("l_inventory")}/>
+        <SC label="Open Maintenance"   value={openMaint.length}     sub={""+overduePmts.length+" overdue payments"}     accent={openMaint.length>0?"#B83232":"#A0AEC0"} icon="🔧" onClick={()=>onNavigate("leasing")}/>
       </div>
 
       {/* Leases + Activity */}
@@ -6168,9 +6181,9 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
               <div key={u.id} style={{padding:"8px 10px",background:"#EEE8F9",borderRadius:8,border:"1px solid #C4ACEC",marginBottom:6}}>
                 <div style={{display:"flex",justifyContent:"space-between"}}>
                   <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{u.unit_ref}</div>
-                  <div style={{fontSize:12,fontWeight:700,color:"#5B3FAA"}}>{lp?"AED "+(Number(lp.annual_rent).toLocaleString())+"/yr":"TBD"}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:"#5B3FAA"}}>{lp?"AED "+Number(lp.annual_rent).toLocaleString()+"/yr":"TBD"}</div>
                 </div>
-                <div style={{fontSize:11,color:"#718096"}}>{u.sub_type}{u.size_sqft?" · "+(Number(u.size_sqft).toLocaleString())+" sqft":""}{u.view?" · "+(u.view)+"":""}</div>
+                <div style={{fontSize:11,color:"#718096"}}>{u.sub_type}{u.size_sqft?" · "+Number(u.size_sqft).toLocaleString()+" sqft":""}{u.view?" · "+u.view:""}</div>
               </div>
             );
           })}
@@ -6265,7 +6278,7 @@ function UserManagement({currentUser, leads=[], activities=[], showToast, appCon
       <div style={{display:"flex",gap:4,marginBottom:14}}>
         {[["users","👥 Users"],["settings","⚙ Settings"]].map(([id,l])=>(
           <button key={id} onClick={()=>setSubTab(id)}
-            style={{padding:"7px 16px",borderRadius:8,border:"1.5px solid "+(subTab===id?"#0B1F3A":"#E2E8F0")+"",background:subTab===id?"#0B1F3A":"#fff",color:subTab===id?"#fff":"#4A5568",fontSize:13,fontWeight:subTab===id?600:400,cursor:"pointer"}}>
+            style={{padding:"7px 16px",borderRadius:8,border:"1.5px solid "+(subTab===id?"#0B1F3A":"#E2E8F0"),background:subTab===id?"#0B1F3A":"#fff",color:subTab===id?"#fff":"#4A5568",fontSize:13,fontWeight:subTab===id?600:400,cursor:"pointer"}}>
             {l}
           </button>
         ))}
@@ -6327,7 +6340,7 @@ function UsersTab({currentUser, showToast}) {
         }
         
         const tempPw = form.password || Math.random().toString(36).slice(-8)+"A1!";
-        const res = await fetch("https://ysceukgpimzfqixtnbnp.supabase.co/auth/v1/admin/users",{
+        const res = await fetch(`https://ysceukgpimzfqixtnbnp.supabase.co/auth/v1/admin/users`,{
           method:"POST",
           headers:{"Content-Type":"application/json","apikey":SUPABASE_SERVICE,"Authorization":"Bearer "+SUPABASE_SERVICE},
           body:JSON.stringify({email:form.email,password:tempPw,email_confirm:true,user_metadata:{full_name:form.full_name}})
@@ -6345,9 +6358,9 @@ function UsersTab({currentUser, showToast}) {
         }).eq("id",result.id);
         if(pErr) showToast("User created but profile update failed: "+pErr.message,"error");
         else {
-          showToast("✓ User created: "+(form.email)+"  |  Temp password: "+(tempPw)+"  |  Share this with them securely","success");
+          showToast(`✓ User created: ${form.email}  |  Temp password: ${tempPw}  |  Share this with them securely`,"success");
           // Copy to clipboard
-          navigator.clipboard?.writeText("Email: "+(form.email)+"\nTemp Password: "+(tempPw)+"").catch(()=>{});
+          navigator.clipboard?.writeText(`Email: ${form.email}\nTemp Password: ${tempPw}`).catch(()=>{});
         }
       }
       setShowAdd(false);setEditUser(null);setForm(blank);loadUsers();
@@ -6409,7 +6422,7 @@ function UsersTab({currentUser, showToast}) {
                       style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>Edit</button>
                     {!u.is_super_admin&&u.id!==currentUser.id&&(
                       <button onClick={()=>toggleActive(u)}
-                        style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid "+(u.is_active?"#F0BCBC":"#A8D5BE")+"",background:u.is_active?"#FAEAEA":"#E6F4EE",color:u.is_active?"#B83232":"#1A7F5A",cursor:"pointer"}}>
+                        style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid "+(u.is_active?"#F0BCBC":"#A8D5BE"),background:u.is_active?"#FAEAEA":"#E6F4EE",color:u.is_active?"#B83232":"#1A7F5A",cursor:"pointer"}}>
                         {u.is_active?"Deactivate":"Activate"}
                       </button>
                     )}
@@ -6609,8 +6622,8 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
           const isActive = activeCompanyId === c.id;
           return (
             <div key={c.id}
-              onClick={()=>{ if(c.is_active&&!isActive){ onSwitchCompany(c.id, c); showToast("Switched to "+(c.name)+"","success"); } }}
-              style={{background:"#fff",border:"2px solid "+(isActive?"#C9A84C":"#E2E8F0")+"",borderRadius:14,overflow:"hidden",opacity:c.is_active?1:.55,transition:"all .2s",cursor:c.is_active&&!isActive?"pointer":"default",boxShadow:isActive?"0 4px 20px rgba(201,168,76,.2)":"none"}}
+              onClick={()=>{ if(c.is_active&&!isActive){ onSwitchCompany(c.id, c); showToast(`Switched to ${c.name}`,"success"); } }}
+              style={{background:"#fff",border:"2px solid "+(isActive?"#C9A84C":"#E2E8F0"),borderRadius:14,overflow:"hidden",opacity:c.is_active?1:.55,transition:"all .2s",cursor:c.is_active&&!isActive?"pointer":"default",boxShadow:isActive?"0 4px 20px rgba(201,168,76,.2)":"none"}}
               onMouseOver={e=>{ if(c.is_active&&!isActive) e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.1)"; }}
               onMouseOut={e=>{ e.currentTarget.style.boxShadow=isActive?"0 4px 20px rgba(201,168,76,.2)":"none"; }}>
               {/* Colour bar */}
@@ -6626,7 +6639,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
                     }
                   </div>
                 </div>
-                {c.city&&<div style={{fontSize:11,color:"#A0AEC0",marginBottom:8}}>📍 {c.city}{c.country?", "+(c.country)+"":""}</div>}
+                {c.city&&<div style={{fontSize:11,color:"#A0AEC0",marginBottom:8}}>📍 {c.city}{c.country?", "+c.country:""}</div>}
                 <div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}}>
                   <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:bm.bg,color:bm.c}}>{bm.icon} {c.business_type==="both"?"Sales & Leasing":c.business_type==="sales"?"Sales Only":"Leasing Only"}</span>
                   <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:pm.bg,color:pm.c}}>{c.plan?.charAt(0).toUpperCase()+c.plan?.slice(1)||"Professional"}</span>
@@ -6641,7 +6654,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
                     ✏ Edit
                   </button>
                   <button onClick={()=>toggleActive(c)}
-                    style={{flex:1,padding:"6px 10px",borderRadius:7,border:"1.5px solid "+(c.is_active?"#F0BCBC":"#A8D5BE")+"",background:c.is_active?"#FAEAEA":"#E6F4EE",color:c.is_active?"#B83232":"#1A7F5A",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    style={{flex:1,padding:"6px 10px",borderRadius:7,border:"1.5px solid "+(c.is_active?"#F0BCBC":"#A8D5BE"),background:c.is_active?"#FAEAEA":"#E6F4EE",color:c.is_active?"#B83232":"#1A7F5A",fontSize:11,fontWeight:600,cursor:"pointer"}}>
                     {c.is_active?"Deactivate":"Activate"}
                   </button>
                 </div>
@@ -6667,7 +6680,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
                   {BIZ_TYPES.map(b=>(
                     <button key={b.id} onClick={()=>sf("business_type",b.id)}
-                      style={{padding:"10px 12px",borderRadius:10,border:"2px solid "+(form.business_type===b.id?"#0B1F3A":"#E2E8F0")+"",background:form.business_type===b.id?"#0B1F3A":"#fff",color:form.business_type===b.id?"#fff":"#4A5568",cursor:"pointer",textAlign:"left",transition:".15s"}}>
+                      style={{padding:"10px 12px",borderRadius:10,border:"2px solid "+(form.business_type===b.id?"#0B1F3A":"#E2E8F0"),background:form.business_type===b.id?"#0B1F3A":"#fff",color:form.business_type===b.id?"#fff":"#4A5568",cursor:"pointer",textAlign:"left",transition:".15s"}}>
                       <div style={{fontSize:18,marginBottom:4}}>{b.icon}</div>
                       <div style={{fontSize:13,fontWeight:700}}>{b.label}</div>
                       <div style={{fontSize:11,opacity:.7,marginTop:2}}>{b.desc}</div>
@@ -6682,7 +6695,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
                   {PLANS.map(p=>(
                     <button key={p.id} onClick={()=>sf("plan",p.id)}
-                      style={{padding:"10px 12px",borderRadius:10,border:"2px solid "+(form.plan===p.id?p.color:"#E2E8F0")+"",background:form.plan===p.id?p.color+"18":"#fff",cursor:"pointer",textAlign:"left",transition:".15s"}}>
+                      style={{padding:"10px 12px",borderRadius:10,border:"2px solid "+(form.plan===p.id?p.color:"#E2E8F0"),background:form.plan===p.id?p.color+"18":"#fff",cursor:"pointer",textAlign:"left",transition:".15s"}}>
                       <div style={{fontSize:13,fontWeight:700,color:form.plan===p.id?p.color:"#0B1F3A"}}>{p.label}</div>
                       <div style={{fontSize:11,color:"#718096",marginTop:2}}>{p.desc}</div>
                     </button>
@@ -6902,7 +6915,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
     if (templateId) {
       const tmpl = templates.find(t => t.id === templateId);
       if (tmpl) {
-        setForm({ ...emptySet, ...tmpl, id:undefined, company_id:undefined, is_template:false, name:""+(tmpl.name)+" (Custom)", based_on:tmpl.name });
+        setForm({ ...emptySet, ...tmpl, id:undefined, company_id:undefined, is_template:false, name:""+tmpl.name+" (Custom)", based_on:tmpl.name });
       }
     } else {
       setForm(emptySet);
@@ -6918,7 +6931,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
   };
 
   const cloneSet = (set) => {
-    setForm({ ...emptySet, ...set, id:undefined, name:""+(set.name)+" (Copy)", based_on:set.name, is_template:false });
+    setForm({ ...emptySet, ...set, id:undefined, name:""+set.name+" (Copy)", based_on:set.name, is_template:false });
     setEditing(null);
     setView("edit");
   };
@@ -6944,8 +6957,8 @@ function PermissionSetsModule({ currentUser, showToast }) {
   };
 
   const deleteSet = async (set) => {
-    if (countUsers(set.id) > 0) { showToast("Cannot delete — "+(countUsers(set.id))+" user(s) assigned to this set","error"); return; }
-    if (!window.confirm("Delete ""+(set.name)+""?")) return;
+    if (countUsers(set.id) > 0) { showToast(`Cannot delete — ${countUsers(set.id)} user(s) assigned to this set`,"error"); return; }
+    if (!window.confirm('Delete "'+set.name+'"?')) return;
     await supabase.from("permission_sets").delete().eq("id", set.id);
     showToast("Deleted","info"); load();
   };
@@ -7107,7 +7120,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                 {COLORS.map(c=>(
                   <button key={c} onClick={()=>!isReadOnly&&setForm(f=>({...f,color:c}))}
-                    style={{width:28,height:28,borderRadius:"50%",background:c,border:"3px solid "+(form.color===c?"#0B1F3A":"transparent")+"",cursor:isReadOnly?"default":"pointer",transition:".15s"}}/>
+                    style={{width:28,height:28,borderRadius:"50%",background:c,border:"3px solid "+(form.color===c?"#0B1F3A":"transparent"),cursor:isReadOnly?"default":"pointer",transition:".15s"}}/>
                 ))}
               </div>
             </div>
@@ -7159,7 +7172,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
               </div>
               {g.perms.map(p=>(
                 <div key={p.key} onClick={()=>!isReadOnly&&togglePerm(p.key)}
-                  style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:8,marginBottom:6,background:form[p.key]?g.bg:"#FAFBFC",border:"1.5px solid "+(form[p.key]?g.color+"33":"#E2E8F0")+"",cursor:isReadOnly?"default":"pointer",transition:"all .15s"}}>
+                  style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:8,marginBottom:6,background:form[p.key]?g.bg:"#FAFBFC",border:"1.5px solid "+(form[p.key]?g.color+"33":"#E2E8F0"),cursor:isReadOnly?"default":"pointer",transition:"all .15s"}}>
                   {/* Toggle */}
                   <div style={{width:40,height:22,borderRadius:11,background:form[p.key]?g.color:"#D1D9E6",position:"relative",flexShrink:0,transition:"background .2s"}}>
                     <div style={{position:"absolute",top:3,left:form[p.key]?20:3,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
@@ -7242,7 +7255,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
     const curIdx = LEASE_STAGES.indexOf(opp.stage);
     const toIdx  = LEASE_STAGES.indexOf(toStage);
     if(["Reserved","Lease Signed"].includes(opp.stage) && toIdx<curIdx && toStage!=="Lost"){
-      showToast("Cannot go back from "+(opp.stage)+"","error"); return;
+      showToast(`Cannot go back from ${opp.stage}`,"error"); return;
     }
     const newStatus = toStage==="Lease Signed"?"Won":toStage==="Lost"?"Lost":"Active";
     const extra = toStage==="Lease Signed"?{won_at:new Date().toISOString()}:toStage==="Lost"?{lost_at:new Date().toISOString()}:{};
@@ -7251,7 +7264,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
       onUpdated({...opp,stage:toStage,status:newStatus,...extra});
       if(toStage==="Reserved"&&opp.unit_id) await supabase.from("project_units").update({status:"Reserved"}).eq("id",opp.unit_id);
       if(toStage==="Lease Signed"&&opp.unit_id) await supabase.from("project_units").update({status:"Leased"}).eq("id",opp.unit_id);
-      showToast("Moved to "+(toStage)+"","success");
+      showToast(`Moved to ${toStage}`,"success");
     }
   };
 
@@ -7275,10 +7288,10 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
         <button onClick={onBack} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||"Lease Enquiry — "+(tenant.full_name)+""}</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||`Lease Enquiry — ${tenant.full_name}`}</span>
             <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>{opp.stage}</span>
           </div>
-          <div style={{fontSize:12,color:"#718096",marginTop:2}}>{tenant.full_name} · {tenant.phone||""} {unit?"· "+(unit.unit_ref)+" — "+(unit.sub_type)+"":""}</div>
+          <div style={{fontSize:12,color:"#718096",marginTop:2}}>{tenant.full_name} · {tenant.phone||""} {unit?"· "+unit.unit_ref+" — "+unit.sub_type:""}</div>
         </div>
         {canEdit&&<button onClick={()=>setShowLog(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Activity</button>}
       </div>
@@ -7286,10 +7299,10 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
       {/* Summary strip */}
       <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
         {[
-          ["🏠 Unit",      unit?""+(unit.unit_ref)+" — "+(unit.sub_type)+"":"Not linked",  "#F7F9FC","#4A5568"],
-          ["💰 Annual Rent",lp?"AED "+(Number(lp.annual_rent).toLocaleString())+"":"—",  "#0B1F3A","#C9A84C"],
+          ["🏠 Unit",      unit?""+unit.unit_ref+" — "+unit.sub_type:"Not linked",  "#F7F9FC","#4A5568"],
+          ["💰 Annual Rent",lp?"AED "+Number(lp.annual_rent).toLocaleString():"—",  "#0B1F3A","#C9A84C"],
           ["👤 Agent",     agent?.full_name||"Unassigned",                            "#F7F9FC","#4A5568"],
-          ["📋 Budget",    opp.budget?"AED "+(Number(opp.budget).toLocaleString())+"":"—","#F7F9FC","#4A5568"],
+          ["📋 Budget",    opp.budget?"AED "+Number(opp.budget).toLocaleString():"—","#F7F9FC","#4A5568"],
           isSigned&&["✅ Lease",     "Signed",                                         "#E6F4EE","#1A7F5A"],
         ].filter(Boolean).map(([l,v,bg,col])=>(
           <div key={l} style={{background:bg,borderRadius:8,padding:"8px 14px",flex:1,minWidth:120}}>
@@ -7304,7 +7317,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
         {["details","activities"].map(id=>(
           <button key={id} onClick={()=>setActiveTab(id)}
             style={{padding:"8px 16px",borderRadius:"8px 8px 0 0",border:"none",borderBottom:activeTab===id?"2.5px solid #5B3FAA":"2.5px solid transparent",background:"transparent",fontSize:13,fontWeight:activeTab===id?700:400,color:activeTab===id?"#5B3FAA":"#718096",cursor:"pointer",textTransform:"capitalize"}}>
-            {id}{id==="activities"&&activities.length>0?" ("+(activities.length)+")":""}
+            {id}{id==="activities"&&activities.length>0?" ("+activities.length+")":""}
           </button>
         ))}
       </div>
@@ -7411,7 +7424,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
                 {["Call","Email","Meeting","Visit","WhatsApp","Note"].map(t=>(
                   <button key={t} onClick={()=>setLogForm(f=>({...f,type:t}))}
-                    style={{padding:"5px 12px",borderRadius:20,border:"1.5px solid "+(logForm.type===t?"#5B3FAA":"#E2E8F0")+"",background:logForm.type===t?"#5B3FAA":"#fff",color:logForm.type===t?"#fff":"#4A5568",fontSize:11,cursor:"pointer",fontWeight:logForm.type===t?600:400}}>
+                    style={{padding:"5px 12px",borderRadius:20,border:"1.5px solid "+(logForm.type===t?"#5B3FAA":"#E2E8F0"),background:logForm.type===t?"#5B3FAA":"#fff",color:logForm.type===t?"#fff":"#4A5568",fontSize:11,cursor:"pointer",fontWeight:logForm.type===t?600:400}}>
                     {t}
                   </button>
                 ))}
@@ -7511,7 +7524,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
       const payload={
         tenant_id:selTenantId,
         company_id:currentUser.company_id||null,
-        title:oppForm.title||(unit?""+(unit.unit_ref)+" — "+(selTenant?.full_name)+"":"Enquiry — "+(selTenant?.full_name)+""),
+        title:oppForm.title||(unit?""+unit.unit_ref+" — "+(selTenant?.full_name):"Enquiry — "+(selTenant?.full_name)),
         unit_id:oppForm.unit_id||null,
         budget:oppForm.budget?Number(oppForm.budget):null,
         assigned_to:oppForm.assigned_to||currentUser.id,
@@ -7565,7 +7578,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
           const m=s==="All"?{c:"#5B3FAA",bg:"#EEE8F9"}:LEASE_STAGE_META[s]||{c:"#718096",bg:"#F0F2F5"};
           return (
             <button key={s} onClick={()=>setFStage(s)}
-              style={{flexShrink:0,padding:"5px 12px",borderRadius:8,border:"1.5px solid "+(fStage===s?m.c:"#E2E8F0")+"",background:fStage===s?m.bg:"#fff",color:m.c,fontSize:11,fontWeight:600,cursor:"pointer"}}>
+              style={{flexShrink:0,padding:"5px 12px",borderRadius:8,border:"1.5px solid "+(fStage===s?m.c:"#E2E8F0"),background:fStage===s?m.bg:"#fff",color:m.c,fontSize:11,fontWeight:600,cursor:"pointer"}}>
               {s} <span style={{fontWeight:700}}>{cnt}</span>
             </button>
           );
@@ -7646,13 +7659,13 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
                     const headers = "full_name,phone,email,nationality,id_type,id_number,id_expiry,tenant_type,notes";
                     const rows = tenants.map(t=>[
                       t.full_name,t.phone||"",t.email||"",t.nationality||"",t.id_type||"",t.id_number||"",t.id_expiry||"",t.tenant_type||"",t.notes||""
-                    ].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(","));
+                    ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","));
                     const csv=[headers,...rows].join("\n");
                     const a=document.createElement("a");
                     a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
-                    a.download="tenants_export_"+(new Date().toISOString().split("T")[0])+".csv";
+                    a.download=`tenants_export_${new Date().toISOString().split("T")[0]}.csv`;
                     a.click();
-                    showToast("Exported "+(tenants.length)+" tenants","success");
+                    showToast(`Exported ${tenants.length} tenants`,"success");
                   }} style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>
                     ⬇ Export Current
                   </button>
@@ -7716,7 +7729,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
                       const{data:newT,error}=await supabase.from("tenants").insert(payload).select();
                       if(error){showToast(error.message,"error");return;}
                       setTenants(p=>[...p,...(newT||[])].sort((a,b)=>a.full_name.localeCompare(b.full_name)));
-                      showToast("✓ "+(newT?.length||0)+" tenants uploaded","success");
+                      showToast(`✓ ${newT?.length||0} tenants uploaded`,"success");
                       setShowTenantUpload(false);
                     }}/>
                   </label>
@@ -7768,7 +7781,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
         <Av name={selTenant.full_name} size={40} bg="#5B3FAA"/>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A"}}>{selTenant.full_name}</div>
-          <div style={{fontSize:12,color:"#718096"}}>{selTenant.phone} {selTenant.email?"· "+(selTenant.email)+"":""} {selTenant.nationality?"· "+(selTenant.nationality)+"":""}</div>
+          <div style={{fontSize:12,color:"#718096"}}>{selTenant.phone} {selTenant.email?"· "+selTenant.email:""} {selTenant.nationality?"· "+selTenant.nationality:""}</div>
         </div>
         <div style={{display:"flex",gap:6}}>
           {canEdit&&<button onClick={()=>{setTForm({...tBlank,...selTenant});setEditTenant(selTenant);setShowAddTenant(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
@@ -7805,7 +7818,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
           const agent=users.find(u=>u.id===opp.assigned_to);
           return (
             <div key={opp.id} onClick={()=>{setSelOpp(opp);setView("opportunity");}}
-              style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",borderLeft:"4px solid "+(sm3.c)+"",transition:"all .12s"}}
+              style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",borderLeft:"4px solid "+sm3.c,transition:"all .12s"}}
               onMouseOver={e=>{e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.08)";e.currentTarget.style.transform="translateY(-1px)";}}
               onMouseOut={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
@@ -7815,7 +7828,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
                     <span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:sm3.bg,color:sm3.c}}>{opp.stage}</span>
                     {opp.status==="Won"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ Signed</span>}
                   </div>
-                  {unit&&<div style={{fontSize:12,color:"#4A5568",marginBottom:2}}>🏠 {unit.unit_ref} — {unit.sub_type}{proj?" · "+(proj.name)+"":""}</div>}
+                  {unit&&<div style={{fontSize:12,color:"#4A5568",marginBottom:2}}>🏠 {unit.unit_ref} — {unit.sub_type}{proj?" · "+proj.name:""}</div>}
                   {lp&&<div style={{fontSize:13,fontWeight:700,color:"#5B3FAA"}}>AED {Number(lp.annual_rent).toLocaleString()} / yr</div>}
                 </div>
                 <div style={{textAlign:"right",flexShrink:0}}>
@@ -7845,13 +7858,13 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Unit *</label>
                   <select value={oppForm.unit_id} onChange={e=>{
                     const u=units.find(x=>x.id===e.target.value);
-                    setOppForm(f=>({...f,unit_id:e.target.value,title:u&&!f.title?""+(u.unit_ref)+" — "+(selTenant?.full_name||"")+"":f.title}));
+                    setOppForm(f=>({...f,unit_id:e.target.value,title:u&&!f.title?""+u.unit_ref+" — "+(selTenant?.full_name||""):f.title}));
                   }}>
                     <option value="">— Select unit —</option>
                     {units.filter(u=>u.status==="Available"&&(u.purpose==="Lease"||u.purpose==="Both")).map(u=>{
                       const lp2=leasePricing.find(l=>l.unit_id===u.id);
                       const pr=projects.find(p=>p.id===u.project_id);
-                      return <option key={u.id} value={u.id}>{u.unit_ref} · {u.sub_type} · {pr?.name||"—"}{lp2?" · AED "+(Math.round(lp2.annual_rent/1000))+"K/yr":""}</option>;
+                      return <option key={u.id} value={u.id}>{u.unit_ref} · {u.sub_type} · {pr?.name||"—"}{lp2?" · AED "+Math.round(lp2.annual_rent/1000)+"K/yr":""}</option>;
                     })}
                   </select>
                 </div>
@@ -7900,600 +7913,6 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
 // ══════════════════════════════════════════════════════════════════
 // MAIN APP
 // ══════════════════════════════════════════════════════════════════
-
-export default function App(){
-  const[checking,  setChecking]  = useState(true);
-  const[currentUser,setCurrentUser]=useState(null);
-  const[leads,     setLeads]     = useState([]);
-  const[properties,setProperties]= useState([]);
-  const[activities,setActivities]= useState([]);
-  const[meetings,  setMeetings]  = useState([]);
-  const[followups, setFollowups] = useState([]);
-  const[discounts, setDiscounts] = useState([]);
-  const[users,     setUsers]     = useState([]);
-  const[aiProjects,setAiProjects]= useState([]);
-  const[aiUnits,   setAiUnits]   = useState([]);
-  const[aiSalePr,  setAiSalePr]  = useState([]);
-  const[aiLeasePr, setAiLeasePr] = useState([]);
-  const[tab,       setTab]       = useState(()=>{
-    const lastApp = localStorage.getItem("propccrm_last_app")||"sales";
-    return lastApp==="leasing"?"l_dashboard":"dashboard";
-  });
-
-  const[activeApp, setActiveApp] = useState(()=>localStorage.getItem("propccrm_last_app")||"sales");
-  const[appConfig, setAppConfig] = useState(()=>getAppConfig());
-  const[dataLoading,setDataLoading]=useState(false);
-  const[companies, setCompanies] = useState([]);
-  const[activeCompanyId,setActiveCompanyId]=useState(()=>localStorage.getItem("propccrm_company_id")||null);
-  // Reload inventory when company changes
-  const switchCompany = async (id) => {
-    // Update profile company_id in Supabase so RLS works correctly
-    await supabase.from("profiles").update({company_id:id}).eq("id",currentUser.id);
-    setActiveCompanyId(id);
-    localStorage.setItem("propccrm_company_id",id);
-    // Update companies list display then reload
-    window.location.reload();
-  };
-  const[leasingData,setLeasingData]=useState({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
-  const[followupAlerts,setFollowupAlerts]=useState({staleLeads:[],overduePayments:[],expiringLeases:[]});
-  const[opps,setOpps]=useState([]);
-  const[toast,setToast]=useState(null);
-  const showToast=(msg,type="success")=>setToast({msg,type});
-
-  const loadAIData=useCallback(async()=>{
-    if(aiProjects.length>0)return;
-    try{
-      const[p,u,sp,lp]=await Promise.all([
-        safe(supabase.from("projects").select("*")),
-        safe(supabase.from("project_units").select("*")),
-        safe(supabase.from("unit_sale_pricing").select("*")),
-        safe(supabase.from("unit_lease_pricing").select("*")),
-      ]);
-      setAiProjects(p.data||[]);setAiUnits(u.data||[]);setAiSalePr(sp.data||[]);setAiLeasePr(lp.data||[]);
-    }catch(e){console.log(e);}
-  },[aiProjects.length]);
-
-  useEffect(()=>{
-    const restore=async()=>{
-      try{
-        const{data:{session}}=await supabase.auth.getSession();
-        if(session?.user){
-          const{data:profile}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
-          if(profile&&profile.is_active)setCurrentUser({...session.user,...profile});
-          else await supabase.auth.signOut();
-        }
-      }catch(e){console.error("Session restore error:",e);}
-      finally{setChecking(false);}
-    };
-    restore();
-    const{data:{subscription}}=supabase.auth.onAuthStateChange(async(event,session)=>{
-      if(event==="SIGNED_OUT"){setCurrentUser(null);setLeads([]);setProperties([]);setActivities([]);setMeetings([]);setFollowups([]);setOpps([]);}
-      if(event==="TOKEN_REFRESHED"&&session?.user){const{data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();if(p)setCurrentUser(u=>({...u,...p}));}
-    });
-    return()=>subscription.unsubscribe();
-  },[]);
-
-  useEffect(()=>{
-    if(!currentUser)return;
-    const safe=async(q)=>{ try{const r=await q;return{data:(r.data||[])};}catch(e){console.warn("Query error:",e);return{data:[]};} };
-    const cid = activeCompanyId || currentUser.company_id || null;
-    const load=async()=>{
-      setDataLoading(true);
-      try{
-        const[l,pr,a,u,d]=await Promise.all([
-          safe(cid
-            ? supabase.from("leads").select("*").eq("company_id",cid).order("created_at",{ascending:false})
-            : supabase.from("leads").select("*").order("created_at",{ascending:false})),
-          safe(supabase.from("properties").select("*").order("created_at",{ascending:false})),
-          safe(supabase.from("activities").select("*").order("created_at",{ascending:false})),
-          safe(cid ? supabase.from("profiles").select("*").eq("company_id",cid).order("full_name") : supabase.from("profiles").select("*").order("full_name")),
-          safe(cid
-            ? supabase.from("discount_requests").select("*").eq("company_id",cid).order("created_at",{ascending:false})
-            : supabase.from("discount_requests").select("*").order("created_at",{ascending:false})),
-        ]);
-        // SECURITY: filter all data by active company client-side
-        const filterByCo = (arr) => cid ? arr.filter(x=>x.company_id===cid) : arr;
-        setLeads(filterByCo(l.data));
-        setProperties(pr.data);
-        setActivities(filterByCo(a.data));
-        setUsers(u.data);
-        setDiscounts(filterByCo(d.data));
-        // Load opportunities globally
-        const oppRes = await safe(supabase.from("opportunities").select("*").order("created_at",{ascending:false}));
-        setOpps(filterByCo(oppRes.data||[]));
-        // Load inventory + leasing data eagerly
-        const[proj,units2,sp2,lp2,lt,ll,lp_,lm]=await Promise.all([
-          safe(cid ? supabase.from("projects").select("*").eq("company_id",cid).order("name") : supabase.from("projects").select("*").order("name")),
-          safe(cid ? supabase.from("project_units").select("*").eq("company_id",cid) : supabase.from("project_units").select("*")),
-          safe(cid ? supabase.from("unit_sale_pricing").select("*").eq("company_id",cid) : supabase.from("unit_sale_pricing").select("*")),
-          safe(cid ? supabase.from("unit_lease_pricing").select("*").eq("company_id",cid) : supabase.from("unit_lease_pricing").select("*")),
-          safe(cid ? supabase.from("tenants").select("*").eq("company_id",cid).order("full_name") : supabase.from("tenants").select("*").order("full_name")),
-          safe(cid ? supabase.from("leases").select("*").eq("company_id",cid).order("end_date") : supabase.from("leases").select("*").order("end_date")),
-          safe(cid ? supabase.from("rent_payments").select("*").order("due_date") : supabase.from("rent_payments").select("*").order("due_date")),
-          safe(cid ? supabase.from("maintenance").select("*").eq("company_id",cid).order("created_at",{ascending:false}) : supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
-        ]);
-        setAiProjects(filterByCo(proj.data));
-        setAiUnits(filterByCo(units2.data));
-        setAiSalePr(filterByCo(sp2.data));
-        setAiLeasePr(filterByCo(lp2.data));
-        const coTenants = filterByCo(lt.data);
-        const coTenantIds = coTenants.map(t=>t.id);
-        const coLeases = (ll.data||[]).filter(l=>
-          (l.company_id&&l.company_id===cid) ||
-          coTenantIds.includes(l.tenant_id)
-        );
-        const coLeaseIds = coLeases.map(l=>l.id);
-        setLeasingData({
-          tenants: coTenants,
-          leases:  coLeases,
-          payments:(lp_.data||[]).filter(p=>coLeaseIds.includes(p.lease_id)||coTenantIds.includes(p.tenant_id)),
-          maintenance:(lm.data||[]).filter(m=>!m.company_id||m.company_id===cid),
-          loaded:true
-        });
-        const today2=new Date();
-        const stale=(l.data||[]).filter(lead=>!["Closed Won","Closed Lost"].includes(lead.stage)&&lead.stage_updated_at&&Math.floor((today2-new Date(lead.stage_updated_at))/(864e5))>=7);
-        const overdueRent=(lp_.data||[]).filter(p=>p.status==="Pending"&&p.due_date&&new Date(p.due_date)<today2);
-        const expiringLeases30=(ll.data||[]).filter(l2=>l2.status==="Active"&&l2.end_date&&Math.ceil((new Date(l2.end_date)-today2)/864e5)<=30&&Math.ceil((new Date(l2.end_date)-today2)/864e5)>0);
-        setFollowupAlerts({staleLeads:stale,overduePayments:overdueRent,expiringLeases:expiringLeases30});
-      }catch(e){console.error("Load error:",e);}
-      setDataLoading(false);
-    };
-    load();
-    const ch=supabase.channel("v3-changes-"+cid)
-      .on("postgres_changes",{event:"*",schema:"public",table:"leads"},p=>{if(p.eventType==="INSERT")setLeads(x=>[p.new,...x]);if(p.eventType==="UPDATE")setLeads(x=>x.map(l=>l.id===p.new.id?p.new:l));if(p.eventType==="DELETE")setLeads(x=>x.filter(l=>l.id!==p.old.id));})
-      .on("postgres_changes",{event:"INSERT",schema:"public",table:"activities"},p=>setActivities(x=>[p.new,...x]))
-      .on("postgres_changes",{event:"*",schema:"public",table:"opportunities"},p=>{if(p.eventType==="INSERT")setOpps(x=>[p.new,...x]);if(p.eventType==="UPDATE")setOpps(x=>x.map(o=>o.id===p.new.id?p.new:o));if(p.eventType==="DELETE")setOpps(x=>x.filter(o=>o.id!==p.old.id));})
-      .subscribe();
-    return()=>supabase.removeChannel(ch);
-  },[currentUser, activeCompanyId]);
-
-  const handleSwitchCompany = (id, coObj) => {
-    const co = coObj || companies.find(c=>c.id===id);
-    if(co) localStorage.setItem("propccrm_company_cache",JSON.stringify({id:co.id,name:co.name,logo_url:co.logo_url||"",business_type:co.business_type,ai_assistant_name:co.ai_assistant_name||""}));
-    setActiveCompanyId(id);
-    localStorage.setItem("propccrm_company_id",id);
-    setTab("dashboard");
-  };
-  const handleSwitchCompanyLeasing = (id, coObj) => {
-    const co = coObj || companies.find(c=>c.id===id);
-    if(co) localStorage.setItem("propccrm_company_cache",JSON.stringify({id:co.id,name:co.name,logo_url:co.logo_url||"",business_type:co.business_type,ai_assistant_name:co.ai_assistant_name||""}));
-    setActiveCompanyId(id);
-    localStorage.setItem("propccrm_company_id",id);
-    setTab("l_dashboard");
-  };
-  const handleLogin=user=>{
-    setCurrentUser(user);
-    localStorage.setItem("propccrm_role", user.role||"viewer");
-    const app = DEFAULT_APP[user.role]||"sales";
-    setActiveApp(app);
-    setActiveApp(app); localStorage.setItem("propccrm_last_app", app);
-    localStorage.setItem("propccrm_last_app", app);
-    // Load companies for all admin/manager roles to show in header
-    if(["super_admin","admin","sales_manager","leasing_manager"].includes(user.role)){
-      supabase.from("companies").select("*").order("name").then(({data})=>{
-        if(data){
-          // Cache the active company for instant display on next load
-          const cid = localStorage.getItem("propccrm_company_id") || user.company_id;
-          const activeCo = data.find(c=>c.id===cid) || data[0];
-          if(activeCo) localStorage.setItem("propccrm_company_cache", JSON.stringify({id:activeCo.id,name:activeCo.name,logo_url:activeCo.logo_url||"",business_type:activeCo.business_type||"",ai_assistant_name:activeCo.ai_assistant_name||""}));
-          setCompanies(data);
-          const saved=localStorage.getItem("propccrm_company_id");
-          const co=saved?data.find(c=>c.id===saved):data[0];
-          if(co){setActiveCompanyId(co.id);localStorage.setItem("propccrm_company_id",co.id);}
-        }
-      });
-    }
-  };
-
-  const handleLogout=async()=>{await supabase.auth.signOut();setCurrentUser(null);};
-
-
-  // Global Ctrl+K handler
-  useEffect(()=>{
-    const handler = e => {
-      if((e.ctrlKey||e.metaKey)&&e.key==="k"){ e.preventDefault(); setAiOpen(o=>!o); }
-    };
-    window.addEventListener("keydown", handler);
-    return ()=>window.removeEventListener("keydown", handler);
-  },[]);
-  const currentApp = activeApp;
-  const userRole   = currentUser?.role||"viewer";
-  const canSwitch  = ["super_admin","admin","sales_manager","leasing_manager"].includes(userRole);
-
-  if(checking) return(
-    <div style={{height:"100dvh",background:"#0B1F3A",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}>
-      <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#fff"}}><span style={{color:"#C9A84C"}}>◆</span> PropCRM</div>
-      <div style={{width:32,height:32,border:"2px solid rgba(255,255,255,.15)",borderTopColor:"#C9A84C",borderRadius:"50%",animation:"spin 1s linear infinite"}}/>
-    </div>
-  );
-
-  if(!currentUser) return <LoginScreen onLogin={handleLogin}/>;
-
-  const cfg=appConfig||{mode:"both"};
-  // Always use currentApp to pick allowed tabs — ignore cfg.mode when app is explicitly selected
-  const allowedTabs = currentApp==="leasing" ? MODE_TABS.leasing : (MODE_TABS[cfg.mode]||MODE_TABS.both);
-  const visibleTabs=TABS.filter(t=>t.app===currentApp&&t.roles.includes(userRole)&&allowedTabs.includes(t.id));
-
-  return (
-    <>
-    <GlobalStyle/>
-    <div style={{display:"flex",flexDirection:"column",height:"100dvh",background:"#F0F2F5",overflow:"hidden"}}>
-
-      {/* Top bar */}
-      <div style={{background:"#0B1F3A",flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:52,gap:10}}>
-
-          {/* LEFT: Company Logo + Name — hero position */}
-          {(()=>{
-            const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
-            const cachedCo = (()=>{ try{ return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null"); }catch{return null;} })();
-            const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || cachedCo || null;
-            const isSA = currentUser?.role==="super_admin";
-            const bizLabel = co?.business_type==="both"?"Sales & Leasing":co?.business_type==="sales"?"Sales Only":co?.business_type==="leasing"?"Leasing Only":co?.business_type||"";
-
-            return (
-              <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,minWidth:0}}>
-                {/* Logo */}
-                {co?.logo_url
-                  ? <img src={co.logo_url} alt={co?.name} style={{width:36,height:36,borderRadius:8,objectFit:"cover",border:"2px solid rgba(201,168,76,.5)",flexShrink:0}}/>
-                  : <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16,color:"#0B1F3A",flexShrink:0,border:"2px solid rgba(201,168,76,.4)"}}>
-                      {co?.name?.charAt(0)||"◆"}
-                    </div>
-                }
-                {/* Company name + type */}
-                <div style={{display:"flex",flexDirection:"column",minWidth:0}}>
-                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:180,lineHeight:1.2}}>
-                    {co?.name||"PropCRM"}
-                  </span>
-                  {bizLabel&&<span style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:".6px",lineHeight:1.3}}>{bizLabel}</span>}
-                </div>
-                {/* Super admin company switcher */}
-                {isSA&&companies.length>1&&(
-                  <select value={storedId||""} onChange={e=>{
-                    setActiveCompanyId(e.target.value);
-                    localStorage.setItem("propccrm_company_id",e.target.value);
-                    window.location.reload();
-                  }} style={{
-                    background:"rgba(255,255,255,.1)",border:"1px solid rgba(201,168,76,.35)",
-                    borderRadius:6,padding:"3px 6px",color:"#C9A84C",fontSize:11,fontWeight:600,
-                    cursor:"pointer",maxWidth:130
-                  }}>
-                    {companies.map(c=>(<option key={c.id} value={c.id} style={{background:"#0B1F3A",color:"#fff"}}>{c.name}</option>))}
-                  </select>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* CENTRE: CRM Switcher */}
-          {canSwitch&&(
-            <div style={{display:"flex",background:"rgba(255,255,255,.07)",borderRadius:10,padding:3,gap:3,flexShrink:0}}>
-              {[
-                {id:"sales",   label:"Sales",   icon:"🏷", accent:"#4A9EE8"},
-                {id:"leasing", label:"Leasing", icon:"🔑", accent:"#9B7FD4"},
-              ].map(a=>{
-                const isActive=currentApp===a.id;
-                return (
-                  <button key={a.id} onClick={()=>{
-                    setActiveApp(a.id);
-                    localStorage.setItem("propccrm_last_app",a.id);
-                    setTimeout(()=>setTab(a.id==="sales"?"dashboard":"l_dashboard"),50);
-                  }} style={{
-                    padding:"5px 12px",borderRadius:8,border:"none",
-                    background:isActive?"#fff":"transparent",
-                    color:isActive?a.accent:"rgba(255,255,255,.5)",
-                    fontSize:12,fontWeight:isActive?700:400,cursor:"pointer",
-                    display:"flex",alignItems:"center",gap:4,
-                    transition:"all .2s",whiteSpace:"nowrap",
-                    boxShadow:isActive?"0 1px 6px rgba(0,0,0,.15)":"none",
-                  }}>
-                    {a.icon} {a.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* RIGHT: User info + PropCRM watermark */}
-          <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-            {/* User */}
-            <div style={{textAlign:"right"}}>
-              <div style={{fontSize:12,color:"#fff",fontWeight:500,lineHeight:1.2}}>{currentUser.full_name}</div>
-              <RoleBadge role={currentUser.role}/>
-            </div>
-            <Av name={currentUser.full_name||currentUser.email} size={32} bg="#C9A84C" tc="#0B1F3A"/>
-            <button onClick={handleLogout} title="Sign out" style={{fontSize:11,color:"rgba(255,255,255,.35)",background:"none",border:"1px solid rgba(255,255,255,.1)",borderRadius:6,padding:"4px 8px",cursor:"pointer",whiteSpace:"nowrap",transition:"color .15s"}}
-              onMouseOver={e=>e.currentTarget.style.color="rgba(255,255,255,.8)"}
-              onMouseOut={e=>e.currentTarget.style.color="rgba(255,255,255,.35)"}>↩</button>
-            {/* PropCRM subtle watermark */}
-            <div style={{borderLeft:"1px solid rgba(255,255,255,.1)",paddingLeft:10,display:"flex",alignItems:"center",gap:3}}>
-              <span style={{color:"#C9A84C",fontSize:10}}>◆</span>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:10,color:"rgba(255,255,255,.3)",fontWeight:600,letterSpacing:".5px"}}>PropCRM</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Tab bar */}
-        <div className="tab-bar-wrap" style={{position:"relative",borderTop:"1px solid rgba(255,255,255,.07)"}}>
-        <div className="tab-bar" style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:38,gap:2,overflowX:"auto"}}>
-          {visibleTabs.map(t=>(
-            <button key={t.id} onClick={()=>{setTab(t.id);if(t.id==="ai"||t.id==="l_ai")loadAIData();}}
-              style={{
-                padding:"5px 12px",borderRadius:"6px 6px 0 0",border:"none",
-                background:tab===t.id?(currentApp==="sales"?"rgba(74,158,232,.18)":"rgba(155,127,212,.18)"):"transparent",
-                color:tab===t.id?"#fff":"rgba(255,255,255,.45)",
-                fontSize:12,fontWeight:tab===t.id?600:400,cursor:"pointer",
-                whiteSpace:"nowrap",transition:"all .15s",flexShrink:0,
-                borderBottom:tab===t.id?"2px solid "+(currentApp==="sales"?"#4A9EE8":"#9B7FD4"):"2px solid transparent",
-              }}>
-              {t.icon} {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Page title */}
-      <div style={{padding:"8px 1rem 6px",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
-        <div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A"}}>{visibleTabs.find(t=>t.id===tab)?.label||""}</div>
-          <div style={{fontSize:11,color:"#A0AEC0"}}>{SUBTITLES[tab]||""}</div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"0 1rem 1rem",WebkitOverflowScrolling:"touch",minHeight:0}}>
-        {(dataLoading&&leads.length===0&&aiUnits.length===0)?(<Spinner msg="Loading your data…"/>):(<>
-
-          {/* ── Sales CRM ─────────────────────────────────────── */}
-          {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={setTab}/>}
-          {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
-          {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
-          {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
-          {tab==="pipeline"    &&<Pipeline leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} users={users} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
-          {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
-          {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
-          {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={handleSwitchCompany} activeCompanyId={activeCompanyId}/>}
-          {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
-          {tab==="permissions" &&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
-          {tab==="group_view"  &&<GroupConsolidatedView/>}
-
-          {/* ── Leasing CRM ───────────────────────────────────── */}
-          {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={setTab} followupAlerts={followupAlerts} key="l_dash"/>}
-          {tab==="l_leads"     &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
-          {tab==="l_pipeline"  &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users} defaultView="pipeline"/>}
-          {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
-          {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
-          {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData}/>}
-          {tab==="l_ai"        &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
-          {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leasingData={leasingData} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
-          {tab==="l_companies" &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={handleSwitchCompanyLeasing} activeCompanyId={activeCompanyId}/>}
-          {tab==="l_users"     &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
-          {tab==="l_permissions"&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
-
-          {tab==="l_group_view" &&<GroupConsolidatedView/>}
-        </>)}
-      </div>
-    </div>
-    {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
-
-
-    </>
-  );
-}body:"Dear "+(lead.name)+",\n\nPlease find your personalised property proposal.\n\nProperty: "+(unit.unit_ref)+" — "+(unit.sub_type)+(proj?" ("+proj.name+")":"")+"\n"+(sp?"Price: AED "+Number(sp.asking_price).toLocaleString()+"\n":"")+"\nKindly review and let us know your preferred next step.\n\nBest regards,\n"+(currentUser.full_name)});port { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-/* ═══════════════════════════════════════════════════════════════
-   PROPCCRM v3.0
-   · Property Master DB: Project → Category → Building → Unit
-   · Lead stage gates with required fields
-   · Stage reversal with reason
-   · WhatsApp / Email / Meeting / Follow-up comms
-   · Role-based permissions throughout
-═══════════════════════════════════════════════════════════════ */
-const SUPABASE_URL  = "https://ysceukgpimzfqixtnbnp.supabase.co";
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzY2V1a2dwaW16ZnFpeHRuYm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNDI5OTQsImV4cCI6MjA4OTkxODk5NH0.WZSyGeOEbiRo1wt13syheTOyiAToMWXInxIaBgaqq8k";
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
-
-// ─── STYLES ───────────────────────────────────────────────────
-const GLOBAL_CSS = [
-  "@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');",
-  "*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}",
-  "body{font-family:'DM Sans',sans-serif;background:#F0F2F5;color:#1a2535}",
-  "::-webkit-scrollbar{width:5px;height:5px}",
-  "::-webkit-scrollbar-thumb{background:#C9A84C55;border-radius:10px}",
-  "input,select,textarea{font-family:'DM Sans',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:8px 12px;width:100%;font-size:13px;color:#1a2535;background:#fff;transition:border-color 0.15s}",
-  "input:focus,select:focus,textarea:focus{border-color:#C9A84C}",
-  "input.error,select.error{border-color:#B83232!important;background:#FFF8F8}",
-  "textarea{resize:vertical}",
-  "button{cursor:pointer;font-family:'DM Sans',sans-serif}",
-  ".fade-in{animation:fadeIn 0.25s ease}",
-  "@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
-  ".slide-in{animation:slideIn 0.2s ease}",
-  "@keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}",
-  ".ch{transition:box-shadow 0.18s,transform 0.18s}",
-  ".ch:hover{box-shadow:0 4px 20px #C9A84C22;transform:translateY(-1px)}",
-  ".dcard{transition:box-shadow 0.15s;cursor:grab}",
-  ".dcard:hover{box-shadow:0 3px 14px #0B1F3A22}",
-  "@keyframes spin{to{transform:rotate(360deg)}}",
-  "@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}",
-  "@keyframes aipulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}",
-  "@keyframes orbpulse{0%,100%{box-shadow:0 4px 20px rgba(201,168,76,.4)}50%{box-shadow:0 4px 32px rgba(201,168,76,.8),0 0 0 8px rgba(201,168,76,.15)}}",
-  "@keyframes slideInRight{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}",
-  "@keyframes fadeIn2{from{opacity:0}to{opacity:1}}",
-  "html{-webkit-text-size-adjust:100%;touch-action:manipulation}",
-  "body{overflow-x:hidden}",
-  "@media(max-width:768px){.tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important}.tab-bar::-webkit-scrollbar{display:none}.tab-bar-wrap{position:relative}.tab-bar-wrap::before,.tab-bar-wrap::after{content:'';position:absolute;top:0;bottom:0;width:32px;pointer-events:none;z-index:10}.tab-bar-wrap::before{left:0;background:linear-gradient(to right,#0B1F3A,transparent)}.tab-bar-wrap::after{right:0;background:linear-gradient(to left,#0B1F3A,transparent)}.filter-sidebar{display:none!important}.filter-sidebar.open{display:flex!important}.table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}.mob-stack{grid-template-columns:1fr!important}.hide-mobile{display:none!important}button{min-height:38px}}",
-  "@media(max-width:480px){.stat-grid{grid-template-columns:1fr 1fr!important}}"
-].join("\n");
-const GlobalStyle = () => (
-  <style dangerouslySetInnerHTML={{__html: GLOBAL_CSS}}/>
-);
-// ─── CONSTANTS ────────────────────────────────────────────────
-const STAGES      = ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
-const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
-const UNIT_TYPES  = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
-const SOURCES     = ["Referral","Website","Portal","Cold Call","Event","Social Media","WhatsApp","Walk-in"];
-const ACT_TYPES   = ["Call","Email","Meeting","Visit","WhatsApp","Note"];
-const MANAGER_DISCOUNT_LIMIT = 5;
-const CAN_DELETE_LEADS = ["admin","manager"];
-const STAGE_RULES = {
-  "Contacted":     ["phone","email"],
-  "Site Visit":    ["meeting_scheduled"],
-  "Proposal Sent": ["unit_id","budget_confirmed"],
-  "Negotiation":   ["proposal_notes"],
-  "Closed Won":    ["final_price","payment_plan_agreed"],
-};
-const DISC_TYPES = [
-  { key:"sale_price",   label:"Sale Price Reduction", icon:"🏷" },
-  { key:"rent",         label:"Rent Reduction",        icon:"🔑" },
-  { key:"payment_plan", label:"Payment Plan Change",   icon:"📅" },
-  { key:"agency_fee",   label:"Agency Fee Waiver",     icon:"🤝" },
-];
-const ROLES = ["super_admin","admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"];
-
-// ─── APP CONFIG ────────────────────────────────────────────────────
-// Stored in localStorage. Set once by admin. Controls which modules are visible.
-const getAppConfig = () => {
-  try { return JSON.parse(localStorage.getItem("propccrm_config")||"null"); } catch { return null; }
-};
-const saveAppConfig = (cfg) => {
-  localStorage.setItem("propccrm_config", JSON.stringify(cfg));
-};
-// Which tabs each mode shows (enforced on top of role-based visibility)
-const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","reports","pay_plans","companies","users","permissions","permsets","group_view"],
-  leasing: ["l_dashboard","l_leads","l_pipeline","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
-  both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","reports","pay_plans","l_reports","companies","users","permissions"],
-};
-// Which roles each mode makes available
-const MODE_ROLES = {
-  sales:   ["admin","sales_manager","sales_agent","viewer"],
-  leasing: ["admin","leasing_manager","leasing_agent","viewer"],
-  both:    ["admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"],
-};
-const VIEWS       = ["Sea View","Pool View","Garden View","City View","Golf View","Park View","Community View","Burj View","Creek View","No View"];
-const MEET_TYPES  = ["Call","Meeting","Site Visit","Video Call","Presentation"];
-const FOLLOW_TYPES= ["Call","WhatsApp","Email","Meeting"];
-
-
-// ─── MASTER DATA LISTS ─────────────────────────────────────────
-const MASTER = {
-  unit_type:    ["Residential","Commercial"],
-  sub_type_res: ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed+","Penthouse","Duplex","Triplex","Villa","Townhouse","Loft"],
-  sub_type_com: ["Office","Retail / Shop","Restaurant","Warehouse","Labour Camp","Hotel Apartment","Showroom","Medical Centre"],
-  sub_type_all: ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed+","Penthouse","Duplex","Triplex","Villa","Townhouse","Loft","Office","Retail / Shop","Restaurant","Warehouse","Labour Camp","Hotel Apartment","Showroom"],
-  purpose:      ["Sale","Lease","Both"],
-  status:       ["Available","Reserved","Under Offer","Sold","Leased","Blocked","Cancelled"],
-  view:         ["Sea View","Pool View","Garden View","City View","Golf View","Park View","Community View","Burj View","Creek View","Lake View","Boulevard View","No View"],
-  furnishing:   ["Unfurnished","Semi-Furnished","Fully Furnished","Serviced"],
-  condition:    ["Off-plan","Shell & Core","Ready","Renovated","Brand New"],
-  facing:       ["North","South","East","West","North-East","North-West","South-East","South-West"],
-  nationality:  ["Emirati","Saudi","Egyptian","Indian","Pakistani","British","Russian","Chinese","American","European","Other"],
-  id_type:      ["Emirates ID","Passport","GCC ID","Residence Visa"],
-  tenant_type:  ["Individual","Corporate"],
-  cheques:      ["1","2","4","6","12"],
-  payment_method: ["Cash","Cheque","Bank Transfer","Card","Crypto"],
-  lead_source:  ["Referral","Website","Property Finder","Bayut","Dubizzle","Cold Call","Event","Social Media","WhatsApp","Walk-in","Agency","Developer","Other"],
-  company_type: ["Brokerage","Developer","Real Estate Agent","Property Management","Off-Plan Specialist","Leasing Company","RERA Registered Agency","Investment Company","Other"],
-};
-
-const WA_TEMPLATES= [
-  { id:"intro",    label:"Introduction",      text:"Hello {name}, I'm {agent} from PropCRM. I wanted to reach out regarding your interest in {type} properties in Dubai. Could we schedule a brief call to discuss your requirements?" },
-  { id:"followup", label:"Follow-up",         text:"Hello {name}, I hope you're well. I wanted to follow up on our previous conversation about the properties we discussed. Do you have any questions or would you like to arrange a viewing?" },
-  { id:"sitevisit",label:"Site Visit Invite", text:"Hello {name}, I'd love to invite you for a site visit to {project}. It's a great opportunity to see the development in person. Would {date} work for you?" },
-  { id:"proposal", label:"Proposal Ready",    text:"Hello {name}, your personalised property proposal is ready. I'll be sending the details shortly. Please let me know if you'd like to discuss anything." },
-  { id:"noresponse",label:"No Response",      text:"Hello {name}, I've tried reaching you a couple of times. I understand you may be busy — whenever you're ready to discuss your property needs, I'm here to help." },
-  { id:"closing",  label:"Closing",           text:"Hello {name}, I wanted to touch base regarding {property}. We have a few serious buyers interested. I wouldn't want you to miss out. Shall we finalise the details?" },
-];
-
-// Stage gate requirements — what must exist before moving to next stage
-const STAGE_GATES = {
-  "Contacted":     { required: ["phone","email"],                    label: "Phone and email required",          fields: ["phone","email"] },
-  "Site Visit":    { required: ["meeting_scheduled"],                label: "A meeting must be scheduled first", fields: ["meeting_scheduled"] },
-  "Proposal Sent": { required: ["unit_id","budget"],                 label: "Link a unit and confirm budget",    fields: ["unit_id","budget"] },
-  "Negotiation":   { required: ["proposal_notes"],                   label: "Proposal notes required",           fields: ["proposal_notes"] },
-  "Closed Won":    { required: ["final_price","payment_plan"],       label: "Final price and payment plan required", fields: ["final_price","payment_plan"] },
-  "Closed Lost":   { required: ["notes"],                            label: "Reason for loss required (notes)",  fields: ["notes"] },
-};
-
-const STAGE_META = {
-  "New Lead":      { c:"#1A5FA8", bg:"#E6EFF9", order:0 },
-  "Contacted":     { c:"#5B3FAA", bg:"#EEE8F9", order:1 },
-  "Site Visit":    { c:"#A06810", bg:"#FDF3DC", order:2 },
-  "Proposal Sent": { c:"#7A3FAA", bg:"#F3E8F9", order:3 },
-  "Negotiation":   { c:"#B85C10", bg:"#FDF0E6", order:4 },
-  "Closed Won":    { c:"#1A7F5A", bg:"#E6F4EE", order:5 },
-  "Closed Lost":   { c:"#B83232", bg:"#FAEAEA", order:6 },
-};
-const TYPE_META = {
-  Residential:{c:"#1A7F5A",bg:"#E6F4EE"}, Commercial:{c:"#1A5FA8",bg:"#E6EFF9"},
-  Luxury:{c:"#8A6200",bg:"#FDF3DC"},      "Off-plan":{c:"#5B3FAA",bg:"#EEE8F9"},
-  Villa:{c:"#0F6E56",bg:"#D4F1E8"},       Flat:{c:"#1D6FA8",bg:"#D4EAF7"},
-  Building:{c:"#5A3D8A",bg:"#E8DFFA"},
-};
-const ACT_META = {
-  Call:{icon:"📞",c:"#1A5FA8",bg:"#E6EFF9"}, Email:{icon:"✉",c:"#5B3FAA",bg:"#EEE8F9"},
-  Meeting:{icon:"🤝",c:"#1A7F5A",bg:"#E6F4EE"}, Visit:{icon:"🏠",c:"#A06810",bg:"#FDF3DC"},
-  WhatsApp:{icon:"💬",c:"#1A7F5A",bg:"#E6F4EE"}, Note:{icon:"📝",c:"#718096",bg:"#F0F2F5"},
-};
-const ROLE_META = {
-  super_admin:    {label:"Super Admin",    color:"#B83232",bg:"#FAEAEA",desc:"All companies · Full access"},
-  admin:          {label:"Admin",          color:"#8A6200",bg:"#FDF3DC",desc:"Full access — all modules"},
-  sales_manager:  {label:"Sales Manager",  color:"#1A5FA8",bg:"#E6EFF9",desc:"All sales leads · approve discounts ≤5%"},
-  sales_agent:    {label:"Sales Agent",    color:"#1A7F5A",bg:"#E6F4EE",desc:"Own sales leads · request discounts"},
-  leasing_manager:{label:"Leasing Mgr",   color:"#5B3FAA",bg:"#EEE8F9",desc:"All leases · approve rent reductions ≤5%"},
-  leasing_agent:  {label:"Leasing Agent", color:"#0F6E56",bg:"#D4F1E8",desc:"Own leases · manage tenants & payments"},
-  viewer:         {label:"Viewer",         color:"#718096",bg:"#F0F2F5",desc:"Read-only access"},
-};
-
-// ─── UTILS ────────────────────────────────────────────────────
-const fmtM    = n  => n ? "AED "+(n/1e6).toFixed(2)+"M" : "—";
-const fmtAED  = n  => n ? "AED "+Number(n).toLocaleString("en-AE") : "—";
-const fmtDate = d  => d ? new Date(d).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"}) : "—";
-const fmtDT   = d  => d ? new Date(d).toLocaleString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
-const ini     = n  => (n||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
-const uid     = () => Date.now()+Math.floor(Math.random()*9999);
-const can = (role, action) => ({
-  super_admin:    ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_companies","manage_inventory","reserve_unit"],
-  admin:          ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_inventory","reserve_unit"],
-  sales_manager:  ["read","write","delete","see_all","delete_leads","approve_manager","view_sales","request_discount","manage_inventory","reserve_unit"],
-  sales_agent:    ["read","write","view_sales","request_discount","reserve_unit"],
-  leasing_manager:["read","write","delete","see_all","delete_leads","approve_manager","view_leasing","request_discount","manage_inventory","reserve_unit"],
-  leasing_agent:  ["read","write","view_leasing","reserve_unit"],
-  viewer:         ["read","view_sales","view_leasing"],
-}[role]||[]).includes(action);
-
-// Helper: which department does this role belong to?
-const roleTeam = role => ({
-  super_admin:"both", admin:"both", sales_manager:"sales", sales_agent:"sales",
-  leasing_manager:"leasing", leasing_agent:"leasing", viewer:"both",
-}[role]||"both");
-
-// Permission set aware check — if user has a permission_set, use it; else fall back to role
-const canWithPS = (role, action, permSet=null) => {
-  if (!permSet) return can(role, action);
-  const PS_MAP = {
-    "read":             true,  // always readable
-    "write":            permSet.p_edit_leads||permSet.p_manage_inventory||permSet.p_manage_leasing,
-    "delete":           permSet.p_delete_leads,
-    "manage_users":     permSet.p_manage_users,
-    "see_all":          permSet.p_view_leads||permSet.p_view_leasing,
-    "delete_leads":     permSet.p_delete_leads,
-    "approve_all":      permSet.p_approve_discount,
-    "approve_manager":  permSet.p_approve_discount,
-    "view_sales":       permSet.p_view_leads,
-    "view_leasing":     permSet.p_view_leasing,
-    "request_discount": permSet.p_request_discount,
-    "manage_companies": false,
-  };
-  return PS_MAP[action] || false;
-};
-
 
 export default function App(){
   const[checking,  setChecking]  = useState(true);
@@ -8804,7 +8223,7 @@ export default function App(){
                 color:tab===t.id?"#fff":"rgba(255,255,255,.45)",
                 fontSize:12,fontWeight:tab===t.id?600:400,cursor:"pointer",
                 whiteSpace:"nowrap",transition:"all .15s",flexShrink:0,
-                borderBottom:tab===t.id?`2px solid ${currentApp==="sales"?"#4A9EE8":"#9B7FD4"}`:"2px solid transparent",
+                borderBottom:tab===t.id?"2px solid "+(currentApp==="sales"?"#4A9EE8":"#9B7FD4"):"2px solid transparent",
               }}>
               {t.icon} {t.label}
             </button>
@@ -8835,7 +8254,13 @@ export default function App(){
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
           {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
-          {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={handleSwitchCompany} activeCompanyId={activeCompanyId}/>}
+          {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
+  const co = coObj || companies.find(c=>c.id===id);
+  if(co) localStorage.setItem("propccrm_company_cache",JSON.stringify({id:co.id,name:co.name,logo_url:co.logo_url||"",business_type:co.business_type||"",ai_assistant_name:co.ai_assistant_name||""}));
+  setActiveCompanyId(id);
+  localStorage.setItem("propccrm_company_id",id);
+  setTab("dashboard");
+}} activeCompanyId={activeCompanyId}/>}
           {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {tab==="permissions" &&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
           {tab==="group_view"  &&<GroupConsolidatedView/>}
@@ -8851,7 +8276,13 @@ export default function App(){
           {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leasingData={leasingData} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
-          {tab==="l_companies" &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={handleSwitchCompanyLeasing} activeCompanyId={activeCompanyId}/>}
+          {tab==="l_companies" &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
+  const co = coObj || companies.find(c=>c.id===id);
+  if(co) localStorage.setItem("propccrm_company_cache",JSON.stringify({id:co.id,name:co.name,logo_url:co.logo_url||"",business_type:co.business_type||"",ai_assistant_name:co.ai_assistant_name||""}));
+  setActiveCompanyId(id);
+  localStorage.setItem("propccrm_company_id",id);
+  setTab("l_dashboard");
+}} activeCompanyId={activeCompanyId}/>}
           {tab==="l_users"     &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {tab==="l_permissions"&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
 
