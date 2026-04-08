@@ -1073,8 +1073,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
     <div class="hdr"><div class="logo">◆ PropCRM</div><div style="font-size:13px;opacity:.7">Payment Receipt</div></div>
     <div class="bdy">
       <div class="amt">AED ${Number(pay.amount).toLocaleString()}</div>
-      ${[["Client",lead.name],["Opportunity",opp.title||unit?.unit_ref||"—"],["Milestone",pay.milestone],["Type",pay.payment_type],pay.cheque_number&&["Cheque No.",pay.cheque_number],pay.bank_name&&["Bank",pay.bank_name],["Status",pay.status],["Date",new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})]].filter(Boolean).map(([l,v])=>"<div class="row"><span style="color:#718096">"+(l)+"</span><span style="font-weight:600">"+(v)+"</span></div>").join("")}
-      ${pay.cheque_file_url?"<img src=""+(pay.cheque_file_url)+"" style="width:100%;margin-top:12px;border-radius:6px;border:1px solid #E2E8F0"/>":""}
+      ${[["Client",lead.name],["Opportunity",opp.title||unit?.unit_ref||"—"],["Milestone",pay.milestone],["Type",pay.payment_type],pay.cheque_number&&["Cheque No.",pay.cheque_number],pay.bank_name&&["Bank",pay.bank_name],["Status",pay.status],["Date",new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})]].filter(Boolean).map(([l,v])=>"<div class='row'><span style='color:#718096'>"+l+"</span><span style='font-weight:600'>"+v+"</span></div>").join("")}
+      ${pay.cheque_file_url?"<img src='"+pay.cheque_file_url+"' style='width:100%;margin-top:12px;border-radius:6px;border:1px solid #E2E8F0'/>":""}
       <div style="text-align:center"><div class="stamp">${pay.status==="Cleared"?"✓ CLEARED":"✓ RECEIVED"}</div></div>
     </div></body></html>`;
     const w=window.open("","_blank","width=500,height=700");
@@ -5049,34 +5049,22 @@ Logged-in user: ${currentUser.full_name} (role: ${currentUser.role})
 Today: ${now.toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
 
 === LIVE DATA ===
-LEADS: ${leads.length} total · ${active.length} active · Pipeline: ${Object.entries(pipeline).map(([s,c])=>""+(s)+":"+(c)+"").join(", ")}
+LEADS: ${leads.length} total · ${active.length} active · Pipeline: ${Object.entries(pipeline).map(([s,c])=>`${s}:${c}`).join(", ")}
 WON: ${leads.filter(l=>l.stage==="Closed Won").length} · LOST: ${leads.filter(l=>l.stage==="Closed Lost").length}
 
 RECENT LEADS (last 10):
-${leads.slice(0,10).map(l=>"• "+(l.name)+" | "+(l.stage)+" | AED "+(Number(l.budget||0).toLocaleString())+" | "+(l.nationality||"—")+" | "+(l.source||"—")+" | "+(l.phone||"—")+" | "+(l.email||"—")+"").join("\n")}
+${leads.slice(0,10).map(l=>`• ${l.name} | ${l.stage} | AED ${Number(l.budget||0).toLocaleString()} | ${l.nationality||"—"} | ${l.source||"—"} | ${l.phone||"—"} | ${l.email||"—"}`).join("\n")}
 
 PROPERTIES: ${units.length} units across ${projects.length} projects · ${avail.length} available
-PROJECTS: ${projects.map(p=>""+(p.name)+" ("+(p.developer||"—")+", "+(p.status)+")").join(" · ")}
+PROJECTS: ${projects.map(p=>`${p.name} (${p.developer||"—"}, ${p.status})`).join(" · ")}
 
 AVAILABLE UNITS (first 20):
 ${avail.slice(0,20).map(u=>{
   const p=projects.find(x=>x.id===u.project_id);
   const sp=salePricing.find(s=>s.unit_id===u.id);
   const lp=leasePricing.find(l=>l.unit_id===u.id);
-  const price=sp?.asking_price?"AED "+(Number(sp.asking_price).toLocaleString())+"":lp?.annual_rent?"AED "+(Number(lp.annual_rent).toLocaleString())+"/yr":"TBD";
-  return "• #"+(u.unit_ref)+" | "+(u.sub_type)+" | "+(u.bedrooms===0?"Studio":(u.unit_type==="Residential"?u.bedrooms+"BR":""))+" | "+(u.size_sqft?Number(u.size_sqft).toLocaleString()+"sqft":"")+" | "+(u.view||"")+" | "+(price)+" | "+(p?.name||"—")+"";
-}).join("\n")}
-
-RECENT ACTIVITY: ${activities.slice(0,5).map(a=>""+(a.type)+" with "+(a.lead_name)+" by "+(a.user_name)+"").join(" · ")}
-
-=== YOUR JOB ===
-1. Answer questions about properties, leads, pipeline using the live data above
-2. Draft WhatsApp/email messages (professional Dubai real estate tone, WhatsApp <150 words)
-3. Analyse pipeline and suggest next actions
-4. Qualify leads — check stage gates: Contacted needs phone+email; Site Visit needs meeting; Proposal needs unit+budget confirmed; Negotiation needs proposal notes; Closed Won needs final price+payment plan
-5. Auto-extract lead details from descriptions — when asked to "auto-fill" a lead, extract: name, phone, email, budget, nationality, notes
-
-Respond concisely. Use bullet points for lists. Match the user's language.`;
+  const price=sp?.asking_price?`AED ${Number(sp.asking_price).toLocaleString()}`:lp?.annual_rent?`AED ${Number(lp.annual_rent).toLocaleString()}/yr`:"TBD";
+  return `• #${u.unit_ref} | ${u.sub_type} | ${u.bedrooms===0?"Studio":(u.unit_type==="Residential"?u.bedrooms+"BR":"")} | ${u.size_sqft?Number(u.size_sqft).toLocaleString()+"sqft":""} | ${u.view||""} | ${price} | ${p?.name||"—"}`;
 }
 
 // ── AI Assistant component ────────────────────────────────────────
@@ -5125,8 +5113,8 @@ function exportToPDF(title, subtitle, headers, rows, filename) {
     <div class="meta">Generated: ${new Date().toLocaleString("en-AE",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
   </div>
   <table>
-    <thead><tr>${headers.map(h=>"<th>"+(h)+"</th>").join("")}</tr></thead>
-    <tbody>${rows.map(r=>"<tr>${r.map(c=>"<td>${c===null||c===undefined?"—":c}</td>").join("")}</tr>").join("")}</tbody>
+    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c===null||c===undefined?"—":c}</td>`).join("")}</tr>`).join("")}</tbody>
   </table>
   <div class="footer">PropCRM · Confidential · ${rows.length} records</div>
   </body></html>`;
@@ -8047,6 +8035,20 @@ export default function App(){
     return()=>supabase.removeChannel(ch);
   },[currentUser, activeCompanyId]);
 
+  const handleSwitchCompany = (id, coObj) => {
+    const co = coObj || companies.find(c=>c.id===id);
+    if(co) localStorage.setItem("propccrm_company_cache",JSON.stringify({id:co.id,name:co.name,logo_url:co.logo_url||"",business_type:co.business_type,ai_assistant_name:co.ai_assistant_name||""}));
+    setActiveCompanyId(id);
+    localStorage.setItem("propccrm_company_id",id);
+    setTab("dashboard");
+  };
+  const handleSwitchCompanyLeasing = (id, coObj) => {
+    const co = coObj || companies.find(c=>c.id===id);
+    if(co) localStorage.setItem("propccrm_company_cache",JSON.stringify({id:co.id,name:co.name,logo_url:co.logo_url||"",business_type:co.business_type,ai_assistant_name:co.ai_assistant_name||""}));
+    setActiveCompanyId(id);
+    localStorage.setItem("propccrm_company_id",id);
+    setTab("l_dashboard");
+  };
   const handleLogin=user=>{
     setCurrentUser(user);
     localStorage.setItem("propccrm_role", user.role||"viewer");
@@ -8241,13 +8243,7 @@ export default function App(){
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
           {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
-          {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
-  const co = coObj || companies.find(c=>c.id===id);
-  if(co) localStorage.setItem("propccrm_company_cache",JSON.stringify({id:co.id,name:co.name,logo_url:co.logo_url||"",business_type:co.business_type||"",ai_assistant_name:co.ai_assistant_name||""}));
-  setActiveCompanyId(id);
-  localStorage.setItem("propccrm_company_id",id);
-  setTab("dashboard");
-}} activeCompanyId={activeCompanyId}/>}
+          {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={handleSwitchCompany} activeCompanyId={activeCompanyId}/>}
           {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {tab==="permissions" &&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
           {tab==="group_view"  &&<GroupConsolidatedView/>}
@@ -8263,13 +8259,7 @@ export default function App(){
           {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leasingData={leasingData} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
-          {tab==="l_companies" &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
-  const co = coObj || companies.find(c=>c.id===id);
-  if(co) localStorage.setItem("propccrm_company_cache",JSON.stringify({id:co.id,name:co.name,logo_url:co.logo_url||"",business_type:co.business_type||"",ai_assistant_name:co.ai_assistant_name||""}));
-  setActiveCompanyId(id);
-  localStorage.setItem("propccrm_company_id",id);
-  setTab("l_dashboard");
-}} activeCompanyId={activeCompanyId}/>}
+          {tab==="l_companies" &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={handleSwitchCompanyLeasing} activeCompanyId={activeCompanyId}/>}
           {tab==="l_users"     &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {tab==="l_permissions"&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
 
