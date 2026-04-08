@@ -791,7 +791,7 @@ function PropertyMaster({currentUser,showToast}){
                   style={{padding:"10px 14px",borderBottom:"1px solid #F0F2F5",cursor:"pointer",background:isSel?"#FDF3DC":"#fff",borderLeft:isSel?"3px solid #C9A84C":"3px solid transparent"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                     <div style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>Unit {u.unit_number}</div>
-                    <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:10,background:sc.bg,color:sc.c}}>{u.status}</span>
+                    <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:10,background:_tSc.bg,color:_tSc.c}}>{u.status}</span>
                   </div>
                   {u.bedrooms&&<div style={{fontSize:11,color:"#718096",marginTop:2}}>{u.bedrooms}BR · {u.view||"No view"} · Floor {u.floor||"—"}</div>}
                   <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
@@ -3548,12 +3548,12 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                 <tr><td colSpan={14} style={{textAlign:"center",padding:"2rem",color:"#A0AEC0"}}>No units match filters</td></tr>
               )}
               {allFiltered.map((u,i)=>{
-                const sp=getSP(u.id); const lp=getLP(u.id);
-                const proj=projects.find(p=>p.id===u.project_id);
-                const sc=UNIT_STATUS_COLORS[u.status]||{c:"#718096",bg:"#F0F2F5"};
+                const _tSp=getSP(u.id); const _tLp=getLP(u.id);
+                const _tProj=projects.find(p=>p.id===u.project_id);
+                const _tSc=UNIT_STATUS_COLORS[u.status]||{c:"#718096",bg:"#F0F2F5"};
                 const isSel=selUnit?.id===u.id;
                 // Use unit handover_date first, then project completion_date
-                const hdDate = u.handover_date||proj?.completion_date;
+                const hdDate = u.handover_date||_tProj?.completion_date;
                 const hdStr  = hdDate?new Date(hdDate).toLocaleDateString("en-AE",{month:"short",year:"2-digit"}):"";
                 return (
                   <tr key={u.id}
@@ -3562,7 +3562,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                     onMouseOver={e=>{if(!isSel)e.currentTarget.style.background="#F0F7FF";}}
                     onMouseOut={e=>{if(!isSel)e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC";}}>
                     <td style={{padding:"5px 8px",fontWeight:700,color:"#0B1F3A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.unit_ref}</td>
-                    <td style={{padding:"5px 8px",color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{proj?.name||"—"}</td>
+                    <td style={{padding:"5px 8px",color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{_tProj?.name||"—"}</td>
                     <td style={{padding:"5px 8px"}}><span style={{fontSize:9,fontWeight:700,padding:"1px 5px",borderRadius:20,background:u.unit_type==="Residential"?"#E6F4EE":"#E6EFF9",color:u.unit_type==="Residential"?"#1A7F5A":"#1A5FA8"}}>{u.unit_type==="Residential"?"R":"C"}</span></td>
                     <td style={{padding:"5px 8px",color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.sub_type}</td>
                     <td style={{padding:"5px 8px"}}><PurposeBadge p={u.purpose}/></td>
@@ -3570,12 +3570,12 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                     <td style={{padding:"5px 8px",color:"#4A5568",whiteSpace:"nowrap"}}>{u.size_sqft?Number(u.size_sqft).toLocaleString():""}</td>
                     <td style={{padding:"5px 8px",color:"#4A5568",textAlign:"center"}}>{u.floor_number??""}</td>
                     <td style={{padding:"5px 8px",color:"#718096",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.view||""}</td>
-                    <td style={{padding:"5px 8px",fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{sp?.asking_price?""+Math.round(sp.asking_price/1000)+"K":""}</td>
-                    <td style={{padding:"5px 8px",fontWeight:600,color:"#1A5FA8",whiteSpace:"nowrap"}}>{lp?.annual_rent?""+Math.round(lp.annual_rent/1000)+"K":""}</td>
+                    <td style={{padding:"5px 8px",fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{_tSp?.asking_price?""+Math.round(_tSp.asking_price/1000)+"K":""}</td>
+                    <td style={{padding:"5px 8px",fontWeight:600,color:"#1A5FA8",whiteSpace:"nowrap"}}>{_tLp?.annual_rent?""+Math.round(_tLp.annual_rent/1000)+"K":""}</td>
                     <td style={{padding:"5px 8px",color:"#718096",whiteSpace:"nowrap",fontSize:11}}>{hdStr}</td>
                     <td style={{padding:"5px 8px"}}>
                       <div style={{display:"flex",flexDirection:"column",gap:2}}>
-                        <span style={{fontSize:9,fontWeight:600,padding:"2px 6px",borderRadius:20,background:sc.bg,color:sc.c,whiteSpace:"nowrap"}}>{u.status}</span>
+                        <span style={{fontSize:9,fontWeight:600,padding:"2px 6px",borderRadius:20,background:_tSc.bg,color:_tSc.c,whiteSpace:"nowrap"}}>{u.status}</span>
                         {reservations.find(x=>x.unit_id===u.id&&["Active","Extended"].includes(x.status))?<ReservationBadge reservation={reservations.find(x=>x.unit_id===u.id&&["Active","Extended"].includes(x.status))}/>:null}
                       </div>
                     </td>
@@ -4757,7 +4757,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                 </div>
               </div>
             </div>
-                    )}
+          )}
 
           {showAddLease&&(
             <Modal title="New Lease Contract" onClose={()=>setShowAddLease(false)} width={520}>
