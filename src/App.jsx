@@ -5743,270 +5743,317 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
   const [loading,     setLoading]     = useState(false);
   const [showSetup,   setShowSetup]   = useState(false);
   const [activeProvider, setActiveProvider] = useState(()=>localStorage.getItem("ai_provider")||"groq");
-  const [keys,        setKeys]        = useState(()=>{
-    try{ return JSON.parse(localStorage.getItem("ai_keys")||"{}"); }catch{ return {}; }
-  });
+  const [keys,        setKeys]        = useState(()=>{ try{ return JSON.parse(localStorage.getItem("ai_keys")||"{}"); }catch{ return {}; } });
   const [suggestion,  setSuggestion]  = useState(null);
   const [usedProvider,setUsedProvider]= useState(null);
+  const [isTyping,    setIsTyping]    = useState(false);
   const bottomRef = useRef(null);
 
+  // Derive AI name from company — use custom ai_assistant_name if set
+  const cacheStr = localStorage.getItem("propccrm_company_cache");
+  const coCache  = cacheStr ? JSON.parse(cacheStr) : null;
+  const coName   = coCache?.name || "PropCRM";
+  const aiFullName = coCache?.ai_assistant_name || (coName.split(" ")[0] + " AI");
+
   const QUICK = [
-    {icon:"📊",label:"Pipeline summary",  msg:"Give me a summary of our current pipeline and suggest the top 3 actions for this week."},
-    {icon:"🏠",label:"Available units",   msg:"List all available units with key details and prices."},
-    {icon:"👤",label:"Stale leads",       msg:"Which leads have been stuck in the same stage the longest? Who should I contact today?"},
-    {icon:"✉", label:"Draft WhatsApp",    msg:"Draft a professional WhatsApp follow-up for a lead who went quiet after receiving a proposal."},
-    {icon:"🔍",label:"Qualify lead",      msg:"I have a lead: UAE national, budget AED 2.5M, looking for a 3-bed villa. What stage should they be in and what are the next steps?"},
-    {icon:"📝",label:"Add lead from text",msg:"Auto-fill: Ahmed Al Rashid, +971501234567, wants a 2-bed in Downtown Dubai, budget AED 2M, serious buyer met at an exhibition."},
+    {icon:"📊", label:"Pipeline Summary",    msg:"Give me a full pipeline summary — total value, deals by stage, and top 3 actions for this week.", category:"analytics"},
+    {icon:"🏠", label:"Available Units",      msg:"Show all available units with pricing. Highlight the best value options.", category:"inventory"},
+    {icon:"👤", label:"Hot Leads",            msg:"Which leads are most likely to close this month? Rank them and explain why.", category:"leads"},
+    {icon:"⏱",  label:"Stale Deals",         msg:"Which leads have been stuck the longest? Who needs immediate attention today?", category:"leads"},
+    {icon:"✍",  label:"Draft WhatsApp",       msg:"Draft a luxury, professional WhatsApp message to re-engage a high-value client who viewed a property but went quiet for 2 weeks.", category:"communication"},
+    {icon:"🔑", label:"Leasing Overview",     msg:"Summarise our leasing portfolio — active leases, expiring soon, overdue payments and available units.", category:"leasing"},
+    {icon:"💰", label:"Revenue Forecast",     msg:"Based on current pipeline and historical conversion, what revenue should we forecast for the next 90 days?", category:"analytics"},
+    {icon:"📝", label:"Add Lead by Voice",    msg:"Auto-fill: Ahmed Al Mansouri, +971501234567, UAE national, looking for a luxury villa in Palm Jumeirah, budget AED 8M, met at Cityscape.", category:"action"},
   ];
 
-  useEffect(()=>{
-    bottomRef.current?.scrollIntoView({behavior:"smooth"});
-  },[messages,loading]);
+  useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); },[messages,loading]);
 
   useEffect(()=>{
     const prov = AI_PROVIDERS.find(p=>p.id===activeProvider)||AI_PROVIDERS[0];
     const hasKey = !!keys[activeProvider];
-    setMessages([{role:"assistant",content:
-      `Hello ${currentUser.full_name.split(" ")[0]}! ✦ I'm your PropCRM AI assistant.
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    const firstName = currentUser.full_name.split(" ")[0];
+    setMessages([{role:"assistant", content:
+      `${greeting}, ${firstName}. I'm **${aiFullName}** — your dedicated real estate intelligence concierge.
 
 `+
-      `I have live access to **${leads.length} leads**, **${units.length} units** across **${projects.length} projects**.
+      `I have live access to **${leads.length} contacts**, **${units.filter(u=>u.status==="Available").length} available units** across **${projects.length} projects**`+
+      (leads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage)).length > 0 ? `, and a pipeline of **${leads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage)).length} active opportunities**` : "")+`.
 
 `+
       (hasKey
-        ? `Running on **${prov.name}** (${prov.badge}). Use the quick buttons below or type anything.
-
-Try: _"Show available 2-bed units under AED 2M"_ or _"Draft a WhatsApp for a client who visited but went quiet"_`
-        : `⚙️ No AI key set yet. Click **Setup AI** to add a free Groq key (takes 1 minute) and start chatting.`)
+        ? `How may I assist you today? Select a quick action below or type your question in natural language.`
+        : `⚙️ To activate, click **Configure ${aiFullName}** below and add a free API key. Setup takes under 2 minutes.`)
     }]);
   },[]);
 
-  const saveKeys = (newKeys) => {
-    setKeys(newKeys);
-    localStorage.setItem("ai_keys", JSON.stringify(newKeys));
-  };
+  const saveKeys = (k) => { setKeys(k); localStorage.setItem("ai_keys", JSON.stringify(k)); };
+  const saveProvider = (pid) => { setActiveProvider(pid); localStorage.setItem("ai_provider", pid); };
 
-  const saveProvider = (pid) => {
-    setActiveProvider(pid);
-    localStorage.setItem("ai_provider", pid);
-  };
-
-  // Try providers in order: selected first, then fallback
   const callAI = async (systemPrompt, msgs) => {
-    const order = [
-      AI_PROVIDERS.find(p=>p.id===activeProvider),
-      ...AI_PROVIDERS.filter(p=>p.id!==activeProvider)
-    ].filter(Boolean);
-
+    const order = [AI_PROVIDERS.find(p=>p.id===activeProvider),...AI_PROVIDERS.filter(p=>p.id!==activeProvider)].filter(Boolean);
     for(const prov of order){
       const key = keys[prov.id];
       if(!key) continue;
-      try{
-        const reply = await prov.call(key, systemPrompt, msgs);
-        setUsedProvider(prov);
-        return reply;
-      }catch(e){
-        console.warn(`${prov.name} failed:`, e.message);
-        if(prov.id === order[order.length-1].id) throw e;
-        // else try next
-      }
+      try{ const reply = await prov.call(key, systemPrompt, msgs); setUsedProvider(prov); return reply; }
+      catch(e){ if(prov.id===order[order.length-1].id) throw e; }
     }
-    throw new Error("No AI keys configured. Click Setup AI to add a free key.");
+    throw new Error("No API key configured.");
   };
 
   const send = async (text) => {
     const msg = text||input.trim();
     if(!msg) return;
-    setInput("");
-    setLoading(true);
+    setInput(""); setLoading(true); setIsTyping(true);
     const newMsgs = [...messages,{role:"user",content:msg}];
     setMessages(newMsgs);
-
+    setTimeout(()=>setIsTyping(false), 800);
     try{
       const ctx = buildContext(leads,units,projects,salePricing,leasePricing,activities,currentUser);
       const reply = await callAI(ctx, newMsgs.slice(-12));
       setMessages(p=>[...p,{role:"assistant",content:reply}]);
-
-      // Auto-parse lead from description
-      if(msg.toLowerCase().includes("auto-fill")||msg.toLowerCase().includes("add lead from")){
-        tryParseLead(reply);
+      if(msg.toLowerCase().includes("auto-fill")||msg.toLowerCase().includes("add lead")){
+        const name   = reply.match(/name[:\s*]*([A-Z][a-zA-Z\s]{2,30})(?:\n|,|\||\*)/i)?.[1]?.trim();
+        const phone  = reply.match(/(\+971\d{8,9}|\+\d{10,14})/)?.[0];
+        const email  = reply.match(/[\w.-]+@[\w.-]+\.\w{2,}/)?.[0];
+        const budget = reply.match(/(?:budget|AED)[:\s*]*([0-9,]+(?:\.[0-9]+)?(?:M|m)?)/i)?.[1];
+        if(name||phone){
+          let b=0;
+          if(budget){const r=budget.replace(/,/g,"");b=r.toLowerCase().includes("m")?parseFloat(r)*1e6:parseFloat(r);}
+          setSuggestion({name:name||"",phone:phone||"",email:email||"",budget:b,notes:""});
+        }
       }
     }catch(e){
-      const noKey = e.message.includes("No AI keys");
-      setMessages(p=>[...p,{role:"assistant",content:
-        noKey
-          ? "⚙️ Please click **Setup AI** above to add at least one API key. Groq is free and takes 1 minute to set up."
-          : `Sorry, something went wrong: ${e.message}`
-      }]);
+      const noKey = e.message.includes("No API key");
+      setMessages(p=>[...p,{role:"assistant",content: noKey
+        ? `To activate ${aiFullName}, please click **Configure ${aiFullName}** above and add a free API key.`
+        : `I encountered an issue: ${e.message}. Please try again.`}]);
       if(noKey) setShowSetup(true);
     }
     setLoading(false);
   };
 
-  const tryParseLead = (text) => {
-    const name   = text.match(/name[:\s*]*([A-Z][a-zA-Z\s]{2,30})(?:\n|,|\||\*)/i)?.[1]?.trim();
-    const phone  = text.match(/(\+971\d{8,9}|\+\d{10,14})/)?.[0];
-    const email  = text.match(/[\w.-]+@[\w.-]+\.\w{2,}/)?.[0];
-    const budget = text.match(/(?:budget|AED)[:\s*]*([0-9,]+(?:\.[0-9]+)?(?:M|m)?)/i)?.[1];
-    if(name||phone){
-      let b=0;
-      if(budget){const r=budget.replace(/,/g,"");b=r.toLowerCase().includes("m")?parseFloat(r)*1e6:parseFloat(r);}
-      setSuggestion({name:name||"",phone:phone||"",email:email||"",budget:b,source:"AI Import",stage:"New Lead",notes:""});
-    }
+  const fmt = (text) => {
+    const lines = text.split("\n");
+    return lines.map((line,i)=>{
+      if(!line.trim()) return <div key={i} style={{height:6}}/>;
+      if(/^#{1,3}\s/.test(line)) return <div key={i} style={{fontWeight:800,fontSize:14,color:"#0B1F3A",marginTop:10,marginBottom:4}}>{line.replace(/^#+\s/,"")}</div>;
+      if(/^\*\*(.+)\*\*$/.test(line)) return <div key={i} style={{fontWeight:700,color:"#0B1F3A",marginTop:6,marginBottom:2}}>{line.replace(/\*\*/g,"")}</div>;
+      if(line.startsWith("•")||line.startsWith("-")||line.startsWith("*  ")){
+        const txt = line.replace(/^[•\-\*]\s*/,"");
+        const parts = txt.split(/\*\*(.+?)\*\*/g);
+        return <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:3,paddingLeft:4}}>
+          <span style={{color:"#C9A84C",fontWeight:700,flexShrink:0,marginTop:2}}>◆</span>
+          <span>{parts.map((p,j)=>j%2===1?<strong key={j} style={{color:"#0B1F3A"}}>{p}</strong>:p)}</span>
+        </div>;
+      }
+      const parts = line.split(/\*\*(.+?)\*\*/g);
+      return <div key={i} style={{marginBottom:3,lineHeight:1.7}}>{parts.map((p,j)=>j%2===1?<strong key={j} style={{color:"#0B1F3A"}}>{p}</strong>:p)}</div>;
+    });
   };
 
-  const fmt = (text) => text.split("\n").map((line,i)=>{
-    if(!line.trim()) return <div key={i} style={{height:5}}/>;
-    if(/^\*\*(.+)\*\*$/.test(line)) return <div key={i} style={{fontWeight:700,marginTop:8,marginBottom:3}}>{line.replace(/\*\*/g,"")}</div>;
-    if(line.startsWith("•")||line.startsWith("-")) return <div key={i} style={{paddingLeft:10,marginBottom:2}}>• {line.slice(1).trim()}</div>;
-    // inline bold
-    const parts = line.split(/\*\*(.+?)\*\*/g);
-    return <div key={i} style={{marginBottom:2}}>{parts.map((p,j)=>j%2===1?<strong key={j}>{p}</strong>:p)}</div>;
-  });
-
   const hasAnyKey = AI_PROVIDERS.some(p=>keys[p.id]);
+  const catColors = {analytics:"#1A5FA8",inventory:"#1A7F5A",leads:"#5B3FAA",leasing:"#9B7FD4",communication:"#A06810",action:"#B83232"};
 
   return (
-    <div style={{display:"flex",flexDirection:"column",height:"100%",maxWidth:860,margin:"0 auto",width:"100%"}}>
+    <div style={{display:"flex",flexDirection:"column",height:"100%",background:"#F7F8FC"}}>
 
-      {/* Header bar */}
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+      {/* ── Premium Header ── */}
+      <div style={{background:"linear-gradient(135deg,#0B1F3A 0%,#1A3558 60%,#0D2A47 100%)",padding:"18px 24px 14px",flexShrink:0,position:"relative",overflow:"hidden"}}>
+        {/* Decorative elements */}
+        <div style={{position:"absolute",top:-20,right:-20,width:120,height:120,borderRadius:"50%",background:"rgba(201,168,76,.08)"}}/>
+        <div style={{position:"absolute",bottom:-30,right:60,width:80,height:80,borderRadius:"50%",background:"rgba(201,168,76,.05)"}}/>
+
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",position:"relative"}}>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            {/* AI Avatar */}
+            <div style={{width:46,height:46,borderRadius:14,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:"#0B1F3A",boxShadow:"0 4px 16px rgba(201,168,76,.4)",flexShrink:0}}>
+              ✦
+            </div>
+            <div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#fff",lineHeight:1.1}}>
+                {aiFullName}
+              </div>
+              <div style={{fontSize:11,color:"rgba(201,168,76,.8)",marginTop:2,letterSpacing:".5px",textTransform:"uppercase"}}>
+                Real Estate Intelligence Concierge
+              </div>
+              <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center"}}>
+                <div style={{width:6,height:6,borderRadius:"50%",background:"#1A7F5A",boxShadow:"0 0 6px #1A7F5A"}}/>
+                <span style={{fontSize:10,color:"rgba(255,255,255,.5)"}}>
+                  {leads.length} contacts · {units.filter(u=>u.status==="Available").length} available units · {projects.length} projects
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Configure button */}
+          <button onClick={()=>setShowSetup(s=>!s)} style={{
+            padding:"7px 14px",borderRadius:8,
+            border:`1px solid ${showSetup?"#C9A84C":"rgba(255,255,255,.15)"}`,
+            background:showSetup?"rgba(201,168,76,.15)":"rgba(255,255,255,.07)",
+            color:showSetup?"#C9A84C":"rgba(255,255,255,.6)",
+            fontSize:11,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:5,
+            transition:"all .2s"
+          }}>
+            ⚙ Configure {aiFullName}
+          </button>
+        </div>
+
         {/* Provider pills */}
-        <div style={{display:"flex",gap:5,flex:1,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:5,marginTop:12,flexWrap:"wrap"}}>
           {AI_PROVIDERS.map(p=>{
-            const hasKey=!!keys[p.id];
-            const isActive=activeProvider===p.id;
+            const hasKey=!!keys[p.id]; const isActive=activeProvider===p.id;
             return (
-              <button key={p.id} onClick={()=>saveProvider(p.id)}
-                style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${isActive?"#0B1F3A":"#E2E8F0"}`,background:isActive?"#0B1F3A":hasKey?"#F7F9FC":"#fff",color:isActive?"#fff":hasKey?"#4A5568":"#A0AEC0",fontSize:11,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
-                <span style={{width:7,height:7,borderRadius:"50%",background:hasKey?"#1A7F5A":"#E2E8F0",display:"inline-block"}}/>
+              <button key={p.id} onClick={()=>saveProvider(p.id)} style={{
+                padding:"4px 10px",borderRadius:20,fontSize:10,fontWeight:600,cursor:"pointer",
+                border:`1px solid ${isActive?"#C9A84C":"rgba(255,255,255,.1)"}`,
+                background:isActive?"rgba(201,168,76,.2)":"rgba(255,255,255,.05)",
+                color:isActive?"#C9A84C":hasKey?"rgba(255,255,255,.5)":"rgba(255,255,255,.25)",
+                display:"flex",alignItems:"center",gap:4,transition:"all .15s"
+              }}>
+                <span style={{width:5,height:5,borderRadius:"50%",background:hasKey?"#1A7F5A":"rgba(255,255,255,.2)",display:"inline-block"}}/>
                 {p.name}
-                <span style={{padding:"1px 5px",borderRadius:10,background:p.badgeBg,color:p.badgeColor,fontSize:9,fontWeight:700}}>{p.badge}</span>
+                {usedProvider?.id===p.id&&<span style={{fontSize:8,color:"#C9A84C"}}>● active</span>}
               </button>
             );
           })}
         </div>
-        <button onClick={()=>setShowSetup(s=>!s)}
-          style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:showSetup?"#0B1F3A":"#fff",color:showSetup?"#fff":"#4A5568",fontSize:12,fontWeight:600,cursor:"pointer"}}>
-          ⚙️ Setup AI
-        </button>
-        {usedProvider&&<span style={{fontSize:11,color:"#A0AEC0"}}>Last response: {usedProvider.name}</span>}
       </div>
 
-      {/* Setup panel */}
+      {/* ── Setup Panel ── */}
       {showSetup&&(
-        <div style={{background:"#F7F9FC",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px",marginBottom:14}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:12}}>⚙️ AI Provider Setup</div>
-          <div style={{fontSize:13,color:"#4A5568",marginBottom:14,lineHeight:1.6}}>
-            Add at least one API key. The app will use your <strong>selected provider</strong> first, then fall back to the others automatically if it fails.
-          </div>
-          {AI_PROVIDERS.map(p=>(
-            <div key={p.id} style={{background:"#fff",border:`1.5px solid ${keys[p.id]?"#A8D5BE":"#E2E8F0"}`,borderRadius:10,padding:"12px 14px",marginBottom:10}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                <span style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>{p.name}</span>
-                <span style={{padding:"2px 8px",borderRadius:10,background:p.badgeBg,color:p.badgeColor,fontSize:10,fontWeight:700}}>{p.badge}</span>
-                <span style={{fontSize:11,color:"#A0AEC0"}}>{p.label}</span>
-                {keys[p.id]&&<span style={{fontSize:11,color:"#1A7F5A",marginLeft:"auto"}}>✓ Key saved</span>}
+        <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"16px 24px",flexShrink:0}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:4}}>Configure {aiFullName}</div>
+          <div style={{fontSize:12,color:"#718096",marginBottom:12}}>Add at least one API key to activate. Groq is free — no credit card needed.</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:10}}>
+            {AI_PROVIDERS.map(p=>(
+              <div key={p.id} style={{border:`1.5px solid ${keys[p.id]?"#A8D5BE":"#E2E8F0"}`,borderRadius:10,padding:"12px",background:keys[p.id]?"#F0FBF5":"#FAFBFC"}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+                  <span style={{fontWeight:700,fontSize:12,color:"#0B1F3A"}}>{p.name}</span>
+                  <span style={{padding:"1px 6px",borderRadius:8,background:p.badgeBg,color:p.badgeColor,fontSize:9,fontWeight:700}}>{p.badge}</span>
+                  {keys[p.id]&&<span style={{marginLeft:"auto",fontSize:10,color:"#1A7F5A",fontWeight:600}}>✓ Active</span>}
+                </div>
+                <div style={{display:"flex",gap:6}}>
+                  <input type="password" defaultValue={keys[p.id]||""} id={`key-${p.id}`} placeholder={p.placeholder}
+                    style={{flex:1,padding:"7px 10px",border:"1.5px solid #D1D9E6",borderRadius:7,fontSize:11}}/>
+                  <button onClick={()=>{
+                    const val=document.getElementById(`key-${p.id}`).value.trim();
+                    if(val){saveKeys({...keys,[p.id]:val});showToast(`${p.name} activated`,"success");}
+                    else{const nk={...keys};delete nk[p.id];saveKeys(nk);}
+                  }} style={{padding:"7px 12px",borderRadius:7,border:"none",background:"#0B1F3A",color:"#C9A84C",fontSize:11,fontWeight:600,cursor:"pointer"}}>Save</button>
+                  <a href={p.link} target="_blank" style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:11,color:"#1A5FA8",fontWeight:600,textDecoration:"none"}}>Get Key ↗</a>
+                </div>
               </div>
-              <div style={{display:"flex",gap:8}}>
-                <input
-                  type="password"
-                  defaultValue={keys[p.id]||""}
-                  id={`key-${p.id}`}
-                  placeholder={p.placeholder}
-                  style={{flex:1,padding:"8px 12px",border:"1.5px solid #D1D9E6",borderRadius:8,fontSize:12}}
-                />
-                <button onClick={()=>{
-                  const val=document.getElementById(`key-${p.id}`).value.trim();
-                  if(val){saveKeys({...keys,[p.id]:val});showToast(`${p.name} key saved`,"success");}
-                  else{const nk={...keys};delete nk[p.id];saveKeys(nk);showToast(`${p.name} key removed`,"info");}
-                }} style={{padding:"8px 14px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>
-                  Save
-                </button>
-                <a href={p.link} target="_blank" style={{padding:"8px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,color:"#1A5FA8",fontWeight:600,textDecoration:"none",display:"flex",alignItems:"center"}}>
-                  Get Key ↗
-                </a>
-              </div>
-            </div>
-          ))}
-          <div style={{background:"#E6EFF9",borderRadius:8,padding:"10px 14px",fontSize:12,color:"#1A5FA8",lineHeight:1.7}}>
-            💡 <strong>Recommended setup:</strong> Add a free Groq key first (1 minute, no credit card). Then optionally add Gemini or Claude as backups. The system will automatically fall back if one provider is unavailable.
+            ))}
           </div>
         </div>
       )}
 
-      {/* Quick prompts */}
-      <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
-        {QUICK.map(q=>(
-          <button key={q.label} onClick={()=>send(q.msg)} disabled={loading||!hasAnyKey}
-            style={{padding:"6px 12px",borderRadius:20,border:"1.5px solid #E2E8F0",background:"#fff",color:!hasAnyKey?"#C0C0C0":"#4A5568",fontSize:12,fontWeight:500,cursor:!hasAnyKey?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:5,transition:".15s"}}
-            onMouseOver={e=>{if(hasAnyKey){e.currentTarget.style.borderColor="#C9A84C";e.currentTarget.style.background="#FDF8EC";}}}
-            onMouseOut={e=>{e.currentTarget.style.borderColor="#E2E8F0";e.currentTarget.style.background="#fff";}}>
-            {q.icon} {q.label}
-          </button>
-        ))}
+      {/* ── Quick Action Buttons ── */}
+      <div style={{padding:"12px 24px 0",flexShrink:0}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Quick Actions</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {QUICK.map(q=>(
+            <button key={q.label} onClick={()=>send(q.msg)} disabled={loading||!hasAnyKey} style={{
+              padding:"6px 12px",borderRadius:20,fontSize:11,fontWeight:600,cursor:!hasAnyKey?"not-allowed":"pointer",
+              border:`1px solid ${catColors[q.category]||"#E2E8F0"}22`,
+              background:`${catColors[q.category]||"#718096"}11`,
+              color:!hasAnyKey?"#C0C0C0":(catColors[q.category]||"#718096"),
+              display:"flex",alignItems:"center",gap:5,transition:"all .15s",whiteSpace:"nowrap",
+            }}
+            onMouseOver={e=>{if(hasAnyKey){e.currentTarget.style.background=`${catColors[q.category]}22`;e.currentTarget.style.transform="translateY(-1px)";}}}
+            onMouseOut={e=>{e.currentTarget.style.background=`${catColors[q.category]}11`;e.currentTarget.style.transform="none";}}>
+              {q.icon} {q.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Chat window */}
-      <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:12,paddingRight:4,marginBottom:12}}>
+      {/* ── Chat Window ── */}
+      <div style={{flex:1,overflowY:"auto",padding:"16px 24px",display:"flex",flexDirection:"column",gap:14}}>
         {messages.map((m,i)=>(
-          <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",flexDirection:m.role==="user"?"row-reverse":"row"}}>
-            <div style={{width:34,height:34,borderRadius:"50%",background:m.role==="user"?"#0B1F3A":"#C9A84C",display:"flex",alignItems:"center",justifyContent:"center",fontSize:m.role==="user"?13:16,flexShrink:0,color:m.role==="user"?"#C9A84C":"#0B1F3A",fontWeight:700}}>
-              {m.role==="user"?ini(currentUser.full_name):"✦"}
+          <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",flexDirection:m.role==="user"?"row-reverse":"row"}}>
+            {/* Avatar */}
+            <div style={{
+              width:36,height:36,borderRadius:10,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,
+              background:m.role==="user"?"#0B1F3A":"linear-gradient(135deg,#C9A84C,#E8C97A)",
+              color:m.role==="user"?"#C9A84C":"#0B1F3A",
+              boxShadow:m.role==="assistant"?"0 2px 8px rgba(201,168,76,.3)":"none"
+            }}>
+              {m.role==="user"?(currentUser.full_name||"U").charAt(0).toUpperCase():"✦"}
             </div>
-            <div style={{maxWidth:"75%",background:m.role==="user"?"#0B1F3A":"#fff",color:m.role==="user"?"#fff":"#1a2535",borderRadius:m.role==="user"?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"11px 15px",fontSize:13,lineHeight:1.7,border:m.role==="assistant"?"1px solid #E2E8F0":"none",boxShadow:m.role==="assistant"?"0 1px 4px rgba(0,0,0,.06)":"none"}}>
+            {/* Bubble */}
+            <div style={{
+              maxWidth:"72%",
+              background:m.role==="user"?"linear-gradient(135deg,#0B1F3A,#1A3558)":"#fff",
+              color:m.role==="user"?"#fff":"#2D3748",
+              borderRadius:m.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",
+              padding:"12px 16px",fontSize:13,lineHeight:1.7,
+              border:m.role==="assistant"?"1px solid #E8EDF3":"none",
+              boxShadow:m.role==="assistant"?"0 2px 12px rgba(0,0,0,.06)":"0 2px 8px rgba(11,31,58,.2)",
+            }}>
               {m.role==="assistant"?fmt(m.content):m.content}
+              {m.role==="assistant"&&i===messages.length-1&&usedProvider&&(
+                <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #F0F2F5",fontSize:10,color:"#A0AEC0",display:"flex",alignItems:"center",gap:4}}>
+                  <span style={{width:4,height:4,borderRadius:"50%",background:"#1A7F5A",display:"inline-block"}}/>
+                  {aiFullName} · Powered by {usedProvider.name}
+                </div>
+              )}
             </div>
           </div>
         ))}
 
+        {/* Typing indicator */}
         {loading&&(
-          <div style={{display:"flex",gap:10,alignItems:"center"}}>
-            <div style={{width:34,height:34,borderRadius:"50%",background:"#C9A84C",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,color:"#0B1F3A",fontWeight:700}}>✦</div>
-            <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:"14px 14px 14px 4px",padding:"12px 16px",display:"flex",gap:5,alignItems:"center"}}>
-              {[0,.2,.4].map((d,i)=>(
-                <div key={i} style={{width:8,height:8,borderRadius:"50%",background:"#C9A84C",animation:`pulse 1s ${d}s infinite`}}/>
+          <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+            <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#0B1F3A",boxShadow:"0 2px 8px rgba(201,168,76,.3)"}}>✦</div>
+            <div style={{background:"#fff",border:"1px solid #E8EDF3",borderRadius:"16px 16px 16px 4px",padding:"14px 18px",boxShadow:"0 2px 12px rgba(0,0,0,.06)",display:"flex",gap:5,alignItems:"center"}}>
+              {[0,.15,.3].map((d,i)=>(
+                <div key={i} style={{width:7,height:7,borderRadius:"50%",background:"#C9A84C",animationName:"aipulse",animationDuration:"1.2s",animationDelay:`${d}s`,animationIterationCount:"infinite",animationTimingFunction:"ease-in-out"}}/>
               ))}
-              <style>{`@keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}`}</style>
-              <span style={{fontSize:12,color:"#A0AEC0",marginLeft:4}}>
-                {AI_PROVIDERS.find(p=>p.id===activeProvider)?.name||"AI"} thinking…
-              </span>
+              <style>{`@keyframes aipulse{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}`}</style>
+              <span style={{fontSize:11,color:"#A0AEC0",marginLeft:6}}>{aiFullName} is thinking…</span>
             </div>
           </div>
         )}
 
         {/* Lead detection card */}
         {suggestion&&(
-          <div style={{background:"#E6F4EE",border:"1.5px solid #A8D5BE",borderRadius:12,padding:"14px 16px"}}>
-            <div style={{fontWeight:700,fontSize:13,color:"#1A7F5A",marginBottom:10}}>✦ Lead detected — add to PropCRM?</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,fontSize:12,color:"#4A5568",marginBottom:12}}>
+          <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:"16px 18px",boxShadow:"0 4px 20px rgba(11,31,58,.2)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+              <span style={{fontSize:18}}>✦</span>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#C9A84C"}}>{aiFullName} detected a lead — add to CRM?</span>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:12}}>
               {[["Name",suggestion.name],["Phone",suggestion.phone],["Email",suggestion.email||"—"],["Budget",suggestion.budget?`AED ${Number(suggestion.budget).toLocaleString()}`:"—"]].map(([l,v])=>(
-                <div key={l}><span style={{fontWeight:600,color:"#0B1F3A"}}>{l}: </span>{v||"—"}</div>
+                <div key={l} style={{background:"rgba(255,255,255,.07)",borderRadius:8,padding:"8px 10px"}}>
+                  <div style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:"#fff"}}>{v||"—"}</div>
+                </div>
               ))}
             </div>
-            <div style={{marginBottom:10}}>
-              <textarea placeholder="Add notes (optional)…" rows={2} value={suggestion.notes}
-                onChange={e=>setSuggestion(s=>({...s,notes:e.target.value}))}
-                style={{width:"100%",padding:"8px 10px",border:"1.5px solid #A8D5BE",borderRadius:8,fontSize:12,resize:"none"}}/>
-            </div>
+            <textarea placeholder="Add notes…" rows={2} value={suggestion.notes}
+              onChange={e=>setSuggestion(s=>({...s,notes:e.target.value}))}
+              style={{width:"100%",padding:"8px 10px",border:"1px solid rgba(255,255,255,.15)",borderRadius:8,fontSize:12,resize:"none",background:"rgba(255,255,255,.08)",color:"#fff",boxSizing:"border-box",marginBottom:10}}/>
             <div style={{display:"flex",gap:8}}>
               <button onClick={async()=>{
                 try{
-                  const{data,error}=await supabase.from("leads").insert({
+                  const{error}=await supabase.from("leads").insert({
                     name:suggestion.name,phone:suggestion.phone||null,email:suggestion.email||null,
                     budget:suggestion.budget||0,source:"AI Import",stage:"New Lead",
                     notes:suggestion.notes||null,assigned_to:currentUser.id,
+                    company_id:currentUser.company_id||null,
                     stage_updated_at:new Date().toISOString(),created_by:currentUser.id
-                  }).select().single();
+                  });
                   if(error)throw error;
-                  showToast(`${suggestion.name} added as a lead!`,"success");
+                  showToast(`${suggestion.name} added successfully`,"success");
                   setSuggestion(null);
                 }catch(e){showToast(e.message,"error");}
-              }} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
-                + Add Lead
+              }} style={{flex:1,padding:"10px",borderRadius:8,border:"none",background:"#C9A84C",color:"#0B1F3A",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                + Add to CRM
               </button>
-              <button onClick={()=>setSuggestion(null)}
-                style={{padding:"8px 14px",borderRadius:8,border:"1.5px solid #A8D5BE",background:"#fff",color:"#4A5568",fontSize:13,cursor:"pointer"}}>
+              <button onClick={()=>setSuggestion(null)} style={{padding:"10px 16px",borderRadius:8,border:"1px solid rgba(255,255,255,.2)",background:"transparent",color:"rgba(255,255,255,.6)",fontSize:13,cursor:"pointer"}}>
                 Dismiss
               </button>
             </div>
@@ -6015,26 +6062,48 @@ Try: _"Show available 2-bed units under AED 2M"_ or _"Draft a WhatsApp for a cli
         <div ref={bottomRef}/>
       </div>
 
-      {/* Input */}
-      <div style={{display:"flex",gap:8,background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:14,padding:"8px 8px 8px 14px",boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
-        <textarea value={input} onChange={e=>setInput(e.target.value)}
-          onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
-          placeholder={hasAnyKey?"Ask anything… 'Show 2-bed units under AED 2M' · 'Draft WhatsApp for Ahmed' · 'Summarise pipeline'":"⚙️ Click Setup AI above to add a free Groq key and start chatting"}
-          rows={1}
-          style={{flex:1,border:"none",outline:"none",resize:"none",fontSize:13,lineHeight:1.6,minHeight:44,maxHeight:120,fontFamily:"inherit",background:"transparent",color:hasAnyKey?"#1a2535":"#A0AEC0"}}
-        />
-        <button onClick={()=>send()} disabled={loading||!input.trim()||!hasAnyKey}
-          style={{padding:"10px 18px",borderRadius:10,border:"none",background:loading||!input.trim()||!hasAnyKey?"#E2E8F0":"#0B1F3A",color:loading||!input.trim()||!hasAnyKey?"#A0AEC0":"#fff",fontSize:13,fontWeight:600,cursor:loading||!input.trim()||!hasAnyKey?"not-allowed":"pointer",transition:".15s",alignSelf:"flex-end"}}>
-          {loading?"…":"Send ↑"}
-        </button>
-      </div>
-      <div style={{fontSize:11,color:"#A0AEC0",textAlign:"center",marginTop:5}}>
-        Enter to send · Shift+Enter for new line · {usedProvider?`Using ${usedProvider.name}`:"Select a provider above"}
+      {/* ── Input Bar ── */}
+      <div style={{padding:"0 24px 20px",flexShrink:0}}>
+        <div style={{
+          display:"flex",gap:8,background:"#fff",
+          border:"1.5px solid #E2E8F0",borderRadius:16,
+          padding:"10px 10px 10px 16px",
+          boxShadow:"0 4px 20px rgba(0,0,0,.08)",
+          transition:"border-color .2s",
+        }}
+        onFocus={e=>e.currentTarget.style.borderColor="#C9A84C"}
+        onBlur={e=>e.currentTarget.style.borderColor="#E2E8F0"}>
+          <textarea value={input} onChange={e=>setInput(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
+            placeholder={hasAnyKey
+              ? `Ask ${aiFullName} anything… "Show units under AED 3M" · "Draft a proposal for Ahmed" · "Which leads need attention?"`
+              : `Configure ${aiFullName} above to start · Add a free Groq API key`}
+            rows={1}
+            style={{flex:1,border:"none",outline:"none",resize:"none",fontSize:13,lineHeight:1.6,
+              minHeight:40,maxHeight:120,fontFamily:"inherit",
+              background:"transparent",color:hasAnyKey?"#1a2535":"#A0AEC0"}}
+          />
+          <button onClick={()=>send()} disabled={loading||!input.trim()||!hasAnyKey} style={{
+            padding:"10px 20px",borderRadius:12,border:"none",
+            background:loading||!input.trim()||!hasAnyKey
+              ?"#E2E8F0"
+              :"linear-gradient(135deg,#0B1F3A,#1A3558)",
+            color:loading||!input.trim()||!hasAnyKey?"#A0AEC0":"#C9A84C",
+            fontSize:13,fontWeight:700,cursor:loading||!input.trim()||!hasAnyKey?"not-allowed":"pointer",
+            transition:"all .2s",alignSelf:"flex-end",
+            boxShadow:!loading&&input.trim()&&hasAnyKey?"0 2px 8px rgba(11,31,58,.3)":"none",
+          }}>
+            {loading?"…":"Send ↑"}
+          </button>
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",marginTop:6,fontSize:10,color:"#A0AEC0",padding:"0 4px"}}>
+          <span>Enter to send · Shift+Enter for new line</span>
+          <span>{usedProvider?`${aiFullName} · ${usedProvider.name}`:`Select provider above`}</span>
+        </div>
       </div>
     </div>
   );
 }
-
 
 // ══════════════════════════════════════════════════════════════════
 // SETUP WIZARD — shown once to admin on first launch
@@ -6826,7 +6895,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
     primary_contact:"", phone:"", email:"",
     address:"", city:"", country:"UAE", brand_color:"#0B1F3A",
     brand_accent:"#C9A84C", plan:"professional", is_active:true, logo_url:"",
-    rera_number:"", ded_number:""
+    rera_number:"", ded_number:"", ai_assistant_name:""
   };
   const [form, setForm] = useState(blank);
   const sf = (k,v) => setForm(f=>({...f,[k]:v}));
@@ -7005,7 +7074,28 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
                 <div style={{gridColumn:"1/-1"}}>
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Company Name *</label>
-                  <input value={form.name} onChange={e=>sf("name",e.target.value)} placeholder="e.g. Al Mansoori Properties"/>
+                  <input value={form.name} onChange={e=>{
+                    sf("name",e.target.value);
+                    // Auto-suggest AI name from first word of company name
+                    if(!form.ai_assistant_name||form.ai_assistant_name===form.name.split(" ")[0]+" AI"){
+                      sf("ai_assistant_name", (e.target.value.split(" ")[0]||"")+" AI");
+                    }
+                  }} placeholder="e.g. Al Mansoori Properties"/>
+                </div>
+                <div style={{gridColumn:"1/-1",background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:10,padding:"14px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                    <span style={{fontSize:18}}>✦</span>
+                    <label style={{fontSize:11,fontWeight:700,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".5px"}}>AI Assistant Name</label>
+                  </div>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginBottom:10,lineHeight:1.6}}>
+                    What should the AI assistant be called for this company? This name will appear on the AI tab and in all AI interactions.
+                  </div>
+                  <input value={form.ai_assistant_name||""} onChange={e=>sf("ai_assistant_name",e.target.value)}
+                    placeholder={form.name?(form.name.split(" ")[0]+" AI"):"e.g. Mansoori AI"}
+                    style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(201,168,76,.4)",borderRadius:8,padding:"8px 12px",color:"#fff",fontSize:13,width:"100%",boxSizing:"border-box"}}/>
+                  <div style={{fontSize:11,color:"rgba(201,168,76,.6)",marginTop:6}}>
+                    💡 Tip: Use your brand name for ownership — e.g. "Mansoori AI", "Atlas AI", "Emaar AI"
+                  </div>
                 </div>
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Primary Contact</label>
@@ -8351,7 +8441,7 @@ export default function App(){
           // Cache the active company for instant display on next load
           const cid = localStorage.getItem("propccrm_company_id") || user.company_id;
           const activeCo = data.find(c=>c.id===cid) || data[0];
-          if(activeCo) localStorage.setItem("propccrm_company_cache", JSON.stringify({id:activeCo.id,name:activeCo.name,logo_url:activeCo.logo_url||"",business_type:activeCo.business_type||""}));
+          if(activeCo) localStorage.setItem("propccrm_company_cache", JSON.stringify({id:activeCo.id,name:activeCo.name,logo_url:activeCo.logo_url||"",business_type:activeCo.business_type||"",ai_assistant_name:activeCo.ai_assistant_name||""}));
           setCompanies(data);
           const saved=localStorage.getItem("propccrm_company_id");
           const co=saved?data.find(c=>c.id===saved):data[0];
@@ -8522,7 +8612,7 @@ export default function App(){
           {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
           {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
   const co = coObj || companies.find(c=>c.id===id);
-  if(co) localStorage.setItem("propccrm_company_cache",JSON.stringify({id:co.id,name:co.name,logo_url:co.logo_url||"",business_type:co.business_type||""}));
+  if(co) localStorage.setItem("propccrm_company_cache",JSON.stringify({id:co.id,name:co.name,logo_url:co.logo_url||"",business_type:co.business_type||"",ai_assistant_name:co.ai_assistant_name||""}));
   setActiveCompanyId(id);
   localStorage.setItem("propccrm_company_id",id);
   setTab("dashboard");
@@ -8544,7 +8634,7 @@ export default function App(){
           {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leasingData={leasingData} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
           {tab==="l_companies" &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
   const co = coObj || companies.find(c=>c.id===id);
-  if(co) localStorage.setItem("propccrm_company_cache",JSON.stringify({id:co.id,name:co.name,logo_url:co.logo_url||"",business_type:co.business_type||""}));
+  if(co) localStorage.setItem("propccrm_company_cache",JSON.stringify({id:co.id,name:co.name,logo_url:co.logo_url||"",business_type:co.business_type||"",ai_assistant_name:co.ai_assistant_name||""}));
   setActiveCompanyId(id);
   localStorage.setItem("propccrm_company_id",id);
   setTab("l_dashboard");
