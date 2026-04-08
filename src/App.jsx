@@ -2433,16 +2433,13 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
         const hour = new Date().getHours();
         const greeting = hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
         const firstName = currentUser?.full_name?.split(" ")[0]||"there";
+        const avail = units.filter(u=>u.status==="Available").length;
         setMessages([{role:"assistant", content:
-          `${greeting}, ${firstName}. I'm **${aiFullName}**.
-
-`+
-          `I have live access to **${leads.length} contacts**, **${units.filter(u=>u.status==="Available").length} available units** and **${projects.length} projects**.
-
-`+
+          greeting+", "+firstName+". I'm **"+aiFullName+"**.\n\n"+
+          "I have live access to **"+leads.length+" contacts**, **"+avail+" available units** and **"+projects.length+" projects**.\n\n"+
           (hasAnyKey
-            ? `Select a quick action or type anything — I'll answer instantly.`
-            : `⚙️ Click **Configure** to add a free API key and activate me.`)
+            ? "Select a quick action or type anything — I'll answer instantly."
+            : "⚙️ Click **Configure** to add a free API key and activate me.")
         }]);
       }
     }
@@ -2520,9 +2517,9 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
   if(!open) return null;
 
   return (
-    <>
+    <div style={{position:"fixed",inset:0,zIndex:1990,pointerEvents:"none"}}>
       {/* Backdrop */}
-      <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(11,31,58,.4)",backdropFilter:"blur(3px)",zIndex:1990,animation:"fadeIn .2s ease"}}/>
+      <div onClick={onClose} style={{position:"absolute",inset:0,background:"rgba(11,31,58,.4)",backdropFilter:"blur(3px)",pointerEvents:"auto"}}/>
 
       {/* Side Panel */}
       <div style={{
@@ -2583,7 +2580,7 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
             {AI_PROVIDERS.map(p=>(
               <div key={p.id} style={{display:"flex",gap:6,alignItems:"center",marginBottom:6}}>
                 <span style={{fontSize:11,fontWeight:600,color:"#4A5568",width:50,flexShrink:0}}>{p.name}</span>
-                <input type="password" defaultValue={keys[p.id]||""} id={`amb-key-${p.id}`} placeholder={p.placeholder}
+                <input type="password" defaultValue={keys[p.id]||""} id={"amb-key-"+p.id} placeholder={p.placeholder}
                   style={{flex:1,padding:"5px 8px",border:"1.5px solid #D1D9E6",borderRadius:6,fontSize:11}}/>
                 <button onClick={()=>{
                   const val=document.getElementById(`amb-key-${p.id}`).value.trim();
@@ -2728,7 +2725,7 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
