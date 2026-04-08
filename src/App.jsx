@@ -791,7 +791,7 @@ function PropertyMaster({currentUser,showToast}){
                   style={{padding:"10px 14px",borderBottom:"1px solid #F0F2F5",cursor:"pointer",background:isSel?"#FDF3DC":"#fff",borderLeft:isSel?"3px solid #C9A84C":"3px solid transparent"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                     <div style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>Unit {u.unit_number}</div>
-                    <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:10,background:_tSc.bg,color:_tSc.c}}>{u.status}</span>
+                    <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:10,background:sc.bg,color:sc.c}}>{u.status}</span>
                   </div>
                   {u.bedrooms&&<div style={{fontSize:11,color:"#718096",marginTop:2}}>{u.bedrooms}BR · {u.view||"No view"} · Floor {u.floor||"—"}</div>}
                   <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
@@ -1035,7 +1035,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
     const _rCSS='body{font-family:Arial,sans-serif;max-width:420px;margin:40px auto}.hdr{background:#0B1F3A;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center}.logo{font-size:20px;font-weight:700;color:#C9A84C}.bdy{border:1px solid #E2E8F0;border-top:none;padding:20px;border-radius:0 0 8px 8px}.amt{font-size:30px;font-weight:700;color:#0B1F3A;text-align:center;padding:16px 0;border-bottom:2px solid #0B1F3A;margin-bottom:16px}.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F0F2F5;font-size:13px}.stamp{border:3px solid #1A7F5A;color:#1A7F5A;padding:6px 16px;border-radius:6px;font-size:14px;font-weight:700;display:inline-block}';
     const _rRows=[["Client",lead.name],["Opportunity",opp.title||unit?.unit_ref||"—"],["Milestone",pay.milestone],["Type",pay.payment_type],pay.cheque_number&&["Cheque No.",pay.cheque_number],pay.bank_name&&["Bank",pay.bank_name],["Status",pay.status],["Date",new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})]].filter(Boolean).map(([l,v])=>'<div class="row"><span style="color:#718096">'+l+'</span><span style="font-weight:600">'+v+'</span></div>').join("");
     const _rImg=pay.cheque_file_url?"<img src='"+pay.cheque_file_url+"' style='width:100%;margin-top:12px;border-radius:6px;border:1px solid #E2E8F0'/>":"";
-    const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+_rCSS+'</style></head><body><div class="hdr"><div class="logo">◆ PropCRM</div><div style="font-size:13px;opacity:.7">Payment Receipt</div></div><div class="bdy"><div class="amt">AED '+Number(pay.amount).toLocaleString()+'</div>'+_rRows+_rImg+'<div style="text-align:center"><div class="stamp">'+(pay.status==="Cleared"?"✓ CLEARED":"✓ RECEIVED")+'</div></div></div></body></html>';
+    const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+_rCSS+'</style></head><body><div class="hdr"><div class="logo">◆ PropCRM</div></div><div class="bdy"><div class="amt">AED '+Number(pay.amount).toLocaleString()+'</div>'+_rRows+_rImg+'<div style="text-align:center"><div class="stamp">'+(pay.status==="Cleared"?"✓ CLEARED":"✓ RECEIVED")+'</div></div></div></body></html>';
     const w=window.open("","_blank","width=500,height=700");
     if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
   };
@@ -1047,9 +1047,6 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const _suLp=selUnit?getLP(selUnit.id):null;
   const _suProj=selUnit?projects.find(p=>p.id===selUnit.project_id):null;
   const _suSc=selUnit?(UNIT_STATUS_COLORS[selUnit.status]||{c:"#718096",bg:"#F0F2F5"}):{c:"#718096",bg:"#F0F2F5"};
-  const _crHp=selUnit?!!(salePricing.find(s=>s.unit_id===selUnit.id)||leasePricing.find(l=>l.unit_id===selUnit.id)):false;
-  const _crPr=selUnit?projects.find(p=>p.id===selUnit.project_id):null;
-  const _crOk=_crHp&&(!_crPr?.launch_date||new Date()>=new Date(_crPr.launch_date));
 
   return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
@@ -2038,10 +2035,10 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
       &&(fStageP==="All"||l.stage===fStageP);
   });
 
-  const _scLead=selCard?(leads.find(l=>l.id===selCard.id)||selCard):null;
-  const _scM=_scLead?(STAGE_META[_scLead.stage]||{c:"#718096",bg:"#F0F2F5"}):{c:"#718096",bg:"#F0F2F5"};
-  const _scDays=(_scLead&&_scLead.stage_updated_at)?Math.floor((new Date()-new Date(_scLead.stage_updated_at))/(864e5)):0;
-  const _scCurIdx=_scLead?stageOrder.indexOf(_scLead.stage):-1;
+  const _scL=selCard?(leads.find(l=>l.id===selCard.id)||selCard):null;
+  const _scM=_scL?(STAGE_META[_scL.stage]||{c:"#718096",bg:"#F0F2F5"}):{c:"#718096",bg:"#F0F2F5"};
+  const _scDays=(_scL&&_scL.stage_updated_at)?Math.floor((new Date()-new Date(_scL.stage_updated_at))/(864e5)):0;
+  const _scCurIdx=_scL?stageOrder.indexOf(_scL.stage):-1;
 
   return(
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}}>
@@ -2134,26 +2131,26 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
         </div>
 
         {/* Detail panel — shown when card selected */}
-        {_scLead&&(
+        {_scL&&(
             <div style={{width:260,flexShrink:0,background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,overflowY:"auto",boxShadow:"0 4px 20px rgba(11,31,58,.08)"}}>
               {/* Header */}
-              <div style={{background:"linear-gradient(135deg,"+_scM.c+","+_scM.c+"CC)",padding:"14px 16px",borderRadius:"10px 10px 0 0"}}>
+              <div style={{background:"linear-gradient(135deg,"+m.c+","+m.c+"CC)",padding:"14px 16px",borderRadius:"10px 10px 0 0"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                   <div>
-                    <div style={{fontWeight:700,fontSize:15,color:"#fff"}}>{_scLead.name}</div>
-                    <div style={{fontSize:11,color:"rgba(255,255,255,.75)",marginTop:2}}>{_scLead.stage}</div>
+                    <div style={{fontWeight:700,fontSize:15,color:"#fff"}}>{_scL.name}</div>
+                    <div style={{fontSize:11,color:"rgba(255,255,255,.75)",marginTop:2}}>{_scL.stage}</div>
                   </div>
                   <button onClick={()=>setSelCard(null)} style={{background:"rgba(255,255,255,.2)",border:"none",borderRadius:6,width:24,height:24,cursor:"pointer",color:"#fff",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
                 </div>
-                {_scLead.budget&&<div style={{fontSize:18,fontWeight:700,color:"#fff",marginTop:8}}>{fmtM(_scLead.budget)}</div>}
+                {_scL.budget&&<div style={{fontSize:18,fontWeight:700,color:"#fff",marginTop:8}}>{fmtM(_scL.budget)}</div>}
               </div>
 
               {/* Details */}
               <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
                 {[
-                  ["Phone",_scLead.phone],["Email",_scLead.email],
-                  ["Nationality",_scLead.nationality],["Source",_scLead.source],
-                  ["Type",_scLead.property_type],["Days in stage",_scDays+"d"],
+                  ["Phone",_scL.phone],["Email",_scL.email],
+                  ["Nationality",_scL.nationality],["Source",_scL.source],
+                  ["Type",_scL.property_type],["Days in stage",days+"d"],
                 ].filter(([,v])=>v).map(([l,v])=>(
                   <div key={l} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid #F7F9FC"}}>
                     <span style={{color:"#A0AEC0"}}>{l}</span>
@@ -2167,29 +2164,29 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
                     <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Move Stage</div>
                     <div style={{display:"flex",flexDirection:"column",gap:6}}>
                       {stageOrder.map((s,i)=>(
-                        <button key={s} onClick={()=>moveStage(_scLead,s)}
-                          disabled={s===_scLead.stage}
-                          style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid "+(s===_scLead.stage?_scM.c:"#E2E8F0"),
-                            background:s===_scLead.stage?_scM.bg:"#fff",color:s===_scLead.stage?_scM.c:"#4A5568",
-                            fontSize:11,fontWeight:s===_scLead.stage?700:400,cursor:s===_scLead.stage?"default":"pointer",
+                        <button key={s} onClick={()=>moveStage(_scL,s)}
+                          disabled={s===_scL.stage}
+                          style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid "+(s===_scL.stage?m.c:"#E2E8F0"),
+                            background:s===_scL.stage?m.bg:"#fff",color:s===_scL.stage?m.c:"#4A5568",
+                            fontSize:11,fontWeight:s===_scL.stage?700:400,cursor:s===_scL.stage?"default":"pointer",
                             textAlign:"left",display:"flex",alignItems:"center",gap:6}}>
-                          <span style={{fontSize:9,color:s===_scLead.stage?_scM.c:"#A0AEC0"}}>{i+1}.</span>
-                          {s} {s===_scLead.stage?"← current":""}
+                          <span style={{fontSize:9,color:s===_scL.stage?m.c:"#A0AEC0"}}>{i+1}.</span>
+                          {s} {s===_scL.stage?"← current":""}
                         </button>
                       ))}
-                      <button onClick={()=>moveStage(_scLead,"Closed Lost")}
+                      <button onClick={()=>moveStage(_scL,"Closed Lost")}
                         style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid #FAEAEA",background:"#FAEAEA",color:"#B83232",fontSize:11,fontWeight:600,cursor:"pointer",textAlign:"left",marginTop:4}}>
                         ✗ Close as Lost
                       </button>
-                      <button onClick={()=>moveStage(_scLead,"Closed Won")}
+                      <button onClick={()=>moveStage(_scL,"Closed Won")}
                         style={{padding:"7px 10px",borderRadius:7,border:"none",background:"#1A7F5A",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",textAlign:"left"}}>
                         ✓ Close as Won
                       </button>
                     </div>
                   </div>
                 )}
-                {_scLead.notes&&(
-                  <div style={{fontSize:11,color:"#718096",lineHeight:1.6,padding:"8px",background:"#F7F9FC",borderRadius:7}}>{_scLead.notes}</div>
+                {_scL.notes&&(
+                  <div style={{fontSize:11,color:"#718096",lineHeight:1.6,padding:"8px",background:"#F7F9FC",borderRadius:7}}>{_scL.notes}</div>
                 )}
               </div>
             </div>
@@ -3414,7 +3411,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
           max_tokens:1500,
           messages:[{role:"user",content:[
             ...(isImage?[{type:"image",source:{type:"base64",media_type:file.type,data:b64}}]:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}}]),
-            {type:"text",text:"Extract property/unit details. Return ONLY valid JSON with fields: unit_ref, sub_type, size_sqft, bedrooms, bathrooms, floor_number, view, asking_price, annual_rent, booking_pct, during_construction_pct, on_handover_pct, developer, project_name, handover_date, furnishing, notes. Use null for unknown."}
+            {type:"text",text:"Extract property/unit details. Return ONLY valid JSON: unit_ref,sub_type,size_sqft,bedrooms,bathrooms,floor_number,view,asking_price,annual_rent,booking_pct,during_construction_pct,on_handover_pct,developer,project_name,handover_date,furnishing,notes. Null for unknown."}
           ]}]
         })
       });
@@ -3548,12 +3545,12 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                 <tr><td colSpan={14} style={{textAlign:"center",padding:"2rem",color:"#A0AEC0"}}>No units match filters</td></tr>
               )}
               {allFiltered.map((u,i)=>{
-                const _tSp=getSP(u.id); const _tLp=getLP(u.id);
-                const _tProj=projects.find(p=>p.id===u.project_id);
-                const _tSc=UNIT_STATUS_COLORS[u.status]||{c:"#718096",bg:"#F0F2F5"};
+                const sp=getSP(u.id); const lp=getLP(u.id);
+                const proj=projects.find(p=>p.id===u.project_id);
+                const sc=UNIT_STATUS_COLORS[u.status]||{c:"#718096",bg:"#F0F2F5"};
                 const isSel=selUnit?.id===u.id;
                 // Use unit handover_date first, then project completion_date
-                const hdDate = u.handover_date||_tProj?.completion_date;
+                const hdDate = u.handover_date||proj?.completion_date;
                 const hdStr  = hdDate?new Date(hdDate).toLocaleDateString("en-AE",{month:"short",year:"2-digit"}):"";
                 return (
                   <tr key={u.id}
@@ -3562,7 +3559,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                     onMouseOver={e=>{if(!isSel)e.currentTarget.style.background="#F0F7FF";}}
                     onMouseOut={e=>{if(!isSel)e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC";}}>
                     <td style={{padding:"5px 8px",fontWeight:700,color:"#0B1F3A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.unit_ref}</td>
-                    <td style={{padding:"5px 8px",color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{_tProj?.name||"—"}</td>
+                    <td style={{padding:"5px 8px",color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{proj?.name||"—"}</td>
                     <td style={{padding:"5px 8px"}}><span style={{fontSize:9,fontWeight:700,padding:"1px 5px",borderRadius:20,background:u.unit_type==="Residential"?"#E6F4EE":"#E6EFF9",color:u.unit_type==="Residential"?"#1A7F5A":"#1A5FA8"}}>{u.unit_type==="Residential"?"R":"C"}</span></td>
                     <td style={{padding:"5px 8px",color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.sub_type}</td>
                     <td style={{padding:"5px 8px"}}><PurposeBadge p={u.purpose}/></td>
@@ -3570,12 +3567,12 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                     <td style={{padding:"5px 8px",color:"#4A5568",whiteSpace:"nowrap"}}>{u.size_sqft?Number(u.size_sqft).toLocaleString():""}</td>
                     <td style={{padding:"5px 8px",color:"#4A5568",textAlign:"center"}}>{u.floor_number??""}</td>
                     <td style={{padding:"5px 8px",color:"#718096",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.view||""}</td>
-                    <td style={{padding:"5px 8px",fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{_tSp?.asking_price?""+Math.round(_tSp.asking_price/1000)+"K":""}</td>
-                    <td style={{padding:"5px 8px",fontWeight:600,color:"#1A5FA8",whiteSpace:"nowrap"}}>{_tLp?.annual_rent?""+Math.round(_tLp.annual_rent/1000)+"K":""}</td>
+                    <td style={{padding:"5px 8px",fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{sp?.asking_price?""+Math.round(sp.asking_price/1000)+"K":""}</td>
+                    <td style={{padding:"5px 8px",fontWeight:600,color:"#1A5FA8",whiteSpace:"nowrap"}}>{lp?.annual_rent?""+Math.round(lp.annual_rent/1000)+"K":""}</td>
                     <td style={{padding:"5px 8px",color:"#718096",whiteSpace:"nowrap",fontSize:11}}>{hdStr}</td>
                     <td style={{padding:"5px 8px"}}>
                       <div style={{display:"flex",flexDirection:"column",gap:2}}>
-                        <span style={{fontSize:9,fontWeight:600,padding:"2px 6px",borderRadius:20,background:_tSc.bg,color:_tSc.c,whiteSpace:"nowrap"}}>{u.status}</span>
+                        <span style={{fontSize:9,fontWeight:600,padding:"2px 6px",borderRadius:20,background:sc.bg,color:sc.c,whiteSpace:"nowrap"}}>{u.status}</span>
                         {reservations.find(x=>x.unit_id===u.id&&["Active","Extended"].includes(x.status))?<ReservationBadge reservation={reservations.find(x=>x.unit_id===u.id&&["Active","Extended"].includes(x.status))}/>:null}
                       </div>
                     </td>
@@ -3655,16 +3652,21 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                     )}
                     {selUnit.notes&&<div style={{fontSize:12,color:"#4A5568",padding:"8px 10px",background:"#F7F9FC",borderRadius:8,lineHeight:1.6}}>{selUnit.notes}</div>}
                     {canEdit&&<button onClick={()=>openEdit(selUnit)} style={{padding:"8px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit Unit</button>}
-                    {canReserve&&selUnit.status==="Available"&&(
+                    {canReserve&&selUnit.status==="Available"&&(()=>{
+                      const _hp=!!(salePricing.find(s=>s.unit_id===selUnit.id)||leasePricing.find(l=>l.unit_id===selUnit.id));
+                      const _pr=projects.find(p=>p.id===selUnit.project_id);
+                      const _ok=_hp&&(!_pr?.launch_date||new Date()>=new Date(_pr.launch_date));
+                      return (
                         <button onClick={()=>{
-                          if(!_crHp){showToast("Add pricing to this unit before reserving","error");return;}
-                          if(!_crOk){showToast("Project launches "+new Date(_crPr.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})+" — not open yet","error");return;}
+                          if(!_hp){showToast("Add pricing to this unit before reserving","error");return;}
+                          if(!_ok){showToast("Project launches "+new Date(_pr.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})+" — not open yet","error");return;}
                           setReserveUnit(selUnit);setShowReserve(true);
-                        }} style={{padding:"8px",borderRadius:8,border:"none",background:_crOk?"#C9A84C":"#E2E8F0",color:_crOk?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:_crOk?"pointer":"not-allowed"}}>
-                          {!_crHp?"⚠️ No Pricing":!_crOk?"🔒 Not Released":"🔒 Reserve Unit"}
+                        }} style={{padding:"8px",borderRadius:8,border:"none",background:_ok?"#C9A84C":"#E2E8F0",color:_ok?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:_ok?"pointer":"not-allowed"}}>
+                          {!_hp?"⚠️ No Pricing":!_ok?"🔒 Not Released":"🔒 Reserve Unit"}
                         </button>
-                    )}
-                    {canReserve&&reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status))?<button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"1.5px solid #E8C97A",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:700,cursor:"pointer"}}>⏱ View Reservation ({hoursLeft(reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status)).expires_at,reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status)).extended_until)}h)</button>:null}
+                      );
+                    })()}
+                    {canReserve&&(()=>{const _r=reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status));return _r?(<button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"1.5px solid #E8C97A",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:700,cursor:"pointer"}}>⏱ View Reservation ({hoursLeft(_r.expires_at,_r.extended_until)}h)</button>):null;})()}
                   </div>
                 )}
                 {/* Pricing tab */}
@@ -3675,10 +3677,10 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                         <div style={{fontSize:11,fontWeight:700,color:"#1A7F5A",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>🏷 Sale Pricing</div>
                         <div style={{background:"#0B1F3A",borderRadius:10,padding:"12px",marginBottom:8,textAlign:"center"}}>
                           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#C9A84C"}}>AED {Number(_suSp.asking_price).toLocaleString()}</div>
-                          {_suSp.price_per_sqft&&<div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Number(_suSp.price_per_sqft).toLocaleString()}/sqft</div>}
+                          {sp.price_per_sqft&&<div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Number(_suSp.price_per_sqft).toLocaleString()}/sqft</div>}
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                          {[["DLD Fee",_suSp.dld_fee_pct+"%"],["Agency Fee",_suSp.agency_fee_pct+"%"],["Booking",_suSp.booking_pct+"%"],["Construction",_suSp.during_construction_pct+"%"],["Handover",_suSp.on_handover_pct+"%"],_suSp.post_handover_pct>0&&["Post Handover",_suSp.post_handover_pct+"%"]].filter(Boolean).map(([l,v])=>(
+                          {[["DLD Fee",sp.dld_fee_pct+"%"],["Agency Fee",sp.agency_fee_pct+"%"],["Booking",sp.booking_pct+"%"],["Construction",sp.during_construction_pct+"%"],["Handover",sp.on_handover_pct+"%"],sp.post_handover_pct>0&&["Post Handover",sp.post_handover_pct+"%"]].filter(Boolean).map(([l,v])=>(
                             <div key={l} style={{background:"#FAFBFC",borderRadius:7,padding:"7px 9px"}}>
                               <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:1}}>{l}</div>
                               <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
@@ -3695,7 +3697,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                           <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Math.round(_suLp.annual_rent/12).toLocaleString()}/month</div>
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                          {[["Deposit","AED "+Number(_suLp.security_deposit||0).toLocaleString()],["Cheques",_suLp.cheques_allowed],["Municipality",_suLp.municipality_tax_pct+"%"],["Chiller",_suLp.chiller_included?"Included":"Excluded"]].map(([l,v])=>(
+                          {[["Deposit","AED "+Number(_suLp.security_deposit||0).toLocaleString()],["Cheques",lp.cheques_allowed],["Municipality",lp.municipality_tax_pct+"%"],["Chiller",lp.chiller_included?"Included":"Excluded"]].map(([l,v])=>(
                             <div key={l} style={{background:"#FAFBFC",borderRadius:7,padding:"7px 9px"}}>
                               <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:1}}>{l}</div>
                               <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
@@ -3835,6 +3837,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
             </div>
           </div>
         </div>
+        );
             )}
             {showReserve&&reserveUnit&&(
         <ReservationModal
@@ -4755,7 +4758,8 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                 </div>
               </div>
             </div>
-          )}
+            );
+                    )}
 
           {showAddLease&&(
             <Modal title="New Lease Contract" onClose={()=>setShowAddLease(false)} width={520}>
@@ -4975,11 +4979,7 @@ function buildContext(leads,units,projects,salePricing,leasePricing,activities,c
   const _p=[];
   _p.push("You are an AI assistant for PropCRM, real estate CRM, Dubai.");
   _p.push("User: "+currentUser.full_name+" ("+currentUser.role+")");
-  _p.push("Today: "+now.toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"}));
-  _p.push("LEADS: "+leads.length+" total. Pipeline: "+Object.entries(pipeline).map(([s,c])=>s+":"+c).join(", "));
-  leads.slice(0,10).forEach(l=>_p.push("• "+l.name+" | "+l.stage));
-  _p.push("PROPERTIES: "+units.length+" units, "+avail.length+" available");
-  avail.slice(0,10).forEach(u=>{const p=projects.find(x=>x.id===u.project_id);const sp=salePricing.find(s=>s.unit_id===u.id);const price=sp?.asking_price?"AED "+Number(sp.asking_price).toLocaleString():"TBD";_p.push("#"+u.unit_ref+" "+u.sub_type+" "+price+" "+(p?.name||"—"));});
+  leads.slice(0,5).forEach(l=>_p.push(l.name+" | "+l.stage));
   _p.push("Respond concisely.");
   return _p.join("\n");
 }
@@ -5009,8 +5009,8 @@ function exportToExcel(rows, headers, filename) {
 // ── PDF export helper ─────────────────────────────────────────────
 function exportToPDF(title, subtitle, headers, rows, filename) {
   const colW = Math.floor(90/headers.length);
-  const _pCSS='body{font-family:Arial,sans-serif;font-size:11px}table{width:100%;border-collapse:collapse}th{background:#0B1F3A;color:#C9A84C;padding:6px;text-align:left;font-size:9px;text-transform:uppercase}td{padding:5px;border-bottom:1px solid #eee}';
-  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+_pCSS+'</style></head><body><h2>'+title+'</h2><p>'+subtitle+'</p><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+(c==null?'—':c)+'</td>').join('')+'</tr>').join('')+'</tbody></table><p style="font-size:9px;color:#A0AEC0">'+rows.length+' records</p></body></html>';
+  const _pCSS='body{font-family:Arial,sans-serif;font-size:11px}table{width:100%;border-collapse:collapse}th{background:#0B1F3A;color:#C9A84C;padding:6px;text-align:left}td{padding:5px;border-bottom:1px solid #eee}';
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+_pCSS+'</style></head><body><h2>'+title+'</h2><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+(c==null?'—':c)+'</td>').join('')+'</tr>').join('')+'</tbody></table></body></html>';
   const blob = new Blob([html], {type:"text/html"});
   const url  = URL.createObjectURL(blob);
   const w    = window.open(url,"_blank");
@@ -7603,6 +7603,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
             </div>
           </div>
         </div>
+        );
             )}
 
       {/* Add/Edit Tenant Modal */}      {showAddTenant&&(
