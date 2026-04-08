@@ -14,17 +14,17 @@ const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ─── STYLES ───────────────────────────────────────────────────
-const _globalCSS = `
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+const _globalCSS = '
+    @import url(\'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap\');
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:#F0F2F5;color:#1a2535}
+    body{font-family:\'DM Sans\',sans-serif;background:#F0F2F5;color:#1a2535}
     ::-webkit-scrollbar{width:5px;height:5px}
     ::-webkit-scrollbar-thumb{background:#C9A84C55;border-radius:10px}
-    input,select,textarea{font-family:'DM Sans',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:9px 12px;font-size:13px;color:#1a2535;background:#fff;width:100%;transition:border-color 0.2s}
+    input,select,textarea{font-family:\'DM Sans\',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:9px 12px;font-size:13px;color:#1a2535;background:#fff;width:100%;transition:border-color 0.2s}
     input:focus,select:focus,textarea:focus{border-color:#C9A84C}
     input.error,select.error{border-color:#B83232!important;background:#FFF8F8}
     textarea{resize:vertical}
-    button{cursor:pointer;font-family:'DM Sans',sans-serif}
+    button{cursor:pointer;font-family:\'DM Sans\',sans-serif}
     .fade-in{animation:fadeIn 0.25s ease}
     @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
     .slide-in{animation:slideIn 0.2s ease}
@@ -57,7 +57,7 @@ const _globalCSS = `
     @media(max-width:480px){
       .stat-grid{grid-template-columns:1fr 1fr!important}
     }
-  `;
+  ';
 const GlobalStyle = () => (
   <style dangerouslySetInnerHTML={{__html:_globalCSS}}/>
 );
@@ -5028,39 +5028,42 @@ function buildContext(leads,units,projects,salePricing,leasePricing,activities,c
   active.forEach(l=>{pipeline[l.stage]=(pipeline[l.stage]||0)+1;});
   const avail=units.filter(u=>u.status==="Available");
 
-  return `You are an AI assistant for PropCRM, a real estate CRM based in Dubai, UAE.
-Logged-in user: ${currentUser.full_name} (role: ${currentUser.role})
-Today: ${now.toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
-
-=== LIVE DATA ===
-LEADS: ${leads.length} total · ${active.length} active · Pipeline: ${Object.entries(pipeline).map(([s,c])=>`${s}:${c}`).join(", ")}
-WON: ${leads.filter(l=>l.stage==="Closed Won").length} · LOST: ${leads.filter(l=>l.stage==="Closed Lost").length}
-
-RECENT LEADS (last 10):
-${leads.slice(0,10).map(l=>`• ${l.name} | ${l.stage} | AED ${Number(l.budget||0).toLocaleString()} | ${l.nationality||"—"} | ${l.source||"—"} | ${l.phone||"—"} | ${l.email||"—"}`).join("\n")}
-
-PROPERTIES: ${units.length} units across ${projects.length} projects · ${avail.length} available
-PROJECTS: ${projects.map(p=>`${p.name} (${p.developer||"—"}, ${p.status})`).join(" · ")}
-
-AVAILABLE UNITS (first 20):
-${avail.slice(0,20).map(u=>{
-  const p=projects.find(x=>x.id===u.project_id);
-  const sp=salePricing.find(s=>s.unit_id===u.id);
-  const lp=leasePricing.find(l=>l.unit_id===u.id);
-  const price=sp?.asking_price?"AED "+Number(sp.asking_price).toLocaleString():lp?.annual_rent?`AED ${Number(lp.annual_rent).toLocaleString()}/yr`:"TBD";
-  return `• #${u.unit_ref} | ${u.sub_type} | ${u.bedrooms===0?"Studio":(u.unit_type==="Residential"?u.bedrooms+"BR":"")} | ${u.size_sqft?Number(u.size_sqft).toLocaleString()+"sqft":""} | ${u.view||""} | ${price} | ${p?.name||"—"}`;
-}).join("\n")}
-
-RECENT ACTIVITY: ${activities.slice(0,5).map(a=>`${a.type} with ${a.lead_name} by ${a.user_name}`).join(" · ")}
-
-=== YOUR JOB ===
-1. Answer questions about properties, leads, pipeline using the live data above
-2. Draft WhatsApp/email messages (professional Dubai real estate tone, WhatsApp <150 words)
-3. Analyse pipeline and suggest next actions
-4. Qualify leads — check stage gates: Contacted needs phone+email; Site Visit needs meeting; Proposal needs unit+budget confirmed; Negotiation needs proposal notes; Closed Won needs final price+payment plan
-5. Auto-extract lead details from descriptions — when asked to "auto-fill" a lead, extract: name, phone, email, budget, nationality, notes
-
-Respond concisely. Use bullet points for lists. Match the user's language.`;
+  const _aiParts = [
+    "You are an AI assistant for PropCRM, a real estate CRM based in Dubai, UAE.",
+    "Logged-in user: "+currentUser.full_name+" (role: "+currentUser.role+")",
+    "Today: "+now.toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}),
+    "",
+    "=== LIVE DATA ===",
+    "LEADS: "+leads.length+" total · "+active.length+" active · Pipeline: "+Object.entries(pipeline).map(([s,c])=>s+":"+c).join(", "),
+    "WON: "+leads.filter(l=>l.stage==="Closed Won").length+" · LOST: "+leads.filter(l=>l.stage==="Closed Lost").length,
+    "",
+    "RECENT LEADS (last 10):",
+    ...leads.slice(0,10).map(l=>"• "+l.name+" | "+l.stage+" | AED "+Number(l.budget||0).toLocaleString()+" | "+(l.nationality||"—")+" | "+(l.source||"—")+" | "+(l.phone||"—")+" | "+(l.email||"—")),
+    "",
+    "PROPERTIES: "+units.length+" units across "+projects.length+" projects · "+avail.length+" available",
+    "PROJECTS: "+projects.map(p=>p.name+" ("+( p.developer||"—")+", "+p.status+")").join(" · "),
+    "",
+    "AVAILABLE UNITS (first 20):",
+    ...avail.slice(0,20).map(u=>{
+      const p=projects.find(x=>x.id===u.project_id);
+      const sp=salePricing.find(s=>s.unit_id===u.id);
+      const lp=leasePricing.find(l=>l.unit_id===u.id);
+      const price=sp?.asking_price?"AED "+Number(sp.asking_price).toLocaleString():lp?.annual_rent?"AED "+Number(lp.annual_rent).toLocaleString()+"/yr":"TBD";
+      return "• #"+u.unit_ref+" | "+u.sub_type+" | "+(u.bedrooms===0?"Studio":(u.unit_type==="Residential"?u.bedrooms+"BR":""))+" | "+(u.size_sqft?Number(u.size_sqft).toLocaleString()+"sqft":"")+" | "+(u.view||"")+" | "+price+" | "+(p?.name||"—");
+    }),
+    "",
+    "RECENT ACTIVITY: "+activities.slice(0,5).map(a=>a.type+" with "+a.lead_name+" by "+a.user_name).join(" · "),
+    "",
+    "=== YOUR JOB ===",
+    "1. Answer questions about properties, leads, pipeline using the live data above",
+    "2. Draft WhatsApp/email messages (professional Dubai real estate tone, WhatsApp <150 words)",
+    "3. Analyse pipeline and suggest next actions",
+    "4. Qualify leads — check stage gates: Contacted needs phone+email; Site Visit needs meeting; Proposal needs unit+budget discussed",
+    "5. Auto-extract lead details from descriptions — when asked to auto-fill a lead, extract: name, phone, email, budget, source, property type",
+    "",
+    "Respond concisely. Use bullet points for lists. Match the user's language."
+  ];
+  return _aiParts.join("\n");
 }
 
 // ── AI Assistant component ────────────────────────────────────────
@@ -5088,32 +5091,15 @@ function exportToExcel(rows, headers, filename) {
 // ── PDF export helper ─────────────────────────────────────────────
 function exportToPDF(title, subtitle, headers, rows, filename) {
   const colW = Math.floor(90/headers.length);
-  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:Arial,sans-serif;color:#1a2535;font-size:11px}
-    .header{background:#0B1F3A;color:#fff;padding:20px 24px;margin-bottom:0}
-    .title{font-size:20px;font-weight:700;color:#C9A84C;margin-bottom:4px}
-    .subtitle{font-size:12px;color:rgba(255,255,255,.6)}
-    .meta{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px}
-    table{width:100%;border-collapse:collapse;margin:0}
-    th{background:#0B1F3A;color:#C9A84C;padding:7px 8px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.4px}
-    td{padding:6px 8px;border-bottom:1px solid #F0F2F5;font-size:10px;vertical-align:top}
-    tr:nth-child(even) td{background:#FAFBFC}
-    .footer{margin-top:16px;text-align:center;font-size:9px;color:#A0AEC0}
-    @media print{@page{margin:12mm}}
-  </style></head><body>
-  <div class="header">
-    <div class="title">◆ PropCRM — ${title}</div>
-    <div class="subtitle">${subtitle}</div>
-    <div class="meta">Generated: ${new Date().toLocaleString("en-AE",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
-  </div>
-  <table>
-    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead>
-    <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c===null||c===undefined?"—":c}</td>`).join("")}</tr>`).join("")}</tbody>
-  </table>
-  <div class="footer">PropCRM · Confidential · ${rows.length} records</div>
-  </body></html>`;
+  const _pdfCSS='*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1a2535;font-size:11px}.header{background:#0B1F3A;color:#fff;padding:20px 24px;margin-bottom:0}.title{font-size:20px;font-weight:700;color:#C9A84C;margin-bottom:4px}.subtitle{font-size:12px;color:rgba(255,255,255,.6)}.meta{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px}table{width:100%;border-collapse:collapse;margin:0}th{background:#0B1F3A;color:#C9A84C;padding:7px 8px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.5px}td{padding:6px 8px;border-bottom:1px solid #F0F2F5;font-size:10px;vertical-align:top}tr:nth-child(even) td{background:#FAFBFC}.footer{margin-top:16px;text-align:center;font-size:9px;color:#A0AEC0}@media print{@page{margin:12mm}}';
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+_pdfCSS+'</style></head><body>'
+    +'<div class="header"><div class="title">◆ PropCRM — '+title+'</div>'
+    +'<div class="subtitle">'+subtitle+'</div>'
+    +'<div class="meta">Generated: '+new Date().toLocaleString("en-AE",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})+'</div></div>'
+    +'<table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead>'
+    +'<tbody>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+(c===null||c===undefined?'—':c)+'</td>').join('')+'</tr>').join('')+'</tbody></table>'
+    +'<div class="footer">PropCRM · Confidential · '+rows.length+' records</div>'
+    +'</body></html>';
   const blob = new Blob([html], {type:"text/html"});
   const url  = URL.createObjectURL(blob);
   const w    = window.open(url,"_blank");
