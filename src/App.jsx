@@ -14,53 +14,39 @@ const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ─── STYLES ───────────────────────────────────────────────────
+const GLOBAL_CSS = [
+  "@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');",
+  "*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}",
+  "body{font-family:'DM Sans',sans-serif;background:#F0F2F5;color:#1a2535}",
+  "::-webkit-scrollbar{width:5px;height:5px}",
+  "::-webkit-scrollbar-thumb{background:#C9A84C55;border-radius:10px}",
+  "input,select,textarea{font-family:'DM Sans',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:8px 12px;width:100%;font-size:13px;color:#1a2535;background:#fff;transition:border-color 0.15s}",
+  "input:focus,select:focus,textarea:focus{border-color:#C9A84C}",
+  "input.error,select.error{border-color:#B83232!important;background:#FFF8F8}",
+  "textarea{resize:vertical}",
+  "button{cursor:pointer;font-family:'DM Sans',sans-serif}",
+  ".fade-in{animation:fadeIn 0.25s ease}",
+  "@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
+  ".slide-in{animation:slideIn 0.2s ease}",
+  "@keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}",
+  ".ch{transition:box-shadow 0.18s,transform 0.18s}",
+  ".ch:hover{box-shadow:0 4px 20px #C9A84C22;transform:translateY(-1px)}",
+  ".dcard{transition:box-shadow 0.15s;cursor:grab}",
+  ".dcard:hover{box-shadow:0 3px 14px #0B1F3A22}",
+  "@keyframes spin{to{transform:rotate(360deg)}}",
+  "@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}",
+  "@keyframes aipulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}",
+  "@keyframes orbpulse{0%,100%{box-shadow:0 4px 20px rgba(201,168,76,.4)}50%{box-shadow:0 4px 32px rgba(201,168,76,.8),0 0 0 8px rgba(201,168,76,.15)}}",
+  "@keyframes slideInRight{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}",
+  "@keyframes fadeIn2{from{opacity:0}to{opacity:1}}",
+  "html{-webkit-text-size-adjust:100%;touch-action:manipulation}",
+  "body{overflow-x:hidden}",
+  "@media(max-width:768px){.tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important}.tab-bar::-webkit-scrollbar{display:none}.tab-bar-wrap{position:relative}.tab-bar-wrap::before,.tab-bar-wrap::after{content:'';position:absolute;top:0;bottom:0;width:32px;pointer-events:none;z-index:10}.tab-bar-wrap::before{left:0;background:linear-gradient(to right,#0B1F3A,transparent)}.tab-bar-wrap::after{right:0;background:linear-gradient(to left,#0B1F3A,transparent)}.filter-sidebar{display:none!important}.filter-sidebar.open{display:flex!important}.table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}.mob-stack{grid-template-columns:1fr!important}.hide-mobile{display:none!important}button{min-height:38px}}",
+  "@media(max-width:480px){.stat-grid{grid-template-columns:1fr 1fr!important}}"
+].join("\n");
 const GlobalStyle = () => (
-  <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:#F0F2F5;color:#1a2535}
-    ::-webkit-scrollbar{width:5px;height:5px}
-    ::-webkit-scrollbar-thumb{background:#C9A84C55;border-radius:10px}
-    input,select,textarea{font-family:'DM Sans',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:9px 12px;font-size:13px;color:#1a2535;background:#fff;width:100%;transition:border-color 0.2s}
-    input:focus,select:focus,textarea:focus{border-color:#C9A84C}
-    input.error,select.error{border-color:#B83232!important;background:#FFF8F8}
-    textarea{resize:vertical}
-    button{cursor:pointer;font-family:'DM Sans',sans-serif}
-    .fade-in{animation:fadeIn 0.25s ease}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-    .slide-in{animation:slideIn 0.2s ease}
-    @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
-    .ch{transition:box-shadow 0.18s,transform 0.18s}
-    .ch:hover{box-shadow:0 4px 20px #C9A84C22;transform:translateY(-1px)}
-    .dcard{transition:box-shadow 0.15s;cursor:grab}
-    .dcard:hover{box-shadow:0 3px 14px #0B1F3A22}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-
-    /* ── MOBILE ──────────────────────────────────────────────── */
-    html{-webkit-text-size-adjust:100%;touch-action:manipulation}
-    body{overflow-x:hidden}
-    @media(max-width:768px){
-      .tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important;position:relative}
-      .tab-bar::-webkit-scrollbar{display:none}
-      .tab-bar-wrap{position:relative}
-      .tab-bar-wrap::before,.tab-bar-wrap::after{content:"";position:absolute;top:0;bottom:0;width:32px;pointer-events:none;z-index:10}
-      .tab-bar-wrap::before{left:0;background:linear-gradient(to right,#0B1F3A,transparent)}
-      .tab-bar-wrap::after{right:0;background:linear-gradient(to left,#0B1F3A,transparent)}
-      .filter-sidebar{display:none!important}
-      .filter-sidebar.open{display:flex!important}
-      .table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}
-      .pipeline-board{overflow-x:auto!important;flex-wrap:nowrap!important}
-      .mob-stack{grid-template-columns:1fr!important}
-      .hide-mobile{display:none!important}
-      button{min-height:38px}
-    }
-    @media(max-width:480px){
-      .stat-grid{grid-template-columns:1fr 1fr!important}
-    }
-  `}</style>
+  <style dangerouslySetInnerHTML={{__html: GLOBAL_CSS}}/>
 );
-
 // ─── CONSTANTS ────────────────────────────────────────────────
 const STAGES      = ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
@@ -358,7 +344,7 @@ const AuthLogo=({sub})=>(
     <div style={{fontSize:13,color:"#A0AEC0",marginTop:6}}>{sub}</div>
   </div>
 );
-const ErrBox=({msg})=>msg?<div style={{background:"#FAEAEA",color:"#B83232",border:"1.5px solid #F0BCBC",borderRadius:8,padding:"10px 14px",fontSize:13,marginBottom:16,lineHeight:1.5}}>{msg}</div>:null;
+const ErrBox=({msg})=>msg?(<div style={{background:"#FAEAEA",color:"#B83232",border:"1.5px solid #F0BCBC",borderRadius:8,padding:"10px 14px",fontSize:13,marginBottom:16,lineHeight:1.5}}>{msg}</div>):null;
 const AuthTabs=({mode,setMode})=>(
   <div style={{display:"flex",background:"#F0F2F5",borderRadius:10,padding:4,marginBottom:24}}>
     {[["login","Sign In"],["signup","Create Account"]].map(([m,label])=>(
@@ -905,7 +891,7 @@ export default function App(){
 
       {/* Content */}
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"0 1rem 1rem",WebkitOverflowScrolling:"touch",minHeight:0}}>
-        {(dataLoading&&leads.length===0&&aiUnits.length===0)?<Spinner msg="Loading your data…"/>:(<>
+        {(dataLoading&&leads.length===0&&aiUnits.length===0)?(<Spinner msg="Loading your data…"/>):(<>
 
           {/* ── Sales CRM ─────────────────────────────────────── */}
           {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={setTab}/>}
