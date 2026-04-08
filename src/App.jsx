@@ -2322,7 +2322,6 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
 // AI ASSISTANT — Premium Concierge
 // ══════════════════════════════════════════════════════════════════
 function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,currentUser,showToast}){
-  const co=currentUser?.company_id;
   const _aiFirstName=currentUser?.full_name?.split(" ")[0]||"Prop";
   const aiName=(currentUser?.ai_assistant_name)||(_aiFirstName+" AI");
   const [open,setOpen]=useState(false);
@@ -2332,159 +2331,85 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
   const [provider,setProvider]=useState(()=>localStorage.getItem("propccrm_ai_provider")||"groq");
   const [apiKey,setApiKey]=useState(()=>localStorage.getItem("propccrm_ai_key_"+(localStorage.getItem("propccrm_ai_provider")||"groq"))||"");
   const [showConfig,setShowConfig]=useState(false);
-  const [streaming,setStreaming]=useState("");
   const endRef=useRef(null);
   const inputRef=useRef(null);
-
   const prov=AI_PROVIDERS.find(p=>p.id===provider)||AI_PROVIDERS[0];
   const hasKey=!!apiKey.trim();
+  const availUnits=units.filter(u=>u.status==="Available").length;
 
-  useEffect(()=>{if(open&&endRef.current)endRef.current.scrollIntoView({behavior:"smooth"});},[msgs,streaming,open]);
+  useEffect(()=>{if(open&&endRef.current)endRef.current.scrollIntoView({behavior:"smooth"});},[msgs,open]);
   useEffect(()=>{if(open&&inputRef.current)setTimeout(()=>inputRef.current?.focus(),100);},[open]);
 
-  const saveKey=(k)=>{
-    setApiKey(k);
-    localStorage.setItem("propccrm_ai_key_"+provider,k);
-  };
-  const changeProv=(id)=>{
-    setProvider(id);
-    localStorage.setItem("propccrm_ai_provider",id);
-    setApiKey(localStorage.getItem("propccrm_ai_key_"+id)||"");
-  };
+  const saveKey=k=>{setApiKey(k);localStorage.setItem("propccrm_ai_key_"+provider,k);};
+  const changeProv=id=>{setProvider(id);localStorage.setItem("propccrm_ai_provider",id);setApiKey(localStorage.getItem("propccrm_ai_key_"+id)||"");};
 
-  const send=async(text)=>{
-    const q=(text||input).trim();
+  const send=async txt=>{
+    const q=(txt||input).trim();
     if(!q||loading)return;
     if(!hasKey){setShowConfig(true);return;}
     setInput("");
     const newMsgs=[...msgs,{role:"user",content:q}];
     setMsgs(newMsgs);
     setLoading(true);
-    setStreaming("");
     try{
       const ctx=buildContext(leads,units,projects,salePricing,leasePricing,activities,currentUser);
       const reply=await prov.call(apiKey,ctx,newMsgs);
       setMsgs(m=>[...m,{role:"assistant",content:reply}]);
     }catch(e){
       setMsgs(m=>[...m,{role:"assistant",content:"⚠️ "+e.message}]);
-    }finally{
-      setLoading(false);
-      setStreaming("");
-    }
+    }finally{setLoading(false);}
   };
 
-  const QUICK=[
-    {icon:"📊",label:"Pipeline summary"},
-    {icon:"🏠",label:"Available units"},
-    {icon:"🔥",label:"Hot leads"},
-    {icon:"⏰",label:"Stale deals"},
-    {icon:"💬",label:"Draft WhatsApp"},
-    {icon:"🔑",label:"Leasing overview"},
-  ];
+  const QUICK=["Pipeline summary","Available units","Hot leads","Draft WhatsApp","Stale deals","Leasing overview"];
 
-  return open ? (
-    <div style={{position:"fixed",bottom:20,right:20,zIndex:9999,
-      width:420,height:680,maxHeight:"90vh",
-      background:"linear-gradient(160deg,#0B1F3A 0%,#0f2847 100%)",
-      borderRadius:20,boxShadow:"0 24px 80px rgba(0,0,0,.6),0 0 0 1px rgba(201,168,76,.25)",
-      display:"flex",flexDirection:"column",overflow:"hidden",
-      fontFamily:"'DM Sans',sans-serif"}}>
+  const bubbleStyle={position:"fixed",bottom:28,right:28,zIndex:9999,width:60,height:60,borderRadius:"50%",border:"none",cursor:"pointer",background:"linear-gradient(135deg,#C9A84C,#E8C97A)",boxShadow:"0 4px 20px rgba(201,168,76,.5),0 0 0 4px rgba(201,168,76,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,animation:"ai-pulse 3s ease-in-out infinite"};
+  const panelStyle={position:"fixed",bottom:20,right:20,zIndex:9999,width:420,height:680,maxHeight:"90vh",background:"linear-gradient(160deg,#0B1F3A 0%,#0f2847 100%)",borderRadius:20,boxShadow:"0 24px 80px rgba(0,0,0,.6),0 0 0 1px rgba(201,168,76,.25)",display:"flex",flexDirection:"column",overflow:"hidden",fontFamily:"'DM Sans',sans-serif"};
 
-      {/* Header */}
-      <div style={{padding:"16px 18px",
-        background:"linear-gradient(135deg,rgba(201,168,76,.15),rgba(201,168,76,.05))",
-        borderBottom:"1px solid rgba(201,168,76,.2)",
-        display:"flex",alignItems:"center",gap:10}}>
-        <div style={{width:36,height:36,borderRadius:10,
-          background:"linear-gradient(135deg,#C9A84C,#8A6200)",
-          display:"flex",alignItems:"center",justifyContent:"center",
-          fontSize:16,flexShrink:0}}>✦</div>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,
-            color:"#E8C97A",letterSpacing:".3px"}}>{aiName}</div>
-          <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",
-            letterSpacing:"1px",marginTop:1}}>Real Estate Intelligence</div>
+  if(!open) return <button onClick={()=>setOpen(true)} style={bubbleStyle} title={"Open "+aiName}>✦</button>;
+
+  return(
+    <div style={panelStyle}>
+      <div style={{padding:"16px 18px",background:"linear-gradient(135deg,rgba(201,168,76,.15),rgba(201,168,76,.05))",borderBottom:"1px solid rgba(201,168,76,.2)",display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#C9A84C,#8A6200)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>✦</div>
+        <div style={{flex:1}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#E8C97A"}}>{aiName}</div>
+          <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:"1px",marginTop:1}}>Real Estate Intelligence</div>
         </div>
-        <div style={{display:"flex",gap:6,alignItems:"center"}}>
-          <button onClick={()=>setShowConfig(v=>!v)}
-            style={{background:"none",border:"1px solid rgba(201,168,76,.3)",
-              color:"#C9A84C",borderRadius:7,padding:"4px 10px",fontSize:11,cursor:"pointer"}}>
-            ⚙ {prov.name}
-          </button>
-          {msgs.length>0&&<button onClick={()=>setMsgs([])}
-            style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",
-              cursor:"pointer",fontSize:13,padding:"4px 6px"}} title="Clear chat">↺</button>}
-          <button onClick={()=>setOpen(false)}
-            style={{background:"none",border:"none",color:"rgba(255,255,255,.5)",
-              cursor:"pointer",fontSize:18,padding:"4px 8px",lineHeight:1}}>✕</button>
-        </div>
+        <button onClick={()=>setShowConfig(v=>!v)} style={{background:"none",border:"1px solid rgba(201,168,76,.3)",color:"#C9A84C",borderRadius:7,padding:"4px 10px",fontSize:11,cursor:"pointer"}}>
+          {"⚙"} {prov.name}
+        </button>
+        {msgs.length>0&&<button onClick={()=>setMsgs([])} style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",cursor:"pointer",fontSize:13,padding:"4px 6px"}}>{"↺"}</button>}
+        <button onClick={()=>setOpen(false)} style={{background:"none",border:"none",color:"rgba(255,255,255,.5)",cursor:"pointer",fontSize:18,padding:"4px 8px",lineHeight:1}}>{"✕"}</button>
       </div>
 
-      {/* Config panel */}
       {showConfig&&(
-        <div style={{padding:"14px 18px",
-          background:"rgba(0,0,0,.3)",borderBottom:"1px solid rgba(255,255,255,.08)"}}>
+        <div style={{padding:"14px 18px",background:"rgba(0,0,0,.3)",borderBottom:"1px solid rgba(255,255,255,.08)"}}>
           <div style={{display:"flex",gap:6,marginBottom:10}}>
             {AI_PROVIDERS.map(p=>(
-              <button key={p.id} onClick={()=>changeProv(p.id)}
-                style={{flex:1,padding:"6px 4px",borderRadius:8,border:"1.5px solid",
-                  borderColor:provider===p.id?"#C9A84C":"rgba(255,255,255,.15)",
-                  background:provider===p.id?"rgba(201,168,76,.15)":"transparent",
-                  color:provider===p.id?"#C9A84C":"rgba(255,255,255,.5)",
-                  fontSize:11,fontWeight:600,cursor:"pointer"}}>
+              <button key={p.id} onClick={()=>changeProv(p.id)} style={{flex:1,padding:"6px 4px",borderRadius:8,border:"1.5px solid",borderColor:provider===p.id?"#C9A84C":"rgba(255,255,255,.15)",background:provider===p.id?"rgba(201,168,76,.15)":"transparent",color:provider===p.id?"#C9A84C":"rgba(255,255,255,.5)",fontSize:11,fontWeight:600,cursor:"pointer"}}>
                 {p.name}
-                <span style={{display:"block",fontSize:9,marginTop:2,
-                  color:p.badgeColor,opacity:.8}}>{p.badge}</span>
               </button>
             ))}
           </div>
-          <input
-            value={apiKey} onChange={e=>saveKey(e.target.value)}
-            placeholder={prov.placeholder}
-            type="password"
-            style={{width:"100%",background:"rgba(255,255,255,.07)",
-              border:"1px solid rgba(255,255,255,.15)",borderRadius:8,
-              padding:"8px 12px",color:"#fff",fontSize:12,boxSizing:"border-box",outline:"none"}}
-          />
-          {!hasKey&&(
-            <a href={prov.link} target="_blank" rel="noreferrer"
-              style={{display:"block",marginTop:6,fontSize:11,
-                color:"#C9A84C",textDecoration:"none",textAlign:"right"}}>
-              Get free API key →
-            </a>
-          )}
-          {hasKey&&<div style={{marginTop:6,fontSize:11,color:"#1A7F5A"}}>✓ Key saved</div>}
+          <input value={apiKey} onChange={e=>saveKey(e.target.value)} placeholder={prov.placeholder} type="password" style={{width:"100%",background:"rgba(255,255,255,.07)",border:"1px solid rgba(255,255,255,.15)",borderRadius:8,padding:"8px 12px",color:"#fff",fontSize:12,boxSizing:"border-box",outline:"none"}}/>
+          {!hasKey&&<a href={prov.link} target="_blank" rel="noreferrer" style={{display:"block",marginTop:6,fontSize:11,color:"#C9A84C",textDecoration:"none",textAlign:"right"}}>{"Get free API key →"}</a>}
+          {hasKey&&<div style={{marginTop:6,fontSize:11,color:"#1A7F5A"}}>{"✓ Key saved"}</div>}
         </div>
       )}
 
-      {/* Messages */}
       <div style={{flex:1,overflowY:"auto",padding:"14px 16px",display:"flex",flexDirection:"column",gap:12}}>
         {msgs.length===0&&(
           <div>
             <div style={{textAlign:"center",padding:"20px 0 16px"}}>
-              <div style={{fontSize:32,marginBottom:6}}>✦</div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,
-                color:"#E8C97A",fontWeight:600,marginBottom:4}}>
-                {hasKey?"How can I help?":"Configure to start"}
-              </div>
-              <div style={{fontSize:12,color:"rgba(255,255,255,.4)",lineHeight:1.5}}>
-                {hasKey
-                  ? leads.length+" leads · "+units.filter(u=>u.status==="Available").length+" available units"
-                  : "Click ⚙ "+prov.name+" above and add your free API key"}
-              </div>
+              <div style={{fontSize:32,marginBottom:6}}>{"✦"}</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,color:"#E8C97A",fontWeight:600,marginBottom:4}}>{hasKey?"How can I help?":"Configure to start"}</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,.4)",lineHeight:1.5}}>{hasKey?leads.length+" leads · "+availUnits+" available units":"Click ⚙ "+prov.name+" above and add your free API key"}</div>
             </div>
             {hasKey&&(
               <div style={{display:"flex",flexWrap:"wrap",gap:7,justifyContent:"center"}}>
                 {QUICK.map(q=>(
-                  <button key={q.label} onClick={()=>send(q.label)}
-                    style={{padding:"7px 12px",borderRadius:20,
-                      border:"1px solid rgba(201,168,76,.25)",
-                      background:"rgba(201,168,76,.08)",
-                      color:"rgba(255,255,255,.75)",fontSize:12,cursor:"pointer",
-                      display:"flex",alignItems:"center",gap:5,transition:"all .15s"}}
-                    onMouseOver={e=>{e.currentTarget.style.borderColor="#C9A84C";e.currentTarget.style.color="#E8C97A";}}
-                    onMouseOut={e=>{e.currentTarget.style.borderColor="rgba(201,168,76,.25)";e.currentTarget.style.color="rgba(255,255,255,.75)";}}>
-                    {q.icon} {q.label}
+                  <button key={q} onClick={()=>send(q)} style={{padding:"7px 12px",borderRadius:20,border:"1px solid rgba(201,168,76,.25)",background:"rgba(201,168,76,.08)",color:"rgba(255,255,255,.75)",fontSize:12,cursor:"pointer"}}>
+                    {q}
                   </button>
                 ))}
               </div>
@@ -2492,82 +2417,32 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
           </div>
         )}
         {msgs.map((m,i)=>(
-          <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
-            {m.role==="assistant"&&(
-              <div style={{width:24,height:24,borderRadius:6,flexShrink:0,marginRight:8,marginTop:2,
-                background:"linear-gradient(135deg,#C9A84C,#8A6200)",
-                display:"flex",alignItems:"center",justifyContent:"center",fontSize:11}}>✦</div>
-            )}
-            <div style={{maxWidth:"82%",padding:"10px 14px",borderRadius:m.role==="user"?"14px 14px 4px 14px":"14px 14px 14px 4px",
-              background:m.role==="user"?"linear-gradient(135deg,#C9A84C,#a87e30)":"rgba(255,255,255,.07)",
-              color:m.role==="user"?"#0B1F3A":"rgba(255,255,255,.88)",
-              fontSize:13,lineHeight:1.6,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+          <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",gap:8}}>
+            {m.role==="assistant"&&<div style={{width:24,height:24,borderRadius:6,flexShrink:0,marginTop:2,background:"linear-gradient(135deg,#C9A84C,#8A6200)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11}}>{"✦"}</div>}
+            <div style={{maxWidth:"82%",padding:"10px 14px",borderRadius:m.role==="user"?"14px 14px 4px 14px":"14px 14px 14px 4px",background:m.role==="user"?"linear-gradient(135deg,#C9A84C,#a87e30)":"rgba(255,255,255,.07)",color:m.role==="user"?"#0B1F3A":"rgba(255,255,255,.88)",fontSize:13,lineHeight:1.6,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
               {m.content}
             </div>
           </div>
         ))}
         {loading&&(
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:24,height:24,borderRadius:6,flexShrink:0,
-              background:"linear-gradient(135deg,#C9A84C,#8A6200)",
-              display:"flex",alignItems:"center",justifyContent:"center",fontSize:11}}>✦</div>
+            <div style={{width:24,height:24,borderRadius:6,flexShrink:0,background:"linear-gradient(135deg,#C9A84C,#8A6200)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11}}>{"✦"}</div>
             <div style={{display:"flex",gap:4}}>
-              {[0,1,2].map(i=>(
-                <div key={i} style={{width:7,height:7,borderRadius:"50%",
-                  background:"#C9A84C",opacity:.7,
-                  animation:"ai-dot .9s "+i*.2+"s ease-in-out infinite alternate"}}/>
-              ))}
+              {[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:"#C9A84C",opacity:.7,animation:"ai-dot .9s "+i*.2+"s ease-in-out infinite alternate"}}/>)}
             </div>
           </div>
         )}
         <div ref={endRef}/>
       </div>
 
-      {/* Input */}
-      <div style={{padding:"12px 14px",borderTop:"1px solid rgba(255,255,255,.08)",
-        background:"rgba(0,0,0,.2)"}}>
+      <div style={{padding:"12px 14px",borderTop:"1px solid rgba(255,255,255,.08)",background:"rgba(0,0,0,.2)"}}>
         <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={e=>{setInput(e.target.value);e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,120)+"px";}}
-            onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
-            placeholder={hasKey?"Ask anything... (Enter to send)":"Add API key above to start"}
-            disabled={!hasKey||loading}
-            style={{flex:1,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.15)",
-              borderRadius:12,padding:"10px 12px",color:"#fff",fontSize:13,
-              resize:"none",outline:"none",minHeight:44,maxHeight:120,
-              fontFamily:"inherit",lineHeight:1.5,
-              opacity:hasKey?1:.5}}
-          />
-          <button onClick={()=>send()} disabled={!hasKey||loading||!input.trim()}
-            style={{width:44,height:44,borderRadius:12,border:"none",
-              background:hasKey&&input.trim()?"linear-gradient(135deg,#C9A84C,#8A6200)":"rgba(255,255,255,.1)",
-              color:hasKey&&input.trim()?"#0B1F3A":"rgba(255,255,255,.3)",
-              cursor:hasKey&&input.trim()?"pointer":"not-allowed",
-              display:"flex",alignItems:"center",justifyContent:"center",
-              fontSize:16,flexShrink:0,transition:"all .15s"}}>
-            ↑
-          </button>
+          <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}} placeholder={hasKey?"Ask anything... (Enter to send)":"Add API key above to start"} disabled={!hasKey||loading} rows={2} style={{flex:1,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.15)",borderRadius:12,padding:"10px 12px",color:"#fff",fontSize:13,resize:"none",outline:"none",fontFamily:"inherit",lineHeight:1.5,opacity:hasKey?1:.5}}/>
+          <button onClick={()=>send()} disabled={!hasKey||loading||!input.trim()} style={{width:44,height:44,borderRadius:12,border:"none",background:hasKey&&input.trim()?"linear-gradient(135deg,#C9A84C,#8A6200)":"rgba(255,255,255,.1)",color:hasKey&&input.trim()?"#0B1F3A":"rgba(255,255,255,.3)",cursor:hasKey&&input.trim()?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{"↑"}</button>
         </div>
-        <div style={{marginTop:6,fontSize:10,color:"rgba(255,255,255,.25)",textAlign:"center"}}>
-          Ctrl+K to open · Shift+Enter for new line · {prov.name} powered
-        </div>
+        <div style={{marginTop:6,fontSize:10,color:"rgba(255,255,255,.25)",textAlign:"center"}}>{"Ctrl+K to toggle · Shift+Enter for new line · "+prov.name+" powered"}</div>
       </div>
     </div>
-  ) : (
-
-    <button onClick={()=>setOpen(true)}
-      style={{position:"fixed",bottom:28,right:28,zIndex:9999,
-        width:60,height:60,borderRadius:"50%",border:"none",cursor:"pointer",
-        background:"linear-gradient(135deg,#C9A84C,#E8C97A)",
-        boxShadow:"0 4px 20px rgba(201,168,76,.5),0 0 0 4px rgba(201,168,76,.15)",
-        display:"flex",alignItems:"center",justifyContent:"center",
-        fontSize:26,transition:"all .2s",
-        animation:"ai-pulse 3s ease-in-out infinite"}}
-      title={"Open "+aiName+" (Ctrl+K)"}>
-      ✦
-    </button>
   );
 }
 function GroupConsolidatedView() {
