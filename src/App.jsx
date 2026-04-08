@@ -2349,100 +2349,64 @@ function FloatingOrb({aiOpen, onOpen, followupAlerts={}}){
 }
 
 // ══════════════════════════════════════════════════════════════════
-// AMBIENT AI — Floating Orb + Command Bar + Side Panel
+// AMBIENT AI — Side Panel + Floating Orb
 // ══════════════════════════════════════════════════════════════════
-function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], projects=[], salePricing=[], leasePricing=[], activities=[], currentUser, showToast, followupAlerts={}, leasingData=null, currentApp="sales"}){
-  const [messages,    setMessages]    = useState([]);
-  const [input,       setInput]       = useState("");
-  const [loading,     setLoading]     = useState(false);
-  const [activeProvider, setActiveProvider] = useState(()=>localStorage.getItem("ai_provider")||"groq");
-  const [keys,        setKeys]        = useState(()=>{ try{ return JSON.parse(localStorage.getItem("ai_keys")||"{}"); }catch{ return {}; } });
-  const [showSetup,   setShowSetup]   = useState(false);
-  const [suggestion,  setSuggestion]  = useState(null);
-  const [usedProvider,setUsedProvider]= useState(null);
-  const inputRef  = useRef(null);
+function AmbientAI({open, onClose, leads=[], units=[], projects=[], salePricing=[], leasePricing=[], activities=[], currentUser, showToast, followupAlerts={}, leasingData=null, currentApp="sales"}){
+  const [messages,setMessages] = useState([]);
+  const [input,setInput] = useState("");
+  const [loading,setLoading] = useState(false);
+  const [activeProvider,setActiveProvider] = useState(()=>localStorage.getItem("ai_provider")||"groq");
+  const [keys,setKeys] = useState(()=>{ try{ return JSON.parse(localStorage.getItem("ai_keys")||"{}"); }catch{ return {}; } });
+  const [showSetup,setShowSetup] = useState(false);
+  const [suggestion,setSuggestion] = useState(null);
+  const [usedProvider,setUsedProvider] = useState(null);
+  const inputRef = useRef(null);
   const bottomRef = useRef(null);
 
-  const cacheStr   = localStorage.getItem("propccrm_company_cache");
-  const coCache    = cacheStr ? JSON.parse(cacheStr) : null;
+  const cacheStr = localStorage.getItem("propccrm_company_cache");
+  const coCache  = cacheStr ? JSON.parse(cacheStr) : null;
   const aiFullName = coCache?.ai_assistant_name || ((coCache?.name||"Prop").split(" ")[0]+" AI");
-  const hasAnyKey  = AI_PROVIDERS.some(p=>keys[p.id]);
+  const hasAnyKey = AI_PROVIDERS.some(p=>keys[p.id]);
 
-  // Smart insights from live data
-  const insights = useMemo(()=>{
-    const items = [];
-    const stale = (followupAlerts.staleLeads||[]);
-    const overdue = (followupAlerts.overduePayments||[]);
-    const expiring = (followupAlerts.expiringLeases||[]);
-    if(stale.length>0) items.push({icon:"⏱",color:"#A06810",bg:"#FDF3DC",text:`${stale.length} lead${stale.length>1?"s":""} stuck for 7+ days`,prompt:`Which leads have been stuck the longest and need immediate attention? Give me a prioritised action plan.`});
-    if(overdue.length>0) items.push({icon:"💳",color:"#B83232",bg:"#FAEAEA",text:`${overdue.length} overdue payment${overdue.length>1?"s":""}`,prompt:`Which payments are overdue? Summarise amounts and suggest next steps for each tenant.`});
-    if(expiring.length>0) items.push({icon:"📄",color:"#8A6200",bg:"#FFF3CD",text:`${expiring.length} lease${expiring.length>1?"s":""} expiring in 30 days`,prompt:`Which leases are expiring soon? Draft renewal talking points for each tenant.`});
-    const avail = units.filter(u=>u.status==="Available").length;
-    if(avail>0) items.push({icon:"🏠",color:"#1A7F5A",bg:"#E6F4EE",text:`${avail} units available for ${currentApp==="leasing"?"lease":"sale"}`,prompt:`Show me all available units with pricing. Which ones represent the best value?`});
-    const activeLeads = leads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
-    if(activeLeads.length>0) items.push({icon:"🎯",color:"#1A5FA8",bg:"#E6EFF9",text:`${activeLeads.length} active opportunities in pipeline`,prompt:`Analyse my current pipeline. What is the total value and which deals are most likely to close this month?`});
-    return items;
-  },[followupAlerts, units, leads, currentApp]);
+  const stale    = followupAlerts.staleLeads||[];
+  const overdue  = followupAlerts.overduePayments||[];
+  const expiring = followupAlerts.expiringLeases||[];
 
-  // Quick prompts by context
+  const INSIGHTS = [
+    stale.length>0    && {icon:"⏱",color:"#A06810",bg:"#FDF3DC",text:`${stale.length} stale lead${stale.length>1?"s":""}`,    msg:"Which leads have been stuck the longest? Give me a prioritised action plan."},
+    overdue.length>0  && {icon:"💳",color:"#B83232",bg:"#FAEAEA",text:`${overdue.length} overdue payment${overdue.length>1?"s":""}`, msg:"Which payments are overdue? Summarise amounts and suggest next steps."},
+    expiring.length>0 && {icon:"📄",color:"#8A6200",bg:"#FFF3CD",text:`${expiring.length} lease${expiring.length>1?"s":""} expiring`, msg:"Which leases are expiring soon? Draft renewal talking points."},
+    units.filter(u=>u.status==="Available").length>0 && {icon:"🏠",color:"#1A7F5A",bg:"#E6F4EE",text:`${units.filter(u=>u.status==="Available").length} available units`, msg:"Show available units with pricing. Which are best value?"},
+  ].filter(Boolean);
+
   const QUICK = currentApp==="leasing" ? [
-    {icon:"🔑",label:"Rent Roll",        msg:"Summarise our current rent roll — total annual income, active leases and upcoming renewals."},
-    {icon:"📄",label:"Expiring Leases",  msg:"Which leases are expiring in the next 60 days? Draft renewal messages for each tenant."},
-    {icon:"💳",label:"Overdue Payments", msg:"Show me all overdue payments with tenant details and recommended collection actions."},
-    {icon:"🏠",label:"Available Units",  msg:"Which units are available for lease? Show pricing and highlight the best value options."},
-    {icon:"👤",label:"Tenant Summary",   msg:"Give me a summary of all active tenants — lease terms, payment history and any issues."},
-    {icon:"🔧",label:"Maintenance",      msg:"Summarise open maintenance requests by priority. Which need immediate attention?"},
+    {icon:"🔑",label:"Rent Roll",       msg:"Summarise our rent roll — total income, active leases, upcoming renewals."},
+    {icon:"📄",label:"Expiring Leases", msg:"Which leases expire in 60 days? Draft renewal messages."},
+    {icon:"💳",label:"Overdue",         msg:"Show overdue payments with tenant details and collection steps."},
+    {icon:"🏠",label:"Available Units", msg:"Which units are available? Show pricing and best value options."},
+    {icon:"🔧",label:"Maintenance",     msg:"Summarise open maintenance by priority. What needs attention now?"},
   ] : [
-    {icon:"📊",label:"Pipeline",         msg:"Full pipeline analysis — total value by stage and top 3 deals to focus on this week."},
-    {icon:"👤",label:"Hot Leads",        msg:"Which leads are most likely to close this month? Rank them with reasoning."},
-    {icon:"🏠",label:"Best Units",       msg:"Which available units are best value right now? Show pricing and highlight standout options."},
-    {icon:"✍",label:"Draft WhatsApp",   msg:"Draft a luxury re-engagement WhatsApp for a client who viewed but went quiet 2 weeks ago."},
-    {icon:"💰",label:"Revenue Forecast", msg:"Based on current pipeline, forecast revenue for the next 90 days."},
-    {icon:"⏱",label:"Stale Deals",      msg:"Which leads need urgent attention? Who has been waiting the longest?"},
+    {icon:"📊",label:"Pipeline",        msg:"Full pipeline analysis — value by stage and top 3 deals this week."},
+    {icon:"👤",label:"Hot Leads",       msg:"Which leads are most likely to close this month? Rank them."},
+    {icon:"🏠",label:"Best Units",      msg:"Which available units are best value? Show pricing highlights."},
+    {icon:"✍",label:"Draft WhatsApp",  msg:"Draft a luxury re-engagement WhatsApp for a client who went quiet 2 weeks ago."},
+    {icon:"💰",label:"Forecast",        msg:"Based on current pipeline, forecast revenue for the next 90 days."},
   ];
 
-  // Ctrl+K global listener
-  useEffect(()=>{
-    const handler = (e) => {
-      if((e.ctrlKey||e.metaKey) && e.key==="k"){
-        e.preventDefault();
-        // Toggle panel open
-        if(!open) {
-          // Trigger open via the orb click simulation
-          document.dispatchEvent(new CustomEvent("propcrm-ai-open"));
-        }
-      }
-      if(e.key==="Escape" && open) onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return ()=>window.removeEventListener("keydown", handler);
-  },[open, onClose]);
-
-  // Listen for open event
-  useEffect(()=>{
-    const handler = () => { if(!open) onClose(); /* parent handles */ };
-    document.addEventListener("propcrm-ai-open", handler);
-    return ()=>document.removeEventListener("propcrm-ai-open", handler);
-  },[]);
-
-  // Focus input when panel opens
   useEffect(()=>{
     if(open){
-      setTimeout(()=>inputRef.current?.focus(), 100);
+      setTimeout(()=>inputRef.current?.focus(),100);
       if(messages.length===0){
-        const hour = new Date().getHours();
-        const greeting = hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
-        const firstName = currentUser?.full_name?.split(" ")[0]||"there";
-        setMessages([{role:"assistant", content:
-          `${greeting}, ${firstName}. I'm **${aiFullName}**.
+        const h=new Date().getHours();
+        const g=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
+        const fn=currentUser?.full_name?.split(" ")[0]||"there";
+        setMessages([{role:"assistant",content:
+          `${g}, ${fn}. I'm **${aiFullName}**.
+
+I have live access to **${leads.length} contacts**, **${units.filter(u=>u.status==="Available").length} available units** and **${projects.length} projects**.
 
 `+
-          `I have live access to **${leads.length} contacts**, **${units.filter(u=>u.status==="Available").length} available units** and **${projects.length} projects**.
-
-`+
-          (hasAnyKey
-            ? `Select a quick action or type anything — I'll answer instantly.`
-            : `⚙️ Click **Configure** to add a free API key and activate me.`)
+          (hasAnyKey?`Select a quick action or type anything.`:`Click **Configure** to add a free API key.`)
         }]);
       }
     }
@@ -2450,161 +2414,123 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
 
   useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); },[messages,loading]);
 
-  const saveKeys = k => { setKeys(k); localStorage.setItem("ai_keys",JSON.stringify(k)); };
-  const saveProvider = pid => { setActiveProvider(pid); localStorage.setItem("ai_provider",pid); };
+  const saveKeys = k=>{ setKeys(k); localStorage.setItem("ai_keys",JSON.stringify(k)); };
+  const saveProvider = pid=>{ setActiveProvider(pid); localStorage.setItem("ai_provider",pid); };
 
-  const callAI = async (systemPrompt, msgs) => {
-    const order = [AI_PROVIDERS.find(p=>p.id===activeProvider),...AI_PROVIDERS.filter(p=>p.id!==activeProvider)].filter(Boolean);
+  const callAI = async(sys,msgs)=>{
+    const order=[AI_PROVIDERS.find(p=>p.id===activeProvider),...AI_PROVIDERS.filter(p=>p.id!==activeProvider)].filter(Boolean);
     for(const prov of order){
-      const key = keys[prov.id];
-      if(!key) continue;
-      try{ const reply = await prov.call(key, systemPrompt, msgs); setUsedProvider(prov); return reply; }
+      const key=keys[prov.id]; if(!key) continue;
+      try{ const r=await prov.call(key,sys,msgs); setUsedProvider(prov); return r; }
       catch(e){ if(prov.id===order[order.length-1].id) throw e; }
     }
     throw new Error("No API key configured.");
   };
 
-  const send = async(text)=>{
-    const msg = text||input.trim();
-    if(!msg) return;
+  const send=async(text)=>{
+    const msg=text||input.trim(); if(!msg) return;
     setInput(""); setLoading(true);
-    const newMsgs = [...messages,{role:"user",content:msg}];
+    const newMsgs=[...messages,{role:"user",content:msg}];
     setMessages(newMsgs);
     try{
-      const ctx = buildContext(leads,units,projects,salePricing,leasePricing,activities,currentUser);
-      const reply = await callAI(ctx, newMsgs.slice(-12));
+      const ctx=buildContext(leads,units,projects,salePricing,leasePricing,activities,currentUser);
+      const reply=await callAI(ctx,newMsgs.slice(-12));
       setMessages(p=>[...p,{role:"assistant",content:reply}]);
-      // Lead detection
       if(msg.toLowerCase().includes("auto-fill")||msg.toLowerCase().includes("add lead")){
-        const name   = reply.match(/name[:\s*]*([A-Z][a-zA-Z\s]{2,30})(?:\n|,|\||\*)/i)?.[1]?.trim();
-        const phone  = reply.match(/(\+971\d{8,9}|\+\d{10,14})/)?.[0];
-        const email  = reply.match(/[\w.-]+@[\w.-]+\.\w{2,}/)?.[0];
-        const budget = reply.match(/(?:budget|AED)[:\s*]*([0-9,]+(?:\.[0-9]+)?(?:M|m)?)/i)?.[1];
+        const name=reply.match(/name[:\s*]*([A-Z][a-zA-Z\s]{2,30})(?:\n|,|\||\*)/i)?.[1]?.trim();
+        const phone=reply.match(/(\+971\d{8,9}|\+\d{10,14})/)?.[0];
+        const budget=reply.match(/(?:budget|AED)[:\s*]*([0-9,]+(?:\.[0-9]+)?(?:M|m)?)/i)?.[1];
         if(name||phone){
-          let b=0;
-          if(budget){const r=budget.replace(/,/g,"");b=r.toLowerCase().includes("m")?parseFloat(r)*1e6:parseFloat(r);}
-          setSuggestion({name:name||"",phone:phone||"",email:email||"",budget:b,notes:""});
+          let b=0; if(budget){const r=budget.replace(/,/g,"");b=r.toLowerCase().includes("m")?parseFloat(r)*1e6:parseFloat(r);}
+          setSuggestion({name:name||"",phone:phone||"",budget:b,notes:""});
         }
       }
     }catch(e){
-      setMessages(p=>[...p,{role:"assistant",content:e.message.includes("No API key")
-        ?`Please click **Configure** to add a free API key and activate ${aiFullName}.`
-        :`Sorry, something went wrong: ${e.message}`}]);
-      if(e.message.includes("No API key")) setShowSetup(true);
+      setMessages(p=>[...p,{role:"assistant",content:e.message.includes("No API")
+        ?`Click **Configure** to add a free API key and activate ${aiFullName}.`
+        :`Sorry: ${e.message}`}]);
+      if(e.message.includes("No API")) setShowSetup(true);
     }
     setLoading(false);
   };
 
-  const fmt = text => text.split("\n").map((line,i)=>{
+  const fmtLine=(line,i)=>{
     if(!line.trim()) return <div key={i} style={{height:5}}/>;
     if(/^#{1,3}\s/.test(line)) return <div key={i} style={{fontWeight:800,fontSize:13,color:"#0B1F3A",marginTop:8,marginBottom:3}}>{line.replace(/^#+\s/,"")}</div>;
-    if(/^\*\*(.+)\*\*$/.test(line)) return <div key={i} style={{fontWeight:700,color:"#0B1F3A",marginTop:5,marginBottom:2}}>{line.replace(/\*\*/g,"")}</div>;
+    if(/^\*\*(.+)\*\*$/.test(line)) return <div key={i} style={{fontWeight:700,color:"#0B1F3A",marginTop:5}}>{line.replace(/\*\*/g,"")}</div>;
     if(line.match(/^[•\-\*]\s/)){
       const txt=line.replace(/^[•\-\*]\s*/,"");
-      const parts=txt.split(/\*\*(.+?)\*\*/g);
-      return <div key={i} style={{display:"flex",gap:6,marginBottom:2,paddingLeft:4}}>
-        <span style={{color:"#C9A84C",fontWeight:700,flexShrink:0}}>◆</span>
-        <span>{parts.map((p,j)=>j%2===1?<strong key={j} style={{color:"#0B1F3A"}}>{p}</strong>:p)}</span>
-      </div>;
+      const pts=txt.split(/\*\*(.+?)\*\*/g);
+      return <div key={i} style={{display:"flex",gap:6,marginBottom:2,paddingLeft:4}}><span style={{color:"#C9A84C",fontWeight:700}}>◆</span><span>{pts.map((p,j)=>j%2===1?<strong key={j} style={{color:"#0B1F3A"}}>{p}</strong>:p)}</span></div>;
     }
-    const parts=line.split(/\*\*(.+?)\*\*/g);
-    return <div key={i} style={{marginBottom:2,lineHeight:1.6}}>{parts.map((p,j)=>j%2===1?<strong key={j} style={{color:"#0B1F3A"}}>{p}</strong>:p)}</div>;
-  });
+    const pts=line.split(/\*\*(.+?)\*\*/g);
+    return <div key={i} style={{marginBottom:2,lineHeight:1.6}}>{pts.map((p,j)=>j%2===1?<strong key={j} style={{color:"#0B1F3A"}}>{p}</strong>:p)}</div>;
+  };
+  const fmt=text=>text.split("\n").map(fmtLine);
 
   if(!open) return null;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(11,31,58,.4)",backdropFilter:"blur(3px)",zIndex:1990,animation:"fadeIn .2s ease"}}/>
-
-      {/* Side Panel */}
-      <div style={{
-        position:"fixed",top:0,right:0,bottom:0,
-        width:"min(480px,95vw)",
-        background:"#F7F8FC",
-        zIndex:2000,
-        display:"flex",flexDirection:"column",
-        boxShadow:"-8px 0 40px rgba(11,31,58,.2)",
-        animation:"slideInRight .25s ease",
-      }}>
+    <div style={{position:"fixed",inset:0,zIndex:1990}} onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <div style={{position:"absolute",inset:0,background:"rgba(11,31,58,.4)",backdropFilter:"blur(3px)"}} onClick={onClose}/>
+      <div style={{position:"absolute",top:0,right:0,bottom:0,width:"min(480px,95vw)",background:"#F7F8FC",display:"flex",flexDirection:"column",boxShadow:"-8px 0 40px rgba(11,31,58,.2)",animation:"slideInRight .25s ease"}}>
 
         {/* Header */}
-        <div style={{background:"linear-gradient(135deg,#0B1F3A 0%,#1A3558 100%)",padding:"16px 20px 12px",flexShrink:0,position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:-15,right:-15,width:80,height:80,borderRadius:"50%",background:"rgba(201,168,76,.08)"}}/>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",position:"relative"}}>
+        <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",padding:"16px 20px 12px",flexShrink:0}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:38,height:38,borderRadius:11,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:"#0B1F3A",boxShadow:"0 3px 12px rgba(201,168,76,.4)"}}>✦</div>
+              <div style={{width:38,height:38,borderRadius:11,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:"#0B1F3A"}}>✦</div>
               <div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff",lineHeight:1.1}}>{aiFullName}</div>
-                <div style={{fontSize:10,color:"rgba(201,168,76,.7)",letterSpacing:".5px",textTransform:"uppercase",marginTop:1}}>Real Estate Intelligence</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>{aiFullName}</div>
+                <div style={{fontSize:10,color:"rgba(201,168,76,.7)",letterSpacing:".5px",textTransform:"uppercase"}}>Real Estate Intelligence</div>
               </div>
             </div>
-            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <div style={{display:"flex",gap:6}}>
               <button onClick={()=>setShowSetup(s=>!s)} style={{padding:"5px 10px",borderRadius:7,border:"1px solid rgba(201,168,76,.3)",background:"rgba(201,168,76,.1)",color:"#C9A84C",fontSize:10,fontWeight:600,cursor:"pointer"}}>⚙ Config</button>
               <button onClick={onClose} style={{width:28,height:28,borderRadius:7,border:"none",background:"rgba(255,255,255,.1)",color:"rgba(255,255,255,.6)",fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
             </div>
           </div>
-
-          {/* Live stats */}
-          <div style={{display:"flex",gap:12,marginTop:10,position:"relative"}}>
-            {[
-              [leads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage)).length,"Active Opps","#4A9EE8"],
-              [units.filter(u=>u.status==="Available").length,"Available","#1A7F5A"],
-              [projects.length,"Projects","#9B7FD4"],
-            ].map(([v,l,c])=>(
-              <div key={l} style={{background:"rgba(255,255,255,.07)",borderRadius:7,padding:"5px 10px",textAlign:"center"}}>
-                <div style={{fontSize:15,fontWeight:700,color:c,lineHeight:1}}>{v}</div>
-                <div style={{fontSize:9,color:"rgba(255,255,255,.4)",marginTop:1}}>{l}</div>
+          <div style={{display:"flex",gap:8}}>
+            {[[leads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage)).length,"Active"],
+              [units.filter(u=>u.status==="Available").length,"Available"],
+              [projects.length,"Projects"]
+            ].map(([v,l])=>(
+              <div key={l} style={{background:"rgba(255,255,255,.07)",borderRadius:7,padding:"4px 10px",textAlign:"center"}}>
+                <div style={{fontSize:14,fontWeight:700,color:"#C9A84C"}}>{v}</div>
+                <div style={{fontSize:9,color:"rgba(255,255,255,.4)"}}>{l}</div>
               </div>
             ))}
             <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:4}}>
               {AI_PROVIDERS.map(p=>(
-                <button key={p.id} onClick={()=>saveProvider(p.id)} title={p.name} style={{
-                  width:6,height:6,borderRadius:"50%",border:"none",cursor:"pointer",padding:0,
-                  background:keys[p.id]?(activeProvider===p.id?"#C9A84C":"#1A7F5A"):"rgba(255,255,255,.2)",
-                }}/>
+                <button key={p.id} onClick={()=>saveProvider(p.id)} title={p.name} style={{width:7,height:7,borderRadius:"50%",border:"none",cursor:"pointer",padding:0,background:keys[p.id]?(activeProvider===p.id?"#C9A84C":"#1A7F5A"):"rgba(255,255,255,.2)"}}/>
               ))}
               <span style={{fontSize:9,color:"rgba(255,255,255,.3)",marginLeft:4}}>{usedProvider?.name||"No key"}</span>
             </div>
           </div>
         </div>
 
-        {/* Setup panel */}
+        {/* Setup */}
         {showSetup&&(
           <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"12px 16px",flexShrink:0,maxHeight:200,overflowY:"auto"}}>
             <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:8}}>Configure {aiFullName}</div>
             {AI_PROVIDERS.map(p=>(
               <div key={p.id} style={{display:"flex",gap:6,alignItems:"center",marginBottom:6}}>
                 <span style={{fontSize:11,fontWeight:600,color:"#4A5568",width:50,flexShrink:0}}>{p.name}</span>
-                <input type="password" defaultValue={keys[p.id]||""} id={`amb-key-${p.id}`} placeholder={p.placeholder}
-                  style={{flex:1,padding:"5px 8px",border:"1.5px solid #D1D9E6",borderRadius:6,fontSize:11}}/>
-                <button onClick={()=>{
-                  const val=document.getElementById(`amb-key-${p.id}`).value.trim();
-                  if(val){saveKeys({...keys,[p.id]:val});showToast(`${p.name} activated`,"success");}
-                  else{const nk={...keys};delete nk[p.id];saveKeys(nk);}
-                }} style={{padding:"5px 10px",borderRadius:6,border:"none",background:"#0B1F3A",color:"#C9A84C",fontSize:11,fontWeight:600,cursor:"pointer"}}>✓</button>
-                <a href={p.link} target="_blank" style={{fontSize:10,color:"#1A5FA8",fontWeight:600,textDecoration:"none",whiteSpace:"nowrap"}}>Get Key ↗</a>
+                <input type="password" defaultValue={keys[p.id]||""} id={"amb-key-"+p.id} placeholder={p.placeholder} style={{flex:1,padding:"5px 8px",border:"1.5px solid #D1D9E6",borderRadius:6,fontSize:11}}/>
+                <button onClick={()=>{ const v=document.getElementById("amb-key-"+p.id).value.trim(); if(v){saveKeys({...keys,[p.id]:v});showToast(p.name+" activated","success");}else{const nk={...keys};delete nk[p.id];saveKeys(nk);} }} style={{padding:"5px 10px",borderRadius:6,border:"none",background:"#0B1F3A",color:"#C9A84C",fontSize:11,fontWeight:600,cursor:"pointer"}}>✓</button>
+                <a href={p.link} target="_blank" style={{fontSize:10,color:"#1A5FA8",fontWeight:600,textDecoration:"none"}}>Get Key ↗</a>
               </div>
             ))}
           </div>
         )}
 
-        {/* Smart Insights strip */}
-        {insights.length>0&&(
+        {/* Insights */}
+        {INSIGHTS.length>0&&(
           <div style={{padding:"10px 16px 0",flexShrink:0}}>
             <div style={{fontSize:9,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>Live Insights</div>
-            <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:6}}>
-              {insights.map((ins,i)=>(
-                <button key={i} onClick={()=>send(ins.prompt)} disabled={loading||!hasAnyKey} style={{
-                  flexShrink:0,padding:"6px 10px",borderRadius:8,
-                  border:`1px solid ${ins.color}33`,background:ins.bg,
-                  color:ins.color,fontSize:11,fontWeight:600,cursor:"pointer",
-                  display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",
-                  transition:"all .15s",
-                }}
-                onMouseOver={e=>e.currentTarget.style.opacity=".8"}
-                onMouseOut={e=>e.currentTarget.style.opacity="1"}>
+            <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:4}}>
+              {INSIGHTS.map((ins,i)=>(
+                <button key={i} onClick={()=>send(ins.msg)} disabled={!hasAnyKey} style={{flexShrink:0,padding:"5px 10px",borderRadius:8,border:"1px solid "+ins.color+"33",background:ins.bg,color:ins.color,fontSize:10,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:4,whiteSpace:"nowrap"}}>
                   {ins.icon} {ins.text}
                 </button>
               ))}
@@ -2617,14 +2543,7 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
           <div style={{fontSize:9,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>Quick Actions</div>
           <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
             {QUICK.map(q=>(
-              <button key={q.label} onClick={()=>send(q.msg)} disabled={loading||!hasAnyKey} style={{
-                padding:"5px 10px",borderRadius:20,fontSize:10,fontWeight:600,
-                border:"1px solid #E2E8F0",background:"#fff",color:"#4A5568",
-                cursor:!hasAnyKey?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:4,
-                transition:"all .15s",
-              }}
-              onMouseOver={e=>{if(hasAnyKey){e.currentTarget.style.borderColor="#C9A84C";e.currentTarget.style.color="#C9A84C";}}}
-              onMouseOut={e=>{e.currentTarget.style.borderColor="#E2E8F0";e.currentTarget.style.color="#4A5568";}}>
+              <button key={q.label} onClick={()=>send(q.msg)} disabled={!hasAnyKey} style={{padding:"4px 10px",borderRadius:20,fontSize:10,fontWeight:600,border:"1px solid #E2E8F0",background:"#fff",color:hasAnyKey?"#4A5568":"#C0C0C0",cursor:hasAnyKey?"pointer":"not-allowed"}}>
                 {q.icon} {q.label}
               </button>
             ))}
@@ -2634,49 +2553,34 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
         {/* Chat */}
         <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
           {messages.map((m,i)=>(
-            <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",flexDirection:m.role==="user"?"row-reverse":"row"}}>
-              <div style={{
-                width:30,height:30,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:12,
-                background:m.role==="user"?"#0B1F3A":"linear-gradient(135deg,#C9A84C,#E8C97A)",
-                color:m.role==="user"?"#C9A84C":"#0B1F3A",
-              }}>
+            <div key={i} style={{display:"flex",gap:8,flexDirection:m.role==="user"?"row-reverse":"row",alignItems:"flex-start"}}>
+              <div style={{width:30,height:30,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:12,background:m.role==="user"?"#0B1F3A":"linear-gradient(135deg,#C9A84C,#E8C97A)",color:m.role==="user"?"#C9A84C":"#0B1F3A"}}>
                 {m.role==="user"?(currentUser?.full_name||"U").charAt(0).toUpperCase():"✦"}
               </div>
-              <div style={{
-                maxWidth:"80%",padding:"10px 13px",fontSize:12,lineHeight:1.6,
-                background:m.role==="user"?"linear-gradient(135deg,#0B1F3A,#1A3558)":"#fff",
-                color:m.role==="user"?"#fff":"#2D3748",
-                borderRadius:m.role==="user"?"12px 12px 3px 12px":"12px 12px 12px 3px",
-                border:m.role==="assistant"?"1px solid #E8EDF3":"none",
-                boxShadow:m.role==="assistant"?"0 1px 8px rgba(0,0,0,.05)":"0 1px 6px rgba(11,31,58,.15)",
-              }}>
+              <div style={{maxWidth:"80%",padding:"10px 13px",fontSize:12,lineHeight:1.6,background:m.role==="user"?"linear-gradient(135deg,#0B1F3A,#1A3558)":"#fff",color:m.role==="user"?"#fff":"#2D3748",borderRadius:m.role==="user"?"12px 12px 3px 12px":"12px 12px 12px 3px",border:m.role==="assistant"?"1px solid #E8EDF3":"none",boxShadow:m.role==="assistant"?"0 1px 8px rgba(0,0,0,.05)":"none"}}>
                 {m.role==="assistant"?fmt(m.content):m.content}
                 {m.role==="assistant"&&i===messages.length-1&&usedProvider&&(
-                  <div style={{marginTop:6,paddingTop:6,borderTop:"1px solid #F0F2F5",fontSize:9,color:"#A0AEC0"}}>
-                    {aiFullName} · {usedProvider.name}
-                  </div>
+                  <div style={{marginTop:6,paddingTop:6,borderTop:"1px solid #F0F2F5",fontSize:9,color:"#A0AEC0"}}>{aiFullName} · {usedProvider.name}</div>
                 )}
               </div>
             </div>
           ))}
-
           {loading&&(
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
               <div style={{width:30,height:30,borderRadius:8,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#0B1F3A"}}>✦</div>
               <div style={{background:"#fff",border:"1px solid #E8EDF3",borderRadius:"12px 12px 12px 3px",padding:"10px 14px",display:"flex",gap:4,alignItems:"center"}}>
                 {[0,.15,.3].map((d,i)=>(
-                  <div key={i} style={{width:6,height:6,borderRadius:"50%",background:"#C9A84C",animationName:"aipulse",animationDuration:"1.2s",animationDelay:`${d}s`,animationIterationCount:"infinite"}}/>
+                  <div key={i} style={{width:6,height:6,borderRadius:"50%",background:"#C9A84C",animationName:"aipulse",animationDuration:"1.2s",animationDelay:d+"s",animationIterationCount:"infinite"}}/>
                 ))}
                 <span style={{fontSize:10,color:"#A0AEC0",marginLeft:5}}>{aiFullName} is thinking…</span>
               </div>
             </div>
           )}
-
           {suggestion&&(
             <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(201,168,76,.3)"}}>
               <div style={{fontSize:12,fontWeight:700,color:"#C9A84C",marginBottom:8}}>✦ Lead detected — add to CRM?</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
-                {[["Name",suggestion.name],["Phone",suggestion.phone],["Email",suggestion.email||"—"],["Budget",suggestion.budget?`AED ${Number(suggestion.budget).toLocaleString()}`:"—"]].map(([l,v])=>(
+                {[["Name",suggestion.name],["Phone",suggestion.phone||"—"],["Budget",suggestion.budget?"AED "+Number(suggestion.budget).toLocaleString():"—"]].map(([l,v])=>(
                   <div key={l} style={{background:"rgba(255,255,255,.07)",borderRadius:6,padding:"6px 8px"}}>
                     <div style={{fontSize:8,color:"rgba(201,168,76,.6)",textTransform:"uppercase",marginBottom:1}}>{l}</div>
                     <div style={{fontSize:11,fontWeight:600,color:"#fff"}}>{v}</div>
@@ -2684,13 +2588,7 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
                 ))}
               </div>
               <div style={{display:"flex",gap:6}}>
-                <button onClick={async()=>{
-                  try{
-                    const{error}=await supabase.from("leads").insert({name:suggestion.name,phone:suggestion.phone||null,email:suggestion.email||null,budget:suggestion.budget||0,source:"AI Import",stage:"New Lead",notes:suggestion.notes||null,assigned_to:currentUser.id,company_id:currentUser.company_id||null,stage_updated_at:new Date().toISOString(),created_by:currentUser.id});
-                    if(error)throw error;
-                    showToast(`${suggestion.name} added`,"success");setSuggestion(null);
-                  }catch(e){showToast(e.message,"error");}
-                }} style={{flex:1,padding:"7px",borderRadius:7,border:"none",background:"#C9A84C",color:"#0B1F3A",fontSize:11,fontWeight:700,cursor:"pointer"}}>+ Add to CRM</button>
+                <button onClick={async()=>{ try{ const{error}=await supabase.from("leads").insert({name:suggestion.name,phone:suggestion.phone||null,budget:suggestion.budget||0,source:"AI Import",stage:"New Lead",assigned_to:currentUser.id,company_id:currentUser.company_id||null,stage_updated_at:new Date().toISOString(),created_by:currentUser.id}); if(error)throw error; showToast(suggestion.name+" added","success");setSuggestion(null); }catch(e){showToast(e.message,"error");} }} style={{flex:1,padding:"7px",borderRadius:7,border:"none",background:"#C9A84C",color:"#0B1F3A",fontSize:11,fontWeight:700,cursor:"pointer"}}>+ Add to CRM</button>
                 <button onClick={()=>setSuggestion(null)} style={{padding:"7px 12px",borderRadius:7,border:"1px solid rgba(255,255,255,.2)",background:"transparent",color:"rgba(255,255,255,.5)",fontSize:11,cursor:"pointer"}}>Dismiss</button>
               </div>
             </div>
@@ -2700,31 +2598,26 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
 
         {/* Input */}
         <div style={{padding:"10px 16px 16px",flexShrink:0,borderTop:"1px solid #E2E8F0",background:"#fff"}}>
-          <div style={{display:"flex",gap:8,background:"#F7F8FC",border:"1.5px solid #E2E8F0",borderRadius:12,padding:"8px 8px 8px 12px",transition:"border-color .2s"}}
-            onFocusCapture={e=>e.currentTarget.style.borderColor="#C9A84C"}
-            onBlurCapture={e=>e.currentTarget.style.borderColor="#E2E8F0"}>
+          <div style={{display:"flex",gap:8,background:"#F7F8FC",border:"1.5px solid #E2E8F0",borderRadius:12,padding:"8px 8px 8px 12px"}}>
             <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)}
-              onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
-              placeholder={hasAnyKey?`Ask ${aiFullName} anything…`:`⚙️ Add API key to activate ${aiFullName}`}
+              onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();} }}
+              placeholder={hasAnyKey?"Ask "+aiFullName+" anything…":"⚙️ Add API key to activate "+aiFullName}
               rows={1} style={{flex:1,border:"none",outline:"none",resize:"none",fontSize:12,lineHeight:1.5,minHeight:36,maxHeight:100,fontFamily:"inherit",background:"transparent",color:hasAnyKey?"#1a2535":"#A0AEC0"}}/>
-            <button onClick={()=>send()} disabled={loading||!input.trim()||!hasAnyKey} style={{
-              padding:"8px 14px",borderRadius:9,border:"none",alignSelf:"flex-end",
-              background:!loading&&input.trim()&&hasAnyKey?"linear-gradient(135deg,#0B1F3A,#1A3558)":"#E2E8F0",
-              color:!loading&&input.trim()&&hasAnyKey?"#C9A84C":"#A0AEC0",
-              fontSize:12,fontWeight:700,cursor:!loading&&input.trim()&&hasAnyKey?"pointer":"not-allowed",
-            }}>
+            <button onClick={()=>send()} disabled={loading||!input.trim()||!hasAnyKey} style={{padding:"8px 14px",borderRadius:9,border:"none",alignSelf:"flex-end",background:(!loading&&input.trim()&&hasAnyKey)?"linear-gradient(135deg,#0B1F3A,#1A3558)":"#E2E8F0",color:(!loading&&input.trim()&&hasAnyKey)?"#C9A84C":"#A0AEC0",fontSize:12,fontWeight:700,cursor:(!loading&&input.trim()&&hasAnyKey)?"pointer":"not-allowed"}}>
               {loading?"…":"↑"}
             </button>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",marginTop:5,fontSize:9,color:"#A0AEC0",padding:"0 2px"}}>
-            <span>Enter to send · Shift+Enter new line · <kbd style={{background:"#F0F2F5",padding:"1px 4px",borderRadius:3}}>Ctrl+K</kbd> to open</span>
-            <span>{usedProvider?`${usedProvider.name}`:"No key set"}</span>
+            <span>Enter to send · Ctrl+K to toggle</span>
+            <span>{usedProvider?usedProvider.name:"No key set"}</span>
           </div>
         </div>
+
       </div>
-    </>
+    </div>
   );
 }
+
 
 // ══════════════════════════════════════════════════════════════════
 // GROUP CONSOLIDATED VIEW — Super Admin only
