@@ -8344,74 +8344,64 @@ export default function App(){
 
       {/* Top bar */}
       <div style={{background:"#0B1F3A",flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:48,gap:8}}>
+        <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:52,gap:10}}>
 
-          {/* Logo + Company */}
-          <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,marginRight:6}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,whiteSpace:"nowrap"}}>
-              <span style={{color:"#C9A84C"}}>◆</span> PropCRM
-            </div>
-            {(()=>{
-              const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
-              const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || null;
-              const isSA = currentUser?.role==="super_admin";
+          {/* LEFT: Company Logo + Name — hero position */}
+          {(()=>{
+            const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
+            const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || null;
+            const isSA = currentUser?.role==="super_admin";
+            const bizLabel = co?.business_type==="both"?"Sales & Leasing":co?.business_type==="sales"?"Sales Only":co?.business_type==="leasing"?"Leasing Only":co?.business_type||"";
 
-              // Super admin with multiple companies — show dropdown switcher
-              if(isSA && companies.length>1){
-                return (
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    {co?.logo_url&&<img src={co.logo_url} alt="" style={{width:28,height:28,borderRadius:6,objectFit:"cover",border:"1.5px solid rgba(201,168,76,.4)"}}/>}
-                    <select value={storedId||""} onChange={e=>{
-                      const newId=e.target.value;
-                      setActiveCompanyId(newId);
-                      localStorage.setItem("propccrm_company_id",newId);
-                      window.location.reload();
-                    }} style={{
-                      background:"rgba(255,255,255,.08)",border:"1px solid rgba(201,168,76,.4)",
-                      borderRadius:8,padding:"5px 10px",color:"#C9A84C",fontSize:13,fontWeight:700,
-                      cursor:"pointer",maxWidth:200,fontFamily:"'Playfair Display',serif"
-                    }}>
-                      {companies.map(c=><option key={c.id} value={c.id} style={{background:"#0B1F3A",color:"#fff"}}>{c.name}</option>)}
-                    </select>
-                  </div>
-                );
-              }
-
-              // All other users — show company name + logo
-              if(!co) return null;
-              return (
-                <div style={{display:"flex",alignItems:"center",gap:8,padding:"4px 10px",borderRadius:8,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)"}}>
-                  {co.logo_url
-                    ? <img src={co.logo_url} alt={co.name} style={{width:28,height:28,borderRadius:6,objectFit:"cover"}}/>
-                    : <div style={{width:28,height:28,borderRadius:6,background:"#C9A84C",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:12,color:"#0B1F3A",flexShrink:0}}>
-                        {co.name?.charAt(0)||"C"}
-                      </div>
-                  }
-                  <div style={{display:"flex",flexDirection:"column",minWidth:0}}>
-                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:13,color:"#C9A84C",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:150,lineHeight:1.2}}>{co.name}</span>
-                    {co.business_type&&<span style={{fontSize:9,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:".5px",lineHeight:1}}>{co.business_type==="both"?"Sales & Leasing":co.business_type==="sales"?"Sales":co.business_type==="leasing"?"Leasing":co.business_type}</span>}
-                  </div>
+            return (
+              <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,minWidth:0}}>
+                {/* Logo */}
+                {co?.logo_url
+                  ? <img src={co.logo_url} alt={co?.name} style={{width:36,height:36,borderRadius:8,objectFit:"cover",border:"2px solid rgba(201,168,76,.5)",flexShrink:0}}/>
+                  : <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16,color:"#0B1F3A",flexShrink:0,border:"2px solid rgba(201,168,76,.4)"}}>
+                      {co?.name?.charAt(0)||"◆"}
+                    </div>
+                }
+                {/* Company name + type */}
+                <div style={{display:"flex",flexDirection:"column",minWidth:0}}>
+                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:180,lineHeight:1.2}}>
+                    {co?.name||"PropCRM"}
+                  </span>
+                  {bizLabel&&<span style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:".6px",lineHeight:1.3}}>{bizLabel}</span>}
                 </div>
-              );
-            })()}
-          </div>
+                {/* Super admin company switcher */}
+                {isSA&&companies.length>1&&(
+                  <select value={storedId||""} onChange={e=>{
+                    setActiveCompanyId(e.target.value);
+                    localStorage.setItem("propccrm_company_id",e.target.value);
+                    window.location.reload();
+                  }} style={{
+                    background:"rgba(255,255,255,.1)",border:"1px solid rgba(201,168,76,.35)",
+                    borderRadius:6,padding:"3px 6px",color:"#C9A84C",fontSize:11,fontWeight:600,
+                    cursor:"pointer",maxWidth:130
+                  }}>
+                    {companies.map(c=><option key={c.id} value={c.id} style={{background:"#0B1F3A",color:"#fff"}}>{c.name}</option>)}
+                  </select>
+                )}
+              </div>
+            );
+          })()}
 
-          {/* CRM Switcher */}
+          {/* CENTRE: CRM Switcher */}
           {canSwitch&&(
             <div style={{display:"flex",background:"rgba(255,255,255,.07)",borderRadius:10,padding:3,gap:3,flexShrink:0}}>
               {[
-                {id:"sales",   label:"Sales CRM",   icon:"🏷", accent:"#4A9EE8"},
-                {id:"leasing", label:"Leasing CRM", icon:"🔑", accent:"#9B7FD4"},
+                {id:"sales",   label:"Sales",   icon:"🏷", accent:"#4A9EE8"},
+                {id:"leasing", label:"Leasing", icon:"🔑", accent:"#9B7FD4"},
               ].map(a=>{
                 const isActive=currentApp===a.id;
                 return (
                   <button key={a.id} onClick={()=>{
                     setActiveApp(a.id);
-                    setActiveApp(a.id); localStorage.setItem("propccrm_last_app", a.id);
-                    // Clear any stale tab from the other app
+                    localStorage.setItem("propccrm_last_app",a.id);
                     setTimeout(()=>setTab(a.id==="sales"?"dashboard":"l_dashboard"),50);
                   }} style={{
-                    padding:"5px 10px",borderRadius:8,border:"none",
+                    padding:"5px 12px",borderRadius:8,border:"none",
                     background:isActive?"#fff":"transparent",
                     color:isActive?a.accent:"rgba(255,255,255,.5)",
                     fontSize:12,fontWeight:isActive?700:400,cursor:"pointer",
@@ -8426,14 +8416,22 @@ export default function App(){
             </div>
           )}
 
-          {/* User info */}
+          {/* RIGHT: User info + PropCRM watermark */}
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+            {/* User */}
             <div style={{textAlign:"right"}}>
-              <div style={{fontSize:12,color:"#fff",fontWeight:500}}>{currentUser.full_name}</div>
+              <div style={{fontSize:12,color:"#fff",fontWeight:500,lineHeight:1.2}}>{currentUser.full_name}</div>
               <RoleBadge role={currentUser.role}/>
             </div>
             <Av name={currentUser.full_name||currentUser.email} size={32} bg="#C9A84C" tc="#0B1F3A"/>
-            <button onClick={handleLogout} style={{fontSize:11,color:"rgba(255,255,255,.4)",background:"none",border:"1px solid rgba(255,255,255,.1)",borderRadius:6,padding:"4px 8px",cursor:"pointer",whiteSpace:"nowrap"}}>↩</button>
+            <button onClick={handleLogout} title="Sign out" style={{fontSize:11,color:"rgba(255,255,255,.35)",background:"none",border:"1px solid rgba(255,255,255,.1)",borderRadius:6,padding:"4px 8px",cursor:"pointer",whiteSpace:"nowrap",transition:"color .15s"}}
+              onMouseOver={e=>e.currentTarget.style.color="rgba(255,255,255,.8)"}
+              onMouseOut={e=>e.currentTarget.style.color="rgba(255,255,255,.35)"}>↩</button>
+            {/* PropCRM subtle watermark */}
+            <div style={{borderLeft:"1px solid rgba(255,255,255,.1)",paddingLeft:10,display:"flex",alignItems:"center",gap:3}}>
+              <span style={{color:"#C9A84C",fontSize:10}}>◆</span>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:10,color:"rgba(255,255,255,.3)",fontWeight:600,letterSpacing:".5px"}}>PropCRM</span>
+            </div>
           </div>
         </div>
 
