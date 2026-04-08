@@ -2137,7 +2137,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
         {_scLead&&(
             <div style={{width:260,flexShrink:0,background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,overflowY:"auto",boxShadow:"0 4px 20px rgba(11,31,58,.08)"}}>
               {/* Header */}
-              <div style={{background:"linear-gradient(135deg,"+m.c+","+m.c+"CC)",padding:"14px 16px",borderRadius:"10px 10px 0 0"}}>
+              <div style={{background:"linear-gradient(135deg,"+_scM.c+","+_scM.c+"CC)",padding:"14px 16px",borderRadius:"10px 10px 0 0"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                   <div>
                     <div style={{fontWeight:700,fontSize:15,color:"#fff"}}>{_scLead.name}</div>
@@ -2169,11 +2169,11 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
                       {stageOrder.map((s,i)=>(
                         <button key={s} onClick={()=>moveStage(_scLead,s)}
                           disabled={s===_scLead.stage}
-                          style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid "+(s===_scLead.stage?m.c:"#E2E8F0"),
-                            background:s===_scLead.stage?m.bg:"#fff",color:s===_scLead.stage?m.c:"#4A5568",
+                          style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid "+(s===_scLead.stage?_scM.c:"#E2E8F0"),
+                            background:s===_scLead.stage?_scM.bg:"#fff",color:s===_scLead.stage?_scM.c:"#4A5568",
                             fontSize:11,fontWeight:s===_scLead.stage?700:400,cursor:s===_scLead.stage?"default":"pointer",
                             textAlign:"left",display:"flex",alignItems:"center",gap:6}}>
-                          <span style={{fontSize:9,color:s===_scLead.stage?m.c:"#A0AEC0"}}>{i+1}.</span>
+                          <span style={{fontSize:9,color:s===_scLead.stage?_scM.c:"#A0AEC0"}}>{i+1}.</span>
                           {s} {s===_scLead.stage?"← current":""}
                         </button>
                       ))}
@@ -3656,7 +3656,6 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                     {selUnit.notes&&<div style={{fontSize:12,color:"#4A5568",padding:"8px 10px",background:"#F7F9FC",borderRadius:8,lineHeight:1.6}}>{selUnit.notes}</div>}
                     {canEdit&&<button onClick={()=>openEdit(selUnit)} style={{padding:"8px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit Unit</button>}
                     {canReserve&&selUnit.status==="Available"&&(
-
                         <button onClick={()=>{
                           if(!_crHp){showToast("Add pricing to this unit before reserving","error");return;}
                           if(!_crOk){showToast("Project launches "+new Date(_crPr.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})+" — not open yet","error");return;}
@@ -3664,7 +3663,6 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                         }} style={{padding:"8px",borderRadius:8,border:"none",background:_crOk?"#C9A84C":"#E2E8F0",color:_crOk?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:_crOk?"pointer":"not-allowed"}}>
                           {!_crHp?"⚠️ No Pricing":!_crOk?"🔒 Not Released":"🔒 Reserve Unit"}
                         </button>
-
                     )}
                     {canReserve&&reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status))?<button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"1.5px solid #E8C97A",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:700,cursor:"pointer"}}>⏱ View Reservation ({hoursLeft(reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status)).expires_at,reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status)).extended_until)}h)</button>:null}
                   </div>
@@ -3677,7 +3675,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                         <div style={{fontSize:11,fontWeight:700,color:"#1A7F5A",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>🏷 Sale Pricing</div>
                         <div style={{background:"#0B1F3A",borderRadius:10,padding:"12px",marginBottom:8,textAlign:"center"}}>
                           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#C9A84C"}}>AED {Number(_suSp.asking_price).toLocaleString()}</div>
-                          {sp.price_per_sqft&&<div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Number(_suSp.price_per_sqft).toLocaleString()}/sqft</div>}
+                          {_suSp.price_per_sqft&&<div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Number(_suSp.price_per_sqft).toLocaleString()}/sqft</div>}
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
                           {[["DLD Fee",_suSp.dld_fee_pct+"%"],["Agency Fee",_suSp.agency_fee_pct+"%"],["Booking",_suSp.booking_pct+"%"],["Construction",_suSp.during_construction_pct+"%"],["Handover",_suSp.on_handover_pct+"%"],_suSp.post_handover_pct>0&&["Post Handover",_suSp.post_handover_pct+"%"]].filter(Boolean).map(([l,v])=>(
