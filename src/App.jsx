@@ -13,7 +13,7 @@ const SUPABASE_URL  = "https://ysceukgpimzfqixtnbnp.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzY2V1a2dwaW16ZnFpeHRuYm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNDI5OTQsImV4cCI6MjA4OTkxODk5NH0.WZSyGeOEbiRo1wt13syheTOyiAToMWXInxIaBgaqq8k";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-// ─── STYLES ───────────────────────────────────────────────────
+// ─── STYLES ─────────────────────────────────────────────────── v2
 const _globalCSS=""+
 "    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');"+
 "    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}"+
@@ -2382,21 +2382,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
     {icon:"🔑",label:"Leasing overview"},
   ];
 
-  if(!open) return(
-    <button onClick={()=>setOpen(true)}
-      style={{position:"fixed",bottom:28,right:28,zIndex:9999,
-        width:60,height:60,borderRadius:"50%",border:"none",cursor:"pointer",
-        background:"linear-gradient(135deg,#C9A84C,#E8C97A)",
-        boxShadow:"0 4px 20px rgba(201,168,76,.5),0 0 0 4px rgba(201,168,76,.15)",
-        display:"flex",alignItems:"center",justifyContent:"center",
-        fontSize:26,transition:"all .2s",
-        animation:"ai-pulse 3s ease-in-out infinite"}}
-      title={"Open "+aiName+" (Ctrl+K)"}>
-      ✦
-    </button>
-  );
-
-  return(
+  return open ? (
     <div style={{position:"fixed",bottom:20,right:20,zIndex:9999,
       width:420,height:680,maxHeight:"90vh",
       background:"linear-gradient(160deg,#0B1F3A 0%,#0f2847 100%)",
@@ -2569,10 +2555,21 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
         </div>
       </div>
     </div>
+  ) : (
+
+    <button onClick={()=>setOpen(true)}
+      style={{position:"fixed",bottom:28,right:28,zIndex:9999,
+        width:60,height:60,borderRadius:"50%",border:"none",cursor:"pointer",
+        background:"linear-gradient(135deg,#C9A84C,#E8C97A)",
+        boxShadow:"0 4px 20px rgba(201,168,76,.5),0 0 0 4px rgba(201,168,76,.15)",
+        display:"flex",alignItems:"center",justifyContent:"center",
+        fontSize:26,transition:"all .2s",
+        animation:"ai-pulse 3s ease-in-out infinite"}}
+      title={"Open "+aiName+" (Ctrl+K)"}>
+      ✦
+    </button>
   );
 }
-
-
 function GroupConsolidatedView() {
   return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,padding:"2rem",textAlign:"center"}}>
