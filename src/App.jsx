@@ -2318,174 +2318,67 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
 
 
 
-function fmtParts(line) {
-  const parts = line.split(/\*\*(.+?)\*\*/g);
-  return parts.map((p,j) => j%2===1 ? <strong key={j} style={{color:"#0B1F3A"}}>{p}</strong> : p);
-}
-function fmtMsg(text) {
-  return text.split("\n").map((line,i) => {
-    if(!line.trim()) return <div key={i} style={{height:5}}/>;
-    if(/^#{1,3}\s/.test(line)) return <div key={i} style={{fontWeight:800,fontSize:13,color:"#0B1F3A",marginTop:8,marginBottom:3}}>{line.replace(/^#+\s/,"")}</div>;
-    if(/^\*\*(.+)\*\*$/.test(line)) return <div key={i} style={{fontWeight:700,color:"#0B1F3A",marginTop:5}}>{line.replace(/\*\*/g,"")}</div>;
-    if(line.match(/^[•\-\*]\s/)){
-      const txt = line.replace(/^[•\-\*]\s*/,"");
-      return (
-        <div key={i} style={{display:"flex",gap:6,marginBottom:2,paddingLeft:4}}>
-          <span style={{color:"#C9A84C",fontWeight:700}}>◆</span>
-          <span>{fmtParts(txt)}</span>
-        </div>
-      );
-    }
-    return <div key={i} style={{marginBottom:2,lineHeight:1.6}}>{fmtParts(line)}</div>;
-  });
-}
-
-function FloatingOrb({aiOpen, onOpen, followupAlerts={}}){
-  const cacheStr = localStorage.getItem("propccrm_company_cache");
-  const coCache  = cacheStr ? JSON.parse(cacheStr) : null;
-  const alertCount = (followupAlerts.staleLeads?.length||0)+(followupAlerts.overduePayments?.length||0)+(followupAlerts.expiringLeases?.length||0);
-  return (
-    <div style={{position:"fixed",bottom:28,right:28,zIndex:2000,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8,pointerEvents:"none"}}>
-      {!aiOpen&&(
-        <div style={{background:"rgba(11,31,58,.85)",backdropFilter:"blur(8px)",borderRadius:8,padding:"5px 10px",fontSize:10,color:"rgba(255,255,255,.6)",pointerEvents:"none",border:"1px solid rgba(255,255,255,.08)"}}>
-          Press <kbd style={{background:"rgba(255,255,255,.1)",padding:"1px 5px",borderRadius:4,fontSize:9}}>Ctrl+K</kbd>
-        </div>
-      )}
-      {alertCount>0&&!aiOpen&&(
-        <div style={{background:"#B83232",borderRadius:20,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#fff",pointerEvents:"none"}}>
-          {alertCount} insight{alertCount>1?"s":""} waiting
-        </div>
-      )}
-      <button onClick={onOpen} style={{
-        width:56,height:56,borderRadius:16,border:"none",cursor:"pointer",
-        background:"linear-gradient(135deg,#C9A84C,#E8C97A)",
-        boxShadow:aiOpen?"0 0 0 4px rgba(201,168,76,.3), 0 8px 32px rgba(201,168,76,.5)":"0 4px 20px rgba(201,168,76,.4)",
-        display:"flex",alignItems:"center",justifyContent:"center",
-        fontSize:24,fontWeight:800,color:"#0B1F3A",
-        transition:"all .3s",transform:aiOpen?"rotate(45deg) scale(1.05)":"scale(1)",
-        pointerEvents:"auto",
-        animation:alertCount>0&&!aiOpen?"orbpulse 2s ease-in-out infinite":"none",
-      }}>✦</button>
-    </div>
-  );
-}
-
 // ══════════════════════════════════════════════════════════════════
-// AMBIENT AI — Floating Orb + Command Bar + Side Panel
+// AI ASSISTANT — Premium Concierge
 // ══════════════════════════════════════════════════════════════════
-function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], projects=[], salePricing=[], leasePricing=[], activities=[], currentUser, showToast, followupAlerts={}, leasingData=null, currentApp="sales"}){
-  const [messages,    setMessages]    = useState([]);
-  const [input,       setInput]       = useState("");
-  const [loading,     setLoading]     = useState(false);
-  const [activeProvider, setActiveProvider] = useState(()=>localStorage.getItem("ai_provider")||"groq");
-  const [keys,        setKeys]        = useState(()=>{ try{ return JSON.parse(localStorage.getItem("ai_keys")||"{}"); }catch{ return {}; } });
-  const [showSetup,   setShowSetup]   = useState(false);
-  const [suggestion,  setSuggestion]  = useState(null);
-  const [usedProvider,setUsedProvider]= useState(null);
-  const inputRef  = useRef(null);
+function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,currentUser,showToast}){
+  const [messages,setMessages] = useState([]);
+  const [input,setInput] = useState("");
+  const [loading,setLoading] = useState(false);
+  const [showSetup,setShowSetup] = useState(false);
+  const [activeProvider,setActiveProvider] = useState(()=>localStorage.getItem("ai_provider")||"groq");
+  const [keys,setKeys] = useState(()=>{ try{return JSON.parse(localStorage.getItem("ai_keys")||"{}"); }catch{return {};} });
+  const [usedProvider,setUsedProvider] = useState(null);
+  const [suggestion,setSuggestion] = useState(null);
   const bottomRef = useRef(null);
 
-  const cacheStr   = localStorage.getItem("propccrm_company_cache");
-  const coCache    = cacheStr ? JSON.parse(cacheStr) : null;
-  const aiFullName = coCache?.ai_assistant_name || ((coCache?.name||"Prop").split(" ")[0]+" AI");
-  const hasAnyKey  = AI_PROVIDERS.some(p=>keys[p.id]);
+  const cacheStr = localStorage.getItem("propccrm_company_cache");
+  const coCache  = cacheStr ? JSON.parse(cacheStr) : null;
+  const aiName = coCache?.ai_assistant_name || ((coCache?.name||"Prop").split(" ")[0]+" AI");
+  const hasAnyKey = AI_PROVIDERS.some(p=>keys[p.id]);
 
-  // Smart insights from live data
-  const insights = useMemo(()=>{
-    const items = [];
-    const stale = (followupAlerts.staleLeads||[]);
-    const overdue = (followupAlerts.overduePayments||[]);
-    const expiring = (followupAlerts.expiringLeases||[]);
-    if(stale.length>0) items.push({icon:"⏱",color:"#A06810",bg:"#FDF3DC",text:stale.length+" lead"+(stale.length>1?"s":"")+" stuck for 7+ days",prompt:`Which leads have been stuck the longest and need immediate attention? Give me a prioritised action plan.`});
-    if(overdue.length>0) items.push({icon:"💳",color:"#B83232",bg:"#FAEAEA",text:overdue.length+" overdue payment"+(overdue.length>1?"s":""),prompt:`Which payments are overdue? Summarise amounts and suggest next steps for each tenant.`});
-    if(expiring.length>0) items.push({icon:"📄",color:"#8A6200",bg:"#FFF3CD",text:expiring.length+" lease"+(expiring.length>1?"s":"")+" expiring in 30 days",prompt:`Which leases are expiring soon? Draft renewal talking points for each tenant.`});
-    const avail = units.filter(u=>u.status==="Available").length;
-    if(avail>0) items.push({icon:"🏠",color:"#1A7F5A",bg:"#E6F4EE",text:avail+" units available for "+(currentApp==="leasing"?"lease":"sale"),prompt:`Show me all available units with pricing. Which ones represent the best value?`});
-    const activeLeads = leads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
-    if(activeLeads.length>0) items.push({icon:"🎯",color:"#1A5FA8",bg:"#E6EFF9",text:activeLeads.length+" active opportunities in pipeline",prompt:`Analyse my current pipeline. What is the total value and which deals are most likely to close this month?`});
-    return items;
-  },[followupAlerts, units, leads, currentApp]);
-
-  // Quick prompts by context
-  const QUICK = currentApp==="leasing" ? [
-    {icon:"🔑",label:"Rent Roll",        msg:"Summarise our current rent roll — total annual income, active leases and upcoming renewals."},
-    {icon:"📄",label:"Expiring Leases",  msg:"Which leases are expiring in the next 60 days? Draft renewal messages for each tenant."},
-    {icon:"💳",label:"Overdue Payments", msg:"Show me all overdue payments with tenant details and recommended collection actions."},
-    {icon:"🏠",label:"Available Units",  msg:"Which units are available for lease? Show pricing and highlight the best value options."},
-    {icon:"👤",label:"Tenant Summary",   msg:"Give me a summary of all active tenants — lease terms, payment history and any issues."},
-    {icon:"🔧",label:"Maintenance",      msg:"Summarise open maintenance requests by priority. Which need immediate attention?"},
-  ] : [
-    {icon:"📊",label:"Pipeline",         msg:"Full pipeline analysis — total value by stage and top 3 deals to focus on this week."},
-    {icon:"👤",label:"Hot Leads",        msg:"Which leads are most likely to close this month? Rank them with reasoning."},
-    {icon:"🏠",label:"Best Units",       msg:"Which available units are best value right now? Show pricing and highlight standout options."},
-    {icon:"✍",label:"Draft WhatsApp",   msg:"Draft a luxury re-engagement WhatsApp for a client who viewed but went quiet 2 weeks ago."},
-    {icon:"💰",label:"Revenue Forecast", msg:"Based on current pipeline, forecast revenue for the next 90 days."},
-    {icon:"⏱",label:"Stale Deals",      msg:"Which leads need urgent attention? Who has been waiting the longest?"},
+  const QUICK = [
+    {icon:"📊", label:"Pipeline",       msg:"Full pipeline analysis — total value by stage and top 3 deals to close this week."},
+    {icon:"🏠", label:"Available Units", msg:"List all available units with key details and pricing highlights."},
+    {icon:"👤", label:"Hot Leads",       msg:"Which leads are most likely to close this month? Rank them with reasoning."},
+    {icon:"✍",  label:"Draft WhatsApp", msg:"Draft a luxury re-engagement WhatsApp for a client who went quiet 2 weeks ago."},
+    {icon:"💰", label:"Forecast",        msg:"Based on current pipeline, what revenue should we forecast for next 90 days?"},
+    {icon:"⏱",  label:"Stale Deals",    msg:"Which leads have been stuck the longest and need immediate attention today?"},
   ];
 
-  // Ctrl+K global listener
-  useEffect(()=>{
-    const handler = (e) => {
-      if((e.ctrlKey||e.metaKey) && e.key==="k"){
-        e.preventDefault();
-        // Toggle panel open
-        if(!open) {
-          // Trigger open via the orb click simulation
-          document.dispatchEvent(new CustomEvent("propcrm-ai-open"));
-        }
-      }
-      if(e.key==="Escape" && open) onClose();
-    };
-    window.addEventListener("keydown", handler);
-    return ()=>window.removeEventListener("keydown", handler);
-  },[open, onClose]);
-
-  // Listen for open event
-  useEffect(()=>{
-    const handler = () => { if(!open) onClose(); /* parent handles */ };
-    document.addEventListener("propcrm-ai-open", handler);
-    return ()=>document.removeEventListener("propcrm-ai-open", handler);
-  },[]);
-
-  // Focus input when panel opens
-  useEffect(()=>{
-    if(open){
-      setTimeout(()=>inputRef.current?.focus(), 100);
-      if(messages.length===0){
-        const hour = new Date().getHours();
-        const greeting = hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
-        const firstName = currentUser?.full_name?.split(" ")[0]||"there";
-        const avail = units.filter(u=>u.status==="Available").length;
-        setMessages([{role:"assistant", content:
-          greeting+", "+firstName+". I'm **"+aiFullName+"**.\n\n"+
-          "I have live access to **"+leads.length+" contacts**, **"+avail+" available units** and **"+projects.length+" projects**.\n\n"+
-          (hasAnyKey
-            ? "Select a quick action or type anything — I'll answer instantly."
-            : "⚙️ Click **Configure** to add a free API key and activate me.")
-        }]);
-      }
-    }
-  },[open]);
-
   useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); },[messages,loading]);
+
+  useEffect(()=>{
+    const h = new Date().getHours();
+    const g = h<12 ? "Good morning" : h<17 ? "Good afternoon" : "Good evening";
+    const fn = currentUser.full_name.split(" ")[0];
+    const avail = units.filter(u=>u.status==="Available").length;
+    setMessages([{role:"assistant", content:
+      g+", "+fn+"! I am **"+aiName+"** — your real estate intelligence concierge.
+
+"+
+      "I have live access to **"+leads.length+" leads**, **"+avail+" available units** across **"+projects.length+" projects**.
+
+"+
+      (hasAnyKey ? "Use the quick buttons below or type anything." : "Click **Setup AI** to add a free Groq key and start chatting.")
+    }]);
+  },[]);
 
   const saveKeys = k => { setKeys(k); localStorage.setItem("ai_keys",JSON.stringify(k)); };
   const saveProvider = pid => { setActiveProvider(pid); localStorage.setItem("ai_provider",pid); };
 
-  const callAI = async (systemPrompt, msgs) => {
+  const callAI = async(sys,msgs) => {
     const order = [AI_PROVIDERS.find(p=>p.id===activeProvider),...AI_PROVIDERS.filter(p=>p.id!==activeProvider)].filter(Boolean);
     for(const prov of order){
-      const key = keys[prov.id];
-      if(!key) continue;
-      try{ const reply = await prov.call(key, systemPrompt, msgs); setUsedProvider(prov); return reply; }
+      const key = keys[prov.id]; if(!key) continue;
+      try{ const r = await prov.call(key,sys,msgs); setUsedProvider(prov); return r; }
       catch(e){ if(prov.id===order[order.length-1].id) throw e; }
     }
     throw new Error("No API key configured.");
   };
 
-  const send = async(text)=>{
-    const msg = text||input.trim();
-    if(!msg) return;
+  const send = async(text) => {
+    const msg = text||input.trim(); if(!msg) return;
     setInput(""); setLoading(true);
     const newMsgs = [...messages,{role:"user",content:msg}];
     setMessages(newMsgs);
@@ -2493,247 +2386,148 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
       const ctx = buildContext(leads,units,projects,salePricing,leasePricing,activities,currentUser);
       const reply = await callAI(ctx, newMsgs.slice(-12));
       setMessages(p=>[...p,{role:"assistant",content:reply}]);
-      // Lead detection
       if(msg.toLowerCase().includes("auto-fill")||msg.toLowerCase().includes("add lead")){
-        const name   = reply.match(/name[:\s*]*([A-Z][a-zA-Z\s]{2,30})(?:\n|,|\||\*)/i)?.[1]?.trim();
-        const phone  = reply.match(/(\+971\d{8,9}|\+\d{10,14})/)?.[0];
-        const email  = reply.match(/[\w.-]+@[\w.-]+\.\w{2,}/)?.[0];
+        const name = reply.match(/name[:\s*]*([A-Z][a-zA-Z\s]{2,30})(?:\n|,|\||\*)/i)?.[1]?.trim();
+        const phone = reply.match(/(\+971\d{8,9}|\+\d{10,14})/)?.[0];
         const budget = reply.match(/(?:budget|AED)[:\s*]*([0-9,]+(?:\.[0-9]+)?(?:M|m)?)/i)?.[1];
         if(name||phone){
           let b=0;
-          if(budget){const r=budget.replace(/,/g,"");b=r.toLowerCase().includes("m")?parseFloat(r)*1e6:parseFloat(r);}
-          setSuggestion({name:name||"",phone:phone||"",email:email||"",budget:b,notes:""});
+          if(budget){ const r=budget.replace(/,/g,""); b=r.toLowerCase().includes("m")?parseFloat(r)*1e6:parseFloat(r); }
+          setSuggestion({name:name||"",phone:phone||"",budget:b,notes:""});
         }
       }
     }catch(e){
-      setMessages(p=>[...p,{role:"assistant",content:e.message.includes("No API key")
-        ?"Please click **Configure** to add a free API key and activate "+aiFullName+"."
-        :"Sorry, something went wrong: "+e.message}]);
-      if(e.message.includes("No API key")) setShowSetup(true);
+      setMessages(p=>[...p,{role:"assistant",content:
+        e.message.includes("No API") ? "Click **Setup AI** above to add a free API key." : "Sorry: "+e.message
+      }]);
+      if(e.message.includes("No API")) setShowSetup(true);
     }
     setLoading(false);
   };
 
-  
-
-  if(!open) return null;
-
   return (
-    <div style={{position:"fixed",inset:0,zIndex:1990,pointerEvents:"none"}}>
-      {/* Backdrop */}
-      <div onClick={onClose} style={{position:"absolute",inset:0,background:"rgba(11,31,58,.4)",backdropFilter:"blur(3px)",pointerEvents:"auto"}}/>
-
-      {/* Side Panel */}
-      <div style={{
-        position:"fixed",top:0,right:0,bottom:0,
-        width:"min(480px,95vw)",
-        background:"#F7F8FC",
-        zIndex:2000,
-        display:"flex",flexDirection:"column",
-        boxShadow:"-8px 0 40px rgba(11,31,58,.2)",
-        animation:"slideInRight .25s ease",
-      }}>
-
-        {/* Header */}
-        <div style={{background:"linear-gradient(135deg,#0B1F3A 0%,#1A3558 100%)",padding:"16px 20px 12px",flexShrink:0,position:"relative",overflow:"hidden"}}>
-          <div style={{position:"absolute",top:-15,right:-15,width:80,height:80,borderRadius:"50%",background:"rgba(201,168,76,.08)"}}/>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",position:"relative"}}>
-            <div style={{display:"flex",alignItems:"center",gap:12}}>
-              <div style={{width:38,height:38,borderRadius:11,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:"#0B1F3A",boxShadow:"0 3px 12px rgba(201,168,76,.4)"}}>✦</div>
-              <div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff",lineHeight:1.1}}>{aiFullName}</div>
-                <div style={{fontSize:10,color:"rgba(201,168,76,.7)",letterSpacing:".5px",textTransform:"uppercase",marginTop:1}}>Real Estate Intelligence</div>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:6,alignItems:"center"}}>
-              <button onClick={()=>setShowSetup(s=>!s)} style={{padding:"5px 10px",borderRadius:7,border:"1px solid rgba(201,168,76,.3)",background:"rgba(201,168,76,.1)",color:"#C9A84C",fontSize:10,fontWeight:600,cursor:"pointer"}}>⚙ Config</button>
-              <button onClick={onClose} style={{width:28,height:28,borderRadius:7,border:"none",background:"rgba(255,255,255,.1)",color:"rgba(255,255,255,.6)",fontSize:16,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
+    <div style={{display:"flex",flexDirection:"column",height:"100%",maxWidth:860,margin:"0 auto",width:"100%"}}>
+      <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:12,padding:"16px 20px",marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:42,height:42,borderRadius:12,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:"#0B1F3A"}}>✦</div>
+            <div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#fff"}}>{aiName}</div>
+              <div style={{fontSize:10,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:".5px"}}>Real Estate Intelligence Concierge</div>
             </div>
           </div>
-
-          {/* Live stats */}
-          <div style={{display:"flex",gap:12,marginTop:10,position:"relative"}}>
-            {[
-              [leads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage)).length,"Active Opps","#4A9EE8"],
-              [units.filter(u=>u.status==="Available").length,"Available","#1A7F5A"],
-              [projects.length,"Projects","#9B7FD4"],
-            ].map(([v,l,c])=>(
-              <div key={l} style={{background:"rgba(255,255,255,.07)",borderRadius:7,padding:"5px 10px",textAlign:"center"}}>
-                <div style={{fontSize:15,fontWeight:700,color:c,lineHeight:1}}>{v}</div>
-                <div style={{fontSize:9,color:"rgba(255,255,255,.4)",marginTop:1}}>{l}</div>
-              </div>
-            ))}
-            <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:4}}>
-              {AI_PROVIDERS.map(p=>(
-                <button key={p.id} onClick={()=>saveProvider(p.id)} title={p.name} style={{
-                  width:6,height:6,borderRadius:"50%",border:"none",cursor:"pointer",padding:0,
-                  background:keys[p.id]?(activeProvider===p.id?"#C9A84C":"#1A7F5A"):"rgba(255,255,255,.2)",
-                }}/>
-              ))}
-              <span style={{fontSize:9,color:"rgba(255,255,255,.3)",marginLeft:4}}>{usedProvider?.name||"No key"}</span>
-            </div>
-          </div>
+          <button onClick={()=>setShowSetup(s=>!s)} style={{padding:"5px 12px",borderRadius:8,border:"1px solid rgba(201,168,76,.3)",background:"rgba(201,168,76,.1)",color:"#C9A84C",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+            {showSetup?"Close":"Setup AI"}
+          </button>
         </div>
-
-        {/* Setup panel */}
-        {showSetup&&(
-          <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"12px 16px",flexShrink:0,maxHeight:200,overflowY:"auto"}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:8}}>Configure {aiFullName}</div>
-            {AI_PROVIDERS.map(p=>(
-              <div key={p.id} style={{display:"flex",gap:6,alignItems:"center",marginBottom:6}}>
-                <span style={{fontSize:11,fontWeight:600,color:"#4A5568",width:50,flexShrink:0}}>{p.name}</span>
-                <input type="password" defaultValue={keys[p.id]||""} id={"amb-key-"+p.id} placeholder={p.placeholder}
-                  style={{flex:1,padding:"5px 8px",border:"1.5px solid #D1D9E6",borderRadius:6,fontSize:11}}/>
-                <button onClick={()=>{
-                  const val=document.getElementById("amb-key-"+p.id).value.trim();
-                  if(val){saveKeys({...keys,[p.id]:val});showToast(p.name+" activated","success");}
-                  else{const nk={...keys};delete nk[p.id];saveKeys(nk);}
-                }} style={{padding:"5px 10px",borderRadius:6,border:"none",background:"#0B1F3A",color:"#C9A84C",fontSize:11,fontWeight:600,cursor:"pointer"}}>✓</button>
-                <a href={p.link} target="_blank" style={{fontSize:10,color:"#1A5FA8",fontWeight:600,textDecoration:"none",whiteSpace:"nowrap"}}>Get Key ↗</a>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Smart Insights strip */}
-        {insights.length>0&&(
-          <div style={{padding:"10px 16px 0",flexShrink:0}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>Live Insights</div>
-            <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:6}}>
-              {insights.map((ins,i)=>(
-                <button key={i} onClick={()=>send(ins.prompt)} disabled={loading||!hasAnyKey} style={{
-                  flexShrink:0,padding:"6px 10px",borderRadius:8,
-                  border:"1px solid "+ins.color+"33",background:ins.bg,
-                  color:ins.color,fontSize:11,fontWeight:600,cursor:"pointer",
-                  display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",
-                  transition:"all .15s",
-                }}
-                onMouseOver={e=>e.currentTarget.style.opacity=".8"}
-                onMouseOut={e=>e.currentTarget.style.opacity="1"}>
-                  {ins.icon} {ins.text}
-                </button>
-              ))}
+        <div style={{display:"flex",gap:8}}>
+          {[[leads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage)).length,"Active Opps"],
+            [units.filter(u=>u.status==="Available").length,"Available"],
+            [projects.length,"Projects"]
+          ].map(([v,l])=>(
+            <div key={l} style={{background:"rgba(255,255,255,.07)",borderRadius:8,padding:"5px 12px",textAlign:"center"}}>
+              <div style={{fontSize:16,fontWeight:700,color:"#C9A84C"}}>{v}</div>
+              <div style={{fontSize:9,color:"rgba(255,255,255,.4)",textTransform:"uppercase"}}>{l}</div>
             </div>
-          </div>
-        )}
-
-        {/* Quick actions */}
-        <div style={{padding:"8px 16px 0",flexShrink:0}}>
-          <div style={{fontSize:9,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>Quick Actions</div>
-          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-            {QUICK.map(q=>(
-              <button key={q.label} onClick={()=>send(q.msg)} disabled={loading||!hasAnyKey} style={{
-                padding:"5px 10px",borderRadius:20,fontSize:10,fontWeight:600,
-                border:"1px solid #E2E8F0",background:"#fff",color:"#4A5568",
-                cursor:!hasAnyKey?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:4,
-                transition:"all .15s",
-              }}
-              onMouseOver={e=>{if(hasAnyKey){e.currentTarget.style.borderColor="#C9A84C";e.currentTarget.style.color="#C9A84C";}}}
-              onMouseOut={e=>{e.currentTarget.style.borderColor="#E2E8F0";e.currentTarget.style.color="#4A5568";}}>
-                {q.icon} {q.label}
+          ))}
+          <div style={{marginLeft:"auto",display:"flex",gap:5,alignItems:"center"}}>
+            {AI_PROVIDERS.map(p=>(
+              <button key={p.id} onClick={()=>saveProvider(p.id)} style={{padding:"4px 10px",borderRadius:20,fontSize:10,fontWeight:600,cursor:"pointer",border:"1px solid "+(activeProvider===p.id?"#C9A84C":"rgba(255,255,255,.2)"),background:activeProvider===p.id?"rgba(201,168,76,.2)":"transparent",color:activeProvider===p.id?"#C9A84C":"rgba(255,255,255,.4)"}}>
+                {p.name}
               </button>
             ))}
           </div>
         </div>
+      </div>
 
-        {/* Chat */}
-        <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
-          {messages.map((m,i)=>(
-            <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",flexDirection:m.role==="user"?"row-reverse":"row"}}>
-              <div style={{
-                width:30,height:30,borderRadius:8,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:12,
-                background:m.role==="user"?"#0B1F3A":"linear-gradient(135deg,#C9A84C,#E8C97A)",
-                color:m.role==="user"?"#C9A84C":"#0B1F3A",
-              }}>
-                {m.role==="user"?(currentUser?.full_name||"U").charAt(0).toUpperCase():"✦"}
-              </div>
-              <div style={{
-                maxWidth:"80%",padding:"10px 13px",fontSize:12,lineHeight:1.6,
-                background:m.role==="user"?"linear-gradient(135deg,#0B1F3A,#1A3558)":"#fff",
-                color:m.role==="user"?"#fff":"#2D3748",
-                borderRadius:m.role==="user"?"12px 12px 3px 12px":"12px 12px 12px 3px",
-                border:m.role==="assistant"?"1px solid #E8EDF3":"none",
-                boxShadow:m.role==="assistant"?"0 1px 8px rgba(0,0,0,.05)":"0 1px 6px rgba(11,31,58,.15)",
-              }}>
-                {m.role==="assistant"?fmtMsg(m.content):m.content}
-                {m.role==="assistant"&&i===messages.length-1&&usedProvider&&(
-                  <div style={{marginTop:6,paddingTop:6,borderTop:"1px solid #F0F2F5",fontSize:9,color:"#A0AEC0"}}>
-                    {aiFullName} · {usedProvider.name}
-                  </div>
-                )}
-              </div>
+      {showSetup&&(
+        <div style={{background:"#F7F9FC",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px",marginBottom:12}}>
+          {AI_PROVIDERS.map(p=>(
+            <div key={p.id} style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+              <span style={{fontWeight:700,fontSize:12,color:"#0B1F3A",width:55}}>{p.name}</span>
+              <input type="password" defaultValue={keys[p.id]||""} id={"aikey-"+p.id} placeholder={p.placeholder} style={{flex:1,fontSize:12}}/>
+              <button onClick={()=>{ const v=document.getElementById("aikey-"+p.id).value.trim(); if(v){saveKeys({...keys,[p.id]:v});showToast(p.name+" activated","success");}else{const nk={...keys};delete nk[p.id];saveKeys(nk);} }} style={{padding:"6px 12px",borderRadius:7,border:"none",background:"#0B1F3A",color:"#C9A84C",fontSize:11,fontWeight:600,cursor:"pointer"}}>Save</button>
+              <a href={p.link} target="_blank" style={{fontSize:11,color:"#1A5FA8",fontWeight:600,textDecoration:"none",whiteSpace:"nowrap"}}>Get Key</a>
             </div>
           ))}
-
-          {loading&&(
-            <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              <div style={{width:30,height:30,borderRadius:8,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#0B1F3A"}}>✦</div>
-              <div style={{background:"#fff",border:"1px solid #E8EDF3",borderRadius:"12px 12px 12px 3px",padding:"10px 14px",display:"flex",gap:4,alignItems:"center"}}>
-                {[0,.15,.3].map((d,i)=>(
-                  <div key={i} style={{width:6,height:6,borderRadius:"50%",background:"#C9A84C",animationName:"aipulse",animationDuration:"1.2s",animationDelay:d+"s",animationIterationCount:"infinite"}}/>
-                ))}
-                <span style={{fontSize:10,color:"#A0AEC0",marginLeft:5}}>{aiFullName} is thinking…</span>
-              </div>
-            </div>
-          )}
-
-          {suggestion&&(
-            <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(201,168,76,.3)"}}>
-              <div style={{fontSize:12,fontWeight:700,color:"#C9A84C",marginBottom:8}}>✦ Lead detected — add to CRM?</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
-                {[["Name",suggestion.name],["Phone",suggestion.phone],["Email",suggestion.email||"—"],["Budget",suggestion.budget?"AED "+Number(suggestion.budget).toLocaleString():"—"]].map(([l,v])=>(
-                  <div key={l} style={{background:"rgba(255,255,255,.07)",borderRadius:6,padding:"6px 8px"}}>
-                    <div style={{fontSize:8,color:"rgba(201,168,76,.6)",textTransform:"uppercase",marginBottom:1}}>{l}</div>
-                    <div style={{fontSize:11,fontWeight:600,color:"#fff"}}>{v}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{display:"flex",gap:6}}>
-                <button onClick={async()=>{
-                  try{
-                    const{error}=await supabase.from("leads").insert({name:suggestion.name,phone:suggestion.phone||null,email:suggestion.email||null,budget:suggestion.budget||0,source:"AI Import",stage:"New Lead",notes:suggestion.notes||null,assigned_to:currentUser.id,company_id:currentUser.company_id||null,stage_updated_at:new Date().toISOString(),created_by:currentUser.id});
-                    if(error)throw error;
-                    showToast(suggestion.name+" added","success");setSuggestion(null);
-                  }catch(e){showToast(e.message,"error");}
-                }} style={{flex:1,padding:"7px",borderRadius:7,border:"none",background:"#C9A84C",color:"#0B1F3A",fontSize:11,fontWeight:700,cursor:"pointer"}}>+ Add to CRM</button>
-                <button onClick={()=>setSuggestion(null)} style={{padding:"7px 12px",borderRadius:7,border:"1px solid rgba(255,255,255,.2)",background:"transparent",color:"rgba(255,255,255,.5)",fontSize:11,cursor:"pointer"}}>Dismiss</button>
-              </div>
-            </div>
-          )}
-          <div ref={bottomRef}/>
         </div>
+      )}
 
-        {/* Input */}
-        <div style={{padding:"10px 16px 16px",flexShrink:0,borderTop:"1px solid #E2E8F0",background:"#fff"}}>
-          <div style={{display:"flex",gap:8,background:"#F7F8FC",border:"1.5px solid #E2E8F0",borderRadius:12,padding:"8px 8px 8px 12px",transition:"border-color .2s"}}
-            onFocusCapture={e=>e.currentTarget.style.borderColor="#C9A84C"}
-            onBlurCapture={e=>e.currentTarget.style.borderColor="#E2E8F0"}>
-            <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)}
-              onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
-              placeholder={hasAnyKey?"Ask "+aiFullName+" anything…":"⚙️ Add API key to activate "+aiFullName}
-              rows={1} style={{flex:1,border:"none",outline:"none",resize:"none",fontSize:12,lineHeight:1.5,minHeight:36,maxHeight:100,fontFamily:"inherit",background:"transparent",color:hasAnyKey?"#1a2535":"#A0AEC0"}}/>
-            <button onClick={()=>send()} disabled={loading||!input.trim()||!hasAnyKey} style={{
-              padding:"8px 14px",borderRadius:9,border:"none",alignSelf:"flex-end",
-              background:!loading&&input.trim()&&hasAnyKey?"linear-gradient(135deg,#0B1F3A,#1A3558)":"#E2E8F0",
-              color:!loading&&input.trim()&&hasAnyKey?"#C9A84C":"#A0AEC0",
-              fontSize:12,fontWeight:700,cursor:!loading&&input.trim()&&hasAnyKey?"pointer":"not-allowed",
-            }}>
-              {loading?"…":"↑"}
-            </button>
+      <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+        {QUICK.map(q=>(
+          <button key={q.label} onClick={()=>send(q.msg)} disabled={loading||!hasAnyKey}
+            style={{padding:"6px 12px",borderRadius:20,border:"1.5px solid #E2E8F0",background:"#fff",color:hasAnyKey?"#4A5568":"#C0C0C0",fontSize:11,cursor:hasAnyKey?"pointer":"not-allowed",display:"flex",alignItems:"center",gap:5}}>
+            {q.icon} {q.label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:12,paddingRight:4,marginBottom:12}}>
+        {messages.map((m,i)=>(
+          <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start",flexDirection:m.role==="user"?"row-reverse":"row"}}>
+            <div style={{width:34,height:34,borderRadius:10,background:m.role==="user"?"#0B1F3A":"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontWeight:700,color:m.role==="user"?"#C9A84C":"#0B1F3A",fontSize:m.role==="user"?13:18}}>
+              {m.role==="user" ? (currentUser.full_name||"U").charAt(0).toUpperCase() : "✦"}
+            </div>
+            <div style={{maxWidth:"75%",background:m.role==="user"?"linear-gradient(135deg,#0B1F3A,#1A3558)":"#fff",color:m.role==="user"?"#fff":"#1a2535",borderRadius:m.role==="user"?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"11px 15px",fontSize:13,lineHeight:1.7,border:m.role==="assistant"?"1px solid #E2E8F0":"none",boxShadow:m.role==="assistant"?"0 1px 4px rgba(0,0,0,.06)":"none"}}>
+              {m.role==="assistant" ? fmtMsg(m.content) : m.content}
+            </div>
           </div>
-          <div style={{display:"flex",justifyContent:"space-between",marginTop:5,fontSize:9,color:"#A0AEC0",padding:"0 2px"}}>
-            <span>Enter to send · Shift+Enter new line · <kbd style={{background:"#F0F2F5",padding:"1px 4px",borderRadius:3}}>Ctrl+K</kbd> to open</span>
-            <span>{usedProvider?usedProvider.name:"No key set"}</span>
+        ))}
+        {loading&&(
+          <div style={{display:"flex",gap:10,alignItems:"center"}}>
+            <div style={{width:34,height:34,borderRadius:10,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:"#0B1F3A",fontWeight:700}}>✦</div>
+            <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:"14px 14px 14px 4px",padding:"12px 16px",display:"flex",gap:5,alignItems:"center"}}>
+              {[0,.2,.4].map((d,i)=>(
+                <div key={i} style={{width:8,height:8,borderRadius:"50%",background:"#C9A84C",animationName:"aipulse",animationDuration:"1s",animationDelay:d+"s",animationIterationCount:"infinite"}}/>
+              ))}
+              <span style={{fontSize:12,color:"#A0AEC0",marginLeft:4}}>{aiName} is thinking</span>
+            </div>
           </div>
-        </div>
+        )}
+        {suggestion&&(
+          <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",border:"1px solid rgba(201,168,76,.3)",borderRadius:12,padding:"14px 16px"}}>
+            <div style={{fontWeight:700,fontSize:13,color:"#C9A84C",marginBottom:10}}>Lead detected — add to CRM?</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+              {[["Name",suggestion.name],["Phone",suggestion.phone||"—"],["Budget",suggestion.budget?"AED "+Number(suggestion.budget).toLocaleString():"—"]].map(([l,v])=>(
+                <div key={l} style={{background:"rgba(255,255,255,.07)",borderRadius:8,padding:"8px 10px"}}>
+                  <div style={{fontSize:9,color:"rgba(201,168,76,.6)",textTransform:"uppercase",marginBottom:2}}>{l}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:"#fff"}}>{v}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={async()=>{
+                try{
+                  const{error}=await supabase.from("leads").insert({name:suggestion.name,phone:suggestion.phone||null,budget:suggestion.budget||0,source:"AI Import",stage:"New Lead",notes:suggestion.notes||null,assigned_to:currentUser.id,company_id:currentUser.company_id||null,stage_updated_at:new Date().toISOString(),created_by:currentUser.id});
+                  if(error)throw error;
+                  showToast(suggestion.name+" added!","success");
+                  setSuggestion(null);
+                }catch(e){showToast(e.message,"error");}
+              }} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#C9A84C",color:"#0B1F3A",fontSize:13,fontWeight:700,cursor:"pointer"}}>Add Lead</button>
+              <button onClick={()=>setSuggestion(null)} style={{padding:"8px 14px",borderRadius:8,border:"1px solid rgba(255,255,255,.2)",background:"transparent",color:"rgba(255,255,255,.6)",fontSize:13,cursor:"pointer"}}>Dismiss</button>
+            </div>
+          </div>
+        )}
+        <div ref={bottomRef}/>
+      </div>
+
+      <div style={{display:"flex",gap:8,background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:14,padding:"8px 8px 8px 14px",boxShadow:"0 2px 8px rgba(0,0,0,.06)"}}>
+        <textarea value={input} onChange={e=>setInput(e.target.value)}
+          onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
+          placeholder={hasAnyKey ? "Ask "+aiName+" anything…" : "Setup AI above to start chatting"}
+          rows={1}
+          style={{flex:1,border:"none",outline:"none",resize:"none",fontSize:13,lineHeight:1.6,minHeight:44,maxHeight:120,fontFamily:"inherit",background:"transparent"}}
+        />
+        <button onClick={()=>send()} disabled={loading||!input.trim()||!hasAnyKey}
+          style={{padding:"10px 18px",borderRadius:10,border:"none",background:(!loading&&input.trim()&&hasAnyKey)?"linear-gradient(135deg,#0B1F3A,#1A3558)":"#E2E8F0",color:(!loading&&input.trim()&&hasAnyKey)?"#C9A84C":"#A0AEC0",fontSize:13,fontWeight:600,cursor:(!loading&&input.trim()&&hasAnyKey)?"pointer":"not-allowed",alignSelf:"flex-end"}}>
+          {loading?"…":"Send"}
+        </button>
       </div>
     </div>
   );
 }
 
-// ══════════════════════════════════════════════════════════════════
-// GROUP CONSOLIDATED VIEW — Super Admin only — Roadmap: MVP Phase
-// ══════════════════════════════════════════════════════════════════
+
 function GroupConsolidatedView() {
   return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,padding:"2rem",textAlign:"center"}}>
@@ -2769,8 +2563,7 @@ const TABS=[
   {id:"discounts",  label:"Discounts",    icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"activity",   label:"Activity Log", icon:"📝", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"reports",    label:"Reports",      icon:"📊", app:"sales",   roles:["super_admin","admin","sales_manager"]},
-  // AI is now ambient — floating orb + command bar (no nav tab needed)
-  // {id:"ai", label:"AI Assistant", icon:"✦", app:"sales", ...}
+  {id:"ai",         label:"AI Assistant", icon:"✦",  app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"companies",  label:"Companies",    icon:"🏢", app:"sales",   roles:["super_admin"]},
   {id:"users",      label:"Users",        icon:"👥", app:"sales",   roles:["admin","super_admin"]},
   {id:"permissions",label:"Permissions",  icon:"🔒", app:"sales",   roles:["super_admin"]},
@@ -2785,7 +2578,7 @@ const TABS=[
   {id:"leasing",    label:"Leasing",      icon:"🔑", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_discounts",label:"Discounts",    icon:"⚡", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_activity", label:"Activity Log", icon:"📝", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
-  // {id:"l_ai", label:"AI Assistant", icon:"✦", app:"leasing", ...} — ambient AI
+  {id:"l_ai",       label:"AI Assistant", icon:"✦",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_reports",  label:"Reports",      icon:"📊", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_companies",label:"Companies",    icon:"🏢", app:"leasing", roles:["super_admin"]},
   {id:"l_users",    label:"Users",        icon:"👥", app:"leasing", roles:["admin","super_admin"]},
@@ -8341,9 +8134,7 @@ export default function App(){
     const lastApp = localStorage.getItem("propccrm_last_app")||"sales";
     return lastApp==="leasing"?"l_dashboard":"dashboard";
   });
-  const[aiOpen,    setAiOpen]    = useState(false);
-  const[aiCmd,     setAiCmd]     = useState("");
-  const[cmdOpen,   setCmdOpen]   = useState(false);
+
   const[activeApp, setActiveApp] = useState(()=>localStorage.getItem("propccrm_last_app")||"sales");
   const[appConfig, setAppConfig] = useState(()=>getAppConfig());
   const[dataLoading,setDataLoading]=useState(false);
@@ -8497,12 +8288,6 @@ export default function App(){
 
   const handleLogout=async()=>{await supabase.auth.signOut();setCurrentUser(null);};
 
-  // Global Ctrl+K to toggle AI panel
-  useEffect(()=>{
-    const handler = e => { if((e.ctrlKey||e.metaKey)&&e.key==="k"){ e.preventDefault(); setAiOpen(o=>!o); } };
-    window.addEventListener("keydown", handler);
-    return ()=>window.removeEventListener("keydown", handler);
-  },[]);
 
   // Global Ctrl+K handler
   useEffect(()=>{
@@ -8666,6 +8451,7 @@ export default function App(){
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
           {tab==="pipeline"    &&<Pipeline leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} users={users} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
@@ -8688,6 +8474,7 @@ export default function App(){
           {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
           {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData}/>}
+          {tab==="l_ai"        &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leasingData={leasingData} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
@@ -8707,19 +8494,6 @@ export default function App(){
     </div>
     {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
 
-    {/* ── AMBIENT AI SYSTEM ───────────────────────────────── */}
-    <AmbientAI
-      open={aiOpen} onClose={()=>setAiOpen(false)}
-      cmdOpen={cmdOpen} onCmdClose={()=>setCmdOpen(false)}
-      leads={leads} units={aiUnits} projects={aiProjects}
-      salePricing={aiSalePr} leasePricing={aiLeasePr}
-      activities={activities} currentUser={currentUser}
-      showToast={showToast} followupAlerts={followupAlerts}
-      leasingData={leasingData} currentApp={currentApp}
-    />
-
-    {/* ── FLOATING ORB ────────────────────────────────────── */}
-    {currentUser&&<FloatingOrb aiOpen={aiOpen} onOpen={()=>setAiOpen(o=>!o)} followupAlerts={followupAlerts}/>}
 
     </>
   );
