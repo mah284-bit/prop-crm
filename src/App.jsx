@@ -2353,15 +2353,8 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
     const g = h<12 ? "Good morning" : h<17 ? "Good afternoon" : "Good evening";
     const fn = currentUser.full_name.split(" ")[0];
     const avail = units.filter(u=>u.status==="Available").length;
-    setMessages([{role:"assistant", content:
-      g+", "+fn+"! I am "+aiName+" - your real estate intelligence concierge.
-
-"+
-      "I have live access to "+leads.length+" leads, "+avail+" available units across "+projects.length+" projects".
-
-"+
-      (hasAnyKey ? "Use the quick buttons below or type anything." : "Click Setup AI to add a free Groq key and start chatting.")
-    }]);
+    const intro = g+", "+fn+"! I am "+aiName+" - your real estate intelligence concierge. I have live access to "+leads.length+" leads, "+avail+" available units across "+projects.length+" projects. "+(hasAnyKey ? "Use the quick buttons below or type anything." : "Click Setup AI above to add a free Groq key.");
+    setMessages([{role:"assistant", content: intro}]);
   },[]);
 
   const saveKeys = k => { setKeys(k); localStorage.setItem("ai_keys",JSON.stringify(k)); };
