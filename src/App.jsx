@@ -2354,13 +2354,13 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
     const fn = currentUser.full_name.split(" ")[0];
     const avail = units.filter(u=>u.status==="Available").length;
     setMessages([{role:"assistant", content:
-      g+", "+fn+"! I am **"+aiName+"** - your real estate intelligence concierge.
+      g+", "+fn+"! I am "+aiName+" - your real estate intelligence concierge.
 
 "+
-      "I have live access to **"+leads.length+" leads**, **"+avail+" available units** across **"+projects.length+" projects**.
+      "I have live access to "+leads.length+" leads, "+avail+" available units across "+projects.length+" projects".
 
 "+
-      (hasAnyKey ? "Use the quick buttons below or type anything." : "Click **Setup AI** to add a free Groq key and start chatting.")
+      (hasAnyKey ? "Use the quick buttons below or type anything." : "Click Setup AI to add a free Groq key and start chatting.")
     }]);
   },[]);
 
@@ -2398,7 +2398,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
       }
     }catch(e){
       setMessages(p=>[...p,{role:"assistant",content:
-        e.message.includes("No API") ? "Click **Setup AI** above to add a free API key." : "Sorry: "+e.message
+        e.message.includes("No API") ? "Click Setup AI above to add a free API key." : "Sorry: "+e.message
       }]);
       if(e.message.includes("No API")) setShowSetup(true);
     }
