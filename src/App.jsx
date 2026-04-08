@@ -3838,7 +3838,6 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
             </div>
           </div>
         </div>
-        );
             )}
             {showReserve&&reserveUnit&&(
         <ReservationModal
@@ -4759,7 +4758,6 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                 </div>
               </div>
             </div>
-            );
                     )}
 
           {showAddLease&&(
@@ -7603,7 +7601,6 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
             </div>
           </div>
         </div>
-        );
             )}
 
       {/* Add/Edit Tenant Modal */}      {showAddTenant&&(
