@@ -5366,18 +5366,24 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
     setLoading(true);
     try {
       const safe = q => q.catch(()=>({data:[]}));
+      const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+      const byco = (tbl, extra="") => {
+        let q = supabase.from(tbl).select(extra||"*");
+        if(cid) q = q.eq("company_id", cid);
+        return q;
+      };
       const [leads,acts,users,units,projs,sp,lp,leases,tenants,payments,leaseOpps] = await Promise.all([
-        safe(supabase.from("leads").select("*").order("created_at",{ascending:false})),
-        safe(supabase.from("activities").select("*")),
-        safe(supabase.from("profiles").select("id,full_name,role,email")),
-        safe(supabase.from("project_units").select("*")),
-        safe(supabase.from("projects").select("*")),
-        safe(supabase.from("unit_sale_pricing").select("*")),
-        safe(supabase.from("unit_lease_pricing").select("*")),
-        safe(supabase.from("leases").select("*").order("end_date")),
-        safe(supabase.from("tenants").select("*")),
-        safe(supabase.from("rent_payments").select("*").order("due_date")),
-        safe(supabase.from("lease_opportunities").select("*")),
+        safe(byco("leads").order("created_at",{ascending:false})),
+        safe(byco("activities")),
+        safe(cid ? supabase.from("profiles").select("id,full_name,role,email").eq("company_id",cid) : supabase.from("profiles").select("id,full_name,role,email")),
+        safe(byco("project_units")),
+        safe(byco("projects")),
+        safe(byco("unit_sale_pricing")),
+        safe(byco("unit_lease_pricing")),
+        safe(byco("leases").order("end_date")),
+        safe(byco("tenants")),
+        safe(byco("rent_payments").order("due_date")),
+        safe(byco("lease_opportunities")),
       ]);
       setData({
         leads:   leads.data||[],   activities: acts.data||[],
