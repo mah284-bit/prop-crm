@@ -7682,7 +7682,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
     Promise.all([
       q(supabase.from("tenants").select("*").order("full_name")),
       q(supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false})),
-      q(supabase.from("project_units").select("id,unit_ref,unit_type,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms,bathrooms,block_or_tower,asking_price")),
+      q(supabase.from("project_units").select("id,unit_ref,unit_type,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms,bathrooms,block_or_tower")),
       q(supabase.from("projects").select("id,name")),
       q(supabase.from("unit_lease_pricing").select("*")),
     ]).then(([t,lo,u,p,lp])=>{
