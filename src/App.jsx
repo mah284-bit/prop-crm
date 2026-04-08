@@ -91,7 +91,7 @@ const saveAppConfig = (cfg) => {
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
   sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","reports","pay_plans","companies","users","permissions"],
-  leasing: ["l_dashboard","l_leads","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions"],
+  leasing: ["l_dashboard","l_leads","l_pipeline","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions"],
   both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","reports","pay_plans","l_reports","companies","users","permissions"],
 };
 // Which roles each mode makes available
@@ -2319,25 +2319,29 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
 const TABS=[
   // ── Sales CRM ──────────────────────────────────────────────────
   {id:"dashboard",  label:"Dashboard",    icon:"⊞",  app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent","viewer"]},
-  {id:"projects",   label:"Projects",     icon:"🏢", app:"sales",   roles:["super_admin","admin","sales_manager"]},
-  {id:"builder",    label:"Inventory",    icon:"📋", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"leads",      label:"Leads",        icon:"👤", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
-  {id:"pipeline",   label:"Pipeline",     icon:"⬡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"pipeline",   label:"Pipeline",     icon:"🔀", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"projects",   label:"Projects",     icon:"🏗️", app:"sales",   roles:["super_admin","admin","sales_manager"]},
+  {id:"builder",    label:"Inventory",    icon:"🏠", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"discounts",  label:"Discounts",    icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager"]},
-  {id:"activity",   label:"Activity Log", icon:"📋", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"activity",   label:"Activity Log", icon:"📝", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"reports",    label:"Reports",      icon:"📊", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"ai",         label:"AI Assistant", icon:"✦",  app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"companies",  label:"Companies",    icon:"🏢", app:"sales",   roles:["super_admin"]},
   {id:"users",      label:"Users",        icon:"👥", app:"sales",   roles:["admin","super_admin"]},
+  {id:"permissions",label:"Permissions",  icon:"🔒", app:"sales",   roles:["super_admin"]},
   {id:"permsets",   label:"Permissions",  icon:"🔐", app:"sales",   roles:["super_admin","admin"]},
   // ── Leasing CRM ────────────────────────────────────────────────
   {id:"l_dashboard",label:"Dashboard",    icon:"⊞",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
   {id:"l_leads",    label:"Enquiries",    icon:"👤", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
-  {id:"l_projects",  label:"Projects",     icon:"🏢", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
+  {id:"l_pipeline", label:"Pipeline",     icon:"🔀", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
+  {id:"l_projects",  label:"Projects",     icon:"🏗️", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_inventory",label:"Inventory",    icon:"📋", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"leasing",    label:"Leasing",      icon:"🔑", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_discounts",label:"Discounts",    icon:"⚡", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
-  {id:"l_activity", label:"Activity Log", icon:"📋", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
+  {id:"l_activity", label:"Activity Log", icon:"📝", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_ai",       label:"AI Assistant", icon:"✦",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
+  {id:"l_reports",  label:"Reports",      icon:"📊", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_companies",label:"Companies",    icon:"🏢", app:"leasing", roles:["super_admin"]},
   {id:"l_users",    label:"Users",        icon:"👥", app:"leasing", roles:["admin","super_admin"]},
   {id:"l_permsets", label:"Permissions",  icon:"🔐", app:"leasing", roles:["super_admin","admin"]},
@@ -2366,6 +2370,8 @@ const SUBTITLES={
   ai:"Ask questions, draft messages, get insights — powered by Claude AI",
   users:"Manage team access and roles",
   l_dashboard:"Your leasing overview at a glance",
+  l_pipeline: "Manage lease enquiries through stages",
+  l_reports:  "Leasing analytics and performance",
   l_leads:"Tenant enquiries — track prospects looking to rent or lease",
   projects:"Create and manage property projects and developments",
   l_projects:"Create and manage leasing property projects",
@@ -7953,10 +7959,10 @@ export default function App(){
           safe(cid ? supabase.from("project_units").select("*").eq("company_id",cid) : supabase.from("project_units").select("*")),
           safe(cid ? supabase.from("unit_sale_pricing").select("*").eq("company_id",cid) : supabase.from("unit_sale_pricing").select("*")),
           safe(cid ? supabase.from("unit_lease_pricing").select("*").eq("company_id",cid) : supabase.from("unit_lease_pricing").select("*")),
-          safe(supabase.from("tenants").select("*").order("full_name")),
-          safe(supabase.from("leases").select("*").order("end_date")),
-          safe(supabase.from("rent_payments").select("*").order("due_date")),
-          safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
+          safe(cid ? supabase.from("tenants").select("*").eq("company_id",cid).order("full_name") : supabase.from("tenants").select("*").order("full_name")),
+          safe(cid ? supabase.from("leases").select("*").eq("company_id",cid).order("end_date") : supabase.from("leases").select("*").order("end_date")),
+          safe(cid ? supabase.from("rent_payments").select("*").order("due_date") : supabase.from("rent_payments").select("*").order("due_date")),
+          safe(cid ? supabase.from("maintenance").select("*").eq("company_id",cid).order("created_at",{ascending:false}) : supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
         ]);
         setAiProjects(filterByCo(proj.data));
         setAiUnits(filterByCo(units2.data));
@@ -8046,17 +8052,32 @@ export default function App(){
             {(()=>{
               const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
               const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || null;
-              if(!co) return null;
-              return (
-                <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:8,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)",cursor:"pointer",transition:"all .15s"}}
-                  onClick={()=>setTab("companies")}
-                  onMouseOver={e=>e.currentTarget.style.background="rgba(255,255,255,.14)"}
-                  onMouseOut={e=>e.currentTarget.style.background="rgba(255,255,255,.08)"}>
+              const isSA = currentUser?.role==="super_admin";
+              if(!co && !isSA) return null;
+              // Super admin gets a dropdown to switch companies
+              if(isSA && companies.length>1){
+                return (
+                  <select value={storedId||""} onChange={e=>{
+                    const newId=e.target.value;
+                    setActiveCompanyId(newId);
+                    localStorage.setItem("propccrm_company_id",newId);
+                    window.location.reload();
+                  }} style={{
+                    background:"rgba(255,255,255,.08)",border:"1px solid rgba(201,168,76,.4)",
+                    borderRadius:8,padding:"4px 10px",color:"#C9A84C",fontSize:13,fontWeight:700,
+                    cursor:"pointer",maxWidth:200,fontFamily:"'Playfair Display',serif"
+                  }}>
+                    {companies.map(c=><option key={c.id} value={c.id} style={{background:"#0B1F3A",color:"#fff"}}>{c.name}</option>)}
+                  </select>
+                );
+              }
+              // Regular users just see company name
+              return co?(
+                <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:8,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)"}}>
                   {co.logo_url&&<img src={co.logo_url} alt="" style={{width:18,height:18,borderRadius:4,objectFit:"cover"}}/>}
                   <span style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#C9A84C",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>{co.name}</span>
-                  <span style={{fontSize:10,color:"rgba(201,168,76,.5)"}}>▼</span>
                 </div>
-              );
+              ):null;
             })()}
           </div>
 
@@ -8147,6 +8168,7 @@ export default function App(){
           {/* ── Leasing CRM ───────────────────────────────────── */}
           {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={setTab} followupAlerts={followupAlerts} key="l_dash"/>}
           {tab==="l_leads"     &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
+          {tab==="l_pipeline"  &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users} defaultView="pipeline"/>}
           {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
           {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData}/>}
