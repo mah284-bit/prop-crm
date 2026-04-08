@@ -14,50 +14,7 @@ const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ─── STYLES ───────────────────────────────────────────────────
-const _globalCSS = '
-    @import url(\'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap\');
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:\'DM Sans\',sans-serif;background:#F0F2F5;color:#1a2535}
-    ::-webkit-scrollbar{width:5px;height:5px}
-    ::-webkit-scrollbar-thumb{background:#C9A84C55;border-radius:10px}
-    input,select,textarea{font-family:\'DM Sans\',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:9px 12px;font-size:13px;color:#1a2535;background:#fff;width:100%;transition:border-color 0.2s}
-    input:focus,select:focus,textarea:focus{border-color:#C9A84C}
-    input.error,select.error{border-color:#B83232!important;background:#FFF8F8}
-    textarea{resize:vertical}
-    button{cursor:pointer;font-family:\'DM Sans\',sans-serif}
-    .fade-in{animation:fadeIn 0.25s ease}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-    .slide-in{animation:slideIn 0.2s ease}
-    @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
-    .ch{transition:box-shadow 0.18s,transform 0.18s}
-    .ch:hover{box-shadow:0 4px 20px #C9A84C22;transform:translateY(-1px)}
-    .dcard{transition:box-shadow 0.15s;cursor:grab}
-    .dcard:hover{box-shadow:0 3px 14px #0B1F3A22}
-    @keyframes spin{to{transform:rotate(360deg)}}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
-
-    /* ── MOBILE ──────────────────────────────────────────────── */
-    html{-webkit-text-size-adjust:100%;touch-action:manipulation}
-    body{overflow-x:hidden}
-    @media(max-width:768px){
-      .tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important;position:relative}
-      .tab-bar::-webkit-scrollbar{display:none}
-      .tab-bar-wrap{position:relative}
-      .tab-bar-wrap::before,.tab-bar-wrap::after{content:"";position:absolute;top:0;bottom:0;width:32px;pointer-events:none;z-index:10}
-      .tab-bar-wrap::before{left:0;background:linear-gradient(to right,#0B1F3A,transparent)}
-      .tab-bar-wrap::after{right:0;background:linear-gradient(to left,#0B1F3A,transparent)}
-      .filter-sidebar{display:none!important}
-      .filter-sidebar.open{display:flex!important}
-      .table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}
-      .pipeline-board{overflow-x:auto!important;flex-wrap:nowrap!important}
-      .mob-stack{grid-template-columns:1fr!important}
-      .hide-mobile{display:none!important}
-      button{min-height:38px}
-    }
-    @media(max-width:480px){
-      .stat-grid{grid-template-columns:1fr 1fr!important}
-    }
-  ';
+const _globalCSS = '\n    @import url(\'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap\');\n    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}\n    body{font-family:\'DM Sans\',sans-serif;background:#F0F2F5;color:#1a2535}\n    ::-webkit-scrollbar{width:5px;height:5px}\n    ::-webkit-scrollbar-thumb{background:#C9A84C55;border-radius:10px}\n    input,select,textarea{font-family:\'DM Sans\',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:9px 12px;font-size:13px;color:#1a2535;background:#fff;width:100%;transition:border-color 0.2s}\n    input:focus,select:focus,textarea:focus{border-color:#C9A84C}\n    input.error,select.error{border-color:#B83232!important;background:#FFF8F8}\n    textarea{resize:vertical}\n    button{cursor:pointer;font-family:\'DM Sans\',sans-serif}\n    .fade-in{animation:fadeIn 0.25s ease}\n    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}\n    .slide-in{animation:slideIn 0.2s ease}\n    @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}\n    .ch{transition:box-shadow 0.18s,transform 0.18s}\n    .ch:hover{box-shadow:0 4px 20px #C9A84C22;transform:translateY(-1px)}\n    .dcard{transition:box-shadow 0.15s;cursor:grab}\n    .dcard:hover{box-shadow:0 3px 14px #0B1F3A22}\n    @keyframes spin{to{transform:rotate(360deg)}}\n    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}\n\n    /* ── MOBILE ──────────────────────────────────────────────── */\n    html{-webkit-text-size-adjust:100%;touch-action:manipulation}\n    body{overflow-x:hidden}\n    @media(max-width:768px){\n      .tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important;position:relative}\n      .tab-bar::-webkit-scrollbar{display:none}\n      .tab-bar-wrap{position:relative}\n      .tab-bar-wrap::before,.tab-bar-wrap::after{content:"";position:absolute;top:0;bottom:0;width:32px;pointer-events:none;z-index:10}\n      .tab-bar-wrap::before{left:0;background:linear-gradient(to right,#0B1F3A,transparent)}\n      .tab-bar-wrap::after{right:0;background:linear-gradient(to left,#0B1F3A,transparent)}\n      .filter-sidebar{display:none!important}\n      .filter-sidebar.open{display:flex!important}\n      .table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}\n      .pipeline-board{overflow-x:auto!important;flex-wrap:nowrap!important}\n      .mob-stack{grid-template-columns:1fr!important}\n      .hide-mobile{display:none!important}\n      button{min-height:38px}\n    }\n    @media(max-width:480px){\n      .stat-grid{grid-template-columns:1fr 1fr!important}\n    }\n  ';
 const GlobalStyle = () => (
   <style dangerouslySetInnerHTML={{__html:_globalCSS}}/>
 );
