@@ -1104,7 +1104,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
         <button onClick={onBack} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||`Opportunity — ${lead.name}`}</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||"Opportunity — "+lead.name}</span>
             <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>{opp.stage}</span>
             {opp.status==="On Hold"&&<span style={{padding:"3px 10px",borderRadius:20,background:"#F0F2F5",color:"#718096",fontSize:11,fontWeight:600}}>On Hold</span>}
           </div>
@@ -2175,12 +2175,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
         </div>
 
         {/* Detail panel — shown when card selected */}
-        {selCard&&(()=>{
-          const lead=leads.find(l=>l.id===selCard.id)||selCard;
-          const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F0F2F5"};
-          const days=lead.stage_updated_at?Math.floor((new Date()-new Date(lead.stage_updated_at))/(864e5)):0;
-          const curIdx=stageOrder.indexOf(lead.stage);
-          return(
+        {selCard&&(()=>{const lead=leads.find(l=>l.id===selCard.id)||selCard;const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F0F2F5"};const days=lead.stage_updated_at?Math.floor((new Date()-new Date(lead.stage_updated_at))/(864e5)):0;const curIdx=stageOrder.indexOf(lead.stage);return(
             <div style={{width:260,flexShrink:0,background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,overflowY:"auto",boxShadow:"0 4px 20px rgba(11,31,58,.08)"}}>
               {/* Header */}
               <div style={{background:"linear-gradient(135deg,"+m.c+","+m.c+"CC)",padding:"14px 16px",borderRadius:"10px 10px 0 0"}}>
@@ -2199,7 +2194,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
                 {[
                   ["Phone",lead.phone],["Email",lead.email],
                   ["Nationality",lead.nationality],["Source",lead.source],
-                  ["Type",lead.property_type],["Days in stage",`${days}d`],
+                  ["Type",lead.property_type],["Days in stage",days+"d"],
                 ].filter(([,v])=>v).map(([l,v])=>(
                   <div key={l} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid #F7F9FC"}}>
                     <span style={{color:"#A0AEC0"}}>{l}</span>
@@ -2781,7 +2776,7 @@ function ReservationBadge({ reservation }) {
   if (reservation.status !== "Active" && reservation.status !== "Extended") return null;
   return (
     <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:20,background:col.bg,color:col.c,border:"1px solid "+col.border}}>
-      {urg === "expired" ? "⚠ Expired" : `🔒 ${hrs}h left`}
+      {urg === "expired" ? "⚠ Expired" : "🔒 "+hrs+"h left"}
     </span>
   );
 }
@@ -3643,7 +3638,7 @@ Return ONLY the JSON, no explanation.`}
                     <td style={{padding:"5px 8px"}}>
                       <div style={{display:"flex",flexDirection:"column",gap:2}}>
                         <span style={{fontSize:9,fontWeight:600,padding:"2px 6px",borderRadius:20,background:sc.bg,color:sc.c,whiteSpace:"nowrap"}}>{u.status}</span>
-                        {(()=>{const r=reservations.find(x=>x.unit_id===u.id&&["Active","Extended"].includes(x.status));return r?<ReservationBadge reservation={r}/>:null;})()}
+                        {reservations.find(x=>x.unit_id===u.id&&["Active","Extended"].includes(x.status))?<ReservationBadge reservation={reservations.find(x=>x.unit_id===u.id&&["Active","Extended"].includes(x.status))}/>:null}
                       </div>
                     </td>
                     <td style={{padding:"5px 4px"}} onClick={e=>e.stopPropagation()}>
@@ -3657,11 +3652,7 @@ Return ONLY the JSON, no explanation.`}
         </div>
 
         {/* Unit detail side panel */}
-        {selUnit&&(()=>{
-          const sp=getSP(selUnit.id); const lp=getLP(selUnit.id);
-          const proj=projects.find(p=>p.id===selUnit.project_id);
-          const sc=UNIT_STATUS_COLORS[selUnit.status]||{c:"#718096",bg:"#F0F2F5"};
-          return (
+        {selUnit&&(()=>{const sp=getSP(selUnit.id);const lp=getLP(selUnit.id);const proj=projects.find(p=>p.id===selUnit.project_id);const sc=UNIT_STATUS_COLORS[selUnit.status]||{c:"#718096",bg:"#F0F2F5"};return(
             <div className="slide-in" style={{width:340,flexShrink:0,background:"#fff",borderLeft:"1px solid #E2E8F0",display:"flex",flexDirection:"column",overflow:"hidden"}}>
               {/* Panel header */}
               <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",padding:"14px 16px",position:"relative"}}>
@@ -3726,21 +3717,8 @@ Return ONLY the JSON, no explanation.`}
                     )}
                     {selUnit.notes&&<div style={{fontSize:12,color:"#4A5568",padding:"8px 10px",background:"#F7F9FC",borderRadius:8,lineHeight:1.6}}>{selUnit.notes}</div>}
                     {canEdit&&<button onClick={()=>openEdit(selUnit)} style={{padding:"8px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit Unit</button>}
-                    {canReserve&&selUnit.status==="Available"&&(()=>{
-                      const hp2=!!(salePricing.find(s=>s.unit_id===selUnit.id)||leasePricing.find(l=>l.unit_id===selUnit.id));
-                      const pr2=projects.find(p=>p.id===selUnit.project_id);
-                      const ok2=hp2&&(!pr2?.launch_date||new Date()>=new Date(pr2.launch_date));
-                      return (
-                        <button onClick={()=>{
-                          if(!hp2){showToast("Add pricing to this unit before reserving","error");return;}
-                          if(!ok2){showToast("Project launches "+new Date(pr2.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})+" — not open yet","error");return;}
-                          setReserveUnit(selUnit);setShowReserve(true);
-                        }} style={{padding:"8px",borderRadius:8,border:"none",background:ok2?"#C9A84C":"#E2E8F0",color:ok2?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:ok2?"pointer":"not-allowed"}}>
-                          {!hp2?"⚠️ No Pricing":!ok2?"🔒 Not Released":"🔒 Reserve Unit"}
-                        </button>
-                      );
-                    })()}
-                    {canReserve&&(()=>{const r=reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status));return r?(<button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"1.5px solid #E8C97A",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:700,cursor:"pointer"}}>⏱ View Reservation ({hoursLeft(r.expires_at,r.extended_until)}h)</button>):null;})()}
+                    {canReserve&&selUnit.status==="Available"&&(()=>{const hp2=!!(salePricing.find(s=>s.unit_id===selUnit.id)||leasePricing.find(l=>l.unit_id===selUnit.id));const pr2=projects.find(p=>p.id===selUnit.project_id);const ok2=hp2&&(!pr2?.launch_date||new Date()>=new Date(pr2.launch_date));return(<button onClick={()=>{if(!hp2){showToast("Add pricing to this unit before reserving","error");return;}if(!ok2){showToast("Project launches "+new Date(pr2.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})+" — not open yet","error");return;}setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"none",background:ok2?"#C9A84C":"#E2E8F0",color:ok2?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:ok2?"pointer":"not-allowed"}}>{!hp2?"⚠️ No Pricing":!ok2?"🔒 Not Released":"🔒 Reserve Unit"}</button>);})()}
+                    {canReserve&&reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status))&&<button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"1.5px solid #E8C97A",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:700,cursor:"pointer"}}>{"⏱ View Reservation ("+hoursLeft(reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status))?.expires_at,reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status))?.extended_until)+"h)"}</button>}
                   </div>
                 )}
                 {/* Pricing tab */}
@@ -3754,7 +3732,7 @@ Return ONLY the JSON, no explanation.`}
                           {sp.price_per_sqft&&<div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Number(sp.price_per_sqft).toLocaleString()}/sqft</div>}
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                          {[["DLD Fee",`${sp.dld_fee_pct}%`],["Agency Fee",`${sp.agency_fee_pct}%`],["Booking",`${sp.booking_pct}%`],["Construction",`${sp.during_construction_pct}%`],["Handover",`${sp.on_handover_pct}%`],sp.post_handover_pct>0&&["Post Handover",`${sp.post_handover_pct}%`]].filter(Boolean).map(([l,v])=>(
+                          {[["DLD Fee",sp.dld_fee_pct+"%"],["Agency Fee",sp.agency_fee_pct+"%"],["Booking",sp.booking_pct+"%"],["Construction",sp.during_construction_pct+"%"],["Handover",sp.on_handover_pct+"%"],sp.post_handover_pct>0&&["Post Handover",sp.post_handover_pct+"%"]].filter(Boolean).map(([l,v])=>(
                             <div key={l} style={{background:"#FAFBFC",borderRadius:7,padding:"7px 9px"}}>
                               <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:1}}>{l}</div>
                               <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
@@ -3771,7 +3749,7 @@ Return ONLY the JSON, no explanation.`}
                           <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Math.round(lp.annual_rent/12).toLocaleString()}/month</div>
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                          {[["Deposit","AED "+Number(lp.security_deposit||0).toLocaleString()],["Cheques",lp.cheques_allowed],["Municipality",`${lp.municipality_tax_pct}%`],["Chiller",lp.chiller_included?"Included":"Excluded"]].map(([l,v])=>(
+                          {[["Deposit","AED "+Number(lp.security_deposit||0).toLocaleString()],["Cheques",lp.cheques_allowed],["Municipality",lp.municipality_tax_pct+"%"],["Chiller",lp.chiller_included?"Included":"Excluded"]].map(([l,v])=>(
                             <div key={l} style={{background:"#FAFBFC",borderRadius:7,padding:"7px 9px"}}>
                               <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:1}}>{l}</div>
                               <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
@@ -3831,10 +3809,7 @@ Return ONLY the JSON, no explanation.`}
 
       {/* Reservation Modal */}
       {/* Inventory Excel Upload Modal */}
-      {showInvExcel&&(()=>{
-        const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
-        return (
-        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+      {showInvExcel&&(()=>{const cid=currentUser.company_id||localStorage.getItem("propccrm_company_id")||null;return(<div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:580,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📤 Upload Inventory from Excel</span>
@@ -3923,7 +3898,7 @@ Return ONLY the JSON, no explanation.`}
           reservation={reservations.find(r=>r.unit_id===reserveUnit.id&&["Active","Extended"].includes(r.status))||null}
           opportunities={[...globalOpps]}
           unitHasPrice={!!(salePricing.find(s=>s.unit_id===reserveUnit.id)||leasePricing.find(l=>l.unit_id===reserveUnit.id))}
-          unitLaunchDate={(()=>{const proj=projects.find(p=>p.id===reserveUnit.project_id);return proj?.launch_date||null;})()}
+          unitLaunchDate={projects.find(p=>p.id===reserveUnit.project_id)?.launch_date||null}
           currentUser={currentUser}
           leads={leads}
           tenants={tenants}
@@ -4405,8 +4380,8 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
                 </div>
                 <div style={{fontSize:11,color:"#718096",marginTop:2}}>
                   {new Date(c.cheque_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}
-                  {c.cheque_number&&` · #${c.cheque_number}`}
-                  {c.bank_name&&` · ${c.bank_name}`}
+                  {c.cheque_number&&" · #"+c.cheque_number}
+                  {c.bank_name&&" · "+c.bank_name}
                 </div>
               </div>
               <div style={{display:"flex",gap:4}}>
@@ -4588,7 +4563,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
 
   if(loading) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"#A0AEC0",fontSize:14}}>Loading Leasing…</div>;
 
-  const TABS_L=[["dashboard","📊 Dashboard"],["tenants",`👤 Tenants (${tenants.length})`],["leases",`📄 Leases (${activeLeases.length})`],["payments",`💰 Payments (${overduePmts.length} overdue)`],["maintenance",`🔧 Maintenance (${openMaint.length})`]];
+  const TABS_L=[["dashboard","📊 Dashboard"],["tenants","👤 Tenants ("+tenants.length+")"],["leases","📄 Leases ("+activeLeases.length+")"],["payments","💰 Payments ("+overduePmts.length+" overdue)"],["maintenance","🔧 Maintenance ("+openMaint.length+")"]];
 
   return (
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
@@ -4602,7 +4577,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
       {tab==="dashboard"&&(
         <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:14}}>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
-            {[["Active Leases",activeLeases.length,"#0B1F3A","📄"],["Annual Rent",`AED ${(totalRent/1e6).toFixed(1)}M`,"#1A7F5A","💰"],["Overdue Payments",overduePmts.length,"#B83232","⚠"],["Open Maintenance",openMaint.length,"#5B3FAA","🔧"]].map(([l,v,c,icon])=>(
+            {[["Active Leases",activeLeases.length,"#0B1F3A","📄"],["Annual Rent","AED "+(totalRent/1e6).toFixed(1)+"M","#1A7F5A","💰"],["Overdue Payments",overduePmts.length,"#B83232","⚠"],["Open Maintenance",openMaint.length,"#5B3FAA","🔧"]].map(([l,v,c,icon])=>(
               <div key={l} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem 1.25rem",borderTop:"3px solid "+c}}>
                 <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".7px",fontWeight:600,marginBottom:6}}>{icon} {l}</div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
@@ -4761,10 +4736,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
             })}
           </div>
           {/* Lease Upload Modal */}
-          {showLeaseUpload&&(()=>{
-            const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
-            return (
-            <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          {showLeaseUpload&&(()=>{const cid=currentUser.company_id||localStorage.getItem("propccrm_company_id")||null;return(<div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
               <div style={{background:"#fff",borderRadius:16,width:600,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
                   <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📋 Leases — Download Template / Upload Data</span>
@@ -7288,7 +7260,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
         <button onClick={onBack} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||`Lease Enquiry — ${tenant.full_name}`}</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||"Lease Enquiry — "+tenant.full_name}</span>
             <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>{opp.stage}</span>
           </div>
           <div style={{fontSize:12,color:"#718096",marginTop:2}}>{tenant.full_name} · {tenant.phone||""} {unit?"· "+unit.unit_ref+" — "+unit.sub_type:""}</div>
@@ -7638,10 +7610,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
       </div>
 
       {/* Tenant Upload Modal */}
-      {showTenantUpload&&(()=>{
-        const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
-        return (
-        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+      {showTenantUpload&&(()=>{const cid=currentUser.company_id||localStorage.getItem("propccrm_company_id")||null;return(<div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:580,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📋 Tenants — Download Template / Upload Data</span>
@@ -8123,14 +8092,7 @@ export default function App(){
         <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:52,gap:10}}>
 
           {/* LEFT: Company Logo + Name — hero position */}
-          {(()=>{
-            const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
-            const cachedCo = (()=>{ try{ return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null"); }catch{return null;} })();
-            const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || cachedCo || null;
-            const isSA = currentUser?.role==="super_admin";
-            const bizLabel = co?.business_type==="both"?"Sales & Leasing":co?.business_type==="sales"?"Sales Only":co?.business_type==="leasing"?"Leasing Only":co?.business_type||"";
-
-            return (
+          {(()=>{const storedId=activeCompanyId||localStorage.getItem("propccrm_company_id")||currentUser?.company_id;const cachedCo=(()=>{try{return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null");}catch{return null;}})();const co=companies.find(c=>c.id===storedId)||companies.find(c=>c.id===currentUser?.company_id)||companies[0]||cachedCo||null;const isSA=currentUser?.role==="super_admin";const bizLabel=co?.business_type==="both"?"Sales & Leasing":co?.business_type==="sales"?"Sales Only":co?.business_type==="leasing"?"Leasing Only":co?.business_type||"";return(
               <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,minWidth:0}}>
                 {/* Logo */}
                 {co?.logo_url
