@@ -13,54 +13,53 @@ const SUPABASE_URL  = "https://ysceukgpimzfqixtnbnp.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzY2V1a2dwaW16ZnFpeHRuYm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNDI5OTQsImV4cCI6MjA4OTkxODk5NH0.WZSyGeOEbiRo1wt13syheTOyiAToMWXInxIaBgaqq8k";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-// ─── STYLES ─────────────────────────────────────────────────── v2
-const _globalCSS=""+
-"    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');"+
-"    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}"+
-"    body{font-family:'DM Sans',sans-serif;background:#F0F2F5;color:#1a2535}"+
-"    ::-webkit-scrollbar{width:5px;height:5px}"+
-"    ::-webkit-scrollbar-thumb{background:#C9A84C55;border-radius:10px}"+
-"    input,select,textarea{font-family:'DM Sans',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:9px 12px;font-size:13px;color:#1a2535;background:#fff;width:100%;transition:border-color 0.2s}"+
-"    input:focus,select:focus,textarea:focus{border-color:#C9A84C}"+
-"    input.error,select.error{border-color:#B83232!important;background:#FFF8F8}"+
-"    textarea{resize:vertical}"+
-"    button{cursor:pointer;font-family:'DM Sans',sans-serif}"+
-"    .fade-in{animation:fadeIn 0.25s ease}"+
-"    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}"+
-"    .slide-in{animation:slideIn 0.2s ease}"+
-"    @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}"+
-"    .ch{transition:box-shadow 0.18s,transform 0.18s}"+
-"    .ch:hover{box-shadow:0 4px 20px #C9A84C22;transform:translateY(-1px)}"+
-"    .dcard{transition:box-shadow 0.15s;cursor:grab}"+
-"    .dcard:hover{box-shadow:0 3px 14px #0B1F3A22}"+
-"    @keyframes spin{to{transform:rotate(360deg)}}"+
-"    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}"+
-""+
-"    /* ── MOBILE ──────────────────────────────────────────────── */"+
-"    html{-webkit-text-size-adjust:100%;touch-action:manipulation}"+
-"    body{overflow-x:hidden}"+
-"    @media(max-width:768px){"+
-"      .tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important;position:relative}"+
-"      .tab-bar::-webkit-scrollbar{display:none}"+
-"      .tab-bar-wrap{position:relative}"+
-"      .tab-bar-wrap::before,.tab-bar-wrap::after{content:\"\";position:absolute;top:0;bottom:0;width:32px;pointer-events:none;z-index:10}"+
-"      .tab-bar-wrap::before{left:0;background:linear-gradient(to right,#0B1F3A,transparent)}"+
-"      .tab-bar-wrap::after{right:0;background:linear-gradient(to left,#0B1F3A,transparent)}"+
-"      .filter-sidebar{display:none!important}"+
-"      .filter-sidebar.open{display:flex!important}"+
-"      .table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}"+
-"      .pipeline-board{overflow-x:auto!important;flex-wrap:nowrap!important}"+
-"      .mob-stack{grid-template-columns:1fr!important}"+
-"      .hide-mobile{display:none!important}"+
-"      button{min-height:38px}"+
-"    }"+
-"    @media(max-width:480px){"+
-"      .stat-grid{grid-template-columns:1fr 1fr!important}"+
-"    }"+
-"  ";
-const _aiCSS="@keyframes ai-pulse{0%,100%{box-shadow:0 4px 20px rgba(201,168,76,.5),0 0 0 4px rgba(201,168,76,.15)}50%{box-shadow:0 4px 28px rgba(201,168,76,.7),0 0 0 8px rgba(201,168,76,.08)}}@keyframes ai-dot{from{transform:translateY(0)}to{transform:translateY(-5px)}}";
-const GlobalStyle=()=>(<style dangerouslySetInnerHTML={{__html:_globalCSS+_aiCSS}}/>);
+// ─── STYLES ───────────────────────────────────────────────────
+const GlobalStyle = () => (<><style dangerouslySetInnerHTML={{__html:`
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:#F0F2F5;color:#1a2535}
+    ::-webkit-scrollbar{width:5px;height:5px}
+    ::-webkit-scrollbar-thumb{background:#C9A84C55;border-radius:10px}
+    input,select,textarea{font-family:'DM Sans',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:9px 12px;font-size:13px;color:#1a2535;background:#fff;width:100%;transition:border-color 0.2s}
+    input:focus,select:focus,textarea:focus{border-color:#C9A84C}
+    input.error,select.error{border-color:#B83232!important;background:#FFF8F8}
+    textarea{resize:vertical}
+    button{cursor:pointer;font-family:'DM Sans',sans-serif}
+    .fade-in{animation:fadeIn 0.25s ease}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+    .slide-in{animation:slideIn 0.2s ease}
+    @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+    .ch{transition:box-shadow 0.18s,transform 0.18s}
+    .ch:hover{box-shadow:0 4px 20px #C9A84C22;transform:translateY(-1px)}
+    .dcard{transition:box-shadow 0.15s;cursor:grab}
+    .dcard:hover{box-shadow:0 3px 14px #0B1F3A22}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
 
+    /* ── MOBILE ──────────────────────────────────────────────── */
+    html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+    body{overflow-x:hidden}
+    @media(max-width:768px){
+      .tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important;position:relative}
+      .tab-bar::-webkit-scrollbar{display:none}
+      .tab-bar-wrap{position:relative}
+      .tab-bar-wrap::before,.tab-bar-wrap::after{content:"";position:absolute;top:0;bottom:0;width:32px;pointer-events:none;z-index:10}
+      .tab-bar-wrap::before{left:0;background:linear-gradient(to right,#0B1F3A,transparent)}
+      .tab-bar-wrap::after{right:0;background:linear-gradient(to left,#0B1F3A,transparent)}
+      .filter-sidebar{display:none!important}
+      .filter-sidebar.open{display:flex!important}
+      .table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}
+      .pipeline-board{overflow-x:auto!important;flex-wrap:nowrap!important}
+      .mob-stack{grid-template-columns:1fr!important}
+      .hide-mobile{display:none!important}
+      button{min-height:38px}
+    }
+    @media(max-width:480px){
+      .stat-grid{grid-template-columns:1fr 1fr!important}
+    }
+  `}}/><style dangerouslySetInnerHTML={{__html:_aiCSS}}/></>
+);
+const _aiCSS="@keyframes ai-p{0%,100%{box-shadow:0 4px 20px rgba(201,168,76,.5)}50%{box-shadow:0 4px 28px rgba(201,168,76,.8)}}";
 
 // ─── CONSTANTS ────────────────────────────────────────────────
 const STAGES      = ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
@@ -1076,25 +1075,27 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   };
 
   const printReceipt=(pay)=>{
-    const _rCSS="body{font-family:Arial,sans-serif;max-width:420px;margin:40px auto}.hdr{background:#0B1F3A;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center}.logo{font-size:20px;font-weight:700;color:#C9A84C}.bdy{border:1px solid #E2E8F0;border-top:none;padding:20px;border-radius:0 0 8px 8px}.amt{font-size:30px;font-weight:700;color:#0B1F3A;text-align:center;padding:16px 0;border-bottom:2px solid #0B1F3A;margin-bottom:16px}.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F0F2F5;font-size:13px}.stamp{border:3px solid #1A7F5A;color:#1A7F5A;padding:6px 16px;border-radius:6px;font-size:14px;font-weight:700;display:inline-block}";
-    const _rRows=[[lead.name,pay.milestone,pay.payment_type,pay.status]].map(r=>"<tr>"+r.map(c=>"<td>"+c+"</td>").join("")+"</tr>").join("");
-    const html="<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>"+_rCSS+"</style></head><body><h2>AED "+Number(pay.amount).toLocaleString()+"</h2>"+_rRows+"</body></html>";
+    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <style>body{font-family:Arial,sans-serif;max-width:420px;margin:40px auto}
+    .hdr{background:#0B1F3A;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center}
+    .logo{font-size:20px;font-weight:700;color:#C9A84C}.bdy{border:1px solid #E2E8F0;border-top:none;padding:20px;border-radius:0 0 8px 8px}
+    .amt{font-size:30px;font-weight:700;color:#0B1F3A;text-align:center;padding:16px 0;border-bottom:2px solid #0B1F3A;margin-bottom:16px}
+    .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F0F2F5;font-size:13px}
+    .stamp{border:3px solid #1A7F5A;color:#1A7F5A;padding:6px 16px;border-radius:6px;font-size:14px;font-weight:700;display:inline-block;margin:12px auto;transform:rotate(-5deg)}
+    </style></head><body>
+    <div class="hdr"><div class="logo">◆ PropCRM</div><div style="font-size:13px;opacity:.7">Payment Receipt</div></div>
+    <div class="bdy">
+      <div class="amt">AED ${Number(pay.amount).toLocaleString()}</div>
+      ${[["Client",lead.name],["Opportunity",opp.title||unit?.unit_ref||"—"],["Milestone",pay.milestone],["Type",pay.payment_type],pay.cheque_number&&["Cheque No.",pay.cheque_number],pay.bank_name&&["Bank",pay.bank_name],["Status",pay.status],["Date",new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})]].filter(Boolean).map(([l,v])=>`<div class="row"><span style="color:#718096">${l}</span><span style="font-weight:600">${v}</span></div>`).join("")}
+      ${pay.cheque_file_url?"<img src='"+pay.cheque_file_url+"' style='width:100%;margin-top:12px;border-radius:6px;border:1px solid #E2E8F0'/>":""}
+      <div style="text-align:center"><div class="stamp">${pay.status==="Cleared"?"✓ CLEARED":"✓ RECEIVED"}</div></div>
+    </div></body></html>`;
     const w=window.open("","_blank","width=500,height=700");
     if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
   };
 
   const totalPaid = payments.filter(p=>["Cleared","Received","Deposited"].includes(p.status)).reduce((s,p)=>s+(p.amount||0),0);
   const totalDue  = payments.reduce((s,p)=>s+(p.amount||0),0);
-
-  const _crV=selUnit?reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status))||null:null;
-  const _crHp=selUnit?!!(salePricing.find(s=>s.unit_id===selUnit.id)||leasePricing.find(l=>l.unit_id===selUnit.id)):false;
-  const _crPr=selUnit?projects.find(p=>p.id===selUnit.project_id):null;
-  const _crOk=_crHp&&(!_crPr?.launch_date||new Date()>=new Date(_crPr.launch_date));
-
-  const _suSp=selUnit?getSP(selUnit.id):null;
-  const _suLp=selUnit?getLP(selUnit.id):null;
-  const _suProj=selUnit?projects.find(p=>p.id===selUnit.project_id):null;
-  const _suSc=selUnit?(UNIT_STATUS_COLORS[selUnit.status]||{c:"#718096",bg:"#F0F2F5"}):{c:"#718096",bg:"#F0F2F5"};
 
   return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
@@ -1103,7 +1104,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
         <button onClick={onBack} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||"Opportunity — "+lead.name}</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||`Opportunity — ${lead.name}`}</span>
             <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>{opp.stage}</span>
             {opp.status==="On Hold"&&<span style={{padding:"3px 10px",borderRadius:20,background:"#F0F2F5",color:"#718096",fontSize:11,fontWeight:600}}>On Hold</span>}
           </div>
@@ -2083,11 +2084,6 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
       &&(fStageP==="All"||l.stage===fStageP);
   });
 
-  const _scL=selCard?(leads.find(l=>l.id===selCard.id)||selCard):null;
-  const _scM=_scL?(STAGE_META[_scL.stage]||{c:"#718096",bg:"#F0F2F5"}):{c:"#718096",bg:"#F0F2F5"};
-  const _scDays=(_scL&&_scL.stage_updated_at)?Math.floor((new Date()-new Date(_scL.stage_updated_at))/(864e5)):0;
-  const _scCurIdx=_scL?stageOrder.indexOf(_scL.stage):-1;
-
   return(
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}}>
 
@@ -2179,27 +2175,31 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
         </div>
 
         {/* Detail panel — shown when card selected */}
-        {_scL&&(
-
+        {selCard&&(()=>{
+          const lead=leads.find(l=>l.id===selCard.id)||selCard;
+          const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F0F2F5"};
+          const days=lead.stage_updated_at?Math.floor((new Date()-new Date(lead.stage_updated_at))/(864e5)):0;
+          const curIdx=stageOrder.indexOf(lead.stage);
+          return(
             <div style={{width:260,flexShrink:0,background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,overflowY:"auto",boxShadow:"0 4px 20px rgba(11,31,58,.08)"}}>
               {/* Header */}
               <div style={{background:"linear-gradient(135deg,"+m.c+","+m.c+"CC)",padding:"14px 16px",borderRadius:"10px 10px 0 0"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                   <div>
-                    <div style={{fontWeight:700,fontSize:15,color:"#fff"}}>{_scL.name}</div>
-                    <div style={{fontSize:11,color:"rgba(255,255,255,.75)",marginTop:2}}>{_scL.stage}</div>
+                    <div style={{fontWeight:700,fontSize:15,color:"#fff"}}>{lead.name}</div>
+                    <div style={{fontSize:11,color:"rgba(255,255,255,.75)",marginTop:2}}>{lead.stage}</div>
                   </div>
                   <button onClick={()=>setSelCard(null)} style={{background:"rgba(255,255,255,.2)",border:"none",borderRadius:6,width:24,height:24,cursor:"pointer",color:"#fff",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
                 </div>
-                {_scL.budget&&<div style={{fontSize:18,fontWeight:700,color:"#fff",marginTop:8}}>{fmtM(_scL.budget)}</div>}
+                {lead.budget&&<div style={{fontSize:18,fontWeight:700,color:"#fff",marginTop:8}}>{fmtM(lead.budget)}</div>}
               </div>
 
               {/* Details */}
               <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
                 {[
-                  ["Phone",_scL.phone],["Email",_scL.email],
-                  ["Nationality",_scL.nationality],["Source",_scL.source],
-                  ["Type",_scL.property_type],["Days in stage",days+"d"],
+                  ["Phone",lead.phone],["Email",lead.email],
+                  ["Nationality",lead.nationality],["Source",lead.source],
+                  ["Type",lead.property_type],["Days in stage",`${days}d`],
                 ].filter(([,v])=>v).map(([l,v])=>(
                   <div key={l} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid #F7F9FC"}}>
                     <span style={{color:"#A0AEC0"}}>{l}</span>
@@ -2213,34 +2213,34 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
                     <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Move Stage</div>
                     <div style={{display:"flex",flexDirection:"column",gap:6}}>
                       {stageOrder.map((s,i)=>(
-                        <button key={s} onClick={()=>moveStage(_scL,s)}
-                          disabled={s===_scL.stage}
-                          style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid "+(s===_scL.stage?m.c:"#E2E8F0"),
-                            background:s===_scL.stage?m.bg:"#fff",color:s===_scL.stage?m.c:"#4A5568",
-                            fontSize:11,fontWeight:s===_scL.stage?700:400,cursor:s===_scL.stage?"default":"pointer",
+                        <button key={s} onClick={()=>moveStage(lead,s)}
+                          disabled={s===lead.stage}
+                          style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid "+(s===lead.stage?m.c:"#E2E8F0"),
+                            background:s===lead.stage?m.bg:"#fff",color:s===lead.stage?m.c:"#4A5568",
+                            fontSize:11,fontWeight:s===lead.stage?700:400,cursor:s===lead.stage?"default":"pointer",
                             textAlign:"left",display:"flex",alignItems:"center",gap:6}}>
-                          <span style={{fontSize:9,color:s===_scL.stage?m.c:"#A0AEC0"}}>{i+1}.</span>
-                          {s} {s===_scL.stage?"← current":""}
+                          <span style={{fontSize:9,color:s===lead.stage?m.c:"#A0AEC0"}}>{i+1}.</span>
+                          {s} {s===lead.stage?"← current":""}
                         </button>
                       ))}
-                      <button onClick={()=>moveStage(_scL,"Closed Lost")}
+                      <button onClick={()=>moveStage(lead,"Closed Lost")}
                         style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid #FAEAEA",background:"#FAEAEA",color:"#B83232",fontSize:11,fontWeight:600,cursor:"pointer",textAlign:"left",marginTop:4}}>
                         ✗ Close as Lost
                       </button>
-                      <button onClick={()=>moveStage(_scL,"Closed Won")}
+                      <button onClick={()=>moveStage(lead,"Closed Won")}
                         style={{padding:"7px 10px",borderRadius:7,border:"none",background:"#1A7F5A",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",textAlign:"left"}}>
                         ✓ Close as Won
                       </button>
                     </div>
                   </div>
                 )}
-                {_scL.notes&&(
-                  <div style={{fontSize:11,color:"#718096",lineHeight:1.6,padding:"8px",background:"#F7F9FC",borderRadius:7}}>{_scL.notes}</div>
+                {lead.notes&&(
+                  <div style={{fontSize:11,color:"#718096",lineHeight:1.6,padding:"8px",background:"#F7F9FC",borderRadius:7}}>{lead.notes}</div>
                 )}
               </div>
             </div>
-
-          )}
+          );
+        })()}
       </div>
 
       {/* Closed summary footer */}
@@ -2322,129 +2322,85 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
 // AI ASSISTANT — Premium Concierge
 // ══════════════════════════════════════════════════════════════════
 function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,currentUser,showToast}){
-  const _aiFirstName=currentUser?.full_name?.split(" ")[0]||"Prop";
-  const aiName=(currentUser?.ai_assistant_name)||(_aiFirstName+" AI");
   const [open,setOpen]=useState(false);
   const [msgs,setMsgs]=useState([]);
-  const [input,setInput]=useState("");
-  const [loading,setLoading]=useState(false);
-  const [provider,setProvider]=useState(()=>localStorage.getItem("propccrm_ai_provider")||"groq");
-  const [apiKey,setApiKey]=useState(()=>localStorage.getItem("propccrm_ai_key_"+(localStorage.getItem("propccrm_ai_provider")||"groq"))||"");
-  const [showConfig,setShowConfig]=useState(false);
+  const [inp,setInp]=useState("");
+  const [busy,setBusy]=useState(false);
+  const [prov,setProv]=useState(()=>localStorage.getItem("propccrm_ai_provider")||"groq");
+  const [key,setKey]=useState(()=>localStorage.getItem("propccrm_ai_key_"+(localStorage.getItem("propccrm_ai_provider")||"groq"))||"");
+  const [cfg,setCfg]=useState(false);
   const endRef=useRef(null);
-  const inputRef=useRef(null);
-  const prov=AI_PROVIDERS.find(p=>p.id===provider)||AI_PROVIDERS[0];
-  const hasKey=!!apiKey.trim();
-  const availUnits=units.filter(u=>u.status==="Available").length;
-
+  const pr=AI_PROVIDERS.find(p=>p.id===prov)||AI_PROVIDERS[0];
+  const hasKey=!!key.trim();
+  const nm=(currentUser?.ai_assistant_name)||(currentUser?.full_name?.split(" ")[0]||"Prop")+" AI";
   useEffect(()=>{if(open&&endRef.current)endRef.current.scrollIntoView({behavior:"smooth"});},[msgs,open]);
-  useEffect(()=>{if(open&&inputRef.current)setTimeout(()=>inputRef.current?.focus(),100);},[open]);
-
-  const saveKey=k=>{setApiKey(k);localStorage.setItem("propccrm_ai_key_"+provider,k);};
-  const changeProv=id=>{setProvider(id);localStorage.setItem("propccrm_ai_provider",id);setApiKey(localStorage.getItem("propccrm_ai_key_"+id)||"");};
-
-  const send=async txt=>{
-    const q=(txt||input).trim();
-    if(!q||loading)return;
-    if(!hasKey){setShowConfig(true);return;}
-    setInput("");
-    const newMsgs=[...msgs,{role:"user",content:q}];
-    setMsgs(newMsgs);
-    setLoading(true);
-    try{
-      const ctx=buildContext(leads,units,projects,salePricing,leasePricing,activities,currentUser);
-      const reply=await prov.call(apiKey,ctx,newMsgs);
-      setMsgs(m=>[...m,{role:"assistant",content:reply}]);
-    }catch(e){
-      setMsgs(m=>[...m,{role:"assistant",content:"⚠️ "+e.message}]);
-    }finally{setLoading(false);}
+  const saveKey=k=>{setKey(k);localStorage.setItem("propccrm_ai_key_"+prov,k);};
+  const changeProv=id=>{setProv(id);localStorage.setItem("propccrm_ai_provider",id);setKey(localStorage.getItem("propccrm_ai_key_"+id)||"");};
+  const send=async t=>{
+    const q=(t||inp).trim();
+    if(!q||busy)return;
+    if(!hasKey){setCfg(true);return;}
+    setInp("");
+    const next=[...msgs,{role:"user",content:q}];
+    setMsgs(next);setBusy(true);
+    try{const r=await pr.call(key,buildContext(leads,units,projects,salePricing,leasePricing,activities,currentUser),next);setMsgs(m=>[...m,{role:"assistant",content:r}]);}
+    catch(e){setMsgs(m=>[...m,{role:"assistant",content:"Error: "+e.message}]);}
+    finally{setBusy(false);}
   };
-
-  const QUICK=["Pipeline summary","Available units","Hot leads","Draft WhatsApp","Stale deals","Leasing overview"];
-
-  const bubbleStyle={position:"fixed",bottom:28,right:28,zIndex:9999,width:60,height:60,borderRadius:"50%",border:"none",cursor:"pointer",background:"linear-gradient(135deg,#C9A84C,#E8C97A)",boxShadow:"0 4px 20px rgba(201,168,76,.5),0 0 0 4px rgba(201,168,76,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,animation:"ai-pulse 3s ease-in-out infinite"};
-  const panelStyle={position:"fixed",bottom:20,right:20,zIndex:9999,width:420,height:680,maxHeight:"90vh",background:"linear-gradient(160deg,#0B1F3A 0%,#0f2847 100%)",borderRadius:20,boxShadow:"0 24px 80px rgba(0,0,0,.6),0 0 0 1px rgba(201,168,76,.25)",display:"flex",flexDirection:"column",overflow:"hidden",fontFamily:"'DM Sans',sans-serif"};
-
-  if(!open) return(<button onClick={()=>setOpen(true)} style={bubbleStyle} title={"Open "+aiName}>{"✦"}</button>);
-
+  const BS={position:"fixed",bottom:28,right:28,zIndex:9999,width:60,height:60,borderRadius:"50%",border:"none",cursor:"pointer",background:"linear-gradient(135deg,#C9A84C,#E8C97A)",boxShadow:"0 4px 20px rgba(201,168,76,.5)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26};
+  const PS={position:"fixed",bottom:20,right:20,zIndex:9999,width:420,height:660,background:"linear-gradient(160deg,#0B1F3A,#0f2847)",borderRadius:20,boxShadow:"0 24px 80px rgba(0,0,0,.6)",display:"flex",flexDirection:"column",overflow:"hidden"};
+  if(!open) return(<button style={BS} onClick={()=>setOpen(true)} title={nm}>{"*"}</button>);
   return(
-    <div style={panelStyle}>
-      <div style={{padding:"16px 18px",background:"linear-gradient(135deg,rgba(201,168,76,.15),rgba(201,168,76,.05))",borderBottom:"1px solid rgba(201,168,76,.2)",display:"flex",alignItems:"center",gap:10}}>
-        <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#C9A84C,#8A6200)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>✦</div>
-        <div style={{flex:1}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#E8C97A"}}>{aiName}</div>
-          <div style={{fontSize:10,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:"1px",marginTop:1}}>Real Estate Intelligence</div>
-        </div>
-        <button onClick={()=>setShowConfig(v=>!v)} style={{background:"none",border:"1px solid rgba(201,168,76,.3)",color:"#C9A84C",borderRadius:7,padding:"4px 10px",fontSize:11,cursor:"pointer"}}>
-          {"⚙"} {prov.name}
-        </button>
-        {msgs.length>0&&<button onClick={()=>setMsgs([])} style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",cursor:"pointer",fontSize:13,padding:"4px 6px"}}>{"↺"}</button>}
-        <button onClick={()=>setOpen(false)} style={{background:"none",border:"none",color:"rgba(255,255,255,.5)",cursor:"pointer",fontSize:18,padding:"4px 8px",lineHeight:1}}>{"✕"}</button>
+    <div style={PS}>
+      <div style={{padding:"14px 16px",borderBottom:"1px solid rgba(201,168,76,.2)",display:"flex",alignItems:"center",gap:8}}>
+        <div style={{flex:1,fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#E8C97A"}}>{nm}</div>
+        <button onClick={()=>setCfg(v=>!v)} style={{background:"none",border:"1px solid rgba(201,168,76,.3)",color:"#C9A84C",borderRadius:6,padding:"3px 8px",fontSize:11,cursor:"pointer"}}>{"# "+pr.name}</button>
+        <button onClick={()=>setOpen(false)} style={{background:"none",border:"none",color:"rgba(255,255,255,.5)",cursor:"pointer",fontSize:18}}>{"x"}</button>
       </div>
-
-      {showConfig&&(
-        <div style={{padding:"14px 18px",background:"rgba(0,0,0,.3)",borderBottom:"1px solid rgba(255,255,255,.08)"}}>
-          <div style={{display:"flex",gap:6,marginBottom:10}}>
+      {cfg?(
+        <div style={{padding:"12px 16px",borderBottom:"1px solid rgba(255,255,255,.08)"}}>
+          <div style={{display:"flex",gap:6,marginBottom:8}}>
             {AI_PROVIDERS.map(p=>(
-              <button key={p.id} onClick={()=>changeProv(p.id)} style={{flex:1,padding:"6px 4px",borderRadius:8,border:"1.5px solid",borderColor:provider===p.id?"#C9A84C":"rgba(255,255,255,.15)",background:provider===p.id?"rgba(201,168,76,.15)":"transparent",color:provider===p.id?"#C9A84C":"rgba(255,255,255,.5)",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-                {p.name}
-              </button>
+              <button key={p.id} onClick={()=>changeProv(p.id)} style={{flex:1,padding:"5px",borderRadius:7,border:"1.5px solid",borderColor:prov===p.id?"#C9A84C":"rgba(255,255,255,.15)",background:prov===p.id?"rgba(201,168,76,.15)":"transparent",color:prov===p.id?"#C9A84C":"rgba(255,255,255,.4)",fontSize:11,cursor:"pointer"}}>{p.name}</button>
             ))}
           </div>
-          <input value={apiKey} onChange={e=>saveKey(e.target.value)} placeholder={prov.placeholder} type="password" style={{width:"100%",background:"rgba(255,255,255,.07)",border:"1px solid rgba(255,255,255,.15)",borderRadius:8,padding:"8px 12px",color:"#fff",fontSize:12,boxSizing:"border-box",outline:"none"}}/>
-          {!hasKey&&<a href={prov.link} target="_blank" rel="noreferrer" style={{display:"block",marginTop:6,fontSize:11,color:"#C9A84C",textDecoration:"none",textAlign:"right"}}>{"Get free API key →"}</a>}
-          {hasKey&&<div style={{marginTop:6,fontSize:11,color:"#1A7F5A"}}>{"✓ Key saved"}</div>}
+          <input value={key} onChange={e=>saveKey(e.target.value)} placeholder={pr.placeholder} type="password" style={{width:"100%",background:"rgba(255,255,255,.07)",border:"1px solid rgba(255,255,255,.15)",borderRadius:7,padding:"7px 10px",color:"#fff",fontSize:12,boxSizing:"border-box",outline:"none"}}/>
+          {hasKey?(<div style={{marginTop:5,fontSize:11,color:"#1A7F5A"}}>{"ok"}</div>):(<a href={pr.link} target="_blank" rel="noreferrer" style={{display:"block",marginTop:5,fontSize:11,color:"#C9A84C",textDecoration:"none"}}>{"Get free key ->"}</a>)}
         </div>
-      )}
-
-      <div style={{flex:1,overflowY:"auto",padding:"14px 16px",display:"flex",flexDirection:"column",gap:12}}>
-        {msgs.length===0&&(
-          <div>
-            <div style={{textAlign:"center",padding:"20px 0 16px"}}>
-              <div style={{fontSize:32,marginBottom:6}}>{"✦"}</div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,color:"#E8C97A",fontWeight:600,marginBottom:4}}>{hasKey?"How can I help?":"Configure to start"}</div>
-              <div style={{fontSize:12,color:"rgba(255,255,255,.4)",lineHeight:1.5}}>{hasKey?leads.length+" leads · "+availUnits+" available units":"Click ⚙ "+prov.name+" above and add your free API key"}</div>
-            </div>
-            {hasKey&&(
-              <div style={{display:"flex",flexWrap:"wrap",gap:7,justifyContent:"center"}}>
-                {QUICK.map(q=>(
-                  <button key={q} onClick={()=>send(q)} style={{padding:"7px 12px",borderRadius:20,border:"1px solid rgba(201,168,76,.25)",background:"rgba(201,168,76,.08)",color:"rgba(255,255,255,.75)",fontSize:12,cursor:"pointer"}}>
-                    {q}
-                  </button>
+      ):null}
+      <div style={{flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:10}}>
+        {msgs.length===0?(
+          <div style={{textAlign:"center",padding:"30px 0"}}>
+            <div style={{fontSize:28,marginBottom:8}}>{"*"}</div>
+            <div style={{color:"#E8C97A",fontSize:14,fontWeight:600,marginBottom:4}}>{hasKey?"How can I help?":"Add API key to start"}</div>
+            {hasKey?(
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,justifyContent:"center",marginTop:12}}>
+                {["Pipeline summary","Available units","Hot leads","Draft WhatsApp"].map(q=>(
+                  <button key={q} onClick={()=>send(q)} style={{padding:"6px 10px",borderRadius:16,border:"1px solid rgba(201,168,76,.25)",background:"rgba(201,168,76,.08)",color:"rgba(255,255,255,.7)",fontSize:11,cursor:"pointer"}}>{q}</button>
                 ))}
               </div>
-            )}
+            ):null}
           </div>
-        )}
+        ):null}
         {msgs.map((m,i)=>(
-          <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",gap:8}}>
-            {m.role==="assistant"&&<div style={{width:24,height:24,borderRadius:6,flexShrink:0,marginTop:2,background:"linear-gradient(135deg,#C9A84C,#8A6200)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11}}>{"✦"}</div>}
-            <div style={{maxWidth:"82%",padding:"10px 14px",borderRadius:m.role==="user"?"14px 14px 4px 14px":"14px 14px 14px 4px",background:m.role==="user"?"linear-gradient(135deg,#C9A84C,#a87e30)":"rgba(255,255,255,.07)",color:m.role==="user"?"#0B1F3A":"rgba(255,255,255,.88)",fontSize:13,lineHeight:1.6,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
-              {m.content}
-            </div>
+          <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
+            <div style={{maxWidth:"85%",padding:"9px 12px",borderRadius:12,background:m.role==="user"?"#C9A84C":"rgba(255,255,255,.08)",color:m.role==="user"?"#0B1F3A":"rgba(255,255,255,.85)",fontSize:13,lineHeight:1.55,whiteSpace:"pre-wrap"}}>{m.content}</div>
           </div>
         ))}
-        {loading&&(
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:24,height:24,borderRadius:6,flexShrink:0,background:"linear-gradient(135deg,#C9A84C,#8A6200)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11}}>{"✦"}</div>
-            <div style={{display:"flex",gap:4}}>
-              {[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:"#C9A84C",opacity:.7,animation:"ai-dot .9s "+i*.2+"s ease-in-out infinite alternate"}}/>)}
-            </div>
-          </div>
-        )}
+        {busy?(<div style={{color:"rgba(255,255,255,.4)",fontSize:12}}>{"..."}</div>):null}
         <div ref={endRef}/>
       </div>
-
-      <div style={{padding:"12px 14px",borderTop:"1px solid rgba(255,255,255,.08)",background:"rgba(0,0,0,.2)"}}>
-        <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
-          <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}} placeholder={hasKey?"Ask anything... (Enter to send)":"Add API key above to start"} disabled={!hasKey||loading} rows={2} style={{flex:1,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.15)",borderRadius:12,padding:"10px 12px",color:"#fff",fontSize:13,resize:"none",outline:"none",fontFamily:"inherit",lineHeight:1.5,opacity:hasKey?1:.5}}/>
-          <button onClick={()=>send()} disabled={!hasKey||loading||!input.trim()} style={{width:44,height:44,borderRadius:12,border:"none",background:hasKey&&input.trim()?"linear-gradient(135deg,#C9A84C,#8A6200)":"rgba(255,255,255,.1)",color:hasKey&&input.trim()?"#0B1F3A":"rgba(255,255,255,.3)",cursor:hasKey&&input.trim()?"pointer":"not-allowed",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{"↑"}</button>
+      <div style={{padding:"10px 12px",borderTop:"1px solid rgba(255,255,255,.08)"}}>
+        <div style={{display:"flex",gap:6}}>
+          <input value={inp} onChange={e=>setInp(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"){send();}}} placeholder={hasKey?"Ask anything...":"Configure API key above"} disabled={!hasKey||busy} style={{flex:1,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)",borderRadius:10,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none",opacity:hasKey?1:.5}}/>
+          <button onClick={()=>send()} disabled={!hasKey||busy||!inp.trim()} style={{width:40,height:40,borderRadius:10,border:"none",background:hasKey&&inp.trim()?"#C9A84C":"rgba(255,255,255,.1)",color:hasKey&&inp.trim()?"#0B1F3A":"rgba(255,255,255,.3)",cursor:"pointer",fontSize:14}}>{">"}</button>
         </div>
-        <div style={{marginTop:6,fontSize:10,color:"rgba(255,255,255,.25)",textAlign:"center"}}>{"Ctrl+K to toggle · Shift+Enter for new line · "+prov.name+" powered"}</div>
       </div>
     </div>
   );
 }
+
+
 function GroupConsolidatedView() {
   return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,padding:"2rem",textAlign:"center"}}>
@@ -2900,7 +2856,7 @@ function ReservationBadge({ reservation }) {
   if (reservation.status !== "Active" && reservation.status !== "Extended") return null;
   return (
     <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:20,background:col.bg,color:col.c,border:"1px solid "+col.border}}>
-      {urg === "expired" ? "⚠ Expired" : "🔒 "+hrs+"h left"}
+      {urg === "expired" ? "⚠ Expired" : `🔒 ${hrs}h left`}
     </span>
   );
 }
@@ -3580,7 +3536,27 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
           max_tokens:1500,
           messages:[{role:"user",content:[
             ...(isImage?[{type:"image",source:{type:"base64",media_type:file.type,data:b64}}]:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}}]),
-            {type:"text",text:"Extract property details. Return ONLY valid JSON: unit_ref,sub_type,size_sqft,bedrooms,bathrooms,asking_price,annual_rent,developer,project_name."}
+            {type:"text",text:`Extract property/unit details from this builder brochure. Return ONLY a JSON object with these fields (use null for unknown):
+{
+  "unit_ref": "unit reference/number",
+  "sub_type": "Studio/1 Bed/2 Bed/3 Bed/4 Bed/Villa/Penthouse/Townhouse/Office/Retail",
+  "size_sqft": number,
+  "bedrooms": number (0 for studio),
+  "bathrooms": number,
+  "floor_number": "floor number or range",
+  "view": "sea view/city view/pool view/garden view etc",
+  "asking_price": number in AED,
+  "annual_rent": number in AED,
+  "booking_pct": number (booking deposit %),
+  "during_construction_pct": number,
+  "on_handover_pct": number,
+  "developer": "developer name",
+  "project_name": "project/building name",
+  "handover_date": "YYYY-MM-DD or year",
+  "furnishing": "Furnished/Unfurnished/Semi-Furnished",
+  "notes": "any other relevant details"
+}
+Return ONLY the JSON, no explanation.`}
           ]}]
         })
       });
@@ -3742,7 +3718,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                     <td style={{padding:"5px 8px"}}>
                       <div style={{display:"flex",flexDirection:"column",gap:2}}>
                         <span style={{fontSize:9,fontWeight:600,padding:"2px 6px",borderRadius:20,background:sc.bg,color:sc.c,whiteSpace:"nowrap"}}>{u.status}</span>
-                        {reservations.find(x=>x.unit_id===u.id&&["Active","Extended"].includes(x.status))?<ReservationBadge reservation={reservations.find(x=>x.unit_id===u.id&&["Active","Extended"].includes(x.status))}/>:null}
+                        {(()=>{const r=reservations.find(x=>x.unit_id===u.id&&["Active","Extended"].includes(x.status));return r?<ReservationBadge reservation={r}/>:null;})()}
                       </div>
                     </td>
                     <td style={{padding:"5px 4px"}} onClick={e=>e.stopPropagation()}>
@@ -3756,14 +3732,17 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
         </div>
 
         {/* Unit detail side panel */}
-        {selUnit&&(
-
+        {selUnit&&(()=>{
+          const sp=getSP(selUnit.id); const lp=getLP(selUnit.id);
+          const proj=projects.find(p=>p.id===selUnit.project_id);
+          const sc=UNIT_STATUS_COLORS[selUnit.status]||{c:"#718096",bg:"#F0F2F5"};
+          return (
             <div className="slide-in" style={{width:340,flexShrink:0,background:"#fff",borderLeft:"1px solid #E2E8F0",display:"flex",flexDirection:"column",overflow:"hidden"}}>
               {/* Panel header */}
               <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",padding:"14px 16px",position:"relative"}}>
                 <button onClick={()=>setSelUnit(null)} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:"#C9A84C",fontSize:20,cursor:"pointer"}}>×</button>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>{selUnit.unit_ref}</div>
-                <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:2}}>{_suProj?.name} · {selUnit.sub_type}</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:2}}>{proj?.name} · {selUnit.sub_type}</div>
                 <span style={{fontSize:10,fontWeight:600,padding:"3px 10px",borderRadius:20,background:sc.bg,color:sc.c,marginTop:6,display:"inline-block"}}>{selUnit.status}</span>
               </div>
               {/* Tabs */}
@@ -3822,18 +3801,21 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                     )}
                     {selUnit.notes&&<div style={{fontSize:12,color:"#4A5568",padding:"8px 10px",background:"#F7F9FC",borderRadius:8,lineHeight:1.6}}>{selUnit.notes}</div>}
                     {canEdit&&<button onClick={()=>openEdit(selUnit)} style={{padding:"8px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit Unit</button>}
-                    {canReserve&&selUnit.status==="Available"&&(
-
+                    {canReserve&&selUnit.status==="Available"&&(()=>{
+                      const hp2=!!(salePricing.find(s=>s.unit_id===selUnit.id)||leasePricing.find(l=>l.unit_id===selUnit.id));
+                      const pr2=projects.find(p=>p.id===selUnit.project_id);
+                      const ok2=hp2&&(!pr2?.launch_date||new Date()>=new Date(pr2.launch_date));
+                      return (
                         <button onClick={()=>{
-                          if(!_crHp){showToast("Add pricing to this unit before reserving","error");return;}
-                          if(!_crOk){showToast("Project launches "+new Date(_crPr.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})+" — not open yet","error");return;}
+                          if(!hp2){showToast("Add pricing to this unit before reserving","error");return;}
+                          if(!ok2){showToast("Project launches "+new Date(pr2.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})+" — not open yet","error");return;}
                           setReserveUnit(selUnit);setShowReserve(true);
-                        }} style={{padding:"8px",borderRadius:8,border:"none",background:_crOk?"#C9A84C":"#E2E8F0",color:_crOk?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:_crOk?"pointer":"not-allowed"}}>
-                          {!_crHp?"⚠️ No Pricing":!_crOk?"🔒 Not Released":"🔒 Reserve Unit"}
+                        }} style={{padding:"8px",borderRadius:8,border:"none",background:ok2?"#C9A84C":"#E2E8F0",color:ok2?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:ok2?"pointer":"not-allowed"}}>
+                          {!hp2?"⚠️ No Pricing":!ok2?"🔒 Not Released":"🔒 Reserve Unit"}
                         </button>
-
-                    )}
-                    {canReserve&&_crV?(<button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"1.5px solid #E8C97A",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:700,cursor:"pointer"}}>⏱ View Reservation ({hoursLeft(_crV.expires_at,_crV.extended_until)}h)</button>):null}
+                      );
+                    })()}
+                    {canReserve&&(()=>{const r=reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status));return r?(<button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"1.5px solid #E8C97A",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:700,cursor:"pointer"}}>⏱ View Reservation ({hoursLeft(r.expires_at,r.extended_until)}h)</button>):null;})()}
                   </div>
                 )}
                 {/* Pricing tab */}
@@ -3843,11 +3825,11 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                       <div>
                         <div style={{fontSize:11,fontWeight:700,color:"#1A7F5A",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>🏷 Sale Pricing</div>
                         <div style={{background:"#0B1F3A",borderRadius:10,padding:"12px",marginBottom:8,textAlign:"center"}}>
-                          <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#C9A84C"}}>AED {Number(_suSp.asking_price).toLocaleString()}</div>
-                          {sp.price_per_sqft&&<div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Number(_suSp.price_per_sqft).toLocaleString()}/sqft</div>}
+                          <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#C9A84C"}}>AED {Number(sp.asking_price).toLocaleString()}</div>
+                          {sp.price_per_sqft&&<div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Number(sp.price_per_sqft).toLocaleString()}/sqft</div>}
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                          {[["DLD Fee",sp.dld_fee_pct+"%"],["Agency Fee",sp.agency_fee_pct+"%"],["Booking",sp.booking_pct+"%"],["Construction",sp.during_construction_pct+"%"],["Handover",sp.on_handover_pct+"%"],sp.post_handover_pct>0&&["Post Handover",sp.post_handover_pct+"%"]].filter(Boolean).map(([l,v])=>(
+                          {[["DLD Fee",`${sp.dld_fee_pct}%`],["Agency Fee",`${sp.agency_fee_pct}%`],["Booking",`${sp.booking_pct}%`],["Construction",`${sp.during_construction_pct}%`],["Handover",`${sp.on_handover_pct}%`],sp.post_handover_pct>0&&["Post Handover",`${sp.post_handover_pct}%`]].filter(Boolean).map(([l,v])=>(
                             <div key={l} style={{background:"#FAFBFC",borderRadius:7,padding:"7px 9px"}}>
                               <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:1}}>{l}</div>
                               <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
@@ -3860,11 +3842,11 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                       <div>
                         <div style={{fontSize:11,fontWeight:700,color:"#1A5FA8",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>🔑 Lease Pricing</div>
                         <div style={{background:"#1A0B3A",borderRadius:10,padding:"12px",marginBottom:8,textAlign:"center"}}>
-                          <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#C9A84C"}}>AED {Number(_suLp.annual_rent).toLocaleString()}/yr</div>
-                          <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Math.round(_suLp.annual_rent/12).toLocaleString()}/month</div>
+                          <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#C9A84C"}}>AED {Number(lp.annual_rent).toLocaleString()}/yr</div>
+                          <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Math.round(lp.annual_rent/12).toLocaleString()}/month</div>
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-                          {[["Deposit","AED "+Number(_suLp.security_deposit||0).toLocaleString()],["Cheques",lp.cheques_allowed],["Municipality",lp.municipality_tax_pct+"%"],["Chiller",lp.chiller_included?"Included":"Excluded"]].map(([l,v])=>(
+                          {[["Deposit","AED "+Number(lp.security_deposit||0).toLocaleString()],["Cheques",lp.cheques_allowed],["Municipality",`${lp.municipality_tax_pct}%`],["Chiller",lp.chiller_included?"Included":"Excluded"]].map(([l,v])=>(
                             <div key={l} style={{background:"#FAFBFC",borderRadius:7,padding:"7px 9px"}}>
                               <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:1}}>{l}</div>
                               <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
@@ -3873,7 +3855,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                         </div>
                       </div>
                     )}
-                    {!_suSp&&!_suLp&&<div style={{textAlign:"center",padding:"1.5rem",color:"#A0AEC0"}}>No pricing set — edit unit to add pricing</div>}
+                    {!sp&&!lp&&<div style={{textAlign:"center",padding:"1.5rem",color:"#A0AEC0"}}>No pricing set — edit unit to add pricing</div>}
                   </div>
                 )}
                 {/* Documents tab */}
@@ -3918,13 +3900,16 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                 )}
               </div>
             </div>
-
-        )}
+          );
+        })()}
       </div>
 
       {/* Reservation Modal */}
       {/* Inventory Excel Upload Modal */}
-      {showInvExcel&&(<div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+      {showInvExcel&&(()=>{
+        const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+        return (
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:580,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📤 Upload Inventory from Excel</span>
@@ -4005,15 +3990,15 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
             </div>
           </div>
         </div>
-      
-      )}
+        );
+      })()}
             {showReserve&&reserveUnit&&(
         <ReservationModal
           unit={reserveUnit}
           reservation={reservations.find(r=>r.unit_id===reserveUnit.id&&["Active","Extended"].includes(r.status))||null}
           opportunities={[...globalOpps]}
           unitHasPrice={!!(salePricing.find(s=>s.unit_id===reserveUnit.id)||leasePricing.find(l=>l.unit_id===reserveUnit.id))}
-          unitLaunchDate={projects.find(p=>p.id===reserveUnit.project_id)?.launch_date||null}
+          unitLaunchDate={(()=>{const proj=projects.find(p=>p.id===reserveUnit.project_id);return proj?.launch_date||null;})()}
           currentUser={currentUser}
           leads={leads}
           tenants={tenants}
@@ -4495,8 +4480,8 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
                 </div>
                 <div style={{fontSize:11,color:"#718096",marginTop:2}}>
                   {new Date(c.cheque_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}
-                  {c.cheque_number&&" · #"+c.cheque_number}
-                  {c.bank_name&&" · "+c.bank_name}
+                  {c.cheque_number&&` · #${c.cheque_number}`}
+                  {c.bank_name&&` · ${c.bank_name}`}
                 </div>
               </div>
               <div style={{display:"flex",gap:4}}>
@@ -4678,7 +4663,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
 
   if(loading) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"#A0AEC0",fontSize:14}}>Loading Leasing…</div>;
 
-  const TABS_L=[["dashboard","📊 Dashboard"],["tenants","👤 Tenants ("+tenants.length+")"],["leases","📄 Leases ("+activeLeases.length+")"],["payments","💰 Payments ("+overduePmts.length+" overdue)"],["maintenance","🔧 Maintenance ("+openMaint.length+")"]];
+  const TABS_L=[["dashboard","📊 Dashboard"],["tenants",`👤 Tenants (${tenants.length})`],["leases",`📄 Leases (${activeLeases.length})`],["payments",`💰 Payments (${overduePmts.length} overdue)`],["maintenance",`🔧 Maintenance (${openMaint.length})`]];
 
   return (
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
@@ -4692,7 +4677,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
       {tab==="dashboard"&&(
         <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:14}}>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
-            {[["Active Leases",activeLeases.length,"#0B1F3A","📄"],["Annual Rent","AED "+(totalRent/1e6).toFixed(1)+"M","#1A7F5A","💰"],["Overdue Payments",overduePmts.length,"#B83232","⚠"],["Open Maintenance",openMaint.length,"#5B3FAA","🔧"]].map(([l,v,c,icon])=>(
+            {[["Active Leases",activeLeases.length,"#0B1F3A","📄"],["Annual Rent",`AED ${(totalRent/1e6).toFixed(1)}M`,"#1A7F5A","💰"],["Overdue Payments",overduePmts.length,"#B83232","⚠"],["Open Maintenance",openMaint.length,"#5B3FAA","🔧"]].map(([l,v,c,icon])=>(
               <div key={l} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem 1.25rem",borderTop:"3px solid "+c}}>
                 <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".7px",fontWeight:600,marginBottom:6}}>{icon} {l}</div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
@@ -4851,7 +4836,10 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
             })}
           </div>
           {/* Lease Upload Modal */}
-          {showLeaseUpload&&(<div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          {showLeaseUpload&&(()=>{
+            const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+            return (
+            <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
               <div style={{background:"#fff",borderRadius:16,width:600,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
                   <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📋 Leases — Download Template / Upload Data</span>
@@ -4912,7 +4900,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                             agency_fee:r.agency_fee?parseFloat(r.agency_fee):null,
                             number_of_cheques:r.number_of_cheques?parseInt(r.number_of_cheques):1,
                             ejari_number:r.ejari_number||null, status:r.status||"Active",
-                            notes:r.notes||null, company_id:currentUser.company_id||localStorage.getItem("propccrm_company_id")||null, created_by:currentUser.id
+                            notes:r.notes||null, company_id:cid, created_by:currentUser.id
                           }));
                           const{data:newL,error}=await supabase.from("leases").insert(payload).select();
                           if(error){showToast(error.message,"error");return;}
@@ -4926,8 +4914,8 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                 </div>
               </div>
             </div>
-          
-          )}
+            );
+          })()}
 
           {showAddLease&&(
             <Modal title="New Lease Contract" onClose={()=>setShowAddLease(false)} width={520}>
@@ -5144,10 +5132,39 @@ function buildContext(leads,units,projects,salePricing,leasePricing,activities,c
   active.forEach(l=>{pipeline[l.stage]=(pipeline[l.stage]||0)+1;});
   const avail=units.filter(u=>u.status==="Available");
 
-  const _p=[];
-  _p.push("You are an AI assistant for PropCRM.");
-  _p.push("User: "+currentUser.full_name);
-  return _p.join("\n");
+  return `You are an AI assistant for PropCRM, a real estate CRM based in Dubai, UAE.
+Logged-in user: ${currentUser.full_name} (role: ${currentUser.role})
+Today: ${now.toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
+
+=== LIVE DATA ===
+LEADS: ${leads.length} total · ${active.length} active · Pipeline: ${Object.entries(pipeline).map(([s,c])=>`${s}:${c}`).join(", ")}
+WON: ${leads.filter(l=>l.stage==="Closed Won").length} · LOST: ${leads.filter(l=>l.stage==="Closed Lost").length}
+
+RECENT LEADS (last 10):
+${leads.slice(0,10).map(l=>`• ${l.name} | ${l.stage} | AED ${Number(l.budget||0).toLocaleString()} | ${l.nationality||"—"} | ${l.source||"—"} | ${l.phone||"—"} | ${l.email||"—"}`).join("\n")}
+
+PROPERTIES: ${units.length} units across ${projects.length} projects · ${avail.length} available
+PROJECTS: ${projects.map(p=>`${p.name} (${p.developer||"—"}, ${p.status})`).join(" · ")}
+
+AVAILABLE UNITS (first 20):
+${avail.slice(0,20).map(u=>{
+  const p=projects.find(x=>x.id===u.project_id);
+  const sp=salePricing.find(s=>s.unit_id===u.id);
+  const lp=leasePricing.find(l=>l.unit_id===u.id);
+  const price=sp?.asking_price?"AED "+Number(sp.asking_price).toLocaleString():lp?.annual_rent?`AED ${Number(lp.annual_rent).toLocaleString()}/yr`:"TBD";
+  return `• #${u.unit_ref} | ${u.sub_type} | ${u.bedrooms===0?"Studio":(u.unit_type==="Residential"?u.bedrooms+"BR":"")} | ${u.size_sqft?Number(u.size_sqft).toLocaleString()+"sqft":""} | ${u.view||""} | ${price} | ${p?.name||"—"}`;
+}).join("\n")}
+
+RECENT ACTIVITY: ${activities.slice(0,5).map(a=>`${a.type} with ${a.lead_name} by ${a.user_name}`).join(" · ")}
+
+=== YOUR JOB ===
+1. Answer questions about properties, leads, pipeline using the live data above
+2. Draft WhatsApp/email messages (professional Dubai real estate tone, WhatsApp <150 words)
+3. Analyse pipeline and suggest next actions
+4. Qualify leads — check stage gates: Contacted needs phone+email; Site Visit needs meeting; Proposal needs unit+budget confirmed; Negotiation needs proposal notes; Closed Won needs final price+payment plan
+5. Auto-extract lead details from descriptions — when asked to "auto-fill" a lead, extract: name, phone, email, budget, nationality, notes
+
+Respond concisely. Use bullet points for lists. Match the user's language.`;
 }
 
 // ── AI Assistant component ────────────────────────────────────────
@@ -5175,8 +5192,32 @@ function exportToExcel(rows, headers, filename) {
 // ── PDF export helper ─────────────────────────────────────────────
 function exportToPDF(title, subtitle, headers, rows, filename) {
   const colW = Math.floor(90/headers.length);
-  const _pCSS="body{font-family:Arial,sans-serif;font-size:11px}table{width:100%;border-collapse:collapse}th{background:#0B1F3A;color:#C9A84C;padding:6px}td{padding:5px;border-bottom:1px solid #eee}";
-  const html="<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><style>"+_pCSS+"</style></head><body><h2>"+title+"</h2><table><thead><tr>"+headers.map(h=>"<th>"+h+"</th>").join("")+"</tr></thead><tbody>"+rows.map(r=>"<tr>"+r.map(c=>"<td>"+(c==null?"-":c)+"</td>").join("")+"</tr>").join("")+"</tbody></table></body></html>";
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Arial,sans-serif;color:#1a2535;font-size:11px}
+    .header{background:#0B1F3A;color:#fff;padding:20px 24px;margin-bottom:0}
+    .title{font-size:20px;font-weight:700;color:#C9A84C;margin-bottom:4px}
+    .subtitle{font-size:12px;color:rgba(255,255,255,.6)}
+    .meta{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px}
+    table{width:100%;border-collapse:collapse;margin:0}
+    th{background:#0B1F3A;color:#C9A84C;padding:7px 8px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.4px}
+    td{padding:6px 8px;border-bottom:1px solid #F0F2F5;font-size:10px;vertical-align:top}
+    tr:nth-child(even) td{background:#FAFBFC}
+    .footer{margin-top:16px;text-align:center;font-size:9px;color:#A0AEC0}
+    @media print{@page{margin:12mm}}
+  </style></head><body>
+  <div class="header">
+    <div class="title">◆ PropCRM — ${title}</div>
+    <div class="subtitle">${subtitle}</div>
+    <div class="meta">Generated: ${new Date().toLocaleString("en-AE",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}</div>
+  </div>
+  <table>
+    <thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+    <tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c===null||c===undefined?"—":c}</td>`).join("")}</tr>`).join("")}</tbody>
+  </table>
+  <div class="footer">PropCRM · Confidential · ${rows.length} records</div>
+  </body></html>`;
   const blob = new Blob([html], {type:"text/html"});
   const url  = URL.createObjectURL(blob);
   const w    = window.open(url,"_blank");
@@ -7322,7 +7363,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
         <button onClick={onBack} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||"Lease Enquiry — "+tenant.full_name}</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||`Lease Enquiry — ${tenant.full_name}`}</span>
             <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>{opp.stage}</span>
           </div>
           <div style={{fontSize:12,color:"#718096",marginTop:2}}>{tenant.full_name} · {tenant.phone||""} {unit?"· "+unit.unit_ref+" — "+unit.sub_type:""}</div>
@@ -7672,7 +7713,10 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
       </div>
 
       {/* Tenant Upload Modal */}
-      {showTenantUpload&&(<div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+      {showTenantUpload&&(()=>{
+        const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+        return (
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:580,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📋 Tenants — Download Template / Upload Data</span>
@@ -7755,7 +7799,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
                         nationality:r.nationality||null, id_type:r.id_type||"Emirates ID",
                         id_number:r.id_number||null, id_expiry:r.id_expiry||null,
                         tenant_type:r.tenant_type||"Individual", notes:r.notes||null,
-                        company_id:currentUser.company_id||localStorage.getItem("propccrm_company_id")||null, created_by:currentUser.id
+                        company_id:cid, created_by:currentUser.id
                       }));
                       const{data:newT,error}=await supabase.from("tenants").insert(payload).select();
                       if(error){showToast(error.message,"error");return;}
@@ -7769,8 +7813,8 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
             </div>
           </div>
         </div>
-      
-      )}
+        );
+      })()}
 
       {/* Add/Edit Tenant Modal */}      {showAddTenant&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
@@ -8144,12 +8188,6 @@ export default function App(){
   const allowedTabs = currentApp==="leasing" ? MODE_TABS.leasing : (MODE_TABS[cfg.mode]||MODE_TABS.both);
   const visibleTabs=TABS.filter(t=>t.app===currentApp&&t.roles.includes(userRole)&&allowedTabs.includes(t.id));
 
-  const _coStoredId=activeCompanyId||localStorage.getItem("propccrm_company_id")||currentUser?.company_id;
-  const _coCachedCo=(()=>{try{return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null");}catch{return null;}})();
-  const _co=companies.find(c=>c.id===_coStoredId)||companies.find(c=>c.id===currentUser?.company_id)||companies[0]||_coCachedCo||null;
-  const _coIsSA=currentUser?.role==="super_admin";
-  const _coBizLabel=_co?.business_type==="both"?"Sales & Leasing":_co?.business_type==="sales"?"Sales Only":_co?.business_type==="leasing"?"Leasing Only":_co?.business_type||"";
-
   return (
     <>
     <GlobalStyle/>
@@ -8159,25 +8197,33 @@ export default function App(){
       <div style={{background:"#0B1F3A",flexShrink:0}}>
         <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:52,gap:10}}>
 
-          {/* Logo + Name */}
+          {/* LEFT: Company Logo + Name — hero position */}
+          {(()=>{
+            const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
+            const cachedCo = (()=>{ try{ return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null"); }catch{return null;} })();
+            const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || cachedCo || null;
+            const isSA = currentUser?.role==="super_admin";
+            const bizLabel = co?.business_type==="both"?"Sales & Leasing":co?.business_type==="sales"?"Sales Only":co?.business_type==="leasing"?"Leasing Only":co?.business_type||"";
+
+            return (
               <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,minWidth:0}}>
                 {/* Logo */}
-                {_co?.logo_url
-                  ? <img src={_co.logo_url} alt={_co?.name} style={{width:36,height:36,borderRadius:8,objectFit:"cover",border:"2px solid rgba(201,168,76,.5)",flexShrink:0}}/>
+                {co?.logo_url
+                  ? <img src={co.logo_url} alt={co?.name} style={{width:36,height:36,borderRadius:8,objectFit:"cover",border:"2px solid rgba(201,168,76,.5)",flexShrink:0}}/>
                   : <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16,color:"#0B1F3A",flexShrink:0,border:"2px solid rgba(201,168,76,.4)"}}>
-                      {_co?.name?.charAt(0)||"◆"}
+                      {co?.name?.charAt(0)||"◆"}
                     </div>
                 }
                 {/* Company name + type */}
                 <div style={{display:"flex",flexDirection:"column",minWidth:0}}>
                   <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:180,lineHeight:1.2}}>
-                    {_co?.name||"PropCRM"}
+                    {co?.name||"PropCRM"}
                   </span>
-                  {_coBizLabel&&<span style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:".6px",lineHeight:1.3}}>{bizLabel}</span>}
+                  {bizLabel&&<span style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:".6px",lineHeight:1.3}}>{bizLabel}</span>}
                 </div>
                 {/* Super admin company switcher */}
-                {_coIsSA&&companies.length>1&&(
-                  <select value={_coStoredId||""} onChange={e=>{
+                {isSA&&companies.length>1&&(
+                  <select value={storedId||""} onChange={e=>{
                     setActiveCompanyId(e.target.value);
                     localStorage.setItem("propccrm_company_id",e.target.value);
                     window.location.reload();
@@ -8190,7 +8236,8 @@ export default function App(){
                   </select>
                 )}
               </div>
-
+            );
+          })()}
 
           {/* CENTRE: CRM Switcher */}
           {canSwitch&&(
@@ -8277,7 +8324,7 @@ export default function App(){
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
           {tab==="pipeline"    &&<Pipeline leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} users={users} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="ai"          &&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,color:"rgba(255,255,255,.5)",fontFamily:"'Playfair Display',serif"}}><div style={{fontSize:56}}>✦</div><div style={{fontSize:20,fontWeight:700,color:"#C9A84C"}}>AI Assistant</div><div style={{fontSize:14,color:"rgba(255,255,255,.5)"}}>Look for the golden bubble · bottom-right corner</div></div>}
+          {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
@@ -8300,7 +8347,7 @@ export default function App(){
           {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
           {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData}/>}
-          {tab==="l_ai"        &&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,color:"rgba(255,255,255,.5)",fontFamily:"'Playfair Display',serif"}}><div style={{fontSize:56}}>✦</div><div style={{fontSize:20,fontWeight:700,color:"#C9A84C"}}>AI Assistant</div><div style={{fontSize:14,color:"rgba(255,255,255,.5)"}}>Look for the golden bubble · bottom-right corner</div></div>}
+          {tab==="l_ai"        &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leasingData={leasingData} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
