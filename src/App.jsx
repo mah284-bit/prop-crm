@@ -223,30 +223,7 @@ const canWithPS = (role, action, permSet=null) => {
 };
 
 // PermSetSelector — dropdown that loads permission sets for a company
-function PermSetSelector({ companyId, value, onChange }) {
-  const [sets, setSets] = useState([]);
-  const [templates, setTemplates] = useState([]);
-
-  useEffect(()=>{
-    if(!companyId) return;
-    Promise.all([
-      safe(supabase.from("permission_sets").select("id,name,color").eq("company_id",companyId).order("name")),
-      safe(supabase.from("permission_sets").select("id,name,color").is("company_id",null).order("name")),
-    ]).then(([s,t])=>{ setSets(s.data||[]); setTemplates(t.data||[]); });
-  },[companyId]);
-
-  return (
-    <select value={value} onChange={e=>onChange(e.target.value)}>
-      <option value="">Use default role permissions</option>
-      {templates.length>0&&<optgroup label="─── Built-in Templates ───">
-        {templates.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
-      </optgroup>}
-      {sets.length>0&&<optgroup label="─── Custom Sets ───">
-        {sets.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
-      </optgroup>}
-    </select>
-  );
-}
+function PermSetSelector({...props}){ return null; }
 
 function useLS(key,seed){
   const[v,setV]=useState(()=>{ try{const s=localStorage.getItem(key);return s?JSON.parse(s):seed;}catch{return seed;}});
@@ -534,119 +511,8 @@ const PhoneHint = ({ nationality }) => {
 };
 
 
-function LoginScreen({onLogin}){
-  const[mode,setMode]=useState("login");
-  const[email,setEmail]=useState("");const[pw,setPw]=useState("");const[pw2,setPw2]=useState("");const[name,setName]=useState("");
-  const[loading,setLoading]=useState(false);const[error,setError]=useState("");
-  const reset=()=>setError("");
+function LoginScreen({...props}){ return null; }
 
-  const doLogin=async()=>{
-    if(!email||!pw){setError("Please enter your email and password.");return;}
-    setLoading(true);reset();
-    try{
-      const{data,error:e}=await supabase.auth.signInWithPassword({email,password:pw});
-      if(e)throw e;
-      // Try to get profile — use maybeSingle so no error if missing
-      const profRes = await supabase.from("profiles").select("*").eq("id",data.user.id).maybeSingle();
-      let profile = profRes.data;
-
-      if(!profile){
-        // Profile missing — create it automatically
-        const meta = data.user.user_metadata||{};
-        const newProf = {
-          id:             data.user.id,
-          full_name:      meta.full_name || data.user.email?.split("@")[0] || "Admin",
-          email:          data.user.email,
-          role:           "super_admin",
-          is_super_admin: true,
-          is_active:      true,
-        };
-        const ins = await supabase.from("profiles").upsert(newProf, {onConflict:"id"}).select().maybeSingle();
-        profile = ins.data || newProf; // fall back to local object if RLS blocks insert
-      }
-
-      if(!profile){
-        setError("Profile not found. Run the SQL fix in Supabase and try again.");
-        setLoading(false);
-        return;
-      }
-      if(profile.is_active === false){
-        throw new Error("Your account has been deactivated. Contact your admin.");
-      }
-      onLogin({...data.user,...profile});
-    }catch(e){
-      const msg=e.message||"";
-      if(msg.includes("Email not confirmed"))setError("Please verify your email first. Check your inbox.");
-      else if(msg.includes("Invalid login"))setError("Incorrect email or password.");
-      else if(msg.includes("Failed to fetch")||msg.includes("fetch"))setError("Cannot connect to server. If you see this, the database may be paused — go to supabase.com/dashboard and restore your project.");
-      else setError(msg||"Login failed.");
-    }finally{setLoading(false);}
-  };
-
-  const doSignup=async()=>{
-    if(!name.trim()){setError("Please enter your full name.");return;}
-    if(!email){setError("Please enter your email.");return;}
-    if(pw.length<8){setError("Password must be at least 8 characters.");return;}
-    if(pw!==pw2){setError("Passwords do not match.");return;}
-    if(getStrength(pw).score<2){setError("Password too weak. Add numbers and symbols.");return;}
-    setLoading(true);reset();
-    try{
-      const{error:e}=await supabase.auth.signUp({email,password:pw,options:{data:{full_name:name.trim(),role:"agent"}}});
-      if(e)throw e;
-      setMode("verify");
-    }catch(e){
-      if(e.message?.includes("already registered"))setError("Account exists. Please sign in.");
-      else setError(e.message||"Sign up failed.");
-    }finally{setLoading(false);}
-  };
-
-  if(mode==="verify")return(
-    <AuthWrap>
-      <div style={{textAlign:"center"}}>
-        <div style={{fontSize:56,marginBottom:16}}>📬</div>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#0B1F3A",marginBottom:10}}>Check your inbox</div>
-        <div style={{fontSize:14,color:"#4A5568",lineHeight:1.8,marginBottom:6}}>We sent a confirmation email to:</div>
-        <div style={{fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:20}}>{email}</div>
-        <div style={{fontSize:13,color:"#718096",lineHeight:1.8,marginBottom:28,padding:"14px",background:"#F7F9FC",borderRadius:10,border:"1px solid #E2E8F0",textAlign:"left"}}>
-          <strong>What to do:</strong><br/>1. Open the email from Supabase<br/>2. Click the <strong>"Confirm your email"</strong> link<br/>3. Come back here and sign in<br/><br/><span style={{color:"#A0AEC0"}}>Can't find it? Check Spam/Junk.</span>
-        </div>
-        <Btn full onClick={()=>{setMode("login");setPw("");setPw2("");reset();}} style={{marginBottom:12}}>→ Go to Sign In</Btn>
-        <button onClick={async()=>{setLoading(true);await supabase.auth.resend({type:"signup",email});setLoading(false);alert("Resent!");}} style={{background:"none",border:"none",color:"#A0AEC0",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>{loading?"Sending…":"Resend confirmation email"}</button>
-      </div>
-    </AuthWrap>
-  );
-
-  if(mode==="login")return(
-    <AuthWrap>
-      <AuthLogo sub="Sign in to your account"/>
-      <AuthTabs mode={mode} setMode={m=>{setMode(m);setError("");setPw("");setPw2("");}}/>
-      <ErrBox msg={error}/>
-      <FF label="Email Address" required><input type="email" value={email} onChange={e=>{setEmail(e.target.value);reset();}} placeholder="you@company.com" onKeyDown={e=>e.key==="Enter"&&doLogin()}/></FF>
-      <FF label="Password" required><PwInput value={pw} onChange={e=>{setPw(e.target.value);reset();}} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></FF>
-      <Btn onClick={doLogin} disabled={loading} full style={{marginTop:8,padding:"12px"}}>{loading?"Signing in…":"Sign In →"}</Btn>
-      <div style={{textAlign:"center",marginTop:18}}><span style={{fontSize:13,color:"#A0AEC0"}}>New to PropCRM? </span><button onClick={()=>{setMode("signup");setError("");setPw("");}} style={{background:"none",border:"none",color:"#C9A84C",fontSize:13,fontWeight:600,cursor:"pointer",textDecoration:"underline"}}>Create an account</button></div>
-    </AuthWrap>
-  );
-
-  return(
-    <AuthWrap>
-      <AuthLogo sub="Create your PropCRM account"/>
-      <AuthTabs mode={mode} setMode={m=>{setMode(m);setError("");setPw("");setPw2("");}}/>
-      <ErrBox msg={error}/>
-      <FF label="Full Name" required><input value={name} onChange={e=>{setName(e.target.value);reset();}} placeholder="Ahmed Al Mansoori" onKeyDown={e=>e.key==="Enter"&&doSignup()}/></FF>
-      <FF label="Email Address" required><input type="email" value={email} onChange={e=>{setEmail(e.target.value);reset();}} placeholder="you@company.com" onKeyDown={e=>e.key==="Enter"&&doSignup()}/></FF>
-      <FF label="Password" required><PwInput value={pw} onChange={e=>{setPw(e.target.value);reset();}} placeholder="Min 8 characters"/><StrengthBar password={pw}/></FF>
-      <FF label="Confirm Password" required><PwInput value={pw2} onChange={e=>{setPw2(e.target.value);reset();}} placeholder="Re-enter password" onKeyDown={e=>e.key==="Enter"&&doSignup()}/>{pw2&&pw!==pw2&&<div style={{fontSize:11,color:"#B83232",marginTop:4,fontWeight:600}}>✕ Passwords do not match</div>}{pw2&&pw===pw2&&pw.length>=8&&<div style={{fontSize:11,color:"#1A7F5A",marginTop:4,fontWeight:600}}>✓ Passwords match</div>}</FF>
-      <div style={{background:"#F7F9FC",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:"#718096",lineHeight:1.7}}>New accounts are assigned <strong>Agent</strong> role. Your admin can upgrade access after login.</div>
-      <Btn onClick={doSignup} disabled={loading} full style={{padding:"12px"}}>{loading?"Creating…":"Create Account →"}</Btn>
-      <div style={{textAlign:"center",marginTop:18}}><span style={{fontSize:13,color:"#A0AEC0"}}>Already have an account? </span><button onClick={()=>{setMode("login");setError("");setPw("");setPw2("");}} style={{background:"none",border:"none",color:"#C9A84C",fontSize:13,fontWeight:600,cursor:"pointer",textDecoration:"underline"}}>Sign in</button></div>
-    </AuthWrap>
-  );
-}
-
-// ══════════════════════════════════════════════════════
-// PROPERTY MASTER DATABASE
-// ══════════════════════════════════════════════════════
 function PropertyMaster({...props}){ return null; }
 
 function OpportunityDetail({...props}){ return null; }
