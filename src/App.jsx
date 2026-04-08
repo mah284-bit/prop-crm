@@ -2175,7 +2175,12 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
         </div>
 
         {/* Detail panel — shown when card selected */}
-        {selCard&&(()=>{const lead=leads.find(l=>l.id===selCard.id)||selCard;const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F0F2F5"};const days=lead.stage_updated_at?Math.floor((new Date()-new Date(lead.stage_updated_at))/(864e5)):0;const curIdx=stageOrder.indexOf(lead.stage);return(
+        {selCard&&(()=>{
+          const lead=leads.find(l=>l.id===selCard.id)||selCard;
+          const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F0F2F5"};
+          const days=lead.stage_updated_at?Math.floor((new Date()-new Date(lead.stage_updated_at))/(864e5)):0;
+          const curIdx=stageOrder.indexOf(lead.stage);
+          return(
             <div style={{width:260,flexShrink:0,background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,overflowY:"auto",boxShadow:"0 4px 20px rgba(11,31,58,.08)"}}>
               {/* Header */}
               <div style={{background:"linear-gradient(135deg,"+m.c+","+m.c+"CC)",padding:"14px 16px",borderRadius:"10px 10px 0 0"}}>
@@ -3456,27 +3461,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
           max_tokens:1500,
           messages:[{role:"user",content:[
             ...(isImage?[{type:"image",source:{type:"base64",media_type:file.type,data:b64}}]:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}}]),
-            {type:"text",text:`Extract property/unit details from this builder brochure. Return ONLY a JSON object with these fields (use null for unknown):
-{
-  "unit_ref": "unit reference/number",
-  "sub_type": "Studio/1 Bed/2 Bed/3 Bed/4 Bed/Villa/Penthouse/Townhouse/Office/Retail",
-  "size_sqft": number,
-  "bedrooms": number (0 for studio),
-  "bathrooms": number,
-  "floor_number": "floor number or range",
-  "view": "sea view/city view/pool view/garden view etc",
-  "asking_price": number in AED,
-  "annual_rent": number in AED,
-  "booking_pct": number (booking deposit %),
-  "during_construction_pct": number,
-  "on_handover_pct": number,
-  "developer": "developer name",
-  "project_name": "project/building name",
-  "handover_date": "YYYY-MM-DD or year",
-  "furnishing": "Furnished/Unfurnished/Semi-Furnished",
-  "notes": "any other relevant details"
-}
-Return ONLY the JSON, no explanation.`}
+            {type:"text",text:"Extract property/unit details from this builder brochure. Return ONLY a JSON object with these fields (use null for unknown):\n{\n  \"unit_ref\": \"unit reference/number\",\n  \"sub_type\": \"Studio/1 Bed/2 Bed/3 Bed/4 Bed/Villa/Penthouse/Townhouse/Office/Retail\",\n  \"size_sqft\": number,\n  \"bedrooms\": number (0 for studio),\n  \"bathrooms\": number,\n  \"floor_number\": \"floor number or range\",\n  \"view\": \"sea view/city view/pool view/garden view etc\",\n  \"asking_price\": number in AED,\n  \"annual_rent\": number in AED,\n  \"booking_pct\": number (booking deposit %),\n  \"during_construction_pct\": number,\n  \"on_handover_pct\": number,\n  \"developer\": \"developer name\",\n  \"project_name\": \"project/building name\",\n  \"handover_date\": \"YYYY-MM-DD or year\",\n  \"furnishing\": \"Furnished/Unfurnished/Semi-Furnished\",\n  \"notes\": \"any other relevant details\"\n}\nReturn ONLY the JSON, no explanation."}
           ]}]
         })
       });
@@ -3638,7 +3623,7 @@ Return ONLY the JSON, no explanation.`}
                     <td style={{padding:"5px 8px"}}>
                       <div style={{display:"flex",flexDirection:"column",gap:2}}>
                         <span style={{fontSize:9,fontWeight:600,padding:"2px 6px",borderRadius:20,background:sc.bg,color:sc.c,whiteSpace:"nowrap"}}>{u.status}</span>
-                        {reservations.find(x=>x.unit_id===u.id&&["Active","Extended"].includes(x.status))?<ReservationBadge reservation={reservations.find(x=>x.unit_id===u.id&&["Active","Extended"].includes(x.status))}/>:null}
+                        {(()=>{const r=reservations.find(x=>x.unit_id===u.id&&["Active","Extended"].includes(x.status));return r?<ReservationBadge reservation={r}/>:null;})()}
                       </div>
                     </td>
                     <td style={{padding:"5px 4px"}} onClick={e=>e.stopPropagation()}>
@@ -3652,7 +3637,11 @@ Return ONLY the JSON, no explanation.`}
         </div>
 
         {/* Unit detail side panel */}
-        {selUnit&&(()=>{const sp=getSP(selUnit.id);const lp=getLP(selUnit.id);const proj=projects.find(p=>p.id===selUnit.project_id);const sc=UNIT_STATUS_COLORS[selUnit.status]||{c:"#718096",bg:"#F0F2F5"};return(
+        {selUnit&&(()=>{
+          const sp=getSP(selUnit.id); const lp=getLP(selUnit.id);
+          const proj=projects.find(p=>p.id===selUnit.project_id);
+          const sc=UNIT_STATUS_COLORS[selUnit.status]||{c:"#718096",bg:"#F0F2F5"};
+          return (
             <div className="slide-in" style={{width:340,flexShrink:0,background:"#fff",borderLeft:"1px solid #E2E8F0",display:"flex",flexDirection:"column",overflow:"hidden"}}>
               {/* Panel header */}
               <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",padding:"14px 16px",position:"relative"}}>
@@ -3717,8 +3706,21 @@ Return ONLY the JSON, no explanation.`}
                     )}
                     {selUnit.notes&&<div style={{fontSize:12,color:"#4A5568",padding:"8px 10px",background:"#F7F9FC",borderRadius:8,lineHeight:1.6}}>{selUnit.notes}</div>}
                     {canEdit&&<button onClick={()=>openEdit(selUnit)} style={{padding:"8px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit Unit</button>}
-                    {canReserve&&selUnit.status==="Available"&&(()=>{const hp2=!!(salePricing.find(s=>s.unit_id===selUnit.id)||leasePricing.find(l=>l.unit_id===selUnit.id));const pr2=projects.find(p=>p.id===selUnit.project_id);const ok2=hp2&&(!pr2?.launch_date||new Date()>=new Date(pr2.launch_date));return(<button onClick={()=>{if(!hp2){showToast("Add pricing to this unit before reserving","error");return;}if(!ok2){showToast("Project launches "+new Date(pr2.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})+" — not open yet","error");return;}setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"none",background:ok2?"#C9A84C":"#E2E8F0",color:ok2?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:ok2?"pointer":"not-allowed"}}>{!hp2?"⚠️ No Pricing":!ok2?"🔒 Not Released":"🔒 Reserve Unit"}</button>);})()}
-                    {canReserve&&reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status))&&<button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"1.5px solid #E8C97A",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:700,cursor:"pointer"}}>{"⏱ View Reservation ("+hoursLeft(reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status))?.expires_at,reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status))?.extended_until)+"h)"}</button>}
+                    {canReserve&&selUnit.status==="Available"&&(()=>{
+                      const hp2=!!(salePricing.find(s=>s.unit_id===selUnit.id)||leasePricing.find(l=>l.unit_id===selUnit.id));
+                      const pr2=projects.find(p=>p.id===selUnit.project_id);
+                      const ok2=hp2&&(!pr2?.launch_date||new Date()>=new Date(pr2.launch_date));
+                      return (
+                        <button onClick={()=>{
+                          if(!hp2){showToast("Add pricing to this unit before reserving","error");return;}
+                          if(!ok2){showToast("Project launches "+new Date(pr2.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})+" — not open yet","error");return;}
+                          setReserveUnit(selUnit);setShowReserve(true);
+                        }} style={{padding:"8px",borderRadius:8,border:"none",background:ok2?"#C9A84C":"#E2E8F0",color:ok2?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:ok2?"pointer":"not-allowed"}}>
+                          {!hp2?"⚠️ No Pricing":!ok2?"🔒 Not Released":"🔒 Reserve Unit"}
+                        </button>
+                      );
+                    })()}
+                    {canReserve&&(()=>{const r=reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status));return r?(<button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"1.5px solid #E8C97A",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:700,cursor:"pointer"}}>⏱ View Reservation ({hoursLeft(r.expires_at,r.extended_until)}h)</button>):null;})()}
                   </div>
                 )}
                 {/* Pricing tab */}
@@ -3809,7 +3811,10 @@ Return ONLY the JSON, no explanation.`}
 
       {/* Reservation Modal */}
       {/* Inventory Excel Upload Modal */}
-      {showInvExcel&&(()=>{const cid=currentUser.company_id||localStorage.getItem("propccrm_company_id")||null;return(<div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+      {showInvExcel&&(()=>{
+        const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+        return (
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:580,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📤 Upload Inventory from Excel</span>
@@ -4736,7 +4741,10 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
             })}
           </div>
           {/* Lease Upload Modal */}
-          {showLeaseUpload&&(()=>{const cid=currentUser.company_id||localStorage.getItem("propccrm_company_id")||null;return(<div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          {showLeaseUpload&&(()=>{
+            const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+            return (
+            <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
               <div style={{background:"#fff",borderRadius:16,width:600,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
                   <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📋 Leases — Download Template / Upload Data</span>
@@ -7610,7 +7618,10 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
       </div>
 
       {/* Tenant Upload Modal */}
-      {showTenantUpload&&(()=>{const cid=currentUser.company_id||localStorage.getItem("propccrm_company_id")||null;return(<div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+      {showTenantUpload&&(()=>{
+        const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+        return (
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:580,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📋 Tenants — Download Template / Upload Data</span>
@@ -8092,7 +8103,14 @@ export default function App(){
         <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:52,gap:10}}>
 
           {/* LEFT: Company Logo + Name — hero position */}
-          {(()=>{const storedId=activeCompanyId||localStorage.getItem("propccrm_company_id")||currentUser?.company_id;const cachedCo=(()=>{try{return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null");}catch{return null;}})();const co=companies.find(c=>c.id===storedId)||companies.find(c=>c.id===currentUser?.company_id)||companies[0]||cachedCo||null;const isSA=currentUser?.role==="super_admin";const bizLabel=co?.business_type==="both"?"Sales & Leasing":co?.business_type==="sales"?"Sales Only":co?.business_type==="leasing"?"Leasing Only":co?.business_type||"";return(
+          {(()=>{
+            const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
+            const cachedCo = (()=>{ try{ return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null"); }catch{return null;} })();
+            const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || cachedCo || null;
+            const isSA = currentUser?.role==="super_admin";
+            const bizLabel = co?.business_type==="both"?"Sales & Leasing":co?.business_type==="sales"?"Sales Only":co?.business_type==="leasing"?"Leasing Only":co?.business_type||"";
+
+            return (
               <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,minWidth:0}}>
                 {/* Logo */}
                 {co?.logo_url
