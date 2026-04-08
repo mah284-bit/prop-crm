@@ -5341,14 +5341,14 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
   );
 }
 
-function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null, crmContext="sales", preloadedUnits=[], preloadedProjects=[], preloadedSalePricing=[], preloadedLeasePricing=[] }) {
+function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null, crmContext="sales", preloadedUnits=[], preloadedProjects=[], preloadedSalePricing=[], preloadedLeasePricing=[], preloadedUsers=[] }) {
   const [activeReport, setActiveReport] = useState(crmContext==="leasing"?"rent_roll":"pipeline");
   const [loading,      setLoading]      = useState(false);
   const [data,         setData]         = useState({
     units: preloadedUnits||[], projects: preloadedProjects||[],
     salePricing: preloadedSalePricing||[], leasePricing: preloadedLeasePricing||[],
     leases: leasingData?.leases||[], tenants: leasingData?.tenants||[],
-    payments: leasingData?.payments||[],
+    payments: leasingData?.payments||[], users: preloadedUsers||[],
   });
   const [filters,      setFilters]      = useState({ dateFrom:"", dateTo:"", status:"All", agent:"All" });
 
@@ -5366,7 +5366,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
     setLoading(true);
     try {
       const safe = q => q.catch(()=>({data:[]}));
-      const [leads,acts,users,units,projs,sp,lp,leases,tenants,payments,cheques] = await Promise.all([
+      const [leads,acts,users,units,projs,sp,lp,leases,tenants,payments,leaseOpps] = await Promise.all([
         safe(supabase.from("leads").select("*").order("created_at",{ascending:false})),
         safe(supabase.from("activities").select("*")),
         safe(supabase.from("profiles").select("id,full_name,role,email")),
@@ -5377,12 +5377,14 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
         safe(supabase.from("leases").select("*").order("end_date")),
         safe(supabase.from("tenants").select("*")),
         safe(supabase.from("rent_payments").select("*").order("due_date")),
-        safe(supabase.from("rent_payments").select("*").order("due_date")),
+        safe(supabase.from("lease_opportunities").select("*")),
       ]);
       setData({
         leads:   leads.data||[],   activities: acts.data||[],
         users:   users.data||[],
+        users:   (users.data||[]).length>0 ? users.data : (preloadedUsers||[]),
         units:   (units.data||[]).length>0 ? units.data : (preloadedUnits||[]),
+        leaseOpps: leaseOpps.data||[],
         projects:(projs.data||[]).length>0 ? projs.data : (preloadedProjects||[]),
         salePricing:(sp.data||[]).length>0 ? sp.data : (preloadedSalePricing||[]),
         leasePricing:(lp.data||[]).length>0 ? lp.data : (preloadedLeasePricing||[]),
@@ -5554,7 +5556,9 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
       generate: () => {
         const { leads=[], users=[], activities=[] } = data;
         const agents = users.filter(u=>["sales_agent","sales_manager","leasing_agent","leasing_manager","admin"].includes(u.role));
-        const oppsData = globalOpps.length>0 ? globalOpps : (data.opps||[]);
+        const oppsData = crmContext==="leasing" 
+          ? (data.leaseOpps||[]) 
+          : (globalOpps.length>0 ? globalOpps : (data.opps||[]));
         const rows = agents.map(u=>{
           const myOpps  = oppsData.filter(o=>o.assigned_to===u.id);
           const won     = myOpps.filter(o=>o.status==="Won"||o.stage==="Closed Won");
@@ -8452,7 +8456,7 @@ export default function App(){
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr}/>}
+          {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
           {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
           {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id)=>{setActiveCompanyId(id);localStorage.setItem("propccrm_company_id",id);window.location.reload();}} activeCompanyId={activeCompanyId}/>}
           {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
@@ -8468,7 +8472,7 @@ export default function App(){
           {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="l_ai"        &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leasingData={leasingData} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr}/>}
+          {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leasingData={leasingData} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
           {tab==="l_companies" &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id)=>{setActiveCompanyId(id);localStorage.setItem("propccrm_company_id",id);window.location.reload();}} activeCompanyId={activeCompanyId}/>}
           {tab==="l_users"     &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {tab==="l_permissions"&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
