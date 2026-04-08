@@ -3720,7 +3720,7 @@ Return ONLY the JSON, no explanation.`}
                       return (
                         <button onClick={()=>{
                           if(!hp2){showToast("Add pricing to this unit before reserving","error");return;}
-                          if(!ok2){showToast("Project launches "+(new Date(pr2.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric")+")} — not open yet","error");return;}
+                          if(!ok2){showToast("Project launches "+new Date(pr2.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})+" — not open yet","error");return;}
                           setReserveUnit(selUnit);setShowReserve(true);
                         }} style={{padding:"8px",borderRadius:8,border:"none",background:ok2?"#C9A84C":"#E2E8F0",color:ok2?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:ok2?"pointer":"not-allowed"}}>
                           {!hp2?"⚠️ No Pricing":!ok2?"🔒 Not Released":"🔒 Reserve Unit"}
