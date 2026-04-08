@@ -5065,6 +5065,7 @@ ${avail.slice(0,20).map(u=>{
   const lp=leasePricing.find(l=>l.unit_id===u.id);
   const price=sp?.asking_price?`AED ${Number(sp.asking_price).toLocaleString()}`:lp?.annual_rent?`AED ${Number(lp.annual_rent).toLocaleString()}/yr`:"TBD";
   return `• #${u.unit_ref} | ${u.sub_type} | ${u.bedrooms===0?"Studio":(u.unit_type==="Residential"?u.bedrooms+"BR":"")} | ${u.size_sqft?Number(u.size_sqft).toLocaleString()+"sqft":""} | ${u.view||""} | ${price} | ${p?.name||"—"}`;
+}).join("\n")`;
 }
 
 // ── AI Assistant component ────────────────────────────────────────
