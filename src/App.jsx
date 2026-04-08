@@ -8137,8 +8137,12 @@ export default function App(){
   const[aiUnits,   setAiUnits]   = useState([]);
   const[aiSalePr,  setAiSalePr]  = useState([]);
   const[aiLeasePr, setAiLeasePr] = useState([]);
-  const[tab,       setTab]       = useState("dashboard");
-  const[activeApp, setActiveApp] = useState("sales");
+  const[tab,       setTab]       = useState(()=>{
+    // Start on correct dashboard based on stored app
+    const lastApp = localStorage.getItem("propccrm_last_app")||"sales";
+    return lastApp==="leasing"?"l_dashboard":"dashboard";
+  });
+  const[activeApp, setActiveApp] = useState(()=>localStorage.getItem("propccrm_last_app")||"sales");
   const[appConfig, setAppConfig] = useState(()=>getAppConfig());
   const[dataLoading,setDataLoading]=useState(false);
   const[companies, setCompanies] = useState([]);
@@ -8270,7 +8274,8 @@ export default function App(){
     localStorage.setItem("propccrm_role", user.role||"viewer");
     const app = DEFAULT_APP[user.role]||"sales";
     setActiveApp(app);
-    setTab(app==="leasing"?"l_dashboard":"dashboard");
+    setActiveApp(app); localStorage.setItem("propccrm_last_app", app);
+    localStorage.setItem("propccrm_last_app", app);
     if(user.is_super_admin||user.role==="super_admin"){
       supabase.from("companies").select("*").order("name").then(({data})=>{
         if(data){
@@ -8359,7 +8364,9 @@ export default function App(){
                 return (
                   <button key={a.id} onClick={()=>{
                     setActiveApp(a.id);
-                    setTab(a.id==="sales"?"dashboard":"l_dashboard");
+                    setActiveApp(a.id); localStorage.setItem("propccrm_last_app", a.id);
+                    // Clear any stale tab from the other app
+                    setTimeout(()=>setTab(a.id==="sales"?"dashboard":"l_dashboard"),50);
                   }} style={{
                     padding:"5px 10px",borderRadius:8,border:"none",
                     background:isActive?"#fff":"transparent",
