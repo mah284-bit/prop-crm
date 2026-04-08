@@ -2318,6 +2318,28 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
 
 
 
+function fmtParts(line) {
+  const parts = line.split(/\*\*(.+?)\*\*/g);
+  return parts.map((p,j) => j%2===1 ? <strong key={j} style={{color:"#0B1F3A"}}>{p}</strong> : p);
+}
+function fmtMsg(text) {
+  return text.split("\n").map((line,i) => {
+    if(!line.trim()) return <div key={i} style={{height:5}}/>;
+    if(/^#{1,3}\s/.test(line)) return <div key={i} style={{fontWeight:800,fontSize:13,color:"#0B1F3A",marginTop:8,marginBottom:3}}>{line.replace(/^#+\s/,"")}</div>;
+    if(/^\*\*(.+)\*\*$/.test(line)) return <div key={i} style={{fontWeight:700,color:"#0B1F3A",marginTop:5}}>{line.replace(/\*\*/g,"")}</div>;
+    if(line.match(/^[•\-\*]\s/)){
+      const txt = line.replace(/^[•\-\*]\s*/,"");
+      return (
+        <div key={i} style={{display:"flex",gap:6,marginBottom:2,paddingLeft:4}}>
+          <span style={{color:"#C9A84C",fontWeight:700}}>◆</span>
+          <span>{fmtParts(txt)}</span>
+        </div>
+      );
+    }
+    return <div key={i} style={{marginBottom:2,lineHeight:1.6}}>{fmtParts(line)}</div>;
+  });
+}
+
 function FloatingOrb({aiOpen, onOpen, followupAlerts={}}){
   const cacheStr = localStorage.getItem("propccrm_company_cache");
   const coCache  = cacheStr ? JSON.parse(cacheStr) : null;
@@ -2374,13 +2396,13 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
     const stale = (followupAlerts.staleLeads||[]);
     const overdue = (followupAlerts.overduePayments||[]);
     const expiring = (followupAlerts.expiringLeases||[]);
-    if(stale.length>0) items.push({icon:"⏱",color:"#A06810",bg:"#FDF3DC",text:`${stale.length} lead${stale.length>1?"s":""} stuck for 7+ days`,prompt:`Which leads have been stuck the longest and need immediate attention? Give me a prioritised action plan.`});
-    if(overdue.length>0) items.push({icon:"💳",color:"#B83232",bg:"#FAEAEA",text:`${overdue.length} overdue payment${overdue.length>1?"s":""}`,prompt:`Which payments are overdue? Summarise amounts and suggest next steps for each tenant.`});
-    if(expiring.length>0) items.push({icon:"📄",color:"#8A6200",bg:"#FFF3CD",text:`${expiring.length} lease${expiring.length>1?"s":""} expiring in 30 days`,prompt:`Which leases are expiring soon? Draft renewal talking points for each tenant.`});
+    if(stale.length>0) items.push({icon:"⏱",color:"#A06810",bg:"#FDF3DC",text:stale.length+" lead"+(stale.length>1?"s":"")+" stuck for 7+ days",prompt:`Which leads have been stuck the longest and need immediate attention? Give me a prioritised action plan.`});
+    if(overdue.length>0) items.push({icon:"💳",color:"#B83232",bg:"#FAEAEA",text:overdue.length+" overdue payment"+(overdue.length>1?"s":""),prompt:`Which payments are overdue? Summarise amounts and suggest next steps for each tenant.`});
+    if(expiring.length>0) items.push({icon:"📄",color:"#8A6200",bg:"#FFF3CD",text:expiring.length+" lease"+(expiring.length>1?"s":"")+" expiring in 30 days",prompt:`Which leases are expiring soon? Draft renewal talking points for each tenant.`});
     const avail = units.filter(u=>u.status==="Available").length;
-    if(avail>0) items.push({icon:"🏠",color:"#1A7F5A",bg:"#E6F4EE",text:`${avail} units available for ${currentApp==="leasing"?"lease":"sale"}`,prompt:`Show me all available units with pricing. Which ones represent the best value?`});
+    if(avail>0) items.push({icon:"🏠",color:"#1A7F5A",bg:"#E6F4EE",text:avail+" units available for "+(currentApp==="leasing"?"lease":"sale"),prompt:`Show me all available units with pricing. Which ones represent the best value?`});
     const activeLeads = leads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
-    if(activeLeads.length>0) items.push({icon:"🎯",color:"#1A5FA8",bg:"#E6EFF9",text:`${activeLeads.length} active opportunities in pipeline`,prompt:`Analyse my current pipeline. What is the total value and which deals are most likely to close this month?`});
+    if(activeLeads.length>0) items.push({icon:"🎯",color:"#1A5FA8",bg:"#E6EFF9",text:activeLeads.length+" active opportunities in pipeline",prompt:`Analyse my current pipeline. What is the total value and which deals are most likely to close this month?`});
     return items;
   },[followupAlerts, units, leads, currentApp]);
 
@@ -2485,34 +2507,14 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
       }
     }catch(e){
       setMessages(p=>[...p,{role:"assistant",content:e.message.includes("No API key")
-        ?`Please click **Configure** to add a free API key and activate ${aiFullName}.`
-        :`Sorry, something went wrong: ${e.message}`}]);
+        ?"Please click **Configure** to add a free API key and activate "+aiFullName+"."
+        :"Sorry, something went wrong: "+e.message}]);
       if(e.message.includes("No API key")) setShowSetup(true);
     }
     setLoading(false);
   };
 
-  const fmtParts = (line) => {
-    const parts = line.split(/\*\*(.+?)\*\*/g);
-    return parts.map((p,j) => j%2===1 ? <strong key={j} style={{color:"#0B1F3A"}}>{p}</strong> : p);
-  };
-  const fmt = (text) => {
-    return text.split("\n").map((line,i) => {
-      if(!line.trim()) return <div key={i} style={{height:5}}/>;
-      if(/^#{1,3}\s/.test(line)) return <div key={i} style={{fontWeight:800,fontSize:13,color:"#0B1F3A",marginTop:8,marginBottom:3}}>{line.replace(/^#+\s/,"")}</div>;
-      if(/^\*\*(.+)\*\*$/.test(line)) return <div key={i} style={{fontWeight:700,color:"#0B1F3A",marginTop:5}}>{line.replace(/\*\*/g,"")}</div>;
-      if(line.match(/^[•\-\*]\s/)){
-        const txt = line.replace(/^[•\-\*]\s*/,"");
-        return (
-          <div key={i} style={{display:"flex",gap:6,marginBottom:2,paddingLeft:4}}>
-            <span style={{color:"#C9A84C",fontWeight:700}}>◆</span>
-            <span>{fmtParts(txt)}</span>
-          </div>
-        );
-      }
-      return <div key={i} style={{marginBottom:2,lineHeight:1.6}}>{fmtParts(line)}</div>;
-    });
-  };
+  
 
   if(!open) return null;
 
@@ -2583,8 +2585,8 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
                 <input type="password" defaultValue={keys[p.id]||""} id={"amb-key-"+p.id} placeholder={p.placeholder}
                   style={{flex:1,padding:"5px 8px",border:"1.5px solid #D1D9E6",borderRadius:6,fontSize:11}}/>
                 <button onClick={()=>{
-                  const val=document.getElementById(`amb-key-${p.id}`).value.trim();
-                  if(val){saveKeys({...keys,[p.id]:val});showToast(`${p.name} activated`,"success");}
+                  const val=document.getElementById("amb-key-"+p.id).value.trim();
+                  if(val){saveKeys({...keys,[p.id]:val});showToast(p.name+" activated","success");}
                   else{const nk={...keys};delete nk[p.id];saveKeys(nk);}
                 }} style={{padding:"5px 10px",borderRadius:6,border:"none",background:"#0B1F3A",color:"#C9A84C",fontSize:11,fontWeight:600,cursor:"pointer"}}>✓</button>
                 <a href={p.link} target="_blank" style={{fontSize:10,color:"#1A5FA8",fontWeight:600,textDecoration:"none",whiteSpace:"nowrap"}}>Get Key ↗</a>
@@ -2601,7 +2603,7 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
               {insights.map((ins,i)=>(
                 <button key={i} onClick={()=>send(ins.prompt)} disabled={loading||!hasAnyKey} style={{
                   flexShrink:0,padding:"6px 10px",borderRadius:8,
-                  border:`1px solid ${ins.color}33`,background:ins.bg,
+                  border:"1px solid "+ins.color+"33",background:ins.bg,
                   color:ins.color,fontSize:11,fontWeight:600,cursor:"pointer",
                   display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap",
                   transition:"all .15s",
@@ -2653,7 +2655,7 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
                 border:m.role==="assistant"?"1px solid #E8EDF3":"none",
                 boxShadow:m.role==="assistant"?"0 1px 8px rgba(0,0,0,.05)":"0 1px 6px rgba(11,31,58,.15)",
               }}>
-                {m.role==="assistant"?fmt(m.content):m.content}
+                {m.role==="assistant"?fmtMsg(m.content):m.content}
                 {m.role==="assistant"&&i===messages.length-1&&usedProvider&&(
                   <div style={{marginTop:6,paddingTop:6,borderTop:"1px solid #F0F2F5",fontSize:9,color:"#A0AEC0"}}>
                     {aiFullName} · {usedProvider.name}
@@ -2668,7 +2670,7 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
               <div style={{width:30,height:30,borderRadius:8,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:800,color:"#0B1F3A"}}>✦</div>
               <div style={{background:"#fff",border:"1px solid #E8EDF3",borderRadius:"12px 12px 12px 3px",padding:"10px 14px",display:"flex",gap:4,alignItems:"center"}}>
                 {[0,.15,.3].map((d,i)=>(
-                  <div key={i} style={{width:6,height:6,borderRadius:"50%",background:"#C9A84C",animationName:"aipulse",animationDuration:"1.2s",animationDelay:`${d}s`,animationIterationCount:"infinite"}}/>
+                  <div key={i} style={{width:6,height:6,borderRadius:"50%",background:"#C9A84C",animationName:"aipulse",animationDuration:"1.2s",animationDelay:d+"s",animationIterationCount:"infinite"}}/>
                 ))}
                 <span style={{fontSize:10,color:"#A0AEC0",marginLeft:5}}>{aiFullName} is thinking…</span>
               </div>
@@ -2679,7 +2681,7 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
             <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(201,168,76,.3)"}}>
               <div style={{fontSize:12,fontWeight:700,color:"#C9A84C",marginBottom:8}}>✦ Lead detected — add to CRM?</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
-                {[["Name",suggestion.name],["Phone",suggestion.phone],["Email",suggestion.email||"—"],["Budget",suggestion.budget?`AED ${Number(suggestion.budget).toLocaleString()}`:"—"]].map(([l,v])=>(
+                {[["Name",suggestion.name],["Phone",suggestion.phone],["Email",suggestion.email||"—"],["Budget",suggestion.budget?"AED "+Number(suggestion.budget).toLocaleString():"—"]].map(([l,v])=>(
                   <div key={l} style={{background:"rgba(255,255,255,.07)",borderRadius:6,padding:"6px 8px"}}>
                     <div style={{fontSize:8,color:"rgba(201,168,76,.6)",textTransform:"uppercase",marginBottom:1}}>{l}</div>
                     <div style={{fontSize:11,fontWeight:600,color:"#fff"}}>{v}</div>
@@ -2691,7 +2693,7 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
                   try{
                     const{error}=await supabase.from("leads").insert({name:suggestion.name,phone:suggestion.phone||null,email:suggestion.email||null,budget:suggestion.budget||0,source:"AI Import",stage:"New Lead",notes:suggestion.notes||null,assigned_to:currentUser.id,company_id:currentUser.company_id||null,stage_updated_at:new Date().toISOString(),created_by:currentUser.id});
                     if(error)throw error;
-                    showToast(`${suggestion.name} added`,"success");setSuggestion(null);
+                    showToast(suggestion.name+" added","success");setSuggestion(null);
                   }catch(e){showToast(e.message,"error");}
                 }} style={{flex:1,padding:"7px",borderRadius:7,border:"none",background:"#C9A84C",color:"#0B1F3A",fontSize:11,fontWeight:700,cursor:"pointer"}}>+ Add to CRM</button>
                 <button onClick={()=>setSuggestion(null)} style={{padding:"7px 12px",borderRadius:7,border:"1px solid rgba(255,255,255,.2)",background:"transparent",color:"rgba(255,255,255,.5)",fontSize:11,cursor:"pointer"}}>Dismiss</button>
