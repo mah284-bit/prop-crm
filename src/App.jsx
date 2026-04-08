@@ -2354,7 +2354,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
     const fn = currentUser.full_name.split(" ")[0];
     const avail = units.filter(u=>u.status==="Available").length;
     setMessages([{role:"assistant", content:
-      g+", "+fn+"! I am **"+aiName+"** — your real estate intelligence concierge.
+      g+", "+fn+"! I am **"+aiName+"** - your real estate intelligence concierge.
 
 "+
       "I have live access to **"+leads.length+" leads**, **"+avail+" available units** across **"+projects.length+" projects**.
