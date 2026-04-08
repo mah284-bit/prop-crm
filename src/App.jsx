@@ -1033,11 +1033,10 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   };
 
   const printReceipt=(pay)=>{
-    const _receiptCSS='body{font-family:Arial,sans-serif;max-width:420px;margin:40px auto}.hdr{background:#0B1F3A;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center}.logo{font-size:20px;font-weight:700;color:#C9A84C}.bdy{border:1px solid #E2E8F0;border-top:none;padding:20px;border-radius:0 0 8px 8px}.amt{font-size:30px;font-weight:700;color:#0B1F3A;text-align:center;padding:16px 0;border-bottom:2px solid #0B1F3A;margin-bottom:16px}.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F0F2F5;font-size:13px}.stamp{border:3px solid #1A7F5A;color:#1A7F5A;padding:6px 16px;border-radius:6px;font-size:14px;font-weight:700;display:inline-block}';
-    const _receiptRows=[["Client",lead.name],["Opportunity",opp.title||unit?.unit_ref||"—"],["Milestone",pay.milestone],["Type",pay.payment_type],pay.cheque_number&&["Cheque No.",pay.cheque_number],pay.bank_name&&["Bank",pay.bank_name],["Status",pay.status],["Date",new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})]].filter(Boolean).map(([l,v])=>'<div class="row"><span style="color:#718096">'+l+'</span><span style="font-weight:600">'+v+'</span></div>').join("");
-    const _receiptImg=pay.cheque_file_url?"<img src='"+pay.cheque_file_url+"' style='width:100%;margin-top:12px;border-radius:6px;border:1px solid #E2E8F0'/>":"";
-    const _receiptStamp=pay.status==="Cleared"?"✓ CLEARED":"✓ RECEIVED";
-    const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+_receiptCSS+'</style></head><body>'+'<div class="hdr"><div class="logo">◆ PropCRM</div><div style="font-size:13px;opacity:.7">Payment Receipt</div></div>'+'<div class="bdy"><div class="amt">AED '+Number(pay.amount).toLocaleString()+'</div>'+_receiptRows+_receiptImg+'<div style="text-align:center"><div class="stamp">'+_receiptStamp+'</div></div></div></body></html>';
+    const _rCSS='body{font-family:Arial,sans-serif;max-width:420px;margin:40px auto}.hdr{background:#0B1F3A;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center}.logo{font-size:20px;font-weight:700;color:#C9A84C}.bdy{border:1px solid #E2E8F0;border-top:none;padding:20px;border-radius:0 0 8px 8px}.amt{font-size:30px;font-weight:700;color:#0B1F3A;text-align:center;padding:16px 0;border-bottom:2px solid #0B1F3A;margin-bottom:16px}.row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F0F2F5;font-size:13px}.stamp{border:3px solid #1A7F5A;color:#1A7F5A;padding:6px 16px;border-radius:6px;font-size:14px;font-weight:700;display:inline-block}';
+    const _rRows=[["Client",lead.name],["Opportunity",opp.title||unit?.unit_ref||"—"],["Milestone",pay.milestone],["Type",pay.payment_type],pay.cheque_number&&["Cheque No.",pay.cheque_number],pay.bank_name&&["Bank",pay.bank_name],["Status",pay.status],["Date",new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})]].filter(Boolean).map(([l,v])=>'<div class="row"><span style="color:#718096">'+l+'</span><span style="font-weight:600">'+v+'</span></div>').join("");
+    const _rImg=pay.cheque_file_url?"<img src='"+pay.cheque_file_url+"' style='width:100%;margin-top:12px;border-radius:6px;border:1px solid #E2E8F0'/>":"";
+    const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+_rCSS+'</style></head><body><div class="hdr"><div class="logo">◆ PropCRM</div><div style="font-size:13px;opacity:.7">Payment Receipt</div></div><div class="bdy"><div class="amt">AED '+Number(pay.amount).toLocaleString()+'</div>'+_rRows+_rImg+'<div style="text-align:center"><div class="stamp">'+( pay.status==="Cleared"?"✓ CLEARED":"✓ RECEIVED")+'</div></div></div></body></html>';
     const w=window.open("","_blank","width=500,height=700");
     if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
   };
@@ -3409,7 +3408,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
           max_tokens:1500,
           messages:[{role:"user",content:[
             ...(isImage?[{type:"image",source:{type:"base64",media_type:file.type,data:b64}}]:[{type:"document",source:{type:"base64",media_type:"application/pdf",data:b64}}]),
-            {type:"text",text:"Extract property/unit details. Return ONLY valid JSON with fields: unit_ref, sub_type, size_sqft, bedrooms, bathrooms, floor_number, view, asking_price, annual_rent, booking_pct, during_construction_pct, on_handover_pct, developer, project_name, handover_date, furnishing, notes. Use null for unknown."}
+            {type:"text",text:"Extract property/unit details. Return ONLY valid JSON with fields: unit_ref, sub_type, size_sqft, bedrooms, bathrooms, floor_number, view, asking_price, annual_rent, booking_pct, during_construction_pct, on_handover_pct, developer, project_name, handover_date, furnishing, notes. Null for unknown."}
           ]}]
         })
       });
@@ -4985,42 +4984,34 @@ function buildContext(leads,units,projects,salePricing,leasePricing,activities,c
   active.forEach(l=>{pipeline[l.stage]=(pipeline[l.stage]||0)+1;});
   const avail=units.filter(u=>u.status==="Available");
 
-  const _aiParts = [
-    "You are an AI assistant for PropCRM, a real estate CRM based in Dubai, UAE.",
-    "Logged-in user: "+currentUser.full_name+" (role: "+currentUser.role+")",
-    "Today: "+now.toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}),
-    "",
-    "=== LIVE DATA ===",
-    "LEADS: "+leads.length+" total · "+active.length+" active · Pipeline: "+Object.entries(pipeline).map(([s,c])=>s+":"+c).join(", "),
-    "WON: "+leads.filter(l=>l.stage==="Closed Won").length+" · LOST: "+leads.filter(l=>l.stage==="Closed Lost").length,
-    "",
-    "RECENT LEADS (last 10):",
-    ...leads.slice(0,10).map(l=>"• "+l.name+" | "+l.stage+" | AED "+Number(l.budget||0).toLocaleString()+" | "+(l.nationality||"—")+" | "+(l.source||"—")+" | "+(l.phone||"—")+" | "+(l.email||"—")),
-    "",
-    "PROPERTIES: "+units.length+" units across "+projects.length+" projects · "+avail.length+" available",
-    "PROJECTS: "+projects.map(p=>p.name+" ("+( p.developer||"—")+", "+p.status+")").join(" · "),
-    "",
-    "AVAILABLE UNITS (first 20):",
-    ...avail.slice(0,20).map(u=>{
-      const p=projects.find(x=>x.id===u.project_id);
-      const sp=salePricing.find(s=>s.unit_id===u.id);
-      const lp=leasePricing.find(l=>l.unit_id===u.id);
-      const price=sp?.asking_price?"AED "+Number(sp.asking_price).toLocaleString():lp?.annual_rent?"AED "+Number(lp.annual_rent).toLocaleString()+"/yr":"TBD";
-      return "• #"+u.unit_ref+" | "+u.sub_type+" | "+(u.bedrooms===0?"Studio":(u.unit_type==="Residential"?u.bedrooms+"BR":""))+" | "+(u.size_sqft?Number(u.size_sqft).toLocaleString()+"sqft":"")+" | "+(u.view||"")+" | "+price+" | "+(p?.name||"—");
-    }),
-    "",
-    "RECENT ACTIVITY: "+activities.slice(0,5).map(a=>a.type+" with "+a.lead_name+" by "+a.user_name).join(" · "),
-    "",
-    "=== YOUR JOB ===",
-    "1. Answer questions about properties, leads, pipeline using the live data above",
-    "2. Draft WhatsApp/email messages (professional Dubai real estate tone, WhatsApp <150 words)",
-    "3. Analyse pipeline and suggest next actions",
-    "4. Qualify leads — check stage gates: Contacted needs phone+email; Site Visit needs meeting; Proposal needs unit+budget discussed",
-    "5. Auto-extract lead details from descriptions — when asked to auto-fill a lead, extract: name, phone, email, budget, source, property type",
-    "",
-    "Respond concisely. Use bullet points for lists. Match the user's language."
-  ];
-  return _aiParts.join("\n");
+  const _p=[];
+  _p.push("You are an AI assistant for PropCRM, a real estate CRM based in Dubai, UAE.");
+  _p.push("Logged-in user: "+currentUser.full_name+" (role: "+currentUser.role+")");
+  _p.push("Today: "+now.toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"}));
+  _p.push("");
+  _p.push("LEADS: "+leads.length+" total · "+active.length+" active");
+  _p.push("Pipeline: "+Object.entries(pipeline).map(([s,c])=>s+":"+c).join(", "));
+  _p.push("WON: "+leads.filter(l=>l.stage==="Closed Won").length+" · LOST: "+leads.filter(l=>l.stage==="Closed Lost").length);
+  _p.push("");
+  _p.push("RECENT LEADS:");
+  leads.slice(0,10).forEach(l=>_p.push("• "+l.name+" | "+l.stage+" | AED "+Number(l.budget||0).toLocaleString()+" | "+(l.nationality||"—")+" | "+(l.source||"—")+" | "+(l.phone||"—")+" | "+(l.email||"—")));
+  _p.push("");
+  _p.push("PROPERTIES: "+units.length+" units · "+projects.length+" projects · "+avail.length+" available");
+  _p.push("PROJECTS: "+projects.map(p=>p.name+" ("+( p.developer||"—")+", "+p.status+")").join(" · "));
+  _p.push("");
+  _p.push("AVAILABLE UNITS (first 20):");
+  avail.slice(0,20).forEach(u=>{
+    const p=projects.find(x=>x.id===u.project_id);
+    const sp=salePricing.find(s=>s.unit_id===u.id);
+    const lp=leasePricing.find(l=>l.unit_id===u.id);
+    const price=sp?.asking_price?"AED "+Number(sp.asking_price).toLocaleString():lp?.annual_rent?"AED "+Number(lp.annual_rent).toLocaleString()+"/yr":"TBD";
+    _p.push("• #"+u.unit_ref+" | "+u.sub_type+" | "+(u.bedrooms===0?"Studio":(u.unit_type==="Residential"?u.bedrooms+"BR":""))+" | "+(u.size_sqft?Number(u.size_sqft).toLocaleString()+"sqft":"")+" | "+price+" | "+(p?.name||"—"));
+  });
+  _p.push("");
+  _p.push("RECENT ACTIVITY: "+activities.slice(0,5).map(a=>a.type+" with "+a.lead_name+" by "+a.user_name).join(" · "));
+  _p.push("");
+  _p.push("Respond concisely. Use bullet points for lists. Match the user's language.");
+  return _p.join("\n");
 }
 
 // ── AI Assistant component ────────────────────────────────────────
@@ -5048,11 +5039,9 @@ function exportToExcel(rows, headers, filename) {
 // ── PDF export helper ─────────────────────────────────────────────
 function exportToPDF(title, subtitle, headers, rows, filename) {
   const colW = Math.floor(90/headers.length);
-  const _pdfCSS='*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1a2535;font-size:11px}.header{background:#0B1F3A;color:#fff;padding:20px 24px;margin-bottom:0}.title{font-size:20px;font-weight:700;color:#C9A84C;margin-bottom:4px}.subtitle{font-size:12px;color:rgba(255,255,255,.6)}.meta{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px}table{width:100%;border-collapse:collapse;margin:0}th{background:#0B1F3A;color:#C9A84C;padding:7px 8px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.5px}td{padding:6px 8px;border-bottom:1px solid #F0F2F5;font-size:10px;vertical-align:top}tr:nth-child(even) td{background:#FAFBFC}.footer{margin-top:16px;text-align:center;font-size:9px;color:#A0AEC0}@media print{@page{margin:12mm}}';
-  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+_pdfCSS+'</style></head><body>'
-    +'<div class="header"><div class="title">◆ PropCRM — '+title+'</div>'
-    +'<div class="subtitle">'+subtitle+'</div>'
-    +'<div class="meta">Generated: '+new Date().toLocaleString("en-AE",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})+'</div></div>'
+  const _pCSS='*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;color:#1a2535;font-size:11px}.header{background:#0B1F3A;color:#fff;padding:20px 24px}.title{font-size:20px;font-weight:700;color:#C9A84C;margin-bottom:4px}.subtitle{font-size:12px;color:rgba(255,255,255,.6)}.meta{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px}table{width:100%;border-collapse:collapse}th{background:#0B1F3A;color:#C9A84C;padding:7px 8px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.5px}td{padding:6px 8px;border-bottom:1px solid #F0F2F5;font-size:10px;vertical-align:top}tr:nth-child(even) td{background:#FAFBFC}.footer{margin-top:16px;text-align:center;font-size:9px;color:#A0AEC0}@media print{@page{margin:12mm}}';
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+_pCSS+'</style></head><body>'
+    +'<div class="header"><div class="title">◆ PropCRM — '+title+'</div><div class="subtitle">'+subtitle+'</div><div class="meta">Generated: '+new Date().toLocaleString("en-AE",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})+'</div></div>'
     +'<table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr></thead>'
     +'<tbody>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+(c===null||c===undefined?'—':c)+'</td>').join('')+'</tr>').join('')+'</tbody></table>'
     +'<div class="footer">PropCRM · Confidential · '+rows.length+' records</div>'
@@ -8027,11 +8016,11 @@ export default function App(){
   const allowedTabs = currentApp==="leasing" ? MODE_TABS.leasing : (MODE_TABS[cfg.mode]||MODE_TABS.both);
   const visibleTabs=TABS.filter(t=>t.app===currentApp&&t.roles.includes(userRole)&&allowedTabs.includes(t.id));
 
-  const _coStoredId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
-  const _coCachedCo = (()=>{ try{ return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null"); }catch{return null;} })();
-  const _co = companies.find(c=>c.id===_coStoredId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || _coCachedCo || null;
-  const _coIsSA = currentUser?.role==="super_admin";
-  const _coBizLabel = _co?.business_type==="both"?"Sales & Leasing":_co?.business_type==="sales"?"Sales Only":_co?.business_type==="leasing"?"Leasing Only":_co?.business_type||"";
+  const _coStoredId=activeCompanyId||localStorage.getItem("propccrm_company_id")||currentUser?.company_id;
+  const _coCachedCo=(()=>{try{return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null");}catch{return null;}})();
+  const _co=companies.find(c=>c.id===_coStoredId)||companies.find(c=>c.id===currentUser?.company_id)||companies[0]||_coCachedCo||null;
+  const _coIsSA=currentUser?.role==="super_admin";
+  const _coBizLabel=_co?.business_type==="both"?"Sales & Leasing":_co?.business_type==="sales"?"Sales Only":_co?.business_type==="leasing"?"Leasing Only":_co?.business_type||"";
 
   return (
     <>
@@ -8043,25 +8032,32 @@ export default function App(){
         <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:52,gap:10}}>
 
           {/* LEFT: Company Logo + Name — hero position */}
+          {(()=>{
+            const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
+            const cachedCo = (()=>{ try{ return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null"); }catch{return null;} })();
+            const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || cachedCo || null;
+            const isSA = currentUser?.role==="super_admin";
+            const bizLabel = co?.business_type==="both"?"Sales & Leasing":co?.business_type==="sales"?"Sales Only":co?.business_type==="leasing"?"Leasing Only":co?.business_type||"";
 
+            return (
               <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,minWidth:0}}>
                 {/* Logo */}
-                {_co?.logo_url
-                  ? <img src={_co.logo_url} alt={_co?.name} style={{width:36,height:36,borderRadius:8,objectFit:"cover",border:"2px solid rgba(201,168,76,.5)",flexShrink:0}}/>
+                {co?.logo_url
+                  ? <img src={co.logo_url} alt={co?.name} style={{width:36,height:36,borderRadius:8,objectFit:"cover",border:"2px solid rgba(201,168,76,.5)",flexShrink:0}}/>
                   : <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16,color:"#0B1F3A",flexShrink:0,border:"2px solid rgba(201,168,76,.4)"}}>
-                      {_co?.name?.charAt(0)||"◆"}
+                      {co?.name?.charAt(0)||"◆"}
                     </div>
                 }
                 {/* Company name + type */}
                 <div style={{display:"flex",flexDirection:"column",minWidth:0}}>
                   <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:180,lineHeight:1.2}}>
-                    {_co?.name||"PropCRM"}
+                    {co?.name||"PropCRM"}
                   </span>
-                  {_coBizLabel&&<span style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:".6px",lineHeight:1.3}}>{bizLabel}</span>}
+                  {bizLabel&&<span style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:".6px",lineHeight:1.3}}>{bizLabel}</span>}
                 </div>
                 {/* Super admin company switcher */}
-                {_coIsSA&&companies.length>1&&(
-                  <select value={_coStoredId||""} onChange={e=>{
+                {isSA&&companies.length>1&&(
+                  <select value={storedId||""} onChange={e=>{
                     setActiveCompanyId(e.target.value);
                     localStorage.setItem("propccrm_company_id",e.target.value);
                     window.location.reload();
@@ -8074,7 +8070,8 @@ export default function App(){
                   </select>
                 )}
               </div>
-
+            );
+          })()}
 
           {/* CENTRE: CRM Switcher */}
           {canSwitch&&(
