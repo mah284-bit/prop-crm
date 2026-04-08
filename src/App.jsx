@@ -1129,8 +1129,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid #E2E8F0"}}>
         {[
           {id:"details",  label:"Details",   locked:false},
-          {id:"activities",label:"Activities${activities.length>0?" (${activities.length})":""}",locked:false},
-          {id:"payments", label:"Payments${payments.length>0?" (${payments.length})":""}", locked:!isWon, lockMsg:"Unlocks at Closed Won"},
+          {id:"activities",label:"Activities"+(activities.length>0?" ("+activities.length+")":""),locked:false},
+          {id:"payments", label:"Payments"+(payments.length>0?" ("+payments.length+")":""), locked:!isWon, lockMsg:"Unlocks at Closed Won"},
           {id:"contract", label:"Contract"+(contract?" ✓":"")+"",  locked:!isWon, lockMsg:"Unlocks at Closed Won"},
         ].map(({id,label,locked,lockMsg})=>(
           <button key={id} onClick={()=>{if(locked){showToast(""+(lockMsg)+"","error");return;}setActiveTab(id);}}
@@ -8231,6 +8231,586 @@ export default function App(){
       {/* Content */}
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"0 1rem 1rem",WebkitOverflowScrolling:"touch",minHeight:0}}>
         {(dataLoading&&leads.length===0&&aiUnits.length===0)?(<Spinner msg="Loading your data…"/>):(<>
+
+          {/* ── Sales CRM ─────────────────────────────────────── */}
+          {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={setTab}/>}
+          {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
+          {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
+          {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
+          {tab==="pipeline"    &&<Pipeline leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} users={users} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
+          {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
+          {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
+          {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={handleSwitchCompany} activeCompanyId={activeCompanyId}/>}
+          {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
+          {tab==="permissions" &&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
+          {tab==="group_view"  &&<GroupConsolidatedView/>}
+
+          {/* ── Leasing CRM ───────────────────────────────────── */}
+          {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={setTab} followupAlerts={followupAlerts} key="l_dash"/>}
+          {tab==="l_leads"     &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
+          {tab==="l_pipeline"  &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users} defaultView="pipeline"/>}
+          {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
+          {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
+          {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData}/>}
+          {tab==="l_ai"        &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
+          {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leasingData={leasingData} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
+          {tab==="l_companies" &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={handleSwitchCompanyLeasing} activeCompanyId={activeCompanyId}/>}
+          {tab==="l_users"     &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
+          {tab==="l_permissions"&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
+
+          {tab==="l_group_view" &&<GroupConsolidatedView/>}
+        </>)}
+      </div>
+    </div>
+    {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+
+
+    </>
+  );
+}body:"Dear "+(lead.name)+",\n\nPlease find your personalised property proposal.\n\nProperty: "+(unit.unit_ref)+" — "+(unit.sub_type)+(proj?" ("+proj.name+")":"")+"\n"+(sp?"Price: AED "+Number(sp.asking_price).toLocaleString()+"\n":"")+"\nKindly review and let us know your preferred next step.\n\nBest regards,\n"+(currentUser.full_name)});port { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+/* ═══════════════════════════════════════════════════════════════
+   PROPCCRM v3.0
+   · Property Master DB: Project → Category → Building → Unit
+   · Lead stage gates with required fields
+   · Stage reversal with reason
+   · WhatsApp / Email / Meeting / Follow-up comms
+   · Role-based permissions throughout
+═══════════════════════════════════════════════════════════════ */
+const SUPABASE_URL  = "https://ysceukgpimzfqixtnbnp.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzY2V1a2dwaW16ZnFpeHRuYm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNDI5OTQsImV4cCI6MjA4OTkxODk5NH0.WZSyGeOEbiRo1wt13syheTOyiAToMWXInxIaBgaqq8k";
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ─── STYLES ───────────────────────────────────────────────────
+const GLOBAL_CSS = [
+  "@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');",
+  "*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}",
+  "body{font-family:'DM Sans',sans-serif;background:#F0F2F5;color:#1a2535}",
+  "::-webkit-scrollbar{width:5px;height:5px}",
+  "::-webkit-scrollbar-thumb{background:#C9A84C55;border-radius:10px}",
+  "input,select,textarea{font-family:'DM Sans',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:8px 12px;width:100%;font-size:13px;color:#1a2535;background:#fff;transition:border-color 0.15s}",
+  "input:focus,select:focus,textarea:focus{border-color:#C9A84C}",
+  "input.error,select.error{border-color:#B83232!important;background:#FFF8F8}",
+  "textarea{resize:vertical}",
+  "button{cursor:pointer;font-family:'DM Sans',sans-serif}",
+  ".fade-in{animation:fadeIn 0.25s ease}",
+  "@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
+  ".slide-in{animation:slideIn 0.2s ease}",
+  "@keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}",
+  ".ch{transition:box-shadow 0.18s,transform 0.18s}",
+  ".ch:hover{box-shadow:0 4px 20px #C9A84C22;transform:translateY(-1px)}",
+  ".dcard{transition:box-shadow 0.15s;cursor:grab}",
+  ".dcard:hover{box-shadow:0 3px 14px #0B1F3A22}",
+  "@keyframes spin{to{transform:rotate(360deg)}}",
+  "@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}",
+  "@keyframes aipulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}",
+  "@keyframes orbpulse{0%,100%{box-shadow:0 4px 20px rgba(201,168,76,.4)}50%{box-shadow:0 4px 32px rgba(201,168,76,.8),0 0 0 8px rgba(201,168,76,.15)}}",
+  "@keyframes slideInRight{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}",
+  "@keyframes fadeIn2{from{opacity:0}to{opacity:1}}",
+  "html{-webkit-text-size-adjust:100%;touch-action:manipulation}",
+  "body{overflow-x:hidden}",
+  "@media(max-width:768px){.tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important}.tab-bar::-webkit-scrollbar{display:none}.tab-bar-wrap{position:relative}.tab-bar-wrap::before,.tab-bar-wrap::after{content:'';position:absolute;top:0;bottom:0;width:32px;pointer-events:none;z-index:10}.tab-bar-wrap::before{left:0;background:linear-gradient(to right,#0B1F3A,transparent)}.tab-bar-wrap::after{right:0;background:linear-gradient(to left,#0B1F3A,transparent)}.filter-sidebar{display:none!important}.filter-sidebar.open{display:flex!important}.table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch}.mob-stack{grid-template-columns:1fr!important}.hide-mobile{display:none!important}button{min-height:38px}}",
+  "@media(max-width:480px){.stat-grid{grid-template-columns:1fr 1fr!important}}"
+].join("\n");
+const GlobalStyle = () => (
+  <style dangerouslySetInnerHTML={{__html: GLOBAL_CSS}}/>
+);
+// ─── CONSTANTS ────────────────────────────────────────────────
+const STAGES      = ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
+const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
+const UNIT_TYPES  = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
+const SOURCES     = ["Referral","Website","Portal","Cold Call","Event","Social Media","WhatsApp","Walk-in"];
+const ACT_TYPES   = ["Call","Email","Meeting","Visit","WhatsApp","Note"];
+const MANAGER_DISCOUNT_LIMIT = 5;
+const CAN_DELETE_LEADS = ["admin","manager"];
+const STAGE_RULES = {
+  "Contacted":     ["phone","email"],
+  "Site Visit":    ["meeting_scheduled"],
+  "Proposal Sent": ["unit_id","budget_confirmed"],
+  "Negotiation":   ["proposal_notes"],
+  "Closed Won":    ["final_price","payment_plan_agreed"],
+};
+const DISC_TYPES = [
+  { key:"sale_price",   label:"Sale Price Reduction", icon:"🏷" },
+  { key:"rent",         label:"Rent Reduction",        icon:"🔑" },
+  { key:"payment_plan", label:"Payment Plan Change",   icon:"📅" },
+  { key:"agency_fee",   label:"Agency Fee Waiver",     icon:"🤝" },
+];
+const ROLES = ["super_admin","admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"];
+
+// ─── APP CONFIG ────────────────────────────────────────────────────
+// Stored in localStorage. Set once by admin. Controls which modules are visible.
+const getAppConfig = () => {
+  try { return JSON.parse(localStorage.getItem("propccrm_config")||"null"); } catch { return null; }
+};
+const saveAppConfig = (cfg) => {
+  localStorage.setItem("propccrm_config", JSON.stringify(cfg));
+};
+// Which tabs each mode shows (enforced on top of role-based visibility)
+const MODE_TABS = {
+  sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","reports","pay_plans","companies","users","permissions","permsets","group_view"],
+  leasing: ["l_dashboard","l_leads","l_pipeline","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
+  both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","reports","pay_plans","l_reports","companies","users","permissions"],
+};
+// Which roles each mode makes available
+const MODE_ROLES = {
+  sales:   ["admin","sales_manager","sales_agent","viewer"],
+  leasing: ["admin","leasing_manager","leasing_agent","viewer"],
+  both:    ["admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"],
+};
+const VIEWS       = ["Sea View","Pool View","Garden View","City View","Golf View","Park View","Community View","Burj View","Creek View","No View"];
+const MEET_TYPES  = ["Call","Meeting","Site Visit","Video Call","Presentation"];
+const FOLLOW_TYPES= ["Call","WhatsApp","Email","Meeting"];
+
+
+// ─── MASTER DATA LISTS ─────────────────────────────────────────
+const MASTER = {
+  unit_type:    ["Residential","Commercial"],
+  sub_type_res: ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed+","Penthouse","Duplex","Triplex","Villa","Townhouse","Loft"],
+  sub_type_com: ["Office","Retail / Shop","Restaurant","Warehouse","Labour Camp","Hotel Apartment","Showroom","Medical Centre"],
+  sub_type_all: ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed+","Penthouse","Duplex","Triplex","Villa","Townhouse","Loft","Office","Retail / Shop","Restaurant","Warehouse","Labour Camp","Hotel Apartment","Showroom"],
+  purpose:      ["Sale","Lease","Both"],
+  status:       ["Available","Reserved","Under Offer","Sold","Leased","Blocked","Cancelled"],
+  view:         ["Sea View","Pool View","Garden View","City View","Golf View","Park View","Community View","Burj View","Creek View","Lake View","Boulevard View","No View"],
+  furnishing:   ["Unfurnished","Semi-Furnished","Fully Furnished","Serviced"],
+  condition:    ["Off-plan","Shell & Core","Ready","Renovated","Brand New"],
+  facing:       ["North","South","East","West","North-East","North-West","South-East","South-West"],
+  nationality:  ["Emirati","Saudi","Egyptian","Indian","Pakistani","British","Russian","Chinese","American","European","Other"],
+  id_type:      ["Emirates ID","Passport","GCC ID","Residence Visa"],
+  tenant_type:  ["Individual","Corporate"],
+  cheques:      ["1","2","4","6","12"],
+  payment_method: ["Cash","Cheque","Bank Transfer","Card","Crypto"],
+  lead_source:  ["Referral","Website","Property Finder","Bayut","Dubizzle","Cold Call","Event","Social Media","WhatsApp","Walk-in","Agency","Developer","Other"],
+  company_type: ["Brokerage","Developer","Real Estate Agent","Property Management","Off-Plan Specialist","Leasing Company","RERA Registered Agency","Investment Company","Other"],
+};
+
+const WA_TEMPLATES= [
+  { id:"intro",    label:"Introduction",      text:"Hello {name}, I'm {agent} from PropCRM. I wanted to reach out regarding your interest in {type} properties in Dubai. Could we schedule a brief call to discuss your requirements?" },
+  { id:"followup", label:"Follow-up",         text:"Hello {name}, I hope you're well. I wanted to follow up on our previous conversation about the properties we discussed. Do you have any questions or would you like to arrange a viewing?" },
+  { id:"sitevisit",label:"Site Visit Invite", text:"Hello {name}, I'd love to invite you for a site visit to {project}. It's a great opportunity to see the development in person. Would {date} work for you?" },
+  { id:"proposal", label:"Proposal Ready",    text:"Hello {name}, your personalised property proposal is ready. I'll be sending the details shortly. Please let me know if you'd like to discuss anything." },
+  { id:"noresponse",label:"No Response",      text:"Hello {name}, I've tried reaching you a couple of times. I understand you may be busy — whenever you're ready to discuss your property needs, I'm here to help." },
+  { id:"closing",  label:"Closing",           text:"Hello {name}, I wanted to touch base regarding {property}. We have a few serious buyers interested. I wouldn't want you to miss out. Shall we finalise the details?" },
+];
+
+// Stage gate requirements — what must exist before moving to next stage
+const STAGE_GATES = {
+  "Contacted":     { required: ["phone","email"],                    label: "Phone and email required",          fields: ["phone","email"] },
+  "Site Visit":    { required: ["meeting_scheduled"],                label: "A meeting must be scheduled first", fields: ["meeting_scheduled"] },
+  "Proposal Sent": { required: ["unit_id","budget"],                 label: "Link a unit and confirm budget",    fields: ["unit_id","budget"] },
+  "Negotiation":   { required: ["proposal_notes"],                   label: "Proposal notes required",           fields: ["proposal_notes"] },
+  "Closed Won":    { required: ["final_price","payment_plan"],       label: "Final price and payment plan required", fields: ["final_price","payment_plan"] },
+  "Closed Lost":   { required: ["notes"],                            label: "Reason for loss required (notes)",  fields: ["notes"] },
+};
+
+const STAGE_META = {
+  "New Lead":      { c:"#1A5FA8", bg:"#E6EFF9", order:0 },
+  "Contacted":     { c:"#5B3FAA", bg:"#EEE8F9", order:1 },
+  "Site Visit":    { c:"#A06810", bg:"#FDF3DC", order:2 },
+  "Proposal Sent": { c:"#7A3FAA", bg:"#F3E8F9", order:3 },
+  "Negotiation":   { c:"#B85C10", bg:"#FDF0E6", order:4 },
+  "Closed Won":    { c:"#1A7F5A", bg:"#E6F4EE", order:5 },
+  "Closed Lost":   { c:"#B83232", bg:"#FAEAEA", order:6 },
+};
+const TYPE_META = {
+  Residential:{c:"#1A7F5A",bg:"#E6F4EE"}, Commercial:{c:"#1A5FA8",bg:"#E6EFF9"},
+  Luxury:{c:"#8A6200",bg:"#FDF3DC"},      "Off-plan":{c:"#5B3FAA",bg:"#EEE8F9"},
+  Villa:{c:"#0F6E56",bg:"#D4F1E8"},       Flat:{c:"#1D6FA8",bg:"#D4EAF7"},
+  Building:{c:"#5A3D8A",bg:"#E8DFFA"},
+};
+const ACT_META = {
+  Call:{icon:"📞",c:"#1A5FA8",bg:"#E6EFF9"}, Email:{icon:"✉",c:"#5B3FAA",bg:"#EEE8F9"},
+  Meeting:{icon:"🤝",c:"#1A7F5A",bg:"#E6F4EE"}, Visit:{icon:"🏠",c:"#A06810",bg:"#FDF3DC"},
+  WhatsApp:{icon:"💬",c:"#1A7F5A",bg:"#E6F4EE"}, Note:{icon:"📝",c:"#718096",bg:"#F0F2F5"},
+};
+const ROLE_META = {
+  super_admin:    {label:"Super Admin",    color:"#B83232",bg:"#FAEAEA",desc:"All companies · Full access"},
+  admin:          {label:"Admin",          color:"#8A6200",bg:"#FDF3DC",desc:"Full access — all modules"},
+  sales_manager:  {label:"Sales Manager",  color:"#1A5FA8",bg:"#E6EFF9",desc:"All sales leads · approve discounts ≤5%"},
+  sales_agent:    {label:"Sales Agent",    color:"#1A7F5A",bg:"#E6F4EE",desc:"Own sales leads · request discounts"},
+  leasing_manager:{label:"Leasing Mgr",   color:"#5B3FAA",bg:"#EEE8F9",desc:"All leases · approve rent reductions ≤5%"},
+  leasing_agent:  {label:"Leasing Agent", color:"#0F6E56",bg:"#D4F1E8",desc:"Own leases · manage tenants & payments"},
+  viewer:         {label:"Viewer",         color:"#718096",bg:"#F0F2F5",desc:"Read-only access"},
+};
+
+// ─── UTILS ────────────────────────────────────────────────────
+const fmtM    = n  => n ? "AED "+(n/1e6).toFixed(2)+"M" : "—";
+const fmtAED  = n  => n ? "AED "+Number(n).toLocaleString("en-AE") : "—";
+const fmtDate = d  => d ? new Date(d).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"}) : "—";
+const fmtDT   = d  => d ? new Date(d).toLocaleString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
+const ini     = n  => (n||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
+const uid     = () => Date.now()+Math.floor(Math.random()*9999);
+const can = (role, action) => ({
+  super_admin:    ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_companies","manage_inventory","reserve_unit"],
+  admin:          ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_inventory","reserve_unit"],
+  sales_manager:  ["read","write","delete","see_all","delete_leads","approve_manager","view_sales","request_discount","manage_inventory","reserve_unit"],
+  sales_agent:    ["read","write","view_sales","request_discount","reserve_unit"],
+  leasing_manager:["read","write","delete","see_all","delete_leads","approve_manager","view_leasing","request_discount","manage_inventory","reserve_unit"],
+  leasing_agent:  ["read","write","view_leasing","reserve_unit"],
+  viewer:         ["read","view_sales","view_leasing"],
+}[role]||[]).includes(action);
+
+// Helper: which department does this role belong to?
+const roleTeam = role => ({
+  super_admin:"both", admin:"both", sales_manager:"sales", sales_agent:"sales",
+  leasing_manager:"leasing", leasing_agent:"leasing", viewer:"both",
+}[role]||"both");
+
+// Permission set aware check — if user has a permission_set, use it; else fall back to role
+const canWithPS = (role, action, permSet=null) => {
+  if (!permSet) return can(role, action);
+  const PS_MAP = {
+    "read":             true,  // always readable
+    "write":            permSet.p_edit_leads||permSet.p_manage_inventory||permSet.p_manage_leasing,
+    "delete":           permSet.p_delete_leads,
+    "manage_users":     permSet.p_manage_users,
+    "see_all":          permSet.p_view_leads||permSet.p_view_leasing,
+    "delete_leads":     permSet.p_delete_leads,
+    "approve_all":      permSet.p_approve_discount,
+    "approve_manager":  permSet.p_approve_discount,
+    "view_sales":       permSet.p_view_leads,
+    "view_leasing":     permSet.p_view_leasing,
+    "request_discount": permSet.p_request_discount,
+    "manage_companies": false,
+  };
+  return PS_MAP[action] || false;
+};
+
+
+export default function App(){
+  const[checking,  setChecking]  = useState(true);
+  const[currentUser,setCurrentUser]=useState(null);
+  const[leads,     setLeads]     = useState([]);
+  const[properties,setProperties]= useState([]);
+  const[activities,setActivities]= useState([]);
+  const[meetings,  setMeetings]  = useState([]);
+  const[followups, setFollowups] = useState([]);
+  const[discounts, setDiscounts] = useState([]);
+  const[users,     setUsers]     = useState([]);
+  const[aiProjects,setAiProjects]= useState([]);
+  const[aiUnits,   setAiUnits]   = useState([]);
+  const[aiSalePr,  setAiSalePr]  = useState([]);
+  const[aiLeasePr, setAiLeasePr] = useState([]);
+  const[tab,       setTab]       = useState(()=>{
+    const lastApp = localStorage.getItem("propccrm_last_app")||"sales";
+    return lastApp==="leasing"?"l_dashboard":"dashboard";
+  });
+
+  const[activeApp, setActiveApp] = useState(()=>localStorage.getItem("propccrm_last_app")||"sales");
+  const[appConfig, setAppConfig] = useState(()=>getAppConfig());
+  const[dataLoading,setDataLoading]=useState(false);
+  const[companies, setCompanies] = useState([]);
+  const[activeCompanyId,setActiveCompanyId]=useState(()=>localStorage.getItem("propccrm_company_id")||null);
+  // Reload inventory when company changes
+  const switchCompany = async (id) => {
+    // Update profile company_id in Supabase so RLS works correctly
+    await supabase.from("profiles").update({company_id:id}).eq("id",currentUser.id);
+    setActiveCompanyId(id);
+    localStorage.setItem("propccrm_company_id",id);
+    // Update companies list display then reload
+    window.location.reload();
+  };
+  const[leasingData,setLeasingData]=useState({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
+  const[followupAlerts,setFollowupAlerts]=useState({staleLeads:[],overduePayments:[],expiringLeases:[]});
+  const[opps,setOpps]=useState([]);
+  const[toast,setToast]=useState(null);
+  const showToast=(msg,type="success")=>setToast({msg,type});
+
+  const loadAIData=useCallback(async()=>{
+    if(aiProjects.length>0)return;
+    try{
+      const[p,u,sp,lp]=await Promise.all([
+        safe(supabase.from("projects").select("*")),
+        safe(supabase.from("project_units").select("*")),
+        safe(supabase.from("unit_sale_pricing").select("*")),
+        safe(supabase.from("unit_lease_pricing").select("*")),
+      ]);
+      setAiProjects(p.data||[]);setAiUnits(u.data||[]);setAiSalePr(sp.data||[]);setAiLeasePr(lp.data||[]);
+    }catch(e){console.log(e);}
+  },[aiProjects.length]);
+
+  useEffect(()=>{
+    const restore=async()=>{
+      try{
+        const{data:{session}}=await supabase.auth.getSession();
+        if(session?.user){
+          const{data:profile}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
+          if(profile&&profile.is_active)setCurrentUser({...session.user,...profile});
+          else await supabase.auth.signOut();
+        }
+      }catch(e){console.error("Session restore error:",e);}
+      finally{setChecking(false);}
+    };
+    restore();
+    const{data:{subscription}}=supabase.auth.onAuthStateChange(async(event,session)=>{
+      if(event==="SIGNED_OUT"){setCurrentUser(null);setLeads([]);setProperties([]);setActivities([]);setMeetings([]);setFollowups([]);setOpps([]);}
+      if(event==="TOKEN_REFRESHED"&&session?.user){const{data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();if(p)setCurrentUser(u=>({...u,...p}));}
+    });
+    return()=>subscription.unsubscribe();
+  },[]);
+
+  useEffect(()=>{
+    if(!currentUser)return;
+    const safe=async(q)=>{ try{const r=await q;return{data:(r.data||[])};}catch(e){console.warn("Query error:",e);return{data:[]};} };
+    const cid = activeCompanyId || currentUser.company_id || null;
+    const load=async()=>{
+      setDataLoading(true);
+      try{
+        const[l,pr,a,u,d]=await Promise.all([
+          safe(cid
+            ? supabase.from("leads").select("*").eq("company_id",cid).order("created_at",{ascending:false})
+            : supabase.from("leads").select("*").order("created_at",{ascending:false})),
+          safe(supabase.from("properties").select("*").order("created_at",{ascending:false})),
+          safe(supabase.from("activities").select("*").order("created_at",{ascending:false})),
+          safe(cid ? supabase.from("profiles").select("*").eq("company_id",cid).order("full_name") : supabase.from("profiles").select("*").order("full_name")),
+          safe(cid
+            ? supabase.from("discount_requests").select("*").eq("company_id",cid).order("created_at",{ascending:false})
+            : supabase.from("discount_requests").select("*").order("created_at",{ascending:false})),
+        ]);
+        // SECURITY: filter all data by active company client-side
+        const filterByCo = (arr) => cid ? arr.filter(x=>x.company_id===cid) : arr;
+        setLeads(filterByCo(l.data));
+        setProperties(pr.data);
+        setActivities(filterByCo(a.data));
+        setUsers(u.data);
+        setDiscounts(filterByCo(d.data));
+        // Load opportunities globally
+        const oppRes = await safe(supabase.from("opportunities").select("*").order("created_at",{ascending:false}));
+        setOpps(filterByCo(oppRes.data||[]));
+        // Load inventory + leasing data eagerly
+        const[proj,units2,sp2,lp2,lt,ll,lp_,lm]=await Promise.all([
+          safe(cid ? supabase.from("projects").select("*").eq("company_id",cid).order("name") : supabase.from("projects").select("*").order("name")),
+          safe(cid ? supabase.from("project_units").select("*").eq("company_id",cid) : supabase.from("project_units").select("*")),
+          safe(cid ? supabase.from("unit_sale_pricing").select("*").eq("company_id",cid) : supabase.from("unit_sale_pricing").select("*")),
+          safe(cid ? supabase.from("unit_lease_pricing").select("*").eq("company_id",cid) : supabase.from("unit_lease_pricing").select("*")),
+          safe(cid ? supabase.from("tenants").select("*").eq("company_id",cid).order("full_name") : supabase.from("tenants").select("*").order("full_name")),
+          safe(cid ? supabase.from("leases").select("*").eq("company_id",cid).order("end_date") : supabase.from("leases").select("*").order("end_date")),
+          safe(cid ? supabase.from("rent_payments").select("*").order("due_date") : supabase.from("rent_payments").select("*").order("due_date")),
+          safe(cid ? supabase.from("maintenance").select("*").eq("company_id",cid).order("created_at",{ascending:false}) : supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
+        ]);
+        setAiProjects(filterByCo(proj.data));
+        setAiUnits(filterByCo(units2.data));
+        setAiSalePr(filterByCo(sp2.data));
+        setAiLeasePr(filterByCo(lp2.data));
+        const coTenants = filterByCo(lt.data);
+        const coTenantIds = coTenants.map(t=>t.id);
+        const coLeases = (ll.data||[]).filter(l=>
+          (l.company_id&&l.company_id===cid) ||
+          coTenantIds.includes(l.tenant_id)
+        );
+        const coLeaseIds = coLeases.map(l=>l.id);
+        setLeasingData({
+          tenants: coTenants,
+          leases:  coLeases,
+          payments:(lp_.data||[]).filter(p=>coLeaseIds.includes(p.lease_id)||coTenantIds.includes(p.tenant_id)),
+          maintenance:(lm.data||[]).filter(m=>!m.company_id||m.company_id===cid),
+          loaded:true
+        });
+        const today2=new Date();
+        const stale=(l.data||[]).filter(lead=>!["Closed Won","Closed Lost"].includes(lead.stage)&&lead.stage_updated_at&&Math.floor((today2-new Date(lead.stage_updated_at))/(864e5))>=7);
+        const overdueRent=(lp_.data||[]).filter(p=>p.status==="Pending"&&p.due_date&&new Date(p.due_date)<today2);
+        const expiringLeases30=(ll.data||[]).filter(l2=>l2.status==="Active"&&l2.end_date&&Math.ceil((new Date(l2.end_date)-today2)/864e5)<=30&&Math.ceil((new Date(l2.end_date)-today2)/864e5)>0);
+        setFollowupAlerts({staleLeads:stale,overduePayments:overdueRent,expiringLeases:expiringLeases30});
+      }catch(e){console.error("Load error:",e);}
+      setDataLoading(false);
+    };
+    load();
+    const ch=supabase.channel("v3-changes-"+cid)
+      .on("postgres_changes",{event:"*",schema:"public",table:"leads"},p=>{if(p.eventType==="INSERT")setLeads(x=>[p.new,...x]);if(p.eventType==="UPDATE")setLeads(x=>x.map(l=>l.id===p.new.id?p.new:l));if(p.eventType==="DELETE")setLeads(x=>x.filter(l=>l.id!==p.old.id));})
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"activities"},p=>setActivities(x=>[p.new,...x]))
+      .on("postgres_changes",{event:"*",schema:"public",table:"opportunities"},p=>{if(p.eventType==="INSERT")setOpps(x=>[p.new,...x]);if(p.eventType==="UPDATE")setOpps(x=>x.map(o=>o.id===p.new.id?p.new:o));if(p.eventType==="DELETE")setOpps(x=>x.filter(o=>o.id!==p.old.id));})
+      .subscribe();
+    return()=>supabase.removeChannel(ch);
+  },[currentUser, activeCompanyId]);
+
+  const handleLogin=user=>{
+    setCurrentUser(user);
+    localStorage.setItem("propccrm_role", user.role||"viewer");
+    const app = DEFAULT_APP[user.role]||"sales";
+    setActiveApp(app);
+    setActiveApp(app); localStorage.setItem("propccrm_last_app", app);
+    localStorage.setItem("propccrm_last_app", app);
+    // Load companies for all admin/manager roles to show in header
+    if(["super_admin","admin","sales_manager","leasing_manager"].includes(user.role)){
+      supabase.from("companies").select("*").order("name").then(({data})=>{
+        if(data){
+          // Cache the active company for instant display on next load
+          const cid = localStorage.getItem("propccrm_company_id") || user.company_id;
+          const activeCo = data.find(c=>c.id===cid) || data[0];
+          if(activeCo) localStorage.setItem("propccrm_company_cache", JSON.stringify({id:activeCo.id,name:activeCo.name,logo_url:activeCo.logo_url||"",business_type:activeCo.business_type||"",ai_assistant_name:activeCo.ai_assistant_name||""}));
+          setCompanies(data);
+          const saved=localStorage.getItem("propccrm_company_id");
+          const co=saved?data.find(c=>c.id===saved):data[0];
+          if(co){setActiveCompanyId(co.id);localStorage.setItem("propccrm_company_id",co.id);}
+        }
+      });
+    }
+  };
+
+  const handleLogout=async()=>{await supabase.auth.signOut();setCurrentUser(null);};
+
+
+  // Global Ctrl+K handler
+  useEffect(()=>{
+    const handler = e => {
+      if((e.ctrlKey||e.metaKey)&&e.key==="k"){ e.preventDefault(); setAiOpen(o=>!o); }
+    };
+    window.addEventListener("keydown", handler);
+    return ()=>window.removeEventListener("keydown", handler);
+  },[]);
+  const currentApp = activeApp;
+  const userRole   = currentUser?.role||"viewer";
+  const canSwitch  = ["super_admin","admin","sales_manager","leasing_manager"].includes(userRole);
+
+  if(checking) return(
+    <div style={{height:"100dvh",background:"#0B1F3A",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}>
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#fff"}}><span style={{color:"#C9A84C"}}>◆</span> PropCRM</div>
+      <div style={{width:32,height:32,border:"2px solid rgba(255,255,255,.15)",borderTopColor:"#C9A84C",borderRadius:"50%",animation:"spin 1s linear infinite"}}/>
+    </div>
+  );
+
+  if(!currentUser) return <LoginScreen onLogin={handleLogin}/>;
+
+  const cfg=appConfig||{mode:"both"};
+  // Always use currentApp to pick allowed tabs — ignore cfg.mode when app is explicitly selected
+  const allowedTabs = currentApp==="leasing" ? MODE_TABS.leasing : (MODE_TABS[cfg.mode]||MODE_TABS.both);
+  const visibleTabs=TABS.filter(t=>t.app===currentApp&&t.roles.includes(userRole)&&allowedTabs.includes(t.id));
+
+  return (
+    <>
+    <GlobalStyle/>
+    <div style={{display:"flex",flexDirection:"column",height:"100dvh",background:"#F0F2F5",overflow:"hidden"}}>
+
+      {/* Top bar */}
+      <div style={{background:"#0B1F3A",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:52,gap:10}}>
+
+          {/* LEFT: Company Logo + Name — hero position */}
+          {(()=>{
+            const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
+            const cachedCo = (()=>{ try{ return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null"); }catch{return null;} })();
+            const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || cachedCo || null;
+            const isSA = currentUser?.role==="super_admin";
+            const bizLabel = co?.business_type==="both"?"Sales & Leasing":co?.business_type==="sales"?"Sales Only":co?.business_type==="leasing"?"Leasing Only":co?.business_type||"";
+
+            return (
+              <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,minWidth:0}}>
+                {/* Logo */}
+                {co?.logo_url
+                  ? <img src={co.logo_url} alt={co?.name} style={{width:36,height:36,borderRadius:8,objectFit:"cover",border:"2px solid rgba(201,168,76,.5)",flexShrink:0}}/>
+                  : <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16,color:"#0B1F3A",flexShrink:0,border:"2px solid rgba(201,168,76,.4)"}}>
+                      {co?.name?.charAt(0)||"◆"}
+                    </div>
+                }
+                {/* Company name + type */}
+                <div style={{display:"flex",flexDirection:"column",minWidth:0}}>
+                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:180,lineHeight:1.2}}>
+                    {co?.name||"PropCRM"}
+                  </span>
+                  {bizLabel&&<span style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:".6px",lineHeight:1.3}}>{bizLabel}</span>}
+                </div>
+                {/* Super admin company switcher */}
+                {isSA&&companies.length>1&&(
+                  <select value={storedId||""} onChange={e=>{
+                    setActiveCompanyId(e.target.value);
+                    localStorage.setItem("propccrm_company_id",e.target.value);
+                    window.location.reload();
+                  }} style={{
+                    background:"rgba(255,255,255,.1)",border:"1px solid rgba(201,168,76,.35)",
+                    borderRadius:6,padding:"3px 6px",color:"#C9A84C",fontSize:11,fontWeight:600,
+                    cursor:"pointer",maxWidth:130
+                  }}>
+                    {companies.map(c=><option key={c.id} value={c.id} style={{background:"#0B1F3A",color:"#fff"}}>{c.name}</option>)}
+                  </select>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* CENTRE: CRM Switcher */}
+          {canSwitch&&(
+            <div style={{display:"flex",background:"rgba(255,255,255,.07)",borderRadius:10,padding:3,gap:3,flexShrink:0}}>
+              {[
+                {id:"sales",   label:"Sales",   icon:"🏷", accent:"#4A9EE8"},
+                {id:"leasing", label:"Leasing", icon:"🔑", accent:"#9B7FD4"},
+              ].map(a=>{
+                const isActive=currentApp===a.id;
+                return (
+                  <button key={a.id} onClick={()=>{
+                    setActiveApp(a.id);
+                    localStorage.setItem("propccrm_last_app",a.id);
+                    setTimeout(()=>setTab(a.id==="sales"?"dashboard":"l_dashboard"),50);
+                  }} style={{
+                    padding:"5px 12px",borderRadius:8,border:"none",
+                    background:isActive?"#fff":"transparent",
+                    color:isActive?a.accent:"rgba(255,255,255,.5)",
+                    fontSize:12,fontWeight:isActive?700:400,cursor:"pointer",
+                    display:"flex",alignItems:"center",gap:4,
+                    transition:"all .2s",whiteSpace:"nowrap",
+                    boxShadow:isActive?"0 1px 6px rgba(0,0,0,.15)":"none",
+                  }}>
+                    {a.icon} {a.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* RIGHT: User info + PropCRM watermark */}
+          <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+            {/* User */}
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:12,color:"#fff",fontWeight:500,lineHeight:1.2}}>{currentUser.full_name}</div>
+              <RoleBadge role={currentUser.role}/>
+            </div>
+            <Av name={currentUser.full_name||currentUser.email} size={32} bg="#C9A84C" tc="#0B1F3A"/>
+            <button onClick={handleLogout} title="Sign out" style={{fontSize:11,color:"rgba(255,255,255,.35)",background:"none",border:"1px solid rgba(255,255,255,.1)",borderRadius:6,padding:"4px 8px",cursor:"pointer",whiteSpace:"nowrap",transition:"color .15s"}}
+              onMouseOver={e=>e.currentTarget.style.color="rgba(255,255,255,.8)"}
+              onMouseOut={e=>e.currentTarget.style.color="rgba(255,255,255,.35)"}>↩</button>
+            {/* PropCRM subtle watermark */}
+            <div style={{borderLeft:"1px solid rgba(255,255,255,.1)",paddingLeft:10,display:"flex",alignItems:"center",gap:3}}>
+              <span style={{color:"#C9A84C",fontSize:10}}>◆</span>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:10,color:"rgba(255,255,255,.3)",fontWeight:600,letterSpacing:".5px"}}>PropCRM</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab bar */}
+        <div className="tab-bar-wrap" style={{position:"relative",borderTop:"1px solid rgba(255,255,255,.07)"}}>
+        <div className="tab-bar" style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:38,gap:2,overflowX:"auto"}}>
+          {visibleTabs.map(t=>(
+            <button key={t.id} onClick={()=>{setTab(t.id);if(t.id==="ai"||t.id==="l_ai")loadAIData();}}
+              style={{
+                padding:"5px 12px",borderRadius:"6px 6px 0 0",border:"none",
+                background:tab===t.id?(currentApp==="sales"?"rgba(74,158,232,.18)":"rgba(155,127,212,.18)"):"transparent",
+                color:tab===t.id?"#fff":"rgba(255,255,255,.45)",
+                fontSize:12,fontWeight:tab===t.id?600:400,cursor:"pointer",
+                whiteSpace:"nowrap",transition:"all .15s",flexShrink:0,
+                borderBottom:tab===t.id?`2px solid ${currentApp==="sales"?"#4A9EE8":"#9B7FD4"}`:"2px solid transparent",
+              }}>
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Page title */}
+      <div style={{padding:"8px 1rem 6px",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+        <div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A"}}>{visibleTabs.find(t=>t.id===tab)?.label||""}</div>
+          <div style={{fontSize:11,color:"#A0AEC0"}}>{SUBTITLES[tab]||""}</div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"0 1rem 1rem",WebkitOverflowScrolling:"touch",minHeight:0}}>
+        {(dataLoading&&leads.length===0&&aiUnits.length===0)?<Spinner msg="Loading your data…"/>:(<>
 
           {/* ── Sales CRM ─────────────────────────────────────── */}
           {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={setTab}/>}
