@@ -2462,7 +2462,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
               {m.role==="user" ? (currentUser.full_name||"U").charAt(0).toUpperCase() : "✦"}
             </div>
             <div style={{maxWidth:"75%",background:m.role==="user"?"linear-gradient(135deg,#0B1F3A,#1A3558)":"#fff",color:m.role==="user"?"#fff":"#1a2535",borderRadius:m.role==="user"?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"11px 15px",fontSize:13,lineHeight:1.7,border:m.role==="assistant"?"1px solid #E2E8F0":"none",boxShadow:m.role==="assistant"?"0 1px 4px rgba(0,0,0,.06)":"none"}}>
-              {m.role==="assistant" ? m.content.split("\n").map((l,i)=>l?<div key={i}>{l}</div>:<div key={i} style={{height:5}}/>) : m.content}
+              <span style={{whiteSpace:"pre-wrap"}}>{m.content}</span>
             </div>
           </div>
         ))}
