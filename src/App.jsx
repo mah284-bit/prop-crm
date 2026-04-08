@@ -5823,7 +5823,7 @@ function SetupWizard({ onComplete }) {
               <div style={{display:"flex",flexDirection:"column",gap:12}}>
                 {MODES.map(m=>(
                   <div key={m.id} onClick={()=>setMode(m.id)}
-                    style={{border:`2px solid ${mode===m.id?m.color:"#E2E8F0"}`,borderRadius:14,padding:"1.25rem 1.5rem",cursor:"pointer",background:mode===m.id?m.bg:"#fff",transition:"all .2s",position:"relative"}}>
+                    style={{border:"2px solid "+(mode===m.id?m.color:"#E2E8F0"),borderRadius:14,padding:"1.25rem 1.5rem",cursor:"pointer",background:mode===m.id?m.bg:"#fff",transition:"all .2s",position:"relative"}}>
                     {m.recommended&&<div style={{position:"absolute",top:-1,right:16,background:"#C9A84C",color:"#0B1F3A",fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:"0 0 8px 8px"}}>RECOMMENDED</div>}
                     <div style={{display:"flex",alignItems:"flex-start",gap:14}}>
                       <div style={{fontSize:28,flexShrink:0}}>{m.icon}</div>
@@ -5922,7 +5922,7 @@ function SetupWizard({ onComplete }) {
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>Ready to launch</div>
               <div style={{fontSize:13,color:"#718096",marginBottom:22}}>Review your configuration below. You can always change this later in Users → Settings.</div>
 
-              <div style={{border:`2px solid ${sel?.color}`,borderRadius:14,padding:"1.5rem",marginBottom:18,background:sel?.bg}}>
+              <div style={{border:"2px solid "+(sel?.color||"#E2E8F0"),borderRadius:14,padding:"1.5rem",marginBottom:18,background:sel?.bg}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
                   <span style={{fontSize:32}}>{sel?.icon}</span>
                   <div>
