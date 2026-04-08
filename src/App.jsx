@@ -4436,6 +4436,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
   const [showAddLease,setShowAddLease]  =useState(false);
   const [showAddPmt,setShowAddPmt]      =useState(false);
   const [showAddMaint,setShowAddMaint]  =useState(false);
+  const [showLeaseUpload,setShowLeaseUpload]=useState(false);
   const [saving,setSaving]=useState(false);
 
   const tBlank={full_name:"",nationality:"",id_type:"Emirates ID",id_number:"",id_expiry:"",passport_number:"",passport_expiry:"",email:"",phone:"",whatsapp:"",tenant_type:"Individual",company_name:"",trade_license:"",notes:""};
@@ -4671,8 +4672,12 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
       {/* Leases */}
       {tab==="leases"&&(
         <div style={{flex:1,display:"flex",flexDirection:"column"}}>
-          <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
-            <span style={{fontSize:12,color:"#A0AEC0"}}>{leases.length} leases</span>
+          <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+            <span style={{fontSize:12,color:"#A0AEC0",flex:1}}>{leases.length} leases</span>
+            {canEdit&&<button onClick={()=>setShowLeaseUpload(true)}
+              style={{padding:"7px 16px",borderRadius:8,border:"1.5px solid #1A7F5A",background:"#E6F4EE",color:"#1A7F5A",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+              📋 Download Template / Upload Data
+            </button>}
             {canEdit&&<button onClick={()=>{setLForm(lBlank);setShowAddLease(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ New Lease</button>}
           </div>
           <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8}}>
@@ -4718,6 +4723,88 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
               );
             })}
           </div>
+          {/* Lease Upload Modal */}
+          {showLeaseUpload&&(()=>{
+            const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+            return (
+            <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+              <div style={{background:"#fff",borderRadius:16,width:600,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📋 Leases — Download Template / Upload Data</span>
+                  <button onClick={()=>setShowLeaseUpload(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
+                </div>
+                <div style={{padding:"1.5rem"}}>
+                  {/* Export */}
+                  {leases.length>0&&(
+                    <div style={{background:"#F7F9FC",borderRadius:10,padding:"12px 14px",marginBottom:14,border:"1px solid #E2E8F0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div><div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>Export Current Leases</div><div style={{fontSize:11,color:"#718096"}}>{leases.length} records</div></div>
+                      <button onClick={()=>{
+                        const headers="tenant_id,unit_id,start_date,end_date,annual_rent,security_deposit,agency_fee,number_of_cheques,ejari_number,status,notes";
+                        const rows=leases.map(l=>[l.tenant_id||"",l.unit_id||"",l.start_date||"",l.end_date||"",l.annual_rent||"",l.security_deposit||"",l.agency_fee||"",l.number_of_cheques||"",l.ejari_number||"",l.status||"",l.notes||""].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","));
+                        const csv=[headers,...rows].join("\n");
+                        const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download=`leases_export_${new Date().toISOString().split("T")[0]}.csv`;a.click();
+                        showToast(`Exported ${leases.length} leases`,"success");
+                      }} style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>⬇ Export Current</button>
+                    </div>
+                  )}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+                    <div style={{background:"#F7F9FC",borderRadius:10,padding:"16px",border:"1px solid #E2E8F0",display:"flex",flexDirection:"column",gap:10}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>📥 Step 1 — Download Template</div>
+                      <div style={{fontSize:11,color:"#4A5568",lineHeight:1.7}}>
+                        <strong>Columns:</strong> tenant_id · unit_id · start_date · end_date · annual_rent · security_deposit · number_of_cheques · ejari_number · status · notes<br/>
+                        <strong>status:</strong> Active | Expired | Terminated | Renewed | Pending<br/>
+                        <strong>Dates:</strong> YYYY-MM-DD format
+                      </div>
+                      <button onClick={()=>{
+                        const headers="tenant_id,unit_id,start_date,end_date,annual_rent,security_deposit,agency_fee,number_of_cheques,ejari_number,status,notes";
+                        const samples='"TENANT_ID_HERE","UNIT_ID_HERE","2025-01-01","2026-01-01","120000","10000","5000","4","EJARI-12345","Active","Sample lease"';
+                        const note="\n\nGet tenant_id from Enquiries tab export\nGet unit_id from Inventory tab export\nstatus values: Active | Expired | Terminated | Renewed | Pending";
+                        const csv=headers+"\n"+samples+note;
+                        const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download="propcrm_leases_template.csv";a.click();
+                      }} style={{padding:"10px 0",borderRadius:8,border:"none",background:"#0B1F3A",color:"#C9A84C",fontSize:13,fontWeight:700,cursor:"pointer",textAlign:"center"}}>
+                        ⬇ Download Template
+                      </button>
+                    </div>
+                    <div style={{background:"#E6F4EE",borderRadius:10,padding:"16px",border:"2px dashed #1A7F5A",display:"flex",flexDirection:"column",gap:10,alignItems:"center",justifyContent:"center"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>📤 Step 2 — Upload Your File</div>
+                      <div style={{fontSize:28}}>📂</div>
+                      <label style={{padding:"12px 24px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",textAlign:"center",width:"100%",boxSizing:"border-box"}}>
+                        📤 Select CSV & Upload
+                        <input type="file" accept=".csv" style={{display:"none"}} onChange={async(e)=>{
+                          const file=e.target.files[0]; if(!file) return;
+                          const text=await file.text();
+                          const rows=text.trim().split("\n");
+                          const headers=rows[0].split(",").map(h=>h.trim().replace(/"/g,"").toLowerCase());
+                          const records=rows.slice(1).filter(r=>r.trim()&&!r.startsWith('"Get')).map(row=>{
+                            const vals=row.split(",").map(v=>v.trim().replace(/"/g,""));
+                            const rec={}; headers.forEach((h,i)=>{rec[h]=vals[i]||null;}); return rec;
+                          });
+                          if(!records.length){showToast("No data rows found","error");return;}
+                          const payload=records.map(r=>({
+                            tenant_id:r.tenant_id||null, unit_id:r.unit_id||null,
+                            start_date:r.start_date||null, end_date:r.end_date||null,
+                            annual_rent:r.annual_rent?parseFloat(r.annual_rent):null,
+                            security_deposit:r.security_deposit?parseFloat(r.security_deposit):null,
+                            agency_fee:r.agency_fee?parseFloat(r.agency_fee):null,
+                            number_of_cheques:r.number_of_cheques?parseInt(r.number_of_cheques):1,
+                            ejari_number:r.ejari_number||null, status:r.status||"Active",
+                            notes:r.notes||null, company_id:cid, created_by:currentUser.id
+                          }));
+                          const{data:newL,error}=await supabase.from("leases").insert(payload).select();
+                          if(error){showToast(error.message,"error");return;}
+                          setLeases(p=>[...(newL||[]),...p]);
+                          showToast(`✓ ${newL?.length||0} leases uploaded`,"success");
+                          setShowLeaseUpload(false);
+                        }}/>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            );
+          })()}
+
           {showAddLease&&(
             <Modal title="New Lease Contract" onClose={()=>setShowAddLease(false)} width={520}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
@@ -7583,7 +7670,9 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
   const [editTenant, setEditTenant] = useState(null);
   const [saving,     setSaving]     = useState(false);
   const [oppForm,    setOppForm]    = useState({title:"",unit_id:"",budget:"",assigned_to:"",notes:""});
+  const [showTenantUpload, setShowTenantUpload] = useState(false);
   const canEdit = can(currentUser.role,"write");
+  const canManageTenants = ["super_admin","admin","leasing_manager"].includes(currentUser.role);
   const tBlank = {full_name:"",phone:"",email:"",nationality:"",id_type:"Emirates ID",id_number:"",id_expiry:"",passport_number:"",tenant_type:"Individual",notes:""};
   const [tForm, setTForm] = useState(tBlank);
   const tf = k => e => setTForm(f=>({...f,[k]:e.target?.value??e}));
@@ -7684,6 +7773,10 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
           <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone, email…" style={{paddingLeft:32,width:"100%"}}/>
         </div>
         <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
+        {canEdit&&<button onClick={()=>setShowTenantUpload(true)}
+          style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #5B3FAA",background:"#F5F0FF",color:"#5B3FAA",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+          📋 Download Template / Upload Data
+        </button>}
         {canEdit&&<button onClick={()=>{setTForm(tBlank);setEditTenant(null);setShowAddTenant(true);}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Tenant</button>}
       </div>
 
@@ -7753,8 +7846,111 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
         </table>
       </div>
 
-      {/* Add/Edit Tenant Modal */}
-      {showAddTenant&&(
+      {/* Tenant Upload Modal */}
+      {showTenantUpload&&(()=>{
+        const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+        return (
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:580,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📋 Tenants — Download Template / Upload Data</span>
+              <button onClick={()=>setShowTenantUpload(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{padding:"1.5rem"}}>
+              {/* Export current */}
+              {tenants.length>0&&(
+                <div style={{background:"#F7F9FC",borderRadius:10,padding:"12px 14px",marginBottom:14,border:"1px solid #E2E8F0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>Export Current Tenants</div>
+                    <div style={{fontSize:11,color:"#718096"}}>{tenants.length} tenant records</div>
+                  </div>
+                  <button onClick={()=>{
+                    const headers = "full_name,phone,email,nationality,id_type,id_number,id_expiry,tenant_type,notes";
+                    const rows = tenants.map(t=>[
+                      t.full_name,t.phone||"",t.email||"",t.nationality||"",t.id_type||"",t.id_number||"",t.id_expiry||"",t.tenant_type||"",t.notes||""
+                    ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","));
+                    const csv=[headers,...rows].join("\n");
+                    const a=document.createElement("a");
+                    a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+                    a.download=`tenants_export_${new Date().toISOString().split("T")[0]}.csv`;
+                    a.click();
+                    showToast(`Exported ${tenants.length} tenants`,"success");
+                  }} style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                    ⬇ Export Current
+                  </button>
+                </div>
+              )}
+
+              {/* Two column layout */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+                {/* Download Template */}
+                <div style={{background:"#F7F9FC",borderRadius:10,padding:"16px",border:"1px solid #E2E8F0",display:"flex",flexDirection:"column",gap:10}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>📥 Step 1 — Download Template</div>
+                  <div style={{fontSize:12,color:"#4A5568",lineHeight:1.7}}>Fill in your tenants in Excel, then save as CSV and upload.</div>
+                  <div style={{fontSize:11,color:"#1A5FA8",lineHeight:1.7}}>
+                    <strong>Columns:</strong> full_name · phone · email · nationality · id_type · id_number · id_expiry · tenant_type · notes<br/>
+                    <strong>nationality:</strong> {MASTER.nationality.join(" | ")}<br/>
+                    <strong>id_type:</strong> {MASTER.id_type.join(" | ")}<br/>
+                    <strong>tenant_type:</strong> {MASTER.tenant_type.join(" | ")}
+                  </div>
+                  <button onClick={()=>{
+                    const headers = "full_name,phone,email,nationality,id_type,id_number,id_expiry,tenant_type,notes";
+                    const samples = [
+                      '"Ahmed Al Mansouri","+971501234567","ahmed@email.com","Emirati","Emirates ID","784-1990-1234567-1","2028-12-31","Individual","VIP client"',
+                      '"Raj Kumar","+971507654321","raj@company.com","Indian","Passport","A1234567","2027-06-30","Corporate","Company lease"',
+                    ].join("\n");
+                    const allowedNote = "\n\nALLOWED VALUES\nnationality: "+MASTER.nationality.join(" | ")+"\nid_type: "+MASTER.id_type.join(" | ")+"\ntenant_type: "+MASTER.tenant_type.join(" | ");
+                    const csv = headers+"\n"+samples+allowedNote;
+                    const a=document.createElement("a");
+                    a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+                    a.download="propcrm_tenants_template.csv";
+                    a.click();
+                  }} style={{padding:"10px 0",borderRadius:8,border:"none",background:"#1A0B3A",color:"#C9A84C",fontSize:13,fontWeight:700,cursor:"pointer",textAlign:"center"}}>
+                    ⬇ Download Template
+                  </button>
+                </div>
+
+                {/* Upload */}
+                <div style={{background:"#F5F0FF",borderRadius:10,padding:"16px",border:"2px dashed #5B3FAA",display:"flex",flexDirection:"column",gap:10,alignItems:"center",justifyContent:"center"}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#1A0B3A"}}>📤 Step 2 — Upload Your File</div>
+                  <div style={{fontSize:12,color:"#4A5568",textAlign:"center",lineHeight:1.6}}>Fill the template, save as CSV, upload here.</div>
+                  <div style={{fontSize:28}}>📂</div>
+                  <label style={{padding:"12px 24px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",textAlign:"center",width:"100%",boxSizing:"border-box"}}>
+                    📤 Select CSV & Upload
+                    <input type="file" accept=".csv" style={{display:"none"}} onChange={async(e)=>{
+                      const file=e.target.files[0]; if(!file) return;
+                      const text=await file.text();
+                      const rows=text.trim().split("\n");
+                      const headers=rows[0].split(",").map(h=>h.trim().replace(/"/g,"").toLowerCase());
+                      const records=rows.slice(1).filter(r=>r.trim()).map(row=>{
+                        const vals=row.split(",").map(v=>v.trim().replace(/"/g,""));
+                        const rec={}; headers.forEach((h,i)=>{rec[h]=vals[i]||null;}); return rec;
+                      });
+                      if(!records.length){showToast("No data rows found","error");return;}
+                      if(!records[0].full_name){showToast("full_name column is required","error");return;}
+                      const payload=records.map(r=>({
+                        full_name:r.full_name, phone:r.phone||null, email:r.email||null,
+                        nationality:r.nationality||null, id_type:r.id_type||"Emirates ID",
+                        id_number:r.id_number||null, id_expiry:r.id_expiry||null,
+                        tenant_type:r.tenant_type||"Individual", notes:r.notes||null,
+                        company_id:cid, created_by:currentUser.id
+                      }));
+                      const{data:newT,error}=await supabase.from("tenants").insert(payload).select();
+                      if(error){showToast(error.message,"error");return;}
+                      setTenants(p=>[...p,...(newT||[])].sort((a,b)=>a.full_name.localeCompare(b.full_name)));
+                      showToast(`✓ ${newT?.length||0} tenants uploaded`,"success");
+                      setShowTenantUpload(false);
+                    }}/>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        );
+      })()}
+
+      {/* Add/Edit Tenant Modal */}      {showAddTenant&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:520,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
