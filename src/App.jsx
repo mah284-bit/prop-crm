@@ -239,10 +239,10 @@ function PermSetSelector({ companyId, value, onChange }) {
     <select value={value} onChange={e=>onChange(e.target.value)}>
       <option value="">Use default role permissions</option>
       {templates.length>0&&<optgroup label="─── Built-in Templates ───">
-        {templates.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+        {templates.map(s=>(<option key={s.id} value={s.id}>{s.name}</option>))}
       </optgroup>}
       {sets.length>0&&<optgroup label="─── Custom Sets ───">
-        {sets.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+        {sets.map(s=>(<option key={s.id} value={s.id}>{s.name}</option>))}
       </optgroup>}
     </select>
   );
@@ -872,7 +872,7 @@ function PropertyMaster({currentUser,showToast}){
           <FF label="Location"><input value={form.location||""} onChange={e=>sf("location",e.target.value)} placeholder="Dubai Harbour, Dubai"/></FF>
           <G2><FF label="Launch Date"><input type="date" value={form.launch_date||""} onChange={e=>sf("launch_date",e.target.value)}/></FF>
           <FF label="Handover Date"><input type="date" value={form.handover_date||""} onChange={e=>sf("handover_date",e.target.value)}/></FF></G2>
-          <FF label="Status"><select value={form.status||"Active"} onChange={e=>sf("status",e.target.value)}>{["Active","Completed","On Hold","Cancelled"].map(s=><option key={s}>{s}</option>)}</select></FF>
+          <FF label="Status"><select value={form.status||"Active"} onChange={e=>sf("status",e.target.value)}>{["Active","Completed","On Hold","Cancelled"].map(s=>(<option key={s}>{s}</option>))}</select></FF>
           <FF label="Description"><textarea value={form.description||""} onChange={e=>sf("description",e.target.value)} rows={3}/></FF>
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
             {form.id&&<Btn variant="danger" onClick={()=>deleteItem("projects",form.id,setProjects)}>Delete</Btn>}
@@ -886,7 +886,7 @@ function PropertyMaster({currentUser,showToast}){
       {modal==="category"&&(
         <Modal title={form.id?"Edit Category":"Add Category"} onClose={()=>{setModal(null);setForm({});}}>
           <G2><FF label="Category Name" required><input value={form.name||""} onChange={e=>sf("name",e.target.value)} placeholder="Waterfront Villas"/></FF>
-          <FF label="Unit Type" required><select value={form.type||"Flat"} onChange={e=>sf("type",e.target.value)}>{UNIT_TYPES.map(t=><option key={t}>{t}</option>)}</select></FF></G2>
+          <FF label="Unit Type" required><select value={form.type||"Flat"} onChange={e=>sf("type",e.target.value)}>{UNIT_TYPES.map(t=>(<option key={t}>{t}</option>))}</select></FF></G2>
           <FF label="Description"><textarea value={form.description||""} onChange={e=>sf("description",e.target.value)} rows={2}/></FF>
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
             {form.id&&<Btn variant="danger" onClick={()=>deleteItem("project_categories",form.id,setCategories)}>Delete</Btn>}
@@ -917,13 +917,13 @@ function PropertyMaster({currentUser,showToast}){
           <G3>
             <FF label="Unit Number" required><input value={form.unit_number||""} onChange={e=>sf("unit_number",e.target.value)} placeholder="101"/></FF>
             <FF label="Floor"><input type="number" value={form.floor||""} onChange={e=>sf("floor",e.target.value)} placeholder="1"/></FF>
-            <FF label="Status"><select value={form.status||"Available"} onChange={e=>sf("status",e.target.value)}>{["Available","Reserved","Under Offer","Sold","Blocked"].map(s=><option key={s}>{s}</option>)}</select></FF>
+            <FF label="Status"><select value={form.status||"Available"} onChange={e=>sf("status",e.target.value)}>{["Available","Reserved","Under Offer","Sold","Blocked"].map(s=>(<option key={s}>{s}</option>))}</select></FF>
           </G3>
           <G2>
             <FF label="Bedrooms"><input type="number" value={form.bedrooms||""} onChange={e=>sf("bedrooms",e.target.value)} placeholder="2"/></FF>
             <FF label="Bathrooms"><input type="number" value={form.bathrooms||""} onChange={e=>sf("bathrooms",e.target.value)} placeholder="3"/></FF>
           </G2>
-          <FF label="View"><select value={form.view||""} onChange={e=>sf("view",e.target.value)}><option value="">Select view…</option>{MASTER.view.map(v=><option key={v}>{v}</option>)}</select></FF>
+          <FF label="View"><select value={form.view||""} onChange={e=>sf("view",e.target.value)}><option value="">Select view…</option>{MASTER.view.map(v=>(<option key={v}>{v}</option>))}</select></FF>
           <G3>
             <FF label="Size (sqft)"><input type="number" value={form.size_sqft||""} onChange={e=>sf("size_sqft",e.target.value)} placeholder="1250"/></FF>
             <FF label="Balcony (sqft)"><input type="number" value={form.balcony_sqft||""} onChange={e=>sf("balcony_sqft",e.target.value)} placeholder="200"/></FF>
@@ -1302,7 +1302,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                             await supabase.from("sales_payments").update({status:e.target.value}).eq("id",pay.id);
                             setPayments(p=>p.map(x=>x.id===pay.id?{...x,status:e.target.value}:x));
                           }} style={{fontSize:11,padding:"3px 6px",borderRadius:5,border:"1px solid #E2E8F0"}}>
-                            {Object.keys(PAYMENT_STATUS_META).map(s=><option key={s}>{s}</option>)}
+                            {Object.keys(PAYMENT_STATUS_META).map(s=>(<option key={s}>{s}</option>))}
                           </select>
                           <button onClick={()=>{setPayForm({...pay});setEditPayment(pay);setShowPayment(true);}} style={{fontSize:11,padding:"3px 8px",borderRadius:5,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>✏</button>
                           <button onClick={()=>printReceipt(pay)} style={{fontSize:11,padding:"3px 8px",borderRadius:5,border:"none",background:"#1A5FA8",color:"#fff",cursor:"pointer"}}>🖨</button>
@@ -1409,7 +1409,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                 <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Milestone *</label>
                   <select value={payForm.milestone} onChange={e=>setPayForm(f=>({...f,milestone:e.target.value}))}>
-                    {["Booking Deposit","SPA Signing","1st Installment","2nd Installment","3rd Installment","4th Installment","On Handover","Post Handover 1","Post Handover 2","Other"].map(m=><option key={m}>{m}</option>)}
+                    {["Booking Deposit","SPA Signing","1st Installment","2nd Installment","3rd Installment","4th Installment","On Handover","Post Handover 1","Post Handover 2","Other"].map(m=>(<option key={m}>{m}</option>))}
                   </select></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>% of Deal Value</label>
                   <input type="number" value={payForm.percentage} placeholder="e.g. 10" onChange={e=>{
@@ -1428,7 +1428,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Due Date</label><input type="date" value={payForm.due_date} onChange={e=>setPayForm(f=>({...f,due_date:e.target.value}))}/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Payment Type</label>
                   <select value={payForm.payment_type} onChange={e=>setPayForm(f=>({...f,payment_type:e.target.value}))}>
-                    {["Cheque","Cash","Bank Transfer","Credit Card"].map(t=><option key={t}>{t}</option>)}
+                    {["Cheque","Cash","Bank Transfer","Credit Card"].map(t=>(<option key={t}>{t}</option>))}
                   </select></div>
                 {payForm.payment_type==="Cheque"&&<>
                   <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Cheque Number</label><input value={payForm.cheque_number} onChange={e=>setPayForm(f=>({...f,cheque_number:e.target.value}))}/></div>
@@ -1463,7 +1463,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                 </>}
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Status</label>
                   <select value={payForm.status} onChange={e=>setPayForm(f=>({...f,status:e.target.value}))}>
-                    {Object.keys(PAYMENT_STATUS_META).map(s=><option key={s}>{s}</option>)}
+                    {Object.keys(PAYMENT_STATUS_META).map(s=>(<option key={s}>{s}</option>))}
                   </select></div>
                 <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label><textarea value={payForm.notes} onChange={e=>setPayForm(f=>({...f,notes:e.target.value}))} rows={2}/></div>
               </div>
@@ -1603,7 +1603,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         </select>
         <select value={fStage} onChange={e=>setFStage(e.target.value)} style={{width:"auto"}}>
           <option value="All">All Stages</option>
-          {OPP_STAGES.map(s=><option key={s}>{s}</option>)}
+          {OPP_STAGES.map(s=>(<option key={s}>{s}</option>))}
         </select>
         <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
         {canEdit&&<button onClick={()=>{setForm(blank);setEditLead(null);setShowAdd(true);}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Contact</button>}
@@ -1681,7 +1681,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Nationality</label><input value={form.nationality} onChange={sf("nationality")}/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Source</label>
                   <select value={form.source} onChange={sf("source")}>
-                    {MASTER.lead_source.map(s=><option key={s}>{s}</option>)}
+                    {MASTER.lead_source.map(s=>(<option key={s}>{s}</option>))}
                   </select></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Property Type</label>
                   <select value={form.property_type} onChange={sf("property_type")}>
@@ -1814,7 +1814,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Assign To</label>
                   <select value={oppForm.assigned_to} onChange={e=>setOppForm(f=>({...f,assigned_to:e.target.value}))}>
-                    {users.filter(u=>u.is_active).map(u=><option key={u.id} value={u.id}>{u.full_name}</option>)}
+                    {users.filter(u=>u.is_active).map(u=>(<option key={u.id} value={u.id}>{u.full_name}</option>))}
                   </select>
                 </div>
                 <div>
@@ -2092,7 +2092,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
         <input value={searchP} onChange={e=>setSearchP(e.target.value)} placeholder="🔍 Search leads…" style={{flex:1,minWidth:140,fontSize:12}}/>
         <select value={fStageP} onChange={e=>setFStageP(e.target.value)} style={{width:"auto",fontSize:12}}>
           <option value="All">All Stages</option>
-          {STAGES.map(s=><option key={s}>{s}</option>)}
+          {STAGES.map(s=>(<option key={s}>{s}</option>))}
         </select>
         <span style={{fontSize:11,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length} leads</span>
       </div>
@@ -2273,8 +2273,8 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
   return(
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
       <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-        <select value={fType} onChange={e=>setFType(e.target.value)} style={{width:"auto"}}><option value="All">All types</option>{ACT_TYPES.map(t=><option key={t}>{t}</option>)}</select>
-        <select value={fLead} onChange={e=>setFLead(e.target.value)} style={{width:"auto"}}><option value="All">All leads</option>{leads.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select>
+        <select value={fType} onChange={e=>setFType(e.target.value)} style={{width:"auto"}}><option value="All">All types</option>{ACT_TYPES.map(t=>(<option key={t}>{t}</option>))}</select>
+        <select value={fLead} onChange={e=>setFLead(e.target.value)} style={{width:"auto"}}><option value="All">All leads</option>{leads.map(l=>(<option key={l.id} value={l.id}>{l.name}</option>))}</select>
         <div style={{marginLeft:"auto"}}><Btn variant="gold" onClick={()=>setShowAdd(true)}>+ Log Activity</Btn></div>
       </div>
       <div style={{fontSize:12,color:"#A0AEC0",marginBottom:10}}>{filtered.length} activit{filtered.length!==1?"ies":"y"}</div>
@@ -2303,8 +2303,8 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
       </div>
       {showAdd&&(
         <Modal title="Log New Activity" onClose={()=>setShowAdd(false)} width={460}>
-          <FF label="Lead" required><select value={form.lead_id} onChange={e=>setForm(f=>({...f,lead_id:e.target.value}))}><option value="">Select a lead…</option>{leads.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select></FF>
-          <FF label="Activity Type"><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ACT_TYPES.map(t=><button key={t} onClick={()=>setForm(f=>({...f,type:t}))} style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${form.type===t?"#0B1F3A":"#E2E8F0"}`,background:form.type===t?"#0B1F3A":"#fff",color:form.type===t?"#fff":"#4A5568",fontSize:13,cursor:"pointer",fontWeight:form.type===t?600:400}}>{ACT_META[t]?.icon} {t}</button>)}</div></FF>
+          <FF label="Lead" required><select value={form.lead_id} onChange={e=>setForm(f=>({...f,lead_id:e.target.value}))}><option value="">Select a lead…</option>{leads.map(l=>(<option key={l.id} value={l.id}>{l.name}</option>))}</select></FF>
+          <FF label="Activity Type"><div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{ACT_TYPES.map(t=>(<button key={t} onClick={()=>setForm(f=>({...f,type:t}))} style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${form.type===t?"#0B1F3A":"#E2E8F0"}`,background:form.type===t?"#0B1F3A":"#fff",color:form.type===t?"#fff":"#4A5568",fontSize:13,cursor:"pointer",fontWeight:form.type===t?600:400}}>{ACT_META[t]?.icon} {t}</button>))}</div></FF>
           <FF label="Note / Summary" required><textarea value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))} rows={4} placeholder="What happened?"/></FF>
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
             <Btn variant="outline" onClick={()=>setShowAdd(false)}>Cancel</Btn>
@@ -2714,7 +2714,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                 <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Project Name *</label><input value={form.name} onChange={sf("name")} placeholder="e.g. Emaar Beachfront"/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Developer</label><input value={form.developer||""} onChange={sf("developer")} placeholder="Emaar, Nakheel…"/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Status</label><select value={form.status||"Active"} onChange={sf("status")}>{["Active","Sold Out","On Hold","Cancelled"].map(s=><option key={s}>{s}</option>)}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Status</label><select value={form.status||"Active"} onChange={sf("status")}>{["Active","Sold Out","On Hold","Cancelled"].map(s=>(<option key={s}>{s}</option>))}</select></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Location</label><input value={form.location||""} onChange={sf("location")} placeholder="Dubai Marina, Downtown…"/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Community</label><input value={form.community||""} onChange={sf("community")}/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Launch Date</label><input type="date" value={form.launch_date||""} onChange={sf("launch_date")}/></div>
@@ -2993,7 +2993,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Link to Lead (optional)</label>
                   <select value={form.lead_id} onChange={onLeadChange}>
                     <option value="">— Select lead to auto-fill —</option>
-                    {leads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage)).map(l=><option key={l.id} value={l.id}>{l.name} · {l.stage}</option>)}
+                    {leads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage)).map(l=>(<option key={l.id} value={l.id}>{l.name} · {l.stage}</option>))}
                   </select>
                 </div>
               )}
@@ -3002,7 +3002,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Link to Tenant (optional)</label>
                   <select value={form.tenant_id} onChange={onTenantChange}>
                     <option value="">— Select tenant to auto-fill —</option>
-                    {tenants.map(t=><option key={t.id} value={t.id}>{t.full_name}</option>)}
+                    {tenants.map(t=>(<option key={t.id} value={t.id}>{t.full_name}</option>))}
                   </select>
                 </div>
               )}
@@ -3539,24 +3539,24 @@ Return ONLY the JSON, no explanation.`}
         <input value={fSearch} onChange={e=>setFSearch(e.target.value)} placeholder="🔍 Universal search — unit ref, project, floor, view, price, status…" style={{flex:1,minWidth:150}}/>
         <select value={fProject} onChange={e=>setFProject(e.target.value)} style={{width:"auto",fontSize:12}}>
           <option value="All">All Projects</option>
-          {companyProjects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+          {companyProjects.map(p=>(<option key={p.id} value={p.id}>{p.name}</option>))}
         </select>
         <select value={fType} onChange={e=>{setFType(e.target.value);setFCat("All");}} style={{width:"auto",fontSize:12}}>
           <option value="All">All Types</option>
-          {MASTER.unit_type.map(t=><option key={t}>{t}</option>)}
+          {MASTER.unit_type.map(t=>(<option key={t}>{t}</option>))}
         </select>
         <select value={fCat} onChange={e=>setFCat(e.target.value)} style={{width:"auto",fontSize:12}}>
           <option value="All">All Categories</option>
           <optgroup label="Residential">
-            {MASTER.sub_type_res.map(s=><option key={s}>{s}</option>)}
+            {MASTER.sub_type_res.map(s=>(<option key={s}>{s}</option>))}
           </optgroup>
           <optgroup label="Commercial">
-            {MASTER.sub_type_com.map(s=><option key={s}>{s}</option>)}
+            {MASTER.sub_type_com.map(s=>(<option key={s}>{s}</option>))}
           </optgroup>
         </select>
         <select value={fStatus} onChange={e=>setFStatus(e.target.value)} style={{width:"auto",fontSize:12}}>
           <option value="All">All Status</option>
-          {MASTER.status.map(s=><option key={s}>{s}</option>)}
+          {MASTER.status.map(s=>(<option key={s}>{s}</option>))}
         </select>
         {crmContext==="both"&&<select value={fPurpose} onChange={e=>setFPurpose(e.target.value)} style={{width:"auto",fontSize:12}}>
           <option value="All">All</option>
@@ -3847,7 +3847,7 @@ Return ONLY the JSON, no explanation.`}
                 <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Step 1 — Select Project</div>
                 <select data-inv-proj defaultValue="" onChange={e=>{setInvProjId(e.target.value);}} style={{width:"100%",borderColor:"#1A5FA8"}}>
                   <option value="">— Select the project for this upload —</option>
-                  {companyProjects.map(p=><option key={p.id} value={p.id}>{p.name}{p.developer?` · ${p.developer}`:""}</option>)}
+                  {companyProjects.map(p=>(<option key={p.id} value={p.id}>{p.name}{p.developer?` · ${p.developer}`:""}</option>))}
                 </select>
                 <div style={{fontSize:11,color:"#718096",marginTop:6}}>All units in the uploaded file will be assigned to this project. The project_id column in the template will be ignored.</div>
               </div>
@@ -3961,24 +3961,24 @@ Return ONLY the JSON, no explanation.`}
               {/* DETAILS */}
               {activeTab==="details"&&(
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Project *</label><select value={uForm.project_id} onChange={uf("project_id")}><option value="">Select…</option>{projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Project *</label><select value={uForm.project_id} onChange={uf("project_id")}><option value="">Select…</option>{projects.map(p=>(<option key={p.id} value={p.id}>{p.name}</option>))}</select></div>
                   <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Unit Ref *</label><input value={uForm.unit_ref} onChange={uf("unit_ref")} placeholder="e.g. A-101"/></div>
                   <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Type</label><select value={uForm.unit_type} onChange={uf("unit_type")}><option>Residential</option><option>Commercial</option></select></div>
                   <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Category</label>
                     <select value={uForm.sub_type} onChange={uf("sub_type")}>
-                      {uForm.unit_type==="Residential"?["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed","Villa","Townhouse","Penthouse","Duplex"].map(s=><option key={s}>{s}</option>):["Office","Retail / Shop","Warehouse","Restaurant","Hotel Apartment","Labour Camp"].map(s=><option key={s}>{s}</option>)}
+                      {uForm.unit_type==="Residential"?["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed","Villa","Townhouse","Penthouse","Duplex"].map(s=>(<option key={s}>{s}</option>)):["Office","Retail / Shop","Warehouse","Restaurant","Hotel Apartment","Labour Camp"].map(s=>(<option key={s}>{s}</option>))}
                     </select>
                   </div>
                   <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Purpose</label><select value={uForm.purpose} onChange={uf("purpose")}><option>Sale</option><option>Lease</option><option>Both</option></select></div>
-                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Status</label><select value={uForm.status} onChange={uf("status")}>{MASTER.status.map(s=><option key={s}>{s}</option>)}</select></div>
-                  {uForm.unit_type==="Residential"&&<div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Bedrooms</label><select value={uForm.bedrooms} onChange={uf("bedrooms")}><option value="0">Studio</option>{[1,2,3,4,5,6,7].map(n=><option key={n} value={n}>{n}</option>)}</select></div>}
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Status</label><select value={uForm.status} onChange={uf("status")}>{MASTER.status.map(s=>(<option key={s}>{s}</option>))}</select></div>
+                  {uForm.unit_type==="Residential"&&<div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Bedrooms</label><select value={uForm.bedrooms} onChange={uf("bedrooms")}><option value="0">Studio</option>{[1,2,3,4,5,6,7].map(n=>(<option key={n} value={n}>{n}</option>))}</select></div>}
                   <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Bathrooms</label><input type="number" value={uForm.bathrooms} onChange={uf("bathrooms")}/></div>
                   <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Size (sqft)</label><input type="number" value={uForm.size_sqft} onChange={uf("size_sqft")}/></div>
                   <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Floor</label><input value={uForm.floor_number} onChange={uf("floor_number")} placeholder="e.g. 12"/></div>
                   <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>View</label><input value={uForm.view} onChange={uf("view")} placeholder="Sea View, City View…"/></div>
                   <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Parking</label><input type="number" value={uForm.parking_spaces} onChange={uf("parking_spaces")}/></div>
-                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Furnishing</label><select value={uForm.furnishing} onChange={uf("furnishing")}>{["Unfurnished","Furnished","Semi-Furnished"].map(s=><option key={s}>{s}</option>)}</select></div>
-                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Condition</label><select value={uForm.condition} onChange={uf("condition")}>{["Off-plan","Ready","Under Construction","Renovation"].map(s=><option key={s}>{s}</option>)}</select></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Furnishing</label><select value={uForm.furnishing} onChange={uf("furnishing")}>{["Unfurnished","Furnished","Semi-Furnished"].map(s=>(<option key={s}>{s}</option>))}</select></div>
+                  <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Condition</label><select value={uForm.condition} onChange={uf("condition")}>{["Off-plan","Ready","Under Construction","Renovation"].map(s=>(<option key={s}>{s}</option>))}</select></div>
                   <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Handover Date</label><input type="date" value={uForm.handover_date} onChange={uf("handover_date")}/></div>
                   <div style={{gridColumn:"1/-1",display:"flex",gap:16,flexWrap:"wrap"}}>
                     {[["Maid Room","maid_room"],["Private Pool","private_pool"],["Private Garden","private_garden"]].map(([l,f])=>(
@@ -4015,7 +4015,7 @@ Return ONLY the JSON, no explanation.`}
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                         <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Annual Rent (AED)</label><input type="number" value={uForm.annual_rent} onChange={uf("annual_rent")} placeholder="120000"/></div>
                         <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Security Deposit (AED)</label><input type="number" value={uForm.security_deposit} onChange={uf("security_deposit")}/></div>
-                        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Cheques Allowed</label><select value={uForm.cheques_allowed} onChange={uf("cheques_allowed")}>{[1,2,3,4,6,12].map(n=><option key={n} value={n}>{n}</option>)}</select></div>
+                        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Cheques Allowed</label><select value={uForm.cheques_allowed} onChange={uf("cheques_allowed")}>{[1,2,3,4,6,12].map(n=>(<option key={n} value={n}>{n}</option>))}</select></div>
                         <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>Municipality Tax %</label><input type="number" value={uForm.municipality_tax_pct} onChange={uf("municipality_tax_pct")}/></div>
                         <div style={{gridColumn:"1/-1"}}>
                           <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13}}>
@@ -4412,7 +4412,7 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
               <div style={{display:"flex",gap:4}}>
                 <select value={c.status} onChange={e=>updateStatus(c.id,e.target.value)}
                   style={{fontSize:10,padding:"3px 6px",borderRadius:5,border:"1px solid #E2E8F0",background:"#fff"}}>
-                  {Object.keys(CHEQ_COLORS).map(s=><option key={s}>{s}</option>)}
+                  {Object.keys(CHEQ_COLORS).map(s=>(<option key={s}>{s}</option>))}
                 </select>
                 <button onClick={()=>{setForm({...blank,...c});setEditCheq(c);setShowAdd(true);}}
                   style={{fontSize:10,padding:"3px 7px",borderRadius:5,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>✏</button>
@@ -4442,7 +4442,7 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
                 <div><label style={{fontSize:10,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Period To</label><input type="date" value={form.period_to} onChange={sf("period_to")}/></div>
                 <div><label style={{fontSize:10,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Status</label>
                   <select value={form.status} onChange={sf("status")}>
-                    {Object.keys(CHEQ_COLORS).map(s=><option key={s}>{s}</option>)}
+                    {Object.keys(CHEQ_COLORS).map(s=>(<option key={s}>{s}</option>))}
                   </select>
                 </div>
                 <div style={{gridColumn:"1/-1"}}><label style={{fontSize:10,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label><textarea value={form.notes} onChange={sf("notes")} rows={2}/></div>
@@ -4650,7 +4650,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
           <div style={{flex:1,overflowY:"auto"}}>
             {tenants.length===0&&<div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}><div style={{fontSize:36,marginBottom:8}}>👤</div><div>No tenants yet</div></div>}
             <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead style={{position:"sticky",top:0}}><tr style={{background:"#0B1F3A"}}>{["Name","Type","Nationality","Phone","Email","ID Number","ID Expiry"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+              <thead style={{position:"sticky",top:0}}><tr style={{background:"#0B1F3A"}}>{["Name","Type","Nationality","Phone","Email","ID Number","ID Expiry"].map(h=>(<th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>))}</tr></thead>
               <tbody>
                 {tenants.map((t,i)=>(
                   <tr key={t.id} style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5"}}>
@@ -4671,7 +4671,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>FULL NAME *</label><input value={tForm.full_name} onChange={e=>setTForm(f=>({...f,full_name:e.target.value}))}/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>TYPE</label><select value={tForm.tenant_type} onChange={e=>setTForm(f=>({...f,tenant_type:e.target.value}))}><option>Individual</option><option>Company</option></select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>NATIONALITY</label><select value={tForm.nationality} onChange={e=>setTForm(f=>({...f,nationality:e.target.value}))}><option value="">Select…</option>{["UAE","Saudi Arabia","India","UK","Pakistan","Egypt","Jordan","USA","Russia","China","Other"].map(n=><option key={n}>{n}</option>)}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>NATIONALITY</label><select value={tForm.nationality} onChange={e=>setTForm(f=>({...f,nationality:e.target.value}))}><option value="">Select…</option>{["UAE","Saudi Arabia","India","UK","Pakistan","Egypt","Jordan","USA","Russia","China","Other"].map(n=>(<option key={n}>{n}</option>))}</select></div>
                 <div>
                 <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>PHONE</label>
                 <VInput value={tForm.phone} onChange={e=>setTForm(f=>({...f,phone:e.target.value}))} placeholder="+971 50 000 0000" validate={v=>validatePhone(v,tForm.nationality)}/>
@@ -4845,13 +4845,13 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
           {showAddLease&&(
             <Modal title="New Lease Contract" onClose={()=>setShowAddLease(false)} width={520}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>UNIT *</label><select value={lForm.unit_id} onChange={e=>setLForm(f=>({...f,unit_id:e.target.value}))}><option value="">Select…</option>{units.map(u=><option key={u.id} value={u.id}>#{u.unit_ref} — {u.sub_type}</option>)}</select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>TENANT *</label><select value={lForm.tenant_id} onChange={e=>setLForm(f=>({...f,tenant_id:e.target.value}))}><option value="">Select…</option>{tenants.map(t=><option key={t.id} value={t.id}>{t.full_name}</option>)}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>UNIT *</label><select value={lForm.unit_id} onChange={e=>setLForm(f=>({...f,unit_id:e.target.value}))}><option value="">Select…</option>{units.map(u=>(<option key={u.id} value={u.id}>#{u.unit_ref} — {u.sub_type}</option>))}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>TENANT *</label><select value={lForm.tenant_id} onChange={e=>setLForm(f=>({...f,tenant_id:e.target.value}))}><option value="">Select…</option>{tenants.map(t=>(<option key={t.id} value={t.id}>{t.full_name}</option>))}</select></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>START DATE *</label><input type="date" value={lForm.start_date} onChange={e=>setLForm(f=>({...f,start_date:e.target.value}))}/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>END DATE *</label><input type="date" value={lForm.end_date} onChange={e=>setLForm(f=>({...f,end_date:e.target.value}))}/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>ANNUAL RENT (AED) *</label><input type="number" value={lForm.annual_rent} onChange={e=>setLForm(f=>({...f,annual_rent:e.target.value}))}/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>SECURITY DEPOSIT</label><input type="number" value={lForm.security_deposit} onChange={e=>setLForm(f=>({...f,security_deposit:e.target.value}))}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>PAYMENT FREQUENCY</label><select value={lForm.payment_frequency} onChange={e=>setLForm(f=>({...f,payment_frequency:e.target.value}))}>{["Monthly","Quarterly","Bi-Annual","Annual"].map(x=><option key={x}>{x}</option>)}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>PAYMENT FREQUENCY</label><select value={lForm.payment_frequency} onChange={e=>setLForm(f=>({...f,payment_frequency:e.target.value}))}>{["Monthly","Quarterly","Bi-Annual","Annual"].map(x=>(<option key={x}>{x}</option>))}</select></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>CHEQUES</label><input type="number" value={lForm.number_of_cheques} onChange={e=>setLForm(f=>({...f,number_of_cheques:e.target.value}))}/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>EJARI NO.</label><input value={lForm.ejari_number} onChange={e=>setLForm(f=>({...f,ejari_number:e.target.value}))}/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>CONTRACT NO.</label><input value={lForm.contract_number} onChange={e=>setLForm(f=>({...f,contract_number:e.target.value}))}/></div>
@@ -4874,7 +4874,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
           </div>
           <div style={{flex:1,overflowY:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead style={{position:"sticky",top:0}}><tr style={{background:"#0B1F3A"}}>{["Tenant","Unit","Type","Amount","Due Date","Paid","Method","Status",""].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+              <thead style={{position:"sticky",top:0}}><tr style={{background:"#0B1F3A"}}>{["Tenant","Unit","Type","Amount","Due Date","Paid","Method","Status",""].map(h=>(<th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>))}</tr></thead>
               <tbody>
                 {payments.sort((a,b)=>new Date(a.due_date)-new Date(b.due_date)).map((p,i)=>{
                   const lease=leases.find(l=>l.id===p.lease_id);
@@ -4902,12 +4902,12 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
           {showAddPmt&&(
             <Modal title="Log Payment" onClose={()=>setShowAddPmt(false)} width={440}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>LEASE *</label><select value={pForm.lease_id} onChange={e=>setPForm(f=>({...f,lease_id:e.target.value}))}><option value="">Select…</option>{leases.filter(l=>l.status==="Active").map(l=><option key={l.id} value={l.id}>{tenantName(l.tenant_id)} · Unit {unitLabel(l.unit_id)}</option>)}</select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>TYPE</label><select value={pForm.payment_type} onChange={e=>setPForm(f=>({...f,payment_type:e.target.value}))}>{["Rent","Security Deposit","Agency Fee","Maintenance","Other"].map(t=><option key={t}>{t}</option>)}</select></div>
+                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>LEASE *</label><select value={pForm.lease_id} onChange={e=>setPForm(f=>({...f,lease_id:e.target.value}))}><option value="">Select…</option>{leases.filter(l=>l.status==="Active").map(l=>(<option key={l.id} value={l.id}>{tenantName(l.tenant_id)} · Unit {unitLabel(l.unit_id)}</option>))}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>TYPE</label><select value={pForm.payment_type} onChange={e=>setPForm(f=>({...f,payment_type:e.target.value}))}>{["Rent","Security Deposit","Agency Fee","Maintenance","Other"].map(t=>(<option key={t}>{t}</option>))}</select></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>AMOUNT (AED) *</label><input type="number" value={pForm.amount} onChange={e=>setPForm(f=>({...f,amount:e.target.value}))}/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>DUE DATE *</label><input type="date" value={pForm.due_date} onChange={e=>setPForm(f=>({...f,due_date:e.target.value}))}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>METHOD</label><select value={pForm.payment_method} onChange={e=>setPForm(f=>({...f,payment_method:e.target.value}))}>{["Cheque","Bank Transfer","Cash","Online"].map(t=><option key={t}>{t}</option>)}</select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>STATUS</label><select value={pForm.status} onChange={e=>setPForm(f=>({...f,status:e.target.value}))}>{["Pending","Paid","Bounced","Waived"].map(s=><option key={s}>{s}</option>)}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>METHOD</label><select value={pForm.payment_method} onChange={e=>setPForm(f=>({...f,payment_method:e.target.value}))}>{["Cheque","Bank Transfer","Cash","Online"].map(t=>(<option key={t}>{t}</option>))}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>STATUS</label><select value={pForm.status} onChange={e=>setPForm(f=>({...f,status:e.target.value}))}>{["Pending","Paid","Bounced","Waived"].map(s=>(<option key={s}>{s}</option>))}</select></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>CHEQUE/REF</label><input value={pForm.cheque_number} onChange={e=>setPForm(f=>({...f,cheque_number:e.target.value}))}/></div>
               </div>
               <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:14}}>
@@ -4955,11 +4955,11 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
           {showAddMaint&&(
             <Modal title="Log Maintenance Request" onClose={()=>setShowAddMaint(false)} width={480}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>UNIT *</label><select value={mForm.unit_id} onChange={e=>setMForm(f=>({...f,unit_id:e.target.value}))}><option value="">Select…</option>{units.map(u=><option key={u.id} value={u.id}>#{u.unit_ref}</option>)}</select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>PRIORITY</label><select value={mForm.priority} onChange={e=>setMForm(f=>({...f,priority:e.target.value}))}>{["Urgent","High","Normal","Low"].map(p=><option key={p}>{p}</option>)}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>UNIT *</label><select value={mForm.unit_id} onChange={e=>setMForm(f=>({...f,unit_id:e.target.value}))}><option value="">Select…</option>{units.map(u=>(<option key={u.id} value={u.id}>#{u.unit_ref}</option>))}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>PRIORITY</label><select value={mForm.priority} onChange={e=>setMForm(f=>({...f,priority:e.target.value}))}>{["Urgent","High","Normal","Low"].map(p=>(<option key={p}>{p}</option>))}</select></div>
                 <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>TITLE *</label><input value={mForm.title} onChange={e=>setMForm(f=>({...f,title:e.target.value}))} placeholder="e.g. AC not working"/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>CATEGORY</label><select value={mForm.category} onChange={e=>setMForm(f=>({...f,category:e.target.value}))}>{["Plumbing","Electrical","AC/HVAC","Painting","Carpentry","Appliances","Pest Control","Cleaning","General","Other"].map(c=><option key={c}>{c}</option>)}</select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>CHARGED TO</label><select value={mForm.charged_to} onChange={e=>setMForm(f=>({...f,charged_to:e.target.value}))}>{["Landlord","Tenant","Shared"].map(c=><option key={c}>{c}</option>)}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>CATEGORY</label><select value={mForm.category} onChange={e=>setMForm(f=>({...f,category:e.target.value}))}>{["Plumbing","Electrical","AC/HVAC","Painting","Carpentry","Appliances","Pest Control","Cleaning","General","Other"].map(c=>(<option key={c}>{c}</option>))}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>CHARGED TO</label><select value={mForm.charged_to} onChange={e=>setMForm(f=>({...f,charged_to:e.target.value}))}>{["Landlord","Tenant","Shared"].map(c=>(<option key={c}>{c}</option>))}</select></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>ASSIGNED TO</label><input value={mForm.assigned_to} onChange={e=>setMForm(f=>({...f,assigned_to:e.target.value}))} placeholder="Contractor name"/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>COST ESTIMATE (AED)</label><input type="number" value={mForm.cost_estimate} onChange={e=>setMForm(f=>({...f,cost_estimate:e.target.value}))}/></div>
                 <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>DESCRIPTION</label><textarea value={mForm.description} onChange={e=>setMForm(f=>({...f,description:e.target.value}))} rows={2}/></div>
@@ -5229,7 +5229,7 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
           <select value={selProject} onChange={e=>setSelProject(e.target.value)} style={{fontSize:12,padding:"6px 10px"}}>
             <option value="all">All Projects</option>
             <option value="global">Global Templates</option>
-            {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+            {projects.map(p=>(<option key={p.id} value={p.id}>{p.name}</option>))}
           </select>
           <span style={{fontSize:12,color:"#A0AEC0"}}>{filtered.length} templates</span>
         </div>
@@ -5317,7 +5317,7 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Project (optional)</label>
                   <select value={form.project_id||""} onChange={e=>setForm(f=>({...f,project_id:e.target.value}))}>
                     <option value="">Global (all projects)</option>
-                    {projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
+                    {projects.map(p=>(<option key={p.id} value={p.id}>{p.name}</option>))}
                   </select>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:8,paddingTop:22}}>
@@ -5686,13 +5686,13 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
                 <table style={{borderCollapse:"collapse",fontSize:12,width:"100%"}}>
                   <thead>
                     <tr style={{background:"#F7F9FC"}}>
-                      {reportData.summaryHeaders.map(h=><th key={h} style={{padding:"6px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:"#4A5568",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>)}
+                      {reportData.summaryHeaders.map(h=>(<th key={h} style={{padding:"6px 12px",textAlign:"left",fontSize:10,fontWeight:700,color:"#4A5568",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>))}
                     </tr>
                   </thead>
                   <tbody>
                     {reportData.summary.map((row,i)=>(
                       <tr key={i} style={{borderBottom:"1px solid #F0F2F5"}}>
-                        {row.map((cell,j)=><td key={j} style={{padding:"7px 12px",fontSize:12,color:String(cell).includes("⚠")?"#B83232":"#0B1F3A",fontWeight:j===0?600:400}}>{cell}</td>)}
+                        {row.map((cell,j)=>(<td key={j} style={{padding:"7px 12px",fontSize:12,color:String(cell).includes("⚠")?"#B83232":"#0B1F3A",fontWeight:j===0?600:400}}>{cell}</td>))}
                       </tr>
                     ))}
                   </tbody>
@@ -5837,13 +5837,13 @@ function SetupWizard({ onComplete }) {
                           <div style={{flex:1}}>
                             <div style={{fontSize:10,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:5}}>Modules</div>
                             <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                              {m.tabs.map(t=><span key={t} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:mode===m.id?"rgba(255,255,255,.7)":"#F0F2F5",color:"#4A5568"}}>{t}</span>)}
+                              {m.tabs.map(t=>(<span key={t} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:mode===m.id?"rgba(255,255,255,.7)":"#F0F2F5",color:"#4A5568"}}>{t}</span>))}
                             </div>
                           </div>
                           <div>
                             <div style={{fontSize:10,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:5}}>Roles</div>
                             <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                              {m.roles.map(r=><span key={r} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:mode===m.id?"rgba(255,255,255,.7)":"#F0F2F5",color:"#4A5568"}}>{r}</span>)}
+                              {m.roles.map(r=>(<span key={r} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:mode===m.id?"rgba(255,255,255,.7)":"#F0F2F5",color:"#4A5568"}}>{r}</span>))}
                             </div>
                           </div>
                         </div>
@@ -5887,7 +5887,7 @@ function SetupWizard({ onComplete }) {
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Country / Market</label>
                   <select value={country} onChange={e=>setCountry(e.target.value)}
                     style={{width:"100%",padding:"11px 14px",border:"1.5px solid #D1D9E6",borderRadius:10,fontSize:13}}>
-                    {["UAE","Saudi Arabia","UK","USA","India","Other"].map(c=><option key={c}>{c}</option>)}
+                    {["UAE","Saudi Arabia","UK","USA","India","Other"].map(c=>(<option key={c}>{c}</option>))}
                   </select>
                 </div>
               </div>
@@ -5933,11 +5933,11 @@ function SetupWizard({ onComplete }) {
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                   <div style={{background:"rgba(255,255,255,.7)",borderRadius:8,padding:"10px 12px"}}>
                     <div style={{fontSize:10,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",marginBottom:6}}>Visible Modules</div>
-                    {sel?.tabs.map(t=><div key={t} style={{fontSize:12,color:"#4A5568",padding:"2px 0"}}>✓ {t}</div>)}
+                    {sel?.tabs.map(t=>(<div key={t} style={{fontSize:12,color:"#4A5568",padding:"2px 0"}}>✓ {t}</div>))}
                   </div>
                   <div style={{background:"rgba(255,255,255,.7)",borderRadius:8,padding:"10px 12px"}}>
                     <div style={{fontSize:10,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",marginBottom:6}}>Available Roles</div>
-                    {sel?.roles.map(r=><div key={r} style={{fontSize:12,color:"#4A5568",padding:"2px 0"}}>✓ {r}</div>)}
+                    {sel?.roles.map(r=>(<div key={r} style={{fontSize:12,color:"#4A5568",padding:"2px 0"}}>✓ {r}</div>))}
                   </div>
                 </div>
               </div>
@@ -6235,7 +6235,7 @@ export default function App(){
                     borderRadius:6,padding:"3px 6px",color:"#C9A84C",fontSize:11,fontWeight:600,
                     cursor:"pointer",maxWidth:130
                   }}>
-                    {companies.map(c=><option key={c.id} value={c.id} style={{background:"#0B1F3A",color:"#fff"}}>{c.name}</option>)}
+                    {companies.map(c=>(<option key={c.id} value={c.id} style={{background:"#0B1F3A",color:"#fff"}}>{c.name}</option>))}
                   </select>
                 )}
               </div>
