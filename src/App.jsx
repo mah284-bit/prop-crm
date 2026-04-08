@@ -2365,7 +2365,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
   const bubbleStyle={position:"fixed",bottom:28,right:28,zIndex:9999,width:60,height:60,borderRadius:"50%",border:"none",cursor:"pointer",background:"linear-gradient(135deg,#C9A84C,#E8C97A)",boxShadow:"0 4px 20px rgba(201,168,76,.5),0 0 0 4px rgba(201,168,76,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,animation:"ai-pulse 3s ease-in-out infinite"};
   const panelStyle={position:"fixed",bottom:20,right:20,zIndex:9999,width:420,height:680,maxHeight:"90vh",background:"linear-gradient(160deg,#0B1F3A 0%,#0f2847 100%)",borderRadius:20,boxShadow:"0 24px 80px rgba(0,0,0,.6),0 0 0 1px rgba(201,168,76,.25)",display:"flex",flexDirection:"column",overflow:"hidden",fontFamily:"'DM Sans',sans-serif"};
 
-  if(!open) return <button onClick={()=>setOpen(true)} style={bubbleStyle} title={"Open "+aiName}>✦</button>;
+  if(!open) return(<button onClick={()=>setOpen(true)} style={bubbleStyle} title={"Open "+aiName}>{"✦"}</button>);
 
   return(
     <div style={panelStyle}>
