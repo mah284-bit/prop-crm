@@ -2944,7 +2944,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
         {/* Expiry warning bar */}
         {!isNew && reservation.status === "Active" && (
           <div style={{background:col.bg,borderBottom:"2px solid "+(col.border)+"",padding:"8px 16px",fontSize:12,color:col.c,fontWeight:600,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <span>{urg==="expired"?"⚠ Reservation has expired":urg==="critical"?"🔴 Expires in "+(hrs)+" hours — action required":urg==="warning"?"⚠ Expires in "+(hrs)+" hours":"✓ Active — expires "+(new Date(reservation.extended_until||reservation.expires_at).toLocaleDateString("en-AE",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+")"}</span>
+            <span>{urg==="expired"?"⚠ Reservation has expired":urg==="critical"?"🔴 Expires in "+(hrs)+" hours — action required":urg==="warning"?"⚠ Expires in "+(hrs)+" hours":"✓ Active — expires "+new Date(reservation.extended_until||reservation.expires_at).toLocaleDateString("en-AE",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
             {(urg==="warning"||urg==="critical"||urg==="expired")&&<button onClick={extend48} style={{fontSize:11,padding:"3px 10px",borderRadius:6,border:"none",background:col.c,color:"#fff",cursor:"pointer"}}>+48h</button>}
           </div>
         )}
