@@ -6211,7 +6211,7 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
       {/* Hero */}
       <div style={{background:"linear-gradient(135deg,#1A0B3A 0%,#2D1558 100%)",borderRadius:14,padding:"1.5rem 2rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>Good morning, {currentUser.full_name?.split(" ")[0]} ☀️</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, {currentUser.full_name?.split(" ")[0]} {new Date().getHours()<12?"☀️":new Date().getHours()<17?"🌤️":"🌙"}</div>
           <div style={{color:"#C9A84C",fontSize:13,marginTop:4}}>{new Date().toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
           <div style={{display:"flex",gap:8,marginTop:6,alignItems:"center"}}>
             <RoleBadge role={currentUser.role}/>
@@ -6224,10 +6224,24 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
         </div>
       </div>
 
+      {/* Empty state banner when no leasing data */}
+      {leases.length===0&&tenants.length===0&&(
+        <div style={{background:"#F0F7FF",border:"1.5px solid #D1E4F7",borderRadius:12,padding:"16px 20px",display:"flex",alignItems:"center",gap:14}}>
+          <div style={{fontSize:32}}>🔑</div>
+          <div>
+            <div style={{fontWeight:700,color:"#0B1F3A",fontSize:14,marginBottom:4}}>No leasing data yet</div>
+            <div style={{fontSize:12,color:"#4A5568"}}>Start by adding tenants and creating leases in the <strong>Enquiries</strong> and <strong>Leasing</strong> tabs. Stats will appear here once data is entered.</div>
+          </div>
+          <button onClick={()=>onNavigate("l_leads")} style={{marginLeft:"auto",padding:"8px 16px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+            + Add Enquiry →
+          </button>
+        </div>
+      )}
+
       {/* Stats */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
-        <SC label="Active Leases"      value={activeLeases.length}  sub={`${tenants.length} tenants`}                  accent="#5B3FAA" icon="📄" onClick={()=>onNavigate("leasing")}/>
-        <SC label="Annual Rent Roll"   value={fmtM(totalRent)}      sub={`${activeLeases.length} contracts`}           accent="#1A7F5A" icon="💰" onClick={()=>onNavigate("leasing")}/>
+        <SC label="Active Leases"      value={activeLeases.length}  sub={tenants.length>0?`${tenants.length} tenants`:"Add tenants to start"}    accent="#5B3FAA" icon="📄" onClick={()=>onNavigate("leasing")}/>
+        <SC label="Annual Rent Roll"   value={fmtM(totalRent)}      sub={activeLeases.length>0?`${activeLeases.length} contracts`:"No active leases"} accent="#1A7F5A" icon="💰" onClick={()=>onNavigate("leasing")}/>
         <SC label="Available Units"    value={availUnits.length}    sub={`${leaseUnits.length} total for lease`}       accent="#9B7FD4" icon="🔑" onClick={()=>onNavigate("l_inventory")}/>
         <SC label="Open Maintenance"   value={openMaint.length}     sub={`${overduePmts.length} overdue payments`}     accent={openMaint.length>0?"#B83232":"#A0AEC0"} icon="🔧" onClick={()=>onNavigate("leasing")}/>
       </div>
@@ -7948,11 +7962,18 @@ export default function App(){
         setAiUnits(filterByCo(units2.data));
         setAiSalePr(filterByCo(sp2.data));
         setAiLeasePr(filterByCo(lp2.data));
+        const coTenants = filterByCo(lt.data);
+        const coTenantIds = coTenants.map(t=>t.id);
+        const coLeases = (ll.data||[]).filter(l=>
+          (l.company_id&&l.company_id===cid) ||
+          coTenantIds.includes(l.tenant_id)
+        );
+        const coLeaseIds = coLeases.map(l=>l.id);
         setLeasingData({
-          tenants:filterByCo(lt.data),
-          leases:ll.data.filter(l=>filterByCo(lt.data).map(t=>t.id).includes(l.tenant_id)),
-          payments:lp_.data,
-          maintenance:lm.data,
+          tenants: coTenants,
+          leases:  coLeases,
+          payments:(lp_.data||[]).filter(p=>coLeaseIds.includes(p.lease_id)||coTenantIds.includes(p.tenant_id)),
+          maintenance:(lm.data||[]).filter(m=>!m.company_id||m.company_id===cid),
           loaded:true
         });
         const today2=new Date();
