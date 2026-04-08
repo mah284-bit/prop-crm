@@ -8305,7 +8305,8 @@ export default function App(){
     setActiveApp(app);
     setActiveApp(app); localStorage.setItem("propccrm_last_app", app);
     localStorage.setItem("propccrm_last_app", app);
-    if(user.is_super_admin||user.role==="super_admin"){
+    // Load companies for all admin/manager roles to show in header
+    if(["super_admin","admin","sales_manager","leasing_manager"].includes(user.role)){
       supabase.from("companies").select("*").order("name").then(({data})=>{
         if(data){
           setCompanies(data);
@@ -8354,31 +8355,44 @@ export default function App(){
               const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
               const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || null;
               const isSA = currentUser?.role==="super_admin";
-              if(!co && !isSA) return null;
-              // Super admin gets a dropdown to switch companies
+
+              // Super admin with multiple companies — show dropdown switcher
               if(isSA && companies.length>1){
                 return (
-                  <select value={storedId||""} onChange={e=>{
-                    const newId=e.target.value;
-                    setActiveCompanyId(newId);
-                    localStorage.setItem("propccrm_company_id",newId);
-                    window.location.reload();
-                  }} style={{
-                    background:"rgba(255,255,255,.08)",border:"1px solid rgba(201,168,76,.4)",
-                    borderRadius:8,padding:"4px 10px",color:"#C9A84C",fontSize:13,fontWeight:700,
-                    cursor:"pointer",maxWidth:200,fontFamily:"'Playfair Display',serif"
-                  }}>
-                    {companies.map(c=><option key={c.id} value={c.id} style={{background:"#0B1F3A",color:"#fff"}}>{c.name}</option>)}
-                  </select>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    {co?.logo_url&&<img src={co.logo_url} alt="" style={{width:28,height:28,borderRadius:6,objectFit:"cover",border:"1.5px solid rgba(201,168,76,.4)"}}/>}
+                    <select value={storedId||""} onChange={e=>{
+                      const newId=e.target.value;
+                      setActiveCompanyId(newId);
+                      localStorage.setItem("propccrm_company_id",newId);
+                      window.location.reload();
+                    }} style={{
+                      background:"rgba(255,255,255,.08)",border:"1px solid rgba(201,168,76,.4)",
+                      borderRadius:8,padding:"5px 10px",color:"#C9A84C",fontSize:13,fontWeight:700,
+                      cursor:"pointer",maxWidth:200,fontFamily:"'Playfair Display',serif"
+                    }}>
+                      {companies.map(c=><option key={c.id} value={c.id} style={{background:"#0B1F3A",color:"#fff"}}>{c.name}</option>)}
+                    </select>
+                  </div>
                 );
               }
-              // Regular users just see company name
-              return co?(
-                <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:8,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)"}}>
-                  {co.logo_url&&<img src={co.logo_url} alt="" style={{width:18,height:18,borderRadius:4,objectFit:"cover"}}/>}
-                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:"#C9A84C",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:160}}>{co.name}</span>
+
+              // All other users — show company name + logo
+              if(!co) return null;
+              return (
+                <div style={{display:"flex",alignItems:"center",gap:8,padding:"4px 10px",borderRadius:8,background:"rgba(255,255,255,.08)",border:"1px solid rgba(255,255,255,.12)"}}>
+                  {co.logo_url
+                    ? <img src={co.logo_url} alt={co.name} style={{width:28,height:28,borderRadius:6,objectFit:"cover"}}/>
+                    : <div style={{width:28,height:28,borderRadius:6,background:"#C9A84C",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:12,color:"#0B1F3A",flexShrink:0}}>
+                        {co.name?.charAt(0)||"C"}
+                      </div>
+                  }
+                  <div style={{display:"flex",flexDirection:"column",minWidth:0}}>
+                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:13,color:"#C9A84C",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:150,lineHeight:1.2}}>{co.name}</span>
+                    {co.business_type&&<span style={{fontSize:9,color:"rgba(201,168,76,.6)",textTransform:"uppercase",letterSpacing:".5px",lineHeight:1}}>{co.business_type==="both"?"Sales & Leasing":co.business_type==="sales"?"Sales":co.business_type==="leasing"?"Leasing":co.business_type}</span>}
+                  </div>
                 </div>
-              ):null;
+              );
             })()}
           </div>
 
