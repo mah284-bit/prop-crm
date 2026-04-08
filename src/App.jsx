@@ -90,8 +90,8 @@ const saveAppConfig = (cfg) => {
 };
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","reports","pay_plans","companies","users","permissions"],
-  leasing: ["l_dashboard","l_leads","l_pipeline","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions","l_permsets"],
+  sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","reports","pay_plans","companies","users","permissions","permsets","group_view"],
+  leasing: ["l_dashboard","l_leads","l_pipeline","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
   both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","reports","pay_plans","l_reports","companies","users","permissions"],
 };
 // Which roles each mode makes available
@@ -2312,6 +2312,45 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
   );
 }
 
+
+// ══════════════════════════════════════════════════════════════════
+// GROUP CONSOLIDATED VIEW — Super Admin only
+// Roadmap: MVP Phase — Consolidated reporting across all legal entities
+// See: Plan B architecture — group_id / parent_company_id on companies table
+// ══════════════════════════════════════════════════════════════════
+function GroupConsolidatedView({ currentUser }) {
+  return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,padding:"2rem"}}>
+      <div style={{fontSize:56}}>🏛</div>
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0B1F3A",textAlign:"center"}}>
+        Group Consolidated View
+      </div>
+      <div style={{fontSize:14,color:"#718096",textAlign:"center",maxWidth:500,lineHeight:1.8}}>
+        This feature will provide consolidated reporting across all your legal entities — 
+        combined pipeline, rent roll, inventory and agent performance in one board-level view.
+      </div>
+      <div style={{background:"#FFF9EC",border:"1.5px solid #E8C97A",borderRadius:12,padding:"16px 24px",maxWidth:480,width:"100%"}}>
+        <div style={{fontSize:12,fontWeight:700,color:"#8A6200",marginBottom:10,textTransform:"uppercase",letterSpacing:".5px"}}>📋 Planned Features</div>
+        {[
+          "Consolidated dashboard — KPIs across all companies",
+          "Cross-entity pipeline & rent roll totals",
+          "Per-entity breakdown with drill-down",
+          "Group-level agent performance ranking",
+          "Consolidated PDF/Excel report export",
+          "Parent company / subsidiary structure (group_id)",
+        ].map((f,i)=>(
+          <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:6,fontSize:13,color:"#4A5568"}}>
+            <span style={{color:"#C9A84C",fontWeight:700,flexShrink:0}}>○</span>{f}
+          </div>
+        ))}
+      </div>
+      <div style={{fontSize:12,color:"#A0AEC0",textAlign:"center"}}>
+        Scheduled for MVP Phase · Requires <code style={{background:"#F0F2F5",padding:"1px 5px",borderRadius:4}}>group_id</code> on companies table
+      </div>
+    </div>
+  );
+}
+
 // ══════════════════════════════════════════════════════
 // ROOT APP
 // ══════════════════════════════════════════════════════
@@ -2331,6 +2370,7 @@ const TABS=[
   {id:"users",      label:"Users",        icon:"👥", app:"sales",   roles:["admin","super_admin"]},
   {id:"permissions",label:"Permissions",  icon:"🔒", app:"sales",   roles:["super_admin"]},
   {id:"permsets",   label:"Permissions",  icon:"🔐", app:"sales",   roles:["super_admin","admin"]},
+  {id:"group_view", label:"Group View",    icon:"🏛", app:"sales",   roles:["super_admin"]},
   // ── Leasing CRM ────────────────────────────────────────────────
   {id:"l_dashboard",label:"Dashboard",    icon:"⊞",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
   {id:"l_leads",    label:"Enquiries",    icon:"👤", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
@@ -2345,6 +2385,7 @@ const TABS=[
   {id:"l_companies",label:"Companies",    icon:"🏢", app:"leasing", roles:["super_admin"]},
   {id:"l_users",    label:"Users",        icon:"👥", app:"leasing", roles:["admin","super_admin"]},
   {id:"l_permsets", label:"Permissions",  icon:"🔐", app:"leasing", roles:["super_admin","admin"]},
+  {id:"l_group_view",label:"Group View",  icon:"🏛", app:"leasing", roles:["super_admin"]},
 ];
 
 // Who can see the app switcher
@@ -6568,13 +6609,19 @@ function UsersTab({currentUser, showToast}) {
 
   const loadUsers = useCallback(async()=>{
     setLoading(true);
-    const queries = [supabase.from("profiles").select("*").order("created_at",{ascending:false})];
+    const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+    // Super admin sees all users (can filter by company via selector)
+    // All other roles only see users from their own company
+    const userQuery = isSuperAdmin
+      ? supabase.from("profiles").select("*").order("created_at",{ascending:false})
+      : supabase.from("profiles").select("*").eq("company_id", cid).order("created_at",{ascending:false});
+    const queries = [userQuery];
     if(isSuperAdmin) queries.push(supabase.from("companies").select("id,name,business_type").order("name"));
     const [u, co] = await Promise.all(queries);
     setUsers(u.data||[]);
     if(co) setCompanies(co.data||[]);
     setLoading(false);
-  },[]);
+  },[isSuperAdmin]);
   useEffect(()=>{loadUsers();},[loadUsers]);
 
   const saveUser=async()=>{
@@ -8237,7 +8284,7 @@ export default function App(){
             : supabase.from("leads").select("*").order("created_at",{ascending:false})),
           safe(supabase.from("properties").select("*").order("created_at",{ascending:false})),
           safe(supabase.from("activities").select("*").order("created_at",{ascending:false})),
-          safe(supabase.from("profiles").select("*").order("full_name")),
+          safe(cid ? supabase.from("profiles").select("*").eq("company_id",cid).order("full_name") : supabase.from("profiles").select("*").order("full_name")),
           safe(cid
             ? supabase.from("discount_requests").select("*").eq("company_id",cid).order("created_at",{ascending:false})
             : supabase.from("discount_requests").select("*").order("created_at",{ascending:false})),
