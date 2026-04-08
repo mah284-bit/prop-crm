@@ -7672,7 +7672,6 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
             {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:""});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Enquiry</button>}
           </div>
         )}
-      </div>
         {tenantOpps.map(opp=>{
           const unit=units.find(u=>u.id===opp.unit_id);
           const proj=unit?projects.find(p=>p.id===unit.project_id):null;
