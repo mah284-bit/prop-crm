@@ -3873,7 +3873,7 @@ Return ONLY the JSON, no explanation.`}
                   "UNIT-"+(String(i+1).padStart(3,"0"))+"",
                   "Residential","2 Bed","Sale",
                   i+1, 1200, 2, 2, "Available", "Sea View", 2500000, ""
-                ].map(v=>"""+(String(v).replace(/"/g,'""'))+""").join(","));
+                ].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(","));
                 // Add sample rows if no projects
                 if(projRows.length===0) projRows.push('"","Your Project Name","A-101","Residential","2 Bed","Sale","5","1250","2","2","Available","Sea View","2500000",""');
                 const headers = "project_id,project_name,unit_ref,unit_type,sub_type,purpose,floor_number,size_sqft,bedrooms,bathrooms,status,view,asking_price,annual_rent";
@@ -4764,7 +4764,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                       <div><div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>Export Current Leases</div><div style={{fontSize:11,color:"#718096"}}>{leases.length} records</div></div>
                       <button onClick={()=>{
                         const headers="tenant_id,unit_id,start_date,end_date,annual_rent,security_deposit,agency_fee,number_of_cheques,ejari_number,status,notes";
-                        const rows=leases.map(l=>[l.tenant_id||"",l.unit_id||"",l.start_date||"",l.end_date||"",l.annual_rent||"",l.security_deposit||"",l.agency_fee||"",l.number_of_cheques||"",l.ejari_number||"",l.status||"",l.notes||""].map(v=>"""+(String(v).replace(/"/g,'""'))+""").join(","));
+                        const rows=leases.map(l=>[l.tenant_id||"",l.unit_id||"",l.start_date||"",l.end_date||"",l.annual_rent||"",l.security_deposit||"",l.agency_fee||"",l.number_of_cheques||"",l.ejari_number||"",l.status||"",l.notes||""].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(","));
                         const csv=[headers,...rows].join("\n");
                         const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download="leases_export_"+(new Date().toISOString().split("T")[0])+".csv";a.click();
                         showToast("Exported "+(leases.length)+" leases","success");
@@ -5079,7 +5079,7 @@ function exportToExcel(rows, headers, filename) {
     if(v === null || v === undefined) return "";
     const s = String(v);
     return s.includes(",") || s.includes('"') || s.includes('\n')
-      ? """+(s.replace(/"/g,'""'))+""" : s;
+      ? '"'+s.replace(/"/g,'""')+'"' : s;
   };
   const csv = [headers.map(escape).join(","), ...rows.map(r=>r.map(escape).join(","))].join("\n");
   const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8"});
@@ -7634,7 +7634,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
                     const headers = "full_name,phone,email,nationality,id_type,id_number,id_expiry,tenant_type,notes";
                     const rows = tenants.map(t=>[
                       t.full_name,t.phone||"",t.email||"",t.nationality||"",t.id_type||"",t.id_number||"",t.id_expiry||"",t.tenant_type||"",t.notes||""
-                    ].map(v=>"""+(String(v).replace(/"/g,'""'))+""").join(","));
+                    ].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(","));
                     const csv=[headers,...rows].join("\n");
                     const a=document.createElement("a");
                     a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
