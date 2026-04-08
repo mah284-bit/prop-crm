@@ -7678,12 +7678,13 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
   const tf = k => e => setTForm(f=>({...f,[k]:e.target?.value??e}));
 
   useEffect(()=>{
+    const q = x => x.then(r=>r).catch(()=>({data:[]}));
     Promise.all([
-      safe(supabase.from("tenants").select("*").order("full_name")),
-      safe(supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false})),
-      safe(supabase.from("project_units").select("id,unit_ref,unit_type,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms,bathrooms,block_or_tower,asking_price")),
-      safe(supabase.from("projects").select("id,name")),
-      safe(supabase.from("unit_lease_pricing").select("*")),
+      q(supabase.from("tenants").select("*").order("full_name")),
+      q(supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false})),
+      q(supabase.from("project_units").select("id,unit_ref,unit_type,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms,bathrooms,block_or_tower,asking_price")),
+      q(supabase.from("projects").select("id,name")),
+      q(supabase.from("unit_lease_pricing").select("*")),
     ]).then(([t,lo,u,p,lp])=>{
       setTenants(t.data||[]);
       setLOpps(lo.data||[]);
