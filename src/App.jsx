@@ -2782,7 +2782,7 @@ function ReservationBadge({ reservation }) {
   if (reservation.status !== "Active" && reservation.status !== "Extended") return null;
   return (
     <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:20,background:col.bg,color:col.c,border:"1px solid "+col.border}}>
-      {urg === "expired" ? "⚠ Expired" : `🔒 ${hrs}h left`}
+      {urg === "expired" ? "⚠ Expired" : "🔒 "+hrs+"h left"}
     </span>
   );
 }
