@@ -1043,6 +1043,9 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const totalPaid = payments.filter(p=>["Cleared","Received","Deposited"].includes(p.status)).reduce((s,p)=>s+(p.amount||0),0);
   const totalDue  = payments.reduce((s,p)=>s+(p.amount||0),0);
 
+  const _crHp=selUnit?!!(salePricing.find(s=>s.unit_id===selUnit.id)||leasePricing.find(l=>l.unit_id===selUnit.id)):false;
+  const _crPr=selUnit?projects.find(p=>p.id===selUnit.project_id):null;
+  const _crOk=_crHp&&(!_crPr?.launch_date||new Date()>=new Date(_crPr.launch_date));
   const _suSp=selUnit?getSP(selUnit.id):null;
   const _suLp=selUnit?getLP(selUnit.id):null;
   const _suProj=selUnit?projects.find(p=>p.id===selUnit.project_id):null;
@@ -3652,21 +3655,18 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
                     )}
                     {selUnit.notes&&<div style={{fontSize:12,color:"#4A5568",padding:"8px 10px",background:"#F7F9FC",borderRadius:8,lineHeight:1.6}}>{selUnit.notes}</div>}
                     {canEdit&&<button onClick={()=>openEdit(selUnit)} style={{padding:"8px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit Unit</button>}
-                    {canReserve&&selUnit.status==="Available"&&(()=>{
-                      const _hp=!!(salePricing.find(s=>s.unit_id===selUnit.id)||leasePricing.find(l=>l.unit_id===selUnit.id));
-                      const _pr=projects.find(p=>p.id===selUnit.project_id);
-                      const _ok=_hp&&(!_pr?.launch_date||new Date()>=new Date(_pr.launch_date));
-                      return (
+                    {canReserve&&selUnit.status==="Available"&&(
+
                         <button onClick={()=>{
-                          if(!_hp){showToast("Add pricing to this unit before reserving","error");return;}
-                          if(!_ok){showToast("Project launches "+new Date(_pr.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})+" — not open yet","error");return;}
+                          if(!_crHp){showToast("Add pricing to this unit before reserving","error");return;}
+                          if(!_crOk){showToast("Project launches "+new Date(_crPr.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})+" — not open yet","error");return;}
                           setReserveUnit(selUnit);setShowReserve(true);
-                        }} style={{padding:"8px",borderRadius:8,border:"none",background:_ok?"#C9A84C":"#E2E8F0",color:_ok?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:_ok?"pointer":"not-allowed"}}>
-                          {!_hp?"⚠️ No Pricing":!_ok?"🔒 Not Released":"🔒 Reserve Unit"}
+                        }} style={{padding:"8px",borderRadius:8,border:"none",background:_crOk?"#C9A84C":"#E2E8F0",color:_crOk?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:_crOk?"pointer":"not-allowed"}}>
+                          {!_crHp?"⚠️ No Pricing":!_crOk?"🔒 Not Released":"🔒 Reserve Unit"}
                         </button>
-                      );
-                    })()}
-                    {canReserve&&(()=>{const _r=reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status));return _r?(<button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"1.5px solid #E8C97A",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:700,cursor:"pointer"}}>⏱ View Reservation ({hoursLeft(_r.expires_at,_r.extended_until)}h)</button>):null;})()}
+
+                    )}
+                    {canReserve&&reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status))?(<button onClick={()=>{setReserveUnit(selUnit);setShowReserve(true);}} style={{padding:"8px",borderRadius:8,border:"1.5px solid #E8C97A",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:700,cursor:"pointer"}}>⏱ View Reservation ({hoursLeft(reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status)).expires_at,reservations.find(x=>x.unit_id===selUnit.id&&["Active","Extended"].includes(x.status)).extended_until)}h)</button>):null}
                   </div>
                 )}
                 {/* Pricing tab */}
@@ -3837,7 +3837,6 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
             </div>
           </div>
         </div>
-        );
             )}
             {showReserve&&reserveUnit&&(
         <ReservationModal
@@ -4758,7 +4757,6 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                 </div>
               </div>
             </div>
-            );
                     )}
 
           {showAddLease&&(
@@ -7603,7 +7601,6 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
             </div>
           </div>
         </div>
-        );
             )}
 
       {/* Add/Edit Tenant Modal */}      {showAddTenant&&(
