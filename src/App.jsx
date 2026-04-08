@@ -2318,6 +2318,36 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
 
 
 
+function FloatingOrb({aiOpen, onOpen, followupAlerts={}}){
+  const cacheStr = localStorage.getItem("propccrm_company_cache");
+  const coCache  = cacheStr ? JSON.parse(cacheStr) : null;
+  const alertCount = (followupAlerts.staleLeads?.length||0)+(followupAlerts.overduePayments?.length||0)+(followupAlerts.expiringLeases?.length||0);
+  return (
+    <div style={{position:"fixed",bottom:28,right:28,zIndex:2000,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8,pointerEvents:"none"}}>
+      {!aiOpen&&(
+        <div style={{background:"rgba(11,31,58,.85)",backdropFilter:"blur(8px)",borderRadius:8,padding:"5px 10px",fontSize:10,color:"rgba(255,255,255,.6)",pointerEvents:"none",border:"1px solid rgba(255,255,255,.08)"}}>
+          Press <kbd style={{background:"rgba(255,255,255,.1)",padding:"1px 5px",borderRadius:4,fontSize:9}}>Ctrl+K</kbd>
+        </div>
+      )}
+      {alertCount>0&&!aiOpen&&(
+        <div style={{background:"#B83232",borderRadius:20,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#fff",pointerEvents:"none"}}>
+          {alertCount} insight{alertCount>1?"s":""} waiting
+        </div>
+      )}
+      <button onClick={onOpen} style={{
+        width:56,height:56,borderRadius:16,border:"none",cursor:"pointer",
+        background:"linear-gradient(135deg,#C9A84C,#E8C97A)",
+        boxShadow:aiOpen?"0 0 0 4px rgba(201,168,76,.3), 0 8px 32px rgba(201,168,76,.5)":"0 4px 20px rgba(201,168,76,.4)",
+        display:"flex",alignItems:"center",justifyContent:"center",
+        fontSize:24,fontWeight:800,color:"#0B1F3A",
+        transition:"all .3s",transform:aiOpen?"rotate(45deg) scale(1.05)":"scale(1)",
+        pointerEvents:"auto",
+        animation:alertCount>0&&!aiOpen?"orbpulse 2s ease-in-out infinite":"none",
+      }}>✦</button>
+    </div>
+  );
+}
+
 // ══════════════════════════════════════════════════════════════════
 // AMBIENT AI — Floating Orb + Command Bar + Side Panel
 // ══════════════════════════════════════════════════════════════════
@@ -2702,6 +2732,36 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
 // See: Plan B architecture — group_id / parent_company_id on companies table
 // ══════════════════════════════════════════════════════════════════
 
+
+function FloatingOrb({aiOpen, onOpen, followupAlerts={}}){
+  const cacheStr = localStorage.getItem("propccrm_company_cache");
+  const coCache  = cacheStr ? JSON.parse(cacheStr) : null;
+  const alertCount = (followupAlerts.staleLeads?.length||0)+(followupAlerts.overduePayments?.length||0)+(followupAlerts.expiringLeases?.length||0);
+  return (
+    <div style={{position:"fixed",bottom:28,right:28,zIndex:2000,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8,pointerEvents:"none"}}>
+      {!aiOpen&&(
+        <div style={{background:"rgba(11,31,58,.85)",backdropFilter:"blur(8px)",borderRadius:8,padding:"5px 10px",fontSize:10,color:"rgba(255,255,255,.6)",pointerEvents:"none",border:"1px solid rgba(255,255,255,.08)"}}>
+          Press <kbd style={{background:"rgba(255,255,255,.1)",padding:"1px 5px",borderRadius:4,fontSize:9}}>Ctrl+K</kbd>
+        </div>
+      )}
+      {alertCount>0&&!aiOpen&&(
+        <div style={{background:"#B83232",borderRadius:20,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#fff",pointerEvents:"none"}}>
+          {alertCount} insight{alertCount>1?"s":""} waiting
+        </div>
+      )}
+      <button onClick={onOpen} style={{
+        width:56,height:56,borderRadius:16,border:"none",cursor:"pointer",
+        background:"linear-gradient(135deg,#C9A84C,#E8C97A)",
+        boxShadow:aiOpen?"0 0 0 4px rgba(201,168,76,.3), 0 8px 32px rgba(201,168,76,.5)":"0 4px 20px rgba(201,168,76,.4)",
+        display:"flex",alignItems:"center",justifyContent:"center",
+        fontSize:24,fontWeight:800,color:"#0B1F3A",
+        transition:"all .3s",transform:aiOpen?"rotate(45deg) scale(1.05)":"scale(1)",
+        pointerEvents:"auto",
+        animation:alertCount>0&&!aiOpen?"orbpulse 2s ease-in-out infinite":"none",
+      }}>✦</button>
+    </div>
+  );
+}
 
 // ══════════════════════════════════════════════════════════════════
 // AMBIENT AI — Floating Orb + Command Bar + Side Panel
@@ -9439,42 +9499,7 @@ export default function App(){
     />
 
     {/* ── FLOATING ORB ────────────────────────────────────── */}
-    {currentUser&&(()=>{
-      const cacheStr = localStorage.getItem("propccrm_company_cache");
-      const coCache  = cacheStr ? JSON.parse(cacheStr) : null;
-      const aiFullName = coCache?.ai_assistant_name || ((coCache?.name||"Prop").split(" ")[0]+" AI");
-      const alertCount = (followupAlerts.staleLeads?.length||0)+(followupAlerts.overduePayments?.length||0)+(followupAlerts.expiringLeases?.length||0);
-      return (
-        <div style={{position:"fixed",bottom:28,right:28,zIndex:2000,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:8,pointerEvents:"none"}}>
-          {/* Keyboard hint — shows briefly */}
-          {!aiOpen&&(
-            <div style={{background:"rgba(11,31,58,.85)",backdropFilter:"blur(8px)",borderRadius:8,padding:"5px 10px",fontSize:10,color:"rgba(255,255,255,.6)",pointerEvents:"none",border:"1px solid rgba(255,255,255,.08)"}}>
-              Press <kbd style={{background:"rgba(255,255,255,.1)",padding:"1px 5px",borderRadius:4,fontSize:9}}>Ctrl+K</kbd> anywhere
-            </div>
-          )}
-          {/* Alert badge */}
-          {alertCount>0&&!aiOpen&&(
-            <div style={{background:"#B83232",borderRadius:20,padding:"4px 10px",fontSize:10,fontWeight:700,color:"#fff",pointerEvents:"none"}}>
-              {alertCount} insight{alertCount>1?"s":""} waiting
-            </div>
-          )}
-          {/* The Orb */}
-          <button onClick={()=>setAiOpen(o=>!o)} style={{
-            width:56,height:56,borderRadius:16,border:"none",cursor:"pointer",
-            background:"linear-gradient(135deg,#C9A84C,#E8C97A)",
-            boxShadow:aiOpen?"0 0 0 4px rgba(201,168,76,.3), 0 8px 32px rgba(201,168,76,.5)":"0 4px 20px rgba(201,168,76,.4)",
-            display:"flex",alignItems:"center",justifyContent:"center",
-            fontSize:24,fontWeight:800,color:"#0B1F3A",
-            transition:"all .3s",transform:aiOpen?"rotate(45deg) scale(1.05)":"scale(1)",
-            pointerEvents:"auto",
-            animation:alertCount>0&&!aiOpen?"orbpulse 2s ease-in-out infinite":"none",
-          }}>
-            ✦
-          </button>
-
-        </div>
-      );
-    })()}
+    {currentUser&&<FloatingOrb aiOpen={aiOpen} onOpen={()=>setAiOpen(o=>!o)} followupAlerts={followupAlerts}/>}
 
     </>
   );
