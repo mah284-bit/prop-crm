@@ -14,9 +14,6 @@ const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ─── STYLES ───────────────────────────────────────────────────
-/* AI bubble animations */
-@keyframes ai-pulse{0%,100%{box-shadow:0 4px 20px rgba(201,168,76,.5),0 0 0 4px rgba(201,168,76,.15)}50%{box-shadow:0 4px 28px rgba(201,168,76,.7),0 0 0 8px rgba(201,168,76,.08)}}
-@keyframes ai-dot{from{transform:translateY(0)}to{transform:translateY(-5px)}}
 const _globalCSS=""+
 "    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');"+
 "    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}"+
@@ -61,7 +58,8 @@ const _globalCSS=""+
 "      .stat-grid{grid-template-columns:1fr 1fr!important}"+
 "    }"+
 "  ";
-const GlobalStyle=()=>(<style dangerouslySetInnerHTML={{__html:_globalCSS}}/>);
+const _aiCSS="@keyframes ai-pulse{0%,100%{box-shadow:0 4px 20px rgba(201,168,76,.5),0 0 0 4px rgba(201,168,76,.15)}50%{box-shadow:0 4px 28px rgba(201,168,76,.7),0 0 0 8px rgba(201,168,76,.08)}}@keyframes ai-dot{from{transform:translateY(0)}to{transform:translateY(-5px)}}";
+const GlobalStyle=()=>(<><style dangerouslySetInnerHTML={{__html:_globalCSS}}/><style dangerouslySetInnerHTML={{__html:_aiCSS}}/></>);
 
 
 // ─── CONSTANTS ────────────────────────────────────────────────
