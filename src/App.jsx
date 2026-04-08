@@ -5065,7 +5065,18 @@ ${avail.slice(0,20).map(u=>{
   const lp=leasePricing.find(l=>l.unit_id===u.id);
   const price=sp?.asking_price?`AED ${Number(sp.asking_price).toLocaleString()}`:lp?.annual_rent?`AED ${Number(lp.annual_rent).toLocaleString()}/yr`:"TBD";
   return `• #${u.unit_ref} | ${u.sub_type} | ${u.bedrooms===0?"Studio":(u.unit_type==="Residential"?u.bedrooms+"BR":"")} | ${u.size_sqft?Number(u.size_sqft).toLocaleString()+"sqft":""} | ${u.view||""} | ${price} | ${p?.name||"—"}`;
-}).join("\n")`;
+}).join("\n")}
+
+RECENT ACTIVITY: ${activities.slice(0,5).map(a=>`${a.type} with ${a.lead_name} by ${a.user_name}`).join(" · ")}
+
+=== YOUR JOB ===
+1. Answer questions about properties, leads, pipeline using the live data above
+2. Draft WhatsApp/email messages (professional Dubai real estate tone, WhatsApp <150 words)
+3. Analyse pipeline and suggest next actions
+4. Qualify leads — check stage gates: Contacted needs phone+email; Site Visit needs meeting; Proposal needs unit+budget confirmed; Negotiation needs proposal notes; Closed Won needs final price+payment plan
+5. Auto-extract lead details from descriptions — when asked to "auto-fill" a lead, extract: name, phone, email, budget, nationality, notes
+
+Respond concisely. Use bullet points for lists. Match the user's language.`;
 }
 
 // ── AI Assistant component ────────────────────────────────────────
