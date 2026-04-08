@@ -91,7 +91,7 @@ const saveAppConfig = (cfg) => {
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
   sales:   ["dashboard","projects","builder","leads","pipeline","discounts","activity","ai","reports","pay_plans","companies","users","permissions"],
-  leasing: ["l_dashboard","l_leads","l_pipeline","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions"],
+  leasing: ["l_dashboard","l_leads","l_pipeline","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions","l_permsets"],
   both:    ["dashboard","projects","builder","leads","pipeline","leasing","discounts","activity","ai","reports","pay_plans","l_reports","companies","users","permissions"],
 };
 // Which roles each mode makes available
@@ -8104,12 +8104,10 @@ export default function App(){
   if(!currentUser) return <LoginScreen onLogin={handleLogin}/>;
 
   const cfg=appConfig||{mode:"both"};
-  // Use currentApp to determine visible tabs, falling back to cfg.mode for "both" companies
-  const allowedTabs = currentApp==="leasing" 
-    ? MODE_TABS.leasing 
-    : currentApp==="sales" 
-      ? (MODE_TABS[cfg.mode]||MODE_TABS.both)
-      : (MODE_TABS[cfg.mode]||MODE_TABS.both);
+  // Always use currentApp to pick allowed tabs — ignore cfg.mode when app is explicitly selected
+  const allowedTabs = currentApp==="leasing"
+    ? [...MODE_TABS.leasing, "l_permsets"]  // include all leasing tabs
+    : [...(MODE_TABS[cfg.mode]||MODE_TABS.both), "permsets"];
   const visibleTabs=TABS.filter(t=>t.app===currentApp&&t.roles.includes(userRole)&&allowedTabs.includes(t.id));
 
   return (
