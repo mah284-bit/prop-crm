@@ -3749,6 +3749,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
               </div>
             </div>
         )}
+      </div>
 
       {/* Reservation Modal */}
       {/* Inventory Excel Upload Modal */}
