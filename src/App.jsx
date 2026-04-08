@@ -1080,7 +1080,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
     const _receiptRows=[["Client",lead.name],["Opportunity",opp.title||unit?.unit_ref||"—"],["Milestone",pay.milestone],["Type",pay.payment_type],pay.cheque_number&&["Cheque No.",pay.cheque_number],pay.bank_name&&["Bank",pay.bank_name],["Status",pay.status],["Date",new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})]].filter(Boolean).map(([l,v])=>'<div class="row"><span style="color:#718096">'+l+'</span><span style="font-weight:600">'+v+'</span></div>').join("");
     const _receiptImg=pay.cheque_file_url?"<img src='"+pay.cheque_file_url+"' style='width:100%;margin-top:12px;border-radius:6px;border:1px solid #E2E8F0'/>":"";
     const _receiptStamp=pay.status==="Cleared"?"✓ CLEARED":"✓ RECEIVED";
-    const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+_receiptCSS+'</style></head><body><div class="hdr"><div class="logo">◆ PropCRM</div><div style="font-size:13px;opacity:.7">Payment Receipt</div></div><div class="bdy"><div class="amt">AED '+Number(pay.amount).toLocaleString()+'</div>'+_receiptRows+_receiptImg+'<div style="text-align:center"><div class="stamp">'+_receiptStamp+'</div></div></div></body></html>';
+    const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'+_receiptCSS+'</style></head><body>'+'<div class="hdr"><div class="logo">◆ PropCRM</div><div style="font-size:13px;opacity:.7">Payment Receipt</div></div>'+'<div class="bdy"><div class="amt">AED '+Number(pay.amount).toLocaleString()+'</div>'+_receiptRows+_receiptImg+'<div style="text-align:center"><div class="stamp">'+_receiptStamp+'</div></div></div></body></html>';
     const w=window.open("","_blank","width=500,height=700");
     if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
   };
@@ -8100,32 +8100,25 @@ export default function App(){
         <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:52,gap:10}}>
 
           {/* LEFT: Company Logo + Name — hero position */}
-          {(()=>{
-            const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
-            const cachedCo = (()=>{ try{ return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null"); }catch{return null;} })();
-            const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || cachedCo || null;
-            const isSA = currentUser?.role==="super_admin";
-            const bizLabel = co?.business_type==="both"?"Sales & Leasing":co?.business_type==="sales"?"Sales Only":co?.business_type==="leasing"?"Leasing Only":co?.business_type||"";
 
-            return (
               <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,minWidth:0}}>
                 {/* Logo */}
-                {co?.logo_url
-                  ? <img src={co.logo_url} alt={co?.name} style={{width:36,height:36,borderRadius:8,objectFit:"cover",border:"2px solid rgba(201,168,76,.5)",flexShrink:0}}/>
+                {_co?.logo_url
+                  ? <img src={_co.logo_url} alt={_co?.name} style={{width:36,height:36,borderRadius:8,objectFit:"cover",border:"2px solid rgba(201,168,76,.5)",flexShrink:0}}/>
                   : <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16,color:"#0B1F3A",flexShrink:0,border:"2px solid rgba(201,168,76,.4)"}}>
-                      {co?.name?.charAt(0)||"◆"}
+                      {_co?.name?.charAt(0)||"◆"}
                     </div>
                 }
                 {/* Company name + type */}
                 <div style={{display:"flex",flexDirection:"column",minWidth:0}}>
                   <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:180,lineHeight:1.2}}>
-                    {co?.name||"PropCRM"}
+                    {_co?.name||"PropCRM"}
                   </span>
-                  {bizLabel&&<span style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:".6px",lineHeight:1.3}}>{bizLabel}</span>}
+                  {_coBizLabel&&<span style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:".6px",lineHeight:1.3}}>{bizLabel}</span>}
                 </div>
                 {/* Super admin company switcher */}
-                {isSA&&companies.length>1&&(
-                  <select value={storedId||""} onChange={e=>{
+                {_coIsSA&&companies.length>1&&(
+                  <select value={_coStoredId||""} onChange={e=>{
                     setActiveCompanyId(e.target.value);
                     localStorage.setItem("propccrm_company_id",e.target.value);
                     window.location.reload();
@@ -8138,8 +8131,7 @@ export default function App(){
                   </select>
                 )}
               </div>
-            );
-          })()}
+
 
           {/* CENTRE: CRM Switcher */}
           {canSwitch&&(
