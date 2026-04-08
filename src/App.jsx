@@ -6128,7 +6128,7 @@ function SetupWizard({ onComplete }) {
 // ══════════════════════════════════════════════════════════════════
 // LEASING DASHBOARD
 // ══════════════════════════════════════════════════════════════════
-function LeasingDashboard({currentUser, activities, units=[], salePricing=[], leasePricing=[], leasingData=null, onNavigate=()=>{}}) {
+function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[], leasePricing=[], leasingData=null, onNavigate=()=>{}, followupAlerts={}}) {
   const [leases,     setLeases]     = useState([]);
   const [tenants,    setTenants]    = useState([]);
   const [payments,   setPayments]   = useState([]);
@@ -6148,20 +6148,25 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
     // Fallback: fetch own data
     const load = async () => {
       setLoading(true);
-      const [l,t,p,m] = await Promise.all([
-        safe(supabase.from("leases").select("*").order("end_date")),
-        safe(supabase.from("tenants").select("*")),
-        safe(supabase.from("rent_payments").select("*").order("due_date")),
-        safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
-      ]);
-      setLeases(l.data||[]); setTenants(t.data||[]);
-      setPayments(p.data||[]); setMaintenance(m.data||[]);
+      try {
+        const qsafe = q => q.then(r=>r).catch(()=>({data:[]}));
+        const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+        const [l,t,p,m] = await Promise.all([
+          qsafe(cid ? supabase.from("leases").select("*").eq("company_id",cid).order("end_date") : supabase.from("leases").select("*").order("end_date")),
+          qsafe(cid ? supabase.from("tenants").select("*").eq("company_id",cid) : supabase.from("tenants").select("*")),
+          qsafe(supabase.from("rent_payments").select("*").order("due_date")),
+          qsafe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
+        ]);
+        setLeases(l.data||[]); setTenants(t.data||[]);
+        setPayments(p.data||[]); setMaintenance(m.data||[]);
+      } catch(e) { console.error("Leasing dashboard load error:", e); }
       setLoading(false);
     };
     load();
   },[leasingData]);
 
-  if(loading) return <Spinner msg="Loading Leasing Dashboard…"/>;
+  // Show spinner only on first load, not on refresh
+  if(loading && leases.length===0 && tenants.length===0) return <Spinner msg="Loading Leasing Dashboard…"/>;
 
   const today         = new Date();
   const activeLeases  = leases.filter(l=>l.status==="Active");
@@ -6334,6 +6339,73 @@ function LeasingDashboard({currentUser, activities, units=[], salePricing=[], le
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#0B1F3A",marginBottom:10}}>Quick Actions</div>
+          {[
+            {icon:"👤",label:"Add Enquiry",       tab:"l_leads",     bg:"#5B3FAA",col:"#fff"},
+            {icon:"🏠",label:"View Inventory",    tab:"l_inventory", bg:"#1A5FA8",col:"#fff"},
+            {icon:"🔀",label:"Pipeline Board",    tab:"l_pipeline",  bg:"#9B7FD4",col:"#fff"},
+            {icon:"📄",label:"Active Leases",     tab:"leasing",     bg:"#1A7F5A",col:"#fff"},
+            {icon:"✦", label:"Ask AI Assistant",  tab:"l_ai",        bg:"#0B1F3A",col:"#C9A84C"},
+          ].map(({icon,label,tab,bg,col})=>(
+            <button key={tab} onClick={()=>onNavigate(tab)}
+              style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"none",background:bg,color:col,fontSize:12,fontWeight:600,cursor:"pointer",marginBottom:6,textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:16}}>{icon}</span>{label}
+            </button>
+          ))}
+        </div>
+        <div style={{background:"#2D1558",borderRadius:12,padding:"1rem"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#C9A84C",marginBottom:10}}>Today at a Glance</div>
+          {[
+            ["New Enquiries", tenants.filter(t=>t.created_at&&new Date(t.created_at).toDateString()===new Date().toDateString()).length, "l_leads"],
+            ["Expiring ≤30d", expiring30.length, "leasing"],
+            ["Overdue Payments", overduePmts.length, "leasing"],
+            ["Open Maintenance", openMaint.length, "leasing"],
+          ].map(([l,v,t])=>(
+            <div key={l} onClick={()=>onNavigate(t)} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,.07)",cursor:"pointer"}}>
+              <span style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>{l}</span>
+              <span style={{fontSize:13,fontWeight:700,color:v>0?"#F87171":"#fff"}}>{v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+
+      {/* Quick Actions + Today summary */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#0B1F3A",marginBottom:10}}>Quick Actions</div>
+          {[
+            {icon:"👤",label:"Add Enquiry",      tab:"l_leads",     bg:"#5B3FAA",col:"#fff"},
+            {icon:"🏠",label:"View Inventory",   tab:"l_inventory", bg:"#1A5FA8",col:"#fff"},
+            {icon:"🔀",label:"Pipeline Board",   tab:"l_pipeline",  bg:"#9B7FD4",col:"#fff"},
+            {icon:"📄",label:"Active Leases",    tab:"leasing",     bg:"#1A7F5A",col:"#fff"},
+            {icon:"✦", label:"AI Assistant",     tab:"l_ai",        bg:"#0B1F3A",col:"#C9A84C"},
+          ].map(({icon,label,tab,bg,col})=>(
+            <button key={tab} onClick={()=>onNavigate(tab)}
+              style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"none",background:bg,color:col,fontSize:12,fontWeight:600,cursor:"pointer",marginBottom:6,textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:16}}>{icon}</span>{label}
+            </button>
+          ))}
+        </div>
+        <div style={{background:"#2D1558",borderRadius:12,padding:"1rem"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#C9A84C",marginBottom:10}}>Today at a Glance</div>
+          {[
+            ["Expiring ≤30d",    expiring30.length,   "leasing"],
+            ["Overdue Payments", overduePmts.length,  "leasing"],
+            ["Open Maintenance", openMaint.length,    "leasing"],
+            ["Available Units",  availUnits.length,   "l_inventory"],
+          ].map(([l,v,t])=>(
+            <div key={l} onClick={()=>onNavigate(t)} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.07)",cursor:"pointer"}}>
+              <span style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>{l}</span>
+              <span style={{fontSize:13,fontWeight:700,color:v>0?"#F87171":"#fff"}}>{v}</span>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -8032,7 +8104,12 @@ export default function App(){
   if(!currentUser) return <LoginScreen onLogin={handleLogin}/>;
 
   const cfg=appConfig||{mode:"both"};
-  const allowedTabs=MODE_TABS[cfg.mode]||MODE_TABS.both;
+  // Use currentApp to determine visible tabs, falling back to cfg.mode for "both" companies
+  const allowedTabs = currentApp==="leasing" 
+    ? MODE_TABS.leasing 
+    : currentApp==="sales" 
+      ? (MODE_TABS[cfg.mode]||MODE_TABS.both)
+      : (MODE_TABS[cfg.mode]||MODE_TABS.both);
   const visibleTabs=TABS.filter(t=>t.app===currentApp&&t.roles.includes(userRole)&&allowedTabs.includes(t.id));
 
   return (
