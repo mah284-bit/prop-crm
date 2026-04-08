@@ -5341,10 +5341,15 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
   );
 }
 
-function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null, crmContext="sales" }) {
+function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null, crmContext="sales", preloadedUnits=[], preloadedProjects=[], preloadedSalePricing=[], preloadedLeasePricing=[] }) {
   const [activeReport, setActiveReport] = useState(crmContext==="leasing"?"rent_roll":"pipeline");
   const [loading,      setLoading]      = useState(false);
-  const [data,         setData]         = useState({});
+  const [data,         setData]         = useState({
+    units: preloadedUnits||[], projects: preloadedProjects||[],
+    salePricing: preloadedSalePricing||[], leasePricing: preloadedLeasePricing||[],
+    leases: leasingData?.leases||[], tenants: leasingData?.tenants||[],
+    payments: leasingData?.payments||[],
+  });
   const [filters,      setFilters]      = useState({ dateFrom:"", dateTo:"", status:"All", agent:"All" });
 
   // Load all data needed for reports
@@ -5376,10 +5381,14 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
       ]);
       setData({
         leads:   leads.data||[],   activities: acts.data||[],
-        users:   users.data||[],   units:      units.data||[],
-        projects:projs.data||[],   salePricing:sp.data||[],
-        leasePricing:lp.data||[], leases:     leases.data||[],
-        tenants: tenants.data||[], payments:   payments.data||[],
+        users:   users.data||[],
+        units:   (units.data||[]).length>0 ? units.data : (preloadedUnits||[]),
+        projects:(projs.data||[]).length>0 ? projs.data : (preloadedProjects||[]),
+        salePricing:(sp.data||[]).length>0 ? sp.data : (preloadedSalePricing||[]),
+        leasePricing:(lp.data||[]).length>0 ? lp.data : (preloadedLeasePricing||[]),
+        leases:  (leases.data||[]).length>0 ? leases.data : (leasingData?.leases||[]),
+        tenants: (tenants.data||[]).length>0 ? tenants.data : (leasingData?.tenants||[]),
+        payments:(payments.data||[]).length>0 ? payments.data : (leasingData?.payments||[]),
         cheques: cheques.data||[],
       });
     } catch(e) { showToast("Error loading report data","error"); }
@@ -8443,7 +8452,7 @@ export default function App(){
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps}/>}
+          {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr}/>}
           {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
           {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id)=>{setActiveCompanyId(id);localStorage.setItem("propccrm_company_id",id);window.location.reload();}} activeCompanyId={activeCompanyId}/>}
           {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
@@ -8459,7 +8468,7 @@ export default function App(){
           {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="l_ai"        &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leasingData={leasingData} crmContext="leasing"/>}
+          {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leasingData={leasingData} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr}/>}
           {tab==="l_companies" &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id)=>{setActiveCompanyId(id);localStorage.setItem("propccrm_company_id",id);window.location.reload();}} activeCompanyId={activeCompanyId}/>}
           {tab==="l_users"     &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {tab==="l_permissions"&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
