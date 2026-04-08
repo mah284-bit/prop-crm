@@ -5341,14 +5341,23 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
   );
 }
 
-function ReportsModule({ currentUser, showToast, globalOpps=[] }) {
-  const [activeReport, setActiveReport] = useState("pipeline");
+function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null, crmContext="sales" }) {
+  const [activeReport, setActiveReport] = useState(crmContext==="leasing"?"rent_roll":"pipeline");
   const [loading,      setLoading]      = useState(false);
   const [data,         setData]         = useState({});
   const [filters,      setFilters]      = useState({ dateFrom:"", dateTo:"", status:"All", agent:"All" });
 
   // Load all data needed for reports
   const loadData = useCallback(async () => {
+    // If leasing context and data already loaded, use it
+    if(crmContext==="leasing" && leasingData?.loaded){
+      setData(d=>({...d,
+        leases:leasingData.leases||[],
+        tenants:leasingData.tenants||[],
+        payments:leasingData.payments||[],
+      }));
+      // Still load other data
+    }
     setLoading(true);
     try {
       const safe = q => q.catch(()=>({data:[]}));
@@ -5362,8 +5371,8 @@ function ReportsModule({ currentUser, showToast, globalOpps=[] }) {
         safe(supabase.from("unit_lease_pricing").select("*")),
         safe(supabase.from("leases").select("*").order("end_date")),
         safe(supabase.from("tenants").select("*")),
-        safe(supabase.from("sales_payments").select("*").order("due_date")),
-        safe(supabase.from("lease_cheques").select("*").order("cheque_date")),
+        safe(supabase.from("rent_payments").select("*").order("due_date")),
+        safe(supabase.from("rent_payments").select("*").order("due_date")),
       ]);
       setData({
         leads:   leads.data||[],   activities: acts.data||[],
@@ -5578,7 +5587,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[] }) {
 
       {/* Report selector */}
       <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-        {Object.entries(REPORTS).map(([key,r])=>(
+        {Object.entries(REPORTS).filter(([key])=>crmContext==="leasing"?["rent_roll","pdc_schedule","inventory","agent_perf"].includes(key):true).map(([key,r])=>(
           <button key={key} onClick={()=>setActiveReport(key)}
             style={{padding:"7px 14px",borderRadius:8,border:`1.5px solid ${activeReport===key?"#0B1F3A":"#E2E8F0"}`,background:activeReport===key?"#0B1F3A":"#fff",color:activeReport===key?"#fff":"#4A5568",fontSize:12,fontWeight:activeReport===key?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .15s"}}>
             <span>{r.icon}</span> {r.label}
@@ -8450,7 +8459,7 @@ export default function App(){
           {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="l_ai"        &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps}/>}
+          {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leasingData={leasingData} crmContext="leasing"/>}
           {tab==="l_companies" &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id)=>{setActiveCompanyId(id);localStorage.setItem("propccrm_company_id",id);window.location.reload();}} activeCompanyId={activeCompanyId}/>}
           {tab==="l_users"     &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {tab==="l_permissions"&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
