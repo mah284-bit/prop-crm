@@ -306,8 +306,8 @@ const FF=({label,children,required=false,error=""})=>(
     {error&&<div style={{fontSize:11,color:"#B83232",marginTop:4,fontWeight:500}}>⚠ {error}</div>}
   </div>
 );
-const G2=({children})=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>{children}</div>;
-const G3=({children})=><div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>{children}</div>;
+const G2=({children})=>(<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>{children}</div>);
+const G3=({children})=>(<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>{children}</div>);
 const Badge=({label,c,bg})=>(
   <span style={{display:"inline-flex",alignItems:"center",gap:4,background:bg,color:c,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,whiteSpace:"nowrap"}}>
     <span style={{width:5,height:5,borderRadius:"50%",background:c,display:"inline-block"}}/>
@@ -820,7 +820,7 @@ export default function App(){
                     borderRadius:6,padding:"3px 6px",color:"#C9A84C",fontSize:11,fontWeight:600,
                     cursor:"pointer",maxWidth:130
                   }}>
-                    {companies.map(c=><option key={c.id} value={c.id} style={{background:"#0B1F3A",color:"#fff"}}>{c.name}</option>)}
+                    {companies.map(c=>(<option key={c.id} value={c.id} style={{background:"#0B1F3A",color:"#fff"}}>{c.name}</option>))}
                   </select>
                 )}
               </div>
