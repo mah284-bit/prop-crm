@@ -1101,7 +1101,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
           {canEdit&&["New","Contacted","Site Visit"].includes(opp.stage)&&unit&&(
             <button onClick={()=>{
               setEmailForm({to:lead.email||"",subject:"Property Proposal — "+(lead.name)+"",
-                body:"Dear "+(lead.name)+",\n\nPlease find your personalised property proposal.\n\nProperty: "+(unit.unit_ref)+" — "+(unit.sub_type)+"${proj?" (${proj.name})":""}\n${sp?"Price: AED ${Number(sp.asking_price).toLocaleString()}\n":""}\nKindly review and let us know your preferred next step.\n\nBest regards,\n"+(currentUser.full_name)+""});
+                body:"Dear "+(lead.name)+",\n\nPlease find your personalised property proposal.\n\nProperty: "+(unit.unit_ref)+" — "+(unit.sub_type)+(proj?" ("+proj.name+")":"")+"\n"+(sp?"Price: AED "+Number(sp.asking_price).toLocaleString()+"\n":"")+"\nKindly review and let us know your preferred next step.\n\nBest regards,\n"+(currentUser.full_name)});
               setShowEmail(true);
             }} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#1A5FA8",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>📤 Send Proposal</button>
           )}
@@ -2944,7 +2944,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
         {/* Expiry warning bar */}
         {!isNew && reservation.status === "Active" && (
           <div style={{background:col.bg,borderBottom:"2px solid "+(col.border)+"",padding:"8px 16px",fontSize:12,color:col.c,fontWeight:600,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <span>{urg==="expired"?"⚠ Reservation has expired":urg==="critical"?"🔴 Expires in "+(hrs)+" hours — action required":urg==="warning"?"⚠ Expires in "+(hrs)+" hours":"✓ Active — expires "+(new Date(reservation.extended_until||reservation.expires_at).toLocaleDateString("en-AE",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit")+")}"}</span>
+            <span>{urg==="expired"?"⚠ Reservation has expired":urg==="critical"?"🔴 Expires in "+(hrs)+" hours — action required":urg==="warning"?"⚠ Expires in "+(hrs)+" hours":"✓ Active — expires "+(new Date(reservation.extended_until||reservation.expires_at).toLocaleDateString("en-AE",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+")"}</span>
             {(urg==="warning"||urg==="critical"||urg==="expired")&&<button onClick={extend48} style={{fontSize:11,padding:"3px 10px",borderRadius:6,border:"none",background:col.c,color:"#fff",cursor:"pointer"}}>+48h</button>}
           </div>
         )}
