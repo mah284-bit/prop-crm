@@ -2495,21 +2495,27 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
     setLoading(false);
   };
 
-  const fmt = text => text.split("\n").map((line,i)=>{
-    if(!line.trim()) return <div key={i} style={{height:5}}/>;
-    if(/^#{1,3}\s/.test(line)) return <div key={i} style={{fontWeight:800,fontSize:13,color:"#0B1F3A",marginTop:8,marginBottom:3}}>{line.replace(/^#+\s/,"")}</div>;
-    if(/^\*\*(.+)\*\*$/.test(line)) return <div key={i} style={{fontWeight:700,color:"#0B1F3A",marginTop:5,marginBottom:2}}>{line.replace(/\*\*/g,"")}</div>;
-    if(line.match(/^[•\-\*]\s/)){
-      const txt=line.replace(/^[•\-\*]\s*/,"");
-      const parts=txt.split(/\*\*(.+?)\*\*/g);
-      return <div key={i} style={{display:"flex",gap:6,marginBottom:2,paddingLeft:4}}>
-        <span style={{color:"#C9A84C",fontWeight:700,flexShrink:0}}>◆</span>
-        <span>{parts.map((p,j)=>j%2===1?<strong key={j} style={{color:"#0B1F3A"}}>{p}</strong>:p)}</span>
-      </div>;
-    }
-    const parts=line.split(/\*\*(.+?)\*\*/g);
-    return <div key={i} style={{marginBottom:2,lineHeight:1.6}}>{parts.map((p,j)=>j%2===1?<strong key={j} style={{color:"#0B1F3A"}}>{p}</strong>:p)}</div>;
-  });
+  const fmtParts = (line) => {
+    const parts = line.split(/\*\*(.+?)\*\*/g);
+    return parts.map((p,j) => j%2===1 ? <strong key={j} style={{color:"#0B1F3A"}}>{p}</strong> : p);
+  };
+  const fmt = (text) => {
+    return text.split("\n").map((line,i) => {
+      if(!line.trim()) return <div key={i} style={{height:5}}/>;
+      if(/^#{1,3}\s/.test(line)) return <div key={i} style={{fontWeight:800,fontSize:13,color:"#0B1F3A",marginTop:8,marginBottom:3}}>{line.replace(/^#+\s/,"")}</div>;
+      if(/^\*\*(.+)\*\*$/.test(line)) return <div key={i} style={{fontWeight:700,color:"#0B1F3A",marginTop:5}}>{line.replace(/\*\*/g,"")}</div>;
+      if(line.match(/^[•\-\*]\s/)){
+        const txt = line.replace(/^[•\-\*]\s*/,"");
+        return (
+          <div key={i} style={{display:"flex",gap:6,marginBottom:2,paddingLeft:4}}>
+            <span style={{color:"#C9A84C",fontWeight:700}}>◆</span>
+            <span>{fmtParts(txt)}</span>
+          </div>
+        );
+      }
+      return <div key={i} style={{marginBottom:2,lineHeight:1.6}}>{fmtParts(line)}</div>;
+    });
+  };
 
   if(!open) return null;
 
@@ -2705,7 +2711,7 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
             onBlurCapture={e=>e.currentTarget.style.borderColor="#E2E8F0"}>
             <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)}
               onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
-              placeholder={hasAnyKey?`Ask ${aiFullName} anything…`:`⚙️ Add API key to activate ${aiFullName}`}
+              placeholder={hasAnyKey?"Ask "+aiFullName+" anything…":"⚙️ Add API key to activate "+aiFullName}
               rows={1} style={{flex:1,border:"none",outline:"none",resize:"none",fontSize:12,lineHeight:1.5,minHeight:36,maxHeight:100,fontFamily:"inherit",background:"transparent",color:hasAnyKey?"#1a2535":"#A0AEC0"}}/>
             <button onClick={()=>send()} disabled={loading||!input.trim()||!hasAnyKey} style={{
               padding:"8px 14px",borderRadius:9,border:"none",alignSelf:"flex-end",
@@ -2718,7 +2724,7 @@ function AmbientAI({open, onClose, cmdOpen, onCmdClose, leads=[], units=[], proj
           </div>
           <div style={{display:"flex",justifyContent:"space-between",marginTop:5,fontSize:9,color:"#A0AEC0",padding:"0 2px"}}>
             <span>Enter to send · Shift+Enter new line · <kbd style={{background:"#F0F2F5",padding:"1px 4px",borderRadius:3}}>Ctrl+K</kbd> to open</span>
-            <span>{usedProvider?`${usedProvider.name}`:"No key set"}</span>
+            <span>{usedProvider?usedProvider.name:"No key set"}</span>
           </div>
         </div>
       </div>
