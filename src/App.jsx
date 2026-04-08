@@ -4754,8 +4754,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                 </div>
               </div>
             </div>
-            );
-                    )}
+          )}
 
           {showAddLease&&(
             <Modal title="New Lease Contract" onClose={()=>setShowAddLease(false)} width={520}>
@@ -7602,8 +7601,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
             </div>
           </div>
         </div>
-        );
-            )}
+      )}
 
       {/* Add/Edit Tenant Modal */}      {showAddTenant&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
