@@ -5741,20 +5741,2558 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
   );
 }
 
-function SetupWizard({...props}){ return null; }
+function SetupWizard({ onComplete }) {
+  const [step,    setStep]    = useState(1);
+  const [mode,    setMode]    = useState(null);
+  const [company, setCompany] = useState("");
+  const [currency,setCurrency]= useState("AED");
+  const [country, setCountry] = useState("UAE");
+  const [saving,  setSaving]  = useState(false);
 
-function LeasingDashboard({...props}){ return null; }
+  const MODES = [
+    {
+      id:"sales",
+      icon:"🏷",
+      title:"Sales Only",
+      desc:"Lead management, property listings, pipeline tracking, discount approvals.",
+      tabs:["Leads","Inventory","Pipeline","Discounts","AI Assistant"],
+      roles:["Admin","Sales Manager","Sales Agent","Viewer"],
+      color:"#1A5FA8", bg:"#E6EFF9",
+    },
+    {
+      id:"leasing",
+      icon:"🔑",
+      title:"Leasing Only",
+      desc:"Tenant management, lease contracts, rent payments, maintenance tracking.",
+      tabs:["Leasing","Discounts","Activity Log","AI Assistant"],
+      roles:["Admin","Leasing Manager","Leasing Agent","Viewer"],
+      color:"#5B3FAA", bg:"#EEE8F9",
+    },
+    {
+      id:"both",
+      icon:"◆",
+      title:"Sales & Leasing",
+      desc:"Full suite — both teams with complete role segregation. Each team only sees their own modules.",
+      tabs:["All modules","Sales team sees sales","Leasing team sees leasing"],
+      roles:["Admin","Sales Manager","Sales Agent","Leasing Manager","Leasing Agent","Viewer"],
+      color:"#C9A84C", bg:"#FDF3DC",
+      recommended:true,
+    },
+  ];
 
-function UserManagement({...props}){ return null; }
+  const complete = () => {
+    if(!mode){return;}
+    setSaving(true);
+    const cfg = { mode, company:company.trim()||"PropCRM", currency, country, setupAt: new Date().toISOString() };
+    saveAppConfig(cfg);
+    setTimeout(()=>{ setSaving(false); onComplete(cfg); }, 600);
+  };
 
-function UsersTab({...props}){ return null; }
+  const sel = MODES.find(m=>m.id===mode);
 
-function SettingsTab({...props}){ return null; }
+  return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0B1F3A 0%,#1A3558 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
+      <div className="fa" style={{background:"#fff",borderRadius:20,width:680,maxWidth:"100%",boxShadow:"0 30px 80px rgba(0,0,0,.4)",overflow:"hidden"}}>
 
-function CompaniesModule({...props}){ return null; }
+        {/* Header */}
+        <div style={{background:"#0B1F3A",padding:"1.75rem 2rem"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:28,fontWeight:700,color:"#C9A84C"}}>◆ PropCRM</div>
+          <div style={{fontSize:14,color:"rgba(255,255,255,.6)",marginTop:4}}>Welcome! Set up your workspace — takes 2 minutes</div>
+          <div style={{fontSize:12,color:"rgba(201,168,76,.6)",marginTop:3}}>You can change any of these settings later in Users → Settings</div>
+          {/* Progress */}
+          <div style={{display:"flex",gap:6,marginTop:16}}>
+            {[1,2,3].map(s=>(
+              <div key={s} style={{flex:1,height:3,borderRadius:3,background:step>=s?"#C9A84C":"rgba(255,255,255,.2)",transition:"background .3s"}}/>
+            ))}
+          </div>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
+            {["Choose mode","Company details","Confirm"].map((l,i)=>(
+              <div key={i} style={{fontSize:11,color:step>=i+1?"#C9A84C":"rgba(255,255,255,.35)",fontWeight:step===i+1?600:400}}>{l}</div>
+            ))}
+          </div>
+        </div>
 
-function PermissionSetsModule({...props}){ return null; }
+        <div style={{padding:"2rem"}}>
 
-function LeaseOpportunityDetail({...props}){ return null; }
+          {/* ── STEP 1: Mode ── */}
+          {step===1&&(
+            <div className="fa">
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>How will you use PropCRM?</div>
+              <div style={{fontSize:13,color:"#718096",marginBottom:22}}>This controls which modules are visible and which roles are available. You can change this later in Settings.</div>
 
-function LeasingLeads({...props}){ return null; }
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                {MODES.map(m=>(
+                  <div key={m.id} onClick={()=>setMode(m.id)}
+                    style={{border:`2px solid ${mode===m.id?m.color:"#E2E8F0"}`,borderRadius:14,padding:"1.25rem 1.5rem",cursor:"pointer",background:mode===m.id?m.bg:"#fff",transition:"all .2s",position:"relative"}}>
+                    {m.recommended&&<div style={{position:"absolute",top:-1,right:16,background:"#C9A84C",color:"#0B1F3A",fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:"0 0 8px 8px"}}>RECOMMENDED</div>}
+                    <div style={{display:"flex",alignItems:"flex-start",gap:14}}>
+                      <div style={{fontSize:28,flexShrink:0}}>{m.icon}</div>
+                      <div style={{flex:1}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                          <span style={{fontWeight:700,fontSize:16,color:"#0B1F3A"}}>{m.title}</span>
+                          {mode===m.id&&<span style={{fontSize:11,fontWeight:700,color:m.color}}>✓ Selected</span>}
+                        </div>
+                        <div style={{fontSize:13,color:"#4A5568",lineHeight:1.6,marginBottom:10}}>{m.desc}</div>
+                        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                          <div style={{flex:1}}>
+                            <div style={{fontSize:10,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:5}}>Modules</div>
+                            <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                              {m.tabs.map(t=><span key={t} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:mode===m.id?"rgba(255,255,255,.7)":"#F0F2F5",color:"#4A5568"}}>{t}</span>)}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{fontSize:10,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:5}}>Roles</div>
+                            <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+                              {m.roles.map(r=><span key={r} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:mode===m.id?"rgba(255,255,255,.7)":"#F0F2F5",color:"#4A5568"}}>{r}</span>)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{display:"flex",justifyContent:"flex-end",marginTop:22}}>
+                <button onClick={()=>{if(mode)setStep(2);}} disabled={!mode}
+                  style={{padding:"11px 28px",borderRadius:10,border:"none",background:mode?"#0B1F3A":"#E2E8F0",color:mode?"#fff":"#A0AEC0",fontSize:14,fontWeight:600,cursor:mode?"pointer":"not-allowed",transition:".2s"}}>
+                  Next → Company Details
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 2: Company ── */}
+          {step===2&&(
+            <div className="fa">
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>Your company details</div>
+              <div style={{fontSize:13,color:"#718096",marginBottom:22}}>Used throughout the app and in the AI assistant's context.</div>
+
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Company Name *</label>
+                  <input value={company} onChange={e=>setCompany(e.target.value)} placeholder="e.g. Al Mansoori Real Estate"
+                    style={{width:"100%",padding:"11px 14px",border:"1.5px solid #D1D9E6",borderRadius:10,fontSize:14}}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Currency</label>
+                  <select value={currency} onChange={e=>setCurrency(e.target.value)}
+                    style={{width:"100%",padding:"11px 14px",border:"1.5px solid #D1D9E6",borderRadius:10,fontSize:13}}>
+                    {[["AED","AED — UAE Dirham"],["SAR","SAR — Saudi Riyal"],["USD","USD — US Dollar"],["GBP","GBP — British Pound"],["EUR","EUR — Euro"]].map(([v,l])=>(
+                      <option key={v} value={v}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Country / Market</label>
+                  <select value={country} onChange={e=>setCountry(e.target.value)}
+                    style={{width:"100%",padding:"11px 14px",border:"1.5px solid #D1D9E6",borderRadius:10,fontSize:13}}>
+                    {["UAE","Saudi Arabia","UK","USA","India","Other"].map(c=><option key={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Summary card */}
+              <div style={{background:"#F7F9FC",border:"1px solid #E2E8F0",borderRadius:12,padding:"14px 16px",marginBottom:22}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>Your Setup Summary</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,fontSize:13}}>
+                  <div><span style={{color:"#A0AEC0"}}>Mode: </span><strong style={{color:sel?.color}}>{sel?.icon} {sel?.title}</strong></div>
+                  <div><span style={{color:"#A0AEC0"}}>Company: </span><strong>{company||"Not set"}</strong></div>
+                  <div><span style={{color:"#A0AEC0"}}>Currency: </span><strong>{currency}</strong></div>
+                  <div><span style={{color:"#A0AEC0"}}>Market: </span><strong>{country}</strong></div>
+                </div>
+              </div>
+
+              <div style={{display:"flex",justifyContent:"space-between"}}>
+                <button onClick={()=>setStep(1)}
+                  style={{padding:"11px 22px",borderRadius:10,border:"1.5px solid #D1D9E6",background:"#fff",color:"#4A5568",fontSize:14,fontWeight:600,cursor:"pointer"}}>
+                  ← Back
+                </button>
+                <button onClick={()=>setStep(3)}
+                  style={{padding:"11px 28px",borderRadius:10,border:"none",background:"#0B1F3A",color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer"}}>
+                  Next → Confirm
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP 3: Confirm ── */}
+          {step===3&&(
+            <div className="fa">
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>Ready to launch</div>
+              <div style={{fontSize:13,color:"#718096",marginBottom:22}}>Review your configuration below. You can always change this later in Users → Settings.</div>
+
+              <div style={{border:`2px solid ${sel?.color}`,borderRadius:14,padding:"1.5rem",marginBottom:18,background:sel?.bg}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+                  <span style={{fontSize:32}}>{sel?.icon}</span>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:18,color:"#0B1F3A"}}>{sel?.title} Mode</div>
+                    <div style={{fontSize:13,color:"#4A5568"}}>{company}</div>
+                  </div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                  <div style={{background:"rgba(255,255,255,.7)",borderRadius:8,padding:"10px 12px"}}>
+                    <div style={{fontSize:10,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",marginBottom:6}}>Visible Modules</div>
+                    {sel?.tabs.map(t=><div key={t} style={{fontSize:12,color:"#4A5568",padding:"2px 0"}}>✓ {t}</div>)}
+                  </div>
+                  <div style={{background:"rgba(255,255,255,.7)",borderRadius:8,padding:"10px 12px"}}>
+                    <div style={{fontSize:10,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",marginBottom:6}}>Available Roles</div>
+                    {sel?.roles.map(r=><div key={r} style={{fontSize:12,color:"#4A5568",padding:"2px 0"}}>✓ {r}</div>)}
+                  </div>
+                </div>
+              </div>
+
+              {mode==="both"&&(
+                <div style={{background:"#E6EFF9",border:"1px solid #B5D4F4",borderRadius:10,padding:"12px 14px",marginBottom:18,fontSize:13,color:"#1A5FA8",lineHeight:1.7}}>
+                  <strong>Sales & Leasing segregation:</strong><br/>
+                  • Sales staff (Sales Manager, Sales Agent) see only: Leads, Inventory, Pipeline<br/>
+                  • Leasing staff (Leasing Manager, Leasing Agent) see only: Leasing module<br/>
+                  • Admins see everything<br/>
+                  • Neither team can see the other's data
+                </div>
+              )}
+
+              <div style={{display:"flex",justifyContent:"space-between"}}>
+                <button onClick={()=>setStep(2)}
+                  style={{padding:"11px 22px",borderRadius:10,border:"1.5px solid #D1D9E6",background:"#fff",color:"#4A5568",fontSize:14,fontWeight:600,cursor:"pointer"}}>
+                  ← Back
+                </button>
+                <button onClick={complete} disabled={saving}
+                  style={{padding:"11px 28px",borderRadius:10,border:"none",background:saving?"#A0AEC0":"#C9A84C",color:"#0B1F3A",fontSize:14,fontWeight:700,cursor:saving?"not-allowed":"pointer",transition:".2s"}}>
+                  {saving?"Setting up…":"🚀 Launch PropCRM"}
+                </button>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
+// ══════════════════════════════════════════════════════════════════
+// LEASING DASHBOARD
+// ══════════════════════════════════════════════════════════════════
+function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[], leasePricing=[], leasingData=null, onNavigate=()=>{}, followupAlerts={}}) {
+  const [leases,     setLeases]     = useState([]);
+  const [tenants,    setTenants]    = useState([]);
+  const [payments,   setPayments]   = useState([]);
+  const [maintenance,setMaintenance]= useState([]);
+  const [loading,    setLoading]    = useState(true);
+
+  useEffect(()=>{
+    // Use pre-loaded data if available — instant render
+    if(leasingData?.loaded){
+      setLeases(leasingData.leases);
+      setTenants(leasingData.tenants);
+      setPayments(leasingData.payments);
+      setMaintenance(leasingData.maintenance);
+      setLoading(false);
+      return;
+    }
+    // Fallback: fetch own data
+    const load = async () => {
+      setLoading(true);
+      try {
+        const qsafe = q => q.then(r=>r).catch(()=>({data:[]}));
+        const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+        const [l,t,p,m] = await Promise.all([
+          qsafe(cid ? supabase.from("leases").select("*").eq("company_id",cid).order("end_date") : supabase.from("leases").select("*").order("end_date")),
+          qsafe(cid ? supabase.from("tenants").select("*").eq("company_id",cid) : supabase.from("tenants").select("*")),
+          qsafe(supabase.from("rent_payments").select("*").order("due_date")),
+          qsafe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
+        ]);
+        setLeases(l.data||[]); setTenants(t.data||[]);
+        setPayments(p.data||[]); setMaintenance(m.data||[]);
+      } catch(e) { console.error("Leasing dashboard load error:", e); }
+      setLoading(false);
+    };
+    load();
+  },[leasingData]);
+
+  // Show spinner only on first load, not on refresh
+  if(loading && leases.length===0 && tenants.length===0) return <Spinner msg="Loading Leasing Dashboard…"/>;
+
+  const today         = new Date();
+  const activeLeases  = leases.filter(l=>l.status==="Active");
+  const expiring30    = activeLeases.filter(l=>{const d=new Date(l.end_date);return d>=today&&(d-today)/864e5<=30;});
+  const overduePmts   = payments.filter(p=>p.status==="Pending"&&new Date(p.due_date)<today);
+  const openMaint     = maintenance.filter(m=>m.status==="Open"||m.status==="In Progress");
+  const totalRent     = activeLeases.reduce((s,l)=>s+(l.annual_rent||0),0);
+  const leaseUnits    = units.filter(u=>u.purpose==="Lease"||u.purpose==="Both");
+  const availUnits    = leaseUnits.filter(u=>u.status==="Available");
+  const recentActs    = [...activities].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
+
+  const SC=({label,value,sub,accent,icon,onClick})=>(
+    <div onClick={onClick} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem 1.25rem",borderTop:`3px solid ${accent}`,display:"flex",alignItems:"flex-start",gap:10,cursor:onClick?"pointer":"default",transition:"all .15s",position:"relative"}}
+      onMouseOver={e=>{if(onClick){e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.1)";e.currentTarget.style.transform="translateY(-2px)";}}}
+      onMouseOut={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
+      <div style={{fontSize:22}}>{icon}</div>
+      <div style={{flex:1}}>
+        <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".7px",fontWeight:600,marginBottom:4}}>{label}</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0B1F3A",lineHeight:1}}>{value}</div>
+        {sub&&<div style={{fontSize:12,color:"#718096",marginTop:4}}>{sub}</div>}
+      </div>
+      {onClick&&<div style={{position:"absolute",top:10,right:10,fontSize:12,color:"#A0AEC0"}}>→</div>}
+    </div>
+  );
+
+  return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",gap:16,height:"100%",overflowY:"auto",paddingRight:4}}>
+
+      {/* Alerts */}
+      {(expiring30.length>0||overduePmts.length>0)&&(
+        <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+          {expiring30.length>0&&(
+            <div onClick={()=>onNavigate("leasing")} style={{flex:1,background:"#FDF3DC",border:"1.5px solid #E8C97A",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}
+              onMouseOver={e=>e.currentTarget.style.opacity=".85"} onMouseOut={e=>e.currentTarget.style.opacity="1"}>
+              <span style={{fontSize:20}}>⏰</span>
+              <div><div style={{fontWeight:700,color:"#8A6200",fontSize:13}}>{expiring30.length} lease{expiring30.length>1?"s":""} expiring in 30 days — click to manage</div>
+              <div style={{fontSize:12,color:"#A06810"}}>Contact tenants for renewal</div></div>
+              <span style={{fontSize:12,color:"#8A6200",fontWeight:600,marginLeft:"auto"}}>Go →</span>
+            </div>
+          )}
+          {overduePmts.length>0&&(
+            <div onClick={()=>onNavigate("leasing")} style={{flex:1,background:"#FAEAEA",border:"1.5px solid #F0BCBC",borderRadius:10,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}
+              onMouseOver={e=>e.currentTarget.style.opacity=".85"} onMouseOut={e=>e.currentTarget.style.opacity="1"}>
+              <span style={{fontSize:20}}>💳</span>
+              <div><div style={{fontWeight:700,color:"#B83232",fontSize:13}}>{overduePmts.length} overdue payment{overduePmts.length>1?"s":""} — click to view</div>
+              <div style={{fontSize:12,color:"#B83232"}}>Total: AED {overduePmts.reduce((s,p)=>s+(p.amount||0),0).toLocaleString()}</div></div>
+              <span style={{fontSize:12,color:"#B83232",fontWeight:600,marginLeft:"auto"}}>Go →</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Hero */}
+      <div style={{background:"linear-gradient(135deg,#1A0B3A 0%,#2D1558 100%)",borderRadius:14,padding:"1.5rem 2rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, {currentUser.full_name?.split(" ")[0]} {new Date().getHours()<12?"☀️":new Date().getHours()<17?"🌤️":"🌙"}</div>
+          <div style={{color:"#C9A84C",fontSize:13,marginTop:4}}>{new Date().toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
+          <div style={{display:"flex",gap:8,marginTop:6,alignItems:"center"}}>
+            <RoleBadge role={currentUser.role}/>
+            <span style={{fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:20,background:"rgba(155,127,212,.25)",color:"#C4ACEC"}}>🔑 Leasing CRM</span>
+          </div>
+        </div>
+        <div style={{textAlign:"right"}}>
+          <div style={{color:"rgba(255,255,255,.5)",fontSize:11,textTransform:"uppercase",letterSpacing:".6px"}}>Annual Rent Roll</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:30,color:"#C9A84C",fontWeight:700,marginTop:2}}>{fmtM(totalRent)}</div>
+        </div>
+      </div>
+
+      {/* Empty state banner when no leasing data */}
+      {leases.length===0&&tenants.length===0&&(
+        <div style={{background:"#F0F7FF",border:"1.5px solid #D1E4F7",borderRadius:12,padding:"16px 20px",display:"flex",alignItems:"center",gap:14}}>
+          <div style={{fontSize:32}}>🔑</div>
+          <div>
+            <div style={{fontWeight:700,color:"#0B1F3A",fontSize:14,marginBottom:4}}>No leasing data yet</div>
+            <div style={{fontSize:12,color:"#4A5568"}}>Start by adding tenants and creating leases in the <strong>Enquiries</strong> and <strong>Leasing</strong> tabs. Stats will appear here once data is entered.</div>
+          </div>
+          <button onClick={()=>onNavigate("l_leads")} style={{marginLeft:"auto",padding:"8px 16px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+            + Add Enquiry →
+          </button>
+        </div>
+      )}
+
+      {/* Stats */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+        <SC label="Active Leases"      value={activeLeases.length}  sub={tenants.length>0?`${tenants.length} tenants`:"Add tenants to start"}    accent="#5B3FAA" icon="📄" onClick={()=>onNavigate("leasing")}/>
+        <SC label="Annual Rent Roll"   value={fmtM(totalRent)}      sub={activeLeases.length>0?`${activeLeases.length} contracts`:"No active leases"} accent="#1A7F5A" icon="💰" onClick={()=>onNavigate("leasing")}/>
+        <SC label="Available Units"    value={availUnits.length}    sub={`${leaseUnits.length} total for lease`}       accent="#9B7FD4" icon="🔑" onClick={()=>onNavigate("l_inventory")}/>
+        <SC label="Open Maintenance"   value={openMaint.length}     sub={`${overduePmts.length} overdue payments`}     accent={openMaint.length>0?"#B83232":"#A0AEC0"} icon="🔧" onClick={()=>onNavigate("leasing")}/>
+      </div>
+
+      {/* Leases + Activity */}
+      <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr)",gap:12}}>
+        {/* Expiring leases */}
+        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1.125rem"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:14}}>⏰ Expiring / Needs Renewal</div>
+          {expiring30.length===0&&<Empty icon="✓" msg="No leases expiring in 30 days"/>}
+          {expiring30.slice(0,5).map(l=>{
+            const tenant=tenants.find(t=>t.id===l.tenant_id);
+            const unit=units.find(u=>u.id===l.unit_id);
+            const daysLeft=Math.ceil((new Date(l.end_date)-today)/864e5);
+            return(
+              <div key={l.id} style={{padding:"9px 11px",background:"#FDF3DC",borderRadius:8,border:"1px solid #E8C97A",marginBottom:7}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                  <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{tenant?.full_name||"Unknown"}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:"#B83232"}}>{daysLeft}d left</div>
+                </div>
+                <div style={{fontSize:11,color:"#718096"}}>Unit {unit?.unit_ref||"—"} · AED {Number(l.annual_rent||0).toLocaleString()}/yr</div>
+                <div style={{fontSize:11,color:"#A06810"}}>Expires {fmtDate(l.end_date)}</div>
+              </div>
+            );
+          })}
+          {expiring30.length===0&&activeLeases.slice(0,3).map(l=>{
+            const tenant=tenants.find(t=>t.id===l.tenant_id);
+            const unit=units.find(u=>u.id===l.unit_id);
+            return(
+              <div key={l.id} style={{padding:"8px 10px",background:"#F7F9FC",borderRadius:8,border:"1px solid #E2E8F0",marginBottom:6}}>
+                <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{tenant?.full_name||"Unknown"}</div>
+                <div style={{fontSize:11,color:"#718096"}}>Unit {unit?.unit_ref||"—"} · AED {Number(l.annual_rent||0).toLocaleString()}/yr · Expires {fmtDate(l.end_date)}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Recent activity */}
+        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1.125rem"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:14}}>📋 Recent Activity</div>
+          {recentActs.length===0&&<Empty icon="📋" msg="No recent activity"/>}
+          {recentActs.map(a=>(
+            <div key={a.id} style={{padding:"8px 10px",background:"#F7F9FC",borderRadius:8,border:"1px solid #F0F2F5",marginBottom:7}}>
+              <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{a.type} — {a.lead_name||"—"}</div>
+              <div style={{fontSize:11,color:"#718096"}}>{a.user_name} · {fmtDate(a.created_at)}</div>
+              {a.note&&<div style={{fontSize:11,color:"#A0AEC0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.note}</div>}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Maintenance + Available units */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1.125rem"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:14}}>🔧 Open Maintenance</div>
+          {openMaint.length===0&&<Empty icon="✓" msg="No open maintenance requests"/>}
+          {openMaint.slice(0,4).map(m=>{
+            const PC={Urgent:{c:"#B83232",bg:"#FAEAEA"},High:{c:"#B85C10",bg:"#FDF0E6"},Normal:{c:"#1A5FA8",bg:"#E6EFF9"},Low:{c:"#718096",bg:"#F0F2F5"}};
+            const pc=PC[m.priority]||PC.Normal;
+            const unit=units.find(u=>u.id===m.unit_id);
+            return(
+              <div key={m.id} style={{padding:"8px 10px",background:"#F7F9FC",borderRadius:8,border:"1px solid #E2E8F0",marginBottom:6}}>
+                <div style={{display:"flex",gap:6,marginBottom:3}}>
+                  <span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:pc.bg,color:pc.c}}>{m.priority}</span>
+                  <span style={{fontSize:11,fontWeight:600,color:"#0B1F3A"}}>{m.title}</span>
+                </div>
+                <div style={{fontSize:11,color:"#718096"}}>Unit {unit?.unit_ref||"—"} · {m.category}</div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1.125rem"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:14}}>🏠 Available for Lease</div>
+          {availUnits.length===0&&<Empty icon="🔑" msg="No units currently available"/>}
+          {availUnits.slice(0,5).map(u=>{
+            const lp=leasePricing.find(l=>l.unit_id===u.id);
+            return(
+              <div key={u.id} style={{padding:"8px 10px",background:"#EEE8F9",borderRadius:8,border:"1px solid #C4ACEC",marginBottom:6}}>
+                <div style={{display:"flex",justifyContent:"space-between"}}>
+                  <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{u.unit_ref}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:"#5B3FAA"}}>{lp?`AED ${Number(lp.annual_rent).toLocaleString()}/yr`:"TBD"}</div>
+                </div>
+                <div style={{fontSize:11,color:"#718096"}}>{u.sub_type}{u.size_sqft?` · ${Number(u.size_sqft).toLocaleString()} sqft`:""}{u.view?` · ${u.view}`:""}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#0B1F3A",marginBottom:10}}>Quick Actions</div>
+          {[
+            {icon:"👤",label:"Add Enquiry",       tab:"l_leads",     bg:"#5B3FAA",col:"#fff"},
+            {icon:"🏠",label:"View Inventory",    tab:"l_inventory", bg:"#1A5FA8",col:"#fff"},
+            {icon:"🔀",label:"Pipeline Board",    tab:"l_pipeline",  bg:"#9B7FD4",col:"#fff"},
+            {icon:"📄",label:"Active Leases",     tab:"leasing",     bg:"#1A7F5A",col:"#fff"},
+            {icon:"✦", label:"Ask AI Assistant",  tab:"l_ai",        bg:"#0B1F3A",col:"#C9A84C"},
+          ].map(({icon,label,tab,bg,col})=>(
+            <button key={tab} onClick={()=>onNavigate(tab)}
+              style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"none",background:bg,color:col,fontSize:12,fontWeight:600,cursor:"pointer",marginBottom:6,textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:16}}>{icon}</span>{label}
+            </button>
+          ))}
+        </div>
+        <div style={{background:"#2D1558",borderRadius:12,padding:"1rem"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#C9A84C",marginBottom:10}}>Today at a Glance</div>
+          {[
+            ["New Enquiries", tenants.filter(t=>t.created_at&&new Date(t.created_at).toDateString()===new Date().toDateString()).length, "l_leads"],
+            ["Expiring ≤30d", expiring30.length, "leasing"],
+            ["Overdue Payments", overduePmts.length, "leasing"],
+            ["Open Maintenance", openMaint.length, "leasing"],
+          ].map(([l,v,t])=>(
+            <div key={l} onClick={()=>onNavigate(t)} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,.07)",cursor:"pointer"}}>
+              <span style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>{l}</span>
+              <span style={{fontSize:13,fontWeight:700,color:v>0?"#F87171":"#fff"}}>{v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+
+      {/* Quick Actions + Today summary */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#0B1F3A",marginBottom:10}}>Quick Actions</div>
+          {[
+            {icon:"👤",label:"Add Enquiry",      tab:"l_leads",     bg:"#5B3FAA",col:"#fff"},
+            {icon:"🏠",label:"View Inventory",   tab:"l_inventory", bg:"#1A5FA8",col:"#fff"},
+            {icon:"🔀",label:"Pipeline Board",   tab:"l_pipeline",  bg:"#9B7FD4",col:"#fff"},
+            {icon:"📄",label:"Active Leases",    tab:"leasing",     bg:"#1A7F5A",col:"#fff"},
+            {icon:"✦", label:"AI Assistant",     tab:"l_ai",        bg:"#0B1F3A",col:"#C9A84C"},
+          ].map(({icon,label,tab,bg,col})=>(
+            <button key={tab} onClick={()=>onNavigate(tab)}
+              style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"none",background:bg,color:col,fontSize:12,fontWeight:600,cursor:"pointer",marginBottom:6,textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:16}}>{icon}</span>{label}
+            </button>
+          ))}
+        </div>
+        <div style={{background:"#2D1558",borderRadius:12,padding:"1rem"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#C9A84C",marginBottom:10}}>Today at a Glance</div>
+          {[
+            ["Expiring ≤30d",    expiring30.length,   "leasing"],
+            ["Overdue Payments", overduePmts.length,  "leasing"],
+            ["Open Maintenance", openMaint.length,    "leasing"],
+            ["Available Units",  availUnits.length,   "l_inventory"],
+          ].map(([l,v,t])=>(
+            <div key={l} onClick={()=>onNavigate(t)} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.07)",cursor:"pointer"}}>
+              <span style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>{l}</span>
+              <span style={{fontSize:13,fontWeight:700,color:v>0?"#F87171":"#fff"}}>{v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Reservations Widget */}
+      <ReservationsWidget currentUser={currentUser} units={units}/>
+    </div>
+  );
+}
+
+
+
+// ══════════════════════════════════════════════════════════════════
+// COMPANIES MODULE — Super Admin only
+// ══════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════
+// USER MANAGEMENT
+// ══════════════════════════════════════════════════════════════════
+function UserManagement({currentUser, leads=[], activities=[], showToast, appConfig={}, onConfigChange=()=>{}}) {
+  const [subTab, setSubTab] = useState("users");
+  return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{display:"flex",gap:4,marginBottom:14}}>
+        {[["users","👥 Users"],["settings","⚙ Settings"]].map(([id,l])=>(
+          <button key={id} onClick={()=>setSubTab(id)}
+            style={{padding:"7px 16px",borderRadius:8,border:`1.5px solid ${subTab===id?"#0B1F3A":"#E2E8F0"}`,background:subTab===id?"#0B1F3A":"#fff",color:subTab===id?"#fff":"#4A5568",fontSize:13,fontWeight:subTab===id?600:400,cursor:"pointer"}}>
+            {l}
+          </button>
+        ))}
+      </div>
+      {subTab==="users"  && <UsersTab currentUser={currentUser} showToast={showToast}/>}
+      {subTab==="settings" && <SettingsTab appConfig={appConfig} onConfigChange={onConfigChange} currentUser={currentUser} showToast={showToast}/>}
+    </div>
+  );
+}
+
+function UsersTab({currentUser, showToast}) {
+  const [users,     setUsers]     = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [showAdd,   setShowAdd]   = useState(false);
+  const [editUser,  setEditUser]  = useState(null);
+  const [saving,    setSaving]    = useState(false);
+  const isSuperAdmin = currentUser.is_super_admin || currentUser.role === "super_admin";
+  const blank = {full_name:"",email:"",role:"sales_agent",is_active:true,company_id:currentUser.company_id||"",password:""};
+  const [form, setForm] = useState(blank);
+  const sf = k => e => setForm(f=>({...f,[k]:e.target?.value??e}));
+
+  const loadUsers = useCallback(async()=>{
+    setLoading(true);
+    const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+    // Super admin sees all users (can filter by company via selector)
+    // All other roles only see users from their own company
+    const userQuery = isSuperAdmin
+      ? supabase.from("profiles").select("*").order("created_at",{ascending:false})
+      : supabase.from("profiles").select("*").eq("company_id", cid).order("created_at",{ascending:false});
+    const queries = [userQuery];
+    if(isSuperAdmin) queries.push(supabase.from("companies").select("id,name,business_type").order("name"));
+    const [u, co] = await Promise.all(queries);
+    setUsers(u.data||[]);
+    if(co) setCompanies(co.data||[]);
+    setLoading(false);
+  },[isSuperAdmin]);
+  useEffect(()=>{loadUsers();},[loadUsers]);
+
+  const saveUser=async()=>{
+    if(!form.full_name.trim()||!form.email.trim()){showToast("Name and email required","error");return;}
+    if(!form.company_id&&!currentUser.company_id){showToast("Please select a company","error");return;}
+    setSaving(true);
+    try{
+      if(editUser){
+        const{error}=await supabase.from("profiles").update({
+          full_name:form.full_name,role:form.role,is_active:form.is_active,
+          company_id:form.company_id||currentUser.company_id||null,
+        }).eq("id",editUser.id);
+        if(error)throw error;
+        showToast("User updated","success");
+      } else {
+        // Use Supabase Admin API via fetch with service role key
+        let SUPABASE_SERVICE = localStorage.getItem("propccrm_srk")||"";
+        if(!SUPABASE_SERVICE){
+          SUPABASE_SERVICE = prompt("Enter Service Role Key (Supabase → Settings → API → service_role):\nThis will be saved for this session only.");
+          if(!SUPABASE_SERVICE){ setSaving(false); return; }
+          localStorage.setItem("propccrm_srk", SUPABASE_SERVICE);
+        }
+        
+        const tempPw = form.password || Math.random().toString(36).slice(-8)+"A1!";
+        const res = await fetch(`https://ysceukgpimzfqixtnbnp.supabase.co/auth/v1/admin/users`,{
+          method:"POST",
+          headers:{"Content-Type":"application/json","apikey":SUPABASE_SERVICE,"Authorization":"Bearer "+SUPABASE_SERVICE},
+          body:JSON.stringify({email:form.email,password:tempPw,email_confirm:true,user_metadata:{full_name:form.full_name}})
+        });
+        const result = await res.json();
+        if(!res.ok){ showToast(result.message||result.error||"Failed to create user","error"); setSaving(false); return; }
+        
+        // Update the auto-created profile with correct role and company
+        await new Promise(r=>setTimeout(r,1000)); // wait for trigger
+        const{error:pErr}=await supabase.from("profiles").update({
+          full_name:form.full_name,
+          role:form.role,
+          is_active:true,
+          company_id:form.company_id||currentUser.company_id||null,
+        }).eq("id",result.id);
+        if(pErr) showToast("User created but profile update failed: "+pErr.message,"error");
+        else {
+          showToast(`✓ User created: ${form.email}  |  Temp password: ${tempPw}  |  Share this with them securely`,"success");
+          // Copy to clipboard
+          navigator.clipboard?.writeText(`Email: ${form.email}\nTemp Password: ${tempPw}`).catch(()=>{});
+        }
+      }
+      setShowAdd(false);setEditUser(null);setForm(blank);loadUsers();
+    }catch(e){showToast(e.message,"error");}
+    setSaving(false);
+  };
+
+  const toggleActive=async(user)=>{
+    await supabase.from("profiles").update({is_active:!user.is_active}).eq("id",user.id);
+    setUsers(p=>p.map(u=>u.id===user.id?{...u,is_active:!u.is_active}:u));
+    showToast(user.is_active?"User deactivated":"User activated","success");
+  };
+
+  if(loading)return <Spinner msg="Loading users…"/>;
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+        <span style={{fontSize:13,color:"#718096"}}>{users.length} users · {users.filter(u=>u.is_active).length} active</span>
+        <button onClick={()=>{setForm(blank);setEditUser(null);setShowAdd(true);}}
+          style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+          + Add User
+        </button>
+      </div>
+      <div style={{flex:1,overflowY:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}>
+          <thead style={{position:"sticky",top:0}}>
+            <tr style={{background:"#0B1F3A"}}>
+              {["Name","Email","Role","Company","Status","Actions"].map(h=>(
+                <th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".5px"}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u,i)=>(
+              <tr key={u.id} style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5"}}>
+                <td style={{padding:"9px 12px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <Av name={u.full_name||u.email} size={28}/>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{u.full_name||"—"}</div>
+                      {u.is_super_admin&&<span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:20,background:"#FDF3DC",color:"#8A6200"}}>Super Admin</span>}
+                    </div>
+                  </div>
+                </td>
+                <td style={{padding:"9px 12px",fontSize:12,color:"#4A5568"}}>{u.email}</td>
+                <td style={{padding:"9px 12px"}}><RoleBadge role={u.role}/></td>
+                <td style={{padding:"9px 12px",fontSize:12,color:"#4A5568",maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {companies.find(c=>c.id===u.company_id)?.name||<span style={{color:"#A0AEC0"}}>—</span>}
+                </td>
+                <td style={{padding:"9px 12px"}}>
+                  <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:u.is_active?"#E6F4EE":"#F0F2F5",color:u.is_active?"#1A7F5A":"#718096"}}>
+                    {u.is_active?"Active":"Inactive"}
+                  </span>
+                </td>
+                <td style={{padding:"9px 12px"}}>
+                  <div style={{display:"flex",gap:6}}>
+                    <button onClick={()=>{setForm({...blank,...u});setEditUser(u);setShowAdd(true);}}
+                      style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>Edit</button>
+                    {!u.is_super_admin&&u.id!==currentUser.id&&(
+                      <button onClick={()=>toggleActive(u)}
+                        style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1.5px solid ${u.is_active?"#F0BCBC":"#A8D5BE"}`,background:u.is_active?"#FAEAEA":"#E6F4EE",color:u.is_active?"#B83232":"#1A7F5A",cursor:"pointer"}}>
+                        {u.is_active?"Deactivate":"Activate"}
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {showAdd&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>{editUser?"Edit User":"Add New User"}</span>
+              <button onClick={()=>{setShowAdd(false);setEditUser(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Full Name *</label><input value={form.full_name} onChange={sf("full_name")}/></div>
+                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Email *</label><input type="email" value={form.email} onChange={sf("email")} disabled={!!editUser}/></div>
+                {!editUser&&<div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Temporary Password</label><input type="password" value={form.password} onChange={sf("password")} placeholder="Leave blank to auto-generate"/></div>}
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Role</label>
+                  <select value={form.role} onChange={sf("role")}>
+                    {["super_admin","admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"].map(r=><option key={r} value={r}>{r.replace(/_/g," ")}</option>)}
+                  </select>
+                </div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Status</label>
+                  <select value={form.is_active?"active":"inactive"} onChange={e=>setForm(f=>({...f,is_active:e.target.value==="active"}))}>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+                {/* Company selector — super admin sees all companies, others see their own */}
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Company *</label>
+                  {isSuperAdmin && companies.length > 0 ? (
+                    <select value={form.company_id} onChange={sf("company_id")} style={{border: !form.company_id?"1.5px solid #B83232":undefined}}>
+                      <option value="">— Select Company —</option>
+                      {companies.map(c=><option key={c.id} value={c.id}>{c.name} ({c.business_type})</option>)}
+                    </select>
+                  ) : (
+                    <input value={companies.find(c=>c.id===currentUser.company_id)?.name || currentUser.company_id || "Your Company"} disabled style={{background:"#F7F9FC",color:"#718096"}}/>
+                  )}
+                  {!form.company_id && <div style={{fontSize:10,color:"#B83232",marginTop:3}}>⚠ Company is required</div>}
+                </div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
+              <button onClick={()=>{setShowAdd(false);setEditUser(null);}} style={{padding:"9px 20px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              <button onClick={saveUser} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editUser?"Save Changes":"Add User"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SettingsTab({appConfig={}, onConfigChange, currentUser, showToast}) {
+  const [form, setForm] = useState({
+    mode:     appConfig.mode||"both",
+    company:  appConfig.company||"PropCRM",
+    currency: appConfig.currency||"AED",
+    country:  appConfig.country||"UAE",
+  });
+  const save=()=>{
+    const cfg={...appConfig,...form,updatedAt:new Date().toISOString()};
+    onConfigChange(cfg);
+    showToast("Settings saved","success");
+  };
+  return(
+    <div style={{maxWidth:480}}>
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>CRM Mode</label>
+          <select value={form.mode} onChange={e=>setForm(f=>({...f,mode:e.target.value}))}>
+            <option value="sales">Sales Only</option>
+            <option value="leasing">Leasing Only</option>
+            <option value="both">Sales & Leasing</option>
+          </select>
+        </div>
+        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Company Name</label><input value={form.company} onChange={e=>setForm(f=>({...f,company:e.target.value}))}/></div>
+        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Currency</label>
+          <select value={form.currency} onChange={e=>setForm(f=>({...f,currency:e.target.value}))}>
+            {["AED","USD","GBP","EUR","SAR","QAR","KWD"].map(c=><option key={c}>{c}</option>)}
+          </select>
+        </div>
+        <button onClick={save} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",alignSelf:"flex-start"}}>Save Settings</button>
+      </div>
+    </div>
+  );
+}
+
+function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompanyId }) {
+  const [companies,  setCompanies]  = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [showAdd,    setShowAdd]    = useState(false);
+  const [editComp,   setEditComp]   = useState(null);
+  const [saving,     setSaving]     = useState(false);
+
+  const blank = {
+    name:"", business_type:"both", company_category:"Brokerage",
+    primary_contact:"", phone:"", email:"",
+    address:"", city:"", country:"UAE", brand_color:"#0B1F3A",
+    brand_accent:"#C9A84C", plan:"professional", is_active:true, logo_url:"",
+    rera_number:"", ded_number:"", ai_assistant_name:""
+  };
+  const [form, setForm] = useState(blank);
+  const sf = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const PLANS = [
+    { id:"starter",      label:"Starter",      desc:"Up to 5 users · Sales or Leasing only",     color:"#718096" },
+    { id:"professional", label:"Professional",  desc:"Up to 20 users · Sales & Leasing",           color:"#1A5FA8" },
+    { id:"enterprise",   label:"Enterprise",    desc:"Unlimited users · Full access + API",         color:"#C9A84C" },
+  ];
+  const BIZ_TYPES = [
+    { id:"sales",   label:"Sales Only",       icon:"🏷", desc:"Leads · Pipeline · Inventory · Off-plan" },
+    { id:"leasing", label:"Leasing Only",     icon:"🔑", desc:"Tenants · Leases · PDC · Rent Roll" },
+    { id:"both",    label:"Sales & Leasing",  icon:"◆",  desc:"Full suite · Both workflows" },
+  ];
+  const COMPANY_CATEGORIES = [
+    "Brokerage", "Developer", "Real Estate Agent", "Property Management",
+    "Off-Plan Specialist", "Leasing Company", "RERA Registered Agency",
+    "Investment Company", "Other"
+  ];
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.from("companies").select("*").order("name");
+      if(error) throw error;
+      setCompanies(data || []);
+    } catch(e) {
+      console.error("Companies load error:", e.message);
+      // If no companies exist yet, show empty state
+      setCompanies([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const save = async () => {
+    if (!form.name.trim()) { showToast("Company name required", "error"); return; }
+    setSaving(true);
+    try {
+      if (editComp) {
+        const { error } = await supabase.from("companies").update({ ...form, updated_at: new Date().toISOString() }).eq("id", editComp.id);
+        if (error) throw error;
+        showToast("Company updated", "success");
+      } else {
+        const { error } = await supabase.from("companies").insert({ ...form }).select().single();
+        if (error) throw error;
+        showToast("Company created", "success");
+      }
+      setShowAdd(false); setEditComp(null); setForm(blank); load();
+    } catch(e) { showToast(e.message, "error"); }
+    setSaving(false);
+  };
+
+  const toggleActive = async (comp) => {
+    await supabase.from("companies").update({ is_active: !comp.is_active }).eq("id", comp.id);
+    setCompanies(p => p.map(c => c.id === comp.id ? { ...c, is_active: !c.is_active } : c));
+    showToast(comp.is_active ? "Company deactivated" : "Company activated", "info");
+  };
+
+  const openEdit = (comp) => {
+    setForm({ ...blank, ...comp });
+    setEditComp(comp);
+    setShowAdd(true);
+  };
+
+  const PLAN_META = { starter:{c:"#718096",bg:"#F0F2F5"}, professional:{c:"#1A5FA8",bg:"#E6EFF9"}, enterprise:{c:"#8A6200",bg:"#FDF3DC"} };
+  const BIZ_META  = { sales:{c:"#1A5FA8",bg:"#E6EFF9",icon:"🏷"}, leasing:{c:"#5B3FAA",bg:"#EEE8F9",icon:"🔑"}, both:{c:"#1A7F5A",bg:"#E6F4EE",icon:"◆"} };
+
+  if (loading) return <Spinner msg="Loading companies…"/>;
+
+  return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}}>
+        <div>
+          <div style={{fontSize:13,color:"#718096"}}>{companies.length} compan{companies.length!==1?"ies":"y"} · {companies.filter(c=>c.is_active).length} active</div>
+        </div>
+        <button onClick={()=>{setForm(blank);setEditComp(null);setShowAdd(true);}}
+          style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+          + Add Company
+        </button>
+      </div>
+
+      {/* Company cards */}
+      <div style={{flex:1,overflowY:"auto",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14,alignContent:"start"}}>
+        {companies.map(c => {
+          const bm = BIZ_META[c.business_type] || BIZ_META.both;
+          const pm = PLAN_META[c.plan] || PLAN_META.professional;
+          const isActive = activeCompanyId === c.id;
+          return (
+            <div key={c.id}
+              onClick={()=>{ if(c.is_active&&!isActive){ onSwitchCompany(c.id, c); showToast(`Switched to ${c.name}`,"success"); } }}
+              style={{background:"#fff",border:`2px solid ${isActive?"#C9A84C":"#E2E8F0"}`,borderRadius:14,overflow:"hidden",opacity:c.is_active?1:.55,transition:"all .2s",cursor:c.is_active&&!isActive?"pointer":"default",boxShadow:isActive?"0 4px 20px rgba(201,168,76,.2)":"none"}}
+              onMouseOver={e=>{ if(c.is_active&&!isActive) e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.1)"; }}
+              onMouseOut={e=>{ e.currentTarget.style.boxShadow=isActive?"0 4px 20px rgba(201,168,76,.2)":"none"; }}>
+              {/* Colour bar */}
+              <div style={{height:5,background:`linear-gradient(90deg,${c.brand_color||"#0B1F3A"},${c.brand_accent||"#C9A84C"})`}}/>
+              <div style={{padding:"14px 16px"}}>
+                {/* Name + badges */}
+                <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0B1F3A"}}>{c.name}</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:3,alignItems:"flex-end"}}>
+                    {isActive
+                      ? <span style={{fontSize:10,fontWeight:700,padding:"2px 9px",borderRadius:20,background:"#C9A84C",color:"#0B1F3A"}}>✦ Active</span>
+                      : <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>Click to switch →</span>
+                    }
+                  </div>
+                </div>
+                {c.city&&<div style={{fontSize:11,color:"#A0AEC0",marginBottom:8}}>📍 {c.city}{c.country?`, ${c.country}`:""}</div>}
+                <div style={{display:"flex",gap:5,marginBottom:10,flexWrap:"wrap"}}>
+                  <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:bm.bg,color:bm.c}}>{bm.icon} {c.business_type==="both"?"Sales & Leasing":c.business_type==="sales"?"Sales Only":"Leasing Only"}</span>
+                  <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:pm.bg,color:pm.c}}>{c.plan?.charAt(0).toUpperCase()+c.plan?.slice(1)||"Professional"}</span>
+                </div>
+                {c.primary_contact&&<div style={{fontSize:11,color:"#4A5568",marginBottom:3}}>👤 {c.primary_contact}</div>}
+                {c.phone&&<div style={{fontSize:11,color:"#4A5568",marginBottom:3}}>📞 {c.phone}</div>}
+                {c.email&&<div style={{fontSize:11,color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:10}}>✉ {c.email}</div>}
+                {/* Edit + Deactivate — stop propagation so card click doesn't trigger */}
+                <div style={{display:"flex",gap:6}} onClick={e=>e.stopPropagation()}>
+                  <button onClick={()=>openEdit(c)}
+                    style={{flex:1,padding:"6px 10px",borderRadius:7,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    ✏ Edit
+                  </button>
+                  <button onClick={()=>toggleActive(c)}
+                    style={{flex:1,padding:"6px 10px",borderRadius:7,border:`1.5px solid ${c.is_active?"#F0BCBC":"#A8D5BE"}`,background:c.is_active?"#FAEAEA":"#E6F4EE",color:c.is_active?"#B83232":"#1A7F5A",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    {c.is_active?"Deactivate":"Activate"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Add / Edit Modal */}
+      {showAdd&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:620,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1.125rem 1.5rem",borderBottom:"1px solid #E2E8F0",flexShrink:0}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A"}}>{editComp?"Edit Company":"Add New Company"}</span>
+              <button onClick={()=>{setShowAdd(false);setEditComp(null);}} style={{background:"none",border:"none",fontSize:22,color:"#A0AEC0",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem",flex:1}}>
+
+              {/* Business Type */}
+              <div style={{marginBottom:16}}>
+                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Business Type *</label>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+                  {BIZ_TYPES.map(b=>(
+                    <button key={b.id} onClick={()=>sf("business_type",b.id)}
+                      style={{padding:"10px 12px",borderRadius:10,border:`2px solid ${form.business_type===b.id?"#0B1F3A":"#E2E8F0"}`,background:form.business_type===b.id?"#0B1F3A":"#fff",color:form.business_type===b.id?"#fff":"#4A5568",cursor:"pointer",textAlign:"left",transition:".15s"}}>
+                      <div style={{fontSize:18,marginBottom:4}}>{b.icon}</div>
+                      <div style={{fontSize:13,fontWeight:700}}>{b.label}</div>
+                      <div style={{fontSize:11,opacity:.7,marginTop:2}}>{b.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Plan */}
+              <div style={{marginBottom:16}}>
+                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Subscription Plan</label>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+                  {PLANS.map(p=>(
+                    <button key={p.id} onClick={()=>sf("plan",p.id)}
+                      style={{padding:"10px 12px",borderRadius:10,border:`2px solid ${form.plan===p.id?p.color:"#E2E8F0"}`,background:form.plan===p.id?p.color+"18":"#fff",cursor:"pointer",textAlign:"left",transition:".15s"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:form.plan===p.id?p.color:"#0B1F3A"}}>{p.label}</div>
+                      <div style={{fontSize:11,color:"#718096",marginTop:2}}>{p.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Core details */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Company Name *</label>
+                  <input value={form.name} onChange={e=>{
+                    sf("name",e.target.value);
+                    // Auto-suggest AI name from first word of company name
+                    if(!form.ai_assistant_name||form.ai_assistant_name===form.name.split(" ")[0]+" AI"){
+                      sf("ai_assistant_name", (e.target.value.split(" ")[0]||"")+" AI");
+                    }
+                  }} placeholder="e.g. Al Mansoori Properties"/>
+                </div>
+                <div style={{gridColumn:"1/-1",background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:10,padding:"14px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                    <span style={{fontSize:18}}>✦</span>
+                    <label style={{fontSize:11,fontWeight:700,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".5px"}}>AI Assistant Name</label>
+                  </div>
+                  <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginBottom:10,lineHeight:1.6}}>
+                    What should the AI assistant be called for this company? This name will appear on the AI tab and in all AI interactions.
+                  </div>
+                  <input value={form.ai_assistant_name||""} onChange={e=>sf("ai_assistant_name",e.target.value)}
+                    placeholder={form.name?(form.name.split(" ")[0]+" AI"):"e.g. Mansoori AI"}
+                    style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(201,168,76,.4)",borderRadius:8,padding:"8px 12px",color:"#fff",fontSize:13,width:"100%",boxSizing:"border-box"}}/>
+                  <div style={{fontSize:11,color:"rgba(201,168,76,.6)",marginTop:6}}>
+                    💡 Tip: Use your brand name for ownership — e.g. "Mansoori AI", "Atlas AI", "Emaar AI"
+                  </div>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Primary Contact</label>
+                  <input value={form.primary_contact} onChange={e=>sf("primary_contact",e.target.value)} placeholder="CEO / Manager name"/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Phone</label>
+                  <input value={form.phone} onChange={e=>sf("phone",e.target.value)} placeholder="+971 4 000 0000"/>
+                </div>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Email</label>
+                  <input type="email" value={form.email} onChange={e=>sf("email",e.target.value)} placeholder="info@company.com"/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>City</label>
+                  <input value={form.city} onChange={e=>sf("city",e.target.value)} placeholder="Dubai"/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Country</label>
+                  <select value={form.country} onChange={e=>sf("country",e.target.value)}>
+                    {["UAE","Saudi Arabia","UK","USA","India","Other"].map(c=><option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Address</label>
+                  <input value={form.address} onChange={e=>sf("address",e.target.value)} placeholder="Office 123, Business Bay, Dubai"/>
+                </div>
+              </div>
+
+              {/* Branding */}
+              <div style={{background:"#F7F9FC",border:"1px solid #E2E8F0",borderRadius:10,padding:"14px",marginBottom:12}}>
+                <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:12}}>🎨 Brand Colours</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Primary Colour</label>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <input type="color" value={form.brand_color} onChange={e=>sf("brand_color",e.target.value)} style={{width:44,height:36,padding:2,border:"1.5px solid #D1D9E6",borderRadius:8,cursor:"pointer"}}/>
+                      <input value={form.brand_color} onChange={e=>sf("brand_color",e.target.value)} placeholder="#0B1F3A" style={{flex:1}}/>
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Accent Colour</label>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <input type="color" value={form.brand_accent} onChange={e=>sf("brand_accent",e.target.value)} style={{width:44,height:36,padding:2,border:"1.5px solid #D1D9E6",borderRadius:8,cursor:"pointer"}}/>
+                      <input value={form.brand_accent} onChange={e=>sf("brand_accent",e.target.value)} placeholder="#C9A84C" style={{flex:1}}/>
+                    </div>
+                  </div>
+                </div>
+                {/* Preview */}
+                <div style={{marginTop:12,borderRadius:8,overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,.1)"}}>
+                  <div style={{background:form.brand_color,padding:"10px 16px",display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:form.brand_accent}}>◆ {form.name||"Company Name"}</span>
+                  </div>
+                  <div style={{background:"#F7F9FC",padding:"8px 16px",display:"flex",gap:6}}>
+                    {["Dashboard","Leads","Inventory"].map(t=>(
+                      <span key={t} style={{fontSize:11,padding:"3px 10px",borderRadius:6,background:t==="Dashboard"?form.brand_color:"transparent",color:t==="Dashboard"?form.brand_accent:"#718096",fontWeight:t==="Dashboard"?600:400}}>
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Status */}
+              <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:13,color:"#4A5568"}}>
+                <input type="checkbox" checked={form.is_active} onChange={e=>sf("is_active",e.target.checked)}/>
+                Company is active (users can log in)
+              </label>
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0",flexShrink:0}}>
+              <button onClick={()=>{setShowAdd(false);setEditComp(null);}} style={{padding:"9px 20px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              <button onClick={save} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+                {saving?"Saving…":editComp?"Save Changes":"Create Company"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
+// ══════════════════════════════════════════════════════════════════
+// PERMISSION SETS MODULE
+// ══════════════════════════════════════════════════════════════════
+
+const PERMISSION_DEFS = [
+  {
+    group: "Sales",
+    color: "#1A5FA8",
+    bg:    "#E6EFF9",
+    icon:  "🏷",
+    perms: [
+      { key:"p_view_leads",       label:"View Leads",              desc:"See leads in the pipeline" },
+      { key:"p_edit_leads",       label:"Create & Edit Leads",     desc:"Add new leads and update existing" },
+      { key:"p_delete_leads",     label:"Delete Leads",            desc:"Permanently remove leads" },
+      { key:"p_request_discount", label:"Request Discounts",       desc:"Submit discount requests for approval" },
+      { key:"p_approve_discount", label:"Approve Discounts",       desc:"Approve or reject discount requests" },
+    ]
+  },
+  {
+    group: "Inventory",
+    color: "#8A6200",
+    bg:    "#FDF3DC",
+    icon:  "🏗",
+    perms: [
+      { key:"p_view_inventory",   label:"View Inventory",          desc:"Browse projects and units" },
+      { key:"p_manage_inventory", label:"Manage Inventory",        desc:"Add, edit and delete projects and units" },
+    ]
+  },
+  {
+    group: "Leasing",
+    color: "#5B3FAA",
+    bg:    "#EEE8F9",
+    icon:  "🔑",
+    perms: [
+      { key:"p_view_leasing",     label:"View Leasing",            desc:"See tenants, leases and payments" },
+      { key:"p_manage_leasing",   label:"Manage Leasing",          desc:"Add tenants, create leases, log payments" },
+    ]
+  },
+  {
+    group: "General",
+    color: "#4A5568",
+    bg:    "#F0F2F5",
+    icon:  "⊞",
+    perms: [
+      { key:"p_view_dashboard",   label:"View Dashboard",          desc:"Access the dashboard overview" },
+      { key:"p_view_activity",    label:"View Activity Log",       desc:"See all logged activities" },
+      { key:"p_use_ai",           label:"Use AI Assistant",        desc:"Access the AI chat assistant" },
+      { key:"p_manage_users",     label:"Manage Users",            desc:"Add, edit and deactivate users" },
+    ]
+  },
+];
+
+const ALL_PERM_KEYS = PERMISSION_DEFS.flatMap(g => g.perms.map(p => p.key));
+
+const TEMPLATES = [
+  { id:"10000000-0000-0000-0000-000000000001", name:"Company Admin",    color:"#8A6200" },
+  { id:"10000000-0000-0000-0000-000000000002", name:"Sales Manager",    color:"#1A5FA8" },
+  { id:"10000000-0000-0000-0000-000000000003", name:"Sales Agent",      color:"#1A7F5A" },
+  { id:"10000000-0000-0000-0000-000000000004", name:"Leasing Manager",  color:"#5B3FAA" },
+  { id:"10000000-0000-0000-0000-000000000005", name:"Leasing Agent",    color:"#0F6E56" },
+  { id:"10000000-0000-0000-0000-000000000006", name:"Viewer",           color:"#718096" },
+];
+
+const COLORS = ["#1A5FA8","#1A7F5A","#5B3FAA","#0F6E56","#8A6200","#B85C10","#B83232","#718096","#0B1F3A","#C9A84C"];
+
+function PermissionSetsModule({ currentUser, showToast }) {
+  const [sets,      setSets]      = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [users,     setUsers]     = useState([]);
+  const [loading,   setLoading]   = useState(true);
+  const [view,      setView]      = useState("list"); // list | edit
+  const [editing,   setEditing]   = useState(null);
+  const [saving,    setSaving]    = useState(false);
+
+  const emptySet = {
+    name:"", description:"", based_on:"", color:"#1A5FA8",
+    ...Object.fromEntries(ALL_PERM_KEYS.map(k=>[k,false])),
+    p_view_dashboard: true,
+  };
+  const [form, setForm] = useState(emptySet);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const [s, t, u] = await Promise.all([
+      safe(supabase.from("permission_sets").select("*").eq("company_id", currentUser.company_id||"").order("name")),
+      safe(supabase.from("permission_sets").select("*").is("company_id", null).order("name")),
+      safe(supabase.from("profiles").select("id,full_name,permission_set_id").eq("company_id", currentUser.company_id||"")),
+    ]);
+    setSets(s.data||[]);
+    setTemplates(t.data||[]);
+    setUsers(u.data||[]);
+    setLoading(false);
+  }, [currentUser.company_id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const countUsers = (setId) => users.filter(u => u.permission_set_id === setId).length;
+
+  const openNew = (templateId=null) => {
+    if (templateId) {
+      const tmpl = templates.find(t => t.id === templateId);
+      if (tmpl) {
+        setForm({ ...emptySet, ...tmpl, id:undefined, company_id:undefined, is_template:false, name:`${tmpl.name} (Custom)`, based_on:tmpl.name });
+      }
+    } else {
+      setForm(emptySet);
+    }
+    setEditing(null);
+    setView("edit");
+  };
+
+  const openEdit = (set) => {
+    setForm({ ...emptySet, ...set });
+    setEditing(set);
+    setView("edit");
+  };
+
+  const cloneSet = (set) => {
+    setForm({ ...emptySet, ...set, id:undefined, name:`${set.name} (Copy)`, based_on:set.name, is_template:false });
+    setEditing(null);
+    setView("edit");
+  };
+
+  const save = async () => {
+    if (!form.name.trim()) { showToast("Name required","error"); return; }
+    setSaving(true);
+    try {
+      const payload = { ...form, company_id:currentUser.company_id, is_template:false, updated_at:new Date().toISOString() };
+      delete payload.id;
+      if (editing) {
+        const { error } = await supabase.from("permission_sets").update(payload).eq("id", editing.id);
+        if (error) throw error;
+        showToast("Permission set updated","success");
+      } else {
+        const { error } = await supabase.from("permission_sets").insert(payload);
+        if (error) throw error;
+        showToast("Permission set created","success");
+      }
+      setView("list"); load();
+    } catch(e) { showToast(e.message,"error"); }
+    setSaving(false);
+  };
+
+  const deleteSet = async (set) => {
+    if (countUsers(set.id) > 0) { showToast(`Cannot delete — ${countUsers(set.id)} user(s) assigned to this set`,"error"); return; }
+    if (!window.confirm(`Delete "${set.name}"?`)) return;
+    await supabase.from("permission_sets").delete().eq("id", set.id);
+    showToast("Deleted","info"); load();
+  };
+
+  const togglePerm = (key) => setForm(f => ({ ...f, [key]: !f[key] }));
+
+  const setAllInGroup = (group, value) => {
+    const keys = PERMISSION_DEFS.find(g=>g.group===group)?.perms.map(p=>p.key)||[];
+    setForm(f => ({ ...f, ...Object.fromEntries(keys.map(k=>[k,value])) }));
+  };
+
+  if (loading) return <Spinner msg="Loading permission sets…"/>;
+
+  // ── LIST VIEW ─────────────────────────────────────────────────
+  if (view === "list") return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+
+      {/* Instructions banner */}
+      <div style={{background:"#E6EFF9",border:"1px solid #B5D4F4",borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:13,color:"#1A5FA8",lineHeight:1.7}}>
+        <strong>How permission sets work:</strong> Create named sets of permissions, then assign them to users.
+        Each user gets exactly one permission set. Start from a built-in template or create from scratch.
+        Built-in templates cannot be deleted — clone them to customise.
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,flex:1,overflow:"hidden"}}>
+
+        {/* Left: Built-in templates */}
+        <div style={{display:"flex",flexDirection:"column",overflow:"hidden"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:10}}>
+            Built-in Templates
+            <span style={{fontSize:11,fontWeight:400,color:"#A0AEC0",marginLeft:8}}>Clone to customise</span>
+          </div>
+          <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8}}>
+            {templates.map(t => (
+              <div key={t.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:10,height:10,borderRadius:"50%",background:t.color,flexShrink:0}}/>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:600,fontSize:13,color:"#0B1F3A"}}>{t.name}</div>
+                  <div style={{fontSize:11,color:"#A0AEC0"}}>{t.description}</div>
+                  <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}}>
+                    {PERMISSION_DEFS.flatMap(g=>g.perms).filter(p=>t[p.key]).map(p=>(
+                      <span key={p.key} style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:20,background:"#F0F2F5",color:"#4A5568"}}>{p.label}</span>
+                    ))}
+                  </div>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                  <button onClick={()=>openNew(t.id)}
+                    style={{padding:"5px 12px",borderRadius:7,border:"1.5px solid #C9A84C",background:"#FDF3DC",color:"#8A6200",fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+                    Clone & Edit
+                  </button>
+                  <button onClick={()=>{ setForm({...emptySet,...t}); setEditing({...t,_readOnly:true}); setView("edit"); }}
+                    style={{padding:"5px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",color:"#4A5568",fontSize:11,cursor:"pointer"}}>
+                    View
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right: Custom sets */}
+        <div style={{display:"flex",flexDirection:"column",overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A"}}>
+              Custom Sets
+              <span style={{fontSize:11,fontWeight:400,color:"#A0AEC0",marginLeft:8}}>{sets.length} created</span>
+            </div>
+            <button onClick={()=>openNew()}
+              style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+              + New Set
+            </button>
+          </div>
+          <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8}}>
+            {sets.length===0&&(
+              <div style={{textAlign:"center",padding:"3rem 1rem",color:"#A0AEC0"}}>
+                <div style={{fontSize:36,marginBottom:8}}>🔐</div>
+                <div style={{fontSize:13,marginBottom:4}}>No custom permission sets yet</div>
+                <div style={{fontSize:12}}>Clone a template or create from scratch</div>
+              </div>
+            )}
+            {sets.map(s => {
+              const uc = countUsers(s.id);
+              const enabledCount = ALL_PERM_KEYS.filter(k=>s[k]).length;
+              return (
+                <div key={s.id} style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:10,padding:"12px 14px"}}>
+                  <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8}}>
+                    <div style={{width:12,height:12,borderRadius:"50%",background:s.color,flexShrink:0,marginTop:2}}/>
+                    <div style={{flex:1}}>
+                      <div style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>{s.name}</div>
+                      {s.description&&<div style={{fontSize:11,color:"#A0AEC0"}}>{s.description}</div>}
+                      {s.based_on&&<div style={{fontSize:11,color:"#C9A84C"}}>Based on: {s.based_on}</div>}
+                    </div>
+                    <div style={{display:"flex",gap:5,alignItems:"center"}}>
+                      <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:"#E6EFF9",color:"#1A5FA8"}}>{uc} user{uc!==1?"s":""}</span>
+                      <span style={{fontSize:11,color:"#A0AEC0"}}>{enabledCount}/13</span>
+                    </div>
+                  </div>
+                  {/* Permission pills */}
+                  <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
+                    {PERMISSION_DEFS.flatMap(g=>g.perms).filter(p=>s[p.key]).map(p=>(
+                      <span key={p.key} style={{fontSize:9,fontWeight:600,padding:"2px 7px",borderRadius:20,background:"#F0F2F5",color:"#4A5568"}}>{p.label}</span>
+                    ))}
+                    {enabledCount===0&&<span style={{fontSize:11,color:"#A0AEC0",fontStyle:"italic"}}>No permissions enabled</span>}
+                  </div>
+                  <div style={{display:"flex",gap:6}}>
+                    <button onClick={()=>openEdit(s)}
+                      style={{flex:1,padding:"6px",borderRadius:7,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>Edit</button>
+                    <button onClick={()=>cloneSet(s)}
+                      style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #C9A84C",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:600,cursor:"pointer"}}>Clone</button>
+                    <button onClick={()=>deleteSet(s)}
+                      style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #F0BCBC",background:"#FAEAEA",color:"#B83232",fontSize:12,fontWeight:600,cursor:"pointer"}}>Delete</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── EDIT VIEW ─────────────────────────────────────────────────
+  const isReadOnly = editing?._readOnly;
+  return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      {/* Edit header */}
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+        <button onClick={()=>setView("list")}
+          style={{padding:"7px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+          ← Back
+        </button>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>
+          {isReadOnly?"View Template":editing?"Edit Permission Set":"New Permission Set"}
+        </div>
+        {isReadOnly&&(
+          <button onClick={()=>cloneSet(editing)}
+            style={{marginLeft:"auto",padding:"7px 16px",borderRadius:8,border:"1.5px solid #C9A84C",background:"#FDF3DC",color:"#8A6200",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+            Clone & Customise →
+          </button>
+        )}
+      </div>
+
+      <div style={{flex:1,overflowY:"auto",display:"grid",gridTemplateColumns:"300px 1fr",gap:16}}>
+
+        {/* Left: Name + colour */}
+        <div>
+          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px",marginBottom:12}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:12,textTransform:"uppercase",letterSpacing:".5px"}}>Set Details</div>
+            <div style={{marginBottom:12}}>
+              <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Name *</label>
+              <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Senior Sales Agent" disabled={isReadOnly}/>
+            </div>
+            <div style={{marginBottom:12}}>
+              <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Description</label>
+              <textarea value={form.description||""} onChange={e=>setForm(f=>({...f,description:e.target.value}))} rows={2} placeholder="What does this role do?" disabled={isReadOnly}/>
+            </div>
+            <div>
+              <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Colour</label>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {COLORS.map(c=>(
+                  <button key={c} onClick={()=>!isReadOnly&&setForm(f=>({...f,color:c}))}
+                    style={{width:28,height:28,borderRadius:"50%",background:c,border:`3px solid ${form.color===c?"#0B1F3A":"transparent"}`,cursor:isReadOnly?"default":"pointer",transition:".15s"}}/>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
+            <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:12,textTransform:"uppercase",letterSpacing:".5px"}}>Summary</div>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+              <div style={{width:40,height:40,borderRadius:10,background:form.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16}}>
+                {form.name?form.name[0].toUpperCase():"?"}
+              </div>
+              <div>
+                <div style={{fontWeight:700,fontSize:14,color:"#0B1F3A"}}>{form.name||"Unnamed"}</div>
+                <div style={{fontSize:12,color:"#A0AEC0"}}>{ALL_PERM_KEYS.filter(k=>form[k]).length} of 13 permissions</div>
+              </div>
+            </div>
+            {PERMISSION_DEFS.map(g=>{
+              const enabled = g.perms.filter(p=>form[p.key]);
+              if (!enabled.length) return null;
+              return (
+                <div key={g.group} style={{marginBottom:8}}>
+                  <div style={{fontSize:10,fontWeight:700,color:g.color,textTransform:"uppercase",letterSpacing:".5px",marginBottom:3}}>{g.icon} {g.group}</div>
+                  {enabled.map(p=><div key={p.key} style={{fontSize:11,color:"#4A5568",paddingLeft:8}}>✓ {p.label}</div>)}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right: Permission toggles */}
+        <div>
+          {PERMISSION_DEFS.map(g=>(
+            <div key={g.group} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px",marginBottom:12}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:18}}>{g.icon}</span>
+                  <span style={{fontWeight:700,fontSize:14,color:"#0B1F3A"}}>{g.group}</span>
+                  <span style={{fontSize:11,color:"#A0AEC0"}}>{g.perms.filter(p=>form[p.key]).length}/{g.perms.length} enabled</span>
+                </div>
+                {!isReadOnly&&(
+                  <div style={{display:"flex",gap:6}}>
+                    <button onClick={()=>setAllInGroup(g.group,true)}
+                      style={{padding:"3px 10px",borderRadius:6,border:"1.5px solid #A8D5BE",background:"#E6F4EE",color:"#1A7F5A",fontSize:11,fontWeight:600,cursor:"pointer"}}>All on</button>
+                    <button onClick={()=>setAllInGroup(g.group,false)}
+                      style={{padding:"3px 10px",borderRadius:6,border:"1.5px solid #F0BCBC",background:"#FAEAEA",color:"#B83232",fontSize:11,fontWeight:600,cursor:"pointer"}}>All off</button>
+                  </div>
+                )}
+              </div>
+              {g.perms.map(p=>(
+                <div key={p.key} onClick={()=>!isReadOnly&&togglePerm(p.key)}
+                  style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:8,marginBottom:6,background:form[p.key]?g.bg:"#FAFBFC",border:`1.5px solid ${form[p.key]?g.color+"33":"#E2E8F0"}`,cursor:isReadOnly?"default":"pointer",transition:"all .15s"}}>
+                  {/* Toggle */}
+                  <div style={{width:40,height:22,borderRadius:11,background:form[p.key]?g.color:"#D1D9E6",position:"relative",flexShrink:0,transition:"background .2s"}}>
+                    <div style={{position:"absolute",top:3,left:form[p.key]?20:3,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:13,fontWeight:600,color:form[p.key]?g.color:"#4A5568"}}>{p.label}</div>
+                    <div style={{fontSize:11,color:"#A0AEC0"}}>{p.desc}</div>
+                  </div>
+                  {form[p.key]&&<span style={{fontSize:11,fontWeight:700,color:g.color}}>✓</span>}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Save bar */}
+      {!isReadOnly&&(
+        <div style={{display:"flex",gap:10,justifyContent:"flex-end",paddingTop:14,marginTop:8,borderTop:"1px solid #E2E8F0"}}>
+          <button onClick={()=>setView("list")}
+            style={{padding:"9px 22px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+            Cancel
+          </button>
+          <button onClick={save} disabled={saving}
+            style={{padding:"9px 28px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+            {saving?"Saving…":editing?"Save Changes":"Create Permission Set"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
+// ══════════════════════════════════════════════════════════════════
+// LEASING ENQUIRIES — Tenant lead tracking for Leasing CRM
+// Uses same leads table, filtered by property_type = "Lease"
+// Stages: New Enquiry → Contacted → Viewing Scheduled → Offer Made → Lease Signed → Lost
+// ══════════════════════════════════════════════════════════════════
+
+
+// ══════════════════════════════════════════════════════════════════
+// LEASING ENQUIRIES — Tenant contacts + Lease Opportunities
+// Same architecture as Sales Leads + Opportunities
+// ══════════════════════════════════════════════════════════════════
+
+const LEASE_STAGES = ["New Enquiry","Contacted","Viewing","Offer Made","Reserved","Lease Signed","Lost"];
+const LEASE_STAGE_META = {
+  "New Enquiry":   {c:"#1A5FA8", bg:"#E6EFF9"},
+  "Contacted":     {c:"#5B3FAA", bg:"#EEE8F9"},
+  "Viewing":       {c:"#A06810", bg:"#FDF3DC"},
+  "Offer Made":    {c:"#B83232", bg:"#FAEAEA"},
+  "Reserved":      {c:"#1A7F5A", bg:"#E6F4EE"},
+  "Lease Signed":  {c:"#0B1F3A", bg:"#E2E8F0"},
+  "Lost":          {c:"#718096", bg:"#F0F2F5"},
+};
+
+// ── Lease Opportunity Detail ──────────────────────────────────────
+function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, users, currentUser, showToast, onBack, onUpdated }) {
+  const [activeTab,  setActiveTab]  = useState("details");
+  const [activities, setActivities] = useState([]);
+  const [saving,     setSaving]     = useState(false);
+  const [showLog,    setShowLog]    = useState(false);
+  const [logForm,    setLogForm]    = useState({type:"Call",note:""});
+  const canEdit = can(currentUser.role,"write");
+  const isSigned = opp.stage==="Lease Signed";
+
+  const unit  = units.find(u=>u.id===opp.unit_id);
+  const proj  = unit ? projects.find(p=>p.id===unit.project_id) : null;
+  const lp    = unit ? leasePricing.find(l=>l.unit_id===unit.id) : null;
+  const agent = users.find(u=>u.id===opp.assigned_to);
+  const sm    = LEASE_STAGE_META[opp.stage]||LEASE_STAGE_META["New Enquiry"];
+
+  useEffect(()=>{
+    supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
+  },[opp.id]);
+
+  const moveStage = async(toStage)=>{
+    const curIdx = LEASE_STAGES.indexOf(opp.stage);
+    const toIdx  = LEASE_STAGES.indexOf(toStage);
+    if(["Reserved","Lease Signed"].includes(opp.stage) && toIdx<curIdx && toStage!=="Lost"){
+      showToast(`Cannot go back from ${opp.stage}`,"error"); return;
+    }
+    const newStatus = toStage==="Lease Signed"?"Won":toStage==="Lost"?"Lost":"Active";
+    const extra = toStage==="Lease Signed"?{won_at:new Date().toISOString()}:toStage==="Lost"?{lost_at:new Date().toISOString()}:{};
+    const{error}=await supabase.from("lease_opportunities").update({stage:toStage,status:newStatus,stage_updated_at:new Date().toISOString(),...extra}).eq("id",opp.id);
+    if(!error){
+      onUpdated({...opp,stage:toStage,status:newStatus,...extra});
+      if(toStage==="Reserved"&&opp.unit_id) await supabase.from("project_units").update({status:"Reserved"}).eq("id",opp.unit_id);
+      if(toStage==="Lease Signed"&&opp.unit_id) await supabase.from("project_units").update({status:"Leased"}).eq("id",opp.unit_id);
+      showToast(`Moved to ${toStage}`,"success");
+    }
+  };
+
+  const saveLog = async()=>{
+    if(!logForm.note.trim()){showToast("Note required","error");return;}
+    setSaving(true);
+    const{data,error}=await supabase.from("activities").insert({
+      opportunity_id:opp.id, lead_id:tenant.id,
+      type:logForm.type, note:logForm.note,
+      user_id:currentUser.id, user_name:currentUser.full_name,
+      lead_name:tenant.full_name, company_id:currentUser.company_id||null,
+    }).select().single();
+    if(!error){setActivities(p=>[data,...p]);showToast("Logged","success");setShowLog(false);setLogForm({type:"Call",note:""});}
+    setSaving(false);
+  };
+
+  return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+        <button onClick={onBack} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||`Lease Enquiry — ${tenant.full_name}`}</span>
+            <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>{opp.stage}</span>
+          </div>
+          <div style={{fontSize:12,color:"#718096",marginTop:2}}>{tenant.full_name} · {tenant.phone||""} {unit?`· ${unit.unit_ref} — ${unit.sub_type}`:""}</div>
+        </div>
+        {canEdit&&<button onClick={()=>setShowLog(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Activity</button>}
+      </div>
+
+      {/* Summary strip */}
+      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+        {[
+          ["🏠 Unit",      unit?`${unit.unit_ref} — ${unit.sub_type}`:"Not linked",  "#F7F9FC","#4A5568"],
+          ["💰 Annual Rent",lp?`AED ${Number(lp.annual_rent).toLocaleString()}`:"—",  "#0B1F3A","#C9A84C"],
+          ["👤 Agent",     agent?.full_name||"Unassigned",                            "#F7F9FC","#4A5568"],
+          ["📋 Budget",    opp.budget?`AED ${Number(opp.budget).toLocaleString()}`:"—","#F7F9FC","#4A5568"],
+          isSigned&&["✅ Lease",     "Signed",                                         "#E6F4EE","#1A7F5A"],
+        ].filter(Boolean).map(([l,v,bg,col])=>(
+          <div key={l} style={{background:bg,borderRadius:8,padding:"8px 14px",flex:1,minWidth:120}}>
+            <div style={{fontSize:9,color:bg==="#0B1F3A"?"rgba(255,255,255,.5)":"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
+            <div style={{fontSize:13,fontWeight:700,color:col,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid #E2E8F0"}}>
+        {["details","activities"].map(id=>(
+          <button key={id} onClick={()=>setActiveTab(id)}
+            style={{padding:"8px 16px",borderRadius:"8px 8px 0 0",border:"none",borderBottom:activeTab===id?"2.5px solid #5B3FAA":"2.5px solid transparent",background:"transparent",fontSize:13,fontWeight:activeTab===id?700:400,color:activeTab===id?"#5B3FAA":"#718096",cursor:"pointer",textTransform:"capitalize"}}>
+            {id}{id==="activities"&&activities.length>0?` (${activities.length})`:""}
+          </button>
+        ))}
+      </div>
+
+      <div style={{flex:1,overflowY:"auto"}}>
+
+        {activeTab==="details"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            {/* Workflow bar */}
+            <div style={{background:"linear-gradient(135deg,#1A0B3A,#2D1558)",borderRadius:12,padding:"14px 16px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.4)",textTransform:"uppercase",letterSpacing:".6px",marginBottom:10}}>Leasing Workflow</div>
+              <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0}}>
+                {LEASE_STAGES.filter(s=>s!=="Lost").map((s,i,arr)=>{
+                  const curIdx=LEASE_STAGES.indexOf(opp.stage);
+                  const thisIdx=LEASE_STAGES.indexOf(s);
+                  const isDone=curIdx>thisIdx;
+                  const isCur=opp.stage===s;
+                  return (
+                    <div key={s} style={{display:"flex",alignItems:"center",flexShrink:0}}>
+                      <div onClick={()=>moveStage(s)}
+                        style={{padding:"5px 12px",borderRadius:20,background:isCur?"#C9A84C":isDone?"rgba(26,127,90,.3)":"rgba(255,255,255,.08)",color:isCur?"#0B1F3A":isDone?"#4ADE80":"rgba(255,255,255,.4)",fontSize:11,fontWeight:isCur||isDone?700:400,cursor:"pointer",whiteSpace:"nowrap",transition:"all .15s"}}>
+                        {isDone?"✓ ":""}{s}
+                      </div>
+                      {i<arr.length-1&&<div style={{width:16,height:1,background:"rgba(255,255,255,.1)",flexShrink:0}}/>}
+                    </div>
+                  );
+                })}
+                <div style={{width:16,height:1,background:"rgba(255,255,255,.1)",flexShrink:0}}/>
+                <div onClick={()=>moveStage("Lost")}
+                  style={{padding:"5px 12px",borderRadius:20,background:opp.stage==="Lost"?"#B83232":"rgba(255,255,255,.05)",color:opp.stage==="Lost"?"#fff":"rgba(255,255,255,.3)",fontSize:11,cursor:"pointer",whiteSpace:"nowrap"}}>
+                  ✗ Lost
+                </div>
+              </div>
+              {isSigned&&<div style={{marginTop:10,padding:"6px 10px",background:"rgba(201,168,76,.15)",borderRadius:6,fontSize:11,color:"#C9A84C",fontWeight:600}}>🎉 Lease Signed — proceed to create lease contract in Leasing module</div>}
+            </div>
+
+            {/* Unit */}
+            <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Property</div>
+              {unit?(
+                <div style={{display:"flex",gap:12,alignItems:"flex-start",flexWrap:"wrap"}}>
+                  <div style={{flex:1,minWidth:200}}>
+                    <div style={{fontWeight:700,fontSize:15,color:"#0B1F3A",marginBottom:4}}>{unit.unit_ref} — {unit.sub_type}</div>
+                    <div style={{fontSize:12,color:"#718096",marginBottom:6}}>{proj?.name||"—"} · Floor {unit.floor_number||"—"} · {unit.view||"—"}</div>
+                    {lp&&<div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#5B3FAA"}}>AED {Number(lp.annual_rent).toLocaleString()} / yr</div>}
+                    {lp?.monthly_rent&&<div style={{fontSize:12,color:"#718096"}}>AED {Number(lp.monthly_rent).toLocaleString()} / mo</div>}
+                  </div>
+                </div>
+              ):(
+                <div style={{color:"#A0AEC0",fontSize:12,textAlign:"center",padding:"1rem"}}>No unit linked yet</div>
+              )}
+            </div>
+
+            {/* Tenant info */}
+            <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Tenant Details</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}>
+                {[["Name",tenant.full_name],["Phone",tenant.phone||"—"],["Email",tenant.email||"—"],["Nationality",tenant.nationality||"—"],["ID Type",tenant.id_type||"—"],["ID Number",tenant.id_number||"—"]].map(([l,v])=>(
+                  <div key={l} style={{background:"#FAFBFC",borderRadius:8,padding:"8px 10px"}}>
+                    <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {opp.notes&&<div style={{background:"#F7F9FC",borderRadius:12,padding:"14px 16px",fontSize:12,color:"#4A5568",lineHeight:1.7}}>{opp.notes}</div>}
+          </div>
+        )}
+
+        {activeTab==="activities"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <button onClick={()=>setShowLog(true)} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Activity</button>
+            {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No activities yet</div>}
+            {activities.map(a=>{
+              const icons={Call:"📞",Email:"✉",Meeting:"🤝",Visit:"🏠",WhatsApp:"💬",Note:"📝"};
+              return (
+                <div key={a.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",display:"flex",gap:10}}>
+                  <div style={{width:32,height:32,borderRadius:"50%",background:"#EEE8F9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{icons[a.type]||"📋"}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+                      <span style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{a.type}</span>
+                      <span style={{fontSize:11,color:"#A0AEC0"}}>{fmtDT(a.created_at)}</span>
+                    </div>
+                    <div style={{fontSize:12,color:"#4A5568",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{a.note}</div>
+                    <div style={{fontSize:11,color:"#A0AEC0",marginTop:4}}>{a.user_name}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Log Activity Modal */}
+      {showLog&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:420,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>Log Activity</span>
+              <button onClick={()=>setShowLog(false)} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{padding:"1.25rem 1.5rem"}}>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
+                {["Call","Email","Meeting","Visit","WhatsApp","Note"].map(t=>(
+                  <button key={t} onClick={()=>setLogForm(f=>({...f,type:t}))}
+                    style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${logForm.type===t?"#5B3FAA":"#E2E8F0"}`,background:logForm.type===t?"#5B3FAA":"#fff",color:logForm.type===t?"#fff":"#4A5568",fontSize:11,cursor:"pointer",fontWeight:logForm.type===t?600:400}}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <textarea value={logForm.note} onChange={e=>setLogForm(f=>({...f,note:e.target.value}))} rows={4} placeholder="What happened? Key details…" style={{width:"100%",marginBottom:12}}/>
+              <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+                <button onClick={()=>setShowLog(false)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+                <button onClick={saveLog} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save"}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main LeasingLeads (Tenant Contacts + Lease Opportunities) ─────
+function LeasingLeads({ currentUser, showToast, users=[] }) {
+  const [tenants,    setTenants]    = useState([]);
+  const [lOpps,      setLOpps]      = useState([]);
+  const [units,      setUnits]      = useState([]);
+  const [projects,   setProjects]   = useState([]);
+  const [leasePricing,setLeasePricing]=useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [search,     setSearch]     = useState("");
+  const [fStage,     setFStage]     = useState("All");
+  const [view,       setView]       = useState("list");  // list | tenant | opportunity
+  const [selTenantId,setSelTenantId]= useState(null);
+  const [selOpp,     setSelOpp]     = useState(null);
+  const [showAddTenant,setShowAddTenant]=useState(false);
+  const [showAddOpp,setShowAddOpp]  = useState(false);
+  const [editTenant, setEditTenant] = useState(null);
+  const [saving,     setSaving]     = useState(false);
+  const [oppForm,    setOppForm]    = useState({title:"",unit_id:"",budget:"",assigned_to:"",notes:""});
+  const [showTenantUpload, setShowTenantUpload] = useState(false);
+  const canEdit = can(currentUser.role,"write");
+  const canManageTenants = ["super_admin","admin","leasing_manager"].includes(currentUser.role);
+  const tBlank = {full_name:"",phone:"",email:"",nationality:"",id_type:"Emirates ID",id_number:"",id_expiry:"",passport_number:"",tenant_type:"Individual",notes:""};
+  const [tForm, setTForm] = useState(tBlank);
+  const tf = k => e => setTForm(f=>({...f,[k]:e.target?.value??e}));
+
+  useEffect(()=>{
+    const q = x => x.then(r=>r).catch(()=>({data:[]}));
+    Promise.all([
+      q(supabase.from("tenants").select("*").order("full_name")),
+      q(supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false})),
+      q(supabase.from("project_units").select("id,unit_ref,unit_type,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms,bathrooms,block_or_tower")),
+      q(supabase.from("projects").select("id,name")),
+      q(supabase.from("unit_lease_pricing").select("*")),
+    ]).then(([t,lo,u,p,lp])=>{
+      setTenants(t.data||[]);
+      setLOpps(lo.data||[]);
+      setUnits(u.data||[]);
+      setProjects(p.data||[]);
+      setLeasePricing(lp.data||[]);
+      setLoading(false);
+    }).catch(()=>setLoading(false));
+  },[]);
+
+  const selTenant   = tenants.find(t=>t.id===selTenantId);
+  const tenantOpps  = selTenantId ? lOpps.filter(o=>o.tenant_id===selTenantId) : [];
+
+  const tenantBestStage = tid => {
+    const lo = lOpps.filter(o=>o.tenant_id===tid&&o.status==="Active");
+    if(!lo.length) return lOpps.find(o=>o.tenant_id===tid)?.stage||"New Enquiry";
+    const order = ["Reserved","Lease Signed","Offer Made","Viewing","Contacted","New Enquiry"];
+    for(const s of order){ if(lo.find(o=>o.stage===s)) return s; }
+    return lo[0]?.stage||"New Enquiry";
+  };
+
+  const saveTenant = async()=>{
+    if(!tForm.full_name.trim()){showToast("Name required","error");return;}
+    setSaving(true);
+    try{
+      const payload={...tForm,company_id:currentUser.company_id||null,created_by:currentUser.id};
+      let data,error;
+      if(editTenant){
+        ({data,error}=await supabase.from("tenants").update(tForm).eq("id",editTenant.id).select().single());
+        setTenants(p=>p.map(t=>t.id===editTenant.id?data:t));
+      }else{
+        ({data,error}=await supabase.from("tenants").insert(payload).select().single());
+        setTenants(p=>[...p,data].sort((a,b)=>a.full_name.localeCompare(b.full_name)));
+      }
+      if(error)throw error;
+      showToast(editTenant?"Tenant updated":"Tenant added","success");
+      setShowAddTenant(false);setEditTenant(null);setTForm(tBlank);
+    }catch(e){showToast(e.message,"error");}
+    setSaving(false);
+  };
+
+  const saveOpp = async()=>{
+    if(!selTenantId)return;
+    setSaving(true);
+    try{
+      const unit=units.find(u=>u.id===oppForm.unit_id);
+      const payload={
+        tenant_id:selTenantId,
+        company_id:currentUser.company_id||null,
+        title:oppForm.title||(unit?`${unit.unit_ref} — ${selTenant?.full_name}`:`Enquiry — ${selTenant?.full_name}`),
+        unit_id:oppForm.unit_id||null,
+        budget:oppForm.budget?Number(oppForm.budget):null,
+        assigned_to:oppForm.assigned_to||currentUser.id,
+        notes:oppForm.notes||null,
+        stage:"New Enquiry",status:"Active",
+        created_by:currentUser.id,
+      };
+      const{data,error}=await supabase.from("lease_opportunities").insert(payload).select().single();
+      if(error)throw error;
+      setLOpps(p=>[data,...p]);
+      showToast("Lease enquiry created","success");
+      setShowAddOpp(false);
+      setOppForm({title:"",unit_id:"",budget:"",assigned_to:"",notes:""});
+      setSelOpp(data);setView("opportunity");
+    }catch(e){showToast(e.message,"error");}
+    setSaving(false);
+  };
+
+  const visible = (can(currentUser.role,"see_all")?tenants:tenants.filter(t=>{
+    const myOpps=lOpps.filter(o=>o.tenant_id===t.id&&o.assigned_to===currentUser.id);
+    return myOpps.length>0;
+  }));
+  const filtered = visible.filter(t=>{
+    const q=search.toLowerCase();
+    return(!q||t.full_name?.toLowerCase().includes(q)||t.phone?.includes(q)||t.email?.toLowerCase().includes(q));
+  });
+
+  if(loading) return <Spinner msg="Loading leasing enquiries…"/>;
+
+  // ── LIST VIEW ─────────────────────────────────────────────────
+  if(view==="list") return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      {/* Toolbar */}
+      <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+        <div style={{position:"relative",flex:1,minWidth:160}}>
+          <span style={{position:"absolute",left:10,top:"50%",transform:"translateY(-50%)",fontSize:14}}>🔍</span>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search name, phone, email…" style={{paddingLeft:32,width:"100%"}}/>
+        </div>
+        <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
+        {canEdit&&<button onClick={()=>setShowTenantUpload(true)}
+          style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #5B3FAA",background:"#F5F0FF",color:"#5B3FAA",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+          📋 Download Template / Upload Data
+        </button>}
+        {canEdit&&<button onClick={()=>{setTForm(tBlank);setEditTenant(null);setShowAddTenant(true);}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Tenant</button>}
+      </div>
+
+      {/* Stage filter strip */}
+      <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",paddingBottom:4,flexShrink:0}}>
+        {["All",...LEASE_STAGES].map(s=>{
+          const cnt=s==="All"?filtered.length:filtered.filter(t=>tenantBestStage(t.id)===s).length;
+          const m=s==="All"?{c:"#5B3FAA",bg:"#EEE8F9"}:LEASE_STAGE_META[s]||{c:"#718096",bg:"#F0F2F5"};
+          return (
+            <button key={s} onClick={()=>setFStage(s)}
+              style={{flexShrink:0,padding:"5px 12px",borderRadius:8,border:`1.5px solid ${fStage===s?m.c:"#E2E8F0"}`,background:fStage===s?m.bg:"#fff",color:m.c,fontSize:11,fontWeight:600,cursor:"pointer"}}>
+              {s} <span style={{fontWeight:700}}>{cnt}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Tenants table */}
+      <div style={{flex:1,overflowY:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+          <thead style={{position:"sticky",top:0,zIndex:1}}>
+            <tr style={{background:"#1A0B3A"}}>
+              {["Tenant","Phone","Email","Nationality","Enquiries","Best Stage","Action"].map(h=>(
+                <th key={h} style={{padding:"8px 10px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length===0&&<tr><td colSpan={7} style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>No tenants found</td></tr>}
+            {filtered.map((t,i)=>{
+              const lo=lOpps.filter(o=>o.tenant_id===t.id);
+              const activeOpps=lo.filter(o=>o.status==="Active");
+              const bestStage=tenantBestStage(t.id);
+              const sm2=LEASE_STAGE_META[bestStage]||{c:"#718096",bg:"#F0F2F5"};
+              if(fStage!=="All"&&bestStage!==fStage)return null;
+              return (
+                <tr key={t.id}
+                  style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5",cursor:"pointer",transition:"background .1s"}}
+                  onMouseOver={e=>e.currentTarget.style.background="#F5F0FF"}
+                  onMouseOut={e=>e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC"}>
+                  <td style={{padding:"8px 10px"}} onClick={()=>{setSelTenantId(t.id);setView("tenant");}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <Av name={t.full_name} size={28} bg="#5B3FAA"/>
+                      <div>
+                        <div style={{fontWeight:600,fontSize:13,color:"#0B1F3A"}}>{t.full_name}</div>
+                        {t.tenant_type&&<div style={{fontSize:10,color:"#A0AEC0"}}>{t.tenant_type}</div>}
+                      </div>
+                    </div>
+                  </td>
+                  <td style={{padding:"8px 10px",color:"#4A5568"}} onClick={()=>{setSelTenantId(t.id);setView("tenant");}}>{t.phone||"—"}</td>
+                  <td style={{padding:"8px 10px",color:"#4A5568",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} onClick={()=>{setSelTenantId(t.id);setView("tenant");}}>{t.email||"—"}</td>
+                  <td style={{padding:"8px 10px",color:"#4A5568"}} onClick={()=>{setSelTenantId(t.id);setView("tenant");}}>{t.nationality||"—"}</td>
+                  <td style={{padding:"8px 10px",textAlign:"center"}} onClick={()=>{setSelTenantId(t.id);setView("tenant");}}>
+                    <span style={{fontWeight:700,color:"#5B3FAA"}}>{activeOpps.length}</span>
+                    {lo.filter(o=>o.status==="Won").length>0&&<span style={{fontSize:10,color:"#1A7F5A",marginLeft:4}}>+{lo.filter(o=>o.status==="Won").length}✓</span>}
+                  </td>
+                  <td style={{padding:"8px 10px"}} onClick={()=>{setSelTenantId(t.id);setView("tenant");}}>
+                    <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:sm2.bg,color:sm2.c}}>{bestStage}</span>
+                  </td>
+                  <td style={{padding:"8px 10px"}} onClick={e=>e.stopPropagation()}>
+                    <button onClick={()=>{setTForm({...tBlank,...t});setEditTenant(t);setShowAddTenant(true);}} style={{fontSize:11,padding:"3px 8px",borderRadius:6,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>✏</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Tenant Upload Modal */}
+      {showTenantUpload&&(()=>{
+        const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
+        return (
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:580,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📋 Tenants — Download Template / Upload Data</span>
+              <button onClick={()=>setShowTenantUpload(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{padding:"1.5rem"}}>
+              {/* Export current */}
+              {tenants.length>0&&(
+                <div style={{background:"#F7F9FC",borderRadius:10,padding:"12px 14px",marginBottom:14,border:"1px solid #E2E8F0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>Export Current Tenants</div>
+                    <div style={{fontSize:11,color:"#718096"}}>{tenants.length} tenant records</div>
+                  </div>
+                  <button onClick={()=>{
+                    const headers = "full_name,phone,email,nationality,id_type,id_number,id_expiry,tenant_type,notes";
+                    const rows = tenants.map(t=>[
+                      t.full_name,t.phone||"",t.email||"",t.nationality||"",t.id_type||"",t.id_number||"",t.id_expiry||"",t.tenant_type||"",t.notes||""
+                    ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","));
+                    const csv=[headers,...rows].join("\n");
+                    const a=document.createElement("a");
+                    a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+                    a.download=`tenants_export_${new Date().toISOString().split("T")[0]}.csv`;
+                    a.click();
+                    showToast(`Exported ${tenants.length} tenants`,"success");
+                  }} style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                    ⬇ Export Current
+                  </button>
+                </div>
+              )}
+
+              {/* Two column layout */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+                {/* Download Template */}
+                <div style={{background:"#F7F9FC",borderRadius:10,padding:"16px",border:"1px solid #E2E8F0",display:"flex",flexDirection:"column",gap:10}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>📥 Step 1 — Download Template</div>
+                  <div style={{fontSize:12,color:"#4A5568",lineHeight:1.7}}>Fill in your tenants in Excel, then save as CSV and upload.</div>
+                  <div style={{fontSize:11,color:"#1A5FA8",lineHeight:1.7}}>
+                    <strong>Columns:</strong> full_name · phone · email · nationality · id_type · id_number · id_expiry · tenant_type · notes<br/>
+                    <strong>nationality:</strong> {MASTER.nationality.join(" | ")}<br/>
+                    <strong>id_type:</strong> {MASTER.id_type.join(" | ")}<br/>
+                    <strong>tenant_type:</strong> {MASTER.tenant_type.join(" | ")}
+                  </div>
+                  <button onClick={()=>{
+                    const headers = "full_name,phone,email,nationality,id_type,id_number,id_expiry,tenant_type,notes";
+                    const samples = [
+                      '"Ahmed Al Mansouri","+971501234567","ahmed@email.com","Emirati","Emirates ID","784-1990-1234567-1","2028-12-31","Individual","VIP client"',
+                      '"Raj Kumar","+971507654321","raj@company.com","Indian","Passport","A1234567","2027-06-30","Corporate","Company lease"',
+                    ].join("\n");
+                    const allowedNote = "\n\nALLOWED VALUES\nnationality: "+MASTER.nationality.join(" | ")+"\nid_type: "+MASTER.id_type.join(" | ")+"\ntenant_type: "+MASTER.tenant_type.join(" | ");
+                    const csv = headers+"\n"+samples+allowedNote;
+                    const a=document.createElement("a");
+                    a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+                    a.download="propcrm_tenants_template.csv";
+                    a.click();
+                  }} style={{padding:"10px 0",borderRadius:8,border:"none",background:"#1A0B3A",color:"#C9A84C",fontSize:13,fontWeight:700,cursor:"pointer",textAlign:"center"}}>
+                    ⬇ Download Template
+                  </button>
+                </div>
+
+                {/* Upload */}
+                <div style={{background:"#F5F0FF",borderRadius:10,padding:"16px",border:"2px dashed #5B3FAA",display:"flex",flexDirection:"column",gap:10,alignItems:"center",justifyContent:"center"}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#1A0B3A"}}>📤 Step 2 — Upload Your File</div>
+                  <div style={{fontSize:12,color:"#4A5568",textAlign:"center",lineHeight:1.6}}>Fill the template, save as CSV, upload here.</div>
+                  <div style={{fontSize:28}}>📂</div>
+                  <label style={{padding:"12px 24px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",textAlign:"center",width:"100%",boxSizing:"border-box"}}>
+                    📤 Select CSV & Upload
+                    <input type="file" accept=".csv" style={{display:"none"}} onChange={async(e)=>{
+                      const file=e.target.files[0]; if(!file) return;
+                      const text=await file.text();
+                      const rows=text.trim().split("\n");
+                      const headers=rows[0].split(",").map(h=>h.trim().replace(/"/g,"").toLowerCase());
+                      const records=rows.slice(1).filter(r=>r.trim()).map(row=>{
+                        const vals=row.split(",").map(v=>v.trim().replace(/"/g,""));
+                        const rec={}; headers.forEach((h,i)=>{rec[h]=vals[i]||null;}); return rec;
+                      });
+                      if(!records.length){showToast("No data rows found","error");return;}
+                      if(!records[0].full_name){showToast("full_name column is required","error");return;}
+                      const payload=records.map(r=>({
+                        full_name:r.full_name, phone:r.phone||null, email:r.email||null,
+                        nationality:r.nationality||null, id_type:r.id_type||"Emirates ID",
+                        id_number:r.id_number||null, id_expiry:r.id_expiry||null,
+                        tenant_type:r.tenant_type||"Individual", notes:r.notes||null,
+                        company_id:cid, created_by:currentUser.id
+                      }));
+                      const{data:newT,error}=await supabase.from("tenants").insert(payload).select();
+                      if(error){showToast(error.message,"error");return;}
+                      setTenants(p=>[...p,...(newT||[])].sort((a,b)=>a.full_name.localeCompare(b.full_name)));
+                      showToast(`✓ ${newT?.length||0} tenants uploaded`,"success");
+                      setShowTenantUpload(false);
+                    }}/>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        );
+      })()}
+
+      {/* Add/Edit Tenant Modal */}      {showAddTenant&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:520,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>{editTenant?"Edit":"New"} Tenant</span>
+              <button onClick={()=>{setShowAddTenant(false);setEditTenant(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Full Name *</label><input value={tForm.full_name} onChange={tf("full_name")}/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Phone</label><input value={tForm.phone} onChange={tf("phone")}/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Email</label><input type="email" value={tForm.email} onChange={tf("email")}/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Nationality</label><input value={tForm.nationality} onChange={tf("nationality")}/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Tenant Type</label>
+                  <select value={tForm.tenant_type} onChange={tf("tenant_type")}><option>Individual</option><option>Company</option></select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>ID Type</label>
+                  <select value={tForm.id_type} onChange={tf("id_type")}><option>Emirates ID</option><option>Passport</option><option>Trade License</option></select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>ID Number</label><input value={tForm.id_number} onChange={tf("id_number")}/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>ID Expiry</label><input type="date" value={tForm.id_expiry} onChange={tf("id_expiry")}/></div>
+                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label><textarea value={tForm.notes} onChange={tf("notes")} rows={2}/></div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
+              <button onClick={()=>{setShowAddTenant(false);setEditTenant(null);}} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              <button onClick={saveTenant} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editTenant?"Save":"Add Tenant"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ── TENANT DETAIL VIEW ────────────────────────────────────────
+  if(view==="tenant"&&selTenant) return (
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap"}}>
+        <button onClick={()=>setView("list")} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Tenants</button>
+        <Av name={selTenant.full_name} size={40} bg="#5B3FAA"/>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A"}}>{selTenant.full_name}</div>
+          <div style={{fontSize:12,color:"#718096"}}>{selTenant.phone} {selTenant.email?`· ${selTenant.email}`:""} {selTenant.nationality?`· ${selTenant.nationality}`:""}</div>
+        </div>
+        <div style={{display:"flex",gap:6}}>
+          {canEdit&&<button onClick={()=>{setTForm({...tBlank,...selTenant});setEditTenant(selTenant);setShowAddTenant(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
+          {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:""});setShowAddOpp(true);}} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Enquiry</button>}
+        </div>
+      </div>
+
+      {/* Tenant info strip */}
+      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+        {[["📞",selTenant.phone||"—"],["✉",selTenant.email||"—"],["🌍",selTenant.nationality||"—"],["🪪",selTenant.id_type||"—"],["🏢",selTenant.tenant_type||"—"]].map(([l,v])=>(
+          <div key={l} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 14px",flex:1,minWidth:100}}>
+            <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
+            <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:12}}>Lease Enquiries ({tenantOpps.length})</div>
+
+      <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8}}>
+        {tenantOpps.length===0&&(
+          <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
+            <div style={{fontSize:36,marginBottom:10}}>🔑</div>
+            <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>No enquiries yet</div>
+            <div style={{fontSize:12,marginBottom:16}}>Add an enquiry for each unit this tenant is interested in</div>
+            {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:""});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Enquiry</button>}
+          </div>
+        )}
+        {tenantOpps.map(opp=>{
+          const unit=units.find(u=>u.id===opp.unit_id);
+          const proj=unit?projects.find(p=>p.id===unit.project_id):null;
+          const lp=unit?leasePricing.find(l=>l.unit_id===unit.id):null;
+          const sm3=LEASE_STAGE_META[opp.stage]||{c:"#718096",bg:"#F0F2F5"};
+          const agent=users.find(u=>u.id===opp.assigned_to);
+          return (
+            <div key={opp.id} onClick={()=>{setSelOpp(opp);setView("opportunity");}}
+              style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",borderLeft:`4px solid ${sm3.c}`,transition:"all .12s"}}
+              onMouseOver={e=>{e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.08)";e.currentTarget.style.transform="translateY(-1px)";}}
+              onMouseOut={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
+                    <span style={{fontWeight:700,fontSize:14,color:"#0B1F3A"}}>{opp.title||"Lease Enquiry"}</span>
+                    <span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:sm3.bg,color:sm3.c}}>{opp.stage}</span>
+                    {opp.status==="Won"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ Signed</span>}
+                  </div>
+                  {unit&&<div style={{fontSize:12,color:"#4A5568",marginBottom:2}}>🏠 {unit.unit_ref} — {unit.sub_type}{proj?` · ${proj.name}`:""}</div>}
+                  {lp&&<div style={{fontSize:13,fontWeight:700,color:"#5B3FAA"}}>AED {Number(lp.annual_rent).toLocaleString()} / yr</div>}
+                </div>
+                <div style={{textAlign:"right",flexShrink:0}}>
+                  <div style={{fontSize:11,color:"#A0AEC0"}}>{agent?.full_name||"Unassigned"}</div>
+                  <div style={{fontSize:11,color:"#A0AEC0",marginTop:2}}>{opp.stage_updated_at?Math.floor((new Date()-new Date(opp.stage_updated_at))/864e5)+"d in stage":""}</div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Add Enquiry Modal */}
+      {showAddOpp&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
+              <div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>🔑 New Lease Enquiry</div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>for {selTenant.full_name}</div>
+              </div>
+              <button onClick={()=>setShowAddOpp(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem",flex:1}}>
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Title</label><input value={oppForm.title} onChange={e=>setOppForm(f=>({...f,title:e.target.value}))} placeholder="Auto-filled from unit"/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Unit *</label>
+                  <select value={oppForm.unit_id} onChange={e=>{
+                    const u=units.find(x=>x.id===e.target.value);
+                    setOppForm(f=>({...f,unit_id:e.target.value,title:u&&!f.title?`${u.unit_ref} — ${selTenant?.full_name||""}`:f.title}));
+                  }}>
+                    <option value="">— Select unit —</option>
+                    {units.filter(u=>u.status==="Available"&&(u.purpose==="Lease"||u.purpose==="Both")).map(u=>{
+                      const lp2=leasePricing.find(l=>l.unit_id===u.id);
+                      const pr=projects.find(p=>p.id===u.project_id);
+                      return <option key={u.id} value={u.id}>{u.unit_ref} · {u.sub_type} · {pr?.name||"—"}{lp2?` · AED ${Math.round(lp2.annual_rent/1000)}K/yr`:""}</option>;
+                    })}
+                  </select>
+                </div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Budget (AED/yr)</label><input type="number" value={oppForm.budget} onChange={e=>setOppForm(f=>({...f,budget:e.target.value}))} placeholder="Annual budget"/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Assign To</label>
+                  <select value={oppForm.assigned_to} onChange={e=>setOppForm(f=>({...f,assigned_to:e.target.value}))}>
+                    {users.filter(u=>u.is_active).map(u=><option key={u.id} value={u.id}>{u.full_name}</option>)}
+                  </select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label><textarea value={oppForm.notes} onChange={e=>setOppForm(f=>({...f,notes:e.target.value}))} rows={3}/></div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
+              <button onClick={()=>setShowAddOpp(false)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              <button onClick={saveOpp} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":"Create Enquiry"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // ── OPPORTUNITY DETAIL ────────────────────────────────────────
+  if(view==="opportunity"&&selOpp) return (
+    <LeaseOpportunityDetail
+      opp={selOpp}
+      tenant={selTenant||tenants.find(t=>t.id===selOpp.tenant_id)||{full_name:"Tenant"}}
+      units={units}
+      projects={projects}
+      leasePricing={leasePricing}
+      users={users}
+      currentUser={currentUser}
+      showToast={showToast}
+      onBack={()=>{setView("tenant");setSelOpp(null);}}
+      onUpdated={(updated)=>{
+        setSelOpp(updated);
+        setLOpps(p=>p.map(o=>o.id===updated.id?updated:o));
+      }}
+    />
+  );
+
+  return null;
+}
+
+
+
+// ══════════════════════════════════════════════════════════════════
+// MAIN APP
+// ══════════════════════════════════════════════════════════════════
+
+export default function App(){
+  const[checking,  setChecking]  = useState(true);
+  const[currentUser,setCurrentUser]=useState(null);
+  const[leads,     setLeads]     = useState([]);
+  const[properties,setProperties]= useState([]);
+  const[activities,setActivities]= useState([]);
+  const[meetings,  setMeetings]  = useState([]);
+  const[followups, setFollowups] = useState([]);
+  const[discounts, setDiscounts] = useState([]);
+  const[users,     setUsers]     = useState([]);
+  const[aiProjects,setAiProjects]= useState([]);
+  const[aiUnits,   setAiUnits]   = useState([]);
+  const[aiSalePr,  setAiSalePr]  = useState([]);
+  const[aiLeasePr, setAiLeasePr] = useState([]);
+  const[tab,       setTab]       = useState(()=>{
+    const lastApp = localStorage.getItem("propccrm_last_app")||"sales";
+    return lastApp==="leasing"?"l_dashboard":"dashboard";
+  });
+
+  const[activeApp, setActiveApp] = useState(()=>localStorage.getItem("propccrm_last_app")||"sales");
+  const[appConfig, setAppConfig] = useState(()=>getAppConfig());
+  const[dataLoading,setDataLoading]=useState(false);
+  const[companies, setCompanies] = useState([]);
+  const[activeCompanyId,setActiveCompanyId]=useState(()=>localStorage.getItem("propccrm_company_id")||null);
+  // Reload inventory when company changes
+  const switchCompany = async (id) => {
+    // Update profile company_id in Supabase so RLS works correctly
+    await supabase.from("profiles").update({company_id:id}).eq("id",currentUser.id);
+    setActiveCompanyId(id);
+    localStorage.setItem("propccrm_company_id",id);
+    // Update companies list display then reload
+    window.location.reload();
+  };
+  const[leasingData,setLeasingData]=useState({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
+  const[followupAlerts,setFollowupAlerts]=useState({staleLeads:[],overduePayments:[],expiringLeases:[]});
+  const[opps,setOpps]=useState([]);
+  const[toast,setToast]=useState(null);
+  const showToast=(msg,type="success")=>setToast({msg,type});
+
+  const loadAIData=useCallback(async()=>{
+    if(aiProjects.length>0)return;
+    try{
+      const[p,u,sp,lp]=await Promise.all([
+        safe(supabase.from("projects").select("*")),
+        safe(supabase.from("project_units").select("*")),
+        safe(supabase.from("unit_sale_pricing").select("*")),
+        safe(supabase.from("unit_lease_pricing").select("*")),
+      ]);
+      setAiProjects(p.data||[]);setAiUnits(u.data||[]);setAiSalePr(sp.data||[]);setAiLeasePr(lp.data||[]);
+    }catch(e){console.log(e);}
+  },[aiProjects.length]);
+
+  useEffect(()=>{
+    const restore=async()=>{
+      try{
+        const{data:{session}}=await supabase.auth.getSession();
+        if(session?.user){
+          const{data:profile}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
+          if(profile&&profile.is_active)setCurrentUser({...session.user,...profile});
+          else await supabase.auth.signOut();
+        }
+      }catch(e){console.error("Session restore error:",e);}
+      finally{setChecking(false);}
+    };
+    restore();
+    const{data:{subscription}}=supabase.auth.onAuthStateChange(async(event,session)=>{
+      if(event==="SIGNED_OUT"){setCurrentUser(null);setLeads([]);setProperties([]);setActivities([]);setMeetings([]);setFollowups([]);setOpps([]);}
+      if(event==="TOKEN_REFRESHED"&&session?.user){const{data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();if(p)setCurrentUser(u=>({...u,...p}));}
+    });
+    return()=>subscription.unsubscribe();
+  },[]);
+
+  useEffect(()=>{
+    if(!currentUser)return;
+    const safe=async(q)=>{ try{const r=await q;return{data:(r.data||[])};}catch(e){console.warn("Query error:",e);return{data:[]};} };
+    const cid = activeCompanyId || currentUser.company_id || null;
+    const load=async()=>{
+      setDataLoading(true);
+      try{
+        const[l,pr,a,u,d]=await Promise.all([
+          safe(cid
+            ? supabase.from("leads").select("*").eq("company_id",cid).order("created_at",{ascending:false})
+            : supabase.from("leads").select("*").order("created_at",{ascending:false})),
+          safe(supabase.from("properties").select("*").order("created_at",{ascending:false})),
+          safe(supabase.from("activities").select("*").order("created_at",{ascending:false})),
+          safe(cid ? supabase.from("profiles").select("*").eq("company_id",cid).order("full_name") : supabase.from("profiles").select("*").order("full_name")),
+          safe(cid
+            ? supabase.from("discount_requests").select("*").eq("company_id",cid).order("created_at",{ascending:false})
+            : supabase.from("discount_requests").select("*").order("created_at",{ascending:false})),
+        ]);
+        // SECURITY: filter all data by active company client-side
+        const filterByCo = (arr) => cid ? arr.filter(x=>x.company_id===cid) : arr;
+        setLeads(filterByCo(l.data));
+        setProperties(pr.data);
+        setActivities(filterByCo(a.data));
+        setUsers(u.data);
+        setDiscounts(filterByCo(d.data));
+        // Load opportunities globally
+        const oppRes = await safe(supabase.from("opportunities").select("*").order("created_at",{ascending:false}));
+        setOpps(filterByCo(oppRes.data||[]));
+        // Load inventory + leasing data eagerly
+        const[proj,units2,sp2,lp2,lt,ll,lp_,lm]=await Promise.all([
+          safe(cid ? supabase.from("projects").select("*").eq("company_id",cid).order("name") : supabase.from("projects").select("*").order("name")),
+          safe(cid ? supabase.from("project_units").select("*").eq("company_id",cid) : supabase.from("project_units").select("*")),
+          safe(cid ? supabase.from("unit_sale_pricing").select("*").eq("company_id",cid) : supabase.from("unit_sale_pricing").select("*")),
+          safe(cid ? supabase.from("unit_lease_pricing").select("*").eq("company_id",cid) : supabase.from("unit_lease_pricing").select("*")),
+          safe(cid ? supabase.from("tenants").select("*").eq("company_id",cid).order("full_name") : supabase.from("tenants").select("*").order("full_name")),
+          safe(cid ? supabase.from("leases").select("*").eq("company_id",cid).order("end_date") : supabase.from("leases").select("*").order("end_date")),
+          safe(cid ? supabase.from("rent_payments").select("*").order("due_date") : supabase.from("rent_payments").select("*").order("due_date")),
+          safe(cid ? supabase.from("maintenance").select("*").eq("company_id",cid).order("created_at",{ascending:false}) : supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
+        ]);
+        setAiProjects(filterByCo(proj.data));
+        setAiUnits(filterByCo(units2.data));
+        setAiSalePr(filterByCo(sp2.data));
+        setAiLeasePr(filterByCo(lp2.data));
+        const coTenants = filterByCo(lt.data);
+        const coTenantIds = coTenants.map(t=>t.id);
+        const coLeases = (ll.data||[]).filter(l=>
+          (l.company_id&&l.company_id===cid) ||
+          coTenantIds.includes(l.tenant_id)
+        );
+        const coLeaseIds = coLeases.map(l=>l.id);
+        setLeasingData({
+          tenants: coTenants,
+          leases:  coLeases,
+          payments:(lp_.data||[]).filter(p=>coLeaseIds.includes(p.lease_id)||coTenantIds.includes(p.tenant_id)),
+          maintenance:(lm.data||[]).filter(m=>!m.company_id||m.company_id===cid),
+          loaded:true
+        });
+        const today2=new Date();
+        const stale=(l.data||[]).filter(lead=>!["Closed Won","Closed Lost"].includes(lead.stage)&&lead.stage_updated_at&&Math.floor((today2-new Date(lead.stage_updated_at))/(864e5))>=7);
+        const overdueRent=(lp_.data||[]).filter(p=>p.status==="Pending"&&p.due_date&&new Date(p.due_date)<today2);
+        const expiringLeases30=(ll.data||[]).filter(l2=>l2.status==="Active"&&l2.end_date&&Math.ceil((new Date(l2.end_date)-today2)/864e5)<=30&&Math.ceil((new Date(l2.end_date)-today2)/864e5)>0);
+        setFollowupAlerts({staleLeads:stale,overduePayments:overdueRent,expiringLeases:expiringLeases30});
+      }catch(e){console.error("Load error:",e);}
+      setDataLoading(false);
+    };
+    load();
+    const ch=supabase.channel("v3-changes-"+cid)
+      .on("postgres_changes",{event:"*",schema:"public",table:"leads"},p=>{if(p.eventType==="INSERT")setLeads(x=>[p.new,...x]);if(p.eventType==="UPDATE")setLeads(x=>x.map(l=>l.id===p.new.id?p.new:l));if(p.eventType==="DELETE")setLeads(x=>x.filter(l=>l.id!==p.old.id));})
+      .on("postgres_changes",{event:"INSERT",schema:"public",table:"activities"},p=>setActivities(x=>[p.new,...x]))
+      .on("postgres_changes",{event:"*",schema:"public",table:"opportunities"},p=>{if(p.eventType==="INSERT")setOpps(x=>[p.new,...x]);if(p.eventType==="UPDATE")setOpps(x=>x.map(o=>o.id===p.new.id?p.new:o));if(p.eventType==="DELETE")setOpps(x=>x.filter(o=>o.id!==p.old.id));})
+      .subscribe();
+    return()=>supabase.removeChannel(ch);
+  },[currentUser, activeCompanyId]);
+
+  const handleLogin=user=>{
+    setCurrentUser(user);
+    localStorage.setItem("propccrm_role", user.role||"viewer");
+    const app = DEFAULT_APP[user.role]||"sales";
+    setActiveApp(app);
+    setActiveApp(app); localStorage.setItem("propccrm_last_app", app);
+    localStorage.setItem("propccrm_last_app", app);
+    // Load companies for all admin/manager roles to show in header
+    if(["super_admin","admin","sales_manager","leasing_manager"].includes(user.role)){
+      supabase.from("companies").select("*").order("name").then(({data})=>{
+        if(data){
+          // Cache the active company for instant display on next load
+          const cid = localStorage.getItem("propccrm_company_id") || user.company_id;
+          const activeCo = data.find(c=>c.id===cid) || data[0];
+          if(activeCo) localStorage.setItem("propccrm_company_cache", JSON.stringify({id:activeCo.id,name:activeCo.name,logo_url:activeCo.logo_url||"",business_type:activeCo.business_type||"",ai_assistant_name:activeCo.ai_assistant_name||""}));
+          setCompanies(data);
+          const saved=localStorage.getItem("propccrm_company_id");
+          const co=saved?data.find(c=>c.id===saved):data[0];
+          if(co){setActiveCompanyId(co.id);localStorage.setItem("propccrm_company_id",co.id);}
+        }
+      });
+    }
+  };
+
+  const handleLogout=async()=>{await supabase.auth.signOut();setCurrentUser(null);};
+
+
+  // Global Ctrl+K handler
+  useEffect(()=>{
+    const handler = e => {
+      if((e.ctrlKey||e.metaKey)&&e.key==="k"){ e.preventDefault(); setAiOpen(o=>!o); }
+    };
+    window.addEventListener("keydown", handler);
+    return ()=>window.removeEventListener("keydown", handler);
+  },[]);
+  const currentApp = activeApp;
+  const userRole   = currentUser?.role||"viewer";
+  const canSwitch  = ["super_admin","admin","sales_manager","leasing_manager"].includes(userRole);
+
+  if(checking) return(
+    <div style={{height:"100dvh",background:"#0B1F3A",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}>
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#fff"}}><span style={{color:"#C9A84C"}}>◆</span> PropCRM</div>
+      <div style={{width:32,height:32,border:"2px solid rgba(255,255,255,.15)",borderTopColor:"#C9A84C",borderRadius:"50%",animation:"spin 1s linear infinite"}}/>
+    </div>
+  );
+
+  if(!currentUser) return <LoginScreen onLogin={handleLogin}/>;
+
+  const cfg=appConfig||{mode:"both"};
+  // Always use currentApp to pick allowed tabs — ignore cfg.mode when app is explicitly selected
+  const allowedTabs = currentApp==="leasing" ? MODE_TABS.leasing : (MODE_TABS[cfg.mode]||MODE_TABS.both);
+  const visibleTabs=TABS.filter(t=>t.app===currentApp&&t.roles.includes(userRole)&&allowedTabs.includes(t.id));
+
+  return (
+    <>
+    <GlobalStyle/>
+    <div style={{display:"flex",flexDirection:"column",height:"100dvh",background:"#F0F2F5",overflow:"hidden"}}>
+
+      {/* Top bar */}
+      <div style={{background:"#0B1F3A",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:52,gap:10}}>
+
+          {/* LEFT: Company Logo + Name — hero position */}
+          {(()=>{
+            const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
+            const cachedCo = (()=>{ try{ return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null"); }catch{return null;} })();
+            const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || cachedCo || null;
+            const isSA = currentUser?.role==="super_admin";
+            const bizLabel = co?.business_type==="both"?"Sales & Leasing":co?.business_type==="sales"?"Sales Only":co?.business_type==="leasing"?"Leasing Only":co?.business_type||"";
+
+            return (
+              <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0,minWidth:0}}>
+                {/* Logo */}
+                {co?.logo_url
+                  ? <img src={co.logo_url} alt={co?.name} style={{width:36,height:36,borderRadius:8,objectFit:"cover",border:"2px solid rgba(201,168,76,.5)",flexShrink:0}}/>
+                  : <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16,color:"#0B1F3A",flexShrink:0,border:"2px solid rgba(201,168,76,.4)"}}>
+                      {co?.name?.charAt(0)||"◆"}
+                    </div>
+                }
+                {/* Company name + type */}
+                <div style={{display:"flex",flexDirection:"column",minWidth:0}}>
+                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:180,lineHeight:1.2}}>
+                    {co?.name||"PropCRM"}
+                  </span>
+                  {bizLabel&&<span style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:".6px",lineHeight:1.3}}>{bizLabel}</span>}
+                </div>
+                {/* Super admin company switcher */}
+                {isSA&&companies.length>1&&(
+                  <select value={storedId||""} onChange={e=>{
+                    setActiveCompanyId(e.target.value);
+                    localStorage.setItem("propccrm_company_id",e.target.value);
+                    window.location.reload();
+                  }} style={{
+                    background:"rgba(255,255,255,.1)",border:"1px solid rgba(201,168,76,.35)",
+                    borderRadius:6,padding:"3px 6px",color:"#C9A84C",fontSize:11,fontWeight:600,
+                    cursor:"pointer",maxWidth:130
+                  }}>
+                    {companies.map(c=><option key={c.id} value={c.id} style={{background:"#0B1F3A",color:"#fff"}}>{c.name}</option>)}
+                  </select>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* CENTRE: CRM Switcher */}
+          {canSwitch&&(
+            <div style={{display:"flex",background:"rgba(255,255,255,.07)",borderRadius:10,padding:3,gap:3,flexShrink:0}}>
+              {[
+                {id:"sales",   label:"Sales",   icon:"🏷", accent:"#4A9EE8"},
+                {id:"leasing", label:"Leasing", icon:"🔑", accent:"#9B7FD4"},
+              ].map(a=>{
+                const isActive=currentApp===a.id;
+                return (
+                  <button key={a.id} onClick={()=>{
+                    setActiveApp(a.id);
+                    localStorage.setItem("propccrm_last_app",a.id);
+                    setTimeout(()=>setTab(a.id==="sales"?"dashboard":"l_dashboard"),50);
+                  }} style={{
+                    padding:"5px 12px",borderRadius:8,border:"none",
+                    background:isActive?"#fff":"transparent",
+                    color:isActive?a.accent:"rgba(255,255,255,.5)",
+                    fontSize:12,fontWeight:isActive?700:400,cursor:"pointer",
+                    display:"flex",alignItems:"center",gap:4,
+                    transition:"all .2s",whiteSpace:"nowrap",
+                    boxShadow:isActive?"0 1px 6px rgba(0,0,0,.15)":"none",
+                  }}>
+                    {a.icon} {a.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* RIGHT: User info + PropCRM watermark */}
+          <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+            {/* User */}
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:12,color:"#fff",fontWeight:500,lineHeight:1.2}}>{currentUser.full_name}</div>
+              <RoleBadge role={currentUser.role}/>
+            </div>
+            <Av name={currentUser.full_name||currentUser.email} size={32} bg="#C9A84C" tc="#0B1F3A"/>
+            <button onClick={handleLogout} title="Sign out" style={{fontSize:11,color:"rgba(255,255,255,.35)",background:"none",border:"1px solid rgba(255,255,255,.1)",borderRadius:6,padding:"4px 8px",cursor:"pointer",whiteSpace:"nowrap",transition:"color .15s"}}
+              onMouseOver={e=>e.currentTarget.style.color="rgba(255,255,255,.8)"}
+              onMouseOut={e=>e.currentTarget.style.color="rgba(255,255,255,.35)"}>↩</button>
+            {/* PropCRM subtle watermark */}
+            <div style={{borderLeft:"1px solid rgba(255,255,255,.1)",paddingLeft:10,display:"flex",alignItems:"center",gap:3}}>
+              <span style={{color:"#C9A84C",fontSize:10}}>◆</span>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:10,color:"rgba(255,255,255,.3)",fontWeight:600,letterSpacing:".5px"}}>PropCRM</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab bar */}
+        <div className="tab-bar-wrap" style={{position:"relative",borderTop:"1px solid rgba(255,255,255,.07)"}}>
+        <div className="tab-bar" style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:38,gap:2,overflowX:"auto"}}>
+          {visibleTabs.map(t=>(
+            <button key={t.id} onClick={()=>{setTab(t.id);if(t.id==="ai"||t.id==="l_ai")loadAIData();}}
+              style={{
+                padding:"5px 12px",borderRadius:"6px 6px 0 0",border:"none",
+                background:tab===t.id?(currentApp==="sales"?"rgba(74,158,232,.18)":"rgba(155,127,212,.18)"):"transparent",
+                color:tab===t.id?"#fff":"rgba(255,255,255,.45)",
+                fontSize:12,fontWeight:tab===t.id?600:400,cursor:"pointer",
+                whiteSpace:"nowrap",transition:"all .15s",flexShrink:0,
+                borderBottom:tab===t.id?`2px solid ${currentApp==="sales"?"#4A9EE8":"#9B7FD4"}`:"2px solid transparent",
+              }}>
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Page title */}
+      <div style={{padding:"8px 1rem 6px",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+        <div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A"}}>{visibleTabs.find(t=>t.id===tab)?.label||""}</div>
+          <div style={{fontSize:11,color:"#A0AEC0"}}>{SUBTITLES[tab]||""}</div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"0 1rem 1rem",WebkitOverflowScrolling:"touch",minHeight:0}}>
+        {(dataLoading&&leads.length===0&&aiUnits.length===0)?<Spinner msg="Loading your data…"/>:(<>
+
+          {/* ── Sales CRM ─────────────────────────────────────── */}
+          {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={setTab}/>}
+          {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
+          {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
+          {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
+          {tab==="pipeline"    &&<Pipeline leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} users={users} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
+          {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
+          {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
+          {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
+  const co = coObj || companies.find(c=>c.id===id);
+  if(co) localStorage.setItem("propccrm_company_cache",JSON.stringify({id:co.id,name:co.name,logo_url:co.logo_url||"",business_type:co.business_type||"",ai_assistant_name:co.ai_assistant_name||""}));
+  setActiveCompanyId(id);
+  localStorage.setItem("propccrm_company_id",id);
+  setTab("dashboard");
+}} activeCompanyId={activeCompanyId}/>}
+          {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
+          {tab==="permissions" &&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
+          {tab==="group_view"  &&<GroupConsolidatedView/>}
+
+          {/* ── Leasing CRM ───────────────────────────────────── */}
+          {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={setTab} followupAlerts={followupAlerts} key="l_dash"/>}
+          {tab==="l_leads"     &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
+          {tab==="l_pipeline"  &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users} defaultView="pipeline"/>}
+          {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
+          {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
+          {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData}/>}
+          {tab==="l_ai"        &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="l_discounts" &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
+          {tab==="l_activity"  &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="l_reports"   &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leasingData={leasingData} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
+          {tab==="l_companies" &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
+  const co = coObj || companies.find(c=>c.id===id);
+  if(co) localStorage.setItem("propccrm_company_cache",JSON.stringify({id:co.id,name:co.name,logo_url:co.logo_url||"",business_type:co.business_type||"",ai_assistant_name:co.ai_assistant_name||""}));
+  setActiveCompanyId(id);
+  localStorage.setItem("propccrm_company_id",id);
+  setTab("l_dashboard");
+}} activeCompanyId={activeCompanyId}/>}
+          {tab==="l_users"     &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
+          {tab==="l_permissions"&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
+
+          {tab==="l_group_view" &&<GroupConsolidatedView/>}
+        </>)}
+      </div>
+    </div>
+    {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+
+
+    </>
+  );
+}
