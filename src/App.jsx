@@ -2577,9 +2577,8 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
               const st = projStats(proj.id);
               const isExp = expanded===proj.id;
               const projUnits = units.filter(u=>u.project_id===proj.id);
-              return (
-                <>
-                  <tr key={proj.id+"_row"}
+              return [
+                  <tr key={proj.id+"_main"}
                     style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5",cursor:"pointer",transition:"background .1s"}}
                     onMouseOver={e=>e.currentTarget.style.background="#F0F7FF"}
                     onMouseOut={e=>e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC"}>
@@ -2607,8 +2606,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                   </tr>
 
 
-                </>
-              );
+              ];
             })}
           </tbody>
         </table>
@@ -8105,9 +8103,7 @@ export default function App(){
 
   const cfg=appConfig||{mode:"both"};
   // Always use currentApp to pick allowed tabs — ignore cfg.mode when app is explicitly selected
-  const allowedTabs = currentApp==="leasing"
-    ? [...MODE_TABS.leasing, "l_permsets"]  // include all leasing tabs
-    : [...(MODE_TABS[cfg.mode]||MODE_TABS.both), "permsets"];
+  const allowedTabs = currentApp==="leasing" ? MODE_TABS.leasing : (MODE_TABS[cfg.mode]||MODE_TABS.both);
   const visibleTabs=TABS.filter(t=>t.app===currentApp&&t.roles.includes(userRole)&&allowedTabs.includes(t.id));
 
   return (
