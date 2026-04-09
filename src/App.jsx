@@ -8339,7 +8339,7 @@ export default function App(){
         const{data:{session}}=await supabase.auth.getSession();
         if(session?.user){
           const{data:profile}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
-          if(profile&&profile.is_active)const _prof={...session.user,...profile}; setCurrentUser(_prof); window.__propcrm_user=_prof;
+          if(profile&&profile.is_active){const _prof={...session.user,...profile}; setCurrentUser(_prof); window.__propcrm_user=_prof;}
           else await supabase.auth.signOut();
         }
       }catch(e){console.error("Session restore error:",e);}

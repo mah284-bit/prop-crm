@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 const AI_PROVIDERS = [
   {
@@ -74,6 +74,18 @@ export default function AIBubble() {
   const dragRef = useRef(null);
   const dragOffset = useRef({ x: 0, y: 0 });
   const endRef = useRef(null);
+  const [liveStats, setLiveStats] = useState({ leads:0, avail:0 });
+
+  // Refresh live stats every 2 seconds
+  useEffect(() => {
+    const refresh = () => {
+      const d = getLiveData();
+      setLiveStats({ leads: d.leads.length, avail: d.units.filter(u=>u.status==="Available").length });
+    };
+    refresh();
+    const t = setInterval(refresh, 2000);
+    return () => clearInterval(t);
+  }, []);
   const inputRef = useRef(null);
 
   const prov = AI_PROVIDERS.find(p => p.id === provId) || AI_PROVIDERS[0];
@@ -299,7 +311,7 @@ export default function AIBubble() {
             <div style={{color:"#E8C97A", fontSize:14, fontWeight:600, marginBottom:4, fontFamily:"'Playfair Display',serif"}}>{hasKey ? "How can I help?" : "Configure to start"}</div>
             <div style={{fontSize:12, color:"rgba(255,255,255,.4)", marginBottom:14}}>
               {hasKey
-                ? (()=>{ const {leads,units} = getLiveData(); return leads.length+" leads · "+units.filter(u=>u.status==="Available").length+" available units"; })()
+                ? liveStats.leads+" leads · "+liveStats.avail+" available units"
                 : "Click "+prov.name+" above and add your API key"
               }
             </div>
