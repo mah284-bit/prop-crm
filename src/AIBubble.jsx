@@ -94,11 +94,12 @@ export default function AIBubble() {
   // Update name from live user data
   useEffect(() => {
     const update = () => {
-      const { user } = getLiveData();
-      if (user?.full_name || user?.ai_assistant_name) {
-        const name = user.ai_assistant_name || (user.full_name?.split(" ")[0] || "Prop") + " AI";
-        setNm(name);
-      }
+      try {
+        const coCache = JSON.parse(localStorage.getItem("propccrm_company_cache")||"null");
+        const coName = coCache?.name || "Prop";
+        const aiName = coCache?.ai_assistant_name || (coName.split(" ")[0] + " AI");
+        setNm(aiName);
+      } catch(e) {}
     };
     update();
     const t = setInterval(update, 3000);
