@@ -379,7 +379,7 @@ const AuthLogo=({sub})=>(
 const ErrBox=({msg})=>msg?<div style={{background:"#FAEAEA",color:"#B83232",border:"1.5px solid #F0BCBC",borderRadius:8,padding:"10px 14px",fontSize:13,marginBottom:16,lineHeight:1.5}}>{msg}</div>:null;
 const AuthTabs=({mode,setMode})=>(
   <div style={{display:"flex",background:"#F0F2F5",borderRadius:10,padding:4,marginBottom:24}}>
-    {[["login","Sign In"],["signup","Create Account"]].map(([m,label])=>(
+    {[["login","Sign In"]].map(([m,label])=>(
       <button key={m} onClick={()=>setMode(m)} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",background:mode===m?"#fff":"transparent",color:mode===m?"#0B1F3A":"#A0AEC0",fontSize:13,fontWeight:mode===m?600:400,cursor:"pointer",transition:"all 0.2s",boxShadow:mode===m?"0 1px 4px rgba(0,0,0,0.08)":"none"}}>{label}</button>
     ))}
   </div>
@@ -612,6 +612,31 @@ function LoginScreen({onLogin}){
     </AuthWrap>
   );
 
+  if(mode==="forgot")return(
+    <AuthWrap>
+      <AuthLogo sub="Reset your password"/>
+      <ErrBox msg={error}/>
+      {error===""&&loading===false&&pw===""&&(
+        <div style={{textAlign:"center",marginBottom:16}}>
+          <div style={{fontSize:40,marginBottom:8}}>🔑</div>
+          <div style={{fontSize:13,color:"#718096",lineHeight:1.7}}>Enter your email address and we will send you a link to reset your password.</div>
+        </div>
+      )}
+      {pw==="sent"?(
+        <div style={{textAlign:"center",padding:"20px 0"}}>
+          <div style={{fontSize:48,marginBottom:12}}>📬</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A",marginBottom:8}}>Check your inbox</div>
+          <div style={{fontSize:13,color:"#718096",lineHeight:1.8,marginBottom:20}}>We sent a password reset link to:<br/><strong style={{color:"#0B1F3A"}}>{email}</strong></div>
+          <div style={{fontSize:12,color:"#A0AEC0",marginBottom:20}}>Click the link in the email to set a new password. Check your spam folder if you don't see it.</div>
+        </div>
+      ):(
+        <FF label="Email Address" required><input type="email" value={email} onChange={e=>{setEmail(e.target.value);reset();}} placeholder="you@company.com" style={{width:"100%",padding:"10px 14px",border:"1.5px solid #E2E8F0",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}}/></FF>
+      )}
+      {pw!=="sent"&&<Btn onClick={async()=>{if(!email.trim()){setError("Please enter your email");return;}setLoading(true);const{error:e}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});setLoading(false);if(e)setError(e.message);else setPw("sent");}} disabled={loading} full style={{marginTop:8,padding:"12px"}}>{loading?"Sending…":"Send Reset Link →"}</Btn>}
+      <div style={{textAlign:"center",marginTop:16}}><button onClick={()=>{setMode("login");setPw("");reset();}} style={{background:"none",border:"none",color:"#A0AEC0",fontSize:13,cursor:"pointer"}}>← Back to Sign In</button></div>
+    </AuthWrap>
+  );
+
   if(mode==="login")return(
     <AuthWrap>
       <AuthLogo sub="Sign in to your account"/>
@@ -620,7 +645,7 @@ function LoginScreen({onLogin}){
       <FF label="Email Address" required><input type="email" value={email} onChange={e=>{setEmail(e.target.value);reset();}} placeholder="you@company.com" onKeyDown={e=>e.key==="Enter"&&doLogin()}/></FF>
       <FF label="Password" required><PwInput value={pw} onChange={e=>{setPw(e.target.value);reset();}} onKeyDown={e=>e.key==="Enter"&&doLogin()}/></FF>
       <Btn onClick={doLogin} disabled={loading} full style={{marginTop:8,padding:"12px"}}>{loading?"Signing in…":"Sign In →"}</Btn>
-      <div style={{textAlign:"center",marginTop:18}}><span style={{fontSize:13,color:"#A0AEC0"}}>New to PropCRM? </span><button onClick={()=>{setMode("signup");setError("");setPw("");}} style={{background:"none",border:"none",color:"#C9A84C",fontSize:13,fontWeight:600,cursor:"pointer",textDecoration:"underline"}}>Create an account</button></div>
+      <div style={{textAlign:"center",marginTop:16}}><button onClick={()=>setMode("forgot")} style={{background:"none",border:"none",color:"#A0AEC0",fontSize:13,cursor:"pointer",textDecoration:"underline"}}>Forgot password?</button></div>
     </AuthWrap>
   );
 
@@ -6741,6 +6766,19 @@ function UsersTab({currentUser, showToast}) {
     showToast(user.is_active?"User deactivated":"User activated","success");
   };
 
+  const resetPassword=async(user)=>{
+    const newPw=prompt("Set new password for "+user.full_name+"\n(minimum 8 characters):");
+    if(!newPw||newPw.length<8){if(newPw!==null)showToast("Password must be at least 8 characters","error");return;}
+    let srk=localStorage.getItem("propccrm_srk")||"";
+    if(!srk){srk=prompt("One-time setup: Enter Supabase Service Role Key\n(Dashboard → Settings → API → service_role):");if(!srk)return;localStorage.setItem("propccrm_srk",srk);}
+    try{
+      const res=await fetch("https://ysceukgpimzfqixtnbnp.supabase.co/auth/v1/admin/users/"+user.id,{method:"PUT",headers:{"Content-Type":"application/json","apikey":srk,"Authorization":"Bearer "+srk},body:JSON.stringify({password:newPw})});
+      if(!res.ok){const e=await res.json();showToast(e.message||"Failed","error");return;}
+      showToast("✓ Password reset for "+user.full_name,"success");
+      navigator.clipboard?.writeText("Email: "+user.email+"\nPassword: "+newPw).catch(()=>{});
+    }catch(e){showToast(e.message,"error");}
+  };
+
   if(loading)return <Spinner msg="Loading users…"/>;
 
   return(
@@ -6791,6 +6829,12 @@ function UsersTab({currentUser, showToast}) {
                       <button onClick={()=>toggleActive(u)}
                         style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:`1.5px solid ${u.is_active?"#F0BCBC":"#A8D5BE"}`,background:u.is_active?"#FAEAEA":"#E6F4EE",color:u.is_active?"#B83232":"#1A7F5A",cursor:"pointer"}}>
                         {u.is_active?"Deactivate":"Activate"}
+                      </button>
+                    )}
+                    {(currentUser.role==="super_admin"||currentUser.role==="admin")&&!u.is_super_admin&&(
+                      <button onClick={()=>resetPassword(u)}
+                        style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1.5px solid rgba(201,168,76,.5)",background:"rgba(201,168,76,.08)",color:"#8A6200",cursor:"pointer"}}>
+                        🔑 Reset PW
                       </button>
                     )}
                   </div>
@@ -6941,8 +6985,6 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
         const { error } = await supabase.from("companies").update({ ...form, updated_at: new Date().toISOString() }).eq("id", editComp.id);
         if (error) throw error;
         showToast("Company updated", "success");
-        // Update company cache so AI bubble picks up new name
-        try { const cached=JSON.parse(localStorage.getItem("propccrm_company_cache")||"null"); if(cached&&cached.id===editComp.id){ localStorage.setItem("propccrm_company_cache", JSON.stringify({...cached,...form})); } } catch(e) {}
       } else {
         const { error } = await supabase.from("companies").insert({ ...form }).select().single();
         if (error) throw error;
@@ -8335,20 +8377,6 @@ export default function App(){
     }catch(e){console.log(e);}
   },[aiProjects.length]);
 
-  // Sync React state to window globals for AI bubble
-  useEffect(()=>{ window.__propcrm_units=aiUnits; },[aiUnits]);
-  useEffect(()=>{ window.__propcrm_projects=aiProjects; },[aiProjects]);
-  useEffect(()=>{ window.__propcrm_leads=leads; },[leads]);
-  useEffect(()=>{ window.__propcrm_user=currentUser; },[currentUser]);
-  useEffect(()=>{
-    const h=()=>{ window.__propcrm_leads=leads; window.__propcrm_units=aiUnits; window.__propcrm_projects=aiProjects; window.__propcrm_user=currentUser; };
-    window.addEventListener('propcrm_ai_data_request',h);
-    return()=>window.removeEventListener('propcrm_ai_data_request',h);
-  },[leads,aiUnits,aiProjects,currentUser]);
-  // Active context for AI bubble
-  useEffect(()=>{ window.__propcrm_active_tab=tab; },[tab]);
-  useEffect(()=>{ window.__propcrm_active_lead=null; },[]);
-
   useEffect(()=>{
     const restore=async()=>{
       try{
@@ -8574,6 +8602,14 @@ export default function App(){
               <RoleBadge role={currentUser.role}/>
             </div>
             <Av name={currentUser.full_name||currentUser.email} size={32} bg="#C9A84C" tc="#0B1F3A"/>
+            <button onClick={()=>{
+                const np=prompt("Enter your new password (min 8 characters):");
+                if(!np||np.length<8){if(np!==null)alert("Min 8 characters required");return;}
+                supabase.auth.updateUser({password:np}).then(({error})=>{
+                  if(error)alert("Error: "+error.message);
+                  else{alert("✓ Password changed! Please log in again.");supabase.auth.signOut();}
+                });
+              }} title="Change my password" style={{fontSize:16,color:"rgba(201,168,76,.6)",background:"none",border:"none",cursor:"pointer",padding:"0 4px"}}>🔑</button>
             <button onClick={handleLogout} title="Sign out" style={{fontSize:11,color:"rgba(255,255,255,.35)",background:"none",border:"1px solid rgba(255,255,255,.1)",borderRadius:6,padding:"4px 8px",cursor:"pointer",whiteSpace:"nowrap",transition:"color .15s"}}
               onMouseOver={e=>e.currentTarget.style.color="rgba(255,255,255,.8)"}
               onMouseOut={e=>e.currentTarget.style.color="rgba(255,255,255,.35)"}>↩</button>
