@@ -8413,6 +8413,13 @@ export default function App(){
 
   useEffect(()=>{
     const restore=async()=>{
+      // Check if this is a password recovery redirect (URL contains type=recovery)
+      const hashParams=new URLSearchParams(window.location.hash.replace("#","?").slice(1));
+      if(hashParams.get("type")==="recovery"||window.location.hash.includes("type=recovery")){
+        setPwRecovery(true);
+        window.history.replaceState(null,"",window.location.pathname);
+        return;
+      }
       try{
         const{data:{session}}=await supabase.auth.getSession();
         if(session?.user){
@@ -8427,6 +8434,7 @@ export default function App(){
     const{data:{subscription}}=supabase.auth.onAuthStateChange(async(event,session)=>{
       if(event==="SIGNED_OUT"){setCurrentUser(null);setLeads([]);setProperties([]);setActivities([]);setMeetings([]);setFollowups([]);setOpps([]);}
       if(event==="TOKEN_REFRESHED"&&session?.user){const{data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();if(p)setCurrentUser(u=>({...u,...p}));}
+      if(event==="PASSWORD_RECOVERY"){setCurrentUser(null);setPwRecovery(true);}
     });
     return()=>subscription.unsubscribe();
   },[]);
