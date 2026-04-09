@@ -1513,10 +1513,10 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const [salePricing,setSalePricing]=useState([]);
   const [showAddOpp, setShowAddOpp]=useState(false);
   const [oppForm,  setOppForm]  = useState({title:"",unit_id:"",budget:"",assigned_to:"",notes:""});
-  const canEdit = can(currentUser.role,"write");
-  const canDel  = can(currentUser.role,"delete_leads");
+  const canEdit = can(currentUser?.role||"","write");
+  const canDel  = can(currentUser?.role||"","delete_leads");
 
-  const blank = {name:"",phone:"",email:"",nationality:"",source:"Walk-In",property_type:"Sale",notes:"",assigned_to:currentUser.id,budget:""};
+  const blank = {name:"",phone:"",email:"",nationality:"",source:"Walk-In",property_type:"Sale",notes:"",assigned_to:currentUser?.id||null,budget:""};
   const [form, setForm] = useState(blank);
   const sf = k => e => setForm(f=>({...f,[k]:e.target?.value??e}));
 
