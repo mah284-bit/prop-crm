@@ -100,6 +100,7 @@ function MsgContent({ content, role }) {
         }
         return <div key={i} style={{marginBottom:3,color:"#2C1810"}}>{t}</div>;
       })}
+      {role==="assistant"&&<CopyBtn text={content.replace(/\*\*/g,"").replace(/\*/g,"").trim()}/>}
     </div>
   );
 }
@@ -233,12 +234,12 @@ export default function AIBubble() {
   };
 
   const QUICK = [
-    {icon:"📊",label:"Pipeline summary"},
-    {icon:"🏠",label:"Available units"},
-    {icon:"🔥",label:"Hot leads"},
-    {icon:"💬",label:"Draft WhatsApp"},
-    {icon:"⏰",label:"Stale deals"},
-    {icon:"📈",label:"Revenue forecast"},
+    {icon:"📊",label:"Pipeline summary",prompt:"Give me a pipeline summary with lead counts per stage and top 3 priority actions."},
+    {icon:"🏠",label:"Available units",prompt:"List available units grouped by type (Studio, 1BR, 2BR). Show ref, view and price for each."},
+    {icon:"🔥",label:"Hot leads",prompt:"Who are my hottest leads right now? Show name, stage, budget and recommended next action for each."},
+    {icon:"💬",label:"Draft WhatsApp",prompt:"Draft a WhatsApp message for my most recent lead. Write ONLY the message text, ready to send. Professional, warm, under 80 words."},
+    {icon:"⏰",label:"Stale deals",prompt:"Which leads have gone stale or need urgent follow-up? List them with days inactive and suggested action."},
+    {icon:"📈",label:"Revenue forecast",prompt:"Give me a revenue forecast based on current pipeline. Show potential value by stage and realistic close probability."},
   ];
 
   const posStyle = pos.x!==null ? {left:pos.x,top:pos.y,bottom:"auto",right:"auto"} : {bottom:20,right:20};
@@ -391,7 +392,7 @@ export default function AIBubble() {
             {hasKey&&(
               <div style={{display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center"}}>
                 {QUICK.map(q=>(
-                  <button key={q.label} className={dataReady?"ai-quick":""} onClick={()=>dataReady&&send(q.label)}
+                  <button key={q.label} className={dataReady?"ai-quick":""} onClick={()=>dataReady&&send(q.prompt||q.label)}
                     style={{
                       padding:"8px 14px",borderRadius:22,cursor:dataReady?"pointer":"not-allowed",fontSize:12,fontWeight:500,
                       border:"1px solid rgba(139,96,0,.25)",
