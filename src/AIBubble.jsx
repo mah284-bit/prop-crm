@@ -47,6 +47,8 @@ const AI_PROVIDERS = [
 
 function getLiveData() {
   try {
+    // Trigger App to refresh window globals
+    window.dispatchEvent(new CustomEvent("propcrm_ai_data_request"));
     return {
       leads: window.__propcrm_leads || [],
       units: window.__propcrm_units || [],
@@ -72,6 +74,18 @@ function MsgContent({ content, role }) {
         if (t.endsWith(":") && t.length < 50) return (
           <div key={i} style={{fontWeight:700,color:"#5C3A00",marginTop:10,marginBottom:5,fontSize:11,textTransform:"uppercase",letterSpacing:"1px",borderBottom:"1px solid rgba(139,96,0,.2)",paddingBottom:3}}>{t}</div>
         );
+        // Handle **bold** markdown
+        if (t.includes("**")) {
+          const parts = t.split(/\*\*(.*?)\*\*/g);
+          return (
+            <div key={i} style={{marginBottom:3,color:"#2C1810"}}>
+              {parts.map((p,j) => j%2===1
+                ? <strong key={j} style={{color:"#5C3A00"}}>{p}</strong>
+                : <span key={j}>{p}</span>
+              )}
+            </div>
+          );
+        }
         return <div key={i} style={{marginBottom:3,color:"#2C1810"}}>{t}</div>;
       })}
     </div>

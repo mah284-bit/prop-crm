@@ -8335,6 +8335,17 @@ export default function App(){
     }catch(e){console.log(e);}
   },[aiProjects.length]);
 
+  // Sync React state to window globals for AI bubble
+  useEffect(()=>{ window.__propcrm_units=aiUnits; },[aiUnits]);
+  useEffect(()=>{ window.__propcrm_projects=aiProjects; },[aiProjects]);
+  useEffect(()=>{ window.__propcrm_leads=leads; },[leads]);
+  useEffect(()=>{ window.__propcrm_user=currentUser; },[currentUser]);
+  useEffect(()=>{
+    const h=()=>{ window.__propcrm_leads=leads; window.__propcrm_units=aiUnits; window.__propcrm_projects=aiProjects; window.__propcrm_user=currentUser; };
+    window.addEventListener('propcrm_ai_data_request',h);
+    return()=>window.removeEventListener('propcrm_ai_data_request',h);
+  },[leads,aiUnits,aiProjects,currentUser]);
+
   useEffect(()=>{
     const restore=async()=>{
       try{
