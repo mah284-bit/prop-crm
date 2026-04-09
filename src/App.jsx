@@ -8333,6 +8333,12 @@ export default function App(){
     }catch(e){console.log(e);}
   },[aiProjects.length]);
 
+  // Keep window globals in sync with React state for AI bubble
+  useEffect(()=>{ window.__propcrm_units=aiUnits; },[aiUnits]);
+  useEffect(()=>{ window.__propcrm_projects=aiProjects; },[aiProjects]);
+  useEffect(()=>{ window.__propcrm_leads=leads; },[leads]);
+  useEffect(()=>{ window.__propcrm_user=currentUser; },[currentUser]);
+
   useEffect(()=>{
     const restore=async()=>{
       try{
