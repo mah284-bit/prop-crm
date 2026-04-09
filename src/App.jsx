@@ -1557,7 +1557,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
     if(!form.name.trim()){showToast("Name required","error");return;}
     setSaving(true);
     try{
-      const payload={...form,company_id:currentUser.company_id||null,created_by:currentUser.id,assigned_to:currentUser.id};
+      const payload={...form,budget:form.budget?Number(form.budget):null,final_price:form.final_price?Number(form.final_price):null,no_response_count:form.no_response_count?Number(form.no_response_count):0,phone:form.phone||null,assigned_to:form.assigned_to||currentUser.id,company_id:currentUser.company_id||null,created_by:currentUser.id};
       let data,error;
       if(editLead){
         ({data,error}=await supabase.from("leads").update(form).eq("id",editLead.id).select().single());
