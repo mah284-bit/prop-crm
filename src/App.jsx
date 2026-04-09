@@ -1539,6 +1539,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const leadOpps = selLeadId ? opps.filter(o=>o.lead_id===selLeadId) : [];
 
   // Filter leads — exclude pure lease leads from Sales CRM
+  if(!currentUser) return null;
   const visible = (can(currentUser.role,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id))
     .filter(l=>l.property_type!=="Lease");
 
