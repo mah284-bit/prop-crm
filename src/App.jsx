@@ -1051,15 +1051,22 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   };
 
   const saveLog = async()=>{
-    if(!logForm.note.trim()){showToast("Note required","error");return;}
+    if(!logForm.note.trim()&&!logForm.next_steps.trim()){showToast("Please add discussion notes or next steps","error");return;}
     setSaving(true);
+    const noteText = [
+      logForm.note,
+      logForm.next_steps?("\n\n✅ Next Steps: "+logForm.next_steps):"",
+      logForm.scheduled_at?("\n📅 Scheduled: "+new Date(logForm.scheduled_at).toLocaleString("en-AE",{dateStyle:"medium",timeStyle:"short"})):"",
+      logForm.duration_mins?("\n⏱ Duration: "+logForm.duration_mins+" mins"):"",
+    ].filter(Boolean).join("");
     const{data,error}=await supabase.from("activities").insert({
       opportunity_id:opp.id, lead_id:lead.id,
-      type:logForm.type, note:logForm.note,
+      type:logForm.type, note:noteText,
+      scheduled_at:logForm.scheduled_at||null,
       user_id:currentUser.id, user_name:currentUser.full_name,
       lead_name:lead.name, company_id:currentUser.company_id||null,
     }).select().single();
-    if(!error){setActivities(p=>[data,...p]);showToast("Activity logged","success");setShowLog(false);setLogForm({type:"Call",note:""});}
+    if(!error){setActivities(p=>[data,...p]);showToast("Activity logged","success");setShowLog(false);setLogForm({type:"Call",note:"",scheduled_at:"",next_steps:"",duration_mins:""});}
     setSaving(false);
   };
 
@@ -7683,7 +7690,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
       user_id:currentUser.id, user_name:currentUser.full_name,
       lead_name:tenant.full_name, company_id:currentUser.company_id||null,
     }).select().single();
-    if(!error){setActivities(p=>[data,...p]);showToast("Logged","success");setShowLog(false);setLogForm({type:"Call",note:""});}
+    if(!error){setActivities(p=>[data,...p]);showToast("Logged","success");setShowLog(false);setLogForm({type:"Call",note:"",scheduled_at:"",next_steps:"",duration_mins:""});}
     setSaving(false);
   };
 
