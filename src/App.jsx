@@ -616,18 +616,11 @@ function LoginScreen({onLogin}){
     <AuthWrap>
       <AuthLogo sub="Reset your password"/>
       <ErrBox msg={error}/>
-      {error===""&&loading===false&&pw===""&&(
-        <div style={{textAlign:"center",marginBottom:16}}>
-          <div style={{fontSize:40,marginBottom:8}}>🔑</div>
-          <div style={{fontSize:13,color:"#718096",lineHeight:1.7}}>Enter your email address and we will send you a link to reset your password.</div>
-        </div>
-      )}
       {pw==="sent"?(
         <div style={{textAlign:"center",padding:"20px 0"}}>
           <div style={{fontSize:48,marginBottom:12}}>📬</div>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A",marginBottom:8}}>Check your inbox</div>
-          <div style={{fontSize:13,color:"#718096",lineHeight:1.8,marginBottom:20}}>We sent a password reset link to:<br/><strong style={{color:"#0B1F3A"}}>{email}</strong></div>
-          <div style={{fontSize:12,color:"#A0AEC0",marginBottom:20}}>Click the link in the email to set a new password. Check your spam folder if you don't see it.</div>
+          <div style={{fontSize:13,color:"#718096",lineHeight:1.8,marginBottom:20}}>We sent a reset link to:<br/><strong style={{color:"#0B1F3A"}}>{email}</strong></div>
         </div>
       ):(
         <FF label="Email Address" required><input type="email" value={email} onChange={e=>{setEmail(e.target.value);reset();}} placeholder="you@company.com" style={{width:"100%",padding:"10px 14px",border:"1.5px solid #E2E8F0",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}}/></FF>
@@ -1535,13 +1528,12 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
     supabase.from("unit_sale_pricing").select("unit_id,asking_price").then(({data})=>setSalePricing(data||[]));
   },[]);
 
-  if(!currentUser) return null;
-  const selLead = leads.find(l=>l&&l.id===selLeadId);
+  const selLead = leads.find(l=>l.id===selLeadId);
   const leadOpps = selLeadId ? opps.filter(o=>o.lead_id===selLeadId) : [];
 
   // Filter leads — exclude pure lease leads from Sales CRM
-  const visible = (can(currentUser.role,"see_all")?leads:leads.filter(l=>l&&l.assigned_to===currentUser.id))
-    .filter(l=>l&&l.property_type!=="Lease");
+  const visible = (can(currentUser.role,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id))
+    .filter(l=>l.property_type!=="Lease");
 
   // Aggregated stage from opportunities
   const leadBestStage = (leadId)=>{
@@ -1564,7 +1556,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
     if(!form.name.trim()){showToast("Name required","error");return;}
     setSaving(true);
     try{
-      const payload={...form,company_id:currentUser.company_id||null,created_by:currentUser.id,assigned_to:currentUser.id};
+      const payload={...form,phone:form.phone||null,budget:form.budget?Number(form.budget):null,company_id:currentUser.company_id||null,created_by:currentUser.id,assigned_to:currentUser.id};
       let data,error;
       if(editLead){
         ({data,error}=await supabase.from("leads").update(form).eq("id",editLead.id).select().single());
@@ -6771,7 +6763,7 @@ function UsersTab({currentUser, showToast}) {
     const newPw=prompt("Set new password for "+user.full_name+"\n(minimum 8 characters):");
     if(!newPw||newPw.length<8){if(newPw!==null)showToast("Password must be at least 8 characters","error");return;}
     let srk=localStorage.getItem("propccrm_srk")||"";
-    if(!srk){srk=prompt("One-time setup: Enter Supabase Service Role Key\n(Dashboard → Settings → API → service_role):");if(!srk)return;localStorage.setItem("propccrm_srk",srk);}
+    if(!srk){srk=prompt("One-time setup: Enter Supabase Service Role Key:");if(!srk)return;localStorage.setItem("propccrm_srk",srk);}
     try{
       const res=await fetch("https://ysceukgpimzfqixtnbnp.supabase.co/auth/v1/admin/users/"+user.id,{method:"PUT",headers:{"Content-Type":"application/json","apikey":srk,"Authorization":"Bearer "+srk},body:JSON.stringify({password:newPw})});
       if(!res.ok){const e=await res.json();showToast(e.message||"Failed","error");return;}
@@ -6986,6 +6978,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
         const { error } = await supabase.from("companies").update({ ...form, updated_at: new Date().toISOString() }).eq("id", editComp.id);
         if (error) throw error;
         showToast("Company updated", "success");
+        try{const cc=JSON.parse(localStorage.getItem("propccrm_company_cache")||"null");if(cc&&cc.id===editComp.id){localStorage.setItem("propccrm_company_cache",JSON.stringify({...cc,...form}));}}catch(e){}
       } else {
         const { error } = await supabase.from("companies").insert({ ...form }).select().single();
         if (error) throw error;
@@ -8328,11 +8321,8 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
 // ══════════════════════════════════════════════════════════════════
 
 function PwRecoveryForm({onDone}){
-  const[pw,setPw]=useState("");
-  const[pw2,setPw2]=useState("");
-  const[loading,setLoading]=useState(false);
-  const[done,setDone]=useState(false);
-  const[err,setErr]=useState("");
+  const[pw,setPw]=useState("");const[pw2,setPw2]=useState("");
+  const[loading,setLoading]=useState(false);const[done,setDone]=useState(false);const[err,setErr]=useState("");
   const submit=async()=>{
     if(pw.length<8){setErr("Password must be at least 8 characters");return;}
     if(pw!==pw2){setErr("Passwords do not match");return;}
@@ -8346,14 +8336,8 @@ function PwRecoveryForm({onDone}){
   return(
     <div>
       {err&&<div style={{background:"#FEE2E2",color:"#C53030",padding:"10px 14px",borderRadius:8,marginBottom:12,fontSize:13}}>{err}</div>}
-      <div style={{marginBottom:12}}>
-        <label style={{display:"block",fontSize:12,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>New Password *</label>
-        <PwInput value={pw} onChange={e=>setPw(e.target.value)} placeholder="Min 8 characters" style={{width:"100%",padding:"10px 14px",border:"1.5px solid #E2E8F0",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}}/>
-      </div>
-      <div style={{marginBottom:16}}>
-        <label style={{display:"block",fontSize:12,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>Confirm Password *</label>
-        <PwInput value={pw2} onChange={e=>setPw2(e.target.value)} placeholder="Repeat new password" style={{width:"100%",padding:"10px 14px",border:"1.5px solid #E2E8F0",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}}/>
-      </div>
+      <div style={{marginBottom:12}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>New Password *</label><PwInput value={pw} onChange={e=>setPw(e.target.value)} placeholder="Min 8 characters" style={{width:"100%",padding:"10px 14px",border:"1.5px solid #E2E8F0",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}}/></div>
+      <div style={{marginBottom:16}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>Confirm Password *</label><PwInput value={pw2} onChange={e=>setPw2(e.target.value)} placeholder="Repeat new password" style={{width:"100%",padding:"10px 14px",border:"1.5px solid #E2E8F0",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}}/></div>
       <Btn onClick={submit} disabled={loading} full style={{padding:"12px"}}>{loading?"Saving…":"Set New Password →"}</Btn>
     </div>
   );
@@ -8413,15 +8397,21 @@ export default function App(){
     }catch(e){console.log(e);}
   },[aiProjects.length]);
 
+  useEffect(()=>{ window.__propcrm_units=aiUnits; },[aiUnits]);
+  useEffect(()=>{ window.__propcrm_projects=aiProjects; },[aiProjects]);
+  useEffect(()=>{ window.__propcrm_leads=leads; },[leads]);
+  useEffect(()=>{ window.__propcrm_user=currentUser; },[currentUser]);
+  useEffect(()=>{
+    const h=()=>{ window.__propcrm_leads=leads; window.__propcrm_units=aiUnits; window.__propcrm_projects=aiProjects; window.__propcrm_user=currentUser; };
+    window.addEventListener('propcrm_ai_data_request',h);
+    return()=>window.removeEventListener('propcrm_ai_data_request',h);
+  },[leads,aiUnits,aiProjects,currentUser]);
+  useEffect(()=>{ window.__propcrm_active_tab=tab; },[tab]);
+
   useEffect(()=>{
     const restore=async()=>{
-      // Check if this is a password recovery redirect (URL contains type=recovery)
-      const hashParams=new URLSearchParams(window.location.hash.replace("#","?").slice(1));
-      if(hashParams.get("type")==="recovery"||window.location.hash.includes("type=recovery")){
-        setPwRecovery(true);
-        window.history.replaceState(null,"",window.location.pathname);
-        return;
-      }
+      const hp=new URLSearchParams(window.location.hash.replace("#","?").slice(1));
+      if(hp.get("type")==="recovery"){setPwRecovery(true);window.history.replaceState(null,"",window.location.pathname);return;}
       try{
         const{data:{session}}=await supabase.auth.getSession();
         if(session?.user){
@@ -8544,23 +8534,19 @@ export default function App(){
   const userRole   = currentUser?.role||"viewer";
   const canSwitch  = ["super_admin","admin","sales_manager","leasing_manager"].includes(userRole);
 
+  if(pwRecovery)return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0B1F3A,#1A3558)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
+      <div style={{background:"#fff",borderRadius:20,padding:"2.5rem",width:440,maxWidth:"100%",boxShadow:"0 30px 80px rgba(0,0,0,0.4)"}}>
+        <div style={{textAlign:"center",marginBottom:24}}><div style={{fontSize:48,marginBottom:8}}>🔑</div><div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>Set New Password</div><div style={{fontSize:13,color:"#718096"}}>Enter your new password below</div></div>
+        <PwRecoveryForm onDone={()=>{setPwRecovery(false);supabase.auth.signOut();}}/>
+      </div>
+    </div>
+  );
+
   if(checking) return(
     <div style={{height:"100dvh",background:"#0B1F3A",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}>
       <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#fff"}}><span style={{color:"#C9A84C"}}>◆</span> PropCRM</div>
       <div style={{width:32,height:32,border:"2px solid rgba(255,255,255,.15)",borderTopColor:"#C9A84C",borderRadius:"50%",animation:"spin 1s linear infinite"}}/>
-    </div>
-  );
-
-  if(pwRecovery)return(
-    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0B1F3A,#1A3558)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
-      <div style={{background:"#fff",borderRadius:20,padding:"2.5rem",width:440,maxWidth:"100%",boxShadow:"0 30px 80px rgba(0,0,0,0.4)"}}>
-        <div style={{textAlign:"center",marginBottom:24}}>
-          <div style={{fontSize:48,marginBottom:8}}>🔑</div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>Set New Password</div>
-          <div style={{fontSize:13,color:"#718096"}}>Enter your new password below</div>
-        </div>
-        <PwRecoveryForm onDone={()=>{setPwRecovery(false);supabase.auth.signOut();}}/>
-      </div>
     </div>
   );
 
@@ -8659,7 +8645,7 @@ export default function App(){
               <RoleBadge role={currentUser.role}/>
             </div>
             <Av name={currentUser.full_name||currentUser.email} size={32} bg="#C9A84C" tc="#0B1F3A"/>
-            {showPwModal&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:99998,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setShowPwModal(false)}><div style={{background:"#fff",borderRadius:16,padding:"2rem",width:400,maxWidth:"90vw",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:36,marginBottom:6}}>🔑</div><div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A",marginBottom:4}}>Change Password</div><button onClick={()=>setShowPwModal(false)} style={{position:"absolute",top:16,right:16,background:"none",border:"none",fontSize:20,cursor:"pointer",color:"#A0AEC0"}}>×</button></div><PwRecoveryForm onDone={()=>{setShowPwModal(false);showToast("Password changed — please log in again","success");supabase.auth.signOut();}}/></div></div>)}
+            {showPwModal&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:99998,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setShowPwModal(false)}><div style={{background:"#fff",borderRadius:16,padding:"2rem",width:400,maxWidth:"90vw",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:36,marginBottom:6}}>🔑</div><div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A",marginBottom:4}}>Change Password</div></div><PwRecoveryForm onDone={()=>{setShowPwModal(false);showToast("Password changed","success");supabase.auth.signOut();}}/></div></div>)}
             <button onClick={()=>setShowPwModal(true)} title="Change my password" style={{fontSize:16,color:"rgba(201,168,76,.6)",background:"none",border:"none",cursor:"pointer",padding:"0 4px"}}>🔑</button>
             <button onClick={handleLogout} title="Sign out" style={{fontSize:11,color:"rgba(255,255,255,.35)",background:"none",border:"1px solid rgba(255,255,255,.1)",borderRadius:6,padding:"4px 8px",cursor:"pointer",whiteSpace:"nowrap",transition:"color .15s"}}
               onMouseOver={e=>e.currentTarget.style.color="rgba(255,255,255,.8)"}
