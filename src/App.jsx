@@ -8347,7 +8347,7 @@ export default function App(){
   },[leads,aiUnits,aiProjects,currentUser]);
   // Active context for AI bubble
   useEffect(()=>{ window.__propcrm_active_tab=tab; },[tab]);
-  useEffect(()=>{ window.__propcrm_active_lead=selLeadId?leads.find(l=>l.id===selLeadId)||null:null; },[selLeadId,leads]);
+  useEffect(()=>{ window.__propcrm_active_lead=null; },[]);
 
   useEffect(()=>{
     const restore=async()=>{
