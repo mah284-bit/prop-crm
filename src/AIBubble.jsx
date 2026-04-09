@@ -58,6 +58,18 @@ function getLiveData() {
   } catch(e) { return { leads:[], units:[], projects:[], user:{} }; }
 }
 
+function CopyBtn({ text }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(text).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);});
+  };
+  return (
+    <button onClick={copy} style={{marginTop:10,padding:"6px 14px",borderRadius:20,border:"1px solid rgba(139,96,0,.3)",background:copied?"rgba(26,127,90,.15)":"rgba(201,168,76,.1)",color:copied?"#1A7F5A":"#8A6200",fontSize:11,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6,transition:"all .2s"}}>
+      {copied?"✓ Copied!":"📋 Copy message"}
+    </button>
+  );
+}
+
 function MsgContent({ content, role }) {
   if (role === "user") return <span>{content}</span>;
   return (
