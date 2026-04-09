@@ -47,15 +47,16 @@ const AI_PROVIDERS = [
 
 function getLiveData() {
   try {
-    // Trigger App to refresh window globals
     window.dispatchEvent(new CustomEvent("propcrm_ai_data_request"));
     return {
       leads: window.__propcrm_leads || [],
       units: window.__propcrm_units || [],
       projects: window.__propcrm_projects || [],
       user: window.__propcrm_user || {},
+      activeLead: window.__propcrm_active_lead || null,
+      activeTab: window.__propcrm_active_tab || null,
     };
-  } catch(e) { return { leads:[], units:[], projects:[], user:{} }; }
+  } catch(e) { return { leads:[], units:[], projects:[], user:{}, activeLead:null, activeTab:null }; }
 }
 
 function CopyBtn({ text }) {
@@ -197,7 +198,7 @@ export default function AIBubble() {
   const changeProv = id => { setProvId(id); localStorage.setItem("propccrm_ai_provider",id); setKey(localStorage.getItem("propccrm_ai_key_"+id)||""); };
 
   const buildCtx = () => {
-    const {leads,units,projects,user} = getLiveData();
+    const {leads,units,projects,user,activeLead,activeTab} = getLiveData();
     const avail = units.filter(u=>u.status==="Available");
     const active = leads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
     const pipeline = {};

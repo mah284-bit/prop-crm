@@ -8345,6 +8345,9 @@ export default function App(){
     window.addEventListener('propcrm_ai_data_request',h);
     return()=>window.removeEventListener('propcrm_ai_data_request',h);
   },[leads,aiUnits,aiProjects,currentUser]);
+  // Active context for AI bubble
+  useEffect(()=>{ window.__propcrm_active_tab=tab; },[tab]);
+  useEffect(()=>{ window.__propcrm_active_lead=selLeadId?leads.find(l=>l.id===selLeadId)||null:null; },[selLeadId,leads]);
 
   useEffect(()=>{
     const restore=async()=>{
