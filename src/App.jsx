@@ -2401,7 +2401,7 @@ function GroupConsolidatedView() {
 const TABS=[
   // ── Sales CRM ──────────────────────────────────────────────────
   {id:"dashboard",  label:"Dashboard",    icon:"⊞",  app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent","viewer"]},
-  {id:"leads",      label:"Contacts",     icon:"👤", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"leads",      label:"Leads",        icon:"👤", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"pipeline",   label:"Pipeline",     icon:"🔀", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"projects",   label:"Projects",     icon:"🏗️", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"builder",    label:"Inventory",    icon:"🏠", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
@@ -2446,7 +2446,7 @@ const DEFAULT_APP = {
 };
 const SUBTITLES={
   dashboard:"Your sales overview at a glance",
-  leads:"Contacts & Deals — full sales pipeline management",
+  leads:"Manage leads with stage gates and full communications",
   builder:"Manage your property inventory — projects, units, pricing and availability",
   pipeline:"Drag deals across stages",
   discounts:"Discount approval hierarchy — Agent → Manager → Admin",
