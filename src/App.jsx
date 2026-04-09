@@ -8329,7 +8329,7 @@ export default function App(){
         safe(supabase.from("unit_sale_pricing").select("*")),
         safe(supabase.from("unit_lease_pricing").select("*")),
       ]);
-      setAiProjects(p.data||[]);setAiUnits(u.data||[]);setAiSalePr(sp.data||[]);setAiLeasePr(lp.data||[]);
+      setAiProjects(p.data||[]);const _units=u.data||[]; setAiUnits(_units); window.__propcrm_units=_units;setAiSalePr(sp.data||[]);setAiLeasePr(lp.data||[]);
     }catch(e){console.log(e);}
   },[aiProjects.length]);
 
@@ -8339,7 +8339,7 @@ export default function App(){
         const{data:{session}}=await supabase.auth.getSession();
         if(session?.user){
           const{data:profile}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
-          if(profile&&profile.is_active)setCurrentUser({...session.user,...profile});
+          if(profile&&profile.is_active)const _prof={...session.user,...profile}; setCurrentUser(_prof); window.__propcrm_user=_prof;
           else await supabase.auth.signOut();
         }
       }catch(e){console.error("Session restore error:",e);}
@@ -8373,7 +8373,7 @@ export default function App(){
         ]);
         // SECURITY: filter all data by active company client-side
         const filterByCo = (arr) => cid ? arr.filter(x=>x.company_id===cid) : arr;
-        setLeads(filterByCo(l.data));
+        const _leads=filterByCo(l.data); setLeads(_leads); window.__propcrm_leads=_leads;
         setProperties(pr.data);
         setActivities(filterByCo(a.data));
         setUsers(u.data);
