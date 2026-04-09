@@ -231,31 +231,49 @@ export default function AIBubble() {
 
   const posStyle = pos.x!==null ? {left:pos.x,top:pos.y,bottom:"auto",right:"auto"} : {bottom:20,right:20};
 
+  const initial = nm.charAt(0).toUpperCase();
   if (!open) return (
-    <button onClick={()=>setOpen(true)} title={"Open "+nm+" · Ctrl+K"}
-      style={{position:"fixed",bottom:24,right:24,zIndex:99999,
-        width:64,height:64,borderRadius:"50%",border:"2px solid rgba(201,168,76,.4)",cursor:"pointer",
-        background:"linear-gradient(135deg,#C9A84C,#F0D98A,#C9A84C)",
-        boxShadow:"0 8px 28px rgba(201,168,76,.5),0 2px 8px rgba(0,0,0,.3)",
-        display:"flex",alignItems:"center",justifyContent:"center",
-        fontSize:26,color:"#3D2000",transition:"all .2s"}}>
-      ✦
-    </button>
+    <div style={{position:"fixed",bottom:20,right:20,zIndex:99999}}>
+      <style>{`
+        @keyframes ai-ring{0%{transform:scale(1);opacity:.6}70%{transform:scale(1.6);opacity:0}100%{transform:scale(1.6);opacity:0}}
+        .ai-bubble-btn:hover{transform:scale(1.08)!important;box-shadow:0 12px 36px rgba(201,168,76,.7),0 2px 8px rgba(0,0,0,.3)!important}
+        .ai-bubble-btn:hover .ai-ring{animation-play-state:running}
+      `}</style>
+      <div className="ai-ring" style={{
+        position:"absolute",inset:-6,borderRadius:"50%",
+        border:"2px solid rgba(201,168,76,.5)",
+        animation:"ai-ring 2s ease-out infinite"
+      }}/>
+      <button className="ai-bubble-btn" onClick={()=>setOpen(true)} title={"Open "+nm+" · Ctrl+K"}
+        style={{position:"relative",width:64,height:64,borderRadius:"50%",border:"none",cursor:"pointer",
+          background:"linear-gradient(135deg,#0B1F3A 0%,#1A3558 100%)",
+          boxShadow:"0 8px 28px rgba(11,31,58,.6),0 0 0 2px #C9A84C,0 0 0 4px rgba(201,168,76,.2)",
+          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1,
+          transition:"all .25s"}}>
+        <span style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#C9A84C",lineHeight:1}}>{initial}</span>
+        <span style={{fontSize:8,color:"rgba(201,168,76,.6)",letterSpacing:"1.5px",textTransform:"uppercase",lineHeight:1}}>AI</span>
+      </button>
+    </div>
   );
 
   if (minimized) return (
     <div ref={panelRef} onMouseDown={onMouseDown}
       style={{position:"fixed",...posStyle,zIndex:99999,
-        width:260,height:50,
-        background:"linear-gradient(135deg,#FBF7F0,#F5EDD8)",
-        border:"1px solid rgba(139,96,0,.3)",
-        borderRadius:25,boxShadow:"0 8px 28px rgba(0,0,0,.2)",
+        width:240,height:48,
+        background:"linear-gradient(135deg,#0B1F3A,#1A3558)",
+        border:"1px solid rgba(201,168,76,.4)",
+        borderRadius:24,boxShadow:"0 8px 28px rgba(0,0,0,.35),0 0 0 1px rgba(201,168,76,.1)",
         display:"flex",alignItems:"center",gap:10,padding:"0 14px",
         cursor:"grab",userSelect:"none"}}>
-      <div style={{width:28,height:28,borderRadius:7,background:"linear-gradient(135deg,#C9A84C,#8A6200)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>✦</div>
-      <div style={{flex:1,fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:"#3D2000",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{nm}</div>
-      <button onClick={()=>setMinimized(false)} style={{background:"none",border:"none",color:"#8A6200",cursor:"pointer",fontSize:14}}>▲</button>
-      <button onClick={()=>setOpen(false)} style={{background:"none",border:"none",color:"#A0908A",cursor:"pointer",fontSize:18}}>×</button>
+      <div style={{width:28,height:28,borderRadius:"50%",flexShrink:0,
+        background:"linear-gradient(135deg,#C9A84C,#8A6200)",
+        display:"flex",alignItems:"center",justifyContent:"center",
+        fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#0B1F3A"}}>
+        {initial}
+      </div>
+      <div style={{flex:1,fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:"#E8C97A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{nm}</div>
+      <button onClick={()=>setMinimized(false)} style={{background:"none",border:"none",color:"rgba(201,168,76,.7)",cursor:"pointer",fontSize:14}}>▲</button>
+      <button onClick={()=>setOpen(false)} style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",cursor:"pointer",fontSize:18}}>×</button>
     </div>
   );
 
@@ -276,16 +294,19 @@ export default function AIBubble() {
       {/* Header */}
       <div onMouseDown={onMouseDown} style={{
         padding:"14px 16px",cursor:"grab",flexShrink:0,
-        background:"linear-gradient(135deg,#0B1F3A 0%,#162d4a 100%)",
+        background:"linear-gradient(135deg,#0B1F3A 0%,#162d4a 100%)",backgroundSize:"200% 200%",
         borderBottom:"3px solid #C9A84C",
         display:"flex",alignItems:"center",gap:10
       }}>
         <div style={{
-          width:38,height:38,borderRadius:10,flexShrink:0,
+          width:38,height:38,borderRadius:"50%",flexShrink:0,
           background:"linear-gradient(135deg,#C9A84C,#E8C97A)",
-          boxShadow:"0 3px 10px rgba(201,168,76,.5)",
-          display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,color:"#0B1F3A"
-        }}>✦</div>
+          boxShadow:"0 3px 10px rgba(201,168,76,.5),0 0 0 2px rgba(255,255,255,.2)",
+          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:0,color:"#0B1F3A"
+        }}>
+          <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,lineHeight:1}}>{initial}</span>
+          <span style={{fontSize:7,letterSpacing:"1px",fontWeight:600,lineHeight:1}}>AI</span>
+        </div>
         <div style={{flex:1}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#F0D98A",letterSpacing:".3px"}}>{nm}</div>
           <div style={{fontSize:9,color:"rgba(201,168,76,.65)",textTransform:"uppercase",letterSpacing:"2px",marginTop:1}}>Real Estate Intelligence</div>
@@ -334,11 +355,14 @@ export default function AIBubble() {
             <div style={{textAlign:"center",padding:"16px 0 20px",
               borderBottom:"1px solid rgba(201,168,76,.2)",marginBottom:18}}>
               <div style={{
-                width:56,height:56,borderRadius:16,margin:"0 auto 12px",
+                width:64,height:64,borderRadius:"50%",margin:"0 auto 14px",
                 background:"linear-gradient(135deg,#0B1F3A,#162d4a)",
-                boxShadow:"0 6px 20px rgba(11,31,58,.3)",
-                display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,color:"#C9A84C"
-              }}>✦</div>
+                boxShadow:"0 6px 20px rgba(11,31,58,.3),0 0 0 3px rgba(201,168,76,.3),0 0 0 6px rgba(201,168,76,.1)",
+                display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1
+              }}>
+                <span style={{fontFamily:"'Playfair Display',serif",fontSize:26,fontWeight:700,color:"#C9A84C",lineHeight:1}}>{initial}</span>
+                <span style={{fontSize:9,color:"rgba(201,168,76,.6)",letterSpacing:"2px",fontWeight:600}}>AI</span>
+              </div>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#0B1F3A",marginBottom:4}}>{nm}</div>
               <div style={{fontSize:11,color:"#8A7A6A",letterSpacing:".5px",marginBottom:10}}>YOUR REAL ESTATE CONCIERGE</div>
               {hasKey
@@ -375,9 +399,13 @@ export default function AIBubble() {
         {msgs.map((m,i)=>(
           <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",gap:8,alignItems:"flex-start"}}>
             {m.role==="assistant"&&(
-              <div style={{width:28,height:28,borderRadius:8,flexShrink:0,marginTop:2,
+              <div style={{width:28,height:28,borderRadius:"50%",flexShrink:0,marginTop:2,
                 background:"linear-gradient(135deg,#0B1F3A,#162d4a)",
-                display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#C9A84C"}}>✦</div>
+                boxShadow:"0 2px 8px rgba(11,31,58,.3)",
+                display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:0}}>
+                <span style={{fontFamily:"'Playfair Display',serif",fontSize:12,fontWeight:700,color:"#C9A84C",lineHeight:1}}>{initial}</span>
+                <span style={{fontSize:6,color:"rgba(201,168,76,.5)",letterSpacing:".5px"}}>AI</span>
+              </div>
             )}
             <div style={{
               maxWidth:"84%",padding:"10px 14px",
