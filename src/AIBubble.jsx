@@ -110,6 +110,7 @@ export default function AIBubble() {
   const [cfg, setCfg] = useState(false);
   const [nm, setNm] = useState("Al AI");
   const [stats, setStats] = useState({ leads:0, avail:0 });
+  const [dataReady, setDataReady] = useState(false);
   const [pos, setPos] = useState({ x:null, y:null });
   const [dragging, setDragging] = useState(false);
   const dragOffset = useRef({x:0,y:0});
@@ -131,7 +132,12 @@ export default function AIBubble() {
     };
     refresh();
     const t = setInterval(refresh, 1500);
-    return () => clearInterval(t);
+    // Check data readiness every second
+    const check = setInterval(()=>{
+      const d = getLiveData();
+      if(d.leads.length>0 || d.units.length>0){ setDataReady(true); clearInterval(check); }
+    }, 500);
+    return () => { clearInterval(t); };
   }, []);
 
   useEffect(() => {
@@ -337,7 +343,10 @@ export default function AIBubble() {
               <div style={{fontSize:11,color:"#8A7A6A",letterSpacing:".5px",marginBottom:10}}>YOUR REAL ESTATE CONCIERGE</div>
               {hasKey
                 ?<div style={{fontSize:12,color:"#5C4A2A",background:"rgba(201,168,76,.12)",borderRadius:20,padding:"5px 14px",display:"inline-block",border:"1px solid rgba(201,168,76,.3)"}}>
-                  📊 {stats.leads} leads &nbsp;·&nbsp; 🏠 {stats.avail} units available
+                  {dataReady
+                    ? <span>📊 {stats.leads} leads &nbsp;·&nbsp; 🏠 {stats.avail} units available</span>
+                    : <span style={{animation:"ai-shimmer 1s ease-in-out infinite"}}>⏳ Loading your data…</span>
+                  }
                 </div>
                 :<div style={{fontSize:12,color:"#8A6200",fontWeight:500}}>Click {prov.name} above to configure</div>
               }
@@ -346,14 +355,14 @@ export default function AIBubble() {
             {hasKey&&(
               <div style={{display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center"}}>
                 {QUICK.map(q=>(
-                  <button key={q.label} className="ai-quick" onClick={()=>send(q.label)}
+                  <button key={q.label} className={dataReady?"ai-quick":""} onClick={()=>dataReady&&send(q.label)}
                     style={{
-                      padding:"8px 14px",borderRadius:22,cursor:"pointer",fontSize:12,fontWeight:500,
+                      padding:"8px 14px",borderRadius:22,cursor:dataReady?"pointer":"not-allowed",fontSize:12,fontWeight:500,
                       border:"1px solid rgba(139,96,0,.25)",
-                      background:"rgba(201,168,76,.08)",
-                      color:"#3D2800",
+                      background:dataReady?"rgba(201,168,76,.08)":"rgba(139,96,0,.04)",
+                      color:dataReady?"#3D2800":"#B0A090",
                       display:"flex",alignItems:"center",gap:6,
-                      transition:"all .2s"
+                      transition:"all .2s",opacity:dataReady?1:.6
                     }}>
                     <span style={{fontSize:14}}>{q.icon}</span>{q.label}
                   </button>
