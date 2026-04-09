@@ -8394,6 +8394,8 @@ export default function App(){
   const[followupAlerts,setFollowupAlerts]=useState({staleLeads:[],overduePayments:[],expiringLeases:[]});
   const[opps,setOpps]=useState([]);
   const[toast,setToast]=useState(null);
+  const[pwRecovery,setPwRecovery]=useState(false);
+  const[showPwModal,setShowPwModal]=useState(false);
   const showToast=(msg,type="success")=>setToast({msg,type});
 
   const loadAIData=useCallback(async()=>{
