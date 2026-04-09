@@ -1535,13 +1535,13 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
     supabase.from("unit_sale_pricing").select("unit_id,asking_price").then(({data})=>setSalePricing(data||[]));
   },[]);
 
-  const selLead = leads.find(l=>l.id===selLeadId);
+  if(!currentUser) return null;
+  const selLead = leads.find(l=>l&&l.id===selLeadId);
   const leadOpps = selLeadId ? opps.filter(o=>o.lead_id===selLeadId) : [];
 
   // Filter leads — exclude pure lease leads from Sales CRM
-  if(!currentUser) return null;
-  const visible = (can(currentUser.role,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id))
-    .filter(l=>l.property_type!=="Lease");
+  const visible = (can(currentUser.role,"see_all")?leads:leads.filter(l=>l&&l.assigned_to===currentUser.id))
+    .filter(l=>l&&l.property_type!=="Lease");
 
   // Aggregated stage from opportunities
   const leadBestStage = (leadId)=>{
