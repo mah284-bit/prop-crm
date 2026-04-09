@@ -6941,6 +6941,8 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
         const { error } = await supabase.from("companies").update({ ...form, updated_at: new Date().toISOString() }).eq("id", editComp.id);
         if (error) throw error;
         showToast("Company updated", "success");
+        // Update company cache so AI bubble picks up new name
+        try { const cached=JSON.parse(localStorage.getItem("propccrm_company_cache")||"null"); if(cached&&cached.id===editComp.id){ localStorage.setItem("propccrm_company_cache", JSON.stringify({...cached,...form})); } } catch(e) {}
       } else {
         const { error } = await supabase.from("companies").insert({ ...form }).select().single();
         if (error) throw error;
@@ -8329,15 +8331,9 @@ export default function App(){
         safe(supabase.from("unit_sale_pricing").select("*")),
         safe(supabase.from("unit_lease_pricing").select("*")),
       ]);
-      setAiProjects(p.data||[]);const _units=u.data||[]; setAiUnits(_units); window.__propcrm_units=_units;setAiSalePr(sp.data||[]);setAiLeasePr(lp.data||[]);
+      setAiProjects(p.data||[]);setAiUnits(u.data||[]);setAiSalePr(sp.data||[]);setAiLeasePr(lp.data||[]);
     }catch(e){console.log(e);}
   },[aiProjects.length]);
-
-  // Keep window globals in sync with React state for AI bubble
-  useEffect(()=>{ window.__propcrm_units=aiUnits; },[aiUnits]);
-  useEffect(()=>{ window.__propcrm_projects=aiProjects; },[aiProjects]);
-  useEffect(()=>{ window.__propcrm_leads=leads; },[leads]);
-  useEffect(()=>{ window.__propcrm_user=currentUser; },[currentUser]);
 
   useEffect(()=>{
     const restore=async()=>{
@@ -8345,7 +8341,7 @@ export default function App(){
         const{data:{session}}=await supabase.auth.getSession();
         if(session?.user){
           const{data:profile}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
-          if(profile&&profile.is_active){const _prof={...session.user,...profile}; setCurrentUser(_prof); window.__propcrm_user=_prof;}
+          if(profile&&profile.is_active)setCurrentUser({...session.user,...profile});
           else await supabase.auth.signOut();
         }
       }catch(e){console.error("Session restore error:",e);}
@@ -8379,7 +8375,7 @@ export default function App(){
         ]);
         // SECURITY: filter all data by active company client-side
         const filterByCo = (arr) => cid ? arr.filter(x=>x.company_id===cid) : arr;
-        const _leads=filterByCo(l.data); setLeads(_leads); window.__propcrm_leads=_leads;
+        setLeads(filterByCo(l.data));
         setProperties(pr.data);
         setActivities(filterByCo(a.data));
         setUsers(u.data);
