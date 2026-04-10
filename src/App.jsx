@@ -1001,6 +1001,148 @@ const OPP_STAGE_META = {
   "Closed Lost":   {c:"#718096", bg:"#F0F2F5"},
 };
 
+function OutcomeModal({activity, onClose, onSave}){
+  const [outcome, setOutcome] = useState(activity._pendingOutcome||"completed");
+  const [notes, setNotes] = useState("");
+  const [reschedDt, setReschedDt] = useState("");
+  const titles = {completed:"✅ Mark as Completed",no_show:"📵 No Show / No Answer",rescheduled:"🔄 Reschedule",cancelled:"❌ Cancel Activity"};
+  const placeholders = {
+    completed:"What was discussed? What was the outcome?",
+    no_show:"Any notes? e.g. Left voicemail, will try again tomorrow",
+    rescheduled:"Why is it being rescheduled?",
+    cancelled:"Reason for cancellation"
+  };
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,padding:"1rem"}}>
+      <div style={{background:"#fff",borderRadius:16,width:440,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+          <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>{titles[outcome]}</span>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
+        </div>
+        <div style={{padding:"1.25rem 1.5rem"}}>
+          {outcome==="rescheduled"&&(
+            <div style={{marginBottom:12}}>
+              <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>📅 New Date & Time *</label>
+              <input type="datetime-local" value={reschedDt} onChange={e=>setReschedDt(e.target.value)} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+            </div>
+          )}
+          <div style={{marginBottom:16}}>
+            <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>
+              {outcome==="completed"?"💬 Outcome Notes":"📝 Notes"}{outcome==="cancelled"?" *":""}
+            </label>
+            <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3}
+              placeholder={placeholders[outcome]}
+              style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,resize:"vertical",outline:"none",boxSizing:"border-box"}}/>
+          </div>
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+            <button onClick={onClose} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+            <button onClick={()=>{
+              if(outcome==="rescheduled"&&!reschedDt){alert("Please select a new date");return;}
+              if(outcome==="cancelled"&&!notes.trim()){alert("Please provide a reason");return;}
+              onSave(outcome,notes,reschedDt);
+            }} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+              Save Outcome
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActivitiesList({activities, setActivities, opp, canEdit, showToast}){
+  const [outcomeModal, setOutcomeModal] = useState(null); // {activity, pendingOutcome}
+  const upcoming = activities.filter(a=>a.status==="upcoming"||(a.scheduled_at&&new Date(a.scheduled_at)>new Date()&&a.status!=="completed"&&a.status!=="no_show"&&a.status!=="cancelled"));
+  const past = activities.filter(a=>!upcoming.find(u=>u.id===a.id));
+  const icons = {Call:"📞",Email:"✉️",Meeting:"🤝",Visit:"🏠",WhatsApp:"💬",Note:"📝"};
+  const statusColors = {completed:"#1A7F5A",upcoming:"#C9A84C",no_show:"#E53E3E",rescheduled:"#1A5FA8",cancelled:"#718096"};
+  const statusLabels = {completed:"✅ Completed",upcoming:"⏰ Upcoming",no_show:"📵 No Show",rescheduled:"🔄 Rescheduled",cancelled:"❌ Cancelled"};
+
+  const markOutcome = async(a, outcome, notes, reschedDt)=>{
+    await supabase.from("activities").update({status:outcome, outcome:notes||null, rescheduled_to:reschedDt||null}).eq("id",a.id);
+    if(reschedDt){
+      await supabase.from("activities").insert({
+        opportunity_id:a.opportunity_id, lead_id:a.lead_id,
+        type:a.type, note:"Rescheduled: "+(notes||""),
+        scheduled_at:reschedDt, status:"upcoming",
+        user_id:a.user_id, user_name:a.user_name,
+        lead_name:a.lead_name, company_id:a.company_id,
+      });
+    }
+    const{data}=await supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false});
+    if(data) setActivities(data);
+    setOutcomeModal(null);
+    showToast("Activity updated","success");
+  };
+
+  const ActCard = ({a})=>{
+    const st = a.status||(a.scheduled_at&&new Date(a.scheduled_at)>new Date()?"upcoming":"completed");
+    const isUpcoming = st==="upcoming";
+    return(
+      <div style={{background:"#fff",border:"1px solid "+(isUpcoming?"#C9A84C":"#E2E8F0"),borderRadius:10,padding:"12px 14px",display:"flex",gap:10}}>
+        <div style={{width:34,height:34,borderRadius:"50%",background:isUpcoming?"rgba(201,168,76,.12)":"#F0F2F5",border:isUpcoming?"1.5px solid #C9A84C":"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
+          {icons[a.type]||"📋"}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4,flexWrap:"wrap",gap:6}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>{a.type}</span>
+              <span style={{fontSize:10,fontWeight:700,color:statusColors[st]||"#718096",background:"rgba(0,0,0,.05)",padding:"2px 8px",borderRadius:10}}>
+                {statusLabels[st]||st}
+              </span>
+            </div>
+            <span style={{fontSize:11,color:"#A0AEC0"}}>{new Date(a.created_at).toLocaleDateString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
+          </div>
+          {a.note&&<div style={{fontSize:12,color:"#4A5568",lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:4}}>{a.note}</div>}
+          {a.outcome&&<div style={{fontSize:11,color:"#718096",fontStyle:"italic",marginBottom:4}}>Note: {a.outcome}</div>}
+          <div style={{fontSize:11,color:"#A0AEC0"}}>{a.user_name}</div>
+          {isUpcoming&&canEdit&&(
+            <div style={{marginTop:10,paddingTop:10,borderTop:"1px dashed #E2E8F0"}}>
+              <div style={{fontSize:11,fontWeight:600,color:"#718096",marginBottom:6}}>Mark outcome:</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {[["completed","✅ Completed","#1A7F5A"],["no_show","📵 No Show","#E53E3E"],["rescheduled","🔄 Reschedule","#1A5FA8"],["cancelled","❌ Cancel","#718096"]].map(([o,label,col])=>(
+                  <button key={o} onClick={()=>markOutcome(a,o)}
+                    style={{padding:"4px 12px",borderRadius:16,border:"1px solid "+col,background:"transparent",color:col,fontSize:11,cursor:"pointer",fontWeight:500}}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      {outcomeModal&&<OutcomeModal activity={{...outcomeModal.activity,_pendingOutcome:outcomeModal.pendingOutcome}} onClose={()=>setOutcomeModal(null)} onSave={(o,n,r)=>markOutcome(outcomeModal.activity,o,n,r)}/>}
+      {upcoming.length>0&&(
+        <div style={{marginBottom:4}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#C9A84C",textTransform:"uppercase",letterSpacing:"1px",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+            ⏰ Upcoming ({upcoming.length})
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {upcoming.map(a=><ActCard key={a.id} a={a}/>)}
+          </div>
+        </div>
+      )}
+      {past.length>0&&(
+        <div>
+          {upcoming.length>0&&(
+            <div style={{fontSize:11,fontWeight:700,color:"#718096",textTransform:"uppercase",letterSpacing:"1px",marginBottom:8,marginTop:8,display:"flex",alignItems:"center",gap:6}}>
+              📋 History ({past.length})
+            </div>
+          )}
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {past.map(a=><ActCard key={a.id} a={a}/>)}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated }) {
   const [activeTab,  setActiveTab]  = useState("details");
   const [activities, setActivities] = useState([]);
@@ -1053,6 +1195,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const saveLog = async()=>{
     if(!logForm.note.trim()&&!logForm.next_steps.trim()){showToast("Please add discussion notes or next steps","error");return;}
     setSaving(true);
+    const isScheduled = logForm.scheduled_at && new Date(logForm.scheduled_at) > new Date();
     const noteText = [
       logForm.note,
       logForm.next_steps?("\n\n✅ Next Steps: "+logForm.next_steps):"",
@@ -1063,6 +1206,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       opportunity_id:opp.id, lead_id:lead.id,
       type:logForm.type, note:noteText,
       scheduled_at:logForm.scheduled_at||null,
+      status:isScheduled?"upcoming":"completed",
       user_id:currentUser.id, user_name:currentUser.full_name,
       lead_name:lead.name, company_id:currentUser.company_id||null,
     }).select().single();
@@ -1259,22 +1403,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             <button onClick={()=>setShowLog(true)} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Activity</button>
             {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No activities yet — log a call, email or meeting</div>}
-            {activities.map(a=>{
-              const icons={Call:"📞",Email:"✉",Meeting:"🤝",Visit:"🏠",WhatsApp:"💬",Note:"📝"};
-              return (
-                <div key={a.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",display:"flex",gap:10}}>
-                  <div style={{width:32,height:32,borderRadius:"50%",background:"#F0F2F5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{icons[a.type]||"📋"}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                      <span style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{a.type}</span>
-                      <span style={{fontSize:11,color:"#A0AEC0"}}>{fmtDT(a.created_at)}</span>
-                    </div>
-                    <div style={{fontSize:12,color:"#4A5568",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{a.note}</div>
-                    <div style={{fontSize:11,color:"#A0AEC0",marginTop:4}}>{a.user_name}</div>
-                  </div>
-                </div>
-              );
-            })}
+            {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast}/>}
           </div>
         )}
 
