@@ -1072,7 +1072,7 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast}){
     const{data}=await supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false});
     if(data) setActivities(data);
     setOutcomeModal(null);
-    showToast("Activity updated","success");
+    showToast("Task updated","success");
   };
 
   const ActCard = ({a})=>{
@@ -1210,7 +1210,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       user_id:currentUser.id, user_name:currentUser.full_name,
       lead_name:lead.name, company_id:currentUser.company_id||null,
     }).select().single();
-    if(!error){setActivities(p=>[data,...p]);showToast("Activity logged","success");setShowLog(false);setLogForm({type:"Call",note:"",scheduled_at:"",next_steps:"",duration_mins:""});}
+    if(!error){setActivities(p=>[data,...p]);showToast("Task logged","success");setShowLog(false);setLogForm({type:"Call",note:"",scheduled_at:"",next_steps:"",duration_mins:""});}
     setSaving(false);
   };
 
@@ -1283,7 +1283,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
               setShowEmail(true);
             }} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#1A5FA8",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>📤 Send Proposal</button>
           )}
-          {canEdit&&<button onClick={()=>setShowLog(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Activity</button>}
+          {canEdit&&<button onClick={()=>setShowLog(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Task</button>}
         </div>
       </div>
 
@@ -1307,7 +1307,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid #E2E8F0"}}>
         {[
           {id:"details",  label:"Details",   locked:false},
-          {id:"activities",label:`Activities${activities.length>0?` (${activities.length})`:""}`,locked:false},
+          {id:"activities",label:`Tasks${activities.length>0?` (${activities.length})`:""}`,locked:false},
           {id:"payments", label:`Payments${payments.length>0?` (${payments.length})`:""}`, locked:!isWon, lockMsg:"Unlocks at Closed Won"},
           {id:"contract", label:`Contract${contract?" ✓":""}`,  locked:!isWon, lockMsg:"Unlocks at Closed Won"},
         ].map(({id,label,locked,lockMsg})=>(
@@ -1402,7 +1402,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
         {activeTab==="activities"&&(
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             <button onClick={()=>setShowLog(true)} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Activity</button>
-            {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No activities yet — log a call, email or meeting</div>}
+            {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No tasks yet — log a call, meeting, site visit or note</div>}
             {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast}/>}
           </div>
         )}
@@ -1492,7 +1492,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"92vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>Log Activity</span>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>Log Task</span>
               <button onClick={()=>setShowLog(false)} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
             <div style={{padding:"1.25rem 1.5rem"}}>
@@ -2443,7 +2443,7 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
   const save=async()=>{
     if(!form.note.trim()||!form.lead_id){showToast("Select a lead and enter a note.","error");return;}
     setSaving(true);
-    try{const lead=leads.find(l=>l.id===form.lead_id);const{data,error}=await supabase.from("activities").insert({lead_id:form.lead_id,type:form.type,note:form.note,user_id:currentUser.id,user_name:currentUser.full_name,lead_name:lead?.name||""}).select().single();if(error)throw error;setActivities(p=>[data,...p]);showToast("Activity logged.","success");setShowAdd(false);setForm({lead_id:"",type:"Call",note:""});}catch(e){showToast(e.message,"error");}finally{setSaving(false);}
+    try{const lead=leads.find(l=>l.id===form.lead_id);const{data,error}=await supabase.from("activities").insert({lead_id:form.lead_id,type:form.type,note:form.note,user_id:currentUser.id,user_name:currentUser.full_name,lead_name:lead?.name||""}).select().single();if(error)throw error;setActivities(p=>[data,...p]);showToast("Task logged.","success");setShowAdd(false);setForm({lead_id:"",type:"Call",note:""});}catch(e){showToast(e.message,"error");}finally{setSaving(false);}
   };
   const del=async id=>{if(!can(currentUser.role,"delete"))return;const{error}=await supabase.from("activities").delete().eq("id",id);if(!error)setActivities(p=>p.filter(a=>a.id!==id));};
   return(
@@ -6652,7 +6652,7 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
         <SC label="Open Maintenance"   value={openMaint.length}     sub={`${overduePmts.length} overdue payments`}     accent={openMaint.length>0?"#B83232":"#A0AEC0"} icon="🔧" onClick={()=>onNavigate("leasing")}/>
       </div>
 
-      {/* Leases + Activity */}
+      {/* Leases + Task */}
       <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr)",gap:12}}>
         {/* Expiring leases */}
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1.125rem"}}>
@@ -7860,7 +7860,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
           </div>
           <div style={{fontSize:12,color:"#718096",marginTop:2}}>{tenant.full_name} · {tenant.phone||""} {unit?`· ${unit.unit_ref} — ${unit.sub_type}`:""}</div>
         </div>
-        {canEdit&&<button onClick={()=>setShowLog(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Activity</button>}
+        {canEdit&&<button onClick={()=>setShowLog(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Task</button>}
       </div>
 
       {/* Summary strip */}
@@ -7984,7 +7984,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:420,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>Log Activity</span>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>Log Task</span>
               <button onClick={()=>setShowLog(false)} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
             <div style={{padding:"1.25rem 1.5rem"}}>
