@@ -8930,7 +8930,8 @@ export default function App(){
             <div style={{display:"flex",background:"rgba(255,255,255,.07)",borderRadius:10,padding:3,gap:3,flexShrink:0}}>
               {[
                 {id:"sales",   label:"Sales",   icon:"🏷", accent:"#4A9EE8"},
-                            ].map(a=>{
+                {id:"leasing", label:"Leasing", icon:"🔑", accent:"#9B7FD4"},
+              ].map(a=>{
                 const isActive=currentApp===a.id;
                 return (
                   <button key={a.id} onClick={()=>{
