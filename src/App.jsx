@@ -1101,7 +1101,7 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast}){
               <div style={{fontSize:11,fontWeight:600,color:"#718096",marginBottom:6}}>Mark outcome:</div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 {[["completed","✅ Completed","#1A7F5A"],["no_show","📵 No Show","#E53E3E"],["rescheduled","🔄 Reschedule","#1A5FA8"],["cancelled","❌ Cancel","#718096"]].map(([o,label,col])=>(
-                  <button key={o} onClick={()=>markOutcome(a,o)}
+                  <button key={o} onClick={()=>setOutcomeModal({activity:a,pendingOutcome:o})}
                     style={{padding:"4px 12px",borderRadius:16,border:"1px solid "+col,background:"transparent",color:col,fontSize:11,cursor:"pointer",fontWeight:500}}>
                     {label}
                   </button>
