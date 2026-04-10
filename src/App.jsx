@@ -2537,7 +2537,7 @@ const TABS=[
   {id:"discounts",  label:"Discounts",    icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"activity",   label:"Activity Log", icon:"📝", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"reports",    label:"Reports",      icon:"📊", app:"sales",   roles:["super_admin","admin","sales_manager"]},
-  {id:"ai",         label:"AI Assistant", icon:"✦",  app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  //{id:"ai",       label:"AI Assistant", icon:"✦",  app:"sales" -- removed, using AI bubble insteadles_manager","sales_agent"]},
   {id:"companies",  label:"Companies",    icon:"🏢", app:"sales",   roles:["super_admin"]},
   {id:"users",      label:"Users",        icon:"👥", app:"sales",   roles:["admin","super_admin"]},
   {id:"permissions",label:"Permissions",  icon:"🔒", app:"sales",   roles:["super_admin"]},
@@ -2545,14 +2545,12 @@ const TABS=[
   {id:"group_view", label:"Group View",    icon:"🏛", app:"sales",   roles:["super_admin"]},
   // ── Leasing CRM ────────────────────────────────────────────────
   {id:"l_dashboard",label:"Dashboard",    icon:"⊞",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
-  {id:"l_leads",    label:"Enquiries",    icon:"👤", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
+  {id:"l_leads",    label:"Leads",        icon:"👤", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_pipeline", label:"Pipeline",     icon:"🔀", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_projects",  label:"Projects",     icon:"🏗️", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_inventory",label:"Inventory",    icon:"📋", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
-  {id:"leasing",    label:"Leasing",      icon:"🔑", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_discounts",label:"Discounts",    icon:"⚡", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_activity", label:"Activity Log", icon:"📝", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
-  {id:"l_ai",       label:"AI Assistant", icon:"✦",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_reports",  label:"Reports",      icon:"📊", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_companies",label:"Companies",    icon:"🏢", app:"leasing", roles:["super_admin"]},
   {id:"l_users",    label:"Users",        icon:"👥", app:"leasing", roles:["admin","super_admin"]},
@@ -2583,7 +2581,7 @@ const SUBTITLES={
   ai:"Ask questions, draft messages, get insights — powered by Claude AI",
   users:"Manage team access and roles",
   l_dashboard:"Your leasing overview at a glance",
-  l_pipeline: "Manage lease enquiries through stages",
+  l_pipeline: "Manage lease deals through stages",
   l_reports:  "Leasing analytics and performance",
   l_leads:"Tenant enquiries — track prospects looking to rent or lease",
   projects:"Create and manage property projects and developments",
@@ -8931,8 +8929,7 @@ export default function App(){
             <div style={{display:"flex",background:"rgba(255,255,255,.07)",borderRadius:10,padding:3,gap:3,flexShrink:0}}>
               {[
                 {id:"sales",   label:"Sales",   icon:"🏷", accent:"#4A9EE8"},
-                {id:"leasing", label:"Leasing", icon:"🔑", accent:"#9B7FD4"},
-              ].map(a=>{
+                            ].map(a=>{
                 const isActive=currentApp===a.id;
                 return (
                   <button key={a.id} onClick={()=>{
