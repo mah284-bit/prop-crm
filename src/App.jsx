@@ -7841,7 +7841,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
       logForm.duration_mins?("\n⏱ Duration: "+logForm.duration_mins+" mins"):"",
     ].filter(Boolean).join("");
     const{data,error}=await supabase.from("activities").insert({
-      opportunity_id:opp.id, lead_id:opp.tenant_id||null,
+      opportunity_id:opp.id, lead_id:null,
       type:logForm.type, note:noteText,
       scheduled_at:logForm.scheduled_at||null,
       status:isScheduled?"upcoming":"completed",
