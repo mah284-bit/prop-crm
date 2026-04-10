@@ -7802,9 +7802,14 @@ const LEASE_STAGE_META = {
 function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, users, currentUser, showToast, onBack, onUpdated }) {
   const [activeTab,  setActiveTab]  = useState("details");
   const [activities, setActivities] = useState([]);
+  const [payments,   setPayments]   = useState([]);
+  const [contract,   setContract]   = useState(null);
   const [saving,     setSaving]     = useState(false);
   const [showLog,    setShowLog]    = useState(false);
-  const [logForm,    setLogForm]    = useState({type:"Call",note:""});
+  const [showPayment,setShowPayment]= useState(false);
+  const [editPayment,setEditPayment]= useState(null);
+  const [logForm,    setLogForm]    = useState({type:"Call",note:"",scheduled_at:"",next_steps:"",duration_mins:""});
+  const [payForm,    setPayForm]    = useState({payment_type:"Security Deposit",amount:"",cheque_number:"",bank_name:"",due_date:"",status:"Pending",notes:""});
   const canEdit = can(currentUser.role,"write");
   const isSigned = opp.stage==="Lease Signed";
 
@@ -7816,64 +7821,89 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
 
   useEffect(()=>{
     supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
+    supabase.from("lease_payments").select("*").eq("opportunity_id",opp.id).order("created_at").then(({data})=>setPayments(data||[]));
+    supabase.from("lease_contracts").select("*").eq("opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
   },[opp.id]);
 
   const moveStage = async(toStage)=>{
-    const curIdx = LEASE_STAGES.indexOf(opp.stage);
-    const toIdx  = LEASE_STAGES.indexOf(toStage);
-    if(["Reserved","Lease Signed"].includes(opp.stage) && toIdx<curIdx && toStage!=="Lost"){
-      showToast(`Cannot go back from ${opp.stage}`,"error"); return;
-    }
-    const newStatus = toStage==="Lease Signed"?"Won":toStage==="Lost"?"Lost":"Active";
-    const extra = toStage==="Lease Signed"?{won_at:new Date().toISOString()}:toStage==="Lost"?{lost_at:new Date().toISOString()}:{};
-    const{error}=await supabase.from("lease_opportunities").update({stage:toStage,status:newStatus,stage_updated_at:new Date().toISOString(),...extra}).eq("id",opp.id);
-    if(!error){
-      onUpdated({...opp,stage:toStage,status:newStatus,...extra});
-      if(toStage==="Reserved"&&opp.unit_id) await supabase.from("project_units").update({status:"Reserved"}).eq("id",opp.unit_id);
-      if(toStage==="Lease Signed"&&opp.unit_id) await supabase.from("project_units").update({status:"Leased"}).eq("id",opp.unit_id);
-      showToast(`Moved to ${toStage}`,"success");
-    }
+    const{error}=await supabase.from("lease_opportunities").update({stage:toStage,stage_updated_at:new Date().toISOString()}).eq("id",opp.id);
+    if(!error){showToast("Stage updated","success");if(onUpdated)onUpdated({...opp,stage:toStage});}
+    else showToast(error.message,"error");
   };
 
   const saveLog = async()=>{
-    if(!logForm.note.trim()){showToast("Note required","error");return;}
+    if(!logForm.note.trim()&&!logForm.next_steps.trim()){showToast("Add notes or next steps","error");return;}
     setSaving(true);
+    const isScheduled = logForm.scheduled_at && new Date(logForm.scheduled_at) > new Date();
+    const noteText = [
+      logForm.note,
+      logForm.next_steps?("\n\n✅ Next Steps: "+logForm.next_steps):"",
+      logForm.scheduled_at?("\n📅 Scheduled: "+new Date(logForm.scheduled_at).toLocaleString("en-AE",{dateStyle:"medium",timeStyle:"short"})):"",
+      logForm.duration_mins?("\n⏱ Duration: "+logForm.duration_mins+" mins"):"",
+    ].filter(Boolean).join("");
     const{data,error}=await supabase.from("activities").insert({
-      opportunity_id:opp.id, lead_id:tenant.id,
-      type:logForm.type, note:logForm.note,
+      opportunity_id:opp.id, lead_id:opp.tenant_id||null,
+      type:logForm.type, note:noteText,
+      scheduled_at:logForm.scheduled_at||null,
+      status:isScheduled?"upcoming":"completed",
       user_id:currentUser.id, user_name:currentUser.full_name,
-      lead_name:tenant.full_name, company_id:currentUser.company_id||null,
+      lead_name:tenant?.full_name||"", company_id:currentUser.company_id||null,
     }).select().single();
-    if(!error){setActivities(p=>[data,...p]);showToast("Logged","success");setShowLog(false);setLogForm({type:"Call",note:"",scheduled_at:"",next_steps:"",duration_mins:""});}
+    if(!error){setActivities(p=>[data,...p]);showToast("Task logged","success");setShowLog(false);setLogForm({type:"Call",note:"",scheduled_at:"",next_steps:"",duration_mins:""});}
     setSaving(false);
   };
+
+  const savePayment = async()=>{
+    if(!payForm.amount){showToast("Amount required","error");return;}
+    setSaving(true);
+    try{
+      const payload={...payForm,amount:Number(payForm.amount),opportunity_id:opp.id,
+        tenant_id:opp.tenant_id||null,company_id:currentUser.company_id||null,created_by:currentUser.id};
+      let data,error;
+      if(editPayment){
+        ({data,error}=await supabase.from("lease_payments").update(payload).eq("id",editPayment.id).select().single());
+        if(!error)setPayments(p=>p.map(x=>x.id===editPayment.id?data:x));
+      } else {
+        ({data,error}=await supabase.from("lease_payments").insert(payload).select().single());
+        if(!error)setPayments(p=>[...p,data]);
+      }
+      if(error)throw error;
+      showToast(editPayment?"Payment updated":"Payment added","success");
+      setShowPayment(false);setEditPayment(null);setPayForm({payment_type:"Security Deposit",amount:"",cheque_number:"",bank_name:"",due_date:"",status:"Pending",notes:""});
+    }catch(e){showToast(e.message,"error");}
+    setSaving(false);
+  };
+
+  const totalPaid = payments.filter(p=>["Cleared","Received"].includes(p.status)).reduce((s,p)=>s+(p.amount||0),0);
+  const totalDue  = payments.reduce((s,p)=>s+(p.amount||0),0);
 
   return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
-        <button onClick={onBack} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
+        <button onClick={onBack} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,cursor:"pointer",flexShrink:0}}>← Back</button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||`Lease Enquiry — ${tenant.full_name}`}</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||"Lease Enquiry"}</span>
             <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>{opp.stage}</span>
           </div>
-          <div style={{fontSize:12,color:"#718096",marginTop:2}}>{tenant.full_name} · {tenant.phone||""} {unit?`· ${unit.unit_ref} — ${unit.sub_type}`:""}</div>
+          <div style={{fontSize:12,color:"#718096",marginTop:2}}>{tenant?.full_name||""} · {tenant?.phone||""}{unit?` · ${unit.unit_ref}`:""}</div>
         </div>
-        {canEdit&&<button onClick={()=>setShowLog(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Task</button>}
+        <div style={{display:"flex",gap:6}}>
+          {canEdit&&<button onClick={()=>setShowLog(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",color:"#0B1F3A",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Task</button>}
+        </div>
       </div>
 
       {/* Summary strip */}
       <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
         {[
-          ["🏠 Unit",      unit?`${unit.unit_ref} — ${unit.sub_type}`:"Not linked",  "#F7F9FC","#4A5568"],
-          ["💰 Annual Rent",lp?`AED ${Number(lp.annual_rent).toLocaleString()}`:"—",  "#0B1F3A","#C9A84C"],
-          ["👤 Agent",     agent?.full_name||"Unassigned",                            "#F7F9FC","#4A5568"],
-          ["📋 Budget",    opp.budget?`AED ${Number(opp.budget).toLocaleString()}`:"—","#F7F9FC","#4A5568"],
-          isSigned&&["✅ Lease",     "Signed",                                         "#E6F4EE","#1A7F5A"],
-        ].filter(Boolean).map(([l,v,bg,col])=>(
+          ["💰 Budget",opp.budget?`AED ${Number(opp.budget).toLocaleString()}/yr`:"—","#0B1F3A","#C9A84C"],
+          ["🏠 Unit",unit?`${unit.unit_ref} — ${unit.sub_type}`:"Not linked","#F7F9FC","#4A5568"],
+          ["👤 Agent",agent?.full_name||"Unassigned","#F7F9FC","#4A5568"],
+          ["💳 Payments",totalDue>0?`${(totalPaid/totalDue*100)|0}% collected`:"No payments","#F7F9FC","#4A5568"],
+        ].map(([l,v,bg,col])=>(
           <div key={l} style={{background:bg,borderRadius:8,padding:"8px 14px",flex:1,minWidth:120}}>
-            <div style={{fontSize:9,color:bg==="#0B1F3A"?"rgba(255,255,255,.5)":"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
+            <div style={{fontSize:9,color:bg==="#0B1F3A"?"rgba(255,255,255,.5)":"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:3}}>{l}</div>
             <div style={{fontSize:13,fontWeight:700,color:col,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{v}</div>
           </div>
         ))}
@@ -7881,135 +7911,300 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
 
       {/* Tabs */}
       <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid #E2E8F0"}}>
-        {["details","activities"].map(id=>(
-          <button key={id} onClick={()=>setActiveTab(id)}
-            style={{padding:"8px 16px",borderRadius:"8px 8px 0 0",border:"none",borderBottom:activeTab===id?"2.5px solid #5B3FAA":"2.5px solid transparent",background:"transparent",fontSize:13,fontWeight:activeTab===id?700:400,color:activeTab===id?"#5B3FAA":"#718096",cursor:"pointer",textTransform:"capitalize"}}>
-            {id}{id==="activities"&&activities.length>0?` (${activities.length})`:""}
+        {[
+          {id:"details",  label:"Details"},
+          {id:"tasks",    label:`Tasks${activities.length>0?` (${activities.length})`:""}`},
+          {id:"payments", label:`Payments${payments.length>0?` (${payments.length})`:""}`, locked:!isSigned, lockMsg:"Unlocks at Lease Signed"},
+          {id:"agreement",label:`Agreement${contract?" ✓":""}`, locked:!isSigned, lockMsg:"Unlocks at Lease Signed"},
+        ].map(({id,label,locked,lockMsg})=>(
+          <button key={id} onClick={()=>{if(locked){showToast(lockMsg||"Locked","error");return;}setActiveTab(id);}}
+            style={{padding:"8px 16px",borderRadius:"8px 8px 0 0",border:"none",
+              borderBottom:activeTab===id?"2.5px solid #5B3FAA":"2.5px solid transparent",
+              background:"transparent",fontSize:13,fontWeight:activeTab===id?600:400,
+              color:locked?"#A0AEC0":activeTab===id?"#5B3FAA":"#4A5568",cursor:locked?"not-allowed":"pointer"}}>
+            {locked&&"🔒 "}{label}
           </button>
         ))}
       </div>
 
       <div style={{flex:1,overflowY:"auto"}}>
 
+        {/* DETAILS TAB */}
         {activeTab==="details"&&(
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
-            {/* Workflow bar */}
+            {/* Workflow */}
             <div style={{background:"linear-gradient(135deg,#1A0B3A,#2D1558)",borderRadius:12,padding:"14px 16px"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.4)",textTransform:"uppercase",letterSpacing:".6px",marginBottom:10}}>Leasing Workflow</div>
+              <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.4)",textTransform:"uppercase",letterSpacing:"1px",marginBottom:10}}>Lease Workflow</div>
               <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0}}>
                 {LEASE_STAGES.filter(s=>s!=="Lost").map((s,i,arr)=>{
                   const curIdx=LEASE_STAGES.indexOf(opp.stage);
-                  const thisIdx=LEASE_STAGES.indexOf(s);
-                  const isDone=curIdx>thisIdx;
-                  const isCur=opp.stage===s;
-                  return (
+                  const sIdx=LEASE_STAGES.indexOf(s);
+                  const done=sIdx<curIdx; const active=sIdx===curIdx;
+                  return(
                     <div key={s} style={{display:"flex",alignItems:"center",flexShrink:0}}>
-                      <div onClick={()=>moveStage(s)}
-                        style={{padding:"5px 12px",borderRadius:20,background:isCur?"#C9A84C":isDone?"rgba(26,127,90,.3)":"rgba(255,255,255,.08)",color:isCur?"#0B1F3A":isDone?"#4ADE80":"rgba(255,255,255,.4)",fontSize:11,fontWeight:isCur||isDone?700:400,cursor:"pointer",whiteSpace:"nowrap",transition:"all .15s"}}>
-                        {isDone?"✓ ":""}{s}
-                      </div>
-                      {i<arr.length-1&&<div style={{width:16,height:1,background:"rgba(255,255,255,.1)",flexShrink:0}}/>}
+                      <button onClick={()=>canEdit&&moveStage(s)} disabled={!canEdit}
+                        style={{padding:"6px 12px",borderRadius:20,border:"none",fontSize:11,fontWeight:active?700:400,cursor:canEdit?"pointer":"default",
+                          background:active?"#9B7FD4":done?"rgba(155,127,212,.3)":"rgba(255,255,255,.1)",
+                          color:active?"#fff":done?"rgba(255,255,255,.7)":"rgba(255,255,255,.4)"}}>
+                        {done?"✓ ":""}{s}
+                      </button>
+                      {i<arr.length-1&&<div style={{width:20,height:1,background:"rgba(255,255,255,.2)",flexShrink:0}}/>}
                     </div>
                   );
                 })}
-                <div style={{width:16,height:1,background:"rgba(255,255,255,.1)",flexShrink:0}}/>
-                <div onClick={()=>moveStage("Lost")}
-                  style={{padding:"5px 12px",borderRadius:20,background:opp.stage==="Lost"?"#B83232":"rgba(255,255,255,.05)",color:opp.stage==="Lost"?"#fff":"rgba(255,255,255,.3)",fontSize:11,cursor:"pointer",whiteSpace:"nowrap"}}>
-                  ✗ Lost
+              </div>
+            </div>
+
+            {/* Property & Pricing */}
+            {unit&&(
+              <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#0B1F3A",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>🏠 Property</div>
+                <div style={{fontWeight:700,color:"#0B1F3A",fontSize:14,marginBottom:4}}>{unit.unit_ref} — {unit.sub_type||unit.unit_type}</div>
+                <div style={{fontSize:12,color:"#718096",marginBottom:10}}>{proj?.name||""} · Floor {unit.floor_number} · {unit.view} · {unit.size_sqft} sqft</div>
+                {lp&&(
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8}}>
+                    {[["Annual Rent",`AED ${Number(lp.annual_rent||0).toLocaleString()}`],
+                      ["Monthly",`AED ${Number((lp.annual_rent||0)/12).toLocaleString()}`],
+                      ["Security Dep.",lp.security_deposit_months?lp.security_deposit_months+" months rent":"—"],
+                      ["Municipality",lp.municipality_tax_pct?lp.municipality_tax_pct+"%":"—"],
+                    ].map(([k,v])=>(
+                      <div key={k} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 10px"}}>
+                        <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{k}</div>
+                        <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tenant Info */}
+            {tenant&&(
+              <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#0B1F3A",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>👤 Tenant</div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  {[["Name",tenant.full_name],["Phone",tenant.phone],["Email",tenant.email],["Nationality",tenant.nationality],["ID Type",tenant.id_type],["ID Number",tenant.id_number]].map(([k,v])=>v&&(
+                    <div key={k}>
+                      <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px"}}>{k}</div>
+                      <div style={{fontSize:13,fontWeight:500,color:"#0B1F3A"}}>{v}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              {isSigned&&<div style={{marginTop:10,padding:"6px 10px",background:"rgba(201,168,76,.15)",borderRadius:6,fontSize:11,color:"#C9A84C",fontWeight:600}}>🎉 Lease Signed — proceed to create lease contract in Leasing module</div>}
-            </div>
+            )}
+          </div>
+        )}
 
-            {/* Unit */}
-            <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
-              <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Property</div>
-              {unit?(
-                <div style={{display:"flex",gap:12,alignItems:"flex-start",flexWrap:"wrap"}}>
-                  <div style={{flex:1,minWidth:200}}>
-                    <div style={{fontWeight:700,fontSize:15,color:"#0B1F3A",marginBottom:4}}>{unit.unit_ref} — {unit.sub_type}</div>
-                    <div style={{fontSize:12,color:"#718096",marginBottom:6}}>{proj?.name||"—"} · Floor {unit.floor_number||"—"} · {unit.view||"—"}</div>
-                    {lp&&<div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#5B3FAA"}}>AED {Number(lp.annual_rent).toLocaleString()} / yr</div>}
-                    {lp?.monthly_rent&&<div style={{fontSize:12,color:"#718096"}}>AED {Number(lp.monthly_rent).toLocaleString()} / mo</div>}
-                  </div>
-                </div>
-              ):(
-                <div style={{color:"#A0AEC0",fontSize:12,textAlign:"center",padding:"1rem"}}>No unit linked yet</div>
-              )}
-            </div>
+        {/* TASKS TAB */}
+        {activeTab==="tasks"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <button onClick={()=>setShowLog(true)} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Task</button>
+            {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No tasks yet — log a call, meeting, site visit or note</div>}
+            {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast}/>}
+          </div>
+        )}
 
-            {/* Tenant info */}
-            <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
-              <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Tenant Details</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:8}}>
-                {[["Name",tenant.full_name],["Phone",tenant.phone||"—"],["Email",tenant.email||"—"],["Nationality",tenant.nationality||"—"],["ID Type",tenant.id_type||"—"],["ID Number",tenant.id_number||"—"]].map(([l,v])=>(
-                  <div key={l} style={{background:"#FAFBFC",borderRadius:8,padding:"8px 10px"}}>
-                    <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
-                    <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{v}</div>
+        {/* PAYMENTS TAB */}
+        {activeTab==="payments"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {canEdit&&<button onClick={()=>{setEditPayment(null);setShowPayment(true);}} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add Payment</button>}
+            {/* Summary */}
+            {payments.length>0&&(
+              <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:12,padding:"14px 16px",display:"flex",gap:16,flexWrap:"wrap"}}>
+                {[["Total Due",`AED ${totalDue.toLocaleString()}`],["Collected",`AED ${totalPaid.toLocaleString()}`],["Outstanding",`AED ${(totalDue-totalPaid).toLocaleString()}`]].map(([k,v])=>(
+                  <div key={k}>
+                    <div style={{fontSize:9,color:"rgba(255,255,255,.5)",textTransform:"uppercase",letterSpacing:".5px"}}>{k}</div>
+                    <div style={{fontSize:15,fontWeight:700,color:"#C9A84C"}}>{v}</div>
                   </div>
                 ))}
               </div>
-            </div>
-
-            {opp.notes&&<div style={{background:"#F7F9FC",borderRadius:12,padding:"14px 16px",fontSize:12,color:"#4A5568",lineHeight:1.7}}>{opp.notes}</div>}
-          </div>
-        )}
-
-        {activeTab==="activities"&&(
-          <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            <button onClick={()=>setShowLog(true)} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Activity</button>
-            {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No activities yet</div>}
-            {activities.map(a=>{
-              const icons={Call:"📞",Email:"✉",Meeting:"🤝",Visit:"🏠",WhatsApp:"💬",Note:"📝"};
-              return (
-                <div key={a.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",display:"flex",gap:10}}>
-                  <div style={{width:32,height:32,borderRadius:"50%",background:"#EEE8F9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,flexShrink:0}}>{icons[a.type]||"📋"}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                      <span style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{a.type}</span>
-                      <span style={{fontSize:11,color:"#A0AEC0"}}>{fmtDT(a.created_at)}</span>
-                    </div>
-                    <div style={{fontSize:12,color:"#4A5568",lineHeight:1.5,whiteSpace:"pre-wrap"}}>{a.note}</div>
-                    <div style={{fontSize:11,color:"#A0AEC0",marginTop:4}}>{a.user_name}</div>
+            )}
+            {payments.length===0&&<div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}><div style={{fontSize:40,marginBottom:10}}>🔒</div><div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>No payments yet</div><div style={{fontSize:12}}>Add security deposit, advance rent and PDC cheques</div></div>}
+            {payments.map(p=>(
+              <div key={p.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <span style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>{p.payment_type}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:p.status==="Cleared"?"#1A7F5A":p.status==="Pending"?"#C9A84C":"#E53E3E"}}>
+                      {p.status==="Cleared"?"✅":"⏳"} {p.status}
+                    </span>
                   </div>
+                  <div style={{fontSize:14,fontWeight:700,color:"#0B1F3A",marginBottom:4}}>AED {Number(p.amount).toLocaleString()}</div>
+                  <div style={{fontSize:11,color:"#718096",display:"flex",gap:12,flexWrap:"wrap"}}>
+                    {p.cheque_number&&<span>Cheque #{p.cheque_number}</span>}
+                    {p.bank_name&&<span>🏦 {p.bank_name}</span>}
+                    {p.due_date&&<span>📅 Due: {new Date(p.due_date).toLocaleDateString("en-AE")}</span>}
+                  </div>
+                  {p.notes&&<div style={{fontSize:11,color:"#A0AEC0",marginTop:4}}>{p.notes}</div>}
                 </div>
-              );
-            })}
+                {canEdit&&(
+                  <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                    <button onClick={()=>{setEditPayment(p);setPayForm({...p});setShowPayment(true);}} style={{padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,cursor:"pointer"}}>Edit</button>
+                    {p.status==="Pending"&&<button onClick={async()=>{await supabase.from("lease_payments").update({status:"Cleared"}).eq("id",p.id);setPayments(px=>px.map(x=>x.id===p.id?{...x,status:"Cleared"}:x));showToast("Marked cleared","success");}} style={{padding:"4px 10px",borderRadius:6,border:"1.5px solid #A8D5BE",background:"#E6F4EE",color:"#1A7F5A",fontSize:11,cursor:"pointer"}}>Clear</button>}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         )}
+
+        {/* AGREEMENT TAB */}
+        {activeTab==="agreement"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            {!contract?(
+              <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
+                <div style={{fontSize:40,marginBottom:10}}>📄</div>
+                <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>No rental agreement yet</div>
+                {canEdit&&isSigned&&(
+                  <button onClick={async()=>{
+                    const terms = prompt("Lease terms / notes (optional):");
+                    const{data,error}=await supabase.from("lease_contracts").insert({
+                      opportunity_id:opp.id, tenant_id:opp.tenant_id||null,
+                      unit_id:opp.unit_id||null, annual_rent:opp.budget||null,
+                      start_date:opp.move_in_date||null, terms:terms||"",
+                      status:"Draft", company_id:currentUser.company_id||null,
+                      created_by:currentUser.id,
+                    }).select().single();
+                    if(!error){setContract(data);showToast("Agreement created","success");}
+                    else showToast(error.message,"error");
+                  }} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                    📄 Create Rental Agreement
+                  </button>
+                )}
+              </div>
+            ):(
+              <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0B1F3A"}}>📄 Rental Agreement</div>
+                  <span style={{padding:"4px 12px",borderRadius:20,background:contract.status==="Signed"?"#E6F4EE":"#FFF9E6",color:contract.status==="Signed"?"#1A7F5A":"#C9A84C",fontSize:11,fontWeight:700}}>{contract.status}</span>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                  {[["Tenant",tenant?.full_name||"—"],["Unit",unit?.unit_ref||"—"],["Annual Rent",contract.annual_rent?`AED ${Number(contract.annual_rent).toLocaleString()}`:"—"],["Start Date",contract.start_date?new Date(contract.start_date).toLocaleDateString("en-AE"):"—"]].map(([k,v])=>(
+                    <div key={k}><div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px"}}>{k}</div><div style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{v}</div></div>
+                  ))}
+                </div>
+                {contract.terms&&<div style={{fontSize:12,color:"#4A5568",background:"#F7F9FC",borderRadius:8,padding:"10px 12px",marginBottom:12}}>{contract.terms}</div>}
+                {canEdit&&contract.status==="Draft"&&(
+                  <button onClick={async()=>{await supabase.from("lease_contracts").update({status:"Signed",signed_at:new Date().toISOString()}).eq("id",contract.id);setContract(c=>({...c,status:"Signed"}));showToast("Agreement signed!","success");}} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                    ✍️ Mark as Signed
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
-      {/* Log Activity Modal */}
+      {/* Log Task Modal */}
       {showLog&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:420,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+          <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"92vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>Log Task</span>
               <button onClick={()=>setShowLog(false)} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
             <div style={{padding:"1.25rem 1.5rem"}}>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-                {["Call","Email","Meeting","Visit","WhatsApp","Note"].map(t=>(
-                  <button key={t} onClick={()=>setLogForm(f=>({...f,type:t}))}
-                    style={{padding:"5px 12px",borderRadius:20,border:`1.5px solid ${logForm.type===t?"#5B3FAA":"#E2E8F0"}`,background:logForm.type===t?"#5B3FAA":"#fff",color:logForm.type===t?"#fff":"#4A5568",fontSize:11,cursor:"pointer",fontWeight:logForm.type===t?600:400}}>
-                    {t}
-                  </button>
-                ))}
+              <div style={{marginBottom:14}}>
+                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Activity Type</label>
+                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {[["Call","📞"],["Email","✉️"],["Meeting","🤝"],["Visit","🏠"],["WhatsApp","💬"],["Note","📝"]].map(([t,icon])=>(
+                    <button key={t} onClick={()=>setLogForm(f=>({...f,type:t}))}
+                      style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${logForm.type===t?"#5B3FAA":"#E2E8F0"}`,background:logForm.type===t?"#5B3FAA":"#fff",color:logForm.type===t?"#fff":"#4A5568",fontSize:12,cursor:"pointer",fontWeight:logForm.type===t?600:400,display:"flex",alignItems:"center",gap:4}}>
+                      <span>{icon}</span>{t}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <textarea value={logForm.note} onChange={e=>setLogForm(f=>({...f,note:e.target.value}))} rows={4} placeholder="What happened? Key details…" style={{width:"100%",marginBottom:12}}/>
+              {["Call","Meeting","Visit"].includes(logForm.type)&&(
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>📅 Date & Time</label>
+                    <input type="datetime-local" value={logForm.scheduled_at} onChange={e=>setLogForm(f=>({...f,scheduled_at:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>⏱ Duration</label>
+                    <select value={logForm.duration_mins} onChange={e=>setLogForm(f=>({...f,duration_mins:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}>
+                      <option value="">Select…</option>
+                      {["15","30","45","60","90","120"].map(m=><option key={m} value={m}>{m} mins</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
+              <div style={{marginBottom:12}}>
+                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>💬 Discussion / Key Details</label>
+                <textarea value={logForm.note} onChange={e=>setLogForm(f=>({...f,note:e.target.value}))} rows={3} placeholder="What was discussed?" style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,resize:"vertical",outline:"none",boxSizing:"border-box"}}/>
+              </div>
+              <div style={{marginBottom:12}}>
+                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>✅ Next Steps</label>
+                <textarea value={logForm.next_steps} onChange={e=>setLogForm(f=>({...f,next_steps:e.target.value}))} rows={2} placeholder="Follow-up action, who's responsible, by when?" style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,resize:"vertical",outline:"none",boxSizing:"border-box"}}/>
+              </div>
               <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
                 <button onClick={()=>setShowLog(false)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                <button onClick={saveLog} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save"}</button>
+                <button onClick={saveLog} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save Task"}</button>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Add Payment Modal */}
+      {showPayment&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"92vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>💳 {editPayment?"Edit":"Add"} Payment</span>
+              <button onClick={()=>{setShowPayment(false);setEditPayment(null);}} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{padding:"1.25rem 1.5rem"}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Payment Type *</label>
+                  <select value={payForm.payment_type} onChange={e=>setPayForm(f=>({...f,payment_type:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}>
+                    {["Security Deposit","Advance Rent (1 Month)","Advance Rent (3 Months)","Advance Rent (6 Months)","Annual Rent","Agency Fee","Municipality Fee","PDC Cheque","Other"].map(t=><option key={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Amount (AED) *</label>
+                  <input type="number" value={payForm.amount} onChange={e=>setPayForm(f=>({...f,amount:e.target.value}))} placeholder="e.g. 50000" style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Status</label>
+                  <select value={payForm.status} onChange={e=>setPayForm(f=>({...f,status:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}>
+                    {["Pending","Received","Cleared","Bounced"].map(s=><option key={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Cheque Number</label>
+                  <input value={payForm.cheque_number||""} onChange={e=>setPayForm(f=>({...f,cheque_number:e.target.value}))} placeholder="Optional" style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Bank Name</label>
+                  <input value={payForm.bank_name||""} onChange={e=>setPayForm(f=>({...f,bank_name:e.target.value}))} placeholder="Optional" style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Due Date</label>
+                  <input type="date" value={payForm.due_date||""} onChange={e=>setPayForm(f=>({...f,due_date:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                </div>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label>
+                  <textarea value={payForm.notes||""} onChange={e=>setPayForm(f=>({...f,notes:e.target.value}))} rows={2} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,resize:"vertical",outline:"none",boxSizing:"border-box"}}/>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:16}}>
+                <button onClick={()=>{setShowPayment(false);setEditPayment(null);}} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+                <button onClick={savePayment} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save Payment"}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
 
-// ── Main LeasingLeads (Tenant Contacts + Lease Opportunities) ─────
+
 function LeasingLeads({ currentUser, showToast, users=[] }) {
   const [tenants,    setTenants]    = useState([]);
   const [lOpps,      setLOpps]      = useState([]);
