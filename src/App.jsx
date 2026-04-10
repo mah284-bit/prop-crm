@@ -7814,6 +7814,10 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
   const [payForm,    setPayForm]    = useState({payment_type:"Security Deposit",amount:"",cheque_number:"",bank_name:"",due_date:"",status:"Pending",notes:""});
   const canEdit = can(currentUser.role,"write");
   const isSigned = opp.stage==="Lease Signed";
+  const isReserved = ["Reserved","Lease Signed"].includes(opp.stage);
+  const hasPayments = payments.length>0;
+  const allPaymentsCleared = hasPayments && payments.every(p=>["Cleared","Received"].includes(p.status));
+  const canAccessAgreement = isReserved && hasPayments;
 
   const unit  = units.find(u=>u.id===opp.unit_id);
   const proj  = unit ? projects.find(p=>p.id===unit.project_id) : null;
@@ -7828,8 +7832,26 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
   },[opp.id]);
 
   const moveStage = async(toStage)=>{
+    // Gate: Lease Signed requires signed agreement
+    if(toStage==="Lease Signed"){
+      if(!contract){showToast("Create a rental agreement before marking as Lease Signed","error");return;}
+      if(contract.status!=="Signed"){showToast("Agreement must be signed before marking as Lease Signed","error");return;}
+      if(!hasPayments){showToast("Add payments before marking as Lease Signed","error");return;}
+    }
+    // Gate: Reserved requires at least Offer Made
+    const stageOrder=["New Enquiry","Contacted","Viewing","Offer Made","Reserved","Lease Signed","Lost"];
+    const curIdx=stageOrder.indexOf(opp.stage);
+    const toIdx=stageOrder.indexOf(toStage);
+    if(toIdx>curIdx+1&&!["Lost"].includes(toStage)){showToast("Please follow the workflow stages in order","error");return;}
     const{error}=await supabase.from("lease_opportunities").update({stage:toStage,stage_updated_at:new Date().toISOString()}).eq("id",opp.id);
-    if(!error){showToast("Stage updated","success");if(onUpdated)onUpdated({...opp,stage:toStage});}
+    if(!error){
+      // Auto-update unit status when Lease Signed
+      if(toStage==="Lease Signed"&&opp.unit_id){
+        await supabase.from("project_units").update({status:"Leased"}).eq("id",opp.unit_id);
+      }
+      showToast("Stage updated","success");
+      if(onUpdated)onUpdated({...opp,stage:toStage});
+    }
     else showToast(error.message,"error");
   };
 
@@ -7916,8 +7938,8 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
         {[
           {id:"details",  label:"Details"},
           {id:"tasks",    label:`Tasks${activities.length>0?` (${activities.length})`:""}`},
-          {id:"payments", label:`Payments${payments.length>0?` (${payments.length})`:""}`, locked:!isSigned, lockMsg:"Unlocks at Lease Signed"},
-          {id:"agreement",label:`Agreement${contract?" ✓":""}`, locked:!isSigned, lockMsg:"Unlocks at Lease Signed"},
+          {id:"payments", label:`Payments${payments.length>0?` (${payments.length})`:""}`, locked:!isReserved, lockMsg:"Move to Reserved to unlock payments"},
+          {id:"agreement",label:`Agreement${contract?" ✓":""}`, locked:!canAccessAgreement, lockMsg:hasPayments?"Move to Reserved first":"Add payments before creating agreement"},
         ].map(({id,label,locked,lockMsg})=>(
           <button key={id} onClick={()=>{if(locked){showToast(lockMsg||"Locked","error");return;}setActiveTab(id);}}
             style={{padding:"8px 16px",borderRadius:"8px 8px 0 0",border:"none",
@@ -8057,7 +8079,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
               <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
                 <div style={{fontSize:40,marginBottom:10}}>📄</div>
                 <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>No rental agreement yet</div>
-                {canEdit&&isSigned&&(
+                {canEdit&&canAccessAgreement&&(
                   <button onClick={async()=>{
                     const terms = prompt("Lease terms / notes (optional):");
                     const{data,error}=await supabase.from("lease_contracts").insert({
@@ -8087,8 +8109,16 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                 </div>
                 {contract.terms&&<div style={{fontSize:12,color:"#4A5568",background:"#F7F9FC",borderRadius:8,padding:"10px 12px",marginBottom:12}}>{contract.terms}</div>}
                 {canEdit&&contract.status==="Draft"&&(
-                  <button onClick={async()=>{await supabase.from("lease_contracts").update({status:"Signed",signed_at:new Date().toISOString()}).eq("id",contract.id);setContract(c=>({...c,status:"Signed"}));showToast("Agreement signed!","success");}} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
-                    ✍️ Mark as Signed
+                  <button onClick={async()=>{
+                    await supabase.from("lease_contracts").update({status:"Signed",signed_at:new Date().toISOString()}).eq("id",contract.id);
+                    setContract(c=>({...c,status:"Signed"}));
+                    // Auto-move to Lease Signed
+                    await supabase.from("lease_opportunities").update({stage:"Lease Signed",stage_updated_at:new Date().toISOString()}).eq("id",opp.id);
+                    if(opp.unit_id) await supabase.from("project_units").update({status:"Leased"}).eq("id",opp.unit_id);
+                    if(onUpdated)onUpdated({...opp,stage:"Lease Signed"});
+                    showToast("✅ Agreement signed! Lease is now active. Unit marked as Leased.","success");
+                  }} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                    ✍️ Sign Agreement & Complete Lease
                   </button>
                 )}
               </div>
