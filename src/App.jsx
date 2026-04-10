@@ -1050,7 +1050,7 @@ function OutcomeModal({activity, onClose, onSave}){
   );
 }
 
-function ActivitiesList({activities, setActivities, opp, canEdit, showToast}){
+function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isLeasing=false}){
   const [outcomeModal, setOutcomeModal] = useState(null); // {activity, pendingOutcome}
   const upcoming = activities.filter(a=>a.status==="upcoming"||(a.scheduled_at&&new Date(a.scheduled_at)>new Date()&&a.status!=="completed"&&a.status!=="no_show"&&a.status!=="cancelled"));
   const past = activities.filter(a=>!upcoming.find(u=>u.id===a.id));
@@ -1062,14 +1062,17 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast}){
     await supabase.from("activities").update({status:outcome, outcome:notes||null, rescheduled_to:reschedDt||null}).eq("id",a.id);
     if(reschedDt){
       await supabase.from("activities").insert({
-        opportunity_id:a.opportunity_id, lead_id:a.lead_id,
+        opportunity_id:isLeasing?null:a.opportunity_id,
+        lease_opportunity_id:isLeasing?opp.id:null,
+        lead_id:isLeasing?null:a.lead_id,
         type:a.type, note:"Rescheduled: "+(notes||""),
         scheduled_at:reschedDt, status:"upcoming",
         user_id:a.user_id, user_name:a.user_name,
         lead_name:a.lead_name, company_id:a.company_id,
       });
     }
-    const{data}=await supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false});
+    const col=isLeasing?"lease_opportunity_id":"opportunity_id";
+    const{data}=await supabase.from("activities").select("*").eq(col,opp.id).order("created_at",{ascending:false});
     if(data) setActivities(data);
     setOutcomeModal(null);
     showToast("Task updated","success");
@@ -7999,7 +8002,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             <button onClick={()=>setShowLog(true)} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Task</button>
             {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No tasks yet — log a call, meeting, site visit or note</div>}
-            {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast}/>}
+            {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast} isLeasing={true}/>}
           </div>
         )}
 
