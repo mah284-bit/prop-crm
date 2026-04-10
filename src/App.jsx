@@ -7812,6 +7812,8 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
   const [editPayment,setEditPayment]= useState(null);
   const [logForm,    setLogForm]    = useState({type:"Call",note:"",scheduled_at:"",next_steps:"",duration_mins:""});
   const [payForm,    setPayForm]    = useState({payment_type:"Security Deposit",amount:"",cheque_number:"",bank_name:"",due_date:"",status:"Pending",notes:""});
+  const [showPDC,    setShowPDC]    = useState(false);
+  const [pdcForm,    setPdcForm]    = useState({num_cheques:"1",annual_rent:"",start_date:"",bank_name:"",notes:""});
   const canEdit = can(currentUser.role,"write");
   const isSigned = opp.stage==="Lease Signed";
   const isReserved = ["Reserved","Lease Signed"].includes(opp.stage);
@@ -8031,7 +8033,10 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
         {/* PAYMENTS TAB */}
         {activeTab==="payments"&&(
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            {canEdit&&<button onClick={()=>{setEditPayment(null);setShowPayment(true);}} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add Payment</button>}
+            <div style={{display:"flex",gap:8,alignSelf:"flex-end"}}>
+              {canEdit&&<button onClick={()=>setShowPDC(true)} style={{padding:"7px 16px",borderRadius:8,border:"1.5px solid #5B3FAA",background:"rgba(91,63,170,.08)",color:"#5B3FAA",fontSize:12,fontWeight:600,cursor:"pointer"}}>🏦 Generate PDC Cheques</button>}
+              {canEdit&&<button onClick={()=>{setEditPayment(null);setShowPayment(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add Payment</button>}
+            </div>
             {/* Summary */}
             {payments.length>0&&(
               <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:12,padding:"14px 16px",display:"flex",gap:16,flexWrap:"wrap"}}>
@@ -8193,7 +8198,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                 <div style={{gridColumn:"1/-1"}}>
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Payment Type *</label>
                   <select value={payForm.payment_type} onChange={e=>setPayForm(f=>({...f,payment_type:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}>
-                    {["Security Deposit","Advance Rent (1 Month)","Advance Rent (3 Months)","Advance Rent (6 Months)","Annual Rent","Agency Fee","Municipality Fee","PDC Cheque","Other"].map(t=><option key={t}>{t}</option>)}
+                    {["Security Deposit","Agency Fee","Municipality Fee","DEWA Deposit","PDC Cheque","Cash","Bank Transfer","Other"].map(t=><option key={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
@@ -8203,11 +8208,11 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Status</label>
                   <select value={payForm.status} onChange={e=>setPayForm(f=>({...f,status:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}>
-                    {["Pending","Received","Cleared","Bounced"].map(s=><option key={s}>{s}</option>)}
+                    {["Pending","Received","Cleared","Bounced","Cancelled"].map(s=><option key={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Cheque Number</label>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Cheque / Ref Number</label>
                   <input value={payForm.cheque_number||""} onChange={e=>setPayForm(f=>({...f,cheque_number:e.target.value}))} placeholder="Optional" style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
                 </div>
                 <div>
@@ -8215,7 +8220,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                   <input value={payForm.bank_name||""} onChange={e=>setPayForm(f=>({...f,bank_name:e.target.value}))} placeholder="Optional" style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
                 </div>
                 <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Due Date</label>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Due / Cheque Date</label>
                   <input type="date" value={payForm.due_date||""} onChange={e=>setPayForm(f=>({...f,due_date:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
                 </div>
                 <div style={{gridColumn:"1/-1"}}>
@@ -8227,6 +8232,99 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                 <button onClick={()=>{setShowPayment(false);setEditPayment(null);}} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
                 <button onClick={savePayment} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save Payment"}</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PDC Cheques Generator Modal */}
+      {showPDC&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:520,maxWidth:"100%",maxHeight:"92vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#1A0B3A,#2D1558)"}}>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>🏦 Generate Rent Cheques (PDC)</span>
+              <button onClick={()=>setShowPDC(false)} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{padding:"1.25rem 1.5rem"}}>
+              <div style={{background:"rgba(91,63,170,.06)",borderRadius:10,padding:"10px 14px",marginBottom:16,fontSize:12,color:"#5B3FAA"}}>
+                📋 Post-dated cheques (PDC) are the standard rent payment method in UAE. Generate all rent cheques at once based on annual rent and number of cheques.
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Annual Rent (AED) *</label>
+                  <input type="number" value={pdcForm.annual_rent} onChange={e=>setPdcForm(f=>({...f,annual_rent:e.target.value}))}
+                    placeholder={opp.budget?`Suggested: AED ${Number(opp.budget).toLocaleString()}`:"Enter annual rent"}
+                    style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                  {opp.budget&&!pdcForm.annual_rent&&<div style={{fontSize:11,color:"#9B7FD4",marginTop:4,cursor:"pointer"}} onClick={()=>setPdcForm(f=>({...f,annual_rent:String(opp.budget)}))}>→ Use budget: AED {Number(opp.budget).toLocaleString()}</div>}
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Number of Cheques *</label>
+                  <select value={pdcForm.num_cheques} onChange={e=>setPdcForm(f=>({...f,num_cheques:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}>
+                    {[["1","1 cheque — Full year upfront"],["2","2 cheques — Every 6 months"],["3","3 cheques — Every 4 months"],["4","4 cheques — Quarterly"],["6","6 cheques — Every 2 months"],["12","12 cheques — Monthly"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Lease Start Date *</label>
+                  <input type="date" value={pdcForm.start_date} onChange={e=>setPdcForm(f=>({...f,start_date:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Bank Name</label>
+                  <input value={pdcForm.bank_name} onChange={e=>setPdcForm(f=>({...f,bank_name:e.target.value}))} placeholder="e.g. Emirates NBD" style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
+                </div>
+              </div>
+              {/* Preview */}
+              {pdcForm.annual_rent&&pdcForm.start_date&&(()=>{
+                const rent=Number(pdcForm.annual_rent);
+                const n=Number(pdcForm.num_cheques);
+                const amt=Math.round(rent/n);
+                const start=new Date(pdcForm.start_date);
+                const monthsGap=12/n;
+                const cheques=Array.from({length:n},(_,i)=>{
+                  const d=new Date(start);
+                  d.setMonth(d.getMonth()+Math.round(i*monthsGap));
+                  return{num:i+1,amount:i===n-1?rent-(amt*(n-1)):amt,date:d.toISOString().split("T")[0]};
+                });
+                return(
+                  <div style={{marginBottom:16}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>📋 Preview — {n} cheque{n>1?"s":""} of AED {amt.toLocaleString()} each</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                      {cheques.map(c=>(
+                        <div key={c.num} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#F7F9FC",borderRadius:8,padding:"8px 12px"}}>
+                          <span style={{fontSize:12,color:"#4A5568"}}>Cheque {c.num}/{n}</span>
+                          <span style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>AED {c.amount.toLocaleString()}</span>
+                          <span style={{fontSize:12,color:"#718096"}}>📅 {new Date(c.date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{marginTop:16,display:"flex",gap:10,justifyContent:"flex-end"}}>
+                      <button onClick={()=>setShowPDC(false)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+                      <button disabled={saving} onClick={async()=>{
+                        setSaving(true);
+                        const rows=cheques.map(c=>({
+                          payment_type:"PDC Cheque",
+                          amount:c.amount,
+                          due_date:c.date,
+                          bank_name:pdcForm.bank_name||null,
+                          status:"Pending",
+                          notes:`Cheque ${c.num} of ${n}`,
+                          lease_opportunity_id:opp.id,
+                          opportunity_id:null,
+                          tenant_id:opp.tenant_id||null,
+                          company_id:currentUser.company_id||null,
+                          created_by:currentUser.id,
+                        }));
+                        const{data,error}=await supabase.from("lease_payments").insert(rows).select();
+                        if(!error){setPayments(p=>[...p,...data]);showToast(`✅ ${n} PDC cheques generated`,"success");setShowPDC(false);setPdcForm({num_cheques:"1",annual_rent:"",start_date:"",bank_name:"",notes:""});}
+                        else showToast(error.message,"error");
+                        setSaving(false);
+                      }} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Generate All Cheques →"}</button>
+                    </div>
+                  </div>
+                );
+              })()}
+              {(!pdcForm.annual_rent||!pdcForm.start_date)&&(
+                <div style={{textAlign:"center",padding:"1rem",color:"#A0AEC0",fontSize:13}}>Enter annual rent and start date to preview cheques</div>
+              )}
             </div>
           </div>
         </div>
