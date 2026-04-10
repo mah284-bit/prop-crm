@@ -7884,6 +7884,11 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
     if(!payForm.amount){showToast("Amount required","error");return;}
     setSaving(true);
     try{
+      // Check duplicate cheque number
+      if(payForm.cheque_number&&!editPayment){
+        const dup = payments.find(p=>p.cheque_number===payForm.cheque_number&&p.id!==editPayment?.id);
+        if(dup){showToast("Cheque number "+payForm.cheque_number+" already exists","error");setSaving(false);return;}
+      }
       const payload={...payForm,amount:Number(payForm.amount),opportunity_id:null,lease_opportunity_id:opp.id,
         tenant_id:opp.tenant_id||null,company_id:currentUser.company_id||null,created_by:currentUser.id};
       let data,error;
@@ -7899,6 +7904,111 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
       setShowPayment(false);setEditPayment(null);setPayForm({payment_type:"Security Deposit",amount:"",cheque_number:"",bank_name:"",due_date:"",status:"Pending",notes:""});
     }catch(e){showToast(e.message,"error");}
     setSaving(false);
+  };
+
+  const printReceipt = (p)=>{
+    const w = window.open("","_blank","width=800,height=600");
+    const companyName = localStorage.getItem("propccrm_company_name")||"PropCRM";
+    const html = `<!DOCTYPE html><html><head><title>Payment Receipt</title>
+    <style>
+      body{font-family:'Arial',sans-serif;margin:0;padding:40px;color:#0B1F3A;}
+      .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;padding-bottom:20px;border-bottom:2px solid #0B1F3A;}
+      .company{font-size:22px;font-weight:700;color:#0B1F3A;}
+      .receipt-title{font-size:28px;font-weight:700;color:#5B3FAA;text-align:right;}
+      .receipt-num{font-size:13px;color:#718096;text-align:right;margin-top:4px;}
+      .section{margin-bottom:20px;}
+      .section-title{font-size:11px;font-weight:700;color:#A0AEC0;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+      .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #E2E8F0;}
+      .label{color:#718096;font-size:13px;}
+      .value{font-weight:600;font-size:13px;color:#0B1F3A;}
+      .amount-box{background:#0B1F3A;color:#C9A84C;padding:20px;border-radius:12px;text-align:center;margin:24px 0;}
+      .amount-label{font-size:12px;opacity:.7;margin-bottom:4px;}
+      .amount-value{font-size:32px;font-weight:700;}
+      .status-badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;background:${p.status==="Cleared"||p.status==="Received"?"#E6F4EE":"#FFF9E6"};color:${p.status==="Cleared"||p.status==="Received"?"#1A7F5A":"#C9A84C"};}
+      .footer{margin-top:40px;padding-top:20px;border-top:1px solid #E2E8F0;text-align:center;font-size:11px;color:#A0AEC0;}
+      @media print{body{padding:20px;}}
+    </style></head><body>
+    <div class="header">
+      <div>
+        <div class="company">${companyName}</div>
+        <div style="font-size:12px;color:#718096;margin-top:4px;">Payment Receipt</div>
+      </div>
+      <div>
+        <div class="receipt-title">RECEIPT</div>
+        <div class="receipt-num">Date: ${new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})}</div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Tenant Details</div>
+      <div class="row"><span class="label">Tenant Name</span><span class="value">${tenant?.full_name||"—"}</span></div>
+      <div class="row"><span class="label">Phone</span><span class="value">${tenant?.phone||"—"}</span></div>
+      <div class="row"><span class="label">Unit</span><span class="value">${unit?.unit_ref||"—"} — ${unit?.sub_type||""}</span></div>
+      <div class="row"><span class="label">Property</span><span class="value">${proj?.name||"—"}</span></div>
+    </div>
+    <div class="amount-box">
+      <div class="amount-label">Amount ${p.status==="Cleared"||p.status==="Received"?"Received":"Due"}</div>
+      <div class="amount-value">AED ${Number(p.amount).toLocaleString()}</div>
+    </div>
+    <div class="section">
+      <div class="section-title">Payment Details</div>
+      <div class="row"><span class="label">Payment Type</span><span class="value">${p.payment_type}</span></div>
+      <div class="row"><span class="label">Status</span><span class="value"><span class="status-badge">${p.status}</span></span></div>
+      ${p.cheque_number?`<div class="row"><span class="label">Cheque Number</span><span class="value">${p.cheque_number}</span></div>`:""}
+      ${p.bank_name?`<div class="row"><span class="label">Bank</span><span class="value">${p.bank_name}</span></div>`:""}
+      ${p.due_date?`<div class="row"><span class="label">Cheque Date</span><span class="value">${new Date(p.due_date).toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})}</span></div>`:""}
+      ${p.notes?`<div class="row"><span class="label">Notes</span><span class="value">${p.notes}</span></div>`:""}
+    </div>
+    <div class="section">
+      <div class="section-title">Received By</div>
+      <div class="row"><span class="label">Agent</span><span class="value">${agent?.full_name||currentUser.full_name}</span></div>
+      <div class="row"><span class="label">Date Issued</span><span class="value">${new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})}</span></div>
+    </div>
+    <div class="footer">
+      <div>This is a computer-generated receipt and is valid without a signature.</div>
+      <div style="margin-top:4px;">${companyName} · Powered by PropCRM</div>
+    </div>
+    <script>window.onload=()=>window.print();</script>
+    </body></html>`;
+    w.document.write(html);
+    w.document.close();
+  };
+
+  const printAllPayments = ()=>{
+    const w = window.open("","_blank","width=800,height=600");
+    const companyName = localStorage.getItem("propccrm_company_name")||"PropCRM";
+    const totalPaidAmt = payments.filter(p=>["Cleared","Received"].includes(p.status)).reduce((s,p)=>s+(p.amount||0),0);
+    const totalDueAmt = payments.reduce((s,p)=>s+(p.amount||0),0);
+    const rows = payments.map((p,i)=>`
+      <tr style="background:${i%2===0?"#F7F9FC":"#fff"}">
+        <td style="padding:8px 12px;font-size:12px;">${p.payment_type}</td>
+        <td style="padding:8px 12px;font-size:12px;">${p.cheque_number||"—"}</td>
+        <td style="padding:8px 12px;font-size:12px;">${p.bank_name||"—"}</td>
+        <td style="padding:8px 12px;font-size:12px;">${p.due_date?new Date(p.due_date).toLocaleDateString("en-AE"):"—"}</td>
+        <td style="padding:8px 12px;font-size:12px;font-weight:700;text-align:right;">AED ${Number(p.amount).toLocaleString()}</td>
+        <td style="padding:8px 12px;font-size:12px;"><span style="padding:2px 10px;border-radius:10px;font-weight:700;background:${["Cleared","Received"].includes(p.status)?"#E6F4EE":"#FFF9E6"};color:${["Cleared","Received"].includes(p.status)?"#1A7F5A":"#C9A84C"};">${p.status}</span></td>
+      </tr>`).join("");
+    const html = `<!DOCTYPE html><html><head><title>Payment Schedule</title>
+    <style>body{font-family:Arial,sans-serif;margin:0;padding:40px;color:#0B1F3A;}table{width:100%;border-collapse:collapse;}th{background:#0B1F3A;color:#fff;padding:10px 12px;font-size:11px;text-align:left;text-transform:uppercase;letter-spacing:.5px;}@media print{body{padding:20px;}}</style>
+    </head><body>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #0B1F3A;">
+      <div><div style="font-size:20px;font-weight:700;">${companyName}</div><div style="font-size:13px;color:#718096;margin-top:2px;">Payment Schedule</div></div>
+      <div style="text-align:right;"><div style="font-size:11px;color:#718096;">Date: ${new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})}</div></div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:13px;"><strong>Tenant:</strong> ${tenant?.full_name||"—"} &nbsp;|&nbsp; <strong>Unit:</strong> ${unit?.unit_ref||"—"} &nbsp;|&nbsp; <strong>Annual Rent:</strong> AED ${Number(opp.budget||0).toLocaleString()}</div>
+    </div>
+    <table><thead><tr><th>Type</th><th>Cheque #</th><th>Bank</th><th>Due Date</th><th style="text-align:right;">Amount</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    <div style="margin-top:20px;display:flex;gap:30px;justify-content:flex-end;">
+      <div style="text-align:right;"><div style="font-size:11px;color:#718096;">TOTAL DUE</div><div style="font-size:18px;font-weight:700;">AED ${totalDueAmt.toLocaleString()}</div></div>
+      <div style="text-align:right;"><div style="font-size:11px;color:#718096;">COLLECTED</div><div style="font-size:18px;font-weight:700;color:#1A7F5A;">AED ${totalPaidAmt.toLocaleString()}</div></div>
+      <div style="text-align:right;"><div style="font-size:11px;color:#718096;">OUTSTANDING</div><div style="font-size:18px;font-weight:700;color:#E53E3E;">AED ${(totalDueAmt-totalPaidAmt).toLocaleString()}</div></div>
+    </div>
+    <div style="margin-top:30px;padding-top:16px;border-top:1px solid #E2E8F0;text-align:center;font-size:11px;color:#A0AEC0;">${companyName} · Powered by PropCRM</div>
+    <script>window.onload=()=>window.print();</script>
+    </body></html>`;
+    w.document.write(html);
+    w.document.close();
   };
 
   const totalPaid = payments.filter(p=>["Cleared","Received"].includes(p.status)).reduce((s,p)=>s+(p.amount||0),0);
@@ -8034,8 +8144,9 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
         {/* PAYMENTS TAB */}
         {activeTab==="payments"&&(
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            <div style={{display:"flex",gap:8,alignSelf:"flex-end"}}>
-              {canEdit&&<button onClick={()=>setShowPDC(true)} style={{padding:"7px 16px",borderRadius:8,border:"1.5px solid #5B3FAA",background:"rgba(91,63,170,.08)",color:"#5B3FAA",fontSize:12,fontWeight:600,cursor:"pointer"}}>🏦 Generate PDC Cheques</button>}
+            <div style={{display:"flex",gap:8,alignSelf:"flex-end",flexWrap:"wrap"}}>
+              {payments.length>0&&<button onClick={printAllPayments} style={{padding:"7px 16px",borderRadius:8,border:"1.5px solid #718096",background:"transparent",color:"#718096",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print Schedule</button>}
+              {canEdit&&<button onClick={()=>setShowPDC(true)} style={{padding:"7px 16px",borderRadius:8,border:"1.5px solid #5B3FAA",background:"rgba(91,63,170,.08)",color:"#5B3FAA",fontSize:12,fontWeight:600,cursor:"pointer"}}>🏦 Generate PDC</button>}
               {canEdit&&<button onClick={()=>{setEditPayment(null);setShowPayment(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add Payment</button>}
             </div>
             {/* Summary */}
@@ -8067,12 +8178,11 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                   </div>
                   {p.notes&&<div style={{fontSize:11,color:"#A0AEC0",marginTop:4}}>{p.notes}</div>}
                 </div>
-                {canEdit&&(
-                  <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                    <button onClick={()=>{setEditPayment(p);setPayForm({...p});setShowPayment(true);}} style={{padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,cursor:"pointer"}}>Edit</button>
-                    {p.status==="Pending"&&<button onClick={async()=>{await supabase.from("lease_payments").update({status:"Cleared"}).eq("id",p.id);setPayments(px=>px.map(x=>x.id===p.id?{...x,status:"Cleared"}:x));showToast("Marked cleared","success");}} style={{padding:"4px 10px",borderRadius:6,border:"1.5px solid #A8D5BE",background:"#E6F4EE",color:"#1A7F5A",fontSize:11,cursor:"pointer"}}>Clear</button>}
+                <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                    <button onClick={()=>printReceipt(p)} style={{padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,cursor:"pointer"}}>🖨 Receipt</button>
+                    {canEdit&&<button onClick={()=>{setEditPayment(p);setPayForm({...p});setShowPayment(true);}} style={{padding:"4px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,cursor:"pointer"}}>Edit</button>}
+                    {canEdit&&p.status==="Pending"&&<button onClick={async()=>{await supabase.from("lease_payments").update({status:"Cleared"}).eq("id",p.id);setPayments(px=>px.map(x=>x.id===p.id?{...x,status:"Cleared"}:x));showToast("Marked cleared","success");}} style={{padding:"4px 10px",borderRadius:6,border:"1.5px solid #A8D5BE",background:"#E6F4EE",color:"#1A7F5A",fontSize:11,cursor:"pointer"}}>✅ Clear</button>}
                   </div>
-                )}
               </div>
             ))}
           </div>
@@ -8320,6 +8430,17 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                           company_id:currentUser.company_id||null,
                           created_by:currentUser.id,
                         }));
+                        // Check for duplicate cheque numbers
+                        const enteredNums = Object.values(pdcChequeNums).filter(Boolean);
+                        if(enteredNums.length!==new Set(enteredNums).size){
+                          showToast("Duplicate cheque numbers found — please check","error");
+                          setSaving(false);return;
+                        }
+                        // Check against existing payments
+                        if(enteredNums.length>0){
+                          const existing = payments.filter(p=>p.cheque_number&&enteredNums.includes(p.cheque_number));
+                          if(existing.length>0){showToast("Cheque number "+existing[0].cheque_number+" already exists","error");setSaving(false);return;}
+                        }
                         const{data,error}=await supabase.from("lease_payments").insert(rows).select();
                         if(!error){setPayments(p=>[...p,...data]);showToast(`✅ ${n} PDC cheques generated`,"success");setShowPDC(false);setPdcForm({num_cheques:"1",annual_rent:"",start_date:"",bank_name:"",notes:"",start_cheque_num:""});setPdcChequeNums({});}
                         else showToast(error.message,"error");
