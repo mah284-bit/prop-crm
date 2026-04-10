@@ -7908,7 +7908,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
 
   const printReceipt = (p)=>{
     const w = window.open("","_blank","width=800,height=600");
-    const companyName = localStorage.getItem("propccrm_company_name")||"PropCRM";
+    const companyName = (()=>{try{const c=JSON.parse(localStorage.getItem("propccrm_company_cache")||"null");return c?.name||"PropCRM";}catch{return "PropCRM";}})();
     const html = `<!DOCTYPE html><html><head><title>Payment Receipt</title>
     <style>
       body{font-family:'Arial',sans-serif;margin:0;padding:40px;color:#0B1F3A;}
@@ -7975,7 +7975,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
 
   const printAgencyReceipt = ()=>{
     const w = window.open("","_blank","width=800,height=600");
-    const companyName = localStorage.getItem("propccrm_company_name")||"PropCRM";
+    const companyName = (()=>{try{const c=JSON.parse(localStorage.getItem("propccrm_company_cache")||"null");return c?.name||"PropCRM";}catch{return "PropCRM";}})();
     const agencyFees = payments.filter(p=>p.payment_type==="Agency Fee");
     const totalFee = agencyFees.reduce((s,p)=>s+(p.amount||0),0);
     const html = `<!DOCTYPE html><html><head><title>Agency Fee Receipt</title>
@@ -8039,7 +8039,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
 
   const printAllPayments = ()=>{
     const w = window.open("","_blank","width=800,height=600");
-    const companyName = localStorage.getItem("propccrm_company_name")||"PropCRM";
+    const companyName = (()=>{try{const c=JSON.parse(localStorage.getItem("propccrm_company_cache")||"null");return c?.name||"PropCRM";}catch{return "PropCRM";}})();
     const totalPaidAmt = payments.filter(p=>["Cleared","Received"].includes(p.status)).reduce((s,p)=>s+(p.amount||0),0);
     const totalDueAmt = payments.reduce((s,p)=>s+(p.amount||0),0);
     const rows = payments.map((p,i)=>`
@@ -8077,7 +8077,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
 
   const printAgreement = ()=>{
     const w = window.open("","_blank","width=900,height=700");
-    const companyName = localStorage.getItem("propccrm_company_name")||"PropCRM";
+    const companyName = (()=>{try{const c=JSON.parse(localStorage.getItem("propccrm_company_cache")||"null");return c?.name||"PropCRM";}catch{return "PropCRM";}})();
     const today = new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"});
     const endDate = contract?.start_date ? new Date(new Date(contract.start_date).setFullYear(new Date(contract.start_date).getFullYear()+1)).toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"}) : "—";
     const html = `<!DOCTYPE html><html><head><title>Rental Agreement</title>
