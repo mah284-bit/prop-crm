@@ -7823,8 +7823,8 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
 
   useEffect(()=>{
     supabase.from("activities").select("*").eq("lease_opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
-    supabase.from("lease_payments").select("*").eq("opportunity_id",opp.id).order("created_at").then(({data})=>setPayments(data||[]));
-    supabase.from("lease_contracts").select("*").eq("opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
+    supabase.from("lease_payments").select("*").eq("lease_opportunity_id",opp.id).order("created_at").then(({data})=>setPayments(data||[]));
+    supabase.from("lease_contracts").select("*").eq("lease_opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
   },[opp.id]);
 
   const moveStage = async(toStage)=>{
@@ -7859,7 +7859,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
     if(!payForm.amount){showToast("Amount required","error");return;}
     setSaving(true);
     try{
-      const payload={...payForm,amount:Number(payForm.amount),opportunity_id:opp.id,
+      const payload={...payForm,amount:Number(payForm.amount),opportunity_id:null,lease_opportunity_id:opp.id,
         tenant_id:opp.tenant_id||null,company_id:currentUser.company_id||null,created_by:currentUser.id};
       let data,error;
       if(editPayment){
@@ -8061,7 +8061,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                   <button onClick={async()=>{
                     const terms = prompt("Lease terms / notes (optional):");
                     const{data,error}=await supabase.from("lease_contracts").insert({
-                      opportunity_id:opp.id, tenant_id:opp.tenant_id||null,
+                      opportunity_id:null, lease_opportunity_id:opp.id, tenant_id:opp.tenant_id||null,
                       unit_id:opp.unit_id||null, annual_rent:opp.budget||null,
                       start_date:opp.move_in_date||null, terms:terms||"",
                       status:"Draft", company_id:currentUser.company_id||null,
