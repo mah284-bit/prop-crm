@@ -1161,6 +1161,10 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [editPayment,setEditPayment]= useState(null);
   const canEdit  = can(currentUser.role,"write");
   const isWon    = opp.stage==="Closed Won";
+  const isDeveloper = (()=>{try{const c=JSON.parse(localStorage.getItem("propccrm_company_cache")||"null");return c?.company_category==="Developer";}catch{return false;}})();
+  const isOffPlan = opp.property_category==="Off-Plan" || (!opp.property_category && sp?.booking_pct>0);
+  const isResale = opp.property_category==="Ready / Resale";
+  const isCommercial = opp.property_category==="Commercial";
   const isLocked = ["Proposal Sent","Negotiation","Closed Won","Closed Lost"].includes(opp.stage);
 
   const unit     = units.find(u=>u.id===opp.unit_id);
@@ -1311,7 +1315,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
         {[
           {id:"details",  label:"Details",   locked:false},
           {id:"activities",label:`Tasks${activities.length>0?` (${activities.length})`:""}`,locked:false},
-          {id:"payments", label:`Payments${payments.length>0?` (${payments.length})`:""}`, locked:!isWon, lockMsg:"Unlocks at Closed Won"},
+          {id:"payments", label:isDeveloper?`Payments${payments.length>0?` (${payments.length})`:""}`:`Commission${payments.length>0?` (${payments.length})`:""}`  , locked:!isWon, lockMsg:"Unlocks at Closed Won"},
           {id:"contract", label:`Contract${contract?" ✓":""}`,  locked:!isWon, lockMsg:"Unlocks at Closed Won"},
         ].map(({id,label,locked,lockMsg})=>(
           <button key={id} onClick={()=>{if(locked){showToast(`${lockMsg}`,"error");return;}setActiveTab(id);}}
@@ -1391,6 +1395,106 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
               </div>
             </div>
 
+            {/* Payment Plan Card */}
+            {unit&&sp&&(
+              <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>
+                    {isOffPlan?"🏗️ Off-Plan Payment Plan":isResale?"🔑 Ready / Resale":"🏢 Commercial"} 
+                  </div>
+                  <span style={{fontSize:11,color:"#718096",background:"#F0F2F5",padding:"3px 10px",borderRadius:10}}>
+                    {opp.property_category||"Off-Plan"}
+                  </span>
+                </div>
+                {/* Off-Plan breakdown */}
+                {(isOffPlan||(!opp.property_category))&&(
+                  <>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:8,marginBottom:12}}>
+                      {[
+                        ["Asking Price",sp.asking_price?`AED ${Number(sp.asking_price).toLocaleString()}`:"—"],
+                        ["Booking",sp.booking_pct?sp.booking_pct+"%":"10%"],
+                        ["During Construction",sp.during_construction_pct?sp.during_construction_pct+"%":"—"],
+                        ["On Handover",sp.on_handover_pct?sp.on_handover_pct+"%":"—"],
+                        ["Post Handover",sp.post_handover_pct>0?sp.post_handover_pct+"%":"—"],
+                        ["DLD Fee",sp.dld_fee_pct?sp.dld_fee_pct+"%":"4%"],
+                        ["Agency Fee",sp.agency_fee_pct?sp.agency_fee_pct+"%":"2%"],
+                        ["OQOOD Fee","AED 4,020"],
+                      ].filter(([,v])=>v&&v!=="—").map(([l,v])=>(
+                        <div key={l} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 10px"}}>
+                          <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
+                          <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {sp.asking_price&&(
+                      <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:10,padding:"12px 14px"}}>
+                        <div style={{fontSize:10,color:"rgba(255,255,255,.5)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Client Upfront Costs</div>
+                        <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+                          {[
+                            ["Booking Deposit",`AED ${Math.round(sp.asking_price*(sp.booking_pct||10)/100).toLocaleString()}`],
+                            ["DLD Fee (4%)",`AED ${Math.round(sp.asking_price*(sp.dld_fee_pct||4)/100).toLocaleString()}`],
+                            ["Agency Fee",`AED ${Math.round(sp.asking_price*(sp.agency_fee_pct||2)/100).toLocaleString()}`],
+                            ["OQOOD","AED 4,020"],
+                            ["Total Upfront",`AED ${(Math.round(sp.asking_price*((sp.booking_pct||10)+(sp.dld_fee_pct||4)+(sp.agency_fee_pct||2))/100)+4020).toLocaleString()}`],
+                          ].map(([l,v])=>(
+                            <div key={l}>
+                              <div style={{fontSize:9,color:"rgba(255,255,255,.4)",textTransform:"uppercase",letterSpacing:".5px"}}>{l}</div>
+                              <div style={{fontSize:13,fontWeight:700,color:"#C9A84C"}}>{v}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+                {/* Ready/Resale breakdown */}
+                {isResale&&(
+                  <>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:8,marginBottom:12}}>
+                      {[
+                        ["Sale Price",sp.asking_price?`AED ${Number(sp.asking_price).toLocaleString()}`:"—"],
+                        ["DLD Fee","4%"],
+                        ["Agency Fee",sp.agency_fee_pct?sp.agency_fee_pct+"%":"2%"],
+                        ["NOC Fee","AED 500–5,000"],
+                        ["Trustee Fee","AED 4,200"],
+                        ["Mortgage Reg.","0.25% (if financed)"],
+                      ].filter(([,v])=>v&&v!=="—").map(([l,v])=>(
+                        <div key={l} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 10px"}}>
+                          <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
+                          <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {sp.asking_price&&(
+                      <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:10,padding:"12px 14px"}}>
+                        <div style={{fontSize:10,color:"rgba(255,255,255,.5)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Client Transfer Costs</div>
+                        <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
+                          {[
+                            ["Sale Price",`AED ${Number(sp.asking_price).toLocaleString()}`],
+                            ["DLD Fee (4%)",`AED ${Math.round(sp.asking_price*0.04).toLocaleString()}`],
+                            ["Agency Fee (2%)",`AED ${Math.round(sp.asking_price*(sp.agency_fee_pct||2)/100).toLocaleString()}`],
+                            ["Trustee + NOC","≈ AED 6,000"],
+                            ["Total Cost",`AED ${(Math.round(sp.asking_price*1.06)+6000).toLocaleString()}`],
+                          ].map(([l,v])=>(
+                            <div key={l}>
+                              <div style={{fontSize:9,color:"rgba(255,255,255,.4)",textTransform:"uppercase",letterSpacing:".5px"}}>{l}</div>
+                              <div style={{fontSize:13,fontWeight:700,color:"#C9A84C"}}>{v}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+                {/* Commercial */}
+                {isCommercial&&(
+                  <div style={{fontSize:12,color:"#718096",padding:"8px 0"}}>
+                    Commercial transactions follow custom terms. Add notes in the opportunity and track payments in the Payments tab once closed.
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Notes */}
             {opp.notes&&(
               <div style={{background:"#F7F9FC",borderRadius:12,padding:"14px 16px",fontSize:12,color:"#4A5568",lineHeight:1.7}}>
@@ -1417,7 +1521,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
               <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
                 <div style={{fontSize:40,marginBottom:10}}>🔒</div>
                 <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>Locked until Closed Won</div>
-                <div style={{fontSize:12}}>Mark this opportunity as Won to enable payment tracking</div>
+                <div style={{fontSize:12}}>{isDeveloper?"Track developer payment collection here":"Track your commission once deal is closed"}</div>
               </div>
             ):(
               <>
@@ -1676,7 +1780,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const [projects, setProjects] = useState([]);
   const [salePricing,setSalePricing]=useState([]);
   const [showAddOpp, setShowAddOpp]=useState(false);
-  const [oppForm,  setOppForm]  = useState({title:"",unit_id:"",budget:"",assigned_to:"",notes:""});
+  const [oppForm,  setOppForm]  = useState({title:"",unit_id:"",budget:"",assigned_to:"",notes:"",property_category:"Off-Plan"});
   const canEdit = can(currentUser.role,"write");
   const canDel  = can(currentUser.role,"delete_leads");
 
@@ -1750,6 +1854,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         budget:oppForm.budget?Number(oppForm.budget):null,
         assigned_to:oppForm.assigned_to||currentUser.id,
         notes:oppForm.notes||null,
+        property_category:oppForm.property_category||"Off-Plan",
         stage:"New",status:"Active",
         created_by:currentUser.id,
       };
@@ -1758,7 +1863,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       setOpps(p=>{const n=[data,...p];setGlobalOpps(n);return n;});
       showToast("Opportunity created","success");
       setShowAddOpp(false);
-      setOppForm({title:"",unit_id:"",budget:"",assigned_to:"",notes:""});
+      setOppForm({title:"",unit_id:"",budget:"",assigned_to:"",notes:"",property_category:"Off-Plan"});
       // Open the opportunity immediately
       setSelOpp(data);
       setView("opportunity");
@@ -1892,7 +1997,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         </div>
         <div style={{display:"flex",gap:6}}>
           {canEdit&&<button onClick={()=>{setForm({...blank,...selLead});setEditLead(selLead);setShowAdd(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
-          {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:""});setShowAddOpp(true);}} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Opportunity</button>}
+          {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Opportunity</button>}
         </div>
       </div>
 
@@ -1916,7 +2021,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
             <div style={{fontSize:36,marginBottom:10}}>🎯</div>
             <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>No opportunities yet</div>
             <div style={{fontSize:12,marginBottom:16}}>Add an opportunity for each property this contact is interested in</div>
-            {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:""});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Opportunity</button>}
+            {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Opportunity</button>}
           </div>
         )}
         {leadOpps.map(opp=>{
@@ -1970,6 +2075,17 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Opportunity Title</label>
                   <input value={oppForm.title} onChange={e=>setOppForm(f=>({...f,title:e.target.value}))} placeholder="e.g. 2BR Palm Jumeirah (auto-filled if unit selected)"/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Property Category *</label>
+                  <div style={{display:"flex",gap:8}}>
+                    {[["Off-Plan","🏗️"],["Ready / Resale","🔑"],["Commercial","🏢"]].map(([cat,icon])=>(
+                      <button key={cat} onClick={()=>setOppForm(f=>({...f,property_category:cat}))}
+                        style={{flex:1,padding:"8px",borderRadius:8,border:`1.5px solid ${oppForm.property_category===cat?"#0B1F3A":"#E2E8F0"}`,background:oppForm.property_category===cat?"#0B1F3A":"#fff",color:oppForm.property_category===cat?"#fff":"#4A5568",fontSize:12,cursor:"pointer",fontWeight:oppForm.property_category===cat?600:400}}>
+                        {icon} {cat}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Linked Unit *</label>
@@ -8788,6 +8904,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
         budget:oppForm.budget?Number(oppForm.budget):null,
         assigned_to:oppForm.assigned_to||currentUser.id,
         notes:oppForm.notes||null,
+        property_category:oppForm.property_category||"Off-Plan",
         stage:"New Enquiry",status:"Active",
         created_by:currentUser.id,
       };
@@ -8796,7 +8913,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
       setLOpps(p=>[data,...p]);
       showToast("Lease enquiry created","success");
       setShowAddOpp(false);
-      setOppForm({title:"",unit_id:"",budget:"",assigned_to:"",notes:""});
+      setOppForm({title:"",unit_id:"",budget:"",assigned_to:"",notes:"",property_category:"Off-Plan"});
       setSelOpp(data);setView("opportunity");
     }catch(e){showToast(e.message,"error");}
     setSaving(false);
@@ -9044,7 +9161,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
         </div>
         <div style={{display:"flex",gap:6}}>
           {canEdit&&<button onClick={()=>{setTForm({...tBlank,...selTenant});setEditTenant(selTenant);setShowAddTenant(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
-          {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:""});setShowAddOpp(true);}} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Enquiry</button>}
+          {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Enquiry</button>}
         </div>
       </div>
 
@@ -9066,7 +9183,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
             <div style={{fontSize:36,marginBottom:10}}>🔑</div>
             <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>No enquiries yet</div>
             <div style={{fontSize:12,marginBottom:16}}>Add an enquiry for each unit this tenant is interested in</div>
-            {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:""});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Enquiry</button>}
+            {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Enquiry</button>}
           </div>
         )}
         {tenantOpps.map(opp=>{
@@ -9343,7 +9460,7 @@ export default function App(){
           // Cache the active company for instant display on next load
           const cid = localStorage.getItem("propccrm_company_id") || user.company_id;
           const activeCo = data.find(c=>c.id===cid) || data[0];
-          if(activeCo) localStorage.setItem("propccrm_company_cache", JSON.stringify({id:activeCo.id,name:activeCo.name,logo_url:activeCo.logo_url||"",business_type:activeCo.business_type||"",ai_assistant_name:activeCo.ai_assistant_name||""}));
+          if(activeCo) localStorage.setItem("propccrm_company_cache", JSON.stringify({id:activeCo.id,name:activeCo.name,logo_url:activeCo.logo_url||"",business_type:activeCo.business_type||"",company_category:activeCo.company_category||"Brokerage",ai_assistant_name:activeCo.ai_assistant_name||""}));
           setCompanies(data);
           const saved=localStorage.getItem("propccrm_company_id");
           const co=saved?data.find(c=>c.id===saved):data[0];
