@@ -7819,7 +7819,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
   const sm    = LEASE_STAGE_META[opp.stage]||LEASE_STAGE_META["New Enquiry"];
 
   useEffect(()=>{
-    supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
+    supabase.from("activities").select("*").eq("lease_opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
     supabase.from("lease_payments").select("*").eq("opportunity_id",opp.id).order("created_at").then(({data})=>setPayments(data||[]));
     supabase.from("lease_contracts").select("*").eq("opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
   },[opp.id]);
@@ -7841,7 +7841,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
       logForm.duration_mins?("\n⏱ Duration: "+logForm.duration_mins+" mins"):"",
     ].filter(Boolean).join("");
     const{data,error}=await supabase.from("activities").insert({
-      opportunity_id:opp.id, lead_id:null,
+      opportunity_id:null, lease_opportunity_id:opp.id, lead_id:null,
       type:logForm.type, note:noteText,
       scheduled_at:logForm.scheduled_at||null,
       status:isScheduled?"upcoming":"completed",
