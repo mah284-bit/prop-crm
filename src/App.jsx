@@ -7813,7 +7813,8 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
   const [logForm,    setLogForm]    = useState({type:"Call",note:"",scheduled_at:"",next_steps:"",duration_mins:""});
   const [payForm,    setPayForm]    = useState({payment_type:"Security Deposit",amount:"",cheque_number:"",bank_name:"",due_date:"",status:"Pending",notes:""});
   const [showPDC,    setShowPDC]    = useState(false);
-  const [pdcForm,    setPdcForm]    = useState({num_cheques:"1",annual_rent:"",start_date:"",bank_name:"",notes:""});
+  const [pdcForm,    setPdcForm]    = useState({num_cheques:"1",annual_rent:"",start_date:"",bank_name:"",notes:"",start_cheque_num:""});
+  const [pdcChequeNums, setPdcChequeNums] = useState({});
   const canEdit = can(currentUser.role,"write");
   const isSigned = opp.stage==="Lease Signed";
   const isReserved = ["Reserved","Lease Signed"].includes(opp.stage);
@@ -8289,10 +8290,15 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                     <div style={{fontSize:11,fontWeight:700,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>📋 Preview — {n} cheque{n>1?"s":""} of AED {amt.toLocaleString()} each</div>
                     <div style={{display:"flex",flexDirection:"column",gap:6}}>
                       {cheques.map(c=>(
-                        <div key={c.num} style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"#F7F9FC",borderRadius:8,padding:"8px 12px"}}>
-                          <span style={{fontSize:12,color:"#4A5568"}}>Cheque {c.num}/{n}</span>
-                          <span style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>AED {c.amount.toLocaleString()}</span>
-                          <span style={{fontSize:12,color:"#718096"}}>📅 {new Date(c.date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}</span>
+                        <div key={c.num} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 12px",marginBottom:4}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                            <span style={{fontSize:12,fontWeight:600,color:"#4A5568"}}>Cheque {c.num}/{n}</span>
+                            <span style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>AED {c.amount.toLocaleString()}</span>
+                            <span style={{fontSize:12,color:"#718096"}}>📅 {new Date(c.date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}</span>
+                          </div>
+                          <input value={pdcChequeNums[c.num]||""} onChange={e=>setPdcChequeNums(p=>({...p,[c.num]:e.target.value}))}
+                            placeholder={"Cheque number (optional)"}
+                            style={{width:"100%",padding:"6px 10px",border:"1.5px solid #E2E8F0",borderRadius:6,fontSize:12,outline:"none",boxSizing:"border-box",background:"#fff"}}/>
                         </div>
                       ))}
                     </div>
@@ -8304,6 +8310,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                           payment_type:"PDC Cheque",
                           amount:c.amount,
                           due_date:c.date,
+                          cheque_number:pdcChequeNums[c.num]||null,
                           bank_name:pdcForm.bank_name||null,
                           status:"Pending",
                           notes:`Cheque ${c.num} of ${n}`,
@@ -8314,7 +8321,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                           created_by:currentUser.id,
                         }));
                         const{data,error}=await supabase.from("lease_payments").insert(rows).select();
-                        if(!error){setPayments(p=>[...p,...data]);showToast(`✅ ${n} PDC cheques generated`,"success");setShowPDC(false);setPdcForm({num_cheques:"1",annual_rent:"",start_date:"",bank_name:"",notes:""});}
+                        if(!error){setPayments(p=>[...p,...data]);showToast(`✅ ${n} PDC cheques generated`,"success");setShowPDC(false);setPdcForm({num_cheques:"1",annual_rent:"",start_date:"",bank_name:"",notes:"",start_cheque_num:""});setPdcChequeNums({});}
                         else showToast(error.message,"error");
                         setSaving(false);
                       }} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Generate All Cheques →"}</button>
