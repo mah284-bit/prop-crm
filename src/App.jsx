@@ -7973,6 +7973,70 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
     w.document.close();
   };
 
+  const printAgencyReceipt = ()=>{
+    const w = window.open("","_blank","width=800,height=600");
+    const companyName = localStorage.getItem("propccrm_company_name")||"PropCRM";
+    const agencyFees = payments.filter(p=>p.payment_type==="Agency Fee");
+    const totalFee = agencyFees.reduce((s,p)=>s+(p.amount||0),0);
+    const html = `<!DOCTYPE html><html><head><title>Agency Fee Receipt</title>
+    <style>
+      body{font-family:Arial,sans-serif;margin:0;padding:40px;color:#0B1F3A;}
+      .header{display:flex;justify-content:space-between;margin-bottom:30px;padding-bottom:20px;border-bottom:3px solid #C9A84C;}
+      .company{font-size:22px;font-weight:700;}.receipt-title{font-size:24px;font-weight:700;color:#C9A84C;text-align:right;}
+      .row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #E2E8F0;}
+      .label{color:#718096;font-size:13px;}.value{font-weight:600;font-size:13px;}
+      .total-box{background:#0B1F3A;color:#C9A84C;padding:20px;border-radius:12px;text-align:center;margin:24px 0;}
+      .watermark{text-align:center;margin-top:40px;padding-top:20px;border-top:1px solid #E2E8F0;font-size:11px;color:#A0AEC0;}
+      @media print{body{padding:20px;}}
+    </style></head><body>
+    <div class="header">
+      <div>
+        <div class="company">${companyName}</div>
+        <div style="font-size:12px;color:#718096;margin-top:2px;">Real Estate Agency</div>
+        <div style="font-size:11px;color:#A0AEC0;margin-top:2px;">RERA Registered</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="receipt-title">AGENCY FEE RECEIPT</div>
+        <div style="font-size:12px;color:#718096;margin-top:4px;">Date: ${new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})}</div>
+      </div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;color:#A0AEC0;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Tenant Details</div>
+      <div class="row"><span class="label">Tenant Name</span><span class="value">${tenant?.full_name||"—"}</span></div>
+      <div class="row"><span class="label">Phone</span><span class="value">${tenant?.phone||"—"}</span></div>
+      <div class="row"><span class="label">Unit</span><span class="value">${unit?.unit_ref||"—"} — ${unit?.sub_type||""}</span></div>
+      <div class="row"><span class="label">Annual Rent</span><span class="value">AED ${Number(opp.budget||0).toLocaleString()}</span></div>
+      <div class="row"><span class="label">Lease Period</span><span class="value">1 Year</span></div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;color:#A0AEC0;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Agency Services</div>
+      <div class="row"><span class="label">Property Search & Viewing</span><span class="value">✓ Included</span></div>
+      <div class="row"><span class="label">Lease Negotiation</span><span class="value">✓ Included</span></div>
+      <div class="row"><span class="label">Contract Preparation</span><span class="value">✓ Included</span></div>
+      <div class="row"><span class="label">Tenancy Registration</span><span class="value">✓ Included</span></div>
+    </div>
+    <div class="total-box">
+      <div style="font-size:12px;opacity:.7;margin-bottom:4px;">Agency Fee Received</div>
+      <div style="font-size:36px;font-weight:700;">AED ${totalFee>0?totalFee.toLocaleString():Number(opp.budget||0)*0.05|0}</div>
+      <div style="font-size:11px;opacity:.6;margin-top:4px;">${totalFee===0?"(Estimated 5% of annual rent)":""}</div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;color:#A0AEC0;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Received By</div>
+      <div class="row"><span class="label">Agent</span><span class="value">${agent?.full_name||currentUser.full_name}</span></div>
+      <div class="row"><span class="label">Date</span><span class="value">${new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})}</span></div>
+    </div>
+    <div style="background:#FFF9E6;border:1px solid #C9A84C;border-radius:8px;padding:12px 16px;font-size:12px;color:#8A6200;margin-bottom:20px;">
+      ⚠️ This receipt is issued by ${companyName} for agency services only. This amount is separate from rent payments made to the landlord.
+    </div>
+    <div class="watermark">
+      <div>This is a computer-generated receipt · ${companyName} · Powered by PropCRM</div>
+    </div>
+    <script>window.onload=()=>window.print();</script>
+    </body></html>`;
+    w.document.write(html);
+    w.document.close();
+  };
+
   const printAllPayments = ()=>{
     const w = window.open("","_blank","width=800,height=600");
     const companyName = localStorage.getItem("propccrm_company_name")||"PropCRM";
@@ -8005,6 +8069,124 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
       <div style="text-align:right;"><div style="font-size:11px;color:#718096;">OUTSTANDING</div><div style="font-size:18px;font-weight:700;color:#E53E3E;">AED ${(totalDueAmt-totalPaidAmt).toLocaleString()}</div></div>
     </div>
     <div style="margin-top:30px;padding-top:16px;border-top:1px solid #E2E8F0;text-align:center;font-size:11px;color:#A0AEC0;">${companyName} · Powered by PropCRM</div>
+    <script>window.onload=()=>window.print();</script>
+    </body></html>`;
+    w.document.write(html);
+    w.document.close();
+  };
+
+  const printAgreement = ()=>{
+    const w = window.open("","_blank","width=900,height=700");
+    const companyName = localStorage.getItem("propccrm_company_name")||"PropCRM";
+    const today = new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"});
+    const endDate = contract?.start_date ? new Date(new Date(contract.start_date).setFullYear(new Date(contract.start_date).getFullYear()+1)).toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"}) : "—";
+    const html = `<!DOCTYPE html><html><head><title>Rental Agreement</title>
+    <style>
+      body{font-family:'Georgia',serif;margin:0;padding:50px;color:#0B1F3A;line-height:1.8;}
+      .header{text-align:center;margin-bottom:40px;padding-bottom:20px;border-bottom:3px double #0B1F3A;}
+      .company-name{font-size:24px;font-weight:700;color:#0B1F3A;letter-spacing:1px;}
+      .doc-title{font-size:20px;font-weight:700;margin:10px 0;color:#5B3FAA;}
+      .doc-ref{font-size:12px;color:#718096;}
+      .section{margin:24px 0;}
+      .section-title{font-size:14px;font-weight:700;color:#0B1F3A;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #E2E8F0;padding-bottom:6px;margin-bottom:12px;}
+      .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+      .field{margin-bottom:12px;}
+      .field-label{font-size:11px;color:#718096;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;}
+      .field-value{font-size:14px;font-weight:600;color:#0B1F3A;border-bottom:1px solid #E2E8F0;padding-bottom:4px;}
+      .clause{margin-bottom:16px;font-size:13px;text-align:justify;}
+      .clause-num{font-weight:700;color:#5B3FAA;}
+      .signature-section{margin-top:60px;display:grid;grid-template-columns:1fr 1fr;gap:40px;}
+      .sig-box{border-top:1px solid #0B1F3A;padding-top:10px;}
+      .sig-label{font-size:11px;color:#718096;text-transform:uppercase;letter-spacing:.5px;}
+      .sig-name{font-size:13px;font-weight:700;margin-top:4px;}
+      .footer{margin-top:40px;padding-top:16px;border-top:1px solid #E2E8F0;text-align:center;font-size:10px;color:#A0AEC0;}
+      .stamp{display:inline-block;border:3px solid ${contract?.status==="Signed"?"#1A7F5A":"#C9A84C"};border-radius:50%;width:100px;height:100px;line-height:100px;text-align:center;font-size:14px;font-weight:700;color:${contract?.status==="Signed"?"#1A7F5A":"#C9A84C"};transform:rotate(-15deg);margin-top:10px;}
+      @media print{body{padding:30px;}}
+    </style></head><body>
+    <div class="header">
+      <div class="company-name">${companyName}</div>
+      <div class="doc-title">TENANCY AGREEMENT</div>
+      <div class="doc-ref">Ref: TA-${opp.id.slice(0,8).toUpperCase()} &nbsp;|&nbsp; Date: ${today} &nbsp;|&nbsp; Status: <strong>${contract?.status||"Draft"}</strong></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Parties to the Agreement</div>
+      <div class="grid">
+        <div>
+          <div class="field"><div class="field-label">Landlord / Agent</div><div class="field-value">${companyName}</div></div>
+        </div>
+        <div>
+          <div class="field"><div class="field-label">Tenant Name</div><div class="field-value">${tenant?.full_name||"—"}</div></div>
+          <div class="field"><div class="field-label">Tenant Phone</div><div class="field-value">${tenant?.phone||"—"}</div></div>
+          <div class="field"><div class="field-label">Tenant Email</div><div class="field-value">${tenant?.email||"—"}</div></div>
+          <div class="field"><div class="field-label">ID / Passport</div><div class="field-value">${tenant?.id_type||""} ${tenant?.id_number||"—"}</div></div>
+          <div class="field"><div class="field-label">Nationality</div><div class="field-value">${tenant?.nationality||"—"}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Property Details</div>
+      <div class="grid">
+        <div>
+          <div class="field"><div class="field-label">Unit Reference</div><div class="field-value">${unit?.unit_ref||"—"}</div></div>
+          <div class="field"><div class="field-label">Property / Project</div><div class="field-value">${proj?.name||"—"}</div></div>
+          <div class="field"><div class="field-label">Type</div><div class="field-value">${unit?.sub_type||unit?.unit_type||"—"}</div></div>
+        </div>
+        <div>
+          <div class="field"><div class="field-label">Floor</div><div class="field-value">${unit?.floor_number||"—"}</div></div>
+          <div class="field"><div class="field-label">View</div><div class="field-value">${unit?.view||"—"}</div></div>
+          <div class="field"><div class="field-label">Size</div><div class="field-value">${unit?.size_sqft||"—"} sqft</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Financial Terms</div>
+      <div class="grid">
+        <div>
+          <div class="field"><div class="field-label">Annual Rent</div><div class="field-value">AED ${Number(contract?.annual_rent||opp.budget||0).toLocaleString()}</div></div>
+          <div class="field"><div class="field-label">Monthly Equivalent</div><div class="field-value">AED ${Math.round(Number(contract?.annual_rent||opp.budget||0)/12).toLocaleString()}</div></div>
+        </div>
+        <div>
+          <div class="field"><div class="field-label">Lease Start Date</div><div class="field-value">${contract?.start_date?new Date(contract.start_date).toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"}):"—"}</div></div>
+          <div class="field"><div class="field-label">Lease End Date</div><div class="field-value">${endDate}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Terms & Conditions</div>
+      ${contract?.terms?`<div class="clause">${contract.terms}</div>`:""}
+      <div class="clause"><span class="clause-num">1.</span> The tenant agrees to pay the rent in full as per the agreed payment schedule.</div>
+      <div class="clause"><span class="clause-num">2.</span> The security deposit shall be refunded within 30 days of vacating the property, subject to deductions for any damages.</div>
+      <div class="clause"><span class="clause-num">3.</span> The tenant shall not sublet the property without prior written consent from the landlord.</div>
+      <div class="clause"><span class="clause-num">4.</span> The tenant shall maintain the property in good condition and report any maintenance issues promptly.</div>
+      <div class="clause"><span class="clause-num">5.</span> This agreement is governed by the laws of the UAE and the relevant emirate regulations.</div>
+      <div class="clause"><span class="clause-num">6.</span> Post-dated cheques once handed over shall not be returned and will be presented on their respective dates.</div>
+    </div>
+
+    <div class="signature-section">
+      <div>
+        <div class="sig-box">
+          <div class="sig-label">Landlord / Agent Signature</div>
+          <div class="sig-name">${companyName}</div>
+          <div style="margin-top:8px;"><div class="stamp">${contract?.status==="Signed"?"SIGNED":"DRAFT"}</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="sig-box">
+          <div class="sig-label">Tenant Signature</div>
+          <div class="sig-name">${tenant?.full_name||"—"}</div>
+          ${contract?.status==="Signed"?`<div style="margin-top:8px;font-size:12px;color:#1A7F5A;">✅ Signed on ${contract.signed_at?new Date(contract.signed_at).toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"}):today}</div>`:"<div style='margin-top:40px;border-top:1px solid #0B1F3A;font-size:11px;color:#718096;padding-top:4px;'>Signature & Date</div>"}
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>This document is generated by ${companyName} using PropCRM.</div>
+      <div style="margin-top:4px;">For queries contact: ${companyName}</div>
+    </div>
     <script>window.onload=()=>window.print();</script>
     </body></html>`;
     w.document.write(html);
@@ -8146,6 +8328,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             <div style={{display:"flex",gap:8,alignSelf:"flex-end",flexWrap:"wrap"}}>
               {payments.length>0&&<button onClick={printAllPayments} style={{padding:"7px 16px",borderRadius:8,border:"1.5px solid #718096",background:"transparent",color:"#718096",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print Schedule</button>}
+              {payments.some(p=>p.payment_type==="Agency Fee")&&<button onClick={printAgencyReceipt} style={{padding:"7px 16px",borderRadius:8,border:"1.5px solid #C9A84C",background:"rgba(201,168,76,.08)",color:"#8A6200",fontSize:12,fontWeight:600,cursor:"pointer"}}>🏷 Agency Receipt</button>}
               {canEdit&&<button onClick={()=>setShowPDC(true)} style={{padding:"7px 16px",borderRadius:8,border:"1.5px solid #5B3FAA",background:"rgba(91,63,170,.08)",color:"#5B3FAA",fontSize:12,fontWeight:600,cursor:"pointer"}}>🏦 Generate PDC</button>}
               {canEdit&&<button onClick={()=>{setEditPayment(null);setShowPayment(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add Payment</button>}
             </div>
@@ -8216,7 +8399,63 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
               <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
                   <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0B1F3A"}}>📄 Rental Agreement</div>
-                  <span style={{padding:"4px 12px",borderRadius:20,background:contract.status==="Signed"?"#E6F4EE":"#FFF9E6",color:contract.status==="Signed"?"#1A7F5A":"#C9A84C",fontSize:11,fontWeight:700}}>{contract.status}</span>
+                  <button onClick={printAgreement} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #718096",background:"transparent",color:"#718096",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print Agreement</button>
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <span style={{padding:"4px 12px",borderRadius:20,background:contract.status==="Signed"?"#E6F4EE":"#FFF9E6",color:contract.status==="Signed"?"#1A7F5A":"#C9A84C",fontSize:11,fontWeight:700}}>{contract.status}</span>
+                    <button onClick={()=>{
+                      const w=window.open("","_blank","width=900,height=700");
+                      const companyName=localStorage.getItem("propccrm_company_name")||"PropCRM";
+                      const html=`<!DOCTYPE html><html><head><title>Rental Agreement</title>
+                      <style>body{font-family:Arial,sans-serif;margin:0;padding:50px;color:#0B1F3A;line-height:1.8;}
+                      h1{font-size:24px;text-align:center;margin-bottom:4px;}
+                      .subtitle{text-align:center;color:#718096;font-size:13px;margin-bottom:30px;}
+                      .section{margin-bottom:24px;}.section-title{font-size:14px;font-weight:700;border-bottom:2px solid #0B1F3A;padding-bottom:4px;margin-bottom:12px;}
+                      .row{display:flex;gap:20px;margin-bottom:8px;}.label{color:#718096;min-width:160px;font-size:13px;}.value{font-weight:600;font-size:13px;}
+                      .clause{font-size:13px;margin-bottom:10px;text-align:justify;}
+                      .sign-box{display:flex;justify-content:space-between;margin-top:60px;}
+                      .sign-line{border-top:1px solid #0B1F3A;padding-top:8px;width:200px;text-align:center;font-size:12px;}
+                      @media print{body{padding:30px;}}</style></head><body>
+                      <h1>TENANCY AGREEMENT</h1>
+                      <div class="subtitle">${companyName}</div>
+                      <div class="section">
+                        <div class="section-title">1. PARTIES</div>
+                        <div class="row"><span class="label">Tenant Name</span><span class="value">${tenant?.full_name||"—"}</span></div>
+                        <div class="row"><span class="label">Tenant Phone</span><span class="value">${tenant?.phone||"—"}</span></div>
+                        <div class="row"><span class="label">Tenant Email</span><span class="value">${tenant?.email||"—"}</span></div>
+                        <div class="row"><span class="label">ID Number</span><span class="value">${tenant?.id_number||"—"}</span></div>
+                      </div>
+                      <div class="section">
+                        <div class="section-title">2. PROPERTY DETAILS</div>
+                        <div class="row"><span class="label">Unit Reference</span><span class="value">${unit?.unit_ref||"—"}</span></div>
+                        <div class="row"><span class="label">Property</span><span class="value">${proj?.name||"—"}</span></div>
+                        <div class="row"><span class="label">Type</span><span class="value">${unit?.sub_type||"—"}</span></div>
+                        <div class="row"><span class="label">Floor</span><span class="value">${unit?.floor_number||"—"}</span></div>
+                        <div class="row"><span class="label">Size</span><span class="value">${unit?.size_sqft||"—"} sqft</span></div>
+                      </div>
+                      <div class="section">
+                        <div class="section-title">3. LEASE TERMS</div>
+                        <div class="row"><span class="label">Annual Rent</span><span class="value">AED ${Number(contract.annual_rent||opp.budget||0).toLocaleString()}</span></div>
+                        <div class="row"><span class="label">Start Date</span><span class="value">${contract.start_date?new Date(contract.start_date).toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"}):"—"}</span></div>
+                        <div class="row"><span class="label">End Date</span><span class="value">${contract.start_date?new Date(new Date(contract.start_date).setFullYear(new Date(contract.start_date).getFullYear()+1)).toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"}):"—"}</span></div>
+                        <div class="row"><span class="label">Payment Terms</span><span class="value">${payments.filter(p=>p.payment_type==="PDC Cheque").length} cheque(s)</span></div>
+                      </div>
+                      <div class="section">
+                        <div class="section-title">4. SPECIAL CONDITIONS</div>
+                        <div class="clause">${contract.terms||"No special conditions."}</div>
+                      </div>
+                      <div class="section">
+                        <div class="section-title">5. SIGNATURES</div>
+                        <div class="sign-box">
+                          <div class="sign-line">Tenant Signature<br/>${tenant?.full_name||""}</div>
+                          <div class="sign-line">Landlord / Agent<br/>${agent?.full_name||""}</div>
+                        </div>
+                      </div>
+                      <div style="text-align:center;margin-top:40px;font-size:11px;color:#A0AEC0;">Generated by ${companyName} · PropCRM · ${new Date().toLocaleDateString("en-AE")}</div>
+                      <script>window.onload=()=>window.print();</script>
+                      </body></html>`;
+                      w.document.write(html);w.document.close();
+                    }} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #0B1F3A",background:"transparent",color:"#0B1F3A",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print Agreement</button>
+                  </div>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
                   {[["Tenant",tenant?.full_name||"—"],["Unit",unit?.unit_ref||"—"],["Annual Rent",contract.annual_rent?`AED ${Number(contract.annual_rent).toLocaleString()}`:"—"],["Start Date",contract.start_date?new Date(contract.start_date).toLocaleDateString("en-AE"):"—"]].map(([k,v])=>(
