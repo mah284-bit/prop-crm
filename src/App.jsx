@@ -2165,6 +2165,9 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
   const availUnits   = ctxUnits.filter(u=>u.status==="Available");
   const reservedUnits= ctxUnits.filter(u=>u.status==="Reserved");
   const today        = new Date();
+  const upcomingTasks = activities.filter(a=>a.status==="upcoming"&&a.scheduled_at&&new Date(a.scheduled_at)>today);
+  const overdueTasksCount = activities.filter(a=>a.status==="upcoming"&&a.scheduled_at&&new Date(a.scheduled_at)<today).length;
+  const convRate = visibleOpps.length>0?Math.round(won.length/visibleOpps.length*100):0;
   const recent       = [...activities].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5);
   const overdueFollowups=[...followups].filter(f=>f.status==="Pending"&&new Date(f.due_at)<today);
   const staleLeads   = active.filter(o=>o.stage_updated_at&&Math.floor((today-new Date(o.stage_updated_at))/(864e5))>=7);
