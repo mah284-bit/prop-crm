@@ -5887,7 +5887,6 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
         return { rows, headers, summary:byStatus, summaryHeaders:["Status","Count",""] };
       }
     },
-},
 
     // 5. AGENT PERFORMANCE
     agent_performance: {
