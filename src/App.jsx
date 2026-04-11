@@ -5915,6 +5915,96 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
         return { rows, headers, summary:[], summaryHeaders:[] };
       }
     },
+
+    // 5. AGENT PERFORMANCE
+    agent_performance: {
+      label:"Agent Performance", icon:"👤",
+      description:"Tasks, deals and conversion rates per agent",
+      generate: () => {
+        const { users=[], activities=[] } = data;
+        const oppsData = globalOpps.length>0 ? globalOpps : (data.opps||[]);
+        const activeUsers = users.filter(u=>u.is_active&&u.role!=="super_admin");
+        const rows = activeUsers.map(u=>{
+          const myOpps = oppsData.filter(o=>o.assigned_to===u.id);
+          const myActs = activities.filter(a=>a.user_id===u.id);
+          const won = myOpps.filter(o=>o.stage==="Closed Won");
+          const lost = myOpps.filter(o=>o.stage==="Closed Lost");
+          const active = myOpps.filter(o=>!["Closed Won","Closed Lost"].includes(o.stage));
+          const pipeline = active.reduce((s,o)=>s+(o.budget||0),0);
+          const wonVal = won.reduce((s,o)=>s+(o.final_price||o.budget||0),0);
+          const conv = myOpps.length>0?Math.round(won.length/myOpps.length*100):0;
+          return [u.full_name,u.role,myActs.length,myOpps.length,active.length,won.length,lost.length,
+            conv+"%",`AED ${(pipeline/1e6).toFixed(2)}M`,`AED ${(wonVal/1e6).toFixed(2)}M`];
+        });
+        return {
+          headers:["Agent","Role","Tasks","Total Deals","Active","Won","Lost","Conv %","Pipeline","Won Value"],
+          rows, summary:[], summaryHeaders:[],
+          title:"Agent Performance Report",
+        };
+      }
+    },
+
+    // 6. LEAD CONVERSION
+    lead_conversion: {
+      label:"Lead Conversion", icon:"🎯",
+      description:"Lead sources and conversion funnel",
+      generate: () => {
+        const { leads=[] } = data;
+        const oppsData = globalOpps.length>0 ? globalOpps : (data.opps||[]);
+        const sources = [...new Set(leads.map(l=>l.source||"Unknown"))];
+        const summaryRows = sources.map(s=>{
+          const sl=leads.filter(l=>(l.source||"Unknown")===s);
+          const won=sl.filter(l=>oppsData.some(o=>o.lead_id===l.id&&o.stage==="Closed Won"));
+          const withOpps=sl.filter(l=>oppsData.some(o=>o.lead_id===l.id));
+          return [s,sl.length,withOpps.length,won.length,sl.length>0?Math.round(won.length/sl.length*100)+"%":"0%"];
+        });
+        const rows = leads.map(l=>{
+          const lo=oppsData.filter(o=>o.lead_id===l.id);
+          const best=lo.find(o=>o.stage==="Closed Won")?"Closed Won":lo[0]?.stage||"No Opp";
+          return [l.name,l.phone||"—",l.source||"—",l.property_type||"—",l.stage||"New",best,lo.length,fmtD(l.created_at)];
+        });
+        return {
+          headers:["Contact","Phone","Source","Type","Lead Stage","Best Opp","Opps","Created"],
+          rows, summary:summaryRows,
+          summaryHeaders:["Source","Total Leads","With Opps","Won","Conversion"],
+          title:"Lead Conversion Report",
+        };
+      }
+    },
+
+    // 7. TASKS REPORT
+    tasks_report: {
+      label:"Tasks Report", icon:"✅",
+      description:"All tasks by type, status and agent",
+      generate: () => {
+        const { activities=[] } = data;
+        const upcoming=activities.filter(a=>a.status==="upcoming");
+        const completed=activities.filter(a=>a.status==="completed"||(!a.status&&!a.scheduled_at));
+        const noShow=activities.filter(a=>a.status==="no_show");
+        const rescheduled=activities.filter(a=>a.status==="rescheduled");
+        const cancelled=activities.filter(a=>a.status==="cancelled");
+        const rows=activities.map(a=>[
+          a.type,a.lead_name||"—",a.user_name||"—",
+          a.status||"completed",
+          a.scheduled_at?fmtD(a.scheduled_at):"—",
+          fmtD(a.created_at),
+          (a.note||"").slice(0,60)+(a.note&&a.note.length>60?"…":""),
+        ]);
+        const summary=[
+          ["⏰ Upcoming",upcoming.length],
+          ["✅ Completed",completed.length],
+          ["📵 No Show",noShow.length],
+          ["🔄 Rescheduled",rescheduled.length],
+          ["❌ Cancelled",cancelled.length],
+          ["📊 Total",activities.length],
+        ];
+        return {
+          headers:["Type","Contact","Agent","Status","Scheduled","Created","Notes"],
+          rows, summary, summaryHeaders:["Status","Count"],
+          title:"Tasks & Activities Report",
+        };
+      }
+    },
   };
 
   const currentReport = REPORTS[activeReport];
@@ -5937,7 +6027,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
 
       {/* Report selector */}
       <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-        {Object.entries(REPORTS).filter(([key])=>crmContext==="leasing"?["rent_roll","pdc_schedule","inventory","agent_perf"].includes(key):true).map(([key,r])=>(
+        {Object.entries(REPORTS).filter(([key])=>crmContext==="leasing"?["rent_roll","pdc_schedule","tasks_report","inventory","agent_perf"].includes(key):true).map(([key,r])=>(
           <button key={key} onClick={()=>setActiveReport(key)}
             style={{padding:"7px 14px",borderRadius:8,border:`1.5px solid ${activeReport===key?"#0B1F3A":"#E2E8F0"}`,background:activeReport===key?"#0B1F3A":"#fff",color:activeReport===key?"#fff":"#4A5568",fontSize:12,fontWeight:activeReport===key?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .15s"}}>
             <span>{r.icon}</span> {r.label}
