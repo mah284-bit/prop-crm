@@ -2359,7 +2359,7 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
 // PIPELINE (same as v2)
 // ══════════════════════════════════════════════════════
 
-function Pipeline({leads,setLeads,currentUser,showToast}){
+function Pipeline({leads,setLeads,currentUser,showToast,activities=[]}){
   const canEdit = can(currentUser.role,"write");
   const visible = can(currentUser.role,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id);
   const [selCard, setSelCard] = useState(null);
@@ -2427,6 +2427,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
           )}
           {filtered.sort((a,b)=>STAGES.indexOf(a.stage)-STAGES.indexOf(b.stage)).map(lead=>{
             const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F0F2F5"};
+            const leadUpcoming = activities.filter(a=>a.lead_id===lead.id&&a.status==="upcoming").length;
             const days=lead.stage_updated_at?Math.floor((new Date()-new Date(lead.stage_updated_at))/(864e5)):0;
             const isSelected=selCard?.id===lead.id;
             return(
@@ -2447,6 +2448,7 @@ function Pipeline({leads,setLeads,currentUser,showToast}){
                     </div>
                     <div style={{fontSize:11,color:"#718096",marginTop:2}}>
                       {lead.property_type&&<span style={{marginRight:8}}>{lead.property_type}</span>}
+                      {leadUpcoming>0&&<span style={{fontWeight:700,color:"#C9A84C",background:"rgba(201,168,76,.1)",padding:"1px 6px",borderRadius:6,marginRight:4}}>⏰ {leadUpcoming} task{leadUpcoming>1?"s":""}</span>}
                       {lead.budget&&<span style={{fontWeight:600,color:"#0B1F3A"}}>{fmtM(lead.budget)}</span>}
                       {lead.phone&&<span style={{marginLeft:8,color:"#A0AEC0"}}>{lead.phone}</span>}
                     </div>
