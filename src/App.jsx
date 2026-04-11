@@ -9303,9 +9303,15 @@ function PwRecoveryForm({onDone}){
     else{setDone(true);setTimeout(onDone,2000);}
   };
   if(done)return(<div style={{textAlign:"center",padding:"20px 0"}}><div style={{fontSize:40,marginBottom:8}}>✅</div><div style={{color:"#1A7F5A",fontWeight:600,fontSize:16}}>Password changed!</div><div style={{fontSize:13,color:"#718096",marginTop:6}}>Signing you out — please log in again.</div></div>);
+  const isSessionError = err.includes("session")||err.includes("Session")||err.includes("token")||err.includes("expired");
   return(
     <div>
-      {err&&<div style={{background:"#FEE2E2",color:"#C53030",padding:"10px 14px",borderRadius:8,marginBottom:12,fontSize:13}}>{err}</div>}
+      {err&&(
+        <div style={{background:"#FEE2E2",color:"#C53030",padding:"10px 14px",borderRadius:8,marginBottom:12,fontSize:13}}>
+          {err}
+          {isSessionError&&<div style={{marginTop:8,fontSize:12,color:"#C53030"}}>Your reset link has expired. Please go back to login and request a new one.</div>}
+        </div>
+      )}
       <div style={{marginBottom:12}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>New Password *</label><PwInput value={pw} onChange={e=>setPw(e.target.value)} placeholder="Min 8 characters" style={{width:"100%",padding:"10px 14px",border:"1.5px solid #E2E8F0",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}}/></div>
       <div style={{marginBottom:16}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>Confirm Password *</label><PwInput value={pw2} onChange={e=>setPw2(e.target.value)} placeholder="Repeat new password" style={{width:"100%",padding:"10px 14px",border:"1.5px solid #E2E8F0",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}}/></div>
       <button onClick={submit} disabled={loading} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:"#0B1F3A",color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer"}}>{loading?"Saving…":"Set New Password →"}</button>
@@ -9508,6 +9514,7 @@ export default function App(){
       <div style={{background:"#fff",borderRadius:20,padding:"2.5rem",width:440,maxWidth:"100%",boxShadow:"0 30px 80px rgba(0,0,0,0.4)"}}>
         <div style={{textAlign:"center",marginBottom:24}}><div style={{fontSize:48,marginBottom:8}}>🔑</div><div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>Set New Password</div><div style={{fontSize:13,color:"#718096"}}>Enter your new password below</div></div>
         <PwRecoveryForm onDone={()=>{setPwRecovery(false);supabase.auth.signOut();}}/>
+        <div style={{textAlign:"center",marginTop:16}}><button onClick={()=>{setPwRecovery(false);supabase.auth.signOut();}} style={{background:"none",border:"none",color:"#A0AEC0",fontSize:13,cursor:"pointer"}}>← Back to Login</button></div>
       </div>
     </div>
   );
