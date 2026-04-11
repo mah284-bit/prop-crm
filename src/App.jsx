@@ -9290,6 +9290,29 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
 // MAIN APP
 // ══════════════════════════════════════════════════════════════════
 
+function PwRecoveryForm({onDone}){
+  const[pw,setPw]=useState("");const[pw2,setPw2]=useState("");
+  const[loading,setLoading]=useState(false);const[done,setDone]=useState(false);const[err,setErr]=useState("");
+  const submit=async()=>{
+    if(pw.length<8){setErr("Password must be at least 8 characters");return;}
+    if(pw!==pw2){setErr("Passwords do not match");return;}
+    setLoading(true);setErr("");
+    const{error}=await supabase.auth.updateUser({password:pw});
+    setLoading(false);
+    if(error)setErr(error.message);
+    else{setDone(true);setTimeout(onDone,2000);}
+  };
+  if(done)return(<div style={{textAlign:"center",padding:"20px 0"}}><div style={{fontSize:40,marginBottom:8}}>✅</div><div style={{color:"#1A7F5A",fontWeight:600,fontSize:16}}>Password changed!</div><div style={{fontSize:13,color:"#718096",marginTop:6}}>Signing you out — please log in again.</div></div>);
+  return(
+    <div>
+      {err&&<div style={{background:"#FEE2E2",color:"#C53030",padding:"10px 14px",borderRadius:8,marginBottom:12,fontSize:13}}>{err}</div>}
+      <div style={{marginBottom:12}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>New Password *</label><PwInput value={pw} onChange={e=>setPw(e.target.value)} placeholder="Min 8 characters" style={{width:"100%",padding:"10px 14px",border:"1.5px solid #E2E8F0",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}}/></div>
+      <div style={{marginBottom:16}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>Confirm Password *</label><PwInput value={pw2} onChange={e=>setPw2(e.target.value)} placeholder="Repeat new password" style={{width:"100%",padding:"10px 14px",border:"1.5px solid #E2E8F0",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}}/></div>
+      <button onClick={submit} disabled={loading} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:"#0B1F3A",color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer"}}>{loading?"Saving…":"Set New Password →"}</button>
+    </div>
+  );
+}
+
 export default function App(){
   const[checking,  setChecking]  = useState(true);
   const[currentUser,setCurrentUser]=useState(null);
@@ -9327,6 +9350,8 @@ export default function App(){
   const[followupAlerts,setFollowupAlerts]=useState({staleLeads:[],overduePayments:[],expiringLeases:[]});
   const[opps,setOpps]=useState([]);
   const[toast,setToast]=useState(null);
+  const[pwRecovery,setPwRecovery]=useState(false);
+  const[showPwModal,setShowPwModal]=useState(false);
   const showToast=(msg,type="success")=>setToast({msg,type});
 
   const loadAIData=useCallback(async()=>{
@@ -9354,6 +9379,8 @@ export default function App(){
 
   useEffect(()=>{
     const restore=async()=>{
+      const hp=new URLSearchParams(window.location.hash.replace("#","?").slice(1));
+      if(hp.get("type")==="recovery"){setPwRecovery(true);window.history.replaceState(null,"",window.location.pathname);return;}
       try{
         const{data:{session}}=await supabase.auth.getSession();
         if(session?.user){
@@ -9367,6 +9394,7 @@ export default function App(){
     restore();
     const{data:{subscription}}=supabase.auth.onAuthStateChange(async(event,session)=>{
       if(event==="SIGNED_OUT"){setCurrentUser(null);setLeads([]);setProperties([]);setActivities([]);setMeetings([]);setFollowups([]);setOpps([]);}
+      if(event==="PASSWORD_RECOVERY"){setCurrentUser(null);setPwRecovery(true);}
       if(event==="TOKEN_REFRESHED"&&session?.user){const{data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();if(p)setCurrentUser(u=>({...u,...p}));}
     });
     return()=>subscription.unsubscribe();
@@ -9475,6 +9503,15 @@ export default function App(){
   const userRole   = currentUser?.role||"viewer";
   const canSwitch  = ["super_admin","admin","sales_manager","leasing_manager"].includes(userRole);
 
+  if(pwRecovery)return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0B1F3A,#1A3558)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
+      <div style={{background:"#fff",borderRadius:20,padding:"2.5rem",width:440,maxWidth:"100%",boxShadow:"0 30px 80px rgba(0,0,0,0.4)"}}>
+        <div style={{textAlign:"center",marginBottom:24}}><div style={{fontSize:48,marginBottom:8}}>🔑</div><div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>Set New Password</div><div style={{fontSize:13,color:"#718096"}}>Enter your new password below</div></div>
+        <PwRecoveryForm onDone={()=>{setPwRecovery(false);supabase.auth.signOut();}}/>
+      </div>
+    </div>
+  );
+
   if(checking) return(
     <div style={{height:"100dvh",background:"#0B1F3A",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}>
       <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#fff"}}><span style={{color:"#C9A84C"}}>◆</span> PropCRM</div>
@@ -9577,6 +9614,8 @@ export default function App(){
               <RoleBadge role={currentUser.role}/>
             </div>
             <Av name={currentUser.full_name||currentUser.email} size={32} bg="#C9A84C" tc="#0B1F3A"/>
+            {showPwModal&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:99998,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setShowPwModal(false)}><div style={{background:"#fff",borderRadius:16,padding:"2rem",width:400,maxWidth:"90vw",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:36,marginBottom:6}}>🔑</div><div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A",marginBottom:4}}>Change Password</div></div><PwRecoveryForm onDone={()=>{setShowPwModal(false);showToast("Password changed","success");supabase.auth.signOut();}}/></div></div>)}
+            <button onClick={()=>setShowPwModal(true)} title="Change my password" style={{fontSize:16,color:"rgba(201,168,76,.6)",background:"none",border:"none",cursor:"pointer",padding:"0 4px"}}>🔑</button>
             <button onClick={handleLogout} title="Sign out" style={{fontSize:11,color:"rgba(255,255,255,.35)",background:"none",border:"1px solid rgba(255,255,255,.1)",borderRadius:6,padding:"4px 8px",cursor:"pointer",whiteSpace:"nowrap",transition:"color .15s"}}
               onMouseOver={e=>e.currentTarget.style.color="rgba(255,255,255,.8)"}
               onMouseOut={e=>e.currentTarget.style.color="rgba(255,255,255,.35)"}>↩</button>
