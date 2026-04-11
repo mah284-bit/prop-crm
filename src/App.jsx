@@ -9386,7 +9386,7 @@ export default function App(){
   useEffect(()=>{
     const restore=async()=>{
       const hp=new URLSearchParams(window.location.hash.replace("#","?").slice(1));
-      if(hp.get("type")==="recovery"){setPwRecovery(true);window.history.replaceState(null,"",window.location.pathname);return;}
+      if(hp.get("type")==="recovery"){setPwRecovery(true);return;}
       try{
         const{data:{session}}=await supabase.auth.getSession();
         if(session?.user){
@@ -9400,7 +9400,7 @@ export default function App(){
     restore();
     const{data:{subscription}}=supabase.auth.onAuthStateChange(async(event,session)=>{
       if(event==="SIGNED_OUT"){setCurrentUser(null);setLeads([]);setProperties([]);setActivities([]);setMeetings([]);setFollowups([]);setOpps([]);}
-      if(event==="PASSWORD_RECOVERY"){setCurrentUser(null);setPwRecovery(true);}
+      if(event==="PASSWORD_RECOVERY"){setPwRecovery(true);}
       if(event==="TOKEN_REFRESHED"&&session?.user){const{data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();if(p)setCurrentUser(u=>({...u,...p}));}
     });
     return()=>subscription.unsubscribe();
