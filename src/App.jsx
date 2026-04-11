@@ -2231,7 +2231,8 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
 
       {/* ── Stat cards ──────────────────────────────────────── */}
       <div className="stat-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
-        <SC label="Active Opps"      value={active.length}         sub={`${won.length} won this period`}   accent="#0B1F3A"  icon="🎯"  onClick={()=>onNavigate("leads")}/>
+        <SC label="Upcoming Tasks"   value={upcomingTasks.length}  sub={overdueTasksCount>0?`⚠️ ${overdueTasksCount} overdue`:"All on track"} accent={overdueTasksCount>0?"#E53E3E":"#1A7F5A"} icon="📋" onClick={()=>onNavigate("leads")} badge={overdueTasksCount>0?overdueTasksCount:null}/>
+        <SC label="Active Opps"      value={active.length}         sub={`${won.length} won · ${convRate}% conv.`}   accent="#0B1F3A"  icon="🎯"  onClick={()=>onNavigate("leads")}/>
         <SC label="Won Value"        value={fmtM(wonVal)}          sub={`${won.length} deals closed`}      accent="#1A7F5A"  icon="🏆"  onClick={()=>onNavigate("leads")}/>
         <SC label="Available Units"  value={availUnits.length}     sub={`${ctxUnits.length} total`}        accent="#C9A84C"  icon="🏠"  onClick={()=>onNavigate("builder")}/>
         <SC label="Reserved"         value={reservedUnits.length}  sub="Pending confirmation"              accent="#A06810"  icon="🔒"  onClick={()=>onNavigate("builder")} badge={reservedUnits.length>0?reservedUnits.length:null}/>
