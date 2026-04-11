@@ -5703,7 +5703,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
         if(cid) q = q.eq("company_id", cid);
         return q;
       };
-      const [leads,acts,users,units,projs,sp,lp,leases,tenants,payments,leaseOpps] = await Promise.all([
+      const [leads,acts,users,units,projs,sp,lp,leases,tenants,payments,leaseOpps,leasePay] = await Promise.all([
         safe(byco("leads").order("created_at",{ascending:false})),
         safe(byco("activities")),
         safe(cid ? supabase.from("profiles").select("id,full_name,role,email").eq("company_id",cid) : supabase.from("profiles").select("id,full_name,role,email")),
@@ -5715,13 +5715,14 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
         safe(byco("tenants")),
         safe(byco("rent_payments").order("due_date")),
         safe(byco("lease_opportunities")),
+        safe(supabase.from("lease_payments").select("*").eq("company_id",cid||"").order("due_date")),
       ]);
       setData({
         leads:   leads.data||[],   activities: acts.data||[],
         users:   users.data||[],
         users:   (users.data||[]).length>0 ? users.data : (preloadedUsers||[]),
         units:   (units.data||[]).length>0 ? units.data : (preloadedUnits||[]),
-        leaseOpps: leaseOpps.data||[],
+        leaseOpps: leaseOpps.data||[], leasePay: leasePay?.data||[],
         projects:(projs.data||[]).length>0 ? projs.data : (preloadedProjects||[]),
         salePricing:(sp.data||[]).length>0 ? sp.data : (preloadedSalePricing||[]),
         leasePricing:(lp.data||[]).length>0 ? lp.data : (preloadedLeasePricing||[]),
@@ -5830,7 +5831,8 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
       label:"PDC Cheque Schedule", icon:"📋",
       description:"All post-dated cheques sorted by deposit date",
       generate: () => {
-        const { cheques=[], leases=[], tenants=[], units=[] } = data;
+        const { leasePay=[], leases=[], tenants=[], units=[], leaseOpps=[] } = data;
+        const cheques = leasePay.filter(p=>p.payment_type==="PDC Cheque"||p.payment_type==="Cheque");
         const lease    = id => leases.find(l=>l.id===id);
         const tenant   = id => tenants.find(t=>t.id===id)?.full_name||"—";
         const unitRef  = id => units.find(u=>u.id===id)?.unit_ref||"—";
@@ -5885,36 +5887,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
         return { rows, headers, summary:byStatus, summaryHeaders:["Status","Count",""] };
       }
     },
-
-    // 6. AGENT PERFORMANCE
-    agent_perf: {
-      label:"Agent Performance", icon:"👤",
-      description:"Leads, conversions and pipeline value per agent",
-      generate: () => {
-        const { leads=[], users=[], activities=[] } = data;
-        const agents = users.filter(u=>["sales_agent","sales_manager","leasing_agent","leasing_manager","admin"].includes(u.role));
-        const oppsData = crmContext==="leasing" 
-          ? (data.leaseOpps||[]) 
-          : (globalOpps.length>0 ? globalOpps : (data.opps||[]));
-        const rows = agents.map(u=>{
-          const myOpps  = oppsData.filter(o=>o.assigned_to===u.id);
-          const won     = myOpps.filter(o=>o.status==="Won"||o.stage==="Closed Won");
-          const lost    = myOpps.filter(o=>o.status==="Lost"||o.stage==="Closed Lost");
-          const active  = myOpps.filter(o=>o.status==="Active");
-          const pipeVal = active.reduce((s,o)=>s+(o.budget||0),0);
-          const wonVal  = won.reduce((s,o)=>s+(o.final_price||o.budget||0),0);
-          const myActs  = activities.filter(a=>a.user_id===u.id);
-          const convRate= myOpps.length>0 ? Math.round(won.length/myOpps.length*100) : 0;
-          return [
-            u.full_name, u.role.replace(/_/g," "), u.email||"—",
-            myOpps.length, active.length, won.length, lost.length,
-            convRate+"%", fmt(pipeVal), fmt(wonVal), myActs.length,
-          ];
-        });
-        const headers = ["Agent","Role","Email","Total Opps","Active","Won","Lost","Conv %","Pipeline Value","Won Value","Activities"];
-        return { rows, headers, summary:[], summaryHeaders:[] };
-      }
-    },
+},
 
     // 5. AGENT PERFORMANCE
     agent_performance: {
@@ -6026,10 +5999,10 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
 
       {/* Report selector */}
-      <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-        {Object.entries(REPORTS).filter(([key])=>crmContext==="leasing"?["rent_roll","pdc_schedule","tasks_report","inventory","agent_perf"].includes(key):true).map(([key,r])=>(
+      <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",overflowX:"auto",paddingBottom:4}}>
+        {Object.entries(REPORTS).filter(([key])=>crmContext==="leasing"?["rent_roll","pdc_schedule","tasks_report","agent_performance"].includes(key):["pipeline","sales_payments","agent_performance","lead_conversion","tasks_report"].includes(key)).map(([key,r])=>(
           <button key={key} onClick={()=>setActiveReport(key)}
-            style={{padding:"7px 14px",borderRadius:8,border:`1.5px solid ${activeReport===key?"#0B1F3A":"#E2E8F0"}`,background:activeReport===key?"#0B1F3A":"#fff",color:activeReport===key?"#fff":"#4A5568",fontSize:12,fontWeight:activeReport===key?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .15s"}}>
+            style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid ${activeReport===key?"#0B1F3A":"#E2E8F0"}`,background:activeReport===key?"#0B1F3A":"#fff",color:activeReport===key?"#fff":"#4A5568",fontSize:11,fontWeight:activeReport===key,whiteSpace:"nowrap"?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .15s"}}>
             <span>{r.icon}</span> {r.label}
           </button>
         ))}
