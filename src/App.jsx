@@ -1338,7 +1338,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
               <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Deal Journey</div>
               
               {/* Stage pills */}
-              <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0,marginBottom:16,paddingBottom:4}}}>
+              <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0,marginBottom:16,paddingBottom:4}}>
                 {OPP_STAGES.filter(s=>s!=="Closed Lost").map((s,i,arr)=>{
                   const curIdx=OPP_STAGES.indexOf(opp.stage);
                   const thisIdx=OPP_STAGES.indexOf(s);
