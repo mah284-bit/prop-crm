@@ -26,7 +26,7 @@ export default async function handler(req, res) {
 
     // Insert into your profiles/users table
     const { error: profileError } = await supabaseAdmin
-      .from('users')
+      .from('profiles')
       .insert({
         id: authData.user.id,
         email,
