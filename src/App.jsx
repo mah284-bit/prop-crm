@@ -1334,31 +1334,94 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
         {activeTab==="details"&&(
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
             {/* Workflow bar */}
-            <div style={{background:"#fff",borderRadius:12,padding:"14px 16px"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.4)",textTransform:"uppercase",letterSpacing:".6px",marginBottom:10}}>Deal Workflow</div>
-              <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0}}>
+            <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"16px 20px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Deal Journey</div>
+              
+              {/* Stage pills */}
+              <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0,marginBottom:16,paddingBottom:4}}}>
                 {OPP_STAGES.filter(s=>s!=="Closed Lost").map((s,i,arr)=>{
                   const curIdx=OPP_STAGES.indexOf(opp.stage);
                   const thisIdx=OPP_STAGES.indexOf(s);
                   const isDone=curIdx>thisIdx;
                   const isCur=opp.stage===s;
+                  const m=OPP_STAGE_META[s]||{c:"#718096",bg:"#F7F9FC"};
                   return (
                     <div key={s} style={{display:"flex",alignItems:"center",flexShrink:0}}>
-                      <div onClick={()=>moveStage(s)}
-                        style={{padding:"5px 12px",borderRadius:20,background:isCur?"#C9A84C":isDone?"rgba(26,127,90,.3)":"rgba(255,255,255,.08)",color:isCur?"#0F2540":isDone?"#4ADE80":"rgba(255,255,255,.4)",fontSize:11,fontWeight:isCur||isDone?700:400,cursor:"pointer",whiteSpace:"nowrap",transition:"all .15s"}}>
-                        {isDone?"✓ ":""}{s}
+                      <div onClick={()=>canEdit&&moveStage(s)}
+                        title={canEdit?"Click to move to this stage":""}
+                        style={{padding:"5px 14px",borderRadius:20,
+                          background:isCur?m.c:isDone?"#E6F4EE":"#F7F9FC",
+                          color:isCur?"#fff":isDone?"#1A7F5A":"#94A3B8",
+                          border:`1.5px solid ${isCur?m.c:isDone?"#A8D5BE":"#E2E8F0"}`,
+                          fontSize:11,fontWeight:isCur||isDone?700:400,
+                          cursor:canEdit?"pointer":"default",whiteSpace:"nowrap",transition:"all .15s"}}>
+                        {isDone?"✓ ":isCur?"▶ ":""}{s}
                       </div>
-                      {i<arr.length-1&&<div style={{width:16,height:1,background:"rgba(255,255,255,.1)",flexShrink:0}}/>}
+                      {i<arr.length-1&&(
+                        <div style={{width:20,height:1,background:isDone?"#A8D5BE":"#E2E8F0",flexShrink:0,position:"relative"}}>
+                          <div style={{position:"absolute",right:-4,top:-3,width:0,height:0,borderTop:"4px solid transparent",borderBottom:"4px solid transparent",borderLeft:`5px solid ${isDone?"#A8D5BE":"#E2E8F0"}`}}/>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
-                <div style={{width:16,height:1,background:"rgba(255,255,255,.1)",flexShrink:0}}/>
-                <div onClick={()=>moveStage("Closed Lost")}
-                  style={{padding:"5px 12px",borderRadius:20,background:opp.stage==="Closed Lost"?"#B83232":"rgba(255,255,255,.05)",color:opp.stage==="Closed Lost"?"#fff":"rgba(255,255,255,.3)",fontSize:11,fontWeight:opp.stage==="Closed Lost"?700:400,cursor:"pointer",whiteSpace:"nowrap"}}>
-                  ✗ Lost
-                </div>
               </div>
-              {isWon&&<div style={{marginTop:10,padding:"6px 10px",background:"rgba(201,168,76,.15)",borderRadius:6,fontSize:11,color:"#C9A84C",fontWeight:600}}>🎉 Won — Payments and Contract are unlocked</div>}
+
+              {/* Stage action buttons */}
+              {canEdit&&!isWon&&opp.stage!=="Closed Lost"&&(()=>{
+                const m=OPP_STAGE_META[opp.stage]||{c:"#718096",bg:"#F7F9FC"};
+                const stageIdx=OPP_STAGES.indexOf(opp.stage);
+                const nextStageName=OPP_STAGES[stageIdx+1];
+                const stageActionMap={
+                  "New":           [{label:"📞 Log Call",type:"Call"},{label:"💬 WhatsApp",type:"WhatsApp"},{label:"📝 Add Note",type:"Note"}],
+                  "Contacted":     [{label:"📅 Schedule Visit",type:"Site Visit"},{label:"📞 Follow Up",type:"Call"},{label:"📝 Add Note",type:"Note"}],
+                  "Site Visit":    [{label:"📋 Log Outcome",type:"Note"},{label:"📄 Send Proposal",type:"Proposal"},{label:"📞 Follow Up",type:"Call"}],
+                  "Proposal Sent": [{label:"📞 Follow Up",type:"Call"},{label:"💰 Negotiate",type:"Note"},{label:"📝 Add Note",type:"Note"}],
+                  "Negotiation":   [{label:"📄 Send Offer",type:"Note"},{label:"✅ Get Approval",type:"Note"},{label:"📝 Add Note",type:"Note"}],
+                  "Offer Accepted":[{label:"📋 Reservation Form",type:"Note"},{label:"💰 Collect Fee",type:"Note"},{label:"📝 Add Note",type:"Note"}],
+                  "Reserved":      [{label:"✅ Confirm Reservation",type:"Note"},{label:"📄 Draft SPA",type:"Note"},{label:"📝 Add Note",type:"Note"}],
+                  "SPA Signed":    [{label:"💰 Add Payment",type:"Note"},{label:"📋 Upload SPA",type:"Note"},{label:"📝 Add Note",type:"Note"}],
+                };
+                const actions=stageActionMap[opp.stage]||[];
+                return(
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",paddingTop:12,borderTop:"1px solid #F1F5F9"}}>
+                    <span style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".5px",marginRight:4}}>Actions</span>
+                    {actions.map((a,i)=>(
+                      <button key={i} onClick={()=>setShowLog(true)}
+                        style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540",transition:"all .12s"}}
+                        onMouseOver={e=>{e.currentTarget.style.borderColor=m.c;e.currentTarget.style.color=m.c;e.currentTarget.style.background=m.bg;}}
+                        onMouseOut={e=>{e.currentTarget.style.borderColor="#E2E8F0";e.currentTarget.style.color="#0F2540";e.currentTarget.style.background="#fff";}}>
+                        {a.label}
+                      </button>
+                    ))}
+                    <div style={{flex:1}}/>
+                    {nextStageName&&nextStageName!=="Closed Won"&&(
+                      <button onClick={()=>moveStage(nextStageName)}
+                        style={{padding:"6px 16px",borderRadius:7,border:"none",background:m.c,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                        → {nextStageName}
+                      </button>
+                    )}
+                    {(opp.stage==="Offer Accepted"||opp.stage==="Negotiation"||opp.stage==="Reserved")&&(
+                      <button onClick={()=>moveStage("Reserved")}
+                        style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                        🔒 Reserve Unit
+                      </button>
+                    )}
+                    {opp.stage==="SPA Signed"&&(
+                      <button onClick={()=>moveStage("Closed Won")}
+                        style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#1A7F5A",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                        ✓ Close Won
+                      </button>
+                    )}
+                    <button onClick={()=>moveStage("Closed Lost")}
+                      style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #FECACA",background:"#FEF2F2",color:"#B83232",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                      ✗ Lost
+                    </button>
+                  </div>
+                );
+              })()}
+
+              {isWon&&<div style={{padding:"8px 12px",background:"#E6F4EE",borderRadius:8,fontSize:12,color:"#1A7F5A",fontWeight:600,border:"1px solid #A8D5BE"}}>🎉 Deal Won — Payments and Contract are unlocked</div>}
             </div>
 
             {/* Unit details */}
