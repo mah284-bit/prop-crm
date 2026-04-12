@@ -16,22 +16,22 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 // ─── STYLES ───────────────────────────────────────────────────
 const GlobalStyle = () => (
   <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap');
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:#F0F2F5;color:#1a2535}
+    body{font-family:'Inter',sans-serif;background:#F7F9FC;color:#0F2540;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
     ::-webkit-scrollbar{width:5px;height:5px}
     ::-webkit-scrollbar-thumb{background:#C9A84C55;border-radius:10px}
-    input,select,textarea{font-family:'DM Sans',sans-serif;outline:none;border:1.5px solid #D1D9E6;border-radius:8px;padding:9px 12px;font-size:13px;color:#1a2535;background:#fff;width:100%;transition:border-color 0.2s}
-    input:focus,select:focus,textarea:focus{border-color:#C9A84C}
-    input.error,select.error{border-color:#B83232!important;background:#FFF8F8}
+    input,select,textarea{font-family:'Inter',sans-serif;outline:none;border:1px solid #E2E8F0;border-radius:8px;padding:9px 12px;font-size:13px;color:#0F2540;background:#fff;width:100%;transition:border-color 0.2s;letter-spacing:-.1px}
+    input:focus,select:focus,textarea:focus{border-color:#C9A84C;box-shadow:0 0 0 3px rgba(201,168,76,.1)}
+    input.error,select.error{border-color:#E53E3E!important;background:#FFF8F8}
     textarea{resize:vertical}
-    button{cursor:pointer;font-family:'DM Sans',sans-serif}
+    button{cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:-.1px}
     .fade-in{animation:fadeIn 0.25s ease}
     @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
     .slide-in{animation:slideIn 0.2s ease}
     @keyframes slideIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
     .ch{transition:box-shadow 0.18s,transform 0.18s}
-    .ch:hover{box-shadow:0 4px 20px #C9A84C22;transform:translateY(-1px)}
+    .ch:hover{box-shadow:0 4px 16px rgba(15,37,64,.08);transform:translateY(-1px)}
     .dcard{transition:box-shadow 0.15s;cursor:grab}
     .dcard:hover{box-shadow:0 3px 14px #0B1F3A22}
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -163,7 +163,7 @@ const TYPE_META = {
 const ACT_META = {
   Call:{icon:"📞",c:"#1A5FA8",bg:"#E6EFF9"}, Email:{icon:"✉",c:"#5B3FAA",bg:"#EEE8F9"},
   Meeting:{icon:"🤝",c:"#1A7F5A",bg:"#E6F4EE"}, Visit:{icon:"🏠",c:"#A06810",bg:"#FDF3DC"},
-  WhatsApp:{icon:"💬",c:"#1A7F5A",bg:"#E6F4EE"}, Note:{icon:"📝",c:"#718096",bg:"#F0F2F5"},
+  WhatsApp:{icon:"💬",c:"#1A7F5A",bg:"#E6F4EE"}, Note:{icon:"📝",c:"#718096",bg:"#F7F9FC"},
 };
 const ROLE_META = {
   super_admin:    {label:"Super Admin",    color:"#B83232",bg:"#FAEAEA",desc:"All companies · Full access"},
@@ -172,7 +172,7 @@ const ROLE_META = {
   sales_agent:    {label:"Sales Agent",    color:"#1A7F5A",bg:"#E6F4EE",desc:"Own sales leads · request discounts"},
   leasing_manager:{label:"Leasing Mgr",   color:"#5B3FAA",bg:"#EEE8F9",desc:"All leases · approve rent reductions ≤5%"},
   leasing_agent:  {label:"Leasing Agent", color:"#0F6E56",bg:"#D4F1E8",desc:"Own leases · manage tenants & payments"},
-  viewer:         {label:"Viewer",         color:"#718096",bg:"#F0F2F5",desc:"Read-only access"},
+  viewer:         {label:"Viewer",         color:"#718096",bg:"#F7F9FC",desc:"Read-only access"},
 };
 
 // ─── UTILS ────────────────────────────────────────────────────
@@ -270,23 +270,23 @@ const checkGate = (targetStage, lead) => {
 };
 
 // ─── ATOMS ────────────────────────────────────────────────────
-const Av = ({name,size=36,bg="#0B1F3A",tc="#C9A84C"}) => (
+const Av = ({name,size=36,bg="#0F2540",tc="#C9A84C"}) => (
   <div style={{width:size,height:size,borderRadius:"50%",background:bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:size*0.32,fontWeight:600,color:tc,letterSpacing:"0.5px"}}>{ini(name)}</div>
 );
 const StageBadge = ({stage}) => {
-  const m=STAGE_META[stage]||{c:"#718096",bg:"#F0F2F5"};
+  const m=STAGE_META[stage]||{c:"#718096",bg:"#F7F9FC"};
   return <span style={{display:"inline-flex",alignItems:"center",gap:4,background:m.bg,color:m.c,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,whiteSpace:"nowrap"}}><span style={{width:5,height:5,borderRadius:"50%",background:m.c,display:"inline-block"}}/>{stage}</span>;
 };
 const TypeBadge = ({type}) => {
-  const m=TYPE_META[type]||{c:"#718096",bg:"#F0F2F5"};
+  const m=TYPE_META[type]||{c:"#718096",bg:"#F7F9FC"};
   return <span style={{fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:m.bg,color:m.c}}>{type}</span>;
 };
 const RoleBadge = ({role}) => {
-  const m=ROLE_META[role]||{label:role,color:"#718096",bg:"#F0F2F5"};
+  const m=ROLE_META[role]||{label:role,color:"#718096",bg:"#F7F9FC"};
   return <span style={{fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:m.bg,color:m.color,textTransform:"capitalize"}}>{m.label}</span>;
 };
 const Btn = ({children,onClick,variant="primary",small=false,full=false,disabled=false,style:st={}}) => {
-  const s={primary:{background:"#0B1F3A",color:"#fff",border:"none"},gold:{background:"#C9A84C",color:"#0B1F3A",border:"none"},outline:{background:"#fff",color:"#0B1F3A",border:"1.5px solid #D1D9E6"},danger:{background:"#FAEAEA",color:"#B83232",border:"1.5px solid #F0BCBC"},green:{background:"#E6F4EE",color:"#1A7F5A",border:"1.5px solid #A8D5BE"},wa:{background:"#25D366",color:"#fff",border:"none"}};
+  const s={primary:{background:"#0F2540",color:"#fff",border:"none"},gold:{background:"#C9A84C",color:"#0F2540",border:"none"},outline:{background:"#fff",color:"#0F2540",border:"1.5px solid #D1D9E6"},danger:{background:"#FAEAEA",color:"#B83232",border:"1.5px solid #F0BCBC"},green:{background:"#E6F4EE",color:"#1A7F5A",border:"1.5px solid #A8D5BE"},wa:{background:"#25D366",color:"#fff",border:"none"}};
   return <button onClick={onClick} disabled={disabled} style={{...s[variant],padding:small?"6px 14px":"9px 18px",borderRadius:8,fontSize:small?12:13,fontWeight:600,display:"inline-flex",alignItems:"center",gap:6,transition:"opacity 0.15s",width:full?"100%":"auto",justifyContent:"center",opacity:disabled?0.45:1,...st}} onMouseOver={e=>{if(!disabled)e.currentTarget.style.opacity="0.82"}} onMouseOut={e=>e.currentTarget.style.opacity=disabled?"0.45":"1"}>{children}</button>;
 };
 const Spinner=({msg="Loading…"})=>(
@@ -304,14 +304,14 @@ const Empty=({icon,msg})=>(
 const FR=({label,value})=>(
   <div style={{display:"flex",flexDirection:"column",gap:2}}>
     <span style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:"0.6px",fontWeight:600}}>{label}</span>
-    <span style={{fontSize:13,color:"#1a2535",fontWeight:500}}>{value||"—"}</span>
+    <span style={{fontSize:13,color:"#0F2540",fontWeight:500}}>{value||"—"}</span>
   </div>
 );
 const Modal=({title,onClose,children,width=520})=>(
   <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
     <div className="fade-in" style={{background:"#fff",borderRadius:16,width,maxWidth:"100%",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,0.3)"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1.25rem 1.5rem",borderBottom:"1px solid #E2E8F0",position:"sticky",top:0,background:"#fff",zIndex:1}}>
-        <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{title}</span>
+        <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0F2540"}}>{title}</span>
         <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#A0AEC0",cursor:"pointer"}}>×</button>
       </div>
       <div style={{padding:"1.25rem 1.5rem"}}>{children}</div>
@@ -333,7 +333,7 @@ const Badge=({label,c,bg})=>(
     {label}
   </span>
 );
-const DiscBadge=({status})=>{const C={Pending:{c:"#A06810",bg:"#FDF3DC"},Approved:{c:"#1A7F5A",bg:"#E6F4EE"},Rejected:{c:"#B83232",bg:"#FAEAEA"},Escalated:{c:"#5B3FAA",bg:"#EEE8F9"}};const m=C[status]||{c:"#718096",bg:"#F0F2F5"};return <Badge label={status} c={m.c} bg={m.bg}/>;};
+const DiscBadge=({status})=>{const C={Pending:{c:"#A06810",bg:"#FDF3DC"},Approved:{c:"#1A7F5A",bg:"#E6F4EE"},Rejected:{c:"#B83232",bg:"#FAEAEA"},Escalated:{c:"#5B3FAA",bg:"#EEE8F9"}};const m=C[status]||{c:"#718096",bg:"#F7F9FC"};return <Badge label={status} c={m.c} bg={m.bg}/>;};
 const Toast=({msg,type="success",onDone})=>{
   useEffect(()=>{const t=setTimeout(onDone,3500);return()=>clearTimeout(t)},[]);
   const colors={success:["#E6F4EE","#1A7F5A"],error:["#FAEAEA","#B83232"],info:["#E6EFF9","#1A5FA8"],warning:["#FDF3DC","#A06810"]};
@@ -363,7 +363,7 @@ const PwInput=({value,onChange,placeholder="••••••••",onKeyDown}
 const StrengthBar=({password})=>{
   const s=getStrength(password);
   if(!password)return null;
-  return <div style={{marginTop:6}}><div style={{height:4,background:"#F0F2F5",borderRadius:4,overflow:"hidden"}}><div style={{width:`${s.pct}%`,height:"100%",background:s.color,borderRadius:4,transition:"width 0.3s"}}/></div><div style={{fontSize:11,color:s.color,fontWeight:600,marginTop:4}}>{s.label} password</div></div>;
+  return <div style={{marginTop:6}}><div style={{height:4,background:"#F7F9FC",borderRadius:4,overflow:"hidden"}}><div style={{width:`${s.pct}%`,height:"100%",background:s.color,borderRadius:4,transition:"width 0.3s"}}/></div><div style={{fontSize:11,color:s.color,fontWeight:600,marginTop:4}}>{s.label} password</div></div>;
 };
 const AuthWrap=({children})=>(
   <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0B1F3A 0%,#1A3558 60%,#0B1F3A 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
@@ -372,15 +372,15 @@ const AuthWrap=({children})=>(
 );
 const AuthLogo=({sub})=>(
   <div style={{textAlign:"center",marginBottom:28}}>
-    <div style={{fontFamily:"'Playfair Display',serif",fontSize:32,fontWeight:700,color:"#0B1F3A"}}><span style={{color:"#C9A84C"}}>◆</span> PropCRM</div>
+    <div style={{fontFamily:"'Playfair Display',serif",fontSize:32,fontWeight:700,color:"#0F2540"}}><span style={{color:"#C9A84C"}}>◆</span> PropCRM</div>
     <div style={{fontSize:13,color:"#A0AEC0",marginTop:6}}>{sub}</div>
   </div>
 );
 const ErrBox=({msg})=>msg?<div style={{background:"#FAEAEA",color:"#B83232",border:"1.5px solid #F0BCBC",borderRadius:8,padding:"10px 14px",fontSize:13,marginBottom:16,lineHeight:1.5}}>{msg}</div>:null;
 const AuthTabs=({mode,setMode})=>(
-  <div style={{display:"flex",background:"#F0F2F5",borderRadius:10,padding:4,marginBottom:24}}>
+  <div style={{display:"flex",background:"#F7F9FC",borderRadius:10,padding:4,marginBottom:24}}>
     {[["login","Sign In"]].map(([m,label])=>(
-      <button key={m} onClick={()=>setMode(m)} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",background:mode===m?"#fff":"transparent",color:mode===m?"#0B1F3A":"#A0AEC0",fontSize:13,fontWeight:mode===m?600:400,cursor:"pointer",transition:"all 0.2s",boxShadow:mode===m?"0 1px 4px rgba(0,0,0,0.08)":"none"}}>{label}</button>
+      <button key={m} onClick={()=>setMode(m)} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",background:mode===m?"#fff":"transparent",color:mode===m?"#0F2540":"#A0AEC0",fontSize:13,fontWeight:mode===m?600:400,cursor:"pointer",transition:"all 0.2s",boxShadow:mode===m?"0 1px 4px rgba(0,0,0,0.08)":"none"}}>{label}</button>
     ))}
   </div>
 );
@@ -600,9 +600,9 @@ function LoginScreen({onLogin}){
     <AuthWrap>
       <div style={{textAlign:"center"}}>
         <div style={{fontSize:56,marginBottom:16}}>📬</div>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#0B1F3A",marginBottom:10}}>Check your inbox</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#0F2540",marginBottom:10}}>Check your inbox</div>
         <div style={{fontSize:14,color:"#4A5568",lineHeight:1.8,marginBottom:6}}>We sent a confirmation email to:</div>
-        <div style={{fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:20}}>{email}</div>
+        <div style={{fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:20}}>{email}</div>
         <div style={{fontSize:13,color:"#718096",lineHeight:1.8,marginBottom:28,padding:"14px",background:"#F7F9FC",borderRadius:10,border:"1px solid #E2E8F0",textAlign:"left"}}>
           <strong>What to do:</strong><br/>1. Open the email from Supabase<br/>2. Click the <strong>"Confirm your email"</strong> link<br/>3. Come back here and sign in<br/><br/><span style={{color:"#A0AEC0"}}>Can't find it? Check Spam/Junk.</span>
         </div>
@@ -619,7 +619,7 @@ function LoginScreen({onLogin}){
       {pw==="sent"?(
         <div style={{textAlign:"center",padding:"20px 0"}}>
           <div style={{fontSize:48,marginBottom:12}}>📬</div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A",marginBottom:8}}>Check your inbox</div>
+          <div style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px",marginBottom:8}}>Check your inbox</div>
           <div style={{fontSize:13,color:"#718096",lineHeight:1.8}}>Reset link sent to:<br/><strong>{email}</strong></div>
         </div>
       ):(
@@ -748,15 +748,15 @@ function PropertyMaster({currentUser,showToast}){
   const catBuilds  = selCategory ? buildings.filter(b=>b.category_id===selCategory.id) : [];
   const buildUnits = selBuilding ? units.filter(u=>u.building_id===selBuilding.id)      : [];
 
-  const STATUS_COLORS={Available:{c:"#1A7F5A",bg:"#E6F4EE"},Reserved:{c:"#A06810",bg:"#FDF3DC"},"Under Offer":{c:"#B85C10",bg:"#FDF0E6"},Sold:{c:"#B83232",bg:"#FAEAEA"},Blocked:{c:"#718096",bg:"#F0F2F5"}};
+  const STATUS_COLORS={Available:{c:"#1A7F5A",bg:"#E6F4EE"},Reserved:{c:"#A06810",bg:"#FDF3DC"},"Under Offer":{c:"#B85C10",bg:"#FDF0E6"},Sold:{c:"#B83232",bg:"#FAEAEA"},Blocked:{c:"#718096",bg:"#F7F9FC"}};
 
   const ColHeader=({title,count,onAdd,icon})=>(
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",background:"#0B1F3A",borderRadius:"10px 10px 0 0"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",background:"#0F2540",borderRadius:"10px 10px 0 0"}}>
       <div>
         <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{icon} {title}</div>
         <div style={{fontSize:11,color:"#C9A84C"}}>{count} item{count!==1?"s":""}</div>
       </div>
-      {canEdit&&<button onClick={onAdd} style={{background:"#C9A84C",color:"#0B1F3A",border:"none",borderRadius:6,padding:"5px 10px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ Add</button>}
+      {canEdit&&<button onClick={onAdd} style={{background:"#C9A84C",color:"#0F2540",border:"none",borderRadius:6,padding:"5px 10px",fontSize:12,fontWeight:700,cursor:"pointer"}}>+ Add</button>}
     </div>
   );
 
@@ -766,10 +766,10 @@ function PropertyMaster({currentUser,showToast}){
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
       {/* Breadcrumb */}
       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:14,fontSize:13,flexWrap:"wrap"}}>
-        <span style={{fontWeight:600,color:"#0B1F3A",cursor:"pointer",textDecoration:selProject?"underline":"none"}} onClick={()=>{setSelProject(null);setSelCategory(null);setSelBuilding(null);setSelUnit(null);}}>All Projects</span>
-        {selProject&&<><span style={{color:"#A0AEC0"}}>›</span><span style={{fontWeight:600,color:"#0B1F3A",cursor:"pointer",textDecoration:selCategory?"underline":"none"}} onClick={()=>{setSelCategory(null);setSelBuilding(null);setSelUnit(null);}}>{selProject.name}</span></>}
-        {selCategory&&<><span style={{color:"#A0AEC0"}}>›</span><span style={{fontWeight:600,color:"#0B1F3A",cursor:"pointer",textDecoration:selBuilding?"underline":"none"}} onClick={()=>{setSelBuilding(null);setSelUnit(null);}}>{selCategory.name}</span></>}
-        {selBuilding&&<><span style={{color:"#A0AEC0"}}>›</span><span style={{fontWeight:600,color:"#0B1F3A"}}>{selBuilding.name}</span></>}
+        <span style={{fontWeight:600,color:"#0F2540",cursor:"pointer",textDecoration:selProject?"underline":"none"}} onClick={()=>{setSelProject(null);setSelCategory(null);setSelBuilding(null);setSelUnit(null);}}>All Projects</span>
+        {selProject&&<><span style={{color:"#A0AEC0"}}>›</span><span style={{fontWeight:600,color:"#0F2540",cursor:"pointer",textDecoration:selCategory?"underline":"none"}} onClick={()=>{setSelCategory(null);setSelBuilding(null);setSelUnit(null);}}>{selProject.name}</span></>}
+        {selCategory&&<><span style={{color:"#A0AEC0"}}>›</span><span style={{fontWeight:600,color:"#0F2540",cursor:"pointer",textDecoration:selBuilding?"underline":"none"}} onClick={()=>{setSelBuilding(null);setSelUnit(null);}}>{selCategory.name}</span></>}
+        {selBuilding&&<><span style={{color:"#A0AEC0"}}>›</span><span style={{fontWeight:600,color:"#0F2540"}}>{selBuilding.name}</span></>}
       </div>
 
       {/* 4-column master layout */}
@@ -782,11 +782,11 @@ function PropertyMaster({currentUser,showToast}){
             {projects.length===0&&<Empty icon="🏙" msg="No projects yet"/>}
             {projects.map(p=>(
               <div key={p.id} onClick={()=>{setSelProject(p);setSelCategory(null);setSelBuilding(null);setSelUnit(null);}}
-                style={{padding:"10px 14px",borderBottom:"1px solid #F0F2F5",cursor:"pointer",background:selProject?.id===p.id?"#0B1F3A":"#fff",transition:"background 0.15s"}}>
-                <div style={{fontWeight:600,fontSize:13,color:selProject?.id===p.id?"#fff":"#0B1F3A"}}>{p.name}</div>
+                style={{padding:"10px 14px",borderBottom:"1px solid #F0F2F5",cursor:"pointer",background:selProject?.id===p.id?"#0F2540":"#fff",transition:"background 0.15s"}}>
+                <div style={{fontWeight:600,fontSize:13,color:selProject?.id===p.id?"#fff":"#0F2540"}}>{p.name}</div>
                 <div style={{fontSize:11,color:selProject?.id===p.id?"#C9A84C":"#A0AEC0",marginTop:2}}>{p.developer||"—"} · {p.location||"—"}</div>
                 <div style={{display:"flex",gap:6,marginTop:5,alignItems:"center",justifyContent:"space-between"}}>
-                  <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:10,background:p.status==="Active"?"#E6F4EE":"#F0F2F5",color:p.status==="Active"?"#1A7F5A":"#718096"}}>{p.status}</span>
+                  <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:10,background:p.status==="Active"?"#E6F4EE":"#F7F9FC",color:p.status==="Active"?"#1A7F5A":"#718096"}}>{p.status}</span>
                   {canEdit&&<button onClick={e=>{e.stopPropagation();setForm({...p});setModal("project");}} style={{background:"none",border:"none",color:"#A0AEC0",fontSize:11,cursor:"pointer"}}>Edit</button>}
                 </div>
               </div>
@@ -802,10 +802,10 @@ function PropertyMaster({currentUser,showToast}){
             {selProject&&projCats.length===0&&<Empty icon="📂" msg="No categories yet"/>}
             {projCats.map(c=>(
               <div key={c.id} onClick={()=>{setSelCategory(c);setSelBuilding(null);setSelUnit(null);}}
-                style={{padding:"10px 14px",borderBottom:"1px solid #F0F2F5",cursor:"pointer",background:selCategory?.id===c.id?"#0B1F3A":"#fff"}}>
+                style={{padding:"10px 14px",borderBottom:"1px solid #F0F2F5",cursor:"pointer",background:selCategory?.id===c.id?"#0F2540":"#fff"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                   <div>
-                    <div style={{fontWeight:600,fontSize:13,color:selCategory?.id===c.id?"#fff":"#0B1F3A"}}>{c.name}</div>
+                    <div style={{fontWeight:600,fontSize:13,color:selCategory?.id===c.id?"#fff":"#0F2540"}}>{c.name}</div>
                     <TypeBadge type={c.type}/>
                   </div>
                   {canEdit&&<button onClick={e=>{e.stopPropagation();setForm({...c});setModal("category");}} style={{background:"none",border:"none",color:"#A0AEC0",fontSize:11,cursor:"pointer"}}>Edit</button>}
@@ -823,8 +823,8 @@ function PropertyMaster({currentUser,showToast}){
             {selCategory&&catBuilds.length===0&&<Empty icon="🏢" msg="No buildings yet"/>}
             {catBuilds.map(b=>(
               <div key={b.id} onClick={()=>{setSelBuilding(b);setSelUnit(null);}}
-                style={{padding:"10px 14px",borderBottom:"1px solid #F0F2F5",cursor:"pointer",background:selBuilding?.id===b.id?"#0B1F3A":"#fff"}}>
-                <div style={{fontWeight:600,fontSize:13,color:selBuilding?.id===b.id?"#fff":"#0B1F3A"}}>{b.name}</div>
+                style={{padding:"10px 14px",borderBottom:"1px solid #F0F2F5",cursor:"pointer",background:selBuilding?.id===b.id?"#0F2540":"#fff"}}>
+                <div style={{fontWeight:600,fontSize:13,color:selBuilding?.id===b.id?"#fff":"#0F2540"}}>{b.name}</div>
                 <div style={{fontSize:11,color:selBuilding?.id===b.id?"#C9A84C":"#A0AEC0",marginTop:2}}>
                   {b.floors?`${b.floors} floors · `:""}{b.total_units?`${b.total_units} units`:""}
                 </div>
@@ -841,25 +841,25 @@ function PropertyMaster({currentUser,showToast}){
             {!selBuilding&&<Empty icon="👆" msg="Select a building"/>}
             {selBuilding&&buildUnits.length===0&&<Empty icon="🔑" msg="No units yet"/>}
             {buildUnits.map(u=>{
-              const sc=STATUS_COLORS[u.status]||{c:"#718096",bg:"#F0F2F5"};
+              const sc=STATUS_COLORS[u.status]||{c:"#718096",bg:"#F7F9FC"};
               const isSel=selUnit?.id===u.id;
               return(
                 <div key={u.id} onClick={()=>setSelUnit(isSel?null:u)}
                   style={{padding:"10px 14px",borderBottom:"1px solid #F0F2F5",cursor:"pointer",background:isSel?"#FDF3DC":"#fff",borderLeft:isSel?"3px solid #C9A84C":"3px solid transparent"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                    <div style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>Unit {u.unit_number}</div>
+                    <div style={{fontWeight:700,fontSize:13,color:"#0F2540"}}>Unit {u.unit_number}</div>
                     <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:10,background:sc.bg,color:sc.c}}>{u.status}</span>
                   </div>
                   {u.bedrooms&&<div style={{fontSize:11,color:"#718096",marginTop:2}}>{u.bedrooms}BR · {u.view||"No view"} · Floor {u.floor||"—"}</div>}
                   <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
-                    <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",fontFamily:"'Playfair Display',serif"}}>{fmtAED(u.base_price)}</div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#0F2540",fontFamily:"'Playfair Display',serif"}}>{fmtAED(u.base_price)}</div>
                     {u.price_per_sqft&&<div style={{fontSize:11,color:"#1A7F5A",fontWeight:600}}>AED {u.price_per_sqft.toLocaleString()}/sqft</div>}
                   </div>
                   {isSel&&(
                     <div style={{marginTop:10,padding:"10px",background:"#fff",borderRadius:8,border:"1px solid #E8C97A"}}>
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
                         {[["Size",`${u.size_sqft||0} sqft`],["Balcony",`${u.balcony_sqft||0} sqft`],["Service Chg",u.service_charge_per_sqft?`AED ${u.service_charge_per_sqft}/sqft`:"—"],["Payment",u.payment_plan||"—"],["Handover",fmtDate(u.handover_date)],["Bathrooms",u.bathrooms||"—"]].map(([l,v])=>(
-                          <div key={l}><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:"0.5px"}}>{l}</div><div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{v}</div></div>
+                          <div key={l}><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:"0.5px"}}>{l}</div><div style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>{v}</div></div>
                         ))}
                       </div>
                       {u.notes&&<div style={{fontSize:11,color:"#718096",marginBottom:8}}>{u.notes}</div>}
@@ -983,7 +983,7 @@ const PAYMENT_STATUS_META = {
   Deposited: { c:"#5B3FAA", bg:"#EEE8F9" },
   Cleared:   { c:"#1A7F5A", bg:"#E6F4EE" },
   Bounced:   { c:"#B83232", bg:"#FAEAEA" },
-  Cancelled: { c:"#718096", bg:"#F0F2F5" },
+  Cancelled: { c:"#718096", bg:"#F7F9FC" },
 };
 
 
@@ -992,13 +992,13 @@ const PAYMENT_STATUS_META = {
 // ══════════════════════════════════════════════════════════════════
 const OPP_STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
 const OPP_STAGE_META = {
-  "New":           {c:"#718096", bg:"#F0F2F5"},
+  "New":           {c:"#718096", bg:"#F7F9FC"},
   "Contacted":     {c:"#1A5FA8", bg:"#E6EFF9"},
   "Site Visit":    {c:"#5B3FAA", bg:"#EEE8F9"},
   "Proposal Sent": {c:"#A06810", bg:"#FDF3DC"},
   "Negotiation":   {c:"#B83232", bg:"#FAEAEA"},
   "Closed Won":    {c:"#1A7F5A", bg:"#E6F4EE"},
-  "Closed Lost":   {c:"#718096", bg:"#F0F2F5"},
+  "Closed Lost":   {c:"#718096", bg:"#F7F9FC"},
 };
 
 function OutcomeModal({activity, onClose, onSave}){
@@ -1015,7 +1015,7 @@ function OutcomeModal({activity, onClose, onSave}){
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,padding:"1rem"}}>
       <div style={{background:"#fff",borderRadius:16,width:440,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
           <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>{titles[outcome]}</span>
           <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
         </div>
@@ -1040,7 +1040,7 @@ function OutcomeModal({activity, onClose, onSave}){
               if(outcome==="rescheduled"&&!reschedDt){alert("Please select a new date");return;}
               if(outcome==="cancelled"&&!notes.trim()){alert("Please provide a reason");return;}
               onSave(outcome,notes,reschedDt);
-            }} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+            }} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
               Save Outcome
             </button>
           </div>
@@ -1083,13 +1083,13 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
     const isUpcoming = st==="upcoming";
     return(
       <div style={{background:"#fff",border:"1px solid "+(isUpcoming?"#C9A84C":"#E2E8F0"),borderRadius:10,padding:"12px 14px",display:"flex",gap:10}}>
-        <div style={{width:34,height:34,borderRadius:"50%",background:isUpcoming?"rgba(201,168,76,.12)":"#F0F2F5",border:isUpcoming?"1.5px solid #C9A84C":"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
+        <div style={{width:34,height:34,borderRadius:"50%",background:isUpcoming?"rgba(201,168,76,.12)":"#F7F9FC",border:isUpcoming?"1.5px solid #C9A84C":"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
           {icons[a.type]||"📋"}
         </div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4,flexWrap:"wrap",gap:6}}>
             <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>{a.type}</span>
+              <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{a.type}</span>
               <span style={{fontSize:10,fontWeight:700,color:statusColors[st]||"#718096",background:"rgba(0,0,0,.05)",padding:"2px 8px",borderRadius:10}}>
                 {statusLabels[st]||st}
               </span>
@@ -1276,9 +1276,9 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
         <button onClick={onBack} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||`Opportunity — ${lead.name}`}</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0F2540"}}>{opp.title||`Opportunity — ${lead.name}`}</span>
             <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>{opp.stage}</span>
-            {opp.status==="On Hold"&&<span style={{padding:"3px 10px",borderRadius:20,background:"#F0F2F5",color:"#718096",fontSize:11,fontWeight:600}}>On Hold</span>}
+            {opp.status==="On Hold"&&<span style={{padding:"3px 10px",borderRadius:20,background:"#F7F9FC",color:"#718096",fontSize:11,fontWeight:600}}>On Hold</span>}
           </div>
           <div style={{fontSize:12,color:"#718096",marginTop:2}}>{lead.name} · {lead.phone||""} {unit?`· ${unit.unit_ref} — ${unit.sub_type}`:""}</div>
         </div>
@@ -1297,14 +1297,14 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       {/* Summary strip */}
       <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
         {[
-          ["💰 Budget",    opp.budget?`AED ${Number(opp.budget).toLocaleString()}`:"—",    "#0B1F3A","#C9A84C"],
+          ["💰 Budget",    opp.budget?`AED ${Number(opp.budget).toLocaleString()}`:"—",    "#0F2540","#C9A84C"],
           ["🏠 Unit",      unit?`${unit.unit_ref} — ${unit.sub_type}`:"Not linked",         "#F7F9FC","#4A5568"],
           ["👤 Agent",     agent?.full_name||"Unassigned",                                  "#F7F9FC","#4A5568"],
           ["📊 Payments",  totalDue>0?`${totalPaid/totalDue*100|0}% collected`:"No payments","#F7F9FC","#4A5568"],
           opp.final_price&&["✅ Final",`AED ${Number(opp.final_price).toLocaleString()}`,"#E6F4EE","#1A7F5A"],
         ].filter(Boolean).map(([l,v,bg,col])=>(
           <div key={l} style={{background:bg,borderRadius:8,padding:"8px 14px",flex:1,minWidth:120}}>
-            <div style={{fontSize:9,color:bg==="#0B1F3A"?"rgba(255,255,255,.5)":"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
+            <div style={{fontSize:9,color:bg==="#0F2540"?"rgba(255,255,255,.5)":"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
             <div style={{fontSize:13,fontWeight:700,color:col,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{v}</div>
           </div>
         ))}
@@ -1319,7 +1319,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
           {id:"contract", label:`Contract${contract?" ✓":""}`,  locked:!isWon, lockMsg:"Unlocks at Closed Won"},
         ].map(({id,label,locked,lockMsg})=>(
           <button key={id} onClick={()=>{if(locked){showToast(`${lockMsg}`,"error");return;}setActiveTab(id);}}
-            style={{padding:"8px 16px",borderRadius:"8px 8px 0 0",border:"none",borderBottom:activeTab===id?"2.5px solid #0B1F3A":"2.5px solid transparent",background:"transparent",fontSize:13,fontWeight:activeTab===id?700:400,color:locked?"#CBD5E0":activeTab===id?"#0B1F3A":"#718096",cursor:locked?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:4}}>
+            style={{padding:"8px 16px",borderRadius:"8px 8px 0 0",border:"none",borderBottom:activeTab===id?"2.5px solid #0B1F3A":"2.5px solid transparent",background:"transparent",fontSize:13,fontWeight:activeTab===id?700:400,color:locked?"#CBD5E0":activeTab===id?"#0F2540":"#718096",cursor:locked?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:4}}>
             {locked&&"🔒 "}{label}
           </button>
         ))}
@@ -1342,7 +1342,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                   return (
                     <div key={s} style={{display:"flex",alignItems:"center",flexShrink:0}}>
                       <div onClick={()=>moveStage(s)}
-                        style={{padding:"5px 12px",borderRadius:20,background:isCur?"#C9A84C":isDone?"rgba(26,127,90,.3)":"rgba(255,255,255,.08)",color:isCur?"#0B1F3A":isDone?"#4ADE80":"rgba(255,255,255,.4)",fontSize:11,fontWeight:isCur||isDone?700:400,cursor:"pointer",whiteSpace:"nowrap",transition:"all .15s"}}>
+                        style={{padding:"5px 12px",borderRadius:20,background:isCur?"#C9A84C":isDone?"rgba(26,127,90,.3)":"rgba(255,255,255,.08)",color:isCur?"#0F2540":isDone?"#4ADE80":"rgba(255,255,255,.4)",fontSize:11,fontWeight:isCur||isDone?700:400,cursor:"pointer",whiteSpace:"nowrap",transition:"all .15s"}}>
                         {isDone?"✓ ":""}{s}
                       </div>
                       {i<arr.length-1&&<div style={{width:16,height:1,background:"rgba(255,255,255,.1)",flexShrink:0}}/>}
@@ -1364,7 +1364,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
               {unit?(
                 <div style={{display:"flex",gap:12,alignItems:"flex-start",flexWrap:"wrap"}}>
                   <div style={{flex:1,minWidth:200}}>
-                    <div style={{fontWeight:700,fontSize:15,color:"#0B1F3A",marginBottom:4}}>{unit.unit_ref} — {unit.sub_type}</div>
+                    <div style={{fontWeight:700,fontSize:15,color:"#0F2540",marginBottom:4}}>{unit.unit_ref} — {unit.sub_type}</div>
                     <div style={{fontSize:12,color:"#718096",marginBottom:6}}>{proj?.name||"—"} · Floor {unit.floor_number||"—"} · {unit.view||"—"} · {unit.size_sqft?`${Number(unit.size_sqft).toLocaleString()} sqft`:""}</div>
                     {sp&&<div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#1A5FA8"}}>AED {Number(sp.asking_price).toLocaleString()}</div>}
                   </div>
@@ -1372,7 +1372,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                     {[["Beds",unit.bedrooms===0?"Studio":unit.bedrooms||"—"],["Baths",unit.bathrooms||"—"],["Sqft",unit.size_sqft?Number(unit.size_sqft).toLocaleString():"—"],["Status",unit.status]].map(([l,v])=>(
                       <div key={l} style={{background:"#FAFBFC",borderRadius:8,padding:"8px 10px"}}>
                         <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
-                        <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{v}</div>
+                        <div style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>{v}</div>
                       </div>
                     ))}
                   </div>
@@ -1389,7 +1389,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                 {[["Budget",opp.budget],["Offer Price",opp.offer_price],["Final Price",opp.final_price],["Discount %",opp.discount_pct?opp.discount_pct+"%":null]].filter(([,v])=>v).map(([l,v])=>(
                   <div key={l} style={{background:"#FAFBFC",borderRadius:8,padding:"10px 12px"}}>
                     <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
-                    <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>{typeof v==="number"?`AED ${Number(v).toLocaleString()}`:v}</div>
+                    <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{typeof v==="number"?`AED ${Number(v).toLocaleString()}`:v}</div>
                   </div>
                 ))}
               </div>
@@ -1402,7 +1402,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                   <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>
                     {isOffPlan?"🏗️ Off-Plan Payment Plan":isResale?"🔑 Ready / Resale":"🏢 Commercial"} 
                   </div>
-                  <span style={{fontSize:11,color:"#718096",background:"#F0F2F5",padding:"3px 10px",borderRadius:10}}>
+                  <span style={{fontSize:11,color:"#718096",background:"#F7F9FC",padding:"3px 10px",borderRadius:10}}>
                     {opp.property_category||"Off-Plan"}
                   </span>
                 </div>
@@ -1422,7 +1422,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                       ].filter(([,v])=>v&&v!=="—").map(([l,v])=>(
                         <div key={l} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 10px"}}>
                           <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
-                          <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
+                          <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{v}</div>
                         </div>
                       ))}
                     </div>
@@ -1461,7 +1461,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                       ].filter(([,v])=>v&&v!=="—").map(([l,v])=>(
                         <div key={l} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 10px"}}>
                           <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
-                          <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
+                          <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{v}</div>
                         </div>
                       ))}
                     </div>
@@ -1508,7 +1508,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
         {/* ── ACTIVITIES TAB ── */}
         {activeTab==="activities"&&(
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
-            <button onClick={()=>setShowLog(true)} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Activity</button>
+            <button onClick={()=>setShowLog(true)} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Activity</button>
             {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No tasks yet — log a call, meeting, site visit or note</div>}
             {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast}/>}
           </div>
@@ -1520,7 +1520,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
             {!isWon?(
               <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
                 <div style={{fontSize:40,marginBottom:10}}>🔒</div>
-                <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>Locked until Closed Won</div>
+                <div style={{fontSize:14,fontWeight:600,color:"#0F2540",marginBottom:6}}>Locked until Closed Won</div>
                 <div style={{fontSize:12}}>{isDeveloper?"Track developer payment collection here":"Track your commission once deal is closed"}</div>
               </div>
             ):(
@@ -1529,26 +1529,26 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                 {totalDue>0&&(
                   <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"14px 16px"}}>
                     <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-                      <span style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>AED {totalPaid.toLocaleString()} collected</span>
+                      <span style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>AED {totalPaid.toLocaleString()} collected</span>
                       <span style={{fontSize:12,color:"#718096"}}>of AED {totalDue.toLocaleString()}</span>
                     </div>
-                    <div style={{background:"#F0F2F5",borderRadius:6,height:10,overflow:"hidden"}}>
+                    <div style={{background:"#F7F9FC",borderRadius:6,height:10,overflow:"hidden"}}>
                       <div style={{width:`${totalDue>0?totalPaid/totalDue*100:0}%`,height:"100%",background:"#1A7F5A",borderRadius:6,transition:"width .4s"}}/>
                     </div>
                   </div>
                 )}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <span style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>Payment Schedule ({payments.length})</span>
+                  <span style={{fontSize:13,fontWeight:600,color:"#0F2540"}}>Payment Schedule ({payments.length})</span>
                   <button onClick={()=>{setPayForm({milestone:"Booking Deposit",amount:"",percentage:"",due_date:"",payment_type:"Cheque",cheque_number:"",cheque_date:"",bank_name:"",status:"Pending",notes:"",cheque_file_url:""});setEditPayment(null);setShowPayment(true);}}
-                    style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add Payment</button>
+                    style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add Payment</button>
                 </div>
                 {payments.map(pay=>{
-                  const pm=PAYMENT_STATUS_META[pay.status]||{c:"#718096",bg:"#F0F2F5"};
+                  const pm=PAYMENT_STATUS_META[pay.status]||{c:"#718096",bg:"#F7F9FC"};
                   return (
                     <div key={pay.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px"}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
                         <div>
-                          <div style={{fontWeight:700,fontSize:14,color:"#0B1F3A",marginBottom:2}}>AED {Number(pay.amount).toLocaleString()}</div>
+                          <div style={{fontWeight:700,fontSize:14,color:"#0F2540",marginBottom:2}}>AED {Number(pay.amount).toLocaleString()}</div>
                           <div style={{fontSize:12,color:"#718096"}}>{pay.milestone}{pay.percentage?` · ${pay.percentage}%`:""}</div>
                           {pay.cheque_number&&<div style={{fontSize:11,color:"#A0AEC0",marginTop:2}}>Cheque #{pay.cheque_number}{pay.bank_name?` · ${pay.bank_name}`:""}</div>}
                           {pay.due_date&&<div style={{fontSize:11,color:"#A0AEC0"}}>Due: {fmtDate(pay.due_date)}</div>}
@@ -1580,11 +1580,11 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
             {!isWon?(
               <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
                 <div style={{fontSize:40,marginBottom:10}}>🔒</div>
-                <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>Locked until Closed Won</div>
+                <div style={{fontSize:14,fontWeight:600,color:"#0F2540",marginBottom:6}}>Locked until Closed Won</div>
               </div>
             ):contract?(
               <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
-                <div style={{fontSize:14,fontWeight:700,color:"#0B1F3A",marginBottom:10}}>📄 Sales Contract</div>
+                <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:10}}>📄 Sales Contract</div>
                 <div style={{fontSize:12,color:"#718096"}}>Contract #{contract.contract_number||"—"} · SPA signed {fmtDate(contract.spa_date)}</div>
               </div>
             ):(
@@ -1598,7 +1598,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       {showLog&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"92vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>Log Task</span>
               <button onClick={()=>setShowLog(false)} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
@@ -1608,7 +1608,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                 <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                   {[["Call","📞"],["Email","✉️"],["Meeting","🤝"],["Visit","🏠"],["WhatsApp","💬"],["Note","📝"]].map(([t,icon])=>(
                     <button key={t} onClick={()=>setLogForm(f=>({...f,type:t}))}
-                      style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${logForm.type===t?"#0B1F3A":"#E2E8F0"}`,background:logForm.type===t?"#0B1F3A":"#fff",color:logForm.type===t?"#fff":"#4A5568",fontSize:12,cursor:"pointer",fontWeight:logForm.type===t?600:400,display:"flex",alignItems:"center",gap:4}}>
+                      style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${logForm.type===t?"#0F2540":"#E2E8F0"}`,background:logForm.type===t?"#0F2540":"#fff",color:logForm.type===t?"#fff":"#4A5568",fontSize:12,cursor:"pointer",fontWeight:logForm.type===t?600:400,display:"flex",alignItems:"center",gap:4}}>
                       <span>{icon}</span>{t}
                     </button>
                   ))}
@@ -1639,7 +1639,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
               </div>
               <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
                 <button onClick={()=>setShowLog(false)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                <button onClick={saveLog} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save"}</button>
+                <button onClick={saveLog} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save"}</button>
               </div>
             </div>
           </div>
@@ -1683,7 +1683,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       {showPayment&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>💰 {editPayment?"Edit":"Add"} Payment</span>
               <button onClick={()=>{setShowPayment(false);setEditPayment(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
@@ -1752,7 +1752,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
             </div>
             <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
               <button onClick={()=>{setShowPayment(false);setEditPayment(null);}} style={{padding:"9px 20px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={savePayment} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":editPayment?"Save Changes":"Add Payment"}</button>
+              <button onClick={savePayment} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":editPayment?"Save Changes":"Add Payment"}</button>
             </div>
           </div>
         </div>
@@ -1890,14 +1890,14 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           {OPP_STAGES.map(s=><option key={s}>{s}</option>)}
         </select>
         <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
-        {canEdit&&<button onClick={()=>{setForm(blank);setEditLead(null);setShowAdd(true);}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Contact</button>}
+        {canEdit&&<button onClick={()=>{setForm(blank);setEditLead(null);setShowAdd(true);}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Contact</button>}
       </div>
 
       {/* Stage summary strip */}
       <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",paddingBottom:4,flexShrink:0}}>
         {["All",...OPP_STAGES.filter(s=>!["Closed Lost"].includes(s))].map(s=>{
           const cnt=s==="All"?filtered.length:filtered.filter(l=>leadBestStage(l.id)===s).length;
-          const m=s==="All"?{c:"#0B1F3A",bg:"#F0F2F5"}:OPP_STAGE_META[s]||{c:"#718096",bg:"#F0F2F5"};
+          const m=s==="All"?{c:"#0F2540",bg:"#F7F9FC"}:OPP_STAGE_META[s]||{c:"#718096",bg:"#F7F9FC"};
           return (
             <button key={s} onClick={()=>setFStage(s)}
               style={{flexShrink:0,padding:"5px 12px",borderRadius:8,border:`1.5px solid ${fStage===s?m.c:"#E2E8F0"}`,background:fStage===s?m.bg:"#fff",color:m.c,fontSize:11,fontWeight:600,cursor:"pointer"}}>
@@ -1915,7 +1915,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           const activeOpps=lo.filter(o=>o.status==="Active");
           const wonOpps=lo.filter(o=>o.status==="Won");
           const bestStage=leadBestStage(l.id);
-          const sm2=OPP_STAGE_META[bestStage]||{c:"#718096",bg:"#F0F2F5"};
+          const sm2=OPP_STAGE_META[bestStage]||{c:"#718096",bg:"#F7F9FC"};
           const assignedUser=users.find(u=>u.id===l.assigned_to);
           const totalVal=lo.reduce((s,o)=>s+(o.budget||0),0);
           if(fStage!=="All"&&bestStage!==fStage)return null;
@@ -1928,7 +1928,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
                 <Av name={l.name} size={32}/>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                    <span style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>{l.name}</span>
+                    <span style={{fontWeight:700,fontSize:13,color:"#0F2540"}}>{l.name}</span>
                     <span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:sm2.bg,color:sm2.c}}>{bestStage}</span>
                     {wonOpps.length>0&&<span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ {wonOpps.length} Won</span>}
                   </div>
@@ -1939,7 +1939,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
                   </div>
                 </div>
                 <div style={{textAlign:"right",flexShrink:0}}>
-                  <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{activeOpps.length} active opp{activeOpps.length!==1?"s":""}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{activeOpps.length} active opp{activeOpps.length!==1?"s":""}</div>
                   {totalVal>0&&<div style={{fontSize:11,color:"#718096"}}>AED {fmtM(totalVal)}</div>}
                   <div style={{fontSize:10,color:"#A0AEC0"}}>{assignedUser?.full_name||"Unassigned"}</div>
                 </div>
@@ -1953,7 +1953,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       {showAdd&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>{editLead?"Edit":"New"} Contact</span>
               <button onClick={()=>{setShowAdd(false);setEditLead(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
@@ -1976,7 +1976,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
             </div>
             <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
               <button onClick={()=>{setShowAdd(false);setEditLead(null);}} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={saveLead} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editLead?"Save":"Add Contact"}</button>
+              <button onClick={saveLead} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editLead?"Save":"Add Contact"}</button>
             </div>
           </div>
         </div>
@@ -1992,12 +1992,12 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         <button onClick={()=>setView("list")} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Contacts</button>
         <Av name={selLead.name} size={40}/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A"}}>{selLead.name}</div>
+          <div style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px"}}>{selLead.name}</div>
           <div style={{fontSize:12,color:"#718096"}}>{selLead.phone} {selLead.email?`· ${selLead.email}`:""} {selLead.nationality?`· ${selLead.nationality}`:""}</div>
         </div>
         <div style={{display:"flex",gap:6}}>
           {canEdit&&<button onClick={()=>{setForm({...blank,...selLead});setEditLead(selLead);setShowAdd(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
-          {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Opportunity</button>}
+          {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Opportunity</button>}
         </div>
       </div>
 
@@ -2006,29 +2006,29 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         {[["📞 Phone",selLead.phone||"—"],["✉ Email",selLead.email||"—"],["🌍 Nationality",selLead.nationality||"—"],["🏷 Source",selLead.source||"—"],["📋 Type",selLead.property_type||"—"]].map(([l,v])=>(
           <div key={l} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 14px",flex:1,minWidth:120}}>
             <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
-            <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div>
+            <div style={{fontSize:13,fontWeight:600,color:"#0F2540",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div>
           </div>
         ))}
       </div>
 
       {/* Opportunities */}
-      <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:12}}>
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:12}}>
         Opportunities ({leadOpps.length})
       </div>
       <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8}}>
         {leadOpps.length===0&&(
           <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
             <div style={{fontSize:36,marginBottom:10}}>🎯</div>
-            <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>No opportunities yet</div>
+            <div style={{fontSize:14,fontWeight:600,color:"#0F2540",marginBottom:6}}>No opportunities yet</div>
             <div style={{fontSize:12,marginBottom:16}}>Add an opportunity for each property this contact is interested in</div>
-            {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Opportunity</button>}
+            {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Opportunity</button>}
           </div>
         )}
         {leadOpps.map(opp=>{
           const unit=units.find(u=>u.id===opp.unit_id);
           const proj=unit?projects.find(p=>p.id===unit.project_id):null;
           const sp=unit?salePricing.find(s=>s.unit_id===unit.id):null;
-          const sm3=OPP_STAGE_META[opp.stage]||{c:"#718096",bg:"#F0F2F5"};
+          const sm3=OPP_STAGE_META[opp.stage]||{c:"#718096",bg:"#F7F9FC"};
           const agent=users.find(u=>u.id===opp.assigned_to);
           return (
             <div key={opp.id} onClick={()=>{setSelOpp(opp);setView("opportunity");}}
@@ -2038,10 +2038,10 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
-                    <span style={{fontWeight:700,fontSize:14,color:"#0B1F3A"}}>{opp.title||"Opportunity"}</span>
+                    <span style={{fontWeight:700,fontSize:14,color:"#0F2540"}}>{opp.title||"Opportunity"}</span>
                     <span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:sm3.bg,color:sm3.c}}>{opp.stage}</span>
                     {opp.status==="Won"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ Won</span>}
-                    {opp.status==="Lost"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#F0F2F5",color:"#718096"}}>Lost</span>}
+                    {opp.status==="Lost"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#F7F9FC",color:"#718096"}}>Lost</span>}
                     {opp.status==="On Hold"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#FDF3DC",color:"#8A6200"}}>On Hold</span>}
                   </div>
                   {unit&&<div style={{fontSize:12,color:"#4A5568",marginBottom:2}}>🏠 {unit.unit_ref} — {unit.sub_type}{proj?` · ${proj.name}`:""}</div>}
@@ -2063,7 +2063,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       {showAddOpp&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
               <div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>🎯 New Opportunity</div>
                 <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>for {selLead.name}</div>
@@ -2081,7 +2081,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
                   <div style={{display:"flex",gap:8}}>
                     {[["Off-Plan","🏗️"],["Ready / Resale","🔑"],["Commercial","🏢"]].map(([cat,icon])=>(
                       <button key={cat} onClick={()=>setOppForm(f=>({...f,property_category:cat}))}
-                        style={{flex:1,padding:"8px",borderRadius:8,border:`1.5px solid ${oppForm.property_category===cat?"#0B1F3A":"#E2E8F0"}`,background:oppForm.property_category===cat?"#0B1F3A":"#fff",color:oppForm.property_category===cat?"#fff":"#4A5568",fontSize:12,cursor:"pointer",fontWeight:oppForm.property_category===cat?600:400}}>
+                        style={{flex:1,padding:"8px",borderRadius:8,border:`1.5px solid ${oppForm.property_category===cat?"#0F2540":"#E2E8F0"}`,background:oppForm.property_category===cat?"#0F2540":"#fff",color:oppForm.property_category===cat?"#fff":"#4A5568",fontSize:12,cursor:"pointer",fontWeight:oppForm.property_category===cat?600:400}}>
                         {icon} {cat}
                       </button>
                     ))}
@@ -2120,7 +2120,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
             </div>
             <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
               <button onClick={()=>setShowAddOpp(false)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={saveOpp} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":"Create Opportunity"}</button>
+              <button onClick={saveOpp} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":"Create Opportunity"}</button>
             </div>
           </div>
         </div>
@@ -2180,7 +2180,7 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
       <div style={{fontSize:22}}>{icon}</div>
       <div style={{flex:1}}>
         <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:"0.7px",fontWeight:600,marginBottom:4}}>{label}</div>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0B1F3A",lineHeight:1}}>{value}</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0F2540",lineHeight:1}}>{value}</div>
         {sub&&<div style={{fontSize:12,color:"#718096",marginTop:4}}>{sub}</div>}
       </div>
       {onClick&&<div style={{position:"absolute",top:10,right:10,fontSize:12,color:"#A0AEC0"}}>→</div>}
@@ -2235,7 +2235,7 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
       {/* ── Stat cards ──────────────────────────────────────── */}
       <div className="stat-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
         <SC label="Upcoming Tasks"   value={upcomingTasks.length}  sub={overdueTasksCount>0?`⚠️ ${overdueTasksCount} overdue`:"All on track"} accent={overdueTasksCount>0?"#E53E3E":"#1A7F5A"} icon="📋" onClick={()=>onNavigate("leads")} badge={overdueTasksCount>0?overdueTasksCount:null}/>
-        <SC label="Active Opps"      value={active.length}         sub={`${won.length} won · ${convRate}% conv.`}   accent="#0B1F3A"  icon="🎯"  onClick={()=>onNavigate("leads")}/>
+        <SC label="Active Opps"      value={active.length}         sub={`${won.length} won · ${convRate}% conv.`}   accent="#0F2540"  icon="🎯"  onClick={()=>onNavigate("leads")}/>
         <SC label="Won Value"        value={fmtM(wonVal)}          sub={`${won.length} deals closed`}      accent="#1A7F5A"  icon="🏆"  onClick={()=>onNavigate("leads")}/>
         <SC label="Available Units"  value={availUnits.length}     sub={`${ctxUnits.length} total`}        accent="#C9A84C"  icon="🏠"  onClick={()=>onNavigate("builder")}/>
         <SC label="Reserved"         value={reservedUnits.length}  sub="Pending confirmation"              accent="#A06810"  icon="🔒"  onClick={()=>onNavigate("builder")} badge={reservedUnits.length>0?reservedUnits.length:null}/>
@@ -2244,13 +2244,13 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
       {/* ── Stage Pipeline ──────────────────────────────────── */}
       <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#0B1F3A"}}>Opportunities by Stage</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#0F2540"}}>Opportunities by Stage</div>
           <button onClick={()=>onNavigate("pipeline")} style={{fontSize:12,color:"#1A5FA8",background:"none",border:"none",cursor:"pointer",fontWeight:600}}>Kanban Board →</button>
         </div>
         {OPP_STAGES.filter(s=>!["Closed Won","Closed Lost"].includes(s)).map(s=>{
           const cnt=visibleOpps.filter(o=>o.stage===s&&o.status==="Active").length;
           const val=visibleOpps.filter(o=>o.stage===s&&o.status==="Active").reduce((a,o)=>a+(o.budget||0),0);
-          const m=OPP_STAGE_META[s]||{c:"#718096",bg:"#F0F2F5"};
+          const m=OPP_STAGE_META[s]||{c:"#718096",bg:"#F7F9FC"};
           const maxCnt=Math.max(...OPP_STAGES.map(st=>visibleOpps.filter(o=>o.stage===st).length),1);
           return (
             <div key={s} onClick={()=>onNavigate("leads")} style={{marginBottom:10,cursor:"pointer"}}
@@ -2258,11 +2258,11 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <span style={{fontSize:11,fontWeight:600,padding:"1px 8px",borderRadius:20,background:m.bg,color:m.c}}>{s}</span>
-                  <span style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{cnt}</span>
+                  <span style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{cnt}</span>
                 </div>
                 {val>0&&<span style={{fontSize:11,color:"#718096"}}>AED {fmtM(val)}</span>}
               </div>
-              <div style={{background:"#F0F2F5",borderRadius:6,height:8,overflow:"hidden"}}>
+              <div style={{background:"#F7F9FC",borderRadius:6,height:8,overflow:"hidden"}}>
                 <div style={{width:`${maxCnt>0?Math.round(cnt/maxCnt*100):0}%`,height:"100%",background:m.c,borderRadius:6,transition:"width .4s"}}/>
               </div>
             </div>
@@ -2289,7 +2289,7 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
         {/* Recent Activity */}
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#0B1F3A"}}>Recent Activity</div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#0F2540"}}>Recent Activity</div>
             <button onClick={()=>onNavigate("activity")} style={{fontSize:12,color:"#1A5FA8",background:"none",border:"none",cursor:"pointer",fontWeight:600}}>View All →</button>
           </div>
           {recent.length===0&&<div style={{textAlign:"center",padding:"1.5rem",color:"#A0AEC0",fontSize:12}}>No activity yet</div>}
@@ -2299,9 +2299,9 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
               <div key={a.id} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:"1px solid #F7F9FC",cursor:"pointer"}}
                 onClick={()=>onNavigate("leads")}
                 onMouseOver={e=>e.currentTarget.style.background="#F7F9FC"} onMouseOut={e=>e.currentTarget.style.background="transparent"}>
-                <div style={{width:28,height:28,borderRadius:"50%",background:"#F0F2F5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>{icons[a.type]||"📋"}</div>
+                <div style={{width:28,height:28,borderRadius:"50%",background:"#F7F9FC",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>{icons[a.type]||"📋"}</div>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.type} — {a.lead_name||"Lead"}</div>
+                  <div style={{fontSize:12,fontWeight:600,color:"#0F2540",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.type} — {a.lead_name||"Lead"}</div>
                   <div style={{fontSize:11,color:"#A0AEC0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.note}</div>
                 </div>
                 <div style={{fontSize:10,color:"#A0AEC0",flexShrink:0}}>{new Date(a.created_at).toLocaleDateString("en-AE",{day:"numeric",month:"short"})}</div>
@@ -2313,9 +2313,9 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
         {/* Quick Actions */}
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"14px"}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#0B1F3A",marginBottom:10}}>Quick Actions</div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:10}}>Quick Actions</div>
             {[
-              {icon:"👤",label:"Add New Lead",       tab:"leads",    bg:"#0B1F3A",col:"#C9A84C"},
+              {icon:"👤",label:"Add New Lead",       tab:"leads",    bg:"#0F2540",col:"#C9A84C"},
               {icon:"🏠",label:"View Inventory",     tab:"builder",  bg:"#1A5FA8",col:"#fff"},
               {icon:"📋",label:"Pipeline Board",     tab:"pipeline", bg:"#5B3FAA",col:"#fff"},
               {icon:"⚡",label:"Pending Discounts",  tab:"discounts",bg:"#A06810",col:"#fff"},
@@ -2330,7 +2330,7 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
           </div>
 
           {/* Today's summary */}
-          <div style={{background:"#0B1F3A",borderRadius:12,padding:"14px"}}>
+          <div style={{background:"#0F2540",borderRadius:12,padding:"14px"}}>
             <div style={{fontSize:12,fontWeight:700,color:"#C9A84C",marginBottom:10}}>Today at a Glance</div>
             {[
               ["New Opps",       visibleOpps.filter(o=>o.created_at&&new Date(o.created_at).toDateString()===today.toDateString()).length, "leads"],
@@ -2401,7 +2401,7 @@ function Pipeline({leads,setLeads,currentUser,showToast,activities=[]}){
         {stageOrder.map(s=>{
           const cnt=visible.filter(l=>l.stage===s).length;
           const val=visible.filter(l=>l.stage===s).reduce((a,l)=>a+(l.budget||0),0);
-          const m=STAGE_META[s]||{c:"#718096",bg:"#F0F2F5"};
+          const m=STAGE_META[s]||{c:"#718096",bg:"#F7F9FC"};
           return(
             <button key={s} onClick={()=>setFStageP(fStageP===s?"All":s)}
               style={{flexShrink:0,padding:"6px 12px",borderRadius:8,background:fStageP===s?m.c:m.bg,
@@ -2426,7 +2426,7 @@ function Pipeline({leads,setLeads,currentUser,showToast,activities=[]}){
             </div>
           )}
           {filtered.sort((a,b)=>STAGES.indexOf(a.stage)-STAGES.indexOf(b.stage)).map(lead=>{
-            const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F0F2F5"};
+            const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F7F9FC"};
             const leadUpcoming = activities.filter(a=>a.lead_id===lead.id&&a.status==="upcoming").length;
             const days=lead.stage_updated_at?Math.floor((new Date()-new Date(lead.stage_updated_at))/(864e5)):0;
             const isSelected=selCard?.id===lead.id;
@@ -2442,14 +2442,14 @@ function Pipeline({leads,setLeads,currentUser,showToast,activities=[]}){
                   <Av name={lead.name} size={34}/>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                      <span style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>{lead.name}</span>
+                      <span style={{fontWeight:700,fontSize:13,color:"#0F2540"}}>{lead.name}</span>
                       <span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:m.bg,color:m.c}}>{lead.stage}</span>
                       {days>7&&<span style={{fontSize:10,fontWeight:700,color:days>14?"#B83232":"#A06810"}}>⏱ {days}d</span>}
                     </div>
                     <div style={{fontSize:11,color:"#718096",marginTop:2}}>
                       {lead.property_type&&<span style={{marginRight:8}}>{lead.property_type}</span>}
                       {leadUpcoming>0&&<span style={{fontWeight:700,color:"#C9A84C",background:"rgba(201,168,76,.1)",padding:"1px 6px",borderRadius:6,marginRight:4}}>⏰ {leadUpcoming} task{leadUpcoming>1?"s":""}</span>}
-                      {lead.budget&&<span style={{fontWeight:600,color:"#0B1F3A"}}>{fmtM(lead.budget)}</span>}
+                      {lead.budget&&<span style={{fontWeight:600,color:"#0F2540"}}>{fmtM(lead.budget)}</span>}
                       {lead.phone&&<span style={{marginLeft:8,color:"#A0AEC0"}}>{lead.phone}</span>}
                     </div>
                   </div>
@@ -2478,7 +2478,7 @@ function Pipeline({leads,setLeads,currentUser,showToast,activities=[]}){
         {/* Detail panel — shown when card selected */}
         {selCard&&(()=>{
           const lead=leads.find(l=>l.id===selCard.id)||selCard;
-          const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F0F2F5"};
+          const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F7F9FC"};
           const days=lead.stage_updated_at?Math.floor((new Date()-new Date(lead.stage_updated_at))/(864e5)):0;
           const curIdx=stageOrder.indexOf(lead.stage);
           return(
@@ -2504,7 +2504,7 @@ function Pipeline({leads,setLeads,currentUser,showToast,activities=[]}){
                 ].filter(([,v])=>v).map(([l,v])=>(
                   <div key={l} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid #F7F9FC"}}>
                     <span style={{color:"#A0AEC0"}}>{l}</span>
-                    <span style={{fontWeight:600,color:"#0B1F3A",maxWidth:140,textAlign:"right",wordBreak:"break-word"}}>{v}</span>
+                    <span style={{fontWeight:600,color:"#0F2540",maxWidth:140,textAlign:"right",wordBreak:"break-word"}}>{v}</span>
                   </div>
                 ))}
 
@@ -2625,7 +2625,7 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
                     <span style={{fontSize:13,fontWeight:700,color:m.c}}>{a.type}</span>
                     <span style={{fontSize:10,fontWeight:700,color:statusColors[st],background:"rgba(0,0,0,.05)",padding:"2px 8px",borderRadius:10}}>{statusLabels[st]||st}</span>
                     <span style={{fontSize:12,color:"#718096"}}>·</span>
-                    <span style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{a.lead_name||"—"}</span>
+                    <span style={{fontSize:13,fontWeight:600,color:"#0F2540"}}>{a.lead_name||"—"}</span>
                   </div>
                   <div style={{fontSize:13,color:"#4A5568",lineHeight:1.6,marginBottom:4,whiteSpace:"pre-wrap"}}>{a.note}</div>
                   {a.outcome&&<div style={{fontSize:11,color:"#718096",fontStyle:"italic",marginBottom:4}}>Outcome: {a.outcome}</div>}
@@ -2649,7 +2649,7 @@ function GroupConsolidatedView() {
   return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,padding:"2rem",textAlign:"center"}}>
       <div style={{fontSize:56}}>🏛</div>
-      <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0B1F3A"}}>Group Consolidated View</div>
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0F2540"}}>Group Consolidated View</div>
       <div style={{fontSize:14,color:"#718096",maxWidth:500,lineHeight:1.8}}>
         This will provide consolidated reporting across all your legal entities — combined pipeline, rent roll, inventory and agent performance in one board-level view.
       </div>
@@ -2661,7 +2661,7 @@ function GroupConsolidatedView() {
           </div>
         ))}
       </div>
-      <div style={{fontSize:11,color:"#A0AEC0"}}>Requires <code style={{background:"#F0F2F5",padding:"1px 5px",borderRadius:4}}>group_id</code> column on companies table · Scheduled for MVP</div>
+      <div style={{fontSize:11,color:"#A0AEC0"}}>Requires <code style={{background:"#F7F9FC",padding:"1px 5px",borderRadius:4}}>group_id</code> column on companies table · Scheduled for MVP</div>
     </div>
   );
 }
@@ -2854,7 +2854,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
   if(drillProject){
     const projUnits = units.filter(u=>u.project_id===drillProject.id);
     // Note: preloaded units may have limited fields - show what's available
-    const sc = s=>({Available:{bg:"#E6F4EE",c:"#1A7F5A"},Reserved:{bg:"#FDF3DC",c:"#A06810"},Sold:{bg:"#E6EFF9",c:"#1A5FA8"},Leased:{bg:"#EEE8F9",c:"#5B3FAA"}}[s]||{bg:"#F0F2F5",c:"#718096"});
+    const sc = s=>({Available:{bg:"#E6F4EE",c:"#1A7F5A"},Reserved:{bg:"#FDF3DC",c:"#A06810"},Sold:{bg:"#E6EFF9",c:"#1A5FA8"},Leased:{bg:"#EEE8F9",c:"#5B3FAA"}}[s]||{bg:"#F7F9FC",c:"#718096"});
     const avail=projUnits.filter(u=>u.status==="Available").length;
     const res=projUnits.filter(u=>u.status==="Reserved").length;
     const sold=projUnits.filter(u=>["Sold","Leased"].includes(u.status)).length;
@@ -2862,7 +2862,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
       <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap"}}>
           <button onClick={()=>setDrillProject(null)} style={{padding:"7px 14px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,cursor:"pointer"}}>← Projects</button>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0B1F3A"}}>{drillProject.name}</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0F2540"}}>{drillProject.name}</div>
           {drillProject.developer&&<span style={{fontSize:12,color:"#718096"}}>· {drillProject.developer}</span>}
           <div style={{display:"flex",gap:8,marginLeft:"auto"}}>
             <span style={{fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>{avail} Available</span>
@@ -2875,7 +2875,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
           :<div style={{flex:1,overflowY:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead style={{position:"sticky",top:0,zIndex:1}}>
-                <tr style={{background:"#0B1F3A"}}>
+                <tr style={{background:"#0F2540"}}>
                   {["Unit Ref","Type","Floor","Beds","Size","View","Status"].map(h=>(
                     <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".5px"}}>{h}</th>
                   ))}
@@ -2884,7 +2884,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
               <tbody>
                 {projUnits.map((u,i)=>(
                   <tr key={u.id} style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5"}}>
-                    <td style={{padding:"10px 12px",fontWeight:700,fontSize:13,color:"#0B1F3A"}}>
+                    <td style={{padding:"10px 12px",fontWeight:700,fontSize:13,color:"#0F2540"}}>
                       {u.unit_ref||"—"}
                       {u.block_or_tower&&<div style={{fontSize:10,color:"#A0AEC0"}}>{u.block_or_tower}</div>}
                     </td>
@@ -2911,7 +2911,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
         <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search projects…" style={{flex:1,minWidth:200}}/>
         <span style={{fontSize:12,color:"#A0AEC0"}}>{filtered.length} project{filtered.length!==1?"s":""}</span>
         <button onClick={()=>{setForm(pBlank);setEditProj(null);setShowAdd(true);}}
-          style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+          style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
           + New Project
         </button>
       </div>
@@ -2921,7 +2921,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
         {filtered.length===0&&<div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}><div style={{fontSize:40,marginBottom:8}}>🏢</div><div>No projects yet — click + New Project</div></div>}
         <table style={{width:"100%",borderCollapse:"collapse"}}>
           <thead style={{position:"sticky",top:0,zIndex:1}}>
-            <tr style={{background:"#0B1F3A"}}>
+            <tr style={{background:"#0F2540"}}>
               {["Project","Developer","Location","Units","Available","Sold","Status",""].map(h=>(
                 <th key={h} style={{padding:"10px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".5px",whiteSpace:"nowrap"}}>{h}</th>
               ))}
@@ -2938,21 +2938,21 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
                     onMouseOver={e=>e.currentTarget.style.background="#F0F7FF"}
                     onMouseOut={e=>e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC"}>
                     <td style={{padding:"10px 12px"}} onClick={()=>setExpanded(isExp?null:proj.id)}>
-                      <div style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>{proj.name}</div>
+                      <div style={{fontWeight:700,fontSize:13,color:"#0F2540"}}>{proj.name}</div>
                       {proj.completion_date&&<div style={{fontSize:11,color:"#A0AEC0"}}>Completion: {new Date(proj.completion_date).toLocaleDateString("en-AE",{month:"short",year:"numeric"})}</div>}
                     </td>
                     <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}} onClick={()=>setExpanded(isExp?null:proj.id)}>{proj.developer||"—"}</td>
                     <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}} onClick={()=>setExpanded(isExp?null:proj.id)}>{proj.location||proj.community||"—"}</td>
-                    <td style={{padding:"10px 12px",fontSize:13,fontWeight:700,color:"#0B1F3A",textAlign:"center"}} onClick={()=>setExpanded(isExp?null:proj.id)}>{st.total}</td>
+                    <td style={{padding:"10px 12px",fontSize:13,fontWeight:700,color:"#0F2540",textAlign:"center"}} onClick={()=>setExpanded(isExp?null:proj.id)}>{st.total}</td>
                     <td style={{padding:"10px 12px",textAlign:"center"}} onClick={()=>setExpanded(isExp?null:proj.id)}><span style={{fontSize:12,fontWeight:600,color:"#1A7F5A"}}>{st.available}</span></td>
                     <td style={{padding:"10px 12px",textAlign:"center"}} onClick={()=>setExpanded(isExp?null:proj.id)}><span style={{fontSize:12,fontWeight:600,color:"#1A5FA8"}}>{st.sold}</span></td>
                     <td style={{padding:"10px 12px"}} onClick={()=>setExpanded(isExp?null:proj.id)}>
-                      <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:proj.status==="Active"?"#E6F4EE":"#F0F2F5",color:proj.status==="Active"?"#1A7F5A":"#718096"}}>{proj.status}</span>
+                      <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:proj.status==="Active"?"#E6F4EE":"#F7F9FC",color:proj.status==="Active"?"#1A7F5A":"#718096"}}>{proj.status}</span>
                     </td>
                     <td style={{padding:"10px 8px"}}>
                       <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
                         <button onClick={()=>setDrillProject(proj)}
-                          style={{fontSize:11,padding:"5px 12px",borderRadius:6,border:"none",background:"#0B1F3A",color:"#C9A84C",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+                          style={{fontSize:11,padding:"5px 12px",borderRadius:6,border:"none",background:"#0F2540",color:"#C9A84C",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
                           View Units →
                         </button>
                         {canManage&&<button onClick={()=>openEdit(proj)} style={{fontSize:11,padding:"5px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer",color:"#4A5568"}}>Edit</button>}
@@ -2972,13 +2972,13 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
       {showExcelUpload&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📤 Upload Projects from Excel</span>
               <button onClick={()=>setShowExcelUpload(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
             <div style={{padding:"1.5rem"}}>
               <div style={{background:"#F7F9FC",borderRadius:10,padding:"1rem",marginBottom:16,border:"1px solid #E2E8F0"}}>
-                <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A",marginBottom:8}}>Required Excel columns:</div>
+                <div style={{fontSize:13,fontWeight:600,color:"#0F2540",marginBottom:8}}>Required Excel columns:</div>
                 <div style={{fontSize:12,color:"#4A5568",lineHeight:1.8}}>
                   <strong>name</strong> (required) • developer • location • community • city • country • status • completion_date (YYYY-MM-DD) • launch_date • website_url • description
                 </div>
@@ -2991,7 +2991,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
               <div style={{border:"2px dashed #D1D9E6",borderRadius:10,padding:"2rem",textAlign:"center",background:"#FAFBFC"}}>
                 <div style={{fontSize:32,marginBottom:8}}>📊</div>
                 <div style={{fontSize:13,color:"#4A5568",marginBottom:12}}>Select your Excel or CSV file</div>
-                <label style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                <label style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
                   <input type="file" accept=".csv,.xlsx,.xls" style={{display:"none"}} onChange={async(e)=>{
                     const file = e.target.files[0];
                     if(!file){ return; }
@@ -3024,7 +3024,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
       {showAdd&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:600,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>{editProj?"Edit Project":"New Project"}</span>
               <button onClick={()=>{setShowAdd(false);setEditProj(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
@@ -3043,7 +3043,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
             </div>
             <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
               <button onClick={()=>{setShowAdd(false);setEditProj(null);}} style={{padding:"9px 20px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={saveProject} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+              <button onClick={saveProject} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
                 {saving?"Saving…":editProj?"Save Changes":"Create Project"}
               </button>
             </div>
@@ -3083,8 +3083,8 @@ const RES_COLORS = {
   ok:       { c:"#1A7F5A", bg:"#E6F4EE", border:"#A8D5BE" },
   warning:  { c:"#A06810", bg:"#FDF3DC", border:"#E8C97A" },
   critical: { c:"#B83232", bg:"#FAEAEA", border:"#F0BCBC" },
-  expired:  { c:"#718096", bg:"#F0F2F5", border:"#CBD5E0" },
-  inactive: { c:"#718096", bg:"#F0F2F5", border:"#CBD5E0" },
+  expired:  { c:"#718096", bg:"#F7F9FC", border:"#CBD5E0" },
+  inactive: { c:"#718096", bg:"#F7F9FC", border:"#CBD5E0" },
 };
 
 // ── Small badge shown on inventory row ─────────────────────────
@@ -3282,7 +3282,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
 
         {/* Status badge for non-active */}
         {!isNew && reservation.status !== "Active" && reservation.status !== "Extended" && (
-          <div style={{background:reservation.status==="Confirmed"?"#E6F4EE":"#F0F2F5",padding:"8px 16px",fontSize:12,fontWeight:600,color:reservation.status==="Confirmed"?"#1A7F5A":"#718096"}}>
+          <div style={{background:reservation.status==="Confirmed"?"#E6F4EE":"#F7F9FC",padding:"8px 16px",fontSize:12,fontWeight:600,color:reservation.status==="Confirmed"?"#1A7F5A":"#718096"}}>
             {reservation.status==="Confirmed"?"✓ Confirmed — unit has been sold/leased":reservation.status==="Released"?"↩ Released — unit back to available":"Reservation "+reservation.status}
           </div>
         )}
@@ -3298,7 +3298,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
                   <div style={{display:"flex",gap:8}}>
                     {["Sale","Lease"].map(t=>(
                       <button key={t} onClick={()=>setForm(f=>({...f,reservation_type:t}))}
-                        style={{flex:1,padding:"8px",borderRadius:8,border:`1.5px solid ${form.reservation_type===t?"#0B1F3A":"#E2E8F0"}`,background:form.reservation_type===t?"#0B1F3A":"#fff",color:form.reservation_type===t?"#fff":"#4A5568",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                        style={{flex:1,padding:"8px",borderRadius:8,border:`1.5px solid ${form.reservation_type===t?"#0F2540":"#E2E8F0"}`,background:form.reservation_type===t?"#0F2540":"#fff",color:form.reservation_type===t?"#fff":"#4A5568",fontSize:13,fontWeight:600,cursor:"pointer"}}>
                         {t==="Sale"?"🏷 For Sale":"🔑 For Lease"}
                       </button>
                     ))}
@@ -3377,7 +3377,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
                 ].filter(Boolean).map(([l,v])=>(
                   <div key={l} style={{background:"#FAFBFC",borderRadius:8,padding:"9px 11px"}}>
                     <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
-                    <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A",wordBreak:"break-all"}}>{v}</div>
+                    <div style={{fontSize:12,fontWeight:600,color:"#0F2540",wordBreak:"break-all"}}>{v}</div>
                   </div>
                 ))}
               </div>
@@ -3391,7 +3391,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
           {isNew && <>
             <button onClick={onClose} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
             <button onClick={save} disabled={saving||Number(form.reservation_fee)>MAX_RESERVATION_FEE}
-              style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#C9A84C",color:"#0B1F3A",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
+              style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#C9A84C",color:"#0F2540",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
               {saving?"Saving…":"🔒 Reserve Unit"}
             </button>
           </>}
@@ -3454,7 +3454,7 @@ function ReservationsWidget({ currentUser, units=[], onManage }) {
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",borderBottom:"1px solid #F0F2F5"}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <span style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>🔒 Active Reservations</span>
+          <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>🔒 Active Reservations</span>
           <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>{reservations.length}</span>
         </div>
         <div style={{display:"flex",gap:6}}>
@@ -3481,7 +3481,7 @@ function ReservationsWidget({ currentUser, units=[], onManage }) {
             </div>
             {/* Info */}
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontWeight:700,fontSize:12,color:"#0B1F3A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{res.client_name}</div>
+              <div style={{fontWeight:700,fontSize:12,color:"#0F2540",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{res.client_name}</div>
               <div style={{fontSize:11,color:"#718096"}}>{unit?.unit_ref||"Unit"} · {res.reservation_type} · AED {Number(res.reservation_fee).toLocaleString()}</div>
             </div>
             {/* Payment method */}
@@ -3512,7 +3512,7 @@ const UNIT_STATUS_COLORS = {
   "Under Offer":{c:"#5B3FAA",bg:"#EEE8F9"},
   Sold:       {c:"#1A5FA8", bg:"#E6EFF9"},
   Leased:     {c:"#1A5FA8", bg:"#E6EFF9"},
-  Cancelled:  {c:"#718096", bg:"#F0F2F5"},
+  Cancelled:  {c:"#718096", bg:"#F7F9FC"},
 };
 
 function InventoryModule({ currentUser, showToast, crmContext="sales", preloadedUnits=null, preloadedProjects=null, preloadedSalePricing=null, preloadedLeasePricing=null, activeCompanyId=null, globalOpps=[] }) {
@@ -3848,7 +3848,7 @@ Return ONLY the JSON, no explanation.`}
   if(loading)return <Spinner msg="Loading inventory…"/>;
 
   const UNIT_ST=["Available","Reserved","Under Offer","Sold","Leased","Cancelled"];
-  const PurposeBadge=({p})=>{const c={Sale:{c:"#1A7F5A",bg:"#E6F4EE"},Lease:{c:"#1A5FA8",bg:"#E6EFF9"},Both:{c:"#8A6200",bg:"#FDF3DC"}}[p]||{c:"#718096",bg:"#F0F2F5"};return <span style={{fontSize:10,fontWeight:600,padding:"2px 6px",borderRadius:20,background:c.bg,color:c.c}}>{p}</span>;};
+  const PurposeBadge=({p})=>{const c={Sale:{c:"#1A7F5A",bg:"#E6F4EE"},Lease:{c:"#1A5FA8",bg:"#E6EFF9"},Both:{c:"#8A6200",bg:"#FDF3DC"}}[p]||{c:"#718096",bg:"#F7F9FC"};return <span style={{fontSize:10,fontWeight:600,padding:"2px 6px",borderRadius:20,background:c.bg,color:c.c}}>{p}</span>;};
 
   return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
@@ -3883,7 +3883,7 @@ Return ONLY the JSON, no explanation.`}
         </select>}
         <input type="number" value={fPriceMin} onChange={e=>setFPriceMin(e.target.value)} placeholder="Min AED" style={{width:90,fontSize:12}}/>
         <input type="number" value={fPriceMax} onChange={e=>setFPriceMax(e.target.value)} placeholder="Max AED" style={{width:90,fontSize:12}}/>
-        <button onClick={resetFilters} style={{padding:"6px 12px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#F0F2F5",color:"#4A5568",fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>✕ Reset</button>
+        <button onClick={resetFilters} style={{padding:"6px 12px",borderRadius:6,border:"1.5px solid #E2E8F0",background:"#F7F9FC",color:"#4A5568",fontSize:12,cursor:"pointer",whiteSpace:"nowrap"}}>✕ Reset</button>
         <span style={{fontSize:11,color:"#A0AEC0",whiteSpace:"nowrap"}}>{allFiltered.length}/{units.length}</span>
       </div>
       {/* Action bar */}
@@ -3894,7 +3894,7 @@ Return ONLY the JSON, no explanation.`}
           📋 Download Template / Upload Data
         </button>}
         {canEdit&&<button onClick={()=>openAdd()}
-          style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
+          style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
           + Add Unit
         </button>}
       </div>
@@ -3922,7 +3922,7 @@ Return ONLY the JSON, no explanation.`}
               <col style={{width:40}}/>{/* Edit */}
             </colgroup>
             <thead style={{position:"sticky",top:0,zIndex:1}}>
-              <tr style={{background:"#0B1F3A"}}>
+              <tr style={{background:"#0F2540"}}>
                 {["Ref","Project","T","Category","For","Bd","Sqft","Fl","View","Sale","Rent/yr","Handover","Status",""].map(h=>(
                   <th key={h} style={{padding:"7px 8px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".3px",whiteSpace:"nowrap",overflow:"hidden"}}>{h}</th>
                 ))}
@@ -3935,7 +3935,7 @@ Return ONLY the JSON, no explanation.`}
               {allFiltered.map((u,i)=>{
                 const sp=getSP(u.id); const lp=getLP(u.id);
                 const proj=projects.find(p=>p.id===u.project_id);
-                const sc=UNIT_STATUS_COLORS[u.status]||{c:"#718096",bg:"#F0F2F5"};
+                const sc=UNIT_STATUS_COLORS[u.status]||{c:"#718096",bg:"#F7F9FC"};
                 const isSel=selUnit?.id===u.id;
                 // Use unit handover_date first, then project completion_date
                 const hdDate = u.handover_date||proj?.completion_date;
@@ -3946,7 +3946,7 @@ Return ONLY the JSON, no explanation.`}
                     style={{background:isSel?"#EEF2FF":i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5",cursor:"pointer",transition:"background .1s"}}
                     onMouseOver={e=>{if(!isSel)e.currentTarget.style.background="#F0F7FF";}}
                     onMouseOut={e=>{if(!isSel)e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC";}}>
-                    <td style={{padding:"5px 8px",fontWeight:700,color:"#0B1F3A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.unit_ref}</td>
+                    <td style={{padding:"5px 8px",fontWeight:700,color:"#0F2540",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.unit_ref}</td>
                     <td style={{padding:"5px 8px",color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{proj?.name||"—"}</td>
                     <td style={{padding:"5px 8px"}}><span style={{fontSize:9,fontWeight:700,padding:"1px 5px",borderRadius:20,background:u.unit_type==="Residential"?"#E6F4EE":"#E6EFF9",color:u.unit_type==="Residential"?"#1A7F5A":"#1A5FA8"}}>{u.unit_type==="Residential"?"R":"C"}</span></td>
                     <td style={{padding:"5px 8px",color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.sub_type}</td>
@@ -3955,7 +3955,7 @@ Return ONLY the JSON, no explanation.`}
                     <td style={{padding:"5px 8px",color:"#4A5568",whiteSpace:"nowrap"}}>{u.size_sqft?Number(u.size_sqft).toLocaleString():""}</td>
                     <td style={{padding:"5px 8px",color:"#4A5568",textAlign:"center"}}>{u.floor_number??""}</td>
                     <td style={{padding:"5px 8px",color:"#718096",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.view||""}</td>
-                    <td style={{padding:"5px 8px",fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>{sp?.asking_price?`${Math.round(sp.asking_price/1000)}K`:""}</td>
+                    <td style={{padding:"5px 8px",fontWeight:700,color:"#0F2540",whiteSpace:"nowrap"}}>{sp?.asking_price?`${Math.round(sp.asking_price/1000)}K`:""}</td>
                     <td style={{padding:"5px 8px",fontWeight:600,color:"#1A5FA8",whiteSpace:"nowrap"}}>{lp?.annual_rent?`${Math.round(lp.annual_rent/1000)}K`:""}</td>
                     <td style={{padding:"5px 8px",color:"#718096",whiteSpace:"nowrap",fontSize:11}}>{hdStr}</td>
                     <td style={{padding:"5px 8px"}}>
@@ -3978,7 +3978,7 @@ Return ONLY the JSON, no explanation.`}
         {selUnit&&(()=>{
           const sp=getSP(selUnit.id); const lp=getLP(selUnit.id);
           const proj=projects.find(p=>p.id===selUnit.project_id);
-          const sc=UNIT_STATUS_COLORS[selUnit.status]||{c:"#718096",bg:"#F0F2F5"};
+          const sc=UNIT_STATUS_COLORS[selUnit.status]||{c:"#718096",bg:"#F7F9FC"};
           return (
             <div className="slide-in" style={{width:340,flexShrink:0,background:"#fff",borderLeft:"1px solid #E2E8F0",display:"flex",flexDirection:"column",overflow:"hidden"}}>
               {/* Panel header */}
@@ -3992,7 +3992,7 @@ Return ONLY the JSON, no explanation.`}
               <div style={{display:"flex",borderBottom:"1px solid #E2E8F0"}}>
                 {["Details","Pricing","Documents"].map(t=>(
                   <button key={t} onClick={()=>setActiveTab(t.toLowerCase())}
-                    style={{flex:1,padding:"8px 4px",border:"none",borderBottom:activeTab===t.toLowerCase()?"2.5px solid #0B1F3A":"2.5px solid transparent",background:"transparent",fontSize:12,fontWeight:activeTab===t.toLowerCase()?700:400,color:activeTab===t.toLowerCase()?"#0B1F3A":"#718096",cursor:"pointer"}}>
+                    style={{flex:1,padding:"8px 4px",border:"none",borderBottom:activeTab===t.toLowerCase()?"2.5px solid #0B1F3A":"2.5px solid transparent",background:"transparent",fontSize:12,fontWeight:activeTab===t.toLowerCase()?700:400,color:activeTab===t.toLowerCase()?"#0F2540":"#718096",cursor:"pointer"}}>
                     {t}
                   </button>
                 ))}
@@ -4017,13 +4017,13 @@ Return ONLY the JSON, no explanation.`}
                       ].map(([l,v])=>(
                         <div key={l} style={{background:"#FAFBFC",borderRadius:7,padding:"8px 10px"}}>
                           <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
-                          <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{v}</div>
+                          <div style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>{v}</div>
                         </div>
                       ))}
                     </div>
                     {/* Features */}
                     <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
-                      {selUnit.maid_room&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:20,background:"#F0F2F5",color:"#4A5568"}}>Maid Room</span>}
+                      {selUnit.maid_room&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:20,background:"#F7F9FC",color:"#4A5568"}}>Maid Room</span>}
                       {selUnit.private_pool&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:20,background:"#E6EFF9",color:"#1A5FA8"}}>Private Pool</span>}
                       {selUnit.private_garden&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>Private Garden</span>}
                     </div>
@@ -4033,7 +4033,7 @@ Return ONLY the JSON, no explanation.`}
                         <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>Update Status</div>
                         <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
                           {UNIT_ST.map(s=>{
-                            const sc2=UNIT_STATUS_COLORS[s]||{c:"#718096",bg:"#F0F2F5"};
+                            const sc2=UNIT_STATUS_COLORS[s]||{c:"#718096",bg:"#F7F9FC"};
                             return <button key={s} onClick={()=>updateUnitStatus(selUnit.id,s)}
                               style={{fontSize:10,padding:"4px 9px",borderRadius:20,border:`1.5px solid ${selUnit.status===s?sc2.c:"#E2E8F0"}`,background:selUnit.status===s?sc2.bg:"#fff",color:selUnit.status===s?sc2.c:"#4A5568",cursor:"pointer",fontWeight:selUnit.status===s?700:400}}>
                               {s}
@@ -4053,7 +4053,7 @@ Return ONLY the JSON, no explanation.`}
                           if(!hp2){showToast("Add pricing to this unit before reserving","error");return;}
                           if(!ok2){showToast(`Project launches ${new Date(pr2.launch_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})} — not open yet`,"error");return;}
                           setReserveUnit(selUnit);setShowReserve(true);
-                        }} style={{padding:"8px",borderRadius:8,border:"none",background:ok2?"#C9A84C":"#E2E8F0",color:ok2?"#0B1F3A":"#A0AEC0",fontSize:12,fontWeight:700,cursor:ok2?"pointer":"not-allowed"}}>
+                        }} style={{padding:"8px",borderRadius:8,border:"none",background:ok2?"#C9A84C":"#E2E8F0",color:ok2?"#0F2540":"#A0AEC0",fontSize:12,fontWeight:700,cursor:ok2?"pointer":"not-allowed"}}>
                           {!hp2?"⚠️ No Pricing":!ok2?"🔒 Not Released":"🔒 Reserve Unit"}
                         </button>
                       );
@@ -4067,7 +4067,7 @@ Return ONLY the JSON, no explanation.`}
                     {sp&&(
                       <div>
                         <div style={{fontSize:11,fontWeight:700,color:"#1A7F5A",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>🏷 Sale Pricing</div>
-                        <div style={{background:"#0B1F3A",borderRadius:10,padding:"12px",marginBottom:8,textAlign:"center"}}>
+                        <div style={{background:"#0F2540",borderRadius:10,padding:"12px",marginBottom:8,textAlign:"center"}}>
                           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#C9A84C"}}>AED {Number(sp.asking_price).toLocaleString()}</div>
                           {sp.price_per_sqft&&<div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>AED {Number(sp.price_per_sqft).toLocaleString()}/sqft</div>}
                         </div>
@@ -4075,7 +4075,7 @@ Return ONLY the JSON, no explanation.`}
                           {[["DLD Fee",`${sp.dld_fee_pct}%`],["Agency Fee",`${sp.agency_fee_pct}%`],["Booking",`${sp.booking_pct}%`],["Construction",`${sp.during_construction_pct}%`],["Handover",`${sp.on_handover_pct}%`],sp.post_handover_pct>0&&["Post Handover",`${sp.post_handover_pct}%`]].filter(Boolean).map(([l,v])=>(
                             <div key={l} style={{background:"#FAFBFC",borderRadius:7,padding:"7px 9px"}}>
                               <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:1}}>{l}</div>
-                              <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
+                              <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{v}</div>
                             </div>
                           ))}
                         </div>
@@ -4092,7 +4092,7 @@ Return ONLY the JSON, no explanation.`}
                           {[["Deposit",`AED ${Number(lp.security_deposit||0).toLocaleString()}`],["Cheques",lp.cheques_allowed],["Municipality",`${lp.municipality_tax_pct}%`],["Chiller",lp.chiller_included?"Included":"Excluded"]].map(([l,v])=>(
                             <div key={l} style={{background:"#FAFBFC",borderRadius:7,padding:"7px 9px"}}>
                               <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:1}}>{l}</div>
-                              <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
+                              <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{v}</div>
                             </div>
                           ))}
                         </div>
@@ -4113,7 +4113,7 @@ Return ONLY the JSON, no explanation.`}
                       return (
                         <div key={field} style={{background:"#FAFBFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px"}}>
                           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-                            <span style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{icon} {label}</span>
+                            <span style={{fontSize:13,fontWeight:600,color:"#0F2540"}}>{icon} {label}</span>
                             {url&&<a href={url} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#1A5FA8",fontWeight:600}}>View →</a>}
                           </div>
                           {url?(
@@ -4132,7 +4132,7 @@ Return ONLY the JSON, no explanation.`}
                     })}
                     {/* AI Scanner */}
                     <div style={{background:"#E6EFF9",border:"1px solid #B5D4F4",borderRadius:10,padding:"12px"}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>✦ AI Brochure Scanner</div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:6}}>✦ AI Brochure Scanner</div>
                       <div style={{fontSize:11,color:"#4A5568",marginBottom:8,lineHeight:1.5}}>Upload a builder brochure (PDF or image) and AI will extract all unit details automatically.</div>
                       <label style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:7,border:"1.5px dashed #B5D4F4",cursor:"pointer",fontSize:12,color:"#1A5FA8",background:"#fff",fontWeight:600}}>
                         <input type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:"none"}} onChange={e=>{if(e.target.files[0]){openEdit(selUnit);scanBrochure(e.target.files[0]);}}}/>
@@ -4154,7 +4154,7 @@ Return ONLY the JSON, no explanation.`}
         return (
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:580,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📤 Upload Inventory from Excel</span>
               <button onClick={()=>{setShowInvExcel(false);setInvProjId("");}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
@@ -4162,7 +4162,7 @@ Return ONLY the JSON, no explanation.`}
 
               {/* Step 1: Select Project */}
               <div style={{background:"#F0F7FF",borderRadius:10,padding:"14px 16px",marginBottom:16,border:"1px solid #D1E4F7"}}>
-                <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Step 1 — Select Project</div>
+                <div style={{fontSize:12,fontWeight:700,color:"#0F2540",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Step 1 — Select Project</div>
                 <select data-inv-proj defaultValue="" onChange={e=>{setInvProjId(e.target.value);}} style={{width:"100%",borderColor:"#1A5FA8"}}>
                   <option value="">— Select the project for this upload —</option>
                   {companyProjects.map(p=><option key={p.id} value={p.id}>{p.name}{p.developer?` · ${p.developer}`:""}</option>)}
@@ -4172,7 +4172,7 @@ Return ONLY the JSON, no explanation.`}
 
               {/* Step 2: Column guide */}
               <div style={{background:"#F7F9FC",borderRadius:10,padding:"12px 14px",marginBottom:14,border:"1px solid #E2E8F0"}}>
-                <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Step 2 — Prepare Your File</div>
+                <div style={{fontSize:12,fontWeight:700,color:"#0F2540",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Step 2 — Prepare Your File</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:12}}>
                   {[
                     ["unit_ref","Unit number e.g. A-101 (required)"],
@@ -4189,7 +4189,7 @@ Return ONLY the JSON, no explanation.`}
                     ["annual_rent","Annual rent in AED"],
                   ].map(([col,desc])=>(
                     <div key={col} style={{display:"flex",gap:6,alignItems:"flex-start"}}>
-                      <span style={{fontSize:11,fontWeight:700,color:"#0B1F3A",background:"#E6EFF9",padding:"1px 6px",borderRadius:4,whiteSpace:"nowrap"}}>{col}</span>
+                      <span style={{fontSize:11,fontWeight:700,color:"#0F2540",background:"#E6EFF9",padding:"1px 6px",borderRadius:4,whiteSpace:"nowrap"}}>{col}</span>
                       <span style={{color:"#718096",fontSize:11}}>{desc}</span>
                     </div>
                   ))}
@@ -4218,13 +4218,13 @@ Return ONLY the JSON, no explanation.`}
               </button>
 
               {/* Step 3: Upload */}
-              <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Step 3 — Upload Your Completed File</div>
+              <div style={{fontSize:12,fontWeight:700,color:"#0F2540",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Step 3 — Upload Your Completed File</div>
               <div style={{background:"#FFF9EC",border:"1px solid #E8C97A",borderRadius:8,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#8A6200"}}>
                 💡 <strong>How to use:</strong> Download the template above → fill in your units in Excel/Google Sheets → save as CSV → upload here
               </div>
               <div style={{border:"2px dashed #C9A84C",borderRadius:10,padding:"2rem",textAlign:"center",background:"#FFFBF0"}}>
                 <div style={{fontSize:36,marginBottom:8}}>📂</div>
-                <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:4}}>Click to select your CSV file</div>
+                <div style={{fontSize:14,fontWeight:600,color:"#0F2540",marginBottom:4}}>Click to select your CSV file</div>
               </div>{/* end grid */}
 
               <div style={{fontSize:11,color:"#A0AEC0",marginTop:12,textAlign:"center"}}>
@@ -4262,7 +4262,7 @@ Return ONLY the JSON, no explanation.`}
       {showUnitForm&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:640,maxWidth:"100%",maxHeight:"94vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>{editUnit?"Edit Unit":"Add New Unit"}</span>
               <div style={{display:"flex",gap:8}}>
                 {["Details","Pricing","Documents","AI Scanner"].map(t=>(
@@ -4352,7 +4352,7 @@ Return ONLY the JSON, no explanation.`}
                 <div style={{display:"flex",flexDirection:"column",gap:12}}>
                   {[{label:"Floor Plan",field:"floor_plan",icon:"📐"},{label:"Unit Brochure",field:"brochure",icon:"📄"},{label:"3D Render / Photo",field:"render",icon:"🖼"}].map(({label,field,icon})=>(
                     <div key={field} style={{background:"#FAFBFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px"}}>
-                      <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A",marginBottom:8}}>{icon} {label}</div>
+                      <div style={{fontSize:13,fontWeight:600,color:"#0F2540",marginBottom:8}}>{icon} {label}</div>
                       {uForm[field+"_url"]?(
                         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
                           <span style={{fontSize:12,color:"#1A7F5A"}}>✓ File ready</span>
@@ -4375,7 +4375,7 @@ Return ONLY the JSON, no explanation.`}
               {activeTab==="ai_scanner"&&(
                 <div style={{display:"flex",flexDirection:"column",gap:14}}>
                   <div style={{background:"#E6EFF9",borderRadius:10,padding:"14px"}}>
-                    <div style={{fontSize:14,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>✦ AI Brochure Scanner</div>
+                    <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:6}}>✦ AI Brochure Scanner</div>
                     <div style={{fontSize:13,color:"#4A5568",lineHeight:1.7,marginBottom:12}}>
                       Upload a builder brochure, floor plan PDF, or any document. Claude AI will read it and automatically extract all property details — size, beds, views, pricing, payment plan — ready for you to review and save.
                     </div>
@@ -4393,7 +4393,7 @@ Return ONLY the JSON, no explanation.`}
                         {Object.entries(scanResult).filter(([k,v])=>v!=null&&v!=="").map(([k,v])=>(
                           <div key={k} style={{background:"#fff",borderRadius:7,padding:"8px 10px"}}>
                             <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{k.replace(/_/g," ")}</div>
-                            <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{String(v)}</div>
+                            <div style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>{String(v)}</div>
                           </div>
                         ))}
                       </div>
@@ -4412,7 +4412,7 @@ Return ONLY the JSON, no explanation.`}
             </div>
             <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
               <button onClick={()=>{setShowUnitForm(false);setEditUnit(null);setScanResult(null);}} style={{padding:"9px 20px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={saveUnit} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+              <button onClick={saveUnit} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
                 {saving?"Saving…":editUnit?"Save Changes":"Add Unit"}
               </button>
             </div>
@@ -4460,7 +4460,7 @@ function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
       {/* Stats bar */}
       <div style={{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap",alignItems:"center"}}>
         {[["All","All",discounts.length],["Pending","Pending",discounts.filter(d=>d.status==="Pending").length],["Escalated","Escalated",discounts.filter(d=>d.status==="Escalated").length],["Approved","Approved",discounts.filter(d=>d.status==="Approved").length],["Rejected","Rejected",discounts.filter(d=>d.status==="Rejected").length]].map(([f,l,cnt])=>(
-          <button key={f} onClick={()=>setFilter(f)} style={{padding:"6px 16px",borderRadius:8,border:`1.5px solid ${filter===f?"#0B1F3A":"#E2E8F0"}`,background:filter===f?"#0B1F3A":"#fff",color:filter===f?"#fff":"#4A5568",fontSize:12,fontWeight:filter===f?600:400,cursor:"pointer"}}>{l} ({cnt})</button>
+          <button key={f} onClick={()=>setFilter(f)} style={{padding:"6px 16px",borderRadius:8,border:`1.5px solid ${filter===f?"#0F2540":"#E2E8F0"}`,background:filter===f?"#0F2540":"#fff",color:filter===f?"#fff":"#4A5568",fontSize:12,fontWeight:filter===f?600:400,cursor:"pointer"}}>{l} ({cnt})</button>
         ))}
       </div>
 
@@ -4476,7 +4476,7 @@ function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
         {visible.length===0&&<div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}><div style={{fontSize:36,marginBottom:8}}>⚡</div><div>No {filter.toLowerCase()} discount requests</div></div>}
         {visible.map(d=>{
           const t=DISC_TYPES_MAP[d.type]||{label:d.type,icon:"💰"};
-          const sc={Pending:{c:"#A06810",bg:"#FDF3DC"},Approved:{c:"#1A7F5A",bg:"#E6F4EE"},Rejected:{c:"#B83232",bg:"#FAEAEA"},Escalated:{c:"#5B3FAA",bg:"#EEE8F9"}}[d.status]||{c:"#718096",bg:"#F0F2F5"};
+          const sc={Pending:{c:"#A06810",bg:"#FDF3DC"},Approved:{c:"#1A7F5A",bg:"#E6F4EE"},Rejected:{c:"#B83232",bg:"#FAEAEA"},Escalated:{c:"#5B3FAA",bg:"#EEE8F9"}}[d.status]||{c:"#718096",bg:"#F7F9FC"};
           const canAct = (d.status==="Pending"&&canApproveManager)||(d.status==="Escalated"&&canApproveAdmin);
           return (
             <div key={d.id} style={{background:"#fff",border:`1px solid ${d.status==="Escalated"?"#C9A84C":d.status==="Pending"?"#E8C97A":"#E2E8F0"}`,borderRadius:12,padding:"14px 16px"}}>
@@ -4484,7 +4484,7 @@ function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
                     <span style={{fontSize:18}}>{t.icon}</span>
-                    <span style={{fontSize:14,fontWeight:700,color:"#0B1F3A"}}>{t.label}</span>
+                    <span style={{fontSize:14,fontWeight:700,color:"#0F2540"}}>{t.label}</span>
                     <span style={{fontSize:12,fontWeight:600,padding:"3px 10px",borderRadius:20,background:sc.bg,color:sc.c}}>{d.status}</span>
                     {d.status==="Escalated"&&<span style={{fontSize:11,color:"#5B3FAA",fontWeight:700}}>⚡ Requires Admin</span>}
                   </div>
@@ -4497,7 +4497,7 @@ function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
               </div>
 
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,background:"#FAFBFC",borderRadius:8,padding:"10px",marginBottom:10}}>
-                <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Original Value</div><div style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{d.original_value?`AED ${Number(d.original_value).toLocaleString()}`:"—"}</div></div>
+                <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Original Value</div><div style={{fontSize:13,fontWeight:600,color:"#0F2540"}}>{d.original_value?`AED ${Number(d.original_value).toLocaleString()}`:"—"}</div></div>
                 <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Requested Value</div><div style={{fontSize:13,fontWeight:600,color:"#1A7F5A"}}>{d.requested_value?`AED ${Number(d.requested_value).toLocaleString()}`:"—"}</div></div>
                 <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Saving</div><div style={{fontSize:13,fontWeight:600,color:"#B83232"}}>{d.original_value&&d.requested_value?`AED ${Number(d.original_value-d.requested_value).toLocaleString()}`:"—"}</div></div>
               </div>
@@ -4532,7 +4532,7 @@ function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
       {actingOn&&action&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:440,padding:"1.5rem",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A",marginBottom:14}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0F2540",marginBottom:14}}>
               {action==="approve"?"✓ Approve Discount":action==="reject"?"✕ Reject Discount":"⚡ Escalate to Admin"}
             </div>
             <div style={{background:"#FAFBFC",borderRadius:8,padding:"10px 12px",marginBottom:14,fontSize:13,color:"#4A5568"}}>
@@ -4669,7 +4669,7 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
     Cleared:   {c:"#1A7F5A",bg:"#E6F4EE"},
     Bounced:   {c:"#B83232",bg:"#FAEAEA"},
     Replaced:  {c:"#5B3FAA",bg:"#EEE8F9"},
-    Cancelled: {c:"#718096",bg:"#F0F2F5"},
+    Cancelled: {c:"#718096",bg:"#F7F9FC"},
   };
 
   const cleared   = cheques.filter(c=>c.status==="Cleared").reduce((s,c)=>s+(c.amount||0),0);
@@ -4682,7 +4682,7 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
     <div style={{borderTop:"1px solid #F0F2F5",paddingTop:12,marginTop:8}}>
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>PDC Cheques ({cheques.length})</div>
+        <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>PDC Cheques ({cheques.length})</div>
         <div style={{display:"flex",gap:6}}>
           {cheques.length===0&&(
             <button onClick={autoGenerate}
@@ -4691,7 +4691,7 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
             </button>
           )}
           <button onClick={()=>{setForm({...blank,cheque_sequence:cheques.length+1});setEditCheq(null);setShowAdd(true);}}
-            style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"none",background:"#0B1F3A",color:"#fff",cursor:"pointer"}}>
+            style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"none",background:"#0F2540",color:"#fff",cursor:"pointer"}}>
             + Add Cheque
           </button>
         </div>
@@ -4717,7 +4717,7 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
               <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",width:24}}>{c.cheque_sequence}/{c.total_cheques}</div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                  <span style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>AED {Number(c.amount).toLocaleString()}</span>
+                  <span style={{fontWeight:700,fontSize:13,color:"#0F2540"}}>AED {Number(c.amount).toLocaleString()}</span>
                   <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:20,background:cm.bg,color:cm.c}}>{c.status}</span>
                   {isOverdue&&<span style={{fontSize:10,fontWeight:600,color:"#B83232"}}>⚠ Overdue</span>}
                 </div>
@@ -4745,7 +4745,7 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:14,width:440,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.25rem",borderBottom:"1px solid #E2E8F0"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A"}}>{editCheq?"Edit Cheque":"Add PDC Cheque"}</span>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540"}}>{editCheq?"Edit Cheque":"Add PDC Cheque"}</span>
               <button onClick={()=>{setShowAdd(false);setEditCheq(null);}} style={{background:"none",border:"none",fontSize:20,color:"#A0AEC0",cursor:"pointer"}}>×</button>
             </div>
             <div style={{overflowY:"auto",padding:"1.125rem 1.25rem"}}>
@@ -4768,7 +4768,7 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
             </div>
             <div style={{display:"flex",gap:8,justifyContent:"flex-end",padding:"0.875rem 1.25rem",borderTop:"1px solid #E2E8F0"}}>
               <button onClick={()=>{setShowAdd(false);setEditCheq(null);}} style={{padding:"8px 16px",borderRadius:7,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={save} disabled={saving} style={{padding:"8px 20px",borderRadius:7,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editCheq?"Save Changes":"Add Cheque"}</button>
+              <button onClick={save} disabled={saving} style={{padding:"8px 20px",borderRadius:7,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editCheq?"Save Changes":"Add Cheque"}</button>
             </div>
           </div>
         </div>
@@ -4912,7 +4912,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
       <div style={{display:"flex",gap:5,marginBottom:14,flexWrap:"wrap"}}>
         {TABS_L.map(([id,l])=>(
-          <button key={id} onClick={()=>setTab(id)} style={{padding:"6px 14px",borderRadius:8,border:`1.5px solid ${tab===id?"#0B1F3A":"#E2E8F0"}`,background:tab===id?"#0B1F3A":"#fff",color:tab===id?"#fff":"#4A5568",fontSize:12,fontWeight:tab===id?600:400,cursor:"pointer"}}>{l}</button>
+          <button key={id} onClick={()=>setTab(id)} style={{padding:"6px 14px",borderRadius:8,border:`1.5px solid ${tab===id?"#0F2540":"#E2E8F0"}`,background:tab===id?"#0F2540":"#fff",color:tab===id?"#fff":"#4A5568",fontSize:12,fontWeight:tab===id?600:400,cursor:"pointer"}}>{l}</button>
         ))}
       </div>
 
@@ -4920,10 +4920,10 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
       {tab==="dashboard"&&(
         <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:14}}>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
-            {[["Active Leases",activeLeases.length,"#0B1F3A","📄"],["Annual Rent",`AED ${(totalRent/1e6).toFixed(1)}M`,"#1A7F5A","💰"],["Overdue Payments",overduePmts.length,"#B83232","⚠"],["Open Maintenance",openMaint.length,"#5B3FAA","🔧"]].map(([l,v,c,icon])=>(
+            {[["Active Leases",activeLeases.length,"#0F2540","📄"],["Annual Rent",`AED ${(totalRent/1e6).toFixed(1)}M`,"#1A7F5A","💰"],["Overdue Payments",overduePmts.length,"#B83232","⚠"],["Open Maintenance",openMaint.length,"#5B3FAA","🔧"]].map(([l,v,c,icon])=>(
               <div key={l} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem 1.25rem",borderTop:`3px solid ${c}`}}>
                 <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".7px",fontWeight:600,marginBottom:6}}>{icon} {l}</div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0F2540"}}>{v}</div>
               </div>
             ))}
           </div>
@@ -4934,7 +4934,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                 const days=Math.ceil((new Date(l.end_date)-today)/(1000*60*60*24));
                 return (
                   <div key={l.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #F0E8C8"}}>
-                    <div><div style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{tenantName(l.tenant_id)}</div><div style={{fontSize:11,color:"#A0AEC0"}}>Unit {unitLabel(l.unit_id)} · Expires {new Date(l.end_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}</div></div>
+                    <div><div style={{fontSize:13,fontWeight:600,color:"#0F2540"}}>{tenantName(l.tenant_id)}</div><div style={{fontSize:11,color:"#A0AEC0"}}>Unit {unitLabel(l.unit_id)} · Expires {new Date(l.end_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}</div></div>
                     <div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{fontSize:12,fontWeight:700,color:"#B83232"}}>{days}d left</span>{canEdit&&<button onClick={()=>renewLease(l)} style={{padding:"5px 12px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:11,fontWeight:600,cursor:"pointer"}}>Renew</button>}</div>
                   </div>
                 );
@@ -4948,7 +4948,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                 const lease=leases.find(l=>l.id===p.lease_id);
                 return (
                   <div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(184,50,50,.1)"}}>
-                    <div><div style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{tenantName(lease?.tenant_id)}</div><div style={{fontSize:11,color:"#B83232"}}>Due {new Date(p.due_date).toLocaleDateString("en-AE",{day:"numeric",month:"short"})} · AED {Number(p.amount).toLocaleString()}</div></div>
+                    <div><div style={{fontSize:13,fontWeight:600,color:"#0F2540"}}>{tenantName(lease?.tenant_id)}</div><div style={{fontSize:11,color:"#B83232"}}>Due {new Date(p.due_date).toLocaleDateString("en-AE",{day:"numeric",month:"short"})} · AED {Number(p.amount).toLocaleString()}</div></div>
                     {canEdit&&<button onClick={()=>markPaid(p.id)} style={{padding:"5px 12px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:11,fontWeight:600,cursor:"pointer"}}>Mark Paid</button>}
                   </div>
                 );
@@ -4963,16 +4963,16 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
         <div style={{flex:1,display:"flex",flexDirection:"column"}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
             <span style={{fontSize:12,color:"#A0AEC0"}}>{tenants.length} tenants</span>
-            {canEdit&&<button onClick={()=>{setTForm(tBlank);setShowAddTenant(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add Tenant</button>}
+            {canEdit&&<button onClick={()=>{setTForm(tBlank);setShowAddTenant(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add Tenant</button>}
           </div>
           <div style={{flex:1,overflowY:"auto"}}>
             {tenants.length===0&&<div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}><div style={{fontSize:36,marginBottom:8}}>👤</div><div>No tenants yet</div></div>}
             <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead style={{position:"sticky",top:0}}><tr style={{background:"#0B1F3A"}}>{["Name","Type","Nationality","Phone","Email","ID Number","ID Expiry"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+              <thead style={{position:"sticky",top:0}}><tr style={{background:"#0F2540"}}>{["Name","Type","Nationality","Phone","Email","ID Number","ID Expiry"].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
               <tbody>
                 {tenants.map((t,i)=>(
                   <tr key={t.id} style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5"}}>
-                    <td style={{padding:"10px 12px",fontWeight:600,fontSize:13,color:"#0B1F3A"}}>{t.full_name}</td>
+                    <td style={{padding:"10px 12px",fontWeight:600,fontSize:13,color:"#0F2540"}}>{t.full_name}</td>
                     <td style={{padding:"10px 12px"}}><span style={{fontSize:11,fontWeight:600,padding:"2px 7px",borderRadius:20,background:t.tenant_type==="Company"?"#E6EFF9":"#E6F4EE",color:t.tenant_type==="Company"?"#1A5FA8":"#1A7F5A"}}>{t.tenant_type}</span></td>
                     <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{t.nationality||"—"}</td>
                     <td style={{padding:"10px 12px",fontSize:12,color:"#4A5568"}}>{t.phone||"—"}</td>
@@ -5017,7 +5017,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
               {tForm.tenant_type==="Company"&&<div style={{marginTop:12,display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>COMPANY NAME</label><input value={tForm.company_name} onChange={e=>setTForm(f=>({...f,company_name:e.target.value}))}/></div><div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>TRADE LICENSE</label><input value={tForm.trade_license} onChange={e=>setTForm(f=>({...f,trade_license:e.target.value}))}/></div></div>}
               <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:14}}>
                 <button onClick={()=>setShowAddTenant(false)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                <button onClick={saveTenant} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Add Tenant"}</button>
+                <button onClick={saveTenant} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Add Tenant"}</button>
               </div>
             </Modal>
           )}
@@ -5033,20 +5033,20 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
               style={{padding:"7px 16px",borderRadius:8,border:"1.5px solid #1A7F5A",background:"#E6F4EE",color:"#1A7F5A",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
               📋 Download Template / Upload Data
             </button>}
-            {canEdit&&<button onClick={()=>{setLForm(lBlank);setShowAddLease(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ New Lease</button>}
+            {canEdit&&<button onClick={()=>{setLForm(lBlank);setShowAddLease(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ New Lease</button>}
           </div>
           <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8}}>
             {leases.length===0&&<div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}><div style={{fontSize:36,marginBottom:8}}>📄</div><div>No leases yet</div></div>}
             {leases.map(l=>{
               const daysLeft=Math.ceil((new Date(l.end_date)-today)/(1000*60*60*24));
               const isExpiring=daysLeft<=30&&daysLeft>=0&&l.status==="Active";
-              const SC_L={Active:{c:"#1A7F5A",bg:"#E6F4EE"},Expired:{c:"#B83232",bg:"#FAEAEA"},Terminated:{c:"#718096",bg:"#F0F2F5"},Pending:{c:"#A06810",bg:"#FDF3DC"},Renewed:{c:"#1A5FA8",bg:"#E6EFF9"}};
-              const sc=SC_L[l.status]||{c:"#718096",bg:"#F0F2F5"};
+              const SC_L={Active:{c:"#1A7F5A",bg:"#E6F4EE"},Expired:{c:"#B83232",bg:"#FAEAEA"},Terminated:{c:"#718096",bg:"#F7F9FC"},Pending:{c:"#A06810",bg:"#FDF3DC"},Renewed:{c:"#1A5FA8",bg:"#E6EFF9"}};
+              const sc=SC_L[l.status]||{c:"#718096",bg:"#F7F9FC"};
               return (
                 <div key={l.id} style={{background:"#fff",border:`1px solid ${isExpiring?"#E8C97A":"#E2E8F0"}`,borderRadius:10,padding:"12px 14px"}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
                     <div>
-                      <div style={{fontSize:14,fontWeight:700,color:"#0B1F3A",marginBottom:2}}>{tenantName(l.tenant_id)}</div>
+                      <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:2}}>{tenantName(l.tenant_id)}</div>
                       <div style={{fontSize:12,color:"#A0AEC0"}}>Unit {unitLabel(l.unit_id)}{l.ejari_number?` · Ejari: ${l.ejari_number}`:""}</div>
                     </div>
                     <div style={{textAlign:"right"}}>
@@ -5056,7 +5056,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,background:"#FAFBFC",borderRadius:8,padding:"8px 10px",marginBottom:8}}>
                     {[["Start",new Date(l.start_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})],["End",new Date(l.end_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})],["Annual Rent",`AED ${Number(l.annual_rent).toLocaleString()}`],["Cheques",l.number_of_cheques]].map(([k,v])=>(
-                      <div key={k}><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px"}}>{k}</div><div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{v}</div></div>
+                      <div key={k}><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px"}}>{k}</div><div style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>{v}</div></div>
                     ))}
                   </div>
                   {canEdit&&(
@@ -5084,7 +5084,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
             return (
             <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
               <div style={{background:"#fff",borderRadius:16,width:600,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
                   <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📋 Leases — Download Template / Upload Data</span>
                   <button onClick={()=>setShowLeaseUpload(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
                 </div>
@@ -5092,7 +5092,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                   {/* Export */}
                   {leases.length>0&&(
                     <div style={{background:"#F7F9FC",borderRadius:10,padding:"12px 14px",marginBottom:14,border:"1px solid #E2E8F0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                      <div><div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>Export Current Leases</div><div style={{fontSize:11,color:"#718096"}}>{leases.length} records</div></div>
+                      <div><div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>Export Current Leases</div><div style={{fontSize:11,color:"#718096"}}>{leases.length} records</div></div>
                       <button onClick={()=>{
                         const headers="tenant_id,unit_id,start_date,end_date,annual_rent,security_deposit,agency_fee,number_of_cheques,ejari_number,status,notes";
                         const rows=leases.map(l=>[l.tenant_id||"",l.unit_id||"",l.start_date||"",l.end_date||"",l.annual_rent||"",l.security_deposit||"",l.agency_fee||"",l.number_of_cheques||"",l.ejari_number||"",l.status||"",l.notes||""].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","));
@@ -5104,7 +5104,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                   )}
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
                     <div style={{background:"#F7F9FC",borderRadius:10,padding:"16px",border:"1px solid #E2E8F0",display:"flex",flexDirection:"column",gap:10}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>📥 Step 1 — Download Template</div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>📥 Step 1 — Download Template</div>
                       <div style={{fontSize:11,color:"#4A5568",lineHeight:1.7}}>
                         <strong>Columns:</strong> tenant_id · unit_id · start_date · end_date · annual_rent · security_deposit · number_of_cheques · ejari_number · status · notes<br/>
                         <strong>status:</strong> Active | Expired | Terminated | Renewed | Pending<br/>
@@ -5116,12 +5116,12 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                         const note="\n\nGet tenant_id from Enquiries tab export\nGet unit_id from Inventory tab export\nstatus values: Active | Expired | Terminated | Renewed | Pending";
                         const csv=headers+"\n"+samples+note;
                         const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);a.download="propcrm_leases_template.csv";a.click();
-                      }} style={{padding:"10px 0",borderRadius:8,border:"none",background:"#0B1F3A",color:"#C9A84C",fontSize:13,fontWeight:700,cursor:"pointer",textAlign:"center"}}>
+                      }} style={{padding:"10px 0",borderRadius:8,border:"none",background:"#0F2540",color:"#C9A84C",fontSize:13,fontWeight:700,cursor:"pointer",textAlign:"center"}}>
                         ⬇ Download Template
                       </button>
                     </div>
                     <div style={{background:"#E6F4EE",borderRadius:10,padding:"16px",border:"2px dashed #1A7F5A",display:"flex",flexDirection:"column",gap:10,alignItems:"center",justifyContent:"center"}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>📤 Step 2 — Upload Your File</div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>📤 Step 2 — Upload Your File</div>
                       <div style={{fontSize:28}}>📂</div>
                       <label style={{padding:"12px 24px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",textAlign:"center",width:"100%",boxSizing:"border-box"}}>
                         📤 Select CSV & Upload
@@ -5176,7 +5176,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
               </div>
               <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:14}}>
                 <button onClick={()=>setShowAddLease(false)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                <button onClick={saveLease} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Create Lease"}</button>
+                <button onClick={saveLease} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Create Lease"}</button>
               </div>
             </Modal>
           )}
@@ -5188,23 +5188,23 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
         <div style={{flex:1,display:"flex",flexDirection:"column"}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
             <div style={{display:"flex",gap:12}}><span style={{fontSize:12,color:"#B83232",fontWeight:600}}>Overdue: {overduePmts.length}</span><span style={{fontSize:12,color:"#A0AEC0"}}>Total: {payments.length}</span></div>
-            {canEdit&&<button onClick={()=>{setPForm(pBlank);setShowAddPmt(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Log Payment</button>}
+            {canEdit&&<button onClick={()=>{setPForm(pBlank);setShowAddPmt(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Log Payment</button>}
           </div>
           <div style={{flex:1,overflowY:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead style={{position:"sticky",top:0}}><tr style={{background:"#0B1F3A"}}>{["Tenant","Unit","Type","Amount","Due Date","Paid","Method","Status",""].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+              <thead style={{position:"sticky",top:0}}><tr style={{background:"#0F2540"}}>{["Tenant","Unit","Type","Amount","Due Date","Paid","Method","Status",""].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
               <tbody>
                 {payments.sort((a,b)=>new Date(a.due_date)-new Date(b.due_date)).map((p,i)=>{
                   const lease=leases.find(l=>l.id===p.lease_id);
                   const isOD=p.status==="Pending"&&new Date(p.due_date)<today;
                   const SC_P={Paid:{c:"#1A7F5A",bg:"#E6F4EE"},Pending:{c:"#A06810",bg:"#FDF3DC"},Bounced:{c:"#B83232",bg:"#FAEAEA"}};
-                  const sc=SC_P[p.status]||{c:"#718096",bg:"#F0F2F5"};
+                  const sc=SC_P[p.status]||{c:"#718096",bg:"#F7F9FC"};
                   return (
                     <tr key={p.id} style={{background:isOD?"#FFF5F5":i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5"}}>
-                      <td style={{padding:"9px 12px",fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{tenantName(lease?.tenant_id)}</td>
+                      <td style={{padding:"9px 12px",fontSize:13,fontWeight:600,color:"#0F2540"}}>{tenantName(lease?.tenant_id)}</td>
                       <td style={{padding:"9px 12px",fontSize:12,color:"#4A5568"}}>{unitLabel(p.unit_id||lease?.unit_id)}</td>
                       <td style={{padding:"9px 12px",fontSize:11,color:"#4A5568"}}>{p.payment_type}</td>
-                      <td style={{padding:"9px 12px",fontSize:13,fontWeight:700,color:"#0B1F3A",whiteSpace:"nowrap"}}>AED {Number(p.amount).toLocaleString()}</td>
+                      <td style={{padding:"9px 12px",fontSize:13,fontWeight:700,color:"#0F2540",whiteSpace:"nowrap"}}>AED {Number(p.amount).toLocaleString()}</td>
                       <td style={{padding:"9px 12px",fontSize:12,color:isOD?"#B83232":"#4A5568",fontWeight:isOD?700:400}}>{new Date(p.due_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}</td>
                       <td style={{padding:"9px 12px",fontSize:12,color:"#1A7F5A"}}>{p.paid_date?new Date(p.paid_date).toLocaleDateString("en-AE",{day:"numeric",month:"short"}):"—"}</td>
                       <td style={{padding:"9px 12px",fontSize:12,color:"#4A5568"}}>{p.payment_method}</td>
@@ -5230,7 +5230,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
               </div>
               <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:14}}>
                 <button onClick={()=>setShowAddPmt(false)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                <button onClick={savePmt} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Log Payment"}</button>
+                <button onClick={savePmt} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Log Payment"}</button>
               </div>
             </Modal>
           )}
@@ -5242,14 +5242,14 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
         <div style={{flex:1,display:"flex",flexDirection:"column"}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
             <span style={{fontSize:12,color:"#A0AEC0"}}>{openMaint.length} open · {maintenance.length} total</span>
-            {canEdit&&<button onClick={()=>{setMForm(mBlank);setShowAddMaint(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Log Request</button>}
+            {canEdit&&<button onClick={()=>{setMForm(mBlank);setShowAddMaint(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Log Request</button>}
           </div>
           <div style={{flex:1,overflowY:"auto",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:10,alignContent:"start"}}>
             {maintenance.map(m=>{
-              const PC={Urgent:{c:"#B83232",bg:"#FAEAEA"},High:{c:"#B85C10",bg:"#FDF0E6"},Normal:{c:"#1A5FA8",bg:"#E6EFF9"},Low:{c:"#718096",bg:"#F0F2F5"}};
+              const PC={Urgent:{c:"#B83232",bg:"#FAEAEA"},High:{c:"#B85C10",bg:"#FDF0E6"},Normal:{c:"#1A5FA8",bg:"#E6EFF9"},Low:{c:"#718096",bg:"#F7F9FC"}};
               const SC_M={Open:{c:"#B83232",bg:"#FAEAEA"},"In Progress":{c:"#A06810",bg:"#FDF3DC"},Completed:{c:"#1A7F5A",bg:"#E6F4EE"}};
-              const pc=PC[m.priority]||{c:"#718096",bg:"#F0F2F5"};
-              const sc=SC_M[m.status]||{c:"#718096",bg:"#F0F2F5"};
+              const pc=PC[m.priority]||{c:"#718096",bg:"#F7F9FC"};
+              const sc=SC_M[m.status]||{c:"#718096",bg:"#F7F9FC"};
               return (
                 <div key={m.id} style={{background:"#fff",border:`1px solid ${m.priority==="Urgent"?"#F0BCBC":"#E2E8F0"}`,borderRadius:10,padding:"12px 14px"}}>
                   <div style={{display:"flex",gap:6,marginBottom:8}}>
@@ -5257,7 +5257,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
                     <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:20,background:sc.bg,color:sc.c}}>{m.status}</span>
                     <span style={{fontSize:10,color:"#A0AEC0",marginLeft:"auto"}}>{m.category}</span>
                   </div>
-                  <div style={{fontWeight:700,fontSize:13,color:"#0B1F3A",marginBottom:4}}>{m.title}</div>
+                  <div style={{fontWeight:700,fontSize:13,color:"#0F2540",marginBottom:4}}>{m.title}</div>
                   <div style={{fontSize:11,color:"#A0AEC0",marginBottom:6}}>Unit {unitLabel(m.unit_id)} · {m.charged_to} responsibility</div>
                   {m.description&&<div style={{fontSize:12,color:"#4A5568",lineHeight:1.5,marginBottom:6}}>{m.description}</div>}
                   {m.assigned_to&&<div style={{fontSize:11,color:"#4A5568"}}>👷 {m.assigned_to}</div>}
@@ -5284,7 +5284,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
               </div>
               <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:14}}>
                 <button onClick={()=>setShowAddMaint(false)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                <button onClick={saveMaint} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Log Request"}</button>
+                <button onClick={saveMaint} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Log Request"}</button>
               </div>
             </Modal>
           )}
@@ -5552,7 +5552,7 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
           <span style={{fontSize:12,color:"#A0AEC0"}}>{filtered.length} templates</span>
         </div>
         {canEdit&&<button onClick={()=>{setForm(blankTpl);setEditTpl(null);setShowAdd(true);}}
-          style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+          style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
           + New Template
         </button>}
       </div>
@@ -5568,10 +5568,10 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
                 <div>
                   <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:4}}>
-                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A"}}>{tpl.name}</span>
+                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540"}}>{tpl.name}</span>
                     {tpl.requires_approval&&<span style={{fontSize:10,padding:"2px 7px",borderRadius:20,background:"#FDF3DC",color:"#8A6200",fontWeight:600}}>⚠ Requires Approval</span>}
                     {proj?<span style={{fontSize:10,padding:"2px 7px",borderRadius:20,background:"#E6EFF9",color:"#1A5FA8",fontWeight:600}}>{proj.name}</span>
-                         :<span style={{fontSize:10,padding:"2px 7px",borderRadius:20,background:"#F0F2F5",color:"#718096",fontWeight:600}}>Global</span>}
+                         :<span style={{fontSize:10,padding:"2px 7px",borderRadius:20,background:"#F7F9FC",color:"#718096",fontWeight:600}}>Global</span>}
                   </div>
                   {tpl.description&&<div style={{fontSize:12,color:"#718096"}}>{tpl.description}</div>}
                 </div>
@@ -5589,7 +5589,7 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
               {/* Milestone bars */}
               <div style={{display:"flex",gap:3,height:28,borderRadius:8,overflow:"hidden",marginBottom:8}}>
                 {ms.map((m,i)=>{
-                  const colors=["#0B1F3A","#1A5FA8","#1A7F5A","#5B3FAA","#A06810","#B83232","#718096"];
+                  const colors=["#0F2540","#1A5FA8","#1A7F5A","#5B3FAA","#A06810","#B83232","#718096"];
                   return (
                     <div key={i} title={`${m.label}: ${m.pct}%`}
                       style={{flex:m.pct,background:colors[i%colors.length],display:"flex",alignItems:"center",justifyContent:"center",minWidth:30}}>
@@ -5600,7 +5600,7 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 {ms.map((m,i)=>{
-                  const colors=["#0B1F3A","#1A5FA8","#1A7F5A","#5B3FAA","#A06810","#B83232","#718096"];
+                  const colors=["#0F2540","#1A5FA8","#1A7F5A","#5B3FAA","#A06810","#B83232","#718096"];
                   return (
                     <div key={i} style={{display:"flex",alignItems:"center",gap:4,fontSize:11,color:"#4A5568"}}>
                       <div style={{width:8,height:8,borderRadius:2,background:colors[i%colors.length],flexShrink:0}}/>
@@ -5655,14 +5655,14 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
                   <span style={{fontSize:12,fontWeight:700,color:Math.abs(totalPct-100)<0.1?"#1A7F5A":"#B83232"}}>
                     Total: {totalPct}% {Math.abs(totalPct-100)<0.1?"✓":"(must be 100%)"}
                   </span>
-                  <button onClick={addMilestone} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"none",background:"#0B1F3A",color:"#fff",cursor:"pointer"}}>+ Add Row</button>
+                  <button onClick={addMilestone} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"none",background:"#0F2540",color:"#fff",cursor:"pointer"}}>+ Add Row</button>
                 </div>
               </div>
               {/* Progress bar preview */}
               {form.milestones.length>0&&(
                 <div style={{display:"flex",gap:2,height:20,borderRadius:6,overflow:"hidden",marginBottom:12}}>
                   {form.milestones.map((m,i)=>{
-                    const colors=["#0B1F3A","#1A5FA8","#1A7F5A","#5B3FAA","#A06810","#B83232","#718096"];
+                    const colors=["#0F2540","#1A5FA8","#1A7F5A","#5B3FAA","#A06810","#B83232","#718096"];
                     return <div key={i} style={{flex:Math.max(Number(m.pct)||0,0.5),background:colors[i%colors.length],transition:"flex .2s"}}/>;
                   })}
                 </div>
@@ -5685,7 +5685,7 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
             <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
               <button onClick={()=>{setShowAdd(false);setEditTpl(null);}} style={{padding:"9px 20px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
               <button onClick={save} disabled={saving||Math.abs(totalPct-100)>0.1}
-                style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving||Math.abs(totalPct-100)>0.1?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+                style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving||Math.abs(totalPct-100)>0.1?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
                 {saving?"Saving…":editTpl?"Save Changes":"Create Template"}
               </button>
             </div>
@@ -6025,14 +6025,14 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
       <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",overflowX:"auto",paddingBottom:4}}>
         {Object.entries(REPORTS).filter(([key])=>crmContext==="leasing"?["rent_roll","pdc_schedule","tasks_report","agent_performance"].includes(key):["pipeline","sales_payments","agent_performance","lead_conversion","tasks_report"].includes(key)).map(([key,r])=>(
           <button key={key} onClick={()=>setActiveReport(key)}
-            style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid ${activeReport===key?"#0B1F3A":"#E2E8F0"}`,background:activeReport===key?"#0B1F3A":"#fff",color:activeReport===key?"#fff":"#4A5568",fontSize:11,fontWeight:activeReport===key,whiteSpace:"nowrap"?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .15s"}}>
+            style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid ${activeReport===key?"#0F2540":"#E2E8F0"}`,background:activeReport===key?"#0F2540":"#fff",color:activeReport===key?"#fff":"#4A5568",fontSize:11,fontWeight:activeReport===key,whiteSpace:"nowrap"?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .15s"}}>
             <span>{r.icon}</span> {r.label}
           </button>
         ))}
       </div>
 
       {/* Report header */}
-      <div style={{background:"#0B1F3A",borderRadius:12,padding:"14px 18px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+      <div style={{background:"#0F2540",borderRadius:12,padding:"14px 18px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
         <div>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>{currentReport?.icon} {currentReport?.label}</div>
           <div style={{fontSize:12,color:"rgba(255,255,255,.5)",marginTop:2}}>{currentReport?.description}</div>
@@ -6043,7 +6043,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
             📊 Export Excel
           </button>
           <button onClick={handleExportPDF} disabled={loading||!reportData}
-            style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#C9A84C",color:"#0B1F3A",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6,opacity:loading||!reportData?.rows?.length?.toString()?0.5:1}}>
+            style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#C9A84C",color:"#0F2540",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:6,opacity:loading||!reportData?.rows?.length?.toString()?0.5:1}}>
             📄 Export PDF
           </button>
           <button onClick={loadData}
@@ -6072,7 +6072,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
                   <tbody>
                     {reportData.summary.map((row,i)=>(
                       <tr key={i} style={{borderBottom:"1px solid #F0F2F5"}}>
-                        {row.map((cell,j)=><td key={j} style={{padding:"7px 12px",fontSize:12,color:String(cell).includes("⚠")?"#B83232":"#0B1F3A",fontWeight:j===0?600:400}}>{cell}</td>)}
+                        {row.map((cell,j)=><td key={j} style={{padding:"7px 12px",fontSize:12,color:String(cell).includes("⚠")?"#B83232":"#0F2540",fontWeight:j===0?600:400}}>{cell}</td>)}
                       </tr>
                     ))}
                   </tbody>
@@ -6084,12 +6084,12 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
           {/* Data table */}
           <div style={{flex:1,overflowY:"auto",overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:12}}>
             <div style={{padding:"10px 16px",borderBottom:"1px solid #F0F2F5",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{reportData.rows.length} records</span>
+              <span style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>{reportData.rows.length} records</span>
               <span style={{fontSize:11,color:"#A0AEC0"}}>Generated {new Date().toLocaleString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
             </div>
             <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
               <thead style={{position:"sticky",top:0,zIndex:1}}>
-                <tr style={{background:"#0B1F3A"}}>
+                <tr style={{background:"#0F2540"}}>
                   <th style={{padding:"8px 10px",textAlign:"left",fontSize:9,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>#</th>
                   {reportData.headers.map(h=>(
                     <th key={h} style={{padding:"8px 10px",textAlign:"left",fontSize:9,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>
@@ -6106,7 +6106,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leasingData=null
                     onMouseOut={e=>e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC"}>
                     <td style={{padding:"5px 10px",fontSize:10,color:"#A0AEC0",fontWeight:600}}>{i+1}</td>
                     {row.map((cell,j)=>(
-                      <td key={j} style={{padding:"5px 10px",color:String(cell||"").includes("⚠")?"#B83232":String(cell||"").includes("AED")?"#0B1F3A":"#4A5568",fontWeight:String(cell||"").includes("AED")?700:400,whiteSpace:"nowrap",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis"}}>
+                      <td key={j} style={{padding:"5px 10px",color:String(cell||"").includes("⚠")?"#B83232":String(cell||"").includes("AED")?"#0F2540":"#4A5568",fontWeight:String(cell||"").includes("AED")?700:400,whiteSpace:"nowrap",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis"}}>
                         {cell===null||cell===undefined?"—":cell}
                       </td>
                     ))}
@@ -6222,18 +6222,18 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
     const lines = text.split("\n");
     return lines.map((line,i)=>{
       if(!line.trim()) return <div key={i} style={{height:6}}/>;
-      if(/^#{1,3}\s/.test(line)) return <div key={i} style={{fontWeight:800,fontSize:14,color:"#0B1F3A",marginTop:10,marginBottom:4}}>{line.replace(/^#+\s/,"")}</div>;
-      if(/^\*\*(.+)\*\*$/.test(line)) return <div key={i} style={{fontWeight:700,color:"#0B1F3A",marginTop:6,marginBottom:2}}>{line.replace(/\*\*/g,"")}</div>;
+      if(/^#{1,3}\s/.test(line)) return <div key={i} style={{fontWeight:800,fontSize:14,color:"#0F2540",marginTop:10,marginBottom:4}}>{line.replace(/^#+\s/,"")}</div>;
+      if(/^\*\*(.+)\*\*$/.test(line)) return <div key={i} style={{fontWeight:700,color:"#0F2540",marginTop:6,marginBottom:2}}>{line.replace(/\*\*/g,"")}</div>;
       if(line.startsWith("•")||line.startsWith("-")||line.startsWith("*  ")){
         const txt = line.replace(/^[•\-\*]\s*/,"");
         const parts = txt.split(/\*\*(.+?)\*\*/g);
         return <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",marginBottom:3,paddingLeft:4}}>
           <span style={{color:"#C9A84C",fontWeight:700,flexShrink:0,marginTop:2}}>◆</span>
-          <span>{parts.map((p,j)=>j%2===1?<strong key={j} style={{color:"#0B1F3A"}}>{p}</strong>:p)}</span>
+          <span>{parts.map((p,j)=>j%2===1?<strong key={j} style={{color:"#0F2540"}}>{p}</strong>:p)}</span>
         </div>;
       }
       const parts = line.split(/\*\*(.+?)\*\*/g);
-      return <div key={i} style={{marginBottom:3,lineHeight:1.7}}>{parts.map((p,j)=>j%2===1?<strong key={j} style={{color:"#0B1F3A"}}>{p}</strong>:p)}</div>;
+      return <div key={i} style={{marginBottom:3,lineHeight:1.7}}>{parts.map((p,j)=>j%2===1?<strong key={j} style={{color:"#0F2540"}}>{p}</strong>:p)}</div>;
     });
   };
 
@@ -6252,7 +6252,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
         <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",position:"relative"}}>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
             {/* AI Avatar */}
-            <div style={{width:46,height:46,borderRadius:14,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:"#0B1F3A",boxShadow:"0 4px 16px rgba(201,168,76,.4)",flexShrink:0}}>
+            <div style={{width:46,height:46,borderRadius:14,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800,color:"#0F2540",boxShadow:"0 4px 16px rgba(201,168,76,.4)",flexShrink:0}}>
               ✦
             </div>
             <div>
@@ -6308,13 +6308,13 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
       {/* ── Setup Panel ── */}
       {showSetup&&(
         <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"16px 24px",flexShrink:0}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:4}}>Configure {aiFullName}</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:4}}>Configure {aiFullName}</div>
           <div style={{fontSize:12,color:"#718096",marginBottom:12}}>Add at least one API key to activate. Groq is free — no credit card needed.</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:10}}>
             {AI_PROVIDERS.map(p=>(
               <div key={p.id} style={{border:`1.5px solid ${keys[p.id]?"#A8D5BE":"#E2E8F0"}`,borderRadius:10,padding:"12px",background:keys[p.id]?"#F0FBF5":"#FAFBFC"}}>
                 <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-                  <span style={{fontWeight:700,fontSize:12,color:"#0B1F3A"}}>{p.name}</span>
+                  <span style={{fontWeight:700,fontSize:12,color:"#0F2540"}}>{p.name}</span>
                   <span style={{padding:"1px 6px",borderRadius:8,background:p.badgeBg,color:p.badgeColor,fontSize:9,fontWeight:700}}>{p.badge}</span>
                   {keys[p.id]&&<span style={{marginLeft:"auto",fontSize:10,color:"#1A7F5A",fontWeight:600}}>✓ Active</span>}
                 </div>
@@ -6325,7 +6325,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
                     const val=document.getElementById(`key-${p.id}`).value.trim();
                     if(val){saveKeys({...keys,[p.id]:val});showToast(`${p.name} activated`,"success");}
                     else{const nk={...keys};delete nk[p.id];saveKeys(nk);}
-                  }} style={{padding:"7px 12px",borderRadius:7,border:"none",background:"#0B1F3A",color:"#C9A84C",fontSize:11,fontWeight:600,cursor:"pointer"}}>Save</button>
+                  }} style={{padding:"7px 12px",borderRadius:7,border:"none",background:"#0F2540",color:"#C9A84C",fontSize:11,fontWeight:600,cursor:"pointer"}}>Save</button>
                   <a href={p.link} target="_blank" style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:11,color:"#1A5FA8",fontWeight:600,textDecoration:"none"}}>Get Key ↗</a>
                 </div>
               </div>
@@ -6361,8 +6361,8 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
             {/* Avatar */}
             <div style={{
               width:36,height:36,borderRadius:10,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,
-              background:m.role==="user"?"#0B1F3A":"linear-gradient(135deg,#C9A84C,#E8C97A)",
-              color:m.role==="user"?"#C9A84C":"#0B1F3A",
+              background:m.role==="user"?"#0F2540":"linear-gradient(135deg,#C9A84C,#E8C97A)",
+              color:m.role==="user"?"#C9A84C":"#0F2540",
               boxShadow:m.role==="assistant"?"0 2px 8px rgba(201,168,76,.3)":"none"
             }}>
               {m.role==="user"?(currentUser.full_name||"U").charAt(0).toUpperCase():"✦"}
@@ -6391,7 +6391,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
         {/* Typing indicator */}
         {loading&&(
           <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
-            <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#0B1F3A",boxShadow:"0 2px 8px rgba(201,168,76,.3)"}}>✦</div>
+            <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:800,color:"#0F2540",boxShadow:"0 2px 8px rgba(201,168,76,.3)"}}>✦</div>
             <div style={{background:"#fff",border:"1px solid #E8EDF3",borderRadius:"16px 16px 16px 4px",padding:"14px 18px",boxShadow:"0 2px 12px rgba(0,0,0,.06)",display:"flex",gap:5,alignItems:"center"}}>
               {[0,.15,.3].map((d,i)=>(
                 <div key={i} style={{width:7,height:7,borderRadius:"50%",background:"#C9A84C",animationName:"aipulse",animationDuration:"1.2s",animationDelay:`${d}s`,animationIterationCount:"infinite",animationTimingFunction:"ease-in-out"}}/>
@@ -6434,7 +6434,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
                   showToast(`${suggestion.name} added successfully`,"success");
                   setSuggestion(null);
                 }catch(e){showToast(e.message,"error");}
-              }} style={{flex:1,padding:"10px",borderRadius:8,border:"none",background:"#C9A84C",color:"#0B1F3A",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+              }} style={{flex:1,padding:"10px",borderRadius:8,border:"none",background:"#C9A84C",color:"#0F2540",fontSize:13,fontWeight:700,cursor:"pointer"}}>
                 + Add to CRM
               </button>
               <button onClick={()=>setSuggestion(null)} style={{padding:"10px 16px",borderRadius:8,border:"1px solid rgba(255,255,255,.2)",background:"transparent",color:"rgba(255,255,255,.6)",fontSize:13,cursor:"pointer"}}>
@@ -6465,7 +6465,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
             rows={1}
             style={{flex:1,border:"none",outline:"none",resize:"none",fontSize:13,lineHeight:1.6,
               minHeight:40,maxHeight:120,fontFamily:"inherit",
-              background:"transparent",color:hasAnyKey?"#1a2535":"#A0AEC0"}}
+              background:"transparent",color:hasAnyKey?"#0F2540":"#A0AEC0"}}
           />
           <button onClick={()=>send()} disabled={loading||!input.trim()||!hasAnyKey} style={{
             padding:"10px 20px",borderRadius:12,border:"none",
@@ -6546,7 +6546,7 @@ function SetupWizard({ onComplete }) {
       <div className="fa" style={{background:"#fff",borderRadius:20,width:680,maxWidth:"100%",boxShadow:"0 30px 80px rgba(0,0,0,.4)",overflow:"hidden"}}>
 
         {/* Header */}
-        <div style={{background:"#0B1F3A",padding:"1.75rem 2rem"}}>
+        <div style={{background:"#0F2540",padding:"1.75rem 2rem"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:28,fontWeight:700,color:"#C9A84C"}}>◆ PropCRM</div>
           <div style={{fontSize:14,color:"rgba(255,255,255,.6)",marginTop:4}}>Welcome! Set up your workspace — takes 2 minutes</div>
           <div style={{fontSize:12,color:"rgba(201,168,76,.6)",marginTop:3}}>You can change any of these settings later in Users → Settings</div>
@@ -6568,19 +6568,19 @@ function SetupWizard({ onComplete }) {
           {/* ── STEP 1: Mode ── */}
           {step===1&&(
             <div className="fa">
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>How will you use PropCRM?</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#0F2540",marginBottom:6}}>How will you use PropCRM?</div>
               <div style={{fontSize:13,color:"#718096",marginBottom:22}}>This controls which modules are visible and which roles are available. You can change this later in Settings.</div>
 
               <div style={{display:"flex",flexDirection:"column",gap:12}}>
                 {MODES.map(m=>(
                   <div key={m.id} onClick={()=>setMode(m.id)}
                     style={{border:`2px solid ${mode===m.id?m.color:"#E2E8F0"}`,borderRadius:14,padding:"1.25rem 1.5rem",cursor:"pointer",background:mode===m.id?m.bg:"#fff",transition:"all .2s",position:"relative"}}>
-                    {m.recommended&&<div style={{position:"absolute",top:-1,right:16,background:"#C9A84C",color:"#0B1F3A",fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:"0 0 8px 8px"}}>RECOMMENDED</div>}
+                    {m.recommended&&<div style={{position:"absolute",top:-1,right:16,background:"#C9A84C",color:"#0F2540",fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:"0 0 8px 8px"}}>RECOMMENDED</div>}
                     <div style={{display:"flex",alignItems:"flex-start",gap:14}}>
                       <div style={{fontSize:28,flexShrink:0}}>{m.icon}</div>
                       <div style={{flex:1}}>
                         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                          <span style={{fontWeight:700,fontSize:16,color:"#0B1F3A"}}>{m.title}</span>
+                          <span style={{fontWeight:700,fontSize:16,color:"#0F2540"}}>{m.title}</span>
                           {mode===m.id&&<span style={{fontSize:11,fontWeight:700,color:m.color}}>✓ Selected</span>}
                         </div>
                         <div style={{fontSize:13,color:"#4A5568",lineHeight:1.6,marginBottom:10}}>{m.desc}</div>
@@ -6588,13 +6588,13 @@ function SetupWizard({ onComplete }) {
                           <div style={{flex:1}}>
                             <div style={{fontSize:10,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:5}}>Modules</div>
                             <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                              {m.tabs.map(t=><span key={t} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:mode===m.id?"rgba(255,255,255,.7)":"#F0F2F5",color:"#4A5568"}}>{t}</span>)}
+                              {m.tabs.map(t=><span key={t} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:mode===m.id?"rgba(255,255,255,.7)":"#F7F9FC",color:"#4A5568"}}>{t}</span>)}
                             </div>
                           </div>
                           <div>
                             <div style={{fontSize:10,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:5}}>Roles</div>
                             <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                              {m.roles.map(r=><span key={r} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:mode===m.id?"rgba(255,255,255,.7)":"#F0F2F5",color:"#4A5568"}}>{r}</span>)}
+                              {m.roles.map(r=><span key={r} style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:mode===m.id?"rgba(255,255,255,.7)":"#F7F9FC",color:"#4A5568"}}>{r}</span>)}
                             </div>
                           </div>
                         </div>
@@ -6606,7 +6606,7 @@ function SetupWizard({ onComplete }) {
 
               <div style={{display:"flex",justifyContent:"flex-end",marginTop:22}}>
                 <button onClick={()=>{if(mode)setStep(2);}} disabled={!mode}
-                  style={{padding:"11px 28px",borderRadius:10,border:"none",background:mode?"#0B1F3A":"#E2E8F0",color:mode?"#fff":"#A0AEC0",fontSize:14,fontWeight:600,cursor:mode?"pointer":"not-allowed",transition:".2s"}}>
+                  style={{padding:"11px 28px",borderRadius:10,border:"none",background:mode?"#0F2540":"#E2E8F0",color:mode?"#fff":"#A0AEC0",fontSize:14,fontWeight:600,cursor:mode?"pointer":"not-allowed",transition:".2s"}}>
                   Next → Company Details
                 </button>
               </div>
@@ -6616,7 +6616,7 @@ function SetupWizard({ onComplete }) {
           {/* ── STEP 2: Company ── */}
           {step===2&&(
             <div className="fa">
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>Your company details</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#0F2540",marginBottom:6}}>Your company details</div>
               <div style={{fontSize:13,color:"#718096",marginBottom:22}}>Used throughout the app and in the AI assistant's context.</div>
 
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
@@ -6660,7 +6660,7 @@ function SetupWizard({ onComplete }) {
                   ← Back
                 </button>
                 <button onClick={()=>setStep(3)}
-                  style={{padding:"11px 28px",borderRadius:10,border:"none",background:"#0B1F3A",color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer"}}>
+                  style={{padding:"11px 28px",borderRadius:10,border:"none",background:"#0F2540",color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer"}}>
                   Next → Confirm
                 </button>
               </div>
@@ -6670,14 +6670,14 @@ function SetupWizard({ onComplete }) {
           {/* ── STEP 3: Confirm ── */}
           {step===3&&(
             <div className="fa">
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>Ready to launch</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#0F2540",marginBottom:6}}>Ready to launch</div>
               <div style={{fontSize:13,color:"#718096",marginBottom:22}}>Review your configuration below. You can always change this later in Users → Settings.</div>
 
               <div style={{border:`2px solid ${sel?.color}`,borderRadius:14,padding:"1.5rem",marginBottom:18,background:sel?.bg}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
                   <span style={{fontSize:32}}>{sel?.icon}</span>
                   <div>
-                    <div style={{fontWeight:700,fontSize:18,color:"#0B1F3A"}}>{sel?.title} Mode</div>
+                    <div style={{fontWeight:700,fontSize:18,color:"#0F2540"}}>{sel?.title} Mode</div>
                     <div style={{fontSize:13,color:"#4A5568"}}>{company}</div>
                   </div>
                 </div>
@@ -6709,7 +6709,7 @@ function SetupWizard({ onComplete }) {
                   ← Back
                 </button>
                 <button onClick={complete} disabled={saving}
-                  style={{padding:"11px 28px",borderRadius:10,border:"none",background:saving?"#A0AEC0":"#C9A84C",color:"#0B1F3A",fontSize:14,fontWeight:700,cursor:saving?"not-allowed":"pointer",transition:".2s"}}>
+                  style={{padding:"11px 28px",borderRadius:10,border:"none",background:saving?"#A0AEC0":"#C9A84C",color:"#0F2540",fontSize:14,fontWeight:700,cursor:saving?"not-allowed":"pointer",transition:".2s"}}>
                   {saving?"Setting up…":"🚀 Launch PropCRM"}
                 </button>
               </div>
@@ -6784,7 +6784,7 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
       <div style={{fontSize:22}}>{icon}</div>
       <div style={{flex:1}}>
         <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".7px",fontWeight:600,marginBottom:4}}>{label}</div>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0B1F3A",lineHeight:1}}>{value}</div>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0F2540",lineHeight:1}}>{value}</div>
         {sub&&<div style={{fontSize:12,color:"#718096",marginTop:4}}>{sub}</div>}
       </div>
       {onClick&&<div style={{position:"absolute",top:10,right:10,fontSize:12,color:"#A0AEC0"}}>→</div>}
@@ -6839,7 +6839,7 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
         <div style={{background:"#F0F7FF",border:"1.5px solid #D1E4F7",borderRadius:12,padding:"16px 20px",display:"flex",alignItems:"center",gap:14}}>
           <div style={{fontSize:32}}>🔑</div>
           <div>
-            <div style={{fontWeight:700,color:"#0B1F3A",fontSize:14,marginBottom:4}}>No leasing data yet</div>
+            <div style={{fontWeight:700,color:"#0F2540",fontSize:14,marginBottom:4}}>No leasing data yet</div>
             <div style={{fontSize:12,color:"#4A5568"}}>Start by adding tenants and creating leases in the <strong>Enquiries</strong> and <strong>Leasing</strong> tabs. Stats will appear here once data is entered.</div>
           </div>
           <button onClick={()=>onNavigate("l_leads")} style={{marginLeft:"auto",padding:"8px 16px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>
@@ -6860,7 +6860,7 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
       <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr)",gap:12}}>
         {/* Expiring leases */}
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1.125rem"}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:14}}>⏰ Expiring / Needs Renewal</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:14}}>⏰ Expiring / Needs Renewal</div>
           {expiring30.length===0&&<Empty icon="✓" msg="No leases expiring in 30 days"/>}
           {expiring30.slice(0,5).map(l=>{
             const tenant=tenants.find(t=>t.id===l.tenant_id);
@@ -6869,7 +6869,7 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
             return(
               <div key={l.id} style={{padding:"9px 11px",background:"#FDF3DC",borderRadius:8,border:"1px solid #E8C97A",marginBottom:7}}>
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
-                  <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{tenant?.full_name||"Unknown"}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:"#0F2540"}}>{tenant?.full_name||"Unknown"}</div>
                   <div style={{fontSize:12,fontWeight:700,color:"#B83232"}}>{daysLeft}d left</div>
                 </div>
                 <div style={{fontSize:11,color:"#718096"}}>Unit {unit?.unit_ref||"—"} · AED {Number(l.annual_rent||0).toLocaleString()}/yr</div>
@@ -6882,7 +6882,7 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
             const unit=units.find(u=>u.id===l.unit_id);
             return(
               <div key={l.id} style={{padding:"8px 10px",background:"#F7F9FC",borderRadius:8,border:"1px solid #E2E8F0",marginBottom:6}}>
-                <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{tenant?.full_name||"Unknown"}</div>
+                <div style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>{tenant?.full_name||"Unknown"}</div>
                 <div style={{fontSize:11,color:"#718096"}}>Unit {unit?.unit_ref||"—"} · AED {Number(l.annual_rent||0).toLocaleString()}/yr · Expires {fmtDate(l.end_date)}</div>
               </div>
             );
@@ -6891,11 +6891,11 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
 
         {/* Recent activity */}
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1.125rem"}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:14}}>📋 Recent Activity</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:14}}>📋 Recent Activity</div>
           {recentActs.length===0&&<Empty icon="📋" msg="No recent activity"/>}
           {recentActs.map(a=>(
             <div key={a.id} style={{padding:"8px 10px",background:"#F7F9FC",borderRadius:8,border:"1px solid #F0F2F5",marginBottom:7}}>
-              <div style={{fontSize:12,fontWeight:600,color:"#0B1F3A"}}>{a.type} — {a.lead_name||"—"}</div>
+              <div style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>{a.type} — {a.lead_name||"—"}</div>
               <div style={{fontSize:11,color:"#718096"}}>{a.user_name} · {fmtDate(a.created_at)}</div>
               {a.note&&<div style={{fontSize:11,color:"#A0AEC0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.note}</div>}
             </div>
@@ -6906,17 +6906,17 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
       {/* Maintenance + Available units */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1.125rem"}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:14}}>🔧 Open Maintenance</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:14}}>🔧 Open Maintenance</div>
           {openMaint.length===0&&<Empty icon="✓" msg="No open maintenance requests"/>}
           {openMaint.slice(0,4).map(m=>{
-            const PC={Urgent:{c:"#B83232",bg:"#FAEAEA"},High:{c:"#B85C10",bg:"#FDF0E6"},Normal:{c:"#1A5FA8",bg:"#E6EFF9"},Low:{c:"#718096",bg:"#F0F2F5"}};
+            const PC={Urgent:{c:"#B83232",bg:"#FAEAEA"},High:{c:"#B85C10",bg:"#FDF0E6"},Normal:{c:"#1A5FA8",bg:"#E6EFF9"},Low:{c:"#718096",bg:"#F7F9FC"}};
             const pc=PC[m.priority]||PC.Normal;
             const unit=units.find(u=>u.id===m.unit_id);
             return(
               <div key={m.id} style={{padding:"8px 10px",background:"#F7F9FC",borderRadius:8,border:"1px solid #E2E8F0",marginBottom:6}}>
                 <div style={{display:"flex",gap:6,marginBottom:3}}>
                   <span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:pc.bg,color:pc.c}}>{m.priority}</span>
-                  <span style={{fontSize:11,fontWeight:600,color:"#0B1F3A"}}>{m.title}</span>
+                  <span style={{fontSize:11,fontWeight:600,color:"#0F2540"}}>{m.title}</span>
                 </div>
                 <div style={{fontSize:11,color:"#718096"}}>Unit {unit?.unit_ref||"—"} · {m.category}</div>
               </div>
@@ -6924,14 +6924,14 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
           })}
         </div>
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1.125rem"}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:14}}>🏠 Available for Lease</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:14}}>🏠 Available for Lease</div>
           {availUnits.length===0&&<Empty icon="🔑" msg="No units currently available"/>}
           {availUnits.slice(0,5).map(u=>{
             const lp=leasePricing.find(l=>l.unit_id===u.id);
             return(
               <div key={u.id} style={{padding:"8px 10px",background:"#EEE8F9",borderRadius:8,border:"1px solid #C4ACEC",marginBottom:6}}>
                 <div style={{display:"flex",justifyContent:"space-between"}}>
-                  <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>{u.unit_ref}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{u.unit_ref}</div>
                   <div style={{fontSize:12,fontWeight:700,color:"#5B3FAA"}}>{lp?`AED ${Number(lp.annual_rent).toLocaleString()}/yr`:"TBD"}</div>
                 </div>
                 <div style={{fontSize:11,color:"#718096"}}>{u.sub_type}{u.size_sqft?` · ${Number(u.size_sqft).toLocaleString()} sqft`:""}{u.view?` · ${u.view}`:""}</div>
@@ -6944,13 +6944,13 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
       {/* Quick Actions */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem"}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#0B1F3A",marginBottom:10}}>Quick Actions</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:10}}>Quick Actions</div>
           {[
             {icon:"👤",label:"Add Enquiry",       tab:"l_leads",     bg:"#5B3FAA",col:"#fff"},
             {icon:"🏠",label:"View Inventory",    tab:"l_inventory", bg:"#1A5FA8",col:"#fff"},
             {icon:"🔀",label:"Pipeline Board",    tab:"l_pipeline",  bg:"#9B7FD4",col:"#fff"},
             {icon:"📄",label:"Active Leases",     tab:"leasing",     bg:"#1A7F5A",col:"#fff"},
-            {icon:"✦", label:"Ask AI Assistant",  tab:"l_ai",        bg:"#0B1F3A",col:"#C9A84C"},
+            {icon:"✦", label:"Ask AI Assistant",  tab:"l_ai",        bg:"#0F2540",col:"#C9A84C"},
           ].map(({icon,label,tab,bg,col})=>(
             <button key={tab} onClick={()=>onNavigate(tab)}
               style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"none",background:bg,color:col,fontSize:12,fontWeight:600,cursor:"pointer",marginBottom:6,textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
@@ -6978,13 +6978,13 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
       {/* Quick Actions + Today summary */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"1rem"}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#0B1F3A",marginBottom:10}}>Quick Actions</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:10}}>Quick Actions</div>
           {[
             {icon:"👤",label:"Add Enquiry",      tab:"l_leads",     bg:"#5B3FAA",col:"#fff"},
             {icon:"🏠",label:"View Inventory",   tab:"l_inventory", bg:"#1A5FA8",col:"#fff"},
             {icon:"🔀",label:"Pipeline Board",   tab:"l_pipeline",  bg:"#9B7FD4",col:"#fff"},
             {icon:"📄",label:"Active Leases",    tab:"leasing",     bg:"#1A7F5A",col:"#fff"},
-            {icon:"✦", label:"AI Assistant",     tab:"l_ai",        bg:"#0B1F3A",col:"#C9A84C"},
+            {icon:"✦", label:"AI Assistant",     tab:"l_ai",        bg:"#0F2540",col:"#C9A84C"},
           ].map(({icon,label,tab,bg,col})=>(
             <button key={tab} onClick={()=>onNavigate(tab)}
               style={{width:"100%",padding:"8px 12px",borderRadius:8,border:"none",background:bg,color:col,fontSize:12,fontWeight:600,cursor:"pointer",marginBottom:6,textAlign:"left",display:"flex",alignItems:"center",gap:8}}>
@@ -7029,7 +7029,7 @@ function UserManagement({currentUser, leads=[], activities=[], showToast, appCon
       <div style={{display:"flex",gap:4,marginBottom:14}}>
         {[["users","👥 Users"],["settings","⚙ Settings"]].map(([id,l])=>(
           <button key={id} onClick={()=>setSubTab(id)}
-            style={{padding:"7px 16px",borderRadius:8,border:`1.5px solid ${subTab===id?"#0B1F3A":"#E2E8F0"}`,background:subTab===id?"#0B1F3A":"#fff",color:subTab===id?"#fff":"#4A5568",fontSize:13,fontWeight:subTab===id?600:400,cursor:"pointer"}}>
+            style={{padding:"7px 16px",borderRadius:8,border:`1.5px solid ${subTab===id?"#0F2540":"#E2E8F0"}`,background:subTab===id?"#0F2540":"#fff",color:subTab===id?"#fff":"#4A5568",fontSize:13,fontWeight:subTab===id?600:400,cursor:"pointer"}}>
             {l}
           </button>
         ))}
@@ -7145,14 +7145,14 @@ function UsersTab({currentUser, showToast}) {
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <span style={{fontSize:13,color:"#718096"}}>{users.length} users · {users.filter(u=>u.is_active).length} active</span>
         <button onClick={()=>{setForm(blank);setEditUser(null);setShowAdd(true);}}
-          style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+          style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
           + Add User
         </button>
       </div>
       <div style={{flex:1,overflowY:"auto"}}>
         <table style={{width:"100%",borderCollapse:"collapse"}}>
           <thead style={{position:"sticky",top:0}}>
-            <tr style={{background:"#0B1F3A"}}>
+            <tr style={{background:"#0F2540"}}>
               {["Name","Email","Role","Company","Status","Actions"].map(h=>(
                 <th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".5px"}}>{h}</th>
               ))}
@@ -7165,7 +7165,7 @@ function UsersTab({currentUser, showToast}) {
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <Av name={u.full_name||u.email} size={28}/>
                     <div>
-                      <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{u.full_name||"—"}</div>
+                      <div style={{fontSize:13,fontWeight:600,color:"#0F2540"}}>{u.full_name||"—"}</div>
                       {u.is_super_admin&&<span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:20,background:"#FDF3DC",color:"#8A6200"}}>Super Admin</span>}
                     </div>
                   </div>
@@ -7176,7 +7176,7 @@ function UsersTab({currentUser, showToast}) {
                   {companies.find(c=>c.id===u.company_id)?.name||<span style={{color:"#A0AEC0"}}>—</span>}
                 </td>
                 <td style={{padding:"9px 12px"}}>
-                  <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:u.is_active?"#E6F4EE":"#F0F2F5",color:u.is_active?"#1A7F5A":"#718096"}}>
+                  <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:u.is_active?"#E6F4EE":"#F7F9FC",color:u.is_active?"#1A7F5A":"#718096"}}>
                     {u.is_active?"Active":"Inactive"}
                   </span>
                 </td>
@@ -7206,7 +7206,7 @@ function UsersTab({currentUser, showToast}) {
       {showAdd&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>{editUser?"Edit User":"Add New User"}</span>
               <button onClick={()=>{setShowAdd(false);setEditUser(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
@@ -7243,7 +7243,7 @@ function UsersTab({currentUser, showToast}) {
             </div>
             <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
               <button onClick={()=>{setShowAdd(false);setEditUser(null);}} style={{padding:"9px 20px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={saveUser} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editUser?"Save Changes":"Add User"}</button>
+              <button onClick={saveUser} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editUser?"Save Changes":"Add User"}</button>
             </div>
           </div>
         </div>
@@ -7280,7 +7280,7 @@ function SettingsTab({appConfig={}, onConfigChange, currentUser, showToast}) {
             {["AED","USD","GBP","EUR","SAR","QAR","KWD"].map(c=><option key={c}>{c}</option>)}
           </select>
         </div>
-        <button onClick={save} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",alignSelf:"flex-start"}}>Save Settings</button>
+        <button onClick={save} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",alignSelf:"flex-start"}}>Save Settings</button>
       </div>
     </div>
   );
@@ -7296,7 +7296,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
   const blank = {
     name:"", business_type:"both", company_category:"Brokerage",
     primary_contact:"", phone:"", email:"",
-    address:"", city:"", country:"UAE", brand_color:"#0B1F3A",
+    address:"", city:"", country:"UAE", brand_color:"#0F2540",
     brand_accent:"#C9A84C", plan:"professional", is_active:true, logo_url:"",
     rera_number:"", ded_number:"", ai_assistant_name:""
   };
@@ -7366,7 +7366,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
     setShowAdd(true);
   };
 
-  const PLAN_META = { starter:{c:"#718096",bg:"#F0F2F5"}, professional:{c:"#1A5FA8",bg:"#E6EFF9"}, enterprise:{c:"#8A6200",bg:"#FDF3DC"} };
+  const PLAN_META = { starter:{c:"#718096",bg:"#F7F9FC"}, professional:{c:"#1A5FA8",bg:"#E6EFF9"}, enterprise:{c:"#8A6200",bg:"#FDF3DC"} };
   const BIZ_META  = { sales:{c:"#1A5FA8",bg:"#E6EFF9",icon:"🏷"}, leasing:{c:"#5B3FAA",bg:"#EEE8F9",icon:"🔑"}, both:{c:"#1A7F5A",bg:"#E6F4EE",icon:"◆"} };
 
   if (loading) return <Spinner msg="Loading companies…"/>;
@@ -7379,7 +7379,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
           <div style={{fontSize:13,color:"#718096"}}>{companies.length} compan{companies.length!==1?"ies":"y"} · {companies.filter(c=>c.is_active).length} active</div>
         </div>
         <button onClick={()=>{setForm(blank);setEditComp(null);setShowAdd(true);}}
-          style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+          style={{padding:"9px 20px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
           + Add Company
         </button>
       </div>
@@ -7397,14 +7397,14 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
               onMouseOver={e=>{ if(c.is_active&&!isActive) e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.1)"; }}
               onMouseOut={e=>{ e.currentTarget.style.boxShadow=isActive?"0 4px 20px rgba(201,168,76,.2)":"none"; }}>
               {/* Colour bar */}
-              <div style={{height:5,background:`linear-gradient(90deg,${c.brand_color||"#0B1F3A"},${c.brand_accent||"#C9A84C"})`}}/>
+              <div style={{height:5,background:`linear-gradient(90deg,${c.brand_color||"#0F2540"},${c.brand_accent||"#C9A84C"})`}}/>
               <div style={{padding:"14px 16px"}}>
                 {/* Name + badges */}
                 <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:8}}>
-                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0B1F3A"}}>{c.name}</div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0F2540"}}>{c.name}</div>
                   <div style={{display:"flex",flexDirection:"column",gap:3,alignItems:"flex-end"}}>
                     {isActive
-                      ? <span style={{fontSize:10,fontWeight:700,padding:"2px 9px",borderRadius:20,background:"#C9A84C",color:"#0B1F3A"}}>✦ Active</span>
+                      ? <span style={{fontSize:10,fontWeight:700,padding:"2px 9px",borderRadius:20,background:"#C9A84C",color:"#0F2540"}}>✦ Active</span>
                       : <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>Click to switch →</span>
                     }
                   </div>
@@ -7439,7 +7439,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:620,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1.125rem 1.5rem",borderBottom:"1px solid #E2E8F0",flexShrink:0}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A"}}>{editComp?"Edit Company":"Add New Company"}</span>
+              <span style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px"}}>{editComp?"Edit Company":"Add New Company"}</span>
               <button onClick={()=>{setShowAdd(false);setEditComp(null);}} style={{background:"none",border:"none",fontSize:22,color:"#A0AEC0",cursor:"pointer"}}>×</button>
             </div>
             <div style={{overflowY:"auto",padding:"1.25rem 1.5rem",flex:1}}>
@@ -7450,7 +7450,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
                 <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
                   {BIZ_TYPES.map(b=>(
                     <button key={b.id} onClick={()=>sf("business_type",b.id)}
-                      style={{padding:"10px 12px",borderRadius:10,border:`2px solid ${form.business_type===b.id?"#0B1F3A":"#E2E8F0"}`,background:form.business_type===b.id?"#0B1F3A":"#fff",color:form.business_type===b.id?"#fff":"#4A5568",cursor:"pointer",textAlign:"left",transition:".15s"}}>
+                      style={{padding:"10px 12px",borderRadius:10,border:`2px solid ${form.business_type===b.id?"#0F2540":"#E2E8F0"}`,background:form.business_type===b.id?"#0F2540":"#fff",color:form.business_type===b.id?"#fff":"#4A5568",cursor:"pointer",textAlign:"left",transition:".15s"}}>
                       <div style={{fontSize:18,marginBottom:4}}>{b.icon}</div>
                       <div style={{fontSize:13,fontWeight:700}}>{b.label}</div>
                       <div style={{fontSize:11,opacity:.7,marginTop:2}}>{b.desc}</div>
@@ -7466,7 +7466,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
                   {PLANS.map(p=>(
                     <button key={p.id} onClick={()=>sf("plan",p.id)}
                       style={{padding:"10px 12px",borderRadius:10,border:`2px solid ${form.plan===p.id?p.color:"#E2E8F0"}`,background:form.plan===p.id?p.color+"18":"#fff",cursor:"pointer",textAlign:"left",transition:".15s"}}>
-                      <div style={{fontSize:13,fontWeight:700,color:form.plan===p.id?p.color:"#0B1F3A"}}>{p.label}</div>
+                      <div style={{fontSize:13,fontWeight:700,color:form.plan===p.id?p.color:"#0F2540"}}>{p.label}</div>
                       <div style={{fontSize:11,color:"#718096",marginTop:2}}>{p.desc}</div>
                     </button>
                   ))}
@@ -7530,13 +7530,13 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
 
               {/* Branding */}
               <div style={{background:"#F7F9FC",border:"1px solid #E2E8F0",borderRadius:10,padding:"14px",marginBottom:12}}>
-                <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:12}}>🎨 Brand Colours</div>
+                <div style={{fontSize:12,fontWeight:700,color:"#0F2540",marginBottom:12}}>🎨 Brand Colours</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Primary Colour</label>
                     <div style={{display:"flex",gap:8,alignItems:"center"}}>
                       <input type="color" value={form.brand_color} onChange={e=>sf("brand_color",e.target.value)} style={{width:44,height:36,padding:2,border:"1.5px solid #D1D9E6",borderRadius:8,cursor:"pointer"}}/>
-                      <input value={form.brand_color} onChange={e=>sf("brand_color",e.target.value)} placeholder="#0B1F3A" style={{flex:1}}/>
+                      <input value={form.brand_color} onChange={e=>sf("brand_color",e.target.value)} placeholder="#0F2540" style={{flex:1}}/>
                     </div>
                   </div>
                   <div>
@@ -7570,7 +7570,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
             </div>
             <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0",flexShrink:0}}>
               <button onClick={()=>{setShowAdd(false);setEditComp(null);}} style={{padding:"9px 20px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={save} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+              <button onClick={save} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
                 {saving?"Saving…":editComp?"Save Changes":"Create Company"}
               </button>
             </div>
@@ -7624,7 +7624,7 @@ const PERMISSION_DEFS = [
   {
     group: "General",
     color: "#4A5568",
-    bg:    "#F0F2F5",
+    bg:    "#F7F9FC",
     icon:  "⊞",
     perms: [
       { key:"p_view_dashboard",   label:"View Dashboard",          desc:"Access the dashboard overview" },
@@ -7646,7 +7646,7 @@ const TEMPLATES = [
   { id:"10000000-0000-0000-0000-000000000006", name:"Viewer",           color:"#718096" },
 ];
 
-const COLORS = ["#1A5FA8","#1A7F5A","#5B3FAA","#0F6E56","#8A6200","#B85C10","#B83232","#718096","#0B1F3A","#C9A84C"];
+const COLORS = ["#1A5FA8","#1A7F5A","#5B3FAA","#0F6E56","#8A6200","#B85C10","#B83232","#718096","#0F2540","#C9A84C"];
 
 function PermissionSetsModule({ currentUser, showToast }) {
   const [sets,      setSets]      = useState([]);
@@ -7758,7 +7758,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
 
         {/* Left: Built-in templates */}
         <div style={{display:"flex",flexDirection:"column",overflow:"hidden"}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:10}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:10}}>
             Built-in Templates
             <span style={{fontSize:11,fontWeight:400,color:"#A0AEC0",marginLeft:8}}>Clone to customise</span>
           </div>
@@ -7767,11 +7767,11 @@ function PermissionSetsModule({ currentUser, showToast }) {
               <div key={t.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",display:"flex",alignItems:"center",gap:12}}>
                 <div style={{width:10,height:10,borderRadius:"50%",background:t.color,flexShrink:0}}/>
                 <div style={{flex:1}}>
-                  <div style={{fontWeight:600,fontSize:13,color:"#0B1F3A"}}>{t.name}</div>
+                  <div style={{fontWeight:600,fontSize:13,color:"#0F2540"}}>{t.name}</div>
                   <div style={{fontSize:11,color:"#A0AEC0"}}>{t.description}</div>
                   <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}}>
                     {PERMISSION_DEFS.flatMap(g=>g.perms).filter(p=>t[p.key]).map(p=>(
-                      <span key={p.key} style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:20,background:"#F0F2F5",color:"#4A5568"}}>{p.label}</span>
+                      <span key={p.key} style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:20,background:"#F7F9FC",color:"#4A5568"}}>{p.label}</span>
                     ))}
                   </div>
                 </div>
@@ -7793,12 +7793,12 @@ function PermissionSetsModule({ currentUser, showToast }) {
         {/* Right: Custom sets */}
         <div style={{display:"flex",flexDirection:"column",overflow:"hidden"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A"}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540"}}>
               Custom Sets
               <span style={{fontSize:11,fontWeight:400,color:"#A0AEC0",marginLeft:8}}>{sets.length} created</span>
             </div>
             <button onClick={()=>openNew()}
-              style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+              style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>
               + New Set
             </button>
           </div>
@@ -7818,7 +7818,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
                   <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8}}>
                     <div style={{width:12,height:12,borderRadius:"50%",background:s.color,flexShrink:0,marginTop:2}}/>
                     <div style={{flex:1}}>
-                      <div style={{fontWeight:700,fontSize:13,color:"#0B1F3A"}}>{s.name}</div>
+                      <div style={{fontWeight:700,fontSize:13,color:"#0F2540"}}>{s.name}</div>
                       {s.description&&<div style={{fontSize:11,color:"#A0AEC0"}}>{s.description}</div>}
                       {s.based_on&&<div style={{fontSize:11,color:"#C9A84C"}}>Based on: {s.based_on}</div>}
                     </div>
@@ -7830,7 +7830,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
                   {/* Permission pills */}
                   <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
                     {PERMISSION_DEFS.flatMap(g=>g.perms).filter(p=>s[p.key]).map(p=>(
-                      <span key={p.key} style={{fontSize:9,fontWeight:600,padding:"2px 7px",borderRadius:20,background:"#F0F2F5",color:"#4A5568"}}>{p.label}</span>
+                      <span key={p.key} style={{fontSize:9,fontWeight:600,padding:"2px 7px",borderRadius:20,background:"#F7F9FC",color:"#4A5568"}}>{p.label}</span>
                     ))}
                     {enabledCount===0&&<span style={{fontSize:11,color:"#A0AEC0",fontStyle:"italic"}}>No permissions enabled</span>}
                   </div>
@@ -7861,7 +7861,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
           style={{padding:"7px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
           ← Back
         </button>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0F2540"}}>
           {isReadOnly?"View Template":editing?"Edit Permission Set":"New Permission Set"}
         </div>
         {isReadOnly&&(
@@ -7877,7 +7877,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
         {/* Left: Name + colour */}
         <div>
           <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px",marginBottom:12}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:12,textTransform:"uppercase",letterSpacing:".5px"}}>Set Details</div>
+            <div style={{fontSize:12,fontWeight:700,color:"#0F2540",marginBottom:12,textTransform:"uppercase",letterSpacing:".5px"}}>Set Details</div>
             <div style={{marginBottom:12}}>
               <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Name *</label>
               <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Senior Sales Agent" disabled={isReadOnly}/>
@@ -7891,7 +7891,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                 {COLORS.map(c=>(
                   <button key={c} onClick={()=>!isReadOnly&&setForm(f=>({...f,color:c}))}
-                    style={{width:28,height:28,borderRadius:"50%",background:c,border:`3px solid ${form.color===c?"#0B1F3A":"transparent"}`,cursor:isReadOnly?"default":"pointer",transition:".15s"}}/>
+                    style={{width:28,height:28,borderRadius:"50%",background:c,border:`3px solid ${form.color===c?"#0F2540":"transparent"}`,cursor:isReadOnly?"default":"pointer",transition:".15s"}}/>
                 ))}
               </div>
             </div>
@@ -7899,13 +7899,13 @@ function PermissionSetsModule({ currentUser, showToast }) {
 
           {/* Summary */}
           <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
-            <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A",marginBottom:12,textTransform:"uppercase",letterSpacing:".5px"}}>Summary</div>
+            <div style={{fontSize:12,fontWeight:700,color:"#0F2540",marginBottom:12,textTransform:"uppercase",letterSpacing:".5px"}}>Summary</div>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
               <div style={{width:40,height:40,borderRadius:10,background:form.color,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:16}}>
                 {form.name?form.name[0].toUpperCase():"?"}
               </div>
               <div>
-                <div style={{fontWeight:700,fontSize:14,color:"#0B1F3A"}}>{form.name||"Unnamed"}</div>
+                <div style={{fontWeight:700,fontSize:14,color:"#0F2540"}}>{form.name||"Unnamed"}</div>
                 <div style={{fontSize:12,color:"#A0AEC0"}}>{ALL_PERM_KEYS.filter(k=>form[k]).length} of 13 permissions</div>
               </div>
             </div>
@@ -7929,7 +7929,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <span style={{fontSize:18}}>{g.icon}</span>
-                  <span style={{fontWeight:700,fontSize:14,color:"#0B1F3A"}}>{g.group}</span>
+                  <span style={{fontWeight:700,fontSize:14,color:"#0F2540"}}>{g.group}</span>
                   <span style={{fontSize:11,color:"#A0AEC0"}}>{g.perms.filter(p=>form[p.key]).length}/{g.perms.length} enabled</span>
                 </div>
                 {!isReadOnly&&(
@@ -7945,7 +7945,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
                 <div key={p.key} onClick={()=>!isReadOnly&&togglePerm(p.key)}
                   style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",borderRadius:8,marginBottom:6,background:form[p.key]?g.bg:"#FAFBFC",border:`1.5px solid ${form[p.key]?g.color+"33":"#E2E8F0"}`,cursor:isReadOnly?"default":"pointer",transition:"all .15s"}}>
                   {/* Toggle */}
-                  <div style={{width:40,height:22,borderRadius:11,background:form[p.key]?g.color:"#D1D9E6",position:"relative",flexShrink:0,transition:"background .2s"}}>
+                  <div style={{width:40,height:22,borderRadius:11,background:form[p.key]?g.color:"#E2E8F0",position:"relative",flexShrink:0,transition:"background .2s"}}>
                     <div style={{position:"absolute",top:3,left:form[p.key]?20:3,width:16,height:16,borderRadius:"50%",background:"#fff",transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
                   </div>
                   <div style={{flex:1}}>
@@ -7968,7 +7968,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
             Cancel
           </button>
           <button onClick={save} disabled={saving}
-            style={{padding:"9px 28px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+            style={{padding:"9px 28px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
             {saving?"Saving…":editing?"Save Changes":"Create Permission Set"}
           </button>
         </div>
@@ -7998,8 +7998,8 @@ const LEASE_STAGE_META = {
   "Viewing":       {c:"#A06810", bg:"#FDF3DC"},
   "Offer Made":    {c:"#B83232", bg:"#FAEAEA"},
   "Reserved":      {c:"#1A7F5A", bg:"#E6F4EE"},
-  "Lease Signed":  {c:"#0B1F3A", bg:"#E2E8F0"},
-  "Lost":          {c:"#718096", bg:"#F0F2F5"},
+  "Lease Signed":  {c:"#0F2540", bg:"#E2E8F0"},
+  "Lost":          {c:"#718096", bg:"#F7F9FC"},
 };
 
 // ── Lease Opportunity Detail ──────────────────────────────────────
@@ -8405,26 +8405,26 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
         <button onClick={onBack} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,cursor:"pointer",flexShrink:0}}>← Back</button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0B1F3A"}}>{opp.title||"Lease Enquiry"}</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0F2540"}}>{opp.title||"Lease Enquiry"}</span>
             <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>{opp.stage}</span>
           </div>
           <div style={{fontSize:12,color:"#718096",marginTop:2}}>{tenant?.full_name||""} · {tenant?.phone||""}{unit?` · ${unit.unit_ref}`:""}</div>
         </div>
         <div style={{display:"flex",gap:6}}>
-          {canEdit&&<button onClick={()=>setShowLog(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",color:"#0B1F3A",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Task</button>}
+          {canEdit&&<button onClick={()=>setShowLog(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",color:"#0F2540",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Task</button>}
         </div>
       </div>
 
       {/* Summary strip */}
       <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
         {[
-          ["💰 Budget",opp.budget?`AED ${Number(opp.budget).toLocaleString()}/yr`:"—","#0B1F3A","#C9A84C"],
+          ["💰 Budget",opp.budget?`AED ${Number(opp.budget).toLocaleString()}/yr`:"—","#0F2540","#C9A84C"],
           ["🏠 Unit",unit?`${unit.unit_ref} — ${unit.sub_type}`:"Not linked","#F7F9FC","#4A5568"],
           ["👤 Agent",agent?.full_name||"Unassigned","#F7F9FC","#4A5568"],
           ["💳 Payments",totalDue>0?`${(totalPaid/totalDue*100)|0}% collected`:"No payments","#F7F9FC","#4A5568"],
         ].map(([l,v,bg,col])=>(
           <div key={l} style={{background:bg,borderRadius:8,padding:"8px 14px",flex:1,minWidth:120}}>
-            <div style={{fontSize:9,color:bg==="#0B1F3A"?"rgba(255,255,255,.5)":"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:3}}>{l}</div>
+            <div style={{fontSize:9,color:bg==="#0F2540"?"rgba(255,255,255,.5)":"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:3}}>{l}</div>
             <div style={{fontSize:13,fontWeight:700,color:col,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{v}</div>
           </div>
         ))}
@@ -8479,8 +8479,8 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
             {/* Property & Pricing */}
             {unit&&(
               <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
-                <div style={{fontSize:11,fontWeight:700,color:"#0B1F3A",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>🏠 Property</div>
-                <div style={{fontWeight:700,color:"#0B1F3A",fontSize:14,marginBottom:4}}>{unit.unit_ref} — {unit.sub_type||unit.unit_type}</div>
+                <div style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>🏠 Property</div>
+                <div style={{fontWeight:700,color:"#0F2540",fontSize:14,marginBottom:4}}>{unit.unit_ref} — {unit.sub_type||unit.unit_type}</div>
                 <div style={{fontSize:12,color:"#718096",marginBottom:10}}>{proj?.name||""} · Floor {unit.floor_number} · {unit.view} · {unit.size_sqft} sqft</div>
                 {lp&&(
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8}}>
@@ -8491,7 +8491,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                     ].map(([k,v])=>(
                       <div key={k} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 10px"}}>
                         <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{k}</div>
-                        <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>{v}</div>
+                        <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{v}</div>
                       </div>
                     ))}
                   </div>
@@ -8502,12 +8502,12 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
             {/* Tenant Info */}
             {tenant&&(
               <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"14px 16px"}}>
-                <div style={{fontSize:11,fontWeight:700,color:"#0B1F3A",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>👤 Tenant</div>
+                <div style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>👤 Tenant</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                   {[["Name",tenant.full_name],["Phone",tenant.phone],["Email",tenant.email],["Nationality",tenant.nationality],["ID Type",tenant.id_type],["ID Number",tenant.id_number]].map(([k,v])=>v&&(
                     <div key={k}>
                       <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px"}}>{k}</div>
-                      <div style={{fontSize:13,fontWeight:500,color:"#0B1F3A"}}>{v}</div>
+                      <div style={{fontSize:13,fontWeight:500,color:"#0F2540"}}>{v}</div>
                     </div>
                   ))}
                 </div>
@@ -8532,7 +8532,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
               {payments.length>0&&<button onClick={printAllPayments} style={{padding:"7px 16px",borderRadius:8,border:"1.5px solid #718096",background:"transparent",color:"#718096",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print Schedule</button>}
               {payments.some(p=>p.payment_type==="Agency Fee")&&<button onClick={printAgencyReceipt} style={{padding:"7px 16px",borderRadius:8,border:"1.5px solid #C9A84C",background:"rgba(201,168,76,.08)",color:"#8A6200",fontSize:12,fontWeight:600,cursor:"pointer"}}>🏷 Agency Receipt</button>}
               {canEdit&&<button onClick={()=>setShowPDC(true)} style={{padding:"7px 16px",borderRadius:8,border:"1.5px solid #5B3FAA",background:"rgba(91,63,170,.08)",color:"#5B3FAA",fontSize:12,fontWeight:600,cursor:"pointer"}}>🏦 Generate PDC</button>}
-              {canEdit&&<button onClick={()=>{setEditPayment(null);setShowPayment(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add Payment</button>}
+              {canEdit&&<button onClick={()=>{setEditPayment(null);setShowPayment(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add Payment</button>}
             </div>
             {/* Summary */}
             {payments.length>0&&(
@@ -8545,17 +8545,17 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                 ))}
               </div>
             )}
-            {payments.length===0&&<div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}><div style={{fontSize:40,marginBottom:10}}>🔒</div><div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>No payments yet</div><div style={{fontSize:12}}>Add security deposit, advance rent and PDC cheques</div></div>}
+            {payments.length===0&&<div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}><div style={{fontSize:40,marginBottom:10}}>🔒</div><div style={{fontSize:14,fontWeight:600,color:"#0F2540",marginBottom:6}}>No payments yet</div><div style={{fontSize:12}}>Add security deposit, advance rent and PDC cheques</div></div>}
             {payments.map(p=>(
               <div key={p.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>
                 <div style={{flex:1}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                    <span style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>{p.payment_type}</span>
+                    <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{p.payment_type}</span>
                     <span style={{fontSize:12,fontWeight:700,color:p.status==="Cleared"?"#1A7F5A":p.status==="Pending"?"#C9A84C":"#E53E3E"}}>
                       {p.status==="Cleared"?"✅":"⏳"} {p.status}
                     </span>
                   </div>
-                  <div style={{fontSize:14,fontWeight:700,color:"#0B1F3A",marginBottom:4}}>AED {Number(p.amount).toLocaleString()}</div>
+                  <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:4}}>AED {Number(p.amount).toLocaleString()}</div>
                   <div style={{fontSize:11,color:"#718096",display:"flex",gap:12,flexWrap:"wrap"}}>
                     {p.cheque_number&&<span>Cheque #{p.cheque_number}</span>}
                     {p.bank_name&&<span>🏦 {p.bank_name}</span>}
@@ -8579,7 +8579,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
             {!contract?(
               <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
                 <div style={{fontSize:40,marginBottom:10}}>📄</div>
-                <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>No rental agreement yet</div>
+                <div style={{fontSize:14,fontWeight:600,color:"#0F2540",marginBottom:6}}>No rental agreement yet</div>
                 {canEdit&&canAccessAgreement&&(
                   <button onClick={async()=>{
                     const terms = prompt("Lease terms / notes (optional):");
@@ -8600,7 +8600,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
             ):(
               <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0B1F3A"}}>📄 Rental Agreement</div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0F2540"}}>📄 Rental Agreement</div>
                   <button onClick={printAgreement} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #718096",background:"transparent",color:"#718096",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print Agreement</button>
                   <div style={{display:"flex",gap:8,alignItems:"center"}}>
                     <span style={{padding:"4px 12px",borderRadius:20,background:contract.status==="Signed"?"#E6F4EE":"#FFF9E6",color:contract.status==="Signed"?"#1A7F5A":"#C9A84C",fontSize:11,fontWeight:700}}>{contract.status}</span>
@@ -8656,12 +8656,12 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                       <script>window.onload=()=>window.print();</script>
                       </body></html>`;
                       w.document.write(html);w.document.close();
-                    }} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #0B1F3A",background:"transparent",color:"#0B1F3A",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print Agreement</button>
+                    }} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #0B1F3A",background:"transparent",color:"#0F2540",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print Agreement</button>
                   </div>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
                   {[["Tenant",tenant?.full_name||"—"],["Unit",unit?.unit_ref||"—"],["Annual Rent",contract.annual_rent?`AED ${Number(contract.annual_rent).toLocaleString()}`:"—"],["Start Date",contract.start_date?new Date(contract.start_date).toLocaleDateString("en-AE"):"—"]].map(([k,v])=>(
-                    <div key={k}><div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px"}}>{k}</div><div style={{fontSize:13,fontWeight:600,color:"#0B1F3A"}}>{v}</div></div>
+                    <div key={k}><div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px"}}>{k}</div><div style={{fontSize:13,fontWeight:600,color:"#0F2540"}}>{v}</div></div>
                   ))}
                 </div>
                 {contract.terms&&<div style={{fontSize:12,color:"#4A5568",background:"#F7F9FC",borderRadius:8,padding:"10px 12px",marginBottom:12}}>{contract.terms}</div>}
@@ -8741,7 +8741,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
       {showPayment&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"92vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E2E8F0",background:"linear-gradient(135deg,#0B1F3A,#1A3558)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>💳 {editPayment?"Edit":"Add"} Payment</span>
               <button onClick={()=>{setShowPayment(false);setEditPayment(null);}} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
@@ -8782,7 +8782,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
               </div>
               <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:16}}>
                 <button onClick={()=>{setShowPayment(false);setEditPayment(null);}} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                <button onClick={savePayment} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0B1F3A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save Payment"}</button>
+                <button onClick={savePayment} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save Payment"}</button>
               </div>
             </div>
           </div>
@@ -8844,7 +8844,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                         <div key={c.num} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 12px",marginBottom:4}}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
                             <span style={{fontSize:12,fontWeight:600,color:"#4A5568"}}>Cheque {c.num}/{n}</span>
-                            <span style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>AED {c.amount.toLocaleString()}</span>
+                            <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>AED {c.amount.toLocaleString()}</span>
                             <span style={{fontSize:12,color:"#718096"}}>📅 {new Date(c.date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}</span>
                           </div>
                           <input value={pdcChequeNums[c.num]||""} onChange={e=>setPdcChequeNums(p=>({...p,[c.num]:e.target.value}))}
@@ -9037,7 +9037,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
       <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",paddingBottom:4,flexShrink:0}}>
         {["All",...LEASE_STAGES].map(s=>{
           const cnt=s==="All"?filtered.length:filtered.filter(t=>tenantBestStage(t.id)===s).length;
-          const m=s==="All"?{c:"#5B3FAA",bg:"#EEE8F9"}:LEASE_STAGE_META[s]||{c:"#718096",bg:"#F0F2F5"};
+          const m=s==="All"?{c:"#5B3FAA",bg:"#EEE8F9"}:LEASE_STAGE_META[s]||{c:"#718096",bg:"#F7F9FC"};
           return (
             <button key={s} onClick={()=>setFStage(s)}
               style={{flexShrink:0,padding:"5px 12px",borderRadius:8,border:`1.5px solid ${fStage===s?m.c:"#E2E8F0"}`,background:fStage===s?m.bg:"#fff",color:m.c,fontSize:11,fontWeight:600,cursor:"pointer"}}>
@@ -9063,7 +9063,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
               const lo=lOpps.filter(o=>o.tenant_id===t.id);
               const activeOpps=lo.filter(o=>o.status==="Active");
               const bestStage=tenantBestStage(t.id);
-              const sm2=LEASE_STAGE_META[bestStage]||{c:"#718096",bg:"#F0F2F5"};
+              const sm2=LEASE_STAGE_META[bestStage]||{c:"#718096",bg:"#F7F9FC"};
               if(fStage!=="All"&&bestStage!==fStage)return null;
               return (
                 <tr key={t.id}
@@ -9074,7 +9074,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
                     <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <Av name={t.full_name} size={28} bg="#5B3FAA"/>
                       <div>
-                        <div style={{fontWeight:600,fontSize:13,color:"#0B1F3A"}}>{t.full_name}</div>
+                        <div style={{fontWeight:600,fontSize:13,color:"#0F2540"}}>{t.full_name}</div>
                         {t.tenant_type&&<div style={{fontSize:10,color:"#A0AEC0"}}>{t.tenant_type}</div>}
                       </div>
                     </div>
@@ -9114,7 +9114,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
               {tenants.length>0&&(
                 <div style={{background:"#F7F9FC",borderRadius:10,padding:"12px 14px",marginBottom:14,border:"1px solid #E2E8F0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div>
-                    <div style={{fontSize:12,fontWeight:700,color:"#0B1F3A"}}>Export Current Tenants</div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>Export Current Tenants</div>
                     <div style={{fontSize:11,color:"#718096"}}>{tenants.length} tenant records</div>
                   </div>
                   <button onClick={()=>{
@@ -9138,7 +9138,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
                 {/* Download Template */}
                 <div style={{background:"#F7F9FC",borderRadius:10,padding:"16px",border:"1px solid #E2E8F0",display:"flex",flexDirection:"column",gap:10}}>
-                  <div style={{fontSize:13,fontWeight:700,color:"#0B1F3A"}}>📥 Step 1 — Download Template</div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>📥 Step 1 — Download Template</div>
                   <div style={{fontSize:12,color:"#4A5568",lineHeight:1.7}}>Fill in your tenants in Excel, then save as CSV and upload.</div>
                   <div style={{fontSize:11,color:"#1A5FA8",lineHeight:1.7}}>
                     <strong>Columns:</strong> full_name · phone · email · nationality · id_type · id_number · id_expiry · tenant_type · notes<br/>
@@ -9242,7 +9242,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
         <button onClick={()=>setView("list")} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Tenants</button>
         <Av name={selTenant.full_name} size={40} bg="#5B3FAA"/>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A"}}>{selTenant.full_name}</div>
+          <div style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px"}}>{selTenant.full_name}</div>
           <div style={{fontSize:12,color:"#718096"}}>{selTenant.phone} {selTenant.email?`· ${selTenant.email}`:""} {selTenant.nationality?`· ${selTenant.nationality}`:""}</div>
         </div>
         <div style={{display:"flex",gap:6}}>
@@ -9256,18 +9256,18 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
         {[["📞",selTenant.phone||"—"],["✉",selTenant.email||"—"],["🌍",selTenant.nationality||"—"],["🪪",selTenant.id_type||"—"],["🏢",selTenant.tenant_type||"—"]].map(([l,v])=>(
           <div key={l} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 14px",flex:1,minWidth:100}}>
             <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
-            <div style={{fontSize:13,fontWeight:600,color:"#0B1F3A",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div>
+            <div style={{fontSize:13,fontWeight:600,color:"#0F2540",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div>
           </div>
         ))}
       </div>
 
-      <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0B1F3A",marginBottom:12}}>Lease Enquiries ({tenantOpps.length})</div>
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:12}}>Lease Enquiries ({tenantOpps.length})</div>
 
       <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8}}>
         {tenantOpps.length===0&&(
           <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
             <div style={{fontSize:36,marginBottom:10}}>🔑</div>
-            <div style={{fontSize:14,fontWeight:600,color:"#0B1F3A",marginBottom:6}}>No enquiries yet</div>
+            <div style={{fontSize:14,fontWeight:600,color:"#0F2540",marginBottom:6}}>No enquiries yet</div>
             <div style={{fontSize:12,marginBottom:16}}>Add an enquiry for each unit this tenant is interested in</div>
             {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Enquiry</button>}
           </div>
@@ -9276,7 +9276,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
           const unit=units.find(u=>u.id===opp.unit_id);
           const proj=unit?projects.find(p=>p.id===unit.project_id):null;
           const lp=unit?leasePricing.find(l=>l.unit_id===unit.id):null;
-          const sm3=LEASE_STAGE_META[opp.stage]||{c:"#718096",bg:"#F0F2F5"};
+          const sm3=LEASE_STAGE_META[opp.stage]||{c:"#718096",bg:"#F7F9FC"};
           const agent=users.find(u=>u.id===opp.assigned_to);
           return (
             <div key={opp.id} onClick={()=>{setSelOpp(opp);setView("opportunity");}}
@@ -9286,7 +9286,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
-                    <span style={{fontWeight:700,fontSize:14,color:"#0B1F3A"}}>{opp.title||"Lease Enquiry"}</span>
+                    <span style={{fontWeight:700,fontSize:14,color:"#0F2540"}}>{opp.title||"Lease Enquiry"}</span>
                     <span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:sm3.bg,color:sm3.c}}>{opp.stage}</span>
                     {opp.status==="Won"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ Signed</span>}
                   </div>
@@ -9400,7 +9400,7 @@ function PwRecoveryForm({onDone}){
       )}
       <div style={{marginBottom:12}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>New Password *</label><PwInput value={pw} onChange={e=>setPw(e.target.value)} placeholder="Min 8 characters" style={{width:"100%",padding:"10px 14px",border:"1.5px solid #E2E8F0",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}}/></div>
       <div style={{marginBottom:16}}><label style={{display:"block",fontSize:12,fontWeight:600,color:"#4A5568",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>Confirm Password *</label><PwInput value={pw2} onChange={e=>setPw2(e.target.value)} placeholder="Repeat new password" style={{width:"100%",padding:"10px 14px",border:"1.5px solid #E2E8F0",borderRadius:10,fontSize:14,outline:"none",boxSizing:"border-box"}}/></div>
-      <button onClick={submit} disabled={loading} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:"#0B1F3A",color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer"}}>{loading?"Saving…":"Set New Password →"}</button>
+      <button onClick={submit} disabled={loading} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:"#0F2540",color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer"}}>{loading?"Saving…":"Set New Password →"}</button>
     </div>
   );
 }
@@ -9598,7 +9598,7 @@ export default function App(){
   if(pwRecovery)return(
     <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0B1F3A,#1A3558)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
       <div style={{background:"#fff",borderRadius:20,padding:"2.5rem",width:440,maxWidth:"100%",boxShadow:"0 30px 80px rgba(0,0,0,0.4)"}}>
-        <div style={{textAlign:"center",marginBottom:24}}><div style={{fontSize:48,marginBottom:8}}>🔑</div><div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#0B1F3A",marginBottom:6}}>Set New Password</div><div style={{fontSize:13,color:"#718096"}}>Enter your new password below</div></div>
+        <div style={{textAlign:"center",marginBottom:24}}><div style={{fontSize:48,marginBottom:8}}>🔑</div><div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#0F2540",marginBottom:6}}>Set New Password</div><div style={{fontSize:13,color:"#718096"}}>Enter your new password below</div></div>
         <PwRecoveryForm onDone={()=>{setPwRecovery(false);supabase.auth.signOut();}}/>
         <div style={{textAlign:"center",marginTop:16}}><button onClick={()=>{setPwRecovery(false);supabase.auth.signOut();}} style={{background:"none",border:"none",color:"#A0AEC0",fontSize:13,cursor:"pointer"}}>← Back to Login</button></div>
       </div>
@@ -9606,7 +9606,7 @@ export default function App(){
   );
 
   if(checking) return(
-    <div style={{height:"100dvh",background:"#0B1F3A",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}>
+    <div style={{height:"100dvh",background:"#0F2540",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}>
       <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#fff"}}><span style={{color:"#C9A84C"}}>◆</span> PropCRM</div>
       <div style={{width:32,height:32,border:"2px solid rgba(255,255,255,.15)",borderTopColor:"#C9A84C",borderRadius:"50%",animation:"spin 1s linear infinite"}}/>
     </div>
@@ -9622,11 +9622,11 @@ export default function App(){
   return (
     <>
     <GlobalStyle/>
-    <div style={{display:"flex",flexDirection:"column",height:"100dvh",background:"#F0F2F5",overflow:"hidden"}}>
+    <div style={{display:"flex",flexDirection:"column",height:"100dvh",background:"#F7F9FC",overflow:"hidden"}}>
 
       {/* Top bar */}
-      <div style={{background:"#0B1F3A",flexShrink:0}}>
-        <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:52,gap:10}}>
+      <div style={{background:"#fff",flexShrink:0,borderBottom:"1px solid #E8EDF4"}}>
+        <div style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:54,gap:10}}>
 
           {/* LEFT: Company Logo + Name — hero position */}
           {(()=>{
@@ -9641,16 +9641,16 @@ export default function App(){
                 {/* Logo */}
                 {co?.logo_url
                   ? <img src={co.logo_url} alt={co?.name} style={{width:36,height:36,borderRadius:8,objectFit:"cover",border:"2px solid rgba(201,168,76,.5)",flexShrink:0}}/>
-                  : <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16,color:"#0B1F3A",flexShrink:0,border:"2px solid rgba(201,168,76,.4)"}}>
+                  : <div style={{width:36,height:36,borderRadius:8,background:"linear-gradient(135deg,#C9A84C,#E8C97A)",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:16,color:"#0F2540",flexShrink:0,border:"2px solid rgba(201,168,76,.4)"}}>
                       {co?.name?.charAt(0)||"◆"}
                     </div>
                 }
                 {/* Company name + type */}
                 <div style={{display:"flex",flexDirection:"column",minWidth:0}}>
-                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:"#fff",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:180,lineHeight:1.2}}>
+                  <span style={{fontFamily:"'Inter',sans-serif",fontSize:14,color:"#0F2540",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:180,lineHeight:1.2,letterSpacing:"-.3px"}}>
                     {co?.name||"PropCRM"}
                   </span>
-                  {bizLabel&&<span style={{fontSize:9,color:"rgba(201,168,76,.7)",textTransform:"uppercase",letterSpacing:".6px",lineHeight:1.3}}>{bizLabel}</span>}
+                  {bizLabel&&<span style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",lineHeight:1.3}}>{bizLabel}</span>}
                 </div>
                 {/* Super admin company switcher */}
                 {isSA&&companies.length>1&&(
@@ -9663,7 +9663,7 @@ export default function App(){
                     borderRadius:6,padding:"3px 6px",color:"#C9A84C",fontSize:11,fontWeight:600,
                     cursor:"pointer",maxWidth:130
                   }}>
-                    {companies.map(c=><option key={c.id} value={c.id} style={{background:"#0B1F3A",color:"#fff"}}>{c.name}</option>)}
+                    {companies.map(c=><option key={c.id} value={c.id} style={{background:"#0F2540",color:"#fff"}}>{c.name}</option>)}
                   </select>
                 )}
               </div>
@@ -9703,31 +9703,31 @@ export default function App(){
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
             {/* User */}
             <div style={{textAlign:"right"}}>
-              <div style={{fontSize:12,color:"#fff",fontWeight:500,lineHeight:1.2}}>{currentUser.full_name}</div>
+              <div style={{fontSize:12,color:"#0F2540",fontWeight:600,lineHeight:1.2,letterSpacing:"-.2px"}}>{currentUser.full_name}</div>
               <RoleBadge role={currentUser.role}/>
             </div>
-            <Av name={currentUser.full_name||currentUser.email} size={32} bg="#C9A84C" tc="#0B1F3A"/>
-            {showPwModal&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:99998,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setShowPwModal(false)}><div style={{background:"#fff",borderRadius:16,padding:"2rem",width:400,maxWidth:"90vw",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:36,marginBottom:6}}>🔑</div><div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A",marginBottom:4}}>Change Password</div></div><PwRecoveryForm onDone={()=>{setShowPwModal(false);showToast("Password changed","success");supabase.auth.signOut();}}/></div></div>)}
-            <button onClick={()=>setShowPwModal(true)} title="Change my password" style={{fontSize:16,color:"rgba(201,168,76,.6)",background:"none",border:"none",cursor:"pointer",padding:"0 4px"}}>🔑</button>
-            <button onClick={handleLogout} title="Sign out" style={{fontSize:11,color:"rgba(255,255,255,.35)",background:"none",border:"1px solid rgba(255,255,255,.1)",borderRadius:6,padding:"4px 8px",cursor:"pointer",whiteSpace:"nowrap",transition:"color .15s"}}
+            <Av name={currentUser.full_name||currentUser.email} size={32} bg="#C9A84C" tc="#0F2540"/>
+            {showPwModal&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:99998,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setShowPwModal(false)}><div style={{background:"#fff",borderRadius:16,padding:"2rem",width:400,maxWidth:"90vw",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:36,marginBottom:6}}>🔑</div><div style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px",marginBottom:4}}>Change Password</div></div><PwRecoveryForm onDone={()=>{setShowPwModal(false);showToast("Password changed","success");supabase.auth.signOut();}}/></div></div>)}
+            <button onClick={()=>setShowPwModal(true)} title="Change my password" style={{fontSize:16,color:"#C9A84C",background:"none",border:"none",cursor:"pointer",padding:"0 4px"}}>🔑</button>
+            <button onClick={handleLogout} title="Sign out" style={{fontSize:11,color:"#94A3B8",background:"none",border:"1px solid #E2E8F0",borderRadius:6,padding:"4px 8px",cursor:"pointer",whiteSpace:"nowrap",transition:"color .15s"}}
               onMouseOver={e=>e.currentTarget.style.color="rgba(255,255,255,.8)"}
               onMouseOut={e=>e.currentTarget.style.color="rgba(255,255,255,.35)"}>↩</button>
             {/* PropCRM subtle watermark */}
-            <div style={{borderLeft:"1px solid rgba(255,255,255,.1)",paddingLeft:10,display:"flex",alignItems:"center",gap:3}}>
+            <div style={{borderLeft:"1px solid #E8EDF4",paddingLeft:10,display:"flex",alignItems:"center",gap:3}}>
               <span style={{color:"#C9A84C",fontSize:10}}>◆</span>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:10,color:"rgba(255,255,255,.3)",fontWeight:600,letterSpacing:".5px"}}>PropCRM</span>
+              <span style={{fontFamily:"'Inter',sans-serif",fontSize:10,color:"#94A3B8",fontWeight:600,letterSpacing:".5px"}}>PropCRM</span>
             </div>
           </div>
         </div>
 
         {/* Tab bar */}
-        <div className="tab-bar" style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:38,gap:2,borderTop:"1px solid rgba(255,255,255,.07)",overflowX:"auto"}}>
+        <div className="tab-bar" style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:40,gap:2,borderTop:"1px solid #F1F5F9",overflowX:"auto",background:"#FAFBFE"}}>
           {visibleTabs.map(t=>(
             <button key={t.id} onClick={()=>{setTab(t.id);if(t.id==="ai"||t.id==="l_ai")loadAIData();}}
               style={{
                 padding:"5px 12px",borderRadius:"6px 6px 0 0",border:"none",
-                background:tab===t.id?(currentApp==="sales"?"rgba(74,158,232,.18)":"rgba(155,127,212,.18)"):"transparent",
-                color:tab===t.id?"#fff":"rgba(255,255,255,.45)",
+                background:tab===t.id?(currentApp==="sales"?"#EFF6FF":"#F5F0FF"):"transparent",
+                color:tab===t.id?"#0F2540":"#64748B",
                 fontSize:12,fontWeight:tab===t.id?600:400,cursor:"pointer",
                 whiteSpace:"nowrap",transition:"all .15s",flexShrink:0,
                 borderBottom:tab===t.id?`2px solid ${currentApp==="sales"?"#4A9EE8":"#9B7FD4"}`:"2px solid transparent",
@@ -9741,7 +9741,7 @@ export default function App(){
       {/* Page title */}
       <div style={{padding:"8px 1rem 6px",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
         <div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0B1F3A"}}>{visibleTabs.find(t=>t.id===tab)?.label||""}</div>
+          <div style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px"}}>{visibleTabs.find(t=>t.id===tab)?.label||""}</div>
           <div style={{fontSize:11,color:"#A0AEC0"}}>{SUBTITLES[tab]||""}</div>
         </div>
       </div>
