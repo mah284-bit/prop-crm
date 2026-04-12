@@ -7082,23 +7082,22 @@ function UsersTab({currentUser, showToast}) {
         if(error)throw error;
         showToast("User updated","success");
       } else {
-        // Use Supabase Admin API via fetch with service role key
-        let SUPABASE_SERVICE = localStorage.getItem("propccrm_srk")||"";
-        if(!SUPABASE_SERVICE){
-          SUPABASE_SERVICE = prompt("Enter Service Role Key (Supabase → Settings → API → service_role):\nThis will be saved for this session only.");
-          if(!SUPABASE_SERVICE){ setSaving(false); return; }
-          localStorage.setItem("propccrm_srk", SUPABASE_SERVICE);
-        }
-        
+        // Secure user creation via serverless API route (service role key stays server-side)
         const tempPw = form.password || Math.random().toString(36).slice(-8)+"A1!";
-        const res = await fetch(`https://ysceukgpimzfqixtnbnp.supabase.co/auth/v1/admin/users`,{
-          method:"POST",
-          headers:{"Content-Type":"application/json","apikey":SUPABASE_SERVICE,"Authorization":"Bearer "+SUPABASE_SERVICE},
-          body:JSON.stringify({email:form.email,password:tempPw,email_confirm:true,user_metadata:{full_name:form.full_name}})
+        const res = await fetch('/api/create-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: form.email,
+            password: tempPw,
+            full_name: form.full_name,
+            role: form.role,
+            company_id: form.company_id || currentUser.company_id || null
+          })
         });
         const result = await res.json();
-        if(!res.ok){ showToast(result.message||result.error||"Failed to create user","error"); setSaving(false); return; }
-        
+        if(!res.ok){ showToast(result.error||"Failed to create user","error"); setSaving(false); return; }
+
         // Update the auto-created profile with correct role and company
         await new Promise(r=>setTimeout(r,1000)); // wait for trigger
         const{error:pErr}=await supabase.from("profiles").update({
@@ -7106,11 +7105,10 @@ function UsersTab({currentUser, showToast}) {
           role:form.role,
           is_active:true,
           company_id:form.company_id||currentUser.company_id||null,
-        }).eq("id",result.id);
+        }).eq("id",result.user.id);
         if(pErr) showToast("User created but profile update failed: "+pErr.message,"error");
         else {
           showToast(`✓ User created: ${form.email}  |  Temp password: ${tempPw}  |  Share this with them securely`,"success");
-          // Copy to clipboard
           navigator.clipboard?.writeText(`Email: ${form.email}\nTemp Password: ${tempPw}`).catch(()=>{});
         }
       }
@@ -7128,10 +7126,8 @@ function UsersTab({currentUser, showToast}) {
   const resetPassword=async(user)=>{
     const newPw=prompt("Set new password for "+user.full_name+"\n(minimum 8 characters):");
     if(!newPw||newPw.length<8){if(newPw!==null)showToast("Password must be at least 8 characters","error");return;}
-    let srk=localStorage.getItem("propccrm_srk")||"";
-    if(!srk){srk=prompt("One-time setup: Enter Supabase Service Role Key:");if(!srk)return;localStorage.setItem("propccrm_srk",srk);}
     try{
-      const res=await fetch("https://ysceukgpimzfqixtnbnp.supabase.co/auth/v1/admin/users/"+user.id,{method:"PUT",headers:{"Content-Type":"application/json","apikey":srk,"Authorization":"Bearer "+srk},body:JSON.stringify({password:newPw})});
+      const res=await fetch("/api/reset-password",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user_id:user.id,password:newPw})});
       if(!res.ok){const e=await res.json();showToast(e.message||"Failed","error");return;}
       showToast("✓ Password reset for "+user.full_name,"success");
       navigator.clipboard?.writeText("Email: "+user.email+"\nPassword: "+newPw).catch(()=>{});
