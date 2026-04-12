@@ -1183,15 +1183,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   },[opp.id]);
 
   const moveStage = async(toStage)=>{
-    // Cannot go back from Proposal Sent+
     const curIdx = OPP_STAGES.indexOf(opp.stage);
     const toIdx  = OPP_STAGES.indexOf(toStage);
-    if(["Proposal Sent","Negotiation","Closed Won"].includes(opp.stage) && toIdx<curIdx && toStage!=="Closed Lost"){
-      showToast(`Cannot go back from ${opp.stage}`,"error"); return;
-    }
-    if(toStage==="Proposal Sent"){
-      showToast("Use 📤 Send Proposal to move to this stage","error"); return;
-    }
     const newStatus = toStage==="Closed Won"?"Won":toStage==="Closed Lost"?"Lost":"Active";
     const extra = toStage==="Closed Won"?{won_at:new Date().toISOString()}:toStage==="Closed Lost"?{lost_at:new Date().toISOString()}:{};
     const{error}=await supabase.from("opportunities").update({stage:toStage,status:newStatus,stage_updated_at:new Date().toISOString(),...extra}).eq("id",opp.id);
@@ -1203,7 +1196,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   };
 
   const saveLog = async()=>{
-    if(!logForm.note.trim()&&!logForm.next_steps.trim()){showToast("Please add discussion notes or next steps","error");return;}
+    if(!(logForm.note||"").trim()&&!(logForm.next_steps||"").trim()){showToast("Please add discussion notes or next steps","error");return;}
     setSaving(true);
     const isScheduled = logForm.scheduled_at && new Date(logForm.scheduled_at) > new Date();
     const noteText = [
