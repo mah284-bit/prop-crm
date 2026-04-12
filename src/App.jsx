@@ -1825,6 +1825,20 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
     if(!form.name.trim()){showToast("Name required","error");return;}
     setSaving(true);
     try{
+      // Duplicate detection (skip when editing)
+      if(!editLead){
+        const dupCheck = leads.filter(l=>
+          (form.email&&l.email&&l.email.toLowerCase()===form.email.toLowerCase()) ||
+          (form.phone&&l.phone&&l.phone.replace(/\s/g,"")===form.phone.replace(/\s/g,""))
+        );
+        if(dupCheck.length>0){
+          setSaving(false);
+          const dup=dupCheck[0];
+          const go=window.confirm(`A contact with this ${form.email&&dup.email?.toLowerCase()===form.email.toLowerCase()?"email":"phone"} already exists:\n\n${dup.name} (${dup.email||dup.phone})\n\nClick OK to open their profile, or Cancel to continue creating.`);
+          if(go){setShowAdd(false);setSelLeadId(dup.id);setView("lead");}
+          return;
+        }
+      }
       const payload={...form,budget:form.budget?Number(form.budget):null,final_price:form.final_price?Number(form.final_price):null,no_response_count:form.no_response_count?Number(form.no_response_count):0,phone:form.phone||null,assigned_to:form.assigned_to||currentUser.id,company_id:currentUser.company_id||null,created_by:currentUser.id};
       let data,error;
       if(editLead){
@@ -1887,24 +1901,17 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         </select>
         <select value={fStage} onChange={e=>setFStage(e.target.value)} style={{width:"auto"}}>
           <option value="All">All Stages</option>
-          {OPP_STAGES.map(s=><option key={s}>{s}</option>)}
+          {["Walk-In","Referral","Online","Social Media","Cold Call","Exhibition","Portal","Other"].map(s=><option key={s}>{s}</option>)}
         </select>
         <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
         {canEdit&&<button onClick={()=>{setForm(blank);setEditLead(null);setShowAdd(true);}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Contact</button>}
       </div>
 
-      {/* Stage summary strip */}
-      <div style={{display:"flex",gap:6,marginBottom:12,overflowX:"auto",paddingBottom:4,flexShrink:0}}>
-        {["All",...OPP_STAGES.filter(s=>!["Closed Lost"].includes(s))].map(s=>{
-          const cnt=s==="All"?filtered.length:filtered.filter(l=>leadBestStage(l.id)===s).length;
-          const m=s==="All"?{c:"#0F2540",bg:"#F7F9FC"}:OPP_STAGE_META[s]||{c:"#718096",bg:"#F7F9FC"};
-          return (
-            <button key={s} onClick={()=>setFStage(s)}
-              style={{flexShrink:0,padding:"5px 12px",borderRadius:8,border:`1.5px solid ${fStage===s?m.c:"#E2E8F0"}`,background:fStage===s?m.bg:"#fff",color:m.c,fontSize:11,fontWeight:600,cursor:"pointer"}}>
-              {s} <span style={{fontWeight:700}}>{cnt}</span>
-            </button>
-          );
-        })}
+      {/* Lead summary strip */}
+      <div style={{display:"flex",gap:8,marginBottom:12,flexShrink:0,flexWrap:"wrap"}}>
+        <div style={{padding:"6px 14px",borderRadius:8,background:"#fff",border:"1px solid #E8EDF4",fontSize:12,color:"#0F2540",fontWeight:600}}>{visible.length} total contacts</div>
+        <div style={{padding:"6px 14px",borderRadius:8,background:"#EFF6FF",border:"1px solid #BFDBFE",fontSize:12,color:"#1A5FA8",fontWeight:600}}>{opps.filter(o=>o.status==="Active").length} active opportunities</div>
+        <div style={{padding:"6px 14px",borderRadius:8,background:"#E6F4EE",border:"1px solid #A8D5BE",fontSize:12,color:"#1A7F5A",fontWeight:600}}>{opps.filter(o=>o.stage==="Closed Won").length} won deals</div>
       </div>
 
       {/* Lead cards */}
@@ -1921,7 +1928,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           if(fStage!=="All"&&bestStage!==fStage)return null;
           return (
             <div key={l.id} onClick={()=>{setSelLeadId(l.id);setView("lead");}}
-              style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 14px",cursor:"pointer",borderLeft:`3px solid ${sm2.c}`,transition:"all .12s"}}
+              style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 14px",cursor:"pointer",borderLeft:"3px solid #E2E8F0",transition:"all .12s"}}
               onMouseOver={e=>{e.currentTarget.style.background="#F7F9FC";e.currentTarget.style.boxShadow="0 2px 8px rgba(0,0,0,.06)";}}
               onMouseOut={e=>{e.currentTarget.style.background="#fff";e.currentTarget.style.boxShadow="none";}}>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -1929,8 +1936,9 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                     <span style={{fontWeight:700,fontSize:13,color:"#0F2540"}}>{l.name}</span>
-                    <span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:sm2.bg,color:sm2.c}}>{bestStage}</span>
+                    {activeOpps.length>0&&<span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:"#EFF6FF",color:"#1A5FA8"}}>{activeOpps.length} active opp{activeOpps.length!==1?"s":""}</span>}
                     {wonOpps.length>0&&<span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ {wonOpps.length} Won</span>}
+                    {activeOpps.length===0&&wonOpps.length===0&&<span style={{fontSize:10,fontWeight:500,padding:"1px 7px",borderRadius:20,background:"#F7F9FC",color:"#94A3B8"}}>No opportunities</span>}
                   </div>
                   <div style={{display:"flex",gap:10,fontSize:11,color:"#718096",marginTop:2,flexWrap:"wrap"}}>
                     {l.phone&&<span>{l.phone}</span>}
@@ -1954,7 +1962,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>{editLead?"Edit":"New"} Contact</span>
+              <span style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>{editLead?"Edit":"New"} Contact</span>
               <button onClick={()=>{setShowAdd(false);setEditLead(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
             <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
@@ -2359,257 +2367,389 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
 // PIPELINE (same as v2)
 // ══════════════════════════════════════════════════════
 
+
+// ── Standalone Log Activity Modal (used in Pipeline + anywhere else) ──
+function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, defaultType="Call"}) {
+  const [form, setForm] = useState({type:defaultType,note:"",scheduled_at:"",next_steps:"",duration_mins:"",status:"completed"});
+  const [saving, setSaving] = useState(false);
+  const sf = k => e => setForm(f=>({...f,[k]:e.target.value}));
+
+  const save = async() => {
+    if(!lead){showToast("No lead found","error");return;}
+    setSaving(true);
+    try{
+      const payload = {
+        lead_id: lead.id,
+        lead_name: lead.name,
+        company_id: currentUser.company_id||null,
+        type: form.type,
+        note: form.note||null,
+        next_steps: form.next_steps||null,
+        scheduled_at: form.scheduled_at||new Date().toISOString(),
+        duration_mins: form.duration_mins?Number(form.duration_mins):null,
+        status: form.status||"completed",
+        created_by: currentUser.id,
+        opportunity_id: opp?.id||null,
+      };
+      const{data,error}=await supabase.from("activities").insert(payload).select().single();
+      if(error)throw error;
+      onSaved(data);
+    }catch(e){showToast(e.message,"error");}
+    setSaving(false);
+  };
+
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
+      <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"92vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.25)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4"}}>
+          <div>
+            <div style={{fontSize:15,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>Log Activity</div>
+            <div style={{fontSize:12,color:"#94A3B8",marginTop:2}}>{lead?.name}{opp?" · "+opp.title:""}</div>
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#94A3B8",cursor:"pointer"}}>×</button>
+        </div>
+        <div style={{padding:"1.25rem 1.5rem"}}>
+          <div style={{marginBottom:14}}>
+            <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Activity Type</label>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {[["Call","📞"],["Email","✉️"],["Meeting","🤝"],["Site Visit","🏠"],["WhatsApp","💬"],["Note","📝"],["Proposal","📄"]].map(([t,icon])=>(
+                <button key={t} onClick={()=>setForm(f=>({...f,type:t}))}
+                  style={{padding:"6px 12px",borderRadius:20,border:`1.5px solid ${form.type===t?"#0F2540":"#E2E8F0"}`,background:form.type===t?"#0F2540":"#fff",color:form.type===t?"#fff":"#475569",fontSize:12,cursor:"pointer",fontWeight:form.type===t?600:400,display:"flex",alignItems:"center",gap:4}}>
+                  <span style={{fontSize:13}}>{icon}</span>{t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{marginBottom:12}}>
+            <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Status</label>
+            <div style={{display:"flex",gap:6}}>
+              {[["completed","✅ Completed"],["upcoming","⏰ Scheduled"]].map(([v,l])=>(
+                <button key={v} onClick={()=>setForm(f=>({...f,status:v}))}
+                  style={{padding:"5px 12px",borderRadius:7,border:`1.5px solid ${form.status===v?"#0F2540":"#E2E8F0"}`,background:form.status===v?"#0F2540":"#fff",color:form.status===v?"#fff":"#475569",fontSize:12,cursor:"pointer",fontWeight:form.status===v?600:400}}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {["Call","Meeting","Site Visit"].includes(form.type)&&(
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
+              <div>
+                <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Date & Time</label>
+                <input type="datetime-local" value={form.scheduled_at} onChange={sf("scheduled_at")}/>
+              </div>
+              <div>
+                <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Duration</label>
+                <select value={form.duration_mins} onChange={sf("duration_mins")}>
+                  <option value="">Select…</option>
+                  {["15","30","45","60","90","120"].map(m=><option key={m} value={m}>{m} mins</option>)}
+                </select>
+              </div>
+            </div>
+          )}
+
+          <div style={{marginBottom:12}}>
+            <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Discussion / Notes</label>
+            <textarea value={form.note} onChange={sf("note")} rows={3} placeholder="What was discussed? Key points, client feedback, objections…"/>
+          </div>
+          <div style={{marginBottom:16}}>
+            <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Next Steps</label>
+            <textarea value={form.next_steps} onChange={sf("next_steps")} rows={2} placeholder="Follow-up action, who's responsible, by when?"/>
+          </div>
+          <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+            <button onClick={onClose} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",color:"#475569"}}>Cancel</button>
+            <button onClick={save} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save Activity"}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activities=[]}) {
   const canEdit = can(currentUser.role, "write");
+  const canReserve = can(currentUser.role, "reserve_unit");
   const [search, setSearch] = useState("");
   const [fStage, setFStage] = useState("All");
   const [fAgent, setFAgent] = useState("All");
-  const [selOpp, setSelOpp] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
   const [moving, setMoving] = useState(null);
-
-  // Load opps fresh if not passed
   const [localOpps, setLocalOpps] = useState([]);
+  const [showActivityModal, setShowActivityModal] = useState(null); // {lead, type}
+  const [showReserveModal, setShowReserveModal] = useState(null);   // {opp, unit}
+  const [units, setUnits] = useState([]);
+  const [reservations, setReservations] = useState([]);
+
   useEffect(() => {
-    supabase.from("opportunities")
-      .select("*")
-      .eq("status", "Active")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => setLocalOpps(data || []));
+    supabase.from("opportunities").select("*").eq("status","Active").order("created_at",{ascending:false})
+      .then(({data}) => setLocalOpps(data||[]));
+    supabase.from("project_units").select("id,unit_ref,status,project_id,bedrooms,sub_type").then(({data})=>setUnits(data||[]));
+    supabase.from("reservations").select("*").in("status",["Active","Extended","Confirmed"]).then(({data})=>setReservations(data||[]));
   }, []);
 
-  const allOpps = localOpps.length > 0 ? localOpps : (opps || []);
-  const activeOpps = can(currentUser.role, "see_all")
-    ? allOpps.filter(o => o.status === "Active")
-    : allOpps.filter(o => o.status === "Active" && o.assigned_to === currentUser.id);
 
-  const filtered = activeOpps.filter(o => {
-    const lead = leads.find(l => l.id === o.lead_id);
+  const allOpps = localOpps.length > 0 ? localOpps : (opps||[]);
+  const myOpps = can(currentUser.role,"see_all") ? allOpps : allOpps.filter(o=>o.assigned_to===currentUser.id);
+  const activeOpps = myOpps.filter(o=>o.status==="Active" && o.stage!=="Closed Won" && o.stage!=="Closed Lost");
+  const wonOpps = myOpps.filter(o=>o.stage==="Closed Won");
+  const lostOpps = myOpps.filter(o=>o.stage==="Closed Lost");
+
+  const filtered = activeOpps.filter(o=>{
+    const lead = leads.find(l=>l.id===o.lead_id);
     const q = search.toLowerCase();
-    const matchSearch = !q
-      || o.title?.toLowerCase().includes(q)
-      || lead?.name?.toLowerCase().includes(q)
-      || lead?.phone?.includes(q)
-      || lead?.email?.toLowerCase().includes(q);
-    const matchStage = fStage === "All" || o.stage === fStage;
-    const matchAgent = fAgent === "All" || o.assigned_to === fAgent;
-    return matchSearch && matchStage && matchAgent;
+    return (!q||o.title?.toLowerCase().includes(q)||lead?.name?.toLowerCase().includes(q)||lead?.phone?.includes(q))
+      && (fStage==="All"||o.stage===fStage)
+      && (fAgent==="All"||o.assigned_to===fAgent);
   });
 
-  const stageOrder = OPP_STAGES.filter(s => s !== "Closed Lost" && s !== "Closed Won");
-
-  const moveStage = async (opp, toStage) => {
-    if (!canEdit) { showToast("No permission", "error"); return; }
+  const moveStage = async(opp, toStage) => {
+    if(!canEdit){showToast("No permission","error");return;}
     setMoving(opp.id);
-    const updates = { stage: toStage, stage_updated_at: new Date().toISOString() };
-    if (toStage === "Closed Won") updates.won_at = new Date().toISOString();
-    if (toStage === "Closed Lost") updates.lost_at = new Date().toISOString();
-    const { error } = await supabase.from("opportunities").update(updates).eq("id", opp.id);
+    const updates = {stage:toStage, stage_updated_at:new Date().toISOString(),
+      ...(toStage==="Closed Won"?{won_at:new Date().toISOString(),status:"Active"}:{}),
+      ...(toStage==="Closed Lost"?{lost_at:new Date().toISOString()}:{})
+    };
+    const{error}=await supabase.from("opportunities").update(updates).eq("id",opp.id);
     setMoving(null);
-    if (error) { showToast(error.message, "error"); return; }
-    setLocalOpps(p => p.map(o => o.id === opp.id ? { ...o, ...updates } : o));
-    if (setOpps) setOpps(p => p.map(o => o.id === opp.id ? { ...o, ...updates } : o));
-    if (selOpp?.id === opp.id) setSelOpp(s => ({ ...s, ...updates }));
-    showToast(`Moved to ${toStage}`, "success");
+    if(error){showToast(error.message,"error");return;}
+    setLocalOpps(p=>p.map(o=>o.id===opp.id?{...o,...updates}:o));
+    if(setOpps) setOpps(p=>p.map(o=>o.id===opp.id?{...o,...updates}:o));
+    setExpandedId(null);
+    showToast(`Moved to ${toStage}`,"success");
   };
 
-  const totalValue = filtered.reduce((s, o) => s + (o.budget || 0), 0);
-  const wonOpps = allOpps.filter(o => o.status === "Active" && o.stage === "Closed Won");
-  const lostOpps = allOpps.filter(o => o.status === "Active" && o.stage === "Closed Lost");
+  const stageActions = {
+    "New":           [{label:"📞 Call",        act:"call"},{label:"💬 WhatsApp",    act:"wa"},{label:"📝 Log note",    act:"log"}],
+    "Contacted":     [{label:"📅 Schedule visit", act:"schedule"},{label:"📄 Send brochure", act:"brochure"},{label:"📝 Log note",    act:"log"}],
+    "Site Visit":    [{label:"📋 Log outcome",  act:"log"},{label:"📄 Send proposal", act:"proposal"},{label:"📞 Follow up",   act:"call"}],
+    "Proposal Sent": [{label:"📞 Follow up",   act:"call"},{label:"💰 Negotiate",    act:"negotiate"},{label:"📝 Log note",   act:"log"}],
+    "Negotiation":   [{label:"📄 Send offer",  act:"offer"},{label:"✅ Get approval", act:"approve"},{label:"📝 Log note",   act:"log"}],
+  };
+
+  const nextStage = {"New":"Contacted","Contacted":"Site Visit","Site Visit":"Proposal Sent","Proposal Sent":"Negotiation","Negotiation":"Closed Won"};
+  const totalVal = filtered.reduce((s,o)=>s+(o.budget||0),0);
+
+  const StagePill = ({stage, count, value, color, bg, border}) => (
+    <div onClick={()=>setFStage(fStage===stage?"All":stage)}
+      style={{flexShrink:0, minWidth:110, background:fStage===stage?color:bg,
+        border:`2px solid ${fStage===stage?color:border}`, borderRadius:10,
+        padding:"10px 14px", cursor:"pointer", transition:"all .15s", textAlign:"center"}}>
+      <div style={{fontSize:22, fontWeight:800, color:fStage===stage?"#fff":color, letterSpacing:"-1px", lineHeight:1}}>{count}</div>
+      <div style={{fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".6px", color:fStage===stage?"rgba(255,255,255,.85)":color, marginTop:3}}>{stage}</div>
+      {value>0&&<div style={{fontSize:10, fontWeight:600, color:fStage===stage?"rgba(255,255,255,.7)":color, marginTop:2}}>{fmtM(value)}</div>}
+    </div>
+  );
+
+  const Arrow = () => (
+    <div style={{display:"flex",alignItems:"center",flexShrink:0,padding:"0 4px"}}>
+      <svg width="20" height="12" viewBox="0 0 20 12"><path d="M0 6h16M12 1l7 5-7 5" stroke="#CBD5E1" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    </div>
+  );
 
   return (
-    <div className="fade-in" style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden",gap:12}}>
 
-      {/* Header */}
-      <div style={{ background: "#fff", border: "1px solid #E8EDF4", borderRadius: 12, padding: "16px 20px", marginBottom: 14, flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+      {/* Stage flow header */}
+      <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"16px 20px",flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#0F2540", letterSpacing: "-.3px" }}>Sales Pipeline</div>
-            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>{filtered.length} active opportunities · {fmtM(totalValue)} total value</div>
+            <span style={{fontSize:15,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>Sales Pipeline</span>
+            <span style={{fontSize:12,color:"#94A3B8",marginLeft:10}}>{filtered.length} opportunities · {fmtM(totalVal)}</span>
           </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search opportunities, leads…" style={{ width: 220, fontSize: 12 }} />
-            <select value={fStage} onChange={e => setFStage(e.target.value)} style={{ width: "auto", fontSize: 12 }}>
-              <option value="All">All Stages</option>
-              {OPP_STAGES.map(s => <option key={s}>{s}</option>)}
-            </select>
-            <select value={fAgent} onChange={e => setFAgent(e.target.value)} style={{ width: "auto", fontSize: 12 }}>
+          <div style={{display:"flex",gap:8}}>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search…" style={{width:180,fontSize:12}}/>
+            <select value={fAgent} onChange={e=>setFAgent(e.target.value)} style={{width:"auto",fontSize:12}}>
               <option value="All">All Agents</option>
-              {users.filter(u => u.is_active).map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+              {users.filter(u=>u.is_active).map(u=><option key={u.id} value={u.id}>{u.full_name}</option>)}
             </select>
+            {fStage!=="All"&&<button onClick={()=>setFStage("All")} style={{fontSize:11,padding:"4px 10px",borderRadius:6,border:"1px solid #E2E8F0",background:"#F7F9FC",cursor:"pointer",color:"#64748B"}}>✕ Clear</button>}
           </div>
         </div>
 
-        {/* Stage summary pills */}
-        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
-          {OPP_STAGES.filter(s => s !== "Closed Lost").map(s => {
-            const cnt = activeOpps.filter(o => o.stage === s).length;
-            const val = activeOpps.filter(o => o.stage === s).reduce((a, o) => a + (o.budget || 0), 0);
-            const m = OPP_STAGE_META[s] || { c: "#718096", bg: "#F7F9FC" };
-            return (
-              <button key={s} onClick={() => setFStage(fStage === s ? "All" : s)}
-                style={{ flexShrink: 0, padding: "6px 12px", borderRadius: 8, cursor: "pointer", transition: "all .15s", border: `1.5px solid ${fStage === s ? m.c : m.c + "40"}`, background: fStage === s ? m.c : m.bg }}>
-                <div style={{ fontWeight: 700, fontSize: 15, color: fStage === s ? "#fff" : m.c, lineHeight: 1 }}>{cnt}</div>
-                <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px", color: fStage === s ? "rgba(255,255,255,.85)" : m.c, marginTop: 2 }}>{s}</div>
-                {val > 0 && <div style={{ fontSize: 9, color: fStage === s ? "rgba(255,255,255,.7)" : m.c }}>{fmtM(val)}</div>}
-              </button>
-            );
-          })}
+        {/* Stage flow with arrows */}
+        <div style={{display:"flex",alignItems:"center",overflowX:"auto",paddingBottom:4,gap:0}}>
+          <StagePill stage="New"           count={myOpps.filter(o=>o.stage==="New").length}           value={myOpps.filter(o=>o.stage==="New").reduce((s,o)=>s+(o.budget||0),0)}           color="#475569" bg="#F7F9FC" border="#CBD5E1"/>
+          <Arrow/>
+          <StagePill stage="Contacted"     count={myOpps.filter(o=>o.stage==="Contacted").length}     value={myOpps.filter(o=>o.stage==="Contacted").reduce((s,o)=>s+(o.budget||0),0)}     color="#1A5FA8" bg="#E6EFF9" border="#BFDBFE"/>
+          <Arrow/>
+          <StagePill stage="Site Visit"    count={myOpps.filter(o=>o.stage==="Site Visit").length}    value={myOpps.filter(o=>o.stage==="Site Visit").reduce((s,o)=>s+(o.budget||0),0)}    color="#5B3FAA" bg="#EEE8F9" border="#C4B5FD"/>
+          <Arrow/>
+          <StagePill stage="Proposal Sent" count={myOpps.filter(o=>o.stage==="Proposal Sent").length} value={myOpps.filter(o=>o.stage==="Proposal Sent").reduce((s,o)=>s+(o.budget||0),0)} color="#A06810" bg="#FDF3DC" border="#FCD34D"/>
+          <Arrow/>
+          <StagePill stage="Negotiation"   count={myOpps.filter(o=>o.stage==="Negotiation").length}   value={myOpps.filter(o=>o.stage==="Negotiation").reduce((s,o)=>s+(o.budget||0),0)}   color="#B83232" bg="#FAEAEA" border="#FECACA"/>
+          <Arrow/>
+          <StagePill stage="Closed Won"    count={wonOpps.length}  value={wonOpps.reduce((s,o)=>s+(o.final_price||o.budget||0),0)}  color="#1A7F5A" bg="#E6F4EE" border="#A8D5BE"/>
         </div>
       </div>
 
-      {/* Main content */}
-      <div style={{ flex: 1, overflow: "hidden", display: "flex", gap: 14 }}>
+      {/* Opportunity list */}
+      <div style={{flex:1,overflowY:"auto",background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,overflow:"hidden"}}>
 
-        {/* Opportunity list */}
-        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
-          {filtered.length === 0 && (
-            <div style={{ textAlign: "center", padding: "4rem", color: "#A0AEC0" }}>
-              <div style={{ fontSize: 40, marginBottom: 10 }}>🎯</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#0F2540", marginBottom: 4 }}>No opportunities found</div>
-              <div style={{ fontSize: 12 }}>Create opportunities from the Leads section</div>
-            </div>
-          )}
-          {filtered
-            .sort((a, b) => OPP_STAGES.indexOf(a.stage) - OPP_STAGES.indexOf(b.stage))
-            .map(opp => {
-              const lead = leads.find(l => l.id === opp.lead_id);
-              const agent = users.find(u => u.id === opp.assigned_to);
-              const m = OPP_STAGE_META[opp.stage] || { c: "#718096", bg: "#F7F9FC" };
-              const days = opp.stage_updated_at ? Math.floor((new Date() - new Date(opp.stage_updated_at)) / 864e5) : 0;
-              const upcoming = activities.filter(a => a.lead_id === opp.lead_id && a.status === "upcoming").length;
-              const isSelected = selOpp?.id === opp.id;
-              const curIdx = stageOrder.indexOf(opp.stage);
-
-              return (
-                <div key={opp.id} onClick={() => setSelOpp(isSelected ? null : opp)}
-                  style={{ background: "#fff", border: `1.5px solid ${isSelected ? m.c : "#E8EDF4"}`, borderRadius: 10, padding: "14px 16px", cursor: "pointer", transition: "all .15s", borderLeft: `4px solid ${m.c}`, boxShadow: isSelected ? `0 2px 12px ${m.c}22` : "0 1px 3px rgba(0,0,0,.03)" }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-
-                    {/* Lead avatar */}
-                    <Av name={lead?.name || "?"} size={38} />
-
-                    {/* Main info */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-                        <span style={{ fontWeight: 700, fontSize: 14, color: "#0F2540", letterSpacing: "-.2px" }}>{opp.title || lead?.name || "Opportunity"}</span>
-                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 20, background: m.bg, color: m.c }}>{opp.stage}</span>
-                        {days > 7 && <span style={{ fontSize: 10, fontWeight: 700, color: days > 14 ? "#E53E3E" : "#A06810" }}>⏱ {days}d</span>}
-                        {upcoming > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: "#C9A84C", background: "rgba(201,168,76,.1)", padding: "1px 6px", borderRadius: 6 }}>⏰ {upcoming}</span>}
-                      </div>
-                      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12, color: "#64748B" }}>
-                        {lead?.name && <span>👤 {lead.name}</span>}
-                        {lead?.phone && <span>📞 {lead.phone}</span>}
-                        {agent && <span>🧑‍💼 {agent.full_name}</span>}
-                        {opp.budget && <span style={{ fontWeight: 600, color: "#0F2540" }}>💰 {fmtM(opp.budget)}</span>}
-                        {opp.property_category && <span>🏢 {opp.property_category}</span>}
-                      </div>
-                    </div>
-
-                    {/* Stage move buttons */}
-                    {canEdit && (
-                      <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                        {curIdx > 0 && (
-                          <button onClick={e => { e.stopPropagation(); moveStage(opp, stageOrder[curIdx - 1]); }}
-                            disabled={moving === opp.id}
-                            title="Move back"
-                            style={{ width: 28, height: 28, borderRadius: 6, border: "1.5px solid #E2E8F0", background: "#fff", cursor: "pointer", color: "#64748B", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>←</button>
-                        )}
-                        {curIdx < stageOrder.length - 1 && (
-                          <button onClick={e => { e.stopPropagation(); moveStage(opp, stageOrder[curIdx + 1]); }}
-                            disabled={moving === opp.id}
-                            title={`Move to ${stageOrder[curIdx + 1]}`}
-                            style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: m.c, cursor: "pointer", color: "#fff", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>→</button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+        {/* Column headers */}
+        <div style={{display:"grid",gridTemplateColumns:"32px 1fr 120px 90px 110px 70px",gap:12,padding:"8px 16px",background:"#FAFBFE",borderBottom:"1px solid #F1F5F9"}}>
+          {["","Opportunity / Lead","Stage","Value","Agent","Days"].map(h=>(
+            <div key={h} style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",color:"#94A3B8"}}>{h}</div>
+          ))}
         </div>
 
-        {/* Detail panel */}
-        {selOpp && (() => {
-          const opp = localOpps.find(o => o.id === selOpp.id) || selOpp;
-          const lead = leads.find(l => l.id === opp.lead_id);
-          const agent = users.find(u => u.id === opp.assigned_to);
-          const m = OPP_STAGE_META[opp.stage] || { c: "#718096", bg: "#F7F9FC" };
-          const days = opp.stage_updated_at ? Math.floor((new Date() - new Date(opp.stage_updated_at)) / 864e5) : 0;
+        {filtered.length===0&&(
+          <div style={{textAlign:"center",padding:"4rem",color:"#94A3B8"}}>
+            <div style={{fontSize:36,marginBottom:10}}>🎯</div>
+            <div style={{fontSize:14,fontWeight:600,color:"#0F2540",marginBottom:4}}>No opportunities found</div>
+            <div style={{fontSize:12}}>Try adjusting your filters or create opportunities from Leads</div>
+          </div>
+        )}
+
+        {filtered.sort((a,b)=>OPP_STAGES.indexOf(a.stage)-OPP_STAGES.indexOf(b.stage)).map(opp=>{
+          const lead = leads.find(l=>l.id===opp.lead_id);
+          const agent = users.find(u=>u.id===opp.assigned_to);
+          const m = OPP_STAGE_META[opp.stage]||{c:"#718096",bg:"#F7F9FC"};
+          const days = opp.stage_updated_at?Math.floor((new Date()-new Date(opp.stage_updated_at))/864e5):0;
+          const isExpanded = expandedId===opp.id;
+          const upcoming = activities.filter(a=>a.lead_id===opp.lead_id&&a.status==="upcoming").length;
+          const actions = stageActions[opp.stage]||[];
+          const next = nextStage[opp.stage];
+
           return (
-            <div style={{ width: 280, flexShrink: 0, background: "#fff", border: "1.5px solid #E8EDF4", borderRadius: 12, overflowY: "auto" }}>
-              {/* Header */}
-              <div style={{ background: m.bg, borderBottom: `3px solid ${m.c}`, padding: "16px", borderRadius: "10px 10px 0 0" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: "#0F2540", letterSpacing: "-.2px", marginBottom: 2 }}>{opp.title || lead?.name}</div>
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: m.c, color: "#fff" }}>{opp.stage}</span>
-                  </div>
-                  <button onClick={() => setSelOpp(null)} style={{ background: "none", border: "none", fontSize: 18, color: "#94A3B8", cursor: "pointer", padding: "0 4px" }}>×</button>
+            <div key={opp.id}>
+              {/* Row */}
+              <div onClick={()=>setExpandedId(isExpanded?null:opp.id)}
+                style={{display:"grid",gridTemplateColumns:"32px 1fr 120px 90px 110px 70px",gap:12,
+                  padding:"10px 16px",borderBottom:isExpanded?"none":"1px solid #F1F5F9",
+                  cursor:"pointer",transition:"background .1s",alignItems:"center",
+                  background:isExpanded?"#F0F6FF":"#fff",
+                  borderLeft:`3px solid ${isExpanded?m.c:"transparent"}`}}
+                onMouseOver={e=>{if(!isExpanded)e.currentTarget.style.background="#F8FAFC";}}
+                onMouseOut={e=>{if(!isExpanded)e.currentTarget.style.background="#fff";}}>
+
+                {/* Avatar */}
+                <div style={{width:28,height:28,borderRadius:"50%",background:m.bg,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:10,color:m.c,flexShrink:0}}>
+                  {(lead?.name||opp.title||"?").split(" ").map(w=>w[0]).slice(0,2).join("")}
                 </div>
-                {opp.budget && <div style={{ fontSize: 20, fontWeight: 700, color: m.c, marginTop: 10, letterSpacing: "-1px" }}>{fmtM(opp.budget)}</div>}
+
+                {/* Title + lead */}
+                <div style={{minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:600,color:"#0F2540",letterSpacing:"-.1px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{opp.title||lead?.name||"Opportunity"}</div>
+                  <div style={{fontSize:11,color:"#94A3B8",marginTop:1,display:"flex",gap:8,flexWrap:"wrap"}}>
+                    {lead?.name&&<span>{lead.name}</span>}
+                    {lead?.phone&&<span>{lead.phone}</span>}
+                    {upcoming>0&&<span style={{color:"#C9A84C",fontWeight:600}}>⏰ {upcoming} task{upcoming>1?"s":""}</span>}
+                  </div>
+                </div>
+
+                {/* Stage badge */}
+                <div style={{fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:20,background:m.bg,color:m.c,display:"inline-flex",alignItems:"center",width:"fit-content"}}>{opp.stage}</div>
+
+                {/* Value */}
+                <div style={{fontSize:13,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>{opp.budget?fmtM(opp.budget):"—"}</div>
+
+                {/* Agent */}
+                <div style={{fontSize:11,color:"#64748B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{agent?.full_name||"—"}</div>
+
+                {/* Days */}
+                <div style={{fontSize:11,fontWeight:days>7?700:400,color:days>14?"#E53E3E":days>7?"#A06810":"#94A3B8",display:"flex",alignItems:"center",gap:3}}>
+                  {days>7&&"⏱"}{days}d{isExpanded&&<span style={{color:m.c,marginLeft:4}}>▴</span>}
+                </div>
               </div>
 
-              {/* Details */}
-              <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
-                {[
-                  ["Lead", lead?.name],
-                  ["Phone", lead?.phone],
-                  ["Email", lead?.email],
-                  ["Agent", agent?.full_name],
-                  ["Category", opp.property_category],
-                  ["Days in stage", `${days}d`],
-                  ["Notes", opp.notes],
-                ].filter(([, v]) => v).map(([label, val]) => (
-                  <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "4px 0", borderBottom: "1px solid #F7F9FC" }}>
-                    <span style={{ color: "#94A3B8", fontWeight: 500 }}>{label}</span>
-                    <span style={{ fontWeight: 600, color: "#0F2540", maxWidth: 150, textAlign: "right", wordBreak: "break-word" }}>{val}</span>
-                  </div>
-                ))}
+              {/* Expanded actions */}
+              {isExpanded&&(
+                <div style={{background:"#F0F6FF",borderBottom:"2px solid #BFDBFE",padding:"10px 16px 12px 60px",display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                  {actions.map(a=>(
+                    <button key={a.act}
+                      onClick={()=>{
+                        if(a.act==="call"||a.act==="wa"||a.act==="log"||a.act==="schedule"||a.act==="brochure"||a.act==="proposal"||a.act==="negotiate"||a.act==="offer"||a.act==="approve"){
+                          const typeMap={call:"Call",wa:"WhatsApp",log:"Note",schedule:"Site Visit",brochure:"Call",proposal:"Proposal",negotiate:"Call",offer:"Call",approve:"Call"};
+                          setShowActivityModal({lead, opp, type:typeMap[a.act]||"Note"});
+                        }
+                      }}
+                      style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540",display:"flex",alignItems:"center",gap:5,transition:"all .12s"}}
+                      onMouseOver={e=>{e.currentTarget.style.borderColor=m.c;e.currentTarget.style.color=m.c;}}
+                      onMouseOut={e=>{e.currentTarget.style.borderColor="#E2E8F0";e.currentTarget.style.color="#0F2540";}}>
+                      {a.label}
+                    </button>
+                  ))}
 
-                {/* Move stage */}
-                {canEdit && (
-                  <div style={{ marginTop: 8 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>Move Stage</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                      {stageOrder.map((s, i) => {
-                        const sm = OPP_STAGE_META[s] || { c: "#718096", bg: "#F7F9FC" };
-                        const isCurrent = s === opp.stage;
-                        return (
-                          <button key={s} onClick={() => moveStage(opp, s)} disabled={isCurrent || moving === opp.id}
-                            style={{ padding: "7px 10px", borderRadius: 7, border: `1.5px solid ${isCurrent ? sm.c : "#E2E8F0"}`, background: isCurrent ? sm.bg : "#fff", color: isCurrent ? sm.c : "#475569", fontSize: 11, fontWeight: isCurrent ? 700 : 400, cursor: isCurrent ? "default" : "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontSize: 9, color: isCurrent ? sm.c : "#94A3B8" }}>{i + 1}.</span>
-                            {s} {isCurrent ? "← current" : ""}
-                          </button>
-                        );
-                      })}
-                      <button onClick={() => moveStage(opp, "Closed Won")}
-                        style={{ padding: "8px 10px", borderRadius: 7, border: "none", background: "#1A7F5A", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", marginTop: 4 }}>
-                        ✓ Close as Won
-                      </button>
-                      <button onClick={() => moveStage(opp, "Closed Lost")}
-                        style={{ padding: "8px 10px", borderRadius: 7, border: "1.5px solid #FAEAEA", background: "#FAEAEA", color: "#B83232", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                        ✗ Close as Lost
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+                  {/* Divider */}
+                  <div style={{width:1,height:24,background:"#BFDBFE",margin:"0 4px"}}/>
+
+                  {/* Next stage button */}
+                  {next&&next!=="Closed Won"&&(
+                    <button onClick={()=>moveStage(opp,next)} disabled={moving===opp.id}
+                      style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#0F2540",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                      → {next}
+                    </button>
+                  )}
+
+                  {/* Reserve / Won */}
+                  {(opp.stage==="Negotiation"||opp.stage==="Proposal Sent")&&canReserve&&(
+                    <button onClick={()=>{
+                      const unit = opp.unit_id ? units.find(u=>u.id===opp.unit_id) : null;
+                      setShowReserveModal({opp, unit, lead});
+                    }} disabled={moving===opp.id}
+                      style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#1A7F5A",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                      ✓ Reserve Unit
+                    </button>
+                  )}
+
+                  {/* Lost */}
+                  <button onClick={()=>moveStage(opp,"Closed Lost")} disabled={moving===opp.id}
+                    style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #FECACA",background:"#FEF2F2",color:"#B83232",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    ✗ Lost
+                  </button>
+
+                  {/* Skip to any stage */}
+                  <select onChange={e=>{if(e.target.value)moveStage(opp,e.target.value);}}
+                    defaultValue=""
+                    style={{marginLeft:"auto",fontSize:11,padding:"5px 8px",borderRadius:7,border:"1px dashed #CBD5E1",background:"#fff",color:"#64748B",cursor:"pointer"}}>
+                    <option value="" disabled>Skip to stage…</option>
+                    {OPP_STAGES.filter(s=>s!==opp.stage).map(s=><option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+              )}
             </div>
           );
-        })()}
+        })}
+
+        {/* Footer */}
+        <div style={{padding:"10px 16px",background:"#FAFBFE",borderTop:"1px solid #F1F5F9",display:"flex",gap:16,fontSize:11,alignItems:"center"}}>
+          <span style={{color:"#1A7F5A",fontWeight:700}}>✓ {wonOpps.length} Won · {fmtM(wonOpps.reduce((s,o)=>s+(o.final_price||o.budget||0),0))}</span>
+          <span style={{color:"#B83232",fontWeight:700}}>✗ {lostOpps.length} Lost</span>
+          <span style={{marginLeft:"auto",color:"#94A3B8"}}>{filtered.length} of {activeOpps.length} active</span>
+        </div>
       </div>
 
-      {/* Won/Lost footer */}
-      {(wonOpps.length > 0 || lostOpps.length > 0) && (
-        <div style={{ flexShrink: 0, display: "flex", gap: 10, padding: "10px 0 0", borderTop: "1px solid #E8EDF4", marginTop: 8 }}>
-          <div style={{ flex: 1, padding: "8px 14px", borderRadius: 8, background: "#E6F4EE", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#1A7F5A" }}>✓ {wonOpps.length} Won</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#1A7F5A" }}>{fmtM(wonOpps.reduce((s, o) => s + (o.final_price || o.budget || 0), 0))}</span>
-          </div>
-          <div style={{ flex: 1, padding: "8px 14px", borderRadius: 8, background: "#FAEAEA", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#B83232" }}>✗ {lostOpps.length} Lost</span>
-          </div>
-        </div>
+      {/* Activity Log Modal */}
+      {showActivityModal&&(
+        <LogActivityModal
+          lead={showActivityModal.lead}
+          currentUser={currentUser}
+          showToast={showToast}
+          onClose={()=>setShowActivityModal(null)}
+          onSaved={(act)=>{
+            showToast("Activity logged","success");
+            setShowActivityModal(null);
+          }}
+        />
+      )}
+
+      {/* Reservation Modal */}
+      {showReserveModal&&(
+        <ReservationModal
+          unit={showReserveModal.unit||{id:showReserveModal.opp.unit_id,unit_ref:"Unit",status:"Available"}}
+          reservation={null}
+          currentUser={currentUser}
+          leads={leads}
+          opportunities={localOpps}
+          showToast={showToast}
+          onClose={()=>setShowReserveModal(null)}
+          onSaved={(res)=>{
+            moveStage(showReserveModal.opp,"Closed Won");
+            setReservations(p=>[res,...p]);
+            setShowReserveModal(null);
+          }}
+        />
       )}
     </div>
   );
@@ -3243,14 +3383,14 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
         notes:              form.notes || null,
         status:             "Active",
         reserved_at:        new Date().toISOString(),
-        expires_at:         new Date(Date.now() + 2*24*60*60*1000).toISOString(),
+        expires_at:         addWorkingDays(new Date(), 5).toISOString(),
         created_by:         currentUser.id,
       };
       const { data, error } = await supabase.from("reservations").insert(payload).select().single();
       if (error) throw error;
       // Mark unit as Reserved
       await supabase.from("project_units").update({ status: "Reserved" }).eq("id", unit.id);
-      showToast("Unit reserved — 48 hour clock started", "success");
+      showToast("Unit reserved — 5 working day clock started", "success");
       onSaved(data);
     } catch(e) { showToast(e.message, "error"); }
     setSaving(false);
@@ -3292,11 +3432,11 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
 
   const extend48 = async () => {
     const newExp = new Date((reservation.extended_until||reservation.expires_at));
-    newExp.setTime(newExp.getTime() + 2*24*60*60*1000);
+    const extDate = addWorkingDays(newExp, 2); newExp.setTime(extDate.getTime());
     setSaving(true);
     try {
       await supabase.from("reservations").update({ status:"Extended", extended_until:newExp.toISOString() }).eq("id", reservation.id);
-      showToast("Reservation extended by 48 hours", "success");
+      showToast("Reservation extended by 2 working days", "success");
       onSaved({ ...reservation, status:"Extended", extended_until:newExp.toISOString() });
     } catch(e) { showToast(e.message, "error"); }
     setSaving(false);
@@ -3304,7 +3444,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
 
   const urg = reservation ? reservationUrgency(reservation) : "ok";
   const col = RES_COLORS[urg];
-  const hrs = reservation ? hoursLeft(reservation.expires_at, reservation.extended_until) : 48;
+  const hrs = reservation ? hoursLeft(reservation.expires_at, reservation.extended_until) : 120;
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
