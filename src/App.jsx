@@ -33,7 +33,7 @@ const GlobalStyle = () => (
     .ch{transition:box-shadow 0.18s,transform 0.18s}
     .ch:hover{box-shadow:0 4px 16px rgba(15,37,64,.08);transform:translateY(-1px)}
     .dcard{transition:box-shadow 0.15s;cursor:grab}
-    .dcard:hover{box-shadow:0 3px 14px #0B1F3A22}
+    .dcard:hover{box-shadow:0 3px 14px rgba(15,37,64,.1)}
     @keyframes spin{to{transform:rotate(360deg)}}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
 
@@ -366,7 +366,7 @@ const StrengthBar=({password})=>{
   return <div style={{marginTop:6}}><div style={{height:4,background:"#F7F9FC",borderRadius:4,overflow:"hidden"}}><div style={{width:`${s.pct}%`,height:"100%",background:s.color,borderRadius:4,transition:"width 0.3s"}}/></div><div style={{fontSize:11,color:s.color,fontWeight:600,marginTop:4}}>{s.label} password</div></div>;
 };
 const AuthWrap=({children})=>(
-  <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0B1F3A 0%,#1A3558 60%,#0B1F3A 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
+  <div style={{minHeight:"100vh",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
     <div className="fade-in" style={{background:"#fff",borderRadius:20,padding:"2.5rem",width:440,maxWidth:"100%",boxShadow:"0 30px 80px rgba(0,0,0,0.4)"}}>{children}</div>
   </div>
 );
@@ -751,7 +751,7 @@ function PropertyMaster({currentUser,showToast}){
   const STATUS_COLORS={Available:{c:"#1A7F5A",bg:"#E6F4EE"},Reserved:{c:"#A06810",bg:"#FDF3DC"},"Under Offer":{c:"#B85C10",bg:"#FDF0E6"},Sold:{c:"#B83232",bg:"#FAEAEA"},Blocked:{c:"#718096",bg:"#F7F9FC"}};
 
   const ColHeader=({title,count,onAdd,icon})=>(
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",background:"#0F2540",borderRadius:"10px 10px 0 0"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 14px",background:"#1E3A5F",borderRadius:"10px 10px 0 0"}}>
       <div>
         <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{icon} {title}</div>
         <div style={{fontSize:11,color:"#C9A84C"}}>{count} item{count!==1?"s":""}</div>
@@ -1249,9 +1249,9 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const printReceipt=(pay)=>{
     const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
     <style>body{font-family:Arial,sans-serif;max-width:420px;margin:40px auto}
-    .hdr{background:#0B1F3A;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center}
+    .hdr{background:#1E3A5F;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center}
     .logo{font-size:20px;font-weight:700;color:#C9A84C}.bdy{border:1px solid #E2E8F0;border-top:none;padding:20px;border-radius:0 0 8px 8px}
-    .amt{font-size:30px;font-weight:700;color:#0B1F3A;text-align:center;padding:16px 0;border-bottom:2px solid #0B1F3A;margin-bottom:16px}
+    .amt{font-size:30px;font-weight:700;color:#0F2540;text-align:center;padding:16px 0;border-bottom:2px solid #E2E8F0;margin-bottom:16px}
     .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F0F2F5;font-size:13px}
     .stamp{border:3px solid #1A7F5A;color:#1A7F5A;padding:6px 16px;border-radius:6px;font-size:14px;font-weight:700;display:inline-block;margin:12px auto;transform:rotate(-5deg)}
     </style></head><body>
@@ -1319,7 +1319,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
           {id:"contract", label:`Contract${contract?" ✓":""}`,  locked:!isWon, lockMsg:"Unlocks at Closed Won"},
         ].map(({id,label,locked,lockMsg})=>(
           <button key={id} onClick={()=>{if(locked){showToast(`${lockMsg}`,"error");return;}setActiveTab(id);}}
-            style={{padding:"8px 16px",borderRadius:"8px 8px 0 0",border:"none",borderBottom:activeTab===id?"2.5px solid #0B1F3A":"2.5px solid transparent",background:"transparent",fontSize:13,fontWeight:activeTab===id?700:400,color:locked?"#CBD5E0":activeTab===id?"#0F2540":"#718096",cursor:locked?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:4}}>
+            style={{padding:"8px 16px",borderRadius:"8px 8px 0 0",border:"none",borderBottom:activeTab===id?"2.5px solid #1E3A5F":"2.5px solid transparent",background:"transparent",fontSize:13,fontWeight:activeTab===id?700:400,color:locked?"#CBD5E0":activeTab===id?"#0F2540":"#718096",cursor:locked?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:4}}>
             {locked&&"🔒 "}{label}
           </button>
         ))}
@@ -1331,7 +1331,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
         {activeTab==="details"&&(
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
             {/* Workflow bar */}
-            <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:12,padding:"14px 16px"}}>
+            <div style={{background:"#fff",borderRadius:12,padding:"14px 16px"}}>
               <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.4)",textTransform:"uppercase",letterSpacing:".6px",marginBottom:10}}>Deal Workflow</div>
               <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0}}>
                 {OPP_STAGES.filter(s=>s!=="Closed Lost").map((s,i,arr)=>{
@@ -1427,7 +1427,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                       ))}
                     </div>
                     {sp.asking_price&&(
-                      <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:10,padding:"12px 14px"}}>
+                      <div style={{background:"#fff",borderRadius:10,padding:"12px 14px"}}>
                         <div style={{fontSize:10,color:"rgba(255,255,255,.5)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Client Upfront Costs</div>
                         <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
                           {[
@@ -1466,7 +1466,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                       ))}
                     </div>
                     {sp.asking_price&&(
-                      <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:10,padding:"12px 14px"}}>
+                      <div style={{background:"#fff",borderRadius:10,padding:"12px 14px"}}>
                         <div style={{fontSize:10,color:"rgba(255,255,255,.5)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Client Transfer Costs</div>
                         <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
                           {[
@@ -1650,7 +1650,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       {showEmail&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:540,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
-            <div style={{background:"linear-gradient(135deg,#1A5FA8,#0B1F3A)",padding:"1rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{background:"#fff",padding:"1rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>📤 Send Proposal</div>
                 <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>Stage moves to Proposal Sent after sending</div>
@@ -2220,7 +2220,7 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
       )}
 
       {/* ── Hero banner ─────────────────────────────────────── */}
-      <div style={{background:"linear-gradient(135deg,#0B1F3A 0%,#1A3558 100%)",borderRadius:14,padding:"1.25rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+      <div style={{background:"#fff",borderRadius:14,padding:"1.25rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
         <div>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, {currentUser.full_name?.split(" ")[0]} ☀️</div>
           <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{new Date().toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
@@ -3256,7 +3256,7 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
     <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
       <div style={{background:"#fff",borderRadius:16,width:520,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
         {/* Header */}
-        <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",padding:"1.125rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{background:"#fff",padding:"1.125rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>
               {isNew ? "🔒 Reserve Unit" : "📋 Reservation Details"}
@@ -3982,7 +3982,7 @@ Return ONLY the JSON, no explanation.`}
           return (
             <div className="slide-in" style={{width:340,flexShrink:0,background:"#fff",borderLeft:"1px solid #E2E8F0",display:"flex",flexDirection:"column",overflow:"hidden"}}>
               {/* Panel header */}
-              <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",padding:"14px 16px",position:"relative"}}>
+              <div style={{background:"#fff",padding:"14px 16px",position:"relative"}}>
                 <button onClick={()=>setSelUnit(null)} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:"#C9A84C",fontSize:20,cursor:"pointer"}}>×</button>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>{selUnit.unit_ref}</div>
                 <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:2}}>{proj?.name} · {selUnit.sub_type}</div>
@@ -3992,7 +3992,7 @@ Return ONLY the JSON, no explanation.`}
               <div style={{display:"flex",borderBottom:"1px solid #E2E8F0"}}>
                 {["Details","Pricing","Documents"].map(t=>(
                   <button key={t} onClick={()=>setActiveTab(t.toLowerCase())}
-                    style={{flex:1,padding:"8px 4px",border:"none",borderBottom:activeTab===t.toLowerCase()?"2.5px solid #0B1F3A":"2.5px solid transparent",background:"transparent",fontSize:12,fontWeight:activeTab===t.toLowerCase()?700:400,color:activeTab===t.toLowerCase()?"#0F2540":"#718096",cursor:"pointer"}}>
+                    style={{flex:1,padding:"8px 4px",border:"none",borderBottom:activeTab===t.toLowerCase()?"2.5px solid #1E3A5F":"2.5px solid transparent",background:"transparent",fontSize:12,fontWeight:activeTab===t.toLowerCase()?700:400,color:activeTab===t.toLowerCase()?"#0F2540":"#718096",cursor:"pointer"}}>
                     {t}
                   </button>
                 ))}
@@ -5439,12 +5439,12 @@ function exportToPDF(title, subtitle, headers, rows, filename) {
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:Arial,sans-serif;color:#1a2535;font-size:11px}
-    .header{background:#0B1F3A;color:#fff;padding:20px 24px;margin-bottom:0}
+    .header{background:#1E3A5F;color:#fff;padding:20px 24px;margin-bottom:0}
     .title{font-size:20px;font-weight:700;color:#C9A84C;margin-bottom:4px}
     .subtitle{font-size:12px;color:rgba(255,255,255,.6)}
     .meta{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px}
     table{width:100%;border-collapse:collapse;margin:0}
-    th{background:#0B1F3A;color:#C9A84C;padding:7px 8px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.4px}
+    th{background:#1E3A5F;color:#C9A84C;padding:7px 8px;text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.4px}
     td{padding:6px 8px;border-bottom:1px solid #F0F2F5;font-size:10px;vertical-align:top}
     tr:nth-child(even) td{background:#FAFBFC}
     .footer{margin-top:16px;text-align:center;font-size:9px;color:#A0AEC0}
@@ -5618,7 +5618,7 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
       {showAdd&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:580,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
-            <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",padding:"1rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{background:"#fff",padding:"1rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>{editTpl?"Edit":"New"} Payment Plan Template</div>
                 <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>Define milestone installments — must total 100%</div>
@@ -6244,7 +6244,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
     <div style={{display:"flex",flexDirection:"column",height:"100%",background:"#F7F8FC"}}>
 
       {/* ── Premium Header ── */}
-      <div style={{background:"linear-gradient(135deg,#0B1F3A 0%,#1A3558 60%,#0D2A47 100%)",padding:"18px 24px 14px",flexShrink:0,position:"relative",overflow:"hidden"}}>
+      <div style={{background:"#fff",padding:"18px 24px 14px",flexShrink:0,position:"relative",overflow:"hidden"}}>
         {/* Decorative elements */}
         <div style={{position:"absolute",top:-20,right:-20,width:120,height:120,borderRadius:"50%",background:"rgba(201,168,76,.08)"}}/>
         <div style={{position:"absolute",bottom:-30,right:60,width:80,height:80,borderRadius:"50%",background:"rgba(201,168,76,.05)"}}/>
@@ -6370,7 +6370,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
             {/* Bubble */}
             <div style={{
               maxWidth:"72%",
-              background:m.role==="user"?"linear-gradient(135deg,#0B1F3A,#1A3558)":"#fff",
+              background:m.role==="user"?"#1E3A5F":"#fff",
               color:m.role==="user"?"#fff":"#2D3748",
               borderRadius:m.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",
               padding:"12px 16px",fontSize:13,lineHeight:1.7,
@@ -6404,7 +6404,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
 
         {/* Lead detection card */}
         {suggestion&&(
-          <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:"16px 18px",boxShadow:"0 4px 20px rgba(11,31,58,.2)"}}>
+          <div style={{background:"#fff",border:"1px solid rgba(201,168,76,.3)",borderRadius:14,padding:"16px 18px",boxShadow:"0 4px 20px rgba(11,31,58,.2)"}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
               <span style={{fontSize:18}}>✦</span>
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#C9A84C"}}>{aiFullName} detected a lead — add to CRM?</span>
@@ -6471,7 +6471,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
             padding:"10px 20px",borderRadius:12,border:"none",
             background:loading||!input.trim()||!hasAnyKey
               ?"#E2E8F0"
-              :"linear-gradient(135deg,#0B1F3A,#1A3558)",
+              :"#1E3A5F",
             color:loading||!input.trim()||!hasAnyKey?"#A0AEC0":"#C9A84C",
             fontSize:13,fontWeight:700,cursor:loading||!input.trim()||!hasAnyKey?"not-allowed":"pointer",
             transition:"all .2s",alignSelf:"flex-end",
@@ -6542,7 +6542,7 @@ function SetupWizard({ onComplete }) {
   const sel = MODES.find(m=>m.id===mode);
 
   return (
-    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0B1F3A 0%,#1A3558 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
+    <div style={{minHeight:"100vh",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
       <div className="fa" style={{background:"#fff",borderRadius:20,width:680,maxWidth:"100%",boxShadow:"0 30px 80px rgba(0,0,0,.4)",overflow:"hidden"}}>
 
         {/* Header */}
@@ -7485,7 +7485,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
                     }
                   }} placeholder="e.g. Al Mansoori Properties"/>
                 </div>
-                <div style={{gridColumn:"1/-1",background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:10,padding:"14px"}}>
+                <div style={{gridColumn:"1/-1",background:"#fff",borderRadius:10,padding:"14px"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
                     <span style={{fontSize:18}}>✦</span>
                     <label style={{fontSize:11,fontWeight:700,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".5px"}}>AI Assistant Name</label>
@@ -8114,7 +8114,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
     const html = `<!DOCTYPE html><html><head><title>Payment Receipt</title>
     <style>
       body{font-family:'Arial',sans-serif;margin:0;padding:40px;color:#0B1F3A;}
-      .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;padding-bottom:20px;border-bottom:2px solid #0B1F3A;}
+      .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;padding-bottom:20px;border-bottom:2px solid #E2E8F0;}
       .company{font-size:22px;font-weight:700;color:#0B1F3A;}
       .receipt-title{font-size:28px;font-weight:700;color:#5B3FAA;text-align:right;}
       .receipt-num{font-size:13px;color:#718096;text-align:right;margin-top:4px;}
@@ -8256,7 +8256,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
     const html = `<!DOCTYPE html><html><head><title>Payment Schedule</title>
     <style>body{font-family:Arial,sans-serif;margin:0;padding:40px;color:#0B1F3A;}table{width:100%;border-collapse:collapse;}th{background:#0B1F3A;color:#fff;padding:10px 12px;font-size:11px;text-align:left;text-transform:uppercase;letter-spacing:.5px;}@media print{body{padding:20px;}}</style>
     </head><body>
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #0B1F3A;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #E2E8F0;">
       <div><div style="font-size:20px;font-weight:700;">${companyName}</div><div style="font-size:13px;color:#718096;margin-top:2px;">Payment Schedule</div></div>
       <div style="text-align:right;"><div style="font-size:11px;color:#718096;">Date: ${new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})}</div></div>
     </div>
@@ -8536,7 +8536,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
             </div>
             {/* Summary */}
             {payments.length>0&&(
-              <div style={{background:"linear-gradient(135deg,#0B1F3A,#1A3558)",borderRadius:12,padding:"14px 16px",display:"flex",gap:16,flexWrap:"wrap"}}>
+              <div style={{background:"#fff",borderRadius:12,padding:"14px 16px",display:"flex",gap:16,flexWrap:"wrap"}}>
                 {[["Total Due",`AED ${totalDue.toLocaleString()}`],["Collected",`AED ${totalPaid.toLocaleString()}`],["Outstanding",`AED ${(totalDue-totalPaid).toLocaleString()}`]].map(([k,v])=>(
                   <div key={k}>
                     <div style={{fontSize:9,color:"rgba(255,255,255,.5)",textTransform:"uppercase",letterSpacing:".5px"}}>{k}</div>
@@ -8611,7 +8611,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                       <style>body{font-family:Arial,sans-serif;margin:0;padding:50px;color:#0B1F3A;line-height:1.8;}
                       h1{font-size:24px;text-align:center;margin-bottom:4px;}
                       .subtitle{text-align:center;color:#718096;font-size:13px;margin-bottom:30px;}
-                      .section{margin-bottom:24px;}.section-title{font-size:14px;font-weight:700;border-bottom:2px solid #0B1F3A;padding-bottom:4px;margin-bottom:12px;}
+                      .section{margin-bottom:24px;}.section-title{font-size:14px;font-weight:700;border-bottom:2px solid #E2E8F0;padding-bottom:4px;margin-bottom:12px;}
                       .row{display:flex;gap:20px;margin-bottom:8px;}.label{color:#718096;min-width:160px;font-size:13px;}.value{font-weight:600;font-size:13px;}
                       .clause{font-size:13px;margin-bottom:10px;text-align:justify;}
                       .sign-box{display:flex;justify-content:space-between;margin-top:60px;}
@@ -8656,7 +8656,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                       <script>window.onload=()=>window.print();</script>
                       </body></html>`;
                       w.document.write(html);w.document.close();
-                    }} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #0B1F3A",background:"transparent",color:"#0F2540",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print Agreement</button>
+                    }} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #1E3A5F",background:"transparent",color:"#0F2540",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print Agreement</button>
                   </div>
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
@@ -9596,7 +9596,7 @@ export default function App(){
   const canSwitch  = ["super_admin","admin","sales_manager","leasing_manager"].includes(userRole);
 
   if(pwRecovery)return(
-    <div style={{minHeight:"100vh",background:"linear-gradient(135deg,#0B1F3A,#1A3558)",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
+    <div style={{minHeight:"100vh",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
       <div style={{background:"#fff",borderRadius:20,padding:"2.5rem",width:440,maxWidth:"100%",boxShadow:"0 30px 80px rgba(0,0,0,0.4)"}}>
         <div style={{textAlign:"center",marginBottom:24}}><div style={{fontSize:48,marginBottom:8}}>🔑</div><div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:"#0F2540",marginBottom:6}}>Set New Password</div><div style={{fontSize:13,color:"#718096"}}>Enter your new password below</div></div>
         <PwRecoveryForm onDone={()=>{setPwRecovery(false);supabase.auth.signOut();}}/>
