@@ -990,15 +990,18 @@ const PAYMENT_STATUS_META = {
 // ══════════════════════════════════════════════════════════════════
 // OPPORTUNITY DETAIL — full workflow per opportunity
 // ══════════════════════════════════════════════════════════════════
-const OPP_STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
+const OPP_STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
 const OPP_STAGE_META = {
-  "New":           {c:"#718096", bg:"#F7F9FC"},
-  "Contacted":     {c:"#1A5FA8", bg:"#E6EFF9"},
-  "Site Visit":    {c:"#5B3FAA", bg:"#EEE8F9"},
-  "Proposal Sent": {c:"#A06810", bg:"#FDF3DC"},
-  "Negotiation":   {c:"#B83232", bg:"#FAEAEA"},
-  "Closed Won":    {c:"#1A7F5A", bg:"#E6F4EE"},
-  "Closed Lost":   {c:"#718096", bg:"#F7F9FC"},
+  "New":            {c:"#718096", bg:"#F7F9FC"},
+  "Contacted":      {c:"#1A5FA8", bg:"#E6EFF9"},
+  "Site Visit":     {c:"#5B3FAA", bg:"#EEE8F9"},
+  "Proposal Sent":  {c:"#A06810", bg:"#FDF3DC"},
+  "Negotiation":    {c:"#B83232", bg:"#FAEAEA"},
+  "Offer Accepted": {c:"#0F766E", bg:"#CCFBF1"},
+  "Reserved":       {c:"#7C3AED", bg:"#EDE9FE"},
+  "SPA Signed":     {c:"#1D4ED8", bg:"#DBEAFE"},
+  "Closed Won":     {c:"#1A7F5A", bg:"#E6F4EE"},
+  "Closed Lost":    {c:"#718096", bg:"#F7F9FC"},
 };
 
 function OutcomeModal({activity, onClose, onSave}){
@@ -2520,14 +2523,17 @@ function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activiti
   };
 
   const stageActions = {
-    "New":           [{label:"📞 Call",        act:"call"},{label:"💬 WhatsApp",    act:"wa"},{label:"📝 Log note",    act:"log"}],
-    "Contacted":     [{label:"📅 Schedule visit", act:"schedule"},{label:"📄 Send brochure", act:"brochure"},{label:"📝 Log note",    act:"log"}],
-    "Site Visit":    [{label:"📋 Log outcome",  act:"log"},{label:"📄 Send proposal", act:"proposal"},{label:"📞 Follow up",   act:"call"}],
-    "Proposal Sent": [{label:"📞 Follow up",   act:"call"},{label:"💰 Negotiate",    act:"negotiate"},{label:"📝 Log note",   act:"log"}],
-    "Negotiation":   [{label:"📄 Send offer",  act:"offer"},{label:"✅ Get approval", act:"approve"},{label:"📝 Log note",   act:"log"}],
+    "New":            [{label:"📞 Call",           act:"call"  },{label:"💬 WhatsApp",      act:"wa"      },{label:"📝 Log note",      act:"log"     }],
+    "Contacted":      [{label:"📅 Schedule visit", act:"schedule"},{label:"📄 Send brochure",act:"brochure"},{label:"📝 Log note",      act:"log"     }],
+    "Site Visit":     [{label:"📋 Log outcome",    act:"log"   },{label:"📄 Send proposal", act:"proposal"},{label:"📞 Follow up",     act:"call"    }],
+    "Proposal Sent":  [{label:"📞 Follow up",      act:"call"  },{label:"💰 Negotiate",     act:"negotiate"},{label:"📝 Log note",     act:"log"     }],
+    "Negotiation":    [{label:"📄 Send offer",     act:"offer" },{label:"✅ Get approval",  act:"approve" },{label:"📝 Log note",      act:"log"     }],
+    "Offer Accepted": [{label:"📋 Reservation form",act:"log"  },{label:"💰 Collect res. fee",act:"log"  },{label:"📝 Log note",      act:"log"     }],
+    "Reserved":       [{label:"✅ Confirm reservation",act:"log"},{label:"⏰ Extend 2 days", act:"log"   },{label:"📄 Draft SPA",     act:"log"     }],
+    "SPA Signed":     [{label:"💰 Add payment",    act:"log"   },{label:"📋 Upload SPA",    act:"log"    },{label:"📝 Log note",      act:"log"     }],
   };
 
-  const nextStage = {"New":"Contacted","Contacted":"Site Visit","Site Visit":"Proposal Sent","Proposal Sent":"Negotiation","Negotiation":"Closed Won"};
+  const nextStage = {"New":"Contacted","Contacted":"Site Visit","Site Visit":"Proposal Sent","Proposal Sent":"Negotiation","Negotiation":"Offer Accepted","Offer Accepted":"Reserved","Reserved":"SPA Signed","SPA Signed":"Closed Won"};
   const totalVal = filtered.reduce((s,o)=>s+(o.budget||0),0);
 
   const StagePill = ({stage, count, value, color, bg, border}) => (
@@ -2569,17 +2575,23 @@ function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activiti
 
         {/* Stage flow with arrows */}
         <div style={{display:"flex",alignItems:"center",overflowX:"auto",paddingBottom:4,gap:0}}>
-          <StagePill stage="New"           count={myOpps.filter(o=>o.stage==="New").length}           value={myOpps.filter(o=>o.stage==="New").reduce((s,o)=>s+(o.budget||0),0)}           color="#475569" bg="#F7F9FC" border="#CBD5E1"/>
+          <StagePill stage="New"            count={myOpps.filter(o=>o.stage==="New").length}            value={myOpps.filter(o=>o.stage==="New").reduce((s,o)=>s+(o.budget||0),0)}            color="#475569" bg="#F7F9FC" border="#CBD5E1"/>
           <Arrow/>
-          <StagePill stage="Contacted"     count={myOpps.filter(o=>o.stage==="Contacted").length}     value={myOpps.filter(o=>o.stage==="Contacted").reduce((s,o)=>s+(o.budget||0),0)}     color="#1A5FA8" bg="#E6EFF9" border="#BFDBFE"/>
+          <StagePill stage="Contacted"      count={myOpps.filter(o=>o.stage==="Contacted").length}      value={myOpps.filter(o=>o.stage==="Contacted").reduce((s,o)=>s+(o.budget||0),0)}      color="#1A5FA8" bg="#E6EFF9" border="#BFDBFE"/>
           <Arrow/>
-          <StagePill stage="Site Visit"    count={myOpps.filter(o=>o.stage==="Site Visit").length}    value={myOpps.filter(o=>o.stage==="Site Visit").reduce((s,o)=>s+(o.budget||0),0)}    color="#5B3FAA" bg="#EEE8F9" border="#C4B5FD"/>
+          <StagePill stage="Site Visit"     count={myOpps.filter(o=>o.stage==="Site Visit").length}     value={myOpps.filter(o=>o.stage==="Site Visit").reduce((s,o)=>s+(o.budget||0),0)}     color="#5B3FAA" bg="#EEE8F9" border="#C4B5FD"/>
           <Arrow/>
-          <StagePill stage="Proposal Sent" count={myOpps.filter(o=>o.stage==="Proposal Sent").length} value={myOpps.filter(o=>o.stage==="Proposal Sent").reduce((s,o)=>s+(o.budget||0),0)} color="#A06810" bg="#FDF3DC" border="#FCD34D"/>
+          <StagePill stage="Proposal Sent"  count={myOpps.filter(o=>o.stage==="Proposal Sent").length}  value={myOpps.filter(o=>o.stage==="Proposal Sent").reduce((s,o)=>s+(o.budget||0),0)}  color="#A06810" bg="#FDF3DC" border="#FCD34D"/>
           <Arrow/>
-          <StagePill stage="Negotiation"   count={myOpps.filter(o=>o.stage==="Negotiation").length}   value={myOpps.filter(o=>o.stage==="Negotiation").reduce((s,o)=>s+(o.budget||0),0)}   color="#B83232" bg="#FAEAEA" border="#FECACA"/>
+          <StagePill stage="Negotiation"    count={myOpps.filter(o=>o.stage==="Negotiation").length}    value={myOpps.filter(o=>o.stage==="Negotiation").reduce((s,o)=>s+(o.budget||0),0)}    color="#B83232" bg="#FAEAEA" border="#FECACA"/>
           <Arrow/>
-          <StagePill stage="Closed Won"    count={wonOpps.length}  value={wonOpps.reduce((s,o)=>s+(o.final_price||o.budget||0),0)}  color="#1A7F5A" bg="#E6F4EE" border="#A8D5BE"/>
+          <StagePill stage="Offer Accepted" count={myOpps.filter(o=>o.stage==="Offer Accepted").length} value={myOpps.filter(o=>o.stage==="Offer Accepted").reduce((s,o)=>s+(o.budget||0),0)} color="#0F766E" bg="#CCFBF1" border="#99F6E4"/>
+          <Arrow/>
+          <StagePill stage="Reserved"       count={myOpps.filter(o=>o.stage==="Reserved").length}       value={myOpps.filter(o=>o.stage==="Reserved").reduce((s,o)=>s+(o.budget||0),0)}       color="#7C3AED" bg="#EDE9FE" border="#C4B5FD"/>
+          <Arrow/>
+          <StagePill stage="SPA Signed"     count={myOpps.filter(o=>o.stage==="SPA Signed").length}     value={myOpps.filter(o=>o.stage==="SPA Signed").reduce((s,o)=>s+(o.budget||0),0)}     color="#1D4ED8" bg="#DBEAFE" border="#93C5FD"/>
+          <Arrow/>
+          <StagePill stage="Closed Won"     count={wonOpps.length}  value={wonOpps.reduce((s,o)=>s+(o.final_price||o.budget||0),0)}  color="#1A7F5A" bg="#E6F4EE" border="#A8D5BE"/>
         </div>
       </div>
 
@@ -2683,7 +2695,7 @@ function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activiti
                   )}
 
                   {/* Reserve / Won */}
-                  {(opp.stage==="Negotiation"||opp.stage==="Proposal Sent")&&canReserve&&(
+                  {(opp.stage==="Offer Accepted"||opp.stage==="Negotiation")&&canReserve&&(
                     <button onClick={()=>{
                       const unit = opp.unit_id ? units.find(u=>u.id===opp.unit_id) : null;
                       setShowReserveModal({opp, unit, lead});
