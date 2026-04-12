@@ -2359,184 +2359,239 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
 // PIPELINE (same as v2)
 // ══════════════════════════════════════════════════════
 
-function Pipeline({leads,setLeads,currentUser,showToast,activities=[]}){
-  const canEdit = can(currentUser.role,"write");
-  const visible = can(currentUser.role,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id);
-  const [selCard, setSelCard] = useState(null);
-  const [fStageP, setFStageP] = useState("All");
-  const [searchP,  setSearchP]  = useState("");
+function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activities=[]}) {
+  const canEdit = can(currentUser.role, "write");
+  const [search, setSearch] = useState("");
+  const [fStage, setFStage] = useState("All");
+  const [fAgent, setFAgent] = useState("All");
+  const [selOpp, setSelOpp] = useState(null);
+  const [moving, setMoving] = useState(null);
 
-  const moveStage = async(lead, toStage)=>{
-    if(!canEdit){ showToast("You don't have permission to move leads","error"); return; }
-    const{error}=await supabase.from("leads").update({stage:toStage,stage_updated_at:new Date().toISOString()}).eq("id",lead.id);
-    if(error){showToast(error.message,"error");return;}
-    setLeads(p=>p.map(l=>l.id===lead.id?{...l,stage:toStage}:l));
-    if(selCard?.id===lead.id) setSelCard(s=>({...s,stage:toStage}));
-    showToast(`Moved to ${toStage}`,"success");
-  };
+  // Load opps fresh if not passed
+  const [localOpps, setLocalOpps] = useState([]);
+  useEffect(() => {
+    supabase.from("opportunities")
+      .select("*")
+      .eq("status", "Active")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => setLocalOpps(data || []));
+  }, []);
 
-  const stageOrder = STAGES.filter(s=>s!=="Closed Lost");
-  const active = visible.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage));
-  const filtered = active.filter(l=>{
-    const q=searchP.toLowerCase();
-    return (!q||l.name?.toLowerCase().includes(q)||l.phone?.includes(q))
-      &&(fStageP==="All"||l.stage===fStageP);
+  const allOpps = localOpps.length > 0 ? localOpps : (opps || []);
+  const activeOpps = can(currentUser.role, "see_all")
+    ? allOpps.filter(o => o.status === "Active")
+    : allOpps.filter(o => o.status === "Active" && o.assigned_to === currentUser.id);
+
+  const filtered = activeOpps.filter(o => {
+    const lead = leads.find(l => l.id === o.lead_id);
+    const q = search.toLowerCase();
+    const matchSearch = !q
+      || o.title?.toLowerCase().includes(q)
+      || lead?.name?.toLowerCase().includes(q)
+      || lead?.phone?.includes(q)
+      || lead?.email?.toLowerCase().includes(q);
+    const matchStage = fStage === "All" || o.stage === fStage;
+    const matchAgent = fAgent === "All" || o.assigned_to === fAgent;
+    return matchSearch && matchStage && matchAgent;
   });
 
-  return(
-    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"}}>
+  const stageOrder = OPP_STAGES.filter(s => s !== "Closed Lost" && s !== "Closed Won");
 
-      {/* Top bar */}
-      <div style={{display:"flex",gap:8,marginBottom:10,alignItems:"center",flexShrink:0,flexWrap:"wrap"}}>
-        <input value={searchP} onChange={e=>setSearchP(e.target.value)} placeholder="🔍 Search leads…" style={{flex:1,minWidth:140,fontSize:12}}/>
-        <select value={fStageP} onChange={e=>setFStageP(e.target.value)} style={{width:"auto",fontSize:12}}>
-          <option value="All">All Stages</option>
-          {STAGES.map(s=><option key={s}>{s}</option>)}
-        </select>
-        <span style={{fontSize:11,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length} leads</span>
-      </div>
+  const moveStage = async (opp, toStage) => {
+    if (!canEdit) { showToast("No permission", "error"); return; }
+    setMoving(opp.id);
+    const updates = { stage: toStage, stage_updated_at: new Date().toISOString() };
+    if (toStage === "Closed Won") updates.won_at = new Date().toISOString();
+    if (toStage === "Closed Lost") updates.lost_at = new Date().toISOString();
+    const { error } = await supabase.from("opportunities").update(updates).eq("id", opp.id);
+    setMoving(null);
+    if (error) { showToast(error.message, "error"); return; }
+    setLocalOpps(p => p.map(o => o.id === opp.id ? { ...o, ...updates } : o));
+    if (setOpps) setOpps(p => p.map(o => o.id === opp.id ? { ...o, ...updates } : o));
+    if (selOpp?.id === opp.id) setSelOpp(s => ({ ...s, ...updates }));
+    showToast(`Moved to ${toStage}`, "success");
+  };
 
-      {/* Stage count strip */}
-      <div style={{display:"flex",gap:5,marginBottom:10,overflowX:"auto",paddingBottom:4,flexShrink:0}}>
-        {stageOrder.map(s=>{
-          const cnt=visible.filter(l=>l.stage===s).length;
-          const val=visible.filter(l=>l.stage===s).reduce((a,l)=>a+(l.budget||0),0);
-          const m=STAGE_META[s]||{c:"#718096",bg:"#F7F9FC"};
-          return(
-            <button key={s} onClick={()=>setFStageP(fStageP===s?"All":s)}
-              style={{flexShrink:0,padding:"6px 12px",borderRadius:8,background:fStageP===s?m.c:m.bg,
-                border:`2px solid ${fStageP===s?m.c:m.c+"33"}`,textAlign:"center",minWidth:90,cursor:"pointer",transition:"all .15s"}}>
-              <div style={{fontWeight:700,fontSize:17,color:fStageP===s?"#fff":m.c,lineHeight:1}}>{cnt}</div>
-              <div style={{fontSize:8,color:fStageP===s?"rgba(255,255,255,.9)":m.c,fontWeight:700,textTransform:"uppercase",letterSpacing:".5px",marginTop:2}}>{s}</div>
-              {val>0&&<div style={{fontSize:9,color:fStageP===s?"rgba(255,255,255,.7)":m.c,opacity:.8}}>{fmtM(val)}</div>}
-            </button>
-          );
-        })}
-      </div>
+  const totalValue = filtered.reduce((s, o) => s + (o.budget || 0), 0);
+  const wonOpps = allOpps.filter(o => o.status === "Active" && o.stage === "Closed Won");
+  const lostOpps = allOpps.filter(o => o.status === "Active" && o.stage === "Closed Lost");
 
-      {/* Main content — cards + detail panel */}
-      <div style={{flex:1,overflow:"hidden",display:"flex",gap:12}}>
+  return (
+    <div className="fade-in" style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
 
-        {/* Card list */}
-        <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8}}>
-          {filtered.length===0&&(
-            <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
-              <div style={{fontSize:36,marginBottom:8}}>📋</div>
-              <div>No leads in pipeline{fStageP!=="All"?` at ${fStageP}`:""}</div>
-            </div>
-          )}
-          {filtered.sort((a,b)=>STAGES.indexOf(a.stage)-STAGES.indexOf(b.stage)).map(lead=>{
-            const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F7F9FC"};
-            const leadUpcoming = activities.filter(a=>a.lead_id===lead.id&&a.status==="upcoming").length;
-            const days=lead.stage_updated_at?Math.floor((new Date()-new Date(lead.stage_updated_at))/(864e5)):0;
-            const isSelected=selCard?.id===lead.id;
-            return(
-              <div key={lead.id} onClick={()=>setSelCard(isSelected?null:lead)}
-                style={{background:"#fff",border:`2px solid ${isSelected?m.c:"#E2E8F0"}`,borderRadius:10,
-                  padding:"10px 14px",cursor:"pointer",transition:"all .15s",
-                  boxShadow:isSelected?`0 2px 12px ${m.c}33`:"0 1px 3px rgba(0,0,0,.04)",
-                  borderLeft:`4px solid ${m.c}`}}
-                onMouseOver={e=>{if(!isSelected)e.currentTarget.style.borderColor=m.c+"66";}}
-                onMouseOut={e=>{if(!isSelected)e.currentTarget.style.borderColor="#E2E8F0";}}>
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <Av name={lead.name} size={34}/>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                      <span style={{fontWeight:700,fontSize:13,color:"#0F2540"}}>{lead.name}</span>
-                      <span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:m.bg,color:m.c}}>{lead.stage}</span>
-                      {days>7&&<span style={{fontSize:10,fontWeight:700,color:days>14?"#B83232":"#A06810"}}>⏱ {days}d</span>}
-                    </div>
-                    <div style={{fontSize:11,color:"#718096",marginTop:2}}>
-                      {lead.property_type&&<span style={{marginRight:8}}>{lead.property_type}</span>}
-                      {leadUpcoming>0&&<span style={{fontWeight:700,color:"#C9A84C",background:"rgba(201,168,76,.1)",padding:"1px 6px",borderRadius:6,marginRight:4}}>⏰ {leadUpcoming} task{leadUpcoming>1?"s":""}</span>}
-                      {lead.budget&&<span style={{fontWeight:600,color:"#0F2540"}}>{fmtM(lead.budget)}</span>}
-                      {lead.phone&&<span style={{marginLeft:8,color:"#A0AEC0"}}>{lead.phone}</span>}
-                    </div>
-                  </div>
-                  <div style={{display:"flex",gap:4,flexShrink:0}}>
-                    {canEdit&&stageOrder.indexOf(lead.stage)>0&&(
-                      <button onClick={e=>{e.stopPropagation();moveStage(lead,stageOrder[stageOrder.indexOf(lead.stage)-1]);}}
-                        title="Move back"
-                        style={{fontSize:14,width:28,height:28,borderRadius:6,border:"1.5px solid #E2E8F0",background:"#fff",cursor:"pointer",color:"#718096",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        ←
-                      </button>
-                    )}
-                    {canEdit&&stageOrder.indexOf(lead.stage)<stageOrder.length-1&&(
-                      <button onClick={e=>{e.stopPropagation();moveStage(lead,stageOrder[stageOrder.indexOf(lead.stage)+1]);}}
-                        title={`Move to ${stageOrder[stageOrder.indexOf(lead.stage)+1]}`}
-                        style={{fontSize:14,width:28,height:28,borderRadius:6,border:"none",background:m.c,cursor:"pointer",color:"#fff",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        →
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+      {/* Header */}
+      <div style={{ background: "#fff", border: "1px solid #E8EDF4", borderRadius: 12, padding: "16px 20px", marginBottom: 14, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#0F2540", letterSpacing: "-.3px" }}>Sales Pipeline</div>
+            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 2 }}>{filtered.length} active opportunities · {fmtM(totalValue)} total value</div>
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search opportunities, leads…" style={{ width: 220, fontSize: 12 }} />
+            <select value={fStage} onChange={e => setFStage(e.target.value)} style={{ width: "auto", fontSize: 12 }}>
+              <option value="All">All Stages</option>
+              {OPP_STAGES.map(s => <option key={s}>{s}</option>)}
+            </select>
+            <select value={fAgent} onChange={e => setFAgent(e.target.value)} style={{ width: "auto", fontSize: 12 }}>
+              <option value="All">All Agents</option>
+              {users.filter(u => u.is_active).map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Stage summary pills */}
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 2 }}>
+          {OPP_STAGES.filter(s => s !== "Closed Lost").map(s => {
+            const cnt = activeOpps.filter(o => o.stage === s).length;
+            const val = activeOpps.filter(o => o.stage === s).reduce((a, o) => a + (o.budget || 0), 0);
+            const m = OPP_STAGE_META[s] || { c: "#718096", bg: "#F7F9FC" };
+            return (
+              <button key={s} onClick={() => setFStage(fStage === s ? "All" : s)}
+                style={{ flexShrink: 0, padding: "6px 12px", borderRadius: 8, cursor: "pointer", transition: "all .15s", border: `1.5px solid ${fStage === s ? m.c : m.c + "40"}`, background: fStage === s ? m.c : m.bg }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: fStage === s ? "#fff" : m.c, lineHeight: 1 }}>{cnt}</div>
+                <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px", color: fStage === s ? "rgba(255,255,255,.85)" : m.c, marginTop: 2 }}>{s}</div>
+                {val > 0 && <div style={{ fontSize: 9, color: fStage === s ? "rgba(255,255,255,.7)" : m.c }}>{fmtM(val)}</div>}
+              </button>
             );
           })}
         </div>
+      </div>
 
-        {/* Detail panel — shown when card selected */}
-        {selCard&&(()=>{
-          const lead=leads.find(l=>l.id===selCard.id)||selCard;
-          const m=STAGE_META[lead.stage]||{c:"#718096",bg:"#F7F9FC"};
-          const days=lead.stage_updated_at?Math.floor((new Date()-new Date(lead.stage_updated_at))/(864e5)):0;
-          const curIdx=stageOrder.indexOf(lead.stage);
-          return(
-            <div style={{width:260,flexShrink:0,background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,overflowY:"auto",boxShadow:"0 4px 20px rgba(11,31,58,.08)"}}>
-              {/* Header */}
-              <div style={{background:`linear-gradient(135deg,${m.c},${m.c}CC)`,padding:"14px 16px",borderRadius:"10px 10px 0 0"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                  <div>
-                    <div style={{fontWeight:700,fontSize:15,color:"#fff"}}>{lead.name}</div>
-                    <div style={{fontSize:11,color:"rgba(255,255,255,.75)",marginTop:2}}>{lead.stage}</div>
+      {/* Main content */}
+      <div style={{ flex: 1, overflow: "hidden", display: "flex", gap: 14 }}>
+
+        {/* Opportunity list */}
+        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtered.length === 0 && (
+            <div style={{ textAlign: "center", padding: "4rem", color: "#A0AEC0" }}>
+              <div style={{ fontSize: 40, marginBottom: 10 }}>🎯</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#0F2540", marginBottom: 4 }}>No opportunities found</div>
+              <div style={{ fontSize: 12 }}>Create opportunities from the Leads section</div>
+            </div>
+          )}
+          {filtered
+            .sort((a, b) => OPP_STAGES.indexOf(a.stage) - OPP_STAGES.indexOf(b.stage))
+            .map(opp => {
+              const lead = leads.find(l => l.id === opp.lead_id);
+              const agent = users.find(u => u.id === opp.assigned_to);
+              const m = OPP_STAGE_META[opp.stage] || { c: "#718096", bg: "#F7F9FC" };
+              const days = opp.stage_updated_at ? Math.floor((new Date() - new Date(opp.stage_updated_at)) / 864e5) : 0;
+              const upcoming = activities.filter(a => a.lead_id === opp.lead_id && a.status === "upcoming").length;
+              const isSelected = selOpp?.id === opp.id;
+              const curIdx = stageOrder.indexOf(opp.stage);
+
+              return (
+                <div key={opp.id} onClick={() => setSelOpp(isSelected ? null : opp)}
+                  style={{ background: "#fff", border: `1.5px solid ${isSelected ? m.c : "#E8EDF4"}`, borderRadius: 10, padding: "14px 16px", cursor: "pointer", transition: "all .15s", borderLeft: `4px solid ${m.c}`, boxShadow: isSelected ? `0 2px 12px ${m.c}22` : "0 1px 3px rgba(0,0,0,.03)" }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+
+                    {/* Lead avatar */}
+                    <Av name={lead?.name || "?"} size={38} />
+
+                    {/* Main info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                        <span style={{ fontWeight: 700, fontSize: 14, color: "#0F2540", letterSpacing: "-.2px" }}>{opp.title || lead?.name || "Opportunity"}</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 20, background: m.bg, color: m.c }}>{opp.stage}</span>
+                        {days > 7 && <span style={{ fontSize: 10, fontWeight: 700, color: days > 14 ? "#E53E3E" : "#A06810" }}>⏱ {days}d</span>}
+                        {upcoming > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: "#C9A84C", background: "rgba(201,168,76,.1)", padding: "1px 6px", borderRadius: 6 }}>⏰ {upcoming}</span>}
+                      </div>
+                      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12, color: "#64748B" }}>
+                        {lead?.name && <span>👤 {lead.name}</span>}
+                        {lead?.phone && <span>📞 {lead.phone}</span>}
+                        {agent && <span>🧑‍💼 {agent.full_name}</span>}
+                        {opp.budget && <span style={{ fontWeight: 600, color: "#0F2540" }}>💰 {fmtM(opp.budget)}</span>}
+                        {opp.property_category && <span>🏢 {opp.property_category}</span>}
+                      </div>
+                    </div>
+
+                    {/* Stage move buttons */}
+                    {canEdit && (
+                      <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                        {curIdx > 0 && (
+                          <button onClick={e => { e.stopPropagation(); moveStage(opp, stageOrder[curIdx - 1]); }}
+                            disabled={moving === opp.id}
+                            title="Move back"
+                            style={{ width: 28, height: 28, borderRadius: 6, border: "1.5px solid #E2E8F0", background: "#fff", cursor: "pointer", color: "#64748B", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>←</button>
+                        )}
+                        {curIdx < stageOrder.length - 1 && (
+                          <button onClick={e => { e.stopPropagation(); moveStage(opp, stageOrder[curIdx + 1]); }}
+                            disabled={moving === opp.id}
+                            title={`Move to ${stageOrder[curIdx + 1]}`}
+                            style={{ width: 28, height: 28, borderRadius: 6, border: "none", background: m.c, cursor: "pointer", color: "#fff", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>→</button>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <button onClick={()=>setSelCard(null)} style={{background:"rgba(255,255,255,.2)",border:"none",borderRadius:6,width:24,height:24,cursor:"pointer",color:"#fff",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>
                 </div>
-                {lead.budget&&<div style={{fontSize:18,fontWeight:700,color:"#fff",marginTop:8}}>{fmtM(lead.budget)}</div>}
+              );
+            })}
+        </div>
+
+        {/* Detail panel */}
+        {selOpp && (() => {
+          const opp = localOpps.find(o => o.id === selOpp.id) || selOpp;
+          const lead = leads.find(l => l.id === opp.lead_id);
+          const agent = users.find(u => u.id === opp.assigned_to);
+          const m = OPP_STAGE_META[opp.stage] || { c: "#718096", bg: "#F7F9FC" };
+          const days = opp.stage_updated_at ? Math.floor((new Date() - new Date(opp.stage_updated_at)) / 864e5) : 0;
+          return (
+            <div style={{ width: 280, flexShrink: 0, background: "#fff", border: "1.5px solid #E8EDF4", borderRadius: 12, overflowY: "auto" }}>
+              {/* Header */}
+              <div style={{ background: m.bg, borderBottom: `3px solid ${m.c}`, padding: "16px", borderRadius: "10px 10px 0 0" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: "#0F2540", letterSpacing: "-.2px", marginBottom: 2 }}>{opp.title || lead?.name}</div>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: m.c, color: "#fff" }}>{opp.stage}</span>
+                  </div>
+                  <button onClick={() => setSelOpp(null)} style={{ background: "none", border: "none", fontSize: 18, color: "#94A3B8", cursor: "pointer", padding: "0 4px" }}>×</button>
+                </div>
+                {opp.budget && <div style={{ fontSize: 20, fontWeight: 700, color: m.c, marginTop: 10, letterSpacing: "-1px" }}>{fmtM(opp.budget)}</div>}
               </div>
 
               {/* Details */}
-              <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
+              <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 8 }}>
                 {[
-                  ["Phone",lead.phone],["Email",lead.email],
-                  ["Nationality",lead.nationality],["Source",lead.source],
-                  ["Type",lead.property_type],["Days in stage",`${days}d`],
-                ].filter(([,v])=>v).map(([l,v])=>(
-                  <div key={l} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"4px 0",borderBottom:"1px solid #F7F9FC"}}>
-                    <span style={{color:"#A0AEC0"}}>{l}</span>
-                    <span style={{fontWeight:600,color:"#0F2540",maxWidth:140,textAlign:"right",wordBreak:"break-word"}}>{v}</span>
+                  ["Lead", lead?.name],
+                  ["Phone", lead?.phone],
+                  ["Email", lead?.email],
+                  ["Agent", agent?.full_name],
+                  ["Category", opp.property_category],
+                  ["Days in stage", `${days}d`],
+                  ["Notes", opp.notes],
+                ].filter(([, v]) => v).map(([label, val]) => (
+                  <div key={label} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, padding: "4px 0", borderBottom: "1px solid #F7F9FC" }}>
+                    <span style={{ color: "#94A3B8", fontWeight: 500 }}>{label}</span>
+                    <span style={{ fontWeight: 600, color: "#0F2540", maxWidth: 150, textAlign: "right", wordBreak: "break-word" }}>{val}</span>
                   </div>
                 ))}
 
-                {/* Move stage buttons */}
-                {canEdit&&(
-                  <div style={{marginTop:4}}>
-                    <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Move Stage</div>
-                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                      {stageOrder.map((s,i)=>(
-                        <button key={s} onClick={()=>moveStage(lead,s)}
-                          disabled={s===lead.stage}
-                          style={{padding:"7px 10px",borderRadius:7,border:`1.5px solid ${s===lead.stage?m.c:"#E2E8F0"}`,
-                            background:s===lead.stage?m.bg:"#fff",color:s===lead.stage?m.c:"#4A5568",
-                            fontSize:11,fontWeight:s===lead.stage?700:400,cursor:s===lead.stage?"default":"pointer",
-                            textAlign:"left",display:"flex",alignItems:"center",gap:6}}>
-                          <span style={{fontSize:9,color:s===lead.stage?m.c:"#A0AEC0"}}>{i+1}.</span>
-                          {s} {s===lead.stage?"← current":""}
-                        </button>
-                      ))}
-                      <button onClick={()=>moveStage(lead,"Closed Lost")}
-                        style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid #FAEAEA",background:"#FAEAEA",color:"#B83232",fontSize:11,fontWeight:600,cursor:"pointer",textAlign:"left",marginTop:4}}>
-                        ✗ Close as Lost
-                      </button>
-                      <button onClick={()=>moveStage(lead,"Closed Won")}
-                        style={{padding:"7px 10px",borderRadius:7,border:"none",background:"#1A7F5A",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",textAlign:"left"}}>
+                {/* Move stage */}
+                {canEdit && (
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: "#94A3B8", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 8 }}>Move Stage</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                      {stageOrder.map((s, i) => {
+                        const sm = OPP_STAGE_META[s] || { c: "#718096", bg: "#F7F9FC" };
+                        const isCurrent = s === opp.stage;
+                        return (
+                          <button key={s} onClick={() => moveStage(opp, s)} disabled={isCurrent || moving === opp.id}
+                            style={{ padding: "7px 10px", borderRadius: 7, border: `1.5px solid ${isCurrent ? sm.c : "#E2E8F0"}`, background: isCurrent ? sm.bg : "#fff", color: isCurrent ? sm.c : "#475569", fontSize: 11, fontWeight: isCurrent ? 700 : 400, cursor: isCurrent ? "default" : "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 9, color: isCurrent ? sm.c : "#94A3B8" }}>{i + 1}.</span>
+                            {s} {isCurrent ? "← current" : ""}
+                          </button>
+                        );
+                      })}
+                      <button onClick={() => moveStage(opp, "Closed Won")}
+                        style={{ padding: "8px 10px", borderRadius: 7, border: "none", background: "#1A7F5A", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", marginTop: 4 }}>
                         ✓ Close as Won
+                      </button>
+                      <button onClick={() => moveStage(opp, "Closed Lost")}
+                        style={{ padding: "8px 10px", borderRadius: 7, border: "1.5px solid #FAEAEA", background: "#FAEAEA", color: "#B83232", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                        ✗ Close as Lost
                       </button>
                     </div>
                   </div>
-                )}
-                {lead.notes&&(
-                  <div style={{fontSize:11,color:"#718096",lineHeight:1.6,padding:"8px",background:"#F7F9FC",borderRadius:7}}>{lead.notes}</div>
                 )}
               </div>
             </div>
@@ -2544,22 +2599,21 @@ function Pipeline({leads,setLeads,currentUser,showToast,activities=[]}){
         })()}
       </div>
 
-      {/* Closed summary footer */}
-      {(visible.filter(l=>l.stage==="Closed Won").length>0||visible.filter(l=>l.stage==="Closed Lost").length>0)&&(
-        <div style={{flexShrink:0,display:"flex",gap:10,padding:"8px 0 0",borderTop:"1px solid #E2E8F0",marginTop:6}}>
-          <div style={{flex:1,padding:"7px 12px",borderRadius:8,background:"#E6F4EE",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <span style={{fontSize:12,fontWeight:700,color:"#1A7F5A"}}>✓ {visible.filter(l=>l.stage==="Closed Won").length} Won</span>
-            <span style={{fontSize:12,fontWeight:700,color:"#1A7F5A"}}>{fmtM(visible.filter(l=>l.stage==="Closed Won").reduce((s,l)=>s+(l.budget||0),0))}</span>
+      {/* Won/Lost footer */}
+      {(wonOpps.length > 0 || lostOpps.length > 0) && (
+        <div style={{ flexShrink: 0, display: "flex", gap: 10, padding: "10px 0 0", borderTop: "1px solid #E8EDF4", marginTop: 8 }}>
+          <div style={{ flex: 1, padding: "8px 14px", borderRadius: 8, background: "#E6F4EE", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#1A7F5A" }}>✓ {wonOpps.length} Won</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#1A7F5A" }}>{fmtM(wonOpps.reduce((s, o) => s + (o.final_price || o.budget || 0), 0))}</span>
           </div>
-          <div style={{flex:1,padding:"7px 12px",borderRadius:8,background:"#FAEAEA",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <span style={{fontSize:12,fontWeight:700,color:"#B83232"}}>✗ {visible.filter(l=>l.stage==="Closed Lost").length} Lost</span>
+          <div style={{ flex: 1, padding: "8px 14px", borderRadius: 8, background: "#FAEAEA", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#B83232" }}>✗ {lostOpps.length} Lost</span>
           </div>
         </div>
       )}
     </div>
   );
 }
-
 
 function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
   const[fType,setFType]=useState("All");
@@ -9755,7 +9809,7 @@ export default function App(){
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
-          {tab==="pipeline"    &&<Pipeline leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} users={users} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="pipeline"    &&<Pipeline leads={leads} opps={opps} setOpps={setOpps} users={users} currentUser={currentUser} showToast={showToast} activities={activities}/>}
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
