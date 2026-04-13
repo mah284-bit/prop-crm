@@ -1168,6 +1168,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [editPayment,setEditPayment]= useState(null);
   const canEdit  = can(currentUser.role,"write");
   const [tookOwnership, setTookOwnership] = useState(false);
+  const [showReassign, setShowReassign] = useState(false);
+  const [reassignForm, setReassignForm] = useState({assigned_to:"", reason:""});
   const isOwner  = opp.assigned_to === currentUser.id;
   const isAdmin  = ["super_admin","admin"].includes(currentUser.role);
   const isManager = ["sales_manager","leasing_manager"].includes(currentUser.role);
