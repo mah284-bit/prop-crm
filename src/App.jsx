@@ -10181,10 +10181,40 @@ export default function App(){
   const[aiLeasePr, setAiLeasePr] = useState([]);
   const[navFilter, setNavFilter]  = useState(null); // {type, value} passed from dashboard
   const[tab,       setTab]       = useState(()=>{
-    // Start on correct dashboard based on stored app
     const lastApp = localStorage.getItem("propccrm_last_app")||"sales";
     return lastApp==="leasing"?"l_dashboard":"dashboard";
   });
+
+  // Browser back/forward button support
+  const navigateToTab = useCallback((newTab, filter=null) => {
+    const prev = tab;
+    setTab(newTab);
+    setNavFilter(filter||null);
+    // Push state so browser back button works
+    window.history.pushState({tab: newTab, filter}, "", window.location.pathname);
+  }, [tab]);
+
+  useEffect(() => {
+    const handlePop = (e) => {
+      if(e.state?.tab) {
+        setTab(e.state.tab);
+        setNavFilter(e.state.filter||null);
+      } else {
+        // No state = user went back to before app loaded
+        // Replace with current dashboard to prevent exit
+        const lastApp = localStorage.getItem("propccrm_last_app")||"sales";
+        const dashboard = lastApp==="leasing"?"l_dashboard":"dashboard";
+        window.history.replaceState({tab: dashboard, filter: null}, "", window.location.pathname);
+        setTab(dashboard);
+      }
+    };
+    window.addEventListener("popstate", handlePop);
+    // Set initial history state
+    const lastApp = localStorage.getItem("propccrm_last_app")||"sales";
+    const initTab = lastApp==="leasing"?"l_dashboard":"dashboard";
+    window.history.replaceState({tab: initTab, filter: null}, "", window.location.pathname);
+    return () => window.removeEventListener("popstate", handlePop);
+  }, []);
   const[activeApp, setActiveApp] = useState(()=>localStorage.getItem("propccrm_last_app")||"sales");
   const[appConfig, setAppConfig] = useState(()=>getAppConfig());
   const[dataLoading,setDataLoading]=useState(false);
@@ -10443,7 +10473,7 @@ export default function App(){
                   <button key={a.id} onClick={()=>{
                     setActiveApp(a.id);
                     localStorage.setItem("propccrm_last_app",a.id);
-                    setTimeout(()=>setTab(a.id==="sales"?"dashboard":"l_dashboard"),50);
+                    setTimeout(()=>navigateToTab(a.id==="sales"?"dashboard":"l_dashboard"),50);
                   }} style={{
                     padding:"5px 12px",borderRadius:8,border:"none",
                     background:isActive?"#fff":"transparent",
@@ -10484,7 +10514,7 @@ export default function App(){
         {/* Tab bar */}
         <div className="tab-bar" style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:40,gap:2,borderTop:"1px solid #F1F5F9",overflowX:"auto",background:"#FAFBFE"}}>
           {visibleTabs.map(t=>(
-            <button key={t.id} onClick={()=>{setTab(t.id);if(t.id==="ai"||t.id==="l_ai")loadAIData();}}
+            <button key={t.id} onClick={()=>{navigateToTab(t.id);if(t.id==="ai"||t.id==="l_ai")loadAIData();}}
               style={{
                 padding:"5px 12px",borderRadius:"6px 6px 0 0",border:"none",
                 background:tab===t.id?(currentApp==="sales"?"#EFF6FF":"#F5F0FF"):"transparent",
@@ -10512,7 +10542,7 @@ export default function App(){
         {(dataLoading&&leads.length===0&&aiUnits.length===0)?<Spinner msg="Loading your data…"/>:(<>
 
           {/* ── Sales CRM ─────────────────────────────────────── */}
-          {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={(t,filter)=>{setTab(t);setNavFilter(filter||null);}}/>}
+          {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={(t,filter)=>navigateToTab(t,filter)}/>}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
@@ -10533,7 +10563,7 @@ export default function App(){
           {tab==="group_view"  &&<GroupConsolidatedView/>}
 
           {/* ── Leasing CRM ───────────────────────────────────── */}
-          {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={(t,filter)=>{setTab(t);setNavFilter(filter||null);}} followupAlerts={followupAlerts} key="l_dash"/>}
+          {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={(t,filter)=>navigateToTab(t,filter)} followupAlerts={followupAlerts} key="l_dash"/>}
           {tab==="l_leads"     &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
           {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
