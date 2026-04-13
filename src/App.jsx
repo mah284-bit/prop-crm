@@ -338,7 +338,7 @@ const Toast=({msg,type="success",onDone})=>{
   useEffect(()=>{const t=setTimeout(onDone,3500);return()=>clearTimeout(t)},[]);
   const colors={success:["#E6F4EE","#1A7F5A"],error:["#FAEAEA","#B83232"],info:["#E6EFF9","#1A5FA8"],warning:["#FDF3DC","#A06810"]};
   const[bg,c]=colors[type]||colors.info;
-  return <div style={{position:"fixed",bottom:24,right:24,zIndex:9999,background:bg,color:c,border:`1.5px solid ${c}33`,borderRadius:10,padding:"12px 18px",fontSize:13,fontWeight:600,boxShadow:"0 4px 20px rgba(0,0,0,0.12)",maxWidth:360}}>{type==="success"?"✓ ":type==="error"?"✕ ":type==="warning"?"⚠ ":"ℹ "}{msg}</div>;
+  return <div style={{position:"fixed",bottom:90,right:24,zIndex:99999,background:bg,color:c,border:`1.5px solid ${c}33`,borderRadius:10,padding:"12px 18px",fontSize:13,fontWeight:600,boxShadow:"0 4px 20px rgba(0,0,0,0.15)",maxWidth:420,wordBreak:"break-word"}}>{type==="success"?"✓ ":type==="error"?"✕ ":type==="warning"?"⚠ ":"ℹ "}{msg}</div>;
 };
 
 // ─── AUTH (same as v2) ────────────────────────────────────────
@@ -1167,6 +1167,14 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [emailForm,  setEmailForm]  = useState({to:"",subject:"",body:""});
   const [editPayment,setEditPayment]= useState(null);
   const canEdit  = can(currentUser.role,"write");
+  const isOwner  = opp.assigned_to === currentUser.id;
+  const isAdmin  = ["super_admin","admin"].includes(currentUser.role);
+  const isManager = ["sales_manager","leasing_manager"].includes(currentUser.role);
+  // canAction = can actually move stages, add payments, request discounts
+  // Must be the assigned agent OR an admin/manager who has taken ownership
+  const canAction = isOwner || tookOwnership;
+  // canReassign = admin/manager can reassign or take ownership
+  const canReassign = isAdmin || isManager;
   const isWon    = opp.stage==="Closed Won";
   const isDeveloper = (()=>{try{const c=JSON.parse(localStorage.getItem("propccrm_company_cache")||"null");return c?.company_category==="Developer";}catch{return false;}})();
   const isOffPlan = opp.property_category==="Off-Plan" || (!opp.property_category && sp?.booking_pct>0);
@@ -1350,6 +1358,46 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
         {/* ── DETAILS TAB ── */}
         {activeTab==="details"&&(
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            {/* Ownership Notice */}
+            {!isOwner&&canEdit&&(
+              <div style={{background:canAction?"#E6F4EE":"#FFFBEB",border:`1px solid ${canAction?"#A8D5BE":"#FDE68A"}`,borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                <div style={{flex:1}}>
+                  <span style={{fontSize:12,fontWeight:600,color:canAction?"#1A7F5A":"#92400E"}}>
+                    {canAction?"✓ You have taken ownership of this deal":"⚠ You are viewing this deal — assigned to "}<strong>{users?.find(u=>u.id===opp.assigned_to)?.full_name||"another agent"}</strong>
+                  </span>
+                  {!canAction&&<div style={{fontSize:11,color:"#92400E",marginTop:2}}>Stage actions are restricted to the assigned agent. Take ownership or reassign to make changes.</div>}
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  {!canAction&&canReassign&&(
+                    <button onClick={async()=>{
+                      const confirm = window.confirm(`Take ownership of this deal?
+
+This will be logged and the current agent (${users?.find(u=>u.id===opp.assigned_to)?.full_name||"unknown"}) will be notified.
+
+You will become the assigned agent.`);
+                      if(!confirm) return;
+                      const{error}=await supabase.from("opportunities").update({assigned_to:currentUser.id,stage_updated_at:new Date().toISOString()}).eq("id",opp.id);
+                      if(error){showToast(error.message,"error");return;}
+                      setTookOwnership(true);
+                      onUpdated({...opp,assigned_to:currentUser.id});
+                      showToast("You have taken ownership of this deal","success");
+                      // Log activity
+                      await supabase.from("activities").insert({lead_id:opp.lead_id,company_id:currentUser.company_id||null,type:"Note",note:`Ownership transferred to ${currentUser.full_name}`,status:"completed",created_by:currentUser.id,opportunity_id:opp.id});
+                    }}
+                      style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#0F2540",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                      Take Ownership
+                    </button>
+                  )}
+                  {canReassign&&(
+                    <button onClick={()=>{setReassignForm({assigned_to:"",reason:""});setShowReassign(true);}}
+                      style={{padding:"6px 14px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",color:"#0F2540",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                      Reassign
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Workflow bar */}
             <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"16px 20px"}}>
               <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Deal Journey</div>
@@ -1364,8 +1412,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                   const m=OPP_STAGE_META[s]||{c:"#718096",bg:"#F7F9FC"};
                   return (
                     <div key={s} style={{display:"flex",alignItems:"center",flexShrink:0}}>
-                      <div onClick={()=>canEdit&&moveStage(s)}
-                        title={canEdit?"Click to move to this stage":""}
+                      <div onClick={()=>canAction&&moveStage(s)}
+                        title={canAction?"Click to move to this stage":isOwner?"":"You are not the assigned agent — reassign first"}
                         style={{padding:"5px 14px",borderRadius:20,
                           background:isCur?m.c:isDone?"#E6F4EE":"#F7F9FC",
                           color:isCur?"#fff":isDone?"#1A7F5A":"#94A3B8",
@@ -1385,7 +1433,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
               </div>
 
               {/* Stage action buttons */}
-              {canEdit&&!isWon&&opp.stage!=="Closed Lost"&&(()=>{
+              {canAction&&!isWon&&opp.stage!=="Closed Lost"&&(()=>{
                 const m=OPP_STAGE_META[opp.stage]||{c:"#718096",bg:"#F7F9FC"};
                 const stageIdx=OPP_STAGES.indexOf(opp.stage);
                 const nextStageName=OPP_STAGES[stageIdx+1];
@@ -1469,7 +1517,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
             <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                 <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Financials</div>
-                {canEdit&&can(currentUser.role,"request_discount")&&!isWon&&(
+                {canAction&&can(currentUser.role,"request_discount")&&!isWon&&(
                   <button onClick={()=>{setDiscReqForm({type:"sale_price",discount_pct:"",reason:"",discount_source:"Developer",developer_auth_ref:""});setShowDiscReq(true);}}
                     style={{padding:"5px 12px",borderRadius:7,border:"1.5px solid #C9A84C",background:"#FDF3DC",color:"#8A6200",fontSize:11,fontWeight:600,cursor:"pointer"}}>
                     💰 Request Discount
@@ -1731,6 +1779,61 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
               <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
                 <button onClick={()=>setShowLog(false)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
                 <button onClick={saveLog} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save"}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reassign Modal */}
+      {showReassign&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1200,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:460,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.25)"}}>
+            <div style={{padding:"1.25rem 1.5rem",borderBottom:"1px solid #E8EDF4",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:15,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>🔄 Reassign Opportunity</div>
+                <div style={{fontSize:12,color:"#94A3B8",marginTop:2}}>This action will be logged in the activity trail</div>
+              </div>
+              <button onClick={()=>setShowReassign(false)} style={{background:"none",border:"none",fontSize:22,color:"#94A3B8",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{padding:"1.25rem 1.5rem",display:"flex",flexDirection:"column",gap:14}}>
+              <div>
+                <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Assign To *</label>
+                <select value={reassignForm.assigned_to} onChange={e=>setReassignForm(f=>({...f,assigned_to:e.target.value}))}>
+                  <option value="">Select agent…</option>
+                  {users?.filter(u=>u.is_active&&u.id!==opp.assigned_to).map(u=>(
+                    <option key={u.id} value={u.id}>{u.full_name} — {u.role?.replace("_"," ")}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Reason for Reassignment *</label>
+                <textarea rows={3} placeholder="Why is this deal being reassigned? This will be logged for audit purposes." value={reassignForm.reason} onChange={e=>setReassignForm(f=>({...f,reason:e.target.value}))}/>
+              </div>
+              <div style={{display:"flex",gap:10,justifyContent:"flex-end",paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
+                <button onClick={()=>setShowReassign(false)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",color:"#475569"}}>Cancel</button>
+                <button onClick={async()=>{
+                  if(!reassignForm.assigned_to){showToast("Please select an agent","error");return;}
+                  if(!reassignForm.reason?.trim()){showToast("Please provide a reason","error");return;}
+                  const prevAgent = users?.find(u=>u.id===opp.assigned_to)?.full_name||"unknown";
+                  const newAgent = users?.find(u=>u.id===reassignForm.assigned_to)?.full_name||"unknown";
+                  const{error}=await supabase.from("opportunities").update({assigned_to:reassignForm.assigned_to}).eq("id",opp.id);
+                  if(error){showToast(error.message,"error");return;}
+                  // Log the reassignment
+                  await supabase.from("activities").insert({
+                    lead_id:opp.lead_id, company_id:currentUser.company_id||null,
+                    type:"Note", status:"completed",
+                    note:`Deal reassigned from ${prevAgent} to ${newAgent}. Reason: ${reassignForm.reason}`,
+                    created_by:currentUser.id, opportunity_id:opp.id,
+                  });
+                  onUpdated({...opp,assigned_to:reassignForm.assigned_to});
+                  showToast(`Deal reassigned to ${newAgent}`,"success");
+                  setShowReassign(false);
+                  if(reassignForm.assigned_to===currentUser.id) setTookOwnership(true);
+                }}
+                  style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                  Confirm Reassignment
+                </button>
               </div>
             </div>
           </div>
