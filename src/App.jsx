@@ -8727,6 +8727,16 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
   const [pdcForm,    setPdcForm]    = useState({num_cheques:"1",annual_rent:"",start_date:"",bank_name:"",notes:"",start_cheque_num:""});
   const [pdcChequeNums, setPdcChequeNums] = useState({});
   const canEdit = can(currentUser.role,"write");
+  const [tookOwnership, setTookOwnership] = useState(false);
+  const [showReassign, setShowReassign] = useState(false);
+  const [reassignForm, setReassignForm] = useState({assigned_to:"", reason:""});
+  const [showStageGate, setShowStageGate] = useState(null);
+  const [stageGateForm, setStageGateForm] = useState({});
+  const isOwner = opp.assigned_to === currentUser.id;
+  const isAdmin = ["super_admin","admin"].includes(currentUser.role);
+  const isManager = ["leasing_manager","sales_manager"].includes(currentUser.role);
+  const canAction = isOwner || tookOwnership;
+  const canReassign = isAdmin || isManager;
   const isSigned = opp.stage==="Lease Signed";
   const isReserved = ["Reserved","Lease Signed"].includes(opp.stage);
   const hasPayments = payments.length>0;
@@ -8745,28 +8755,37 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
     supabase.from("lease_contracts").select("*").eq("lease_opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
   },[opp.id]);
 
-  const moveStage = async(toStage)=>{
+  const LEASE_GATED = ["Offer Made","Reserved","Lease Signed","Lost"];
+
+  const moveStage = async(toStage) => {
+    if(!canAction){showToast("You are not the assigned agent — take ownership first","error");return;}
+    if(LEASE_GATED.includes(toStage)){
+      setStageGateForm({});
+      setShowStageGate(toStage);
+      return;
+    }
+    await commitLeaseStageMove(toStage, {});
+  };
+
+  const commitLeaseStageMove = async(toStage, extraData) => {
     // Gate: Lease Signed requires signed agreement
     if(toStage==="Lease Signed"){
       if(!contract){showToast("Create a rental agreement before marking as Lease Signed","error");return;}
       if(contract.status!=="Signed"){showToast("Agreement must be signed before marking as Lease Signed","error");return;}
       if(!hasPayments){showToast("Add payments before marking as Lease Signed","error");return;}
     }
-    // Gate: Reserved requires at least Offer Made
-    const stageOrder=["New Enquiry","Contacted","Viewing","Offer Made","Reserved","Lease Signed","Lost"];
-    const curIdx=stageOrder.indexOf(opp.stage);
-    const toIdx=stageOrder.indexOf(toStage);
-    if(toIdx>curIdx+1&&!["Lost"].includes(toStage)){showToast("Please follow the workflow stages in order","error");return;}
-    const{error}=await supabase.from("lease_opportunities").update({stage:toStage,stage_updated_at:new Date().toISOString()}).eq("id",opp.id);
+    const{error}=await supabase.from("lease_opportunities").update({
+      stage:toStage, stage_updated_at:new Date().toISOString(), ...extraData
+    }).eq("id",opp.id);
     if(!error){
-      // Auto-update unit status when Lease Signed
-      if(toStage==="Lease Signed"&&opp.unit_id){
+      if(toStage==="Lease Signed"&&opp.unit_id)
         await supabase.from("project_units").update({status:"Leased"}).eq("id",opp.unit_id);
-      }
-      showToast("Stage updated","success");
-      if(onUpdated)onUpdated({...opp,stage:toStage});
-    }
-    else showToast(error.message,"error");
+      if(toStage==="Reserved"&&opp.unit_id)
+        await supabase.from("project_units").update({status:"Reserved"}).eq("id",opp.unit_id);
+      showToast(`Moved to ${toStage}`,"success");
+      if(onUpdated)onUpdated({...opp,stage:toStage,...extraData});
+      setShowStageGate(null);
+    } else showToast(error.message,"error");
   };
 
   const saveLog = async()=>{
@@ -9166,6 +9185,38 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
             <div style={{background:"linear-gradient(135deg,#1A0B3A,#2D1558)",borderRadius:12,padding:"14px 16px"}}>
               <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.4)",textTransform:"uppercase",letterSpacing:"1px",marginBottom:10}}>Lease Workflow</div>
               <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0}}>
+                {/* Ownership Notice */}
+                {!isOwner&&canEdit&&(
+                  <div style={{background:canAction?"#E6F4EE":"#FFFBEB",border:`1px solid ${canAction?"#A8D5BE":"#FDE68A"}`,borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:12}}>
+                    <div style={{flex:1}}>
+                      <span style={{fontSize:12,fontWeight:600,color:canAction?"#1A7F5A":"#92400E"}}>
+                        {canAction?"✓ You have taken ownership":"⚠ Assigned to "}<strong>{users?.find(u=>u.id===opp.assigned_to)?.full_name||"another agent"}</strong>
+                      </span>
+                      {!canAction&&<div style={{fontSize:11,color:"#92400E",marginTop:2}}>Stage actions restricted to assigned agent.</div>}
+                    </div>
+                    <div style={{display:"flex",gap:8}}>
+                      {!canAction&&canReassign&&(
+                        <button onClick={async()=>{
+                          if(!window.confirm(`Take ownership of this lease deal?`)) return;
+                          const{error}=await supabase.from("lease_opportunities").update({assigned_to:currentUser.id}).eq("id",opp.id);
+                          if(error){showToast(error.message,"error");return;}
+                          setTookOwnership(true);
+                          onUpdated({...opp,assigned_to:currentUser.id});
+                          await supabase.from("activities").insert({lead_id:opp.lead_id||null,company_id:currentUser.company_id||null,type:"Note",note:`Ownership transferred to ${currentUser.full_name}`,status:"completed",created_by:currentUser.id,lease_opportunity_id:opp.id});
+                          showToast("You have taken ownership","success");
+                        }} style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#5B3FAA",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                          Take Ownership
+                        </button>
+                      )}
+                      {canReassign&&(
+                        <button onClick={()=>{setReassignForm({assigned_to:"",reason:""});setShowReassign(true);}}
+                          style={{padding:"6px 14px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",color:"#0F2540",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                          Reassign
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {LEASE_STAGES.filter(s=>s!=="Lost").map((s,i,arr)=>{
                   const curIdx=LEASE_STAGES.indexOf(opp.stage);
                   const sIdx=LEASE_STAGES.indexOf(s);
