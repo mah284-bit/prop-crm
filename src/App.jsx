@@ -2745,11 +2745,11 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
 
       {/* ── Stat cards ──────────────────────────────────────── */}
       <div className="stat-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
-        <SC label="Upcoming Tasks"   value={upcomingTasks.length}  sub={overdueTasksCount>0?`⚠️ ${overdueTasksCount} overdue`:"All on track"} accent={overdueTasksCount>0?"#E53E3E":"#1A7F5A"} icon="📋" onClick={()=>onNavigate("leads")} badge={overdueTasksCount>0?overdueTasksCount:null}/>
-        <SC label="Active Opps"      value={active.length}         sub={`${won.length} won · ${convRate}% conv.`}   accent="#0F2540"  icon="🎯"  onClick={()=>onNavigate("leads")}/>
-        <SC label="Won Value"        value={fmtM(wonVal)}          sub={`${won.length} deals closed`}      accent="#1A7F5A"  icon="🏆"  onClick={()=>onNavigate("leads")}/>
-        <SC label="Available Units"  value={availUnits.length}     sub={`${ctxUnits.length} total`}        accent="#C9A84C"  icon="🏠"  onClick={()=>onNavigate("builder")}/>
-        <SC label="Reserved"         value={reservedUnits.length}  sub="Pending confirmation"              accent="#A06810"  icon="🔒"  onClick={()=>onNavigate("builder")} badge={reservedUnits.length>0?reservedUnits.length:null}/>
+        <SC label="Upcoming Tasks"   value={upcomingTasks.length}  sub={overdueTasksCount>0?`⚠️ ${overdueTasksCount} overdue`:"All on track"} accent={overdueTasksCount>0?"#E53E3E":"#1A7F5A"} icon="📋" onClick={()=>onNavigate("activity",{type:"status",value:"upcoming"})} badge={overdueTasksCount>0?overdueTasksCount:null}/>
+        <SC label="Active Opps"      value={active.length}         sub={`${won.length} won · ${convRate}% conv.`}   accent="#0F2540"  icon="🎯"  onClick={()=>onNavigate("reports",{type:"report",value:"pipeline"})}/>
+        <SC label="Won Value"        value={fmtM(wonVal)}          sub={`${won.length} deals closed`}      accent="#1A7F5A"  icon="🏆"  onClick={()=>onNavigate("reports",{type:"report",value:"pipeline",stage:"Closed Won"})}/>
+        <SC label="Available Units"  value={availUnits.length}     sub={`${ctxUnits.length} total`}        accent="#C9A84C"  icon="🏠"  onClick={()=>onNavigate("builder",{type:"status",value:"Available"})}/>
+        <SC label="Reserved"         value={reservedUnits.length}  sub="Pending confirmation"              accent="#A06810"  icon="🔒"  onClick={()=>onNavigate("builder",{type:"status",value:"Reserved"})} badge={reservedUnits.length>0?reservedUnits.length:null}/>
       </div>
 
       {/* ── Stage Pipeline ──────────────────────────────────── */}
@@ -3267,10 +3267,10 @@ function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activiti
   );
 }
 
-function ActivityLog({leads,activities,setActivities,currentUser,showToast}){
+function ActivityLog({leads,activities,setActivities,currentUser,showToast,initialFilter=null}){
   const[fType,setFType]=useState("All");
   const[fLead,setFLead]=useState("All");
-  const[fStatus,setFStatus]=useState("All");
+  const[fStatus,setFStatus]=useState(initialFilter?.type==="status"?initialFilter.value:"All");
   const statusColors={completed:"#1A7F5A",upcoming:"#C9A84C",no_show:"#E53E3E",rescheduled:"#1A5FA8",cancelled:"#718096"};
   const statusLabels={completed:"✅ Completed",upcoming:"⏰ Upcoming",no_show:"📵 No Show",rescheduled:"🔄 Rescheduled",cancelled:"❌ Cancelled"};
   const filtered=useMemo(()=>[...activities].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).filter(a=>
@@ -4219,7 +4219,7 @@ const UNIT_STATUS_COLORS = {
   Cancelled:  {c:"#718096", bg:"#F7F9FC"},
 };
 
-function InventoryModule({ currentUser, showToast, crmContext="sales", preloadedUnits=null, preloadedProjects=null, preloadedSalePricing=null, preloadedLeasePricing=null, activeCompanyId=null, globalOpps=[] }) {
+function InventoryModule({ currentUser, showToast, crmContext="sales", preloadedUnits=null, preloadedProjects=null, preloadedSalePricing=null, preloadedLeasePricing=null, activeCompanyId=null, globalOpps=[], initialFilter=null }) {
   // Company ID for all security filtering
   const activeCid = activeCompanyId || currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
   const [units,       setUnits]       = useState(preloadedUnits||[]);
@@ -4234,7 +4234,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
   const [fProject, setFProject] = useState("All");
   const [fType,    setFType]    = useState("All");
   const [fCat,     setFCat]     = useState("All");
-  const [fStatus,  setFStatus]  = useState("All");
+  const [fStatus,  setFStatus]  = useState(initialFilter?.type==="status"?initialFilter.value:"All");
   const [fBeds,    setFBeds]    = useState("All");
   const [fPurpose, setFPurpose] = useState(crmContext==="leasing"?"Lease":crmContext==="sales"?"Sale":"All");
   const [fCategory, setFCategory] = useState("All"); // All | Residential | Commercial
@@ -6408,8 +6408,8 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
   );
 }
 
-function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activities=[], leasingData=null, crmContext="sales", preloadedUnits=[], preloadedProjects=[], preloadedSalePricing=[], preloadedLeasePricing=[], preloadedUsers=[] }) {
-  const [activeReport, setActiveReport] = useState(crmContext==="leasing"?"rent_roll":"pipeline");
+function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activities=[], leasingData=null, initialFilter=null, crmContext="sales", preloadedUnits=[], preloadedProjects=[], preloadedSalePricing=[], preloadedLeasePricing=[], preloadedUsers=[] }) {
+  const [activeReport, setActiveReport] = useState(initialFilter?.value||( crmContext==="leasing"?"rent_roll":"pipeline"));
   const [loading,      setLoading]      = useState(false);
   const [data,         setData]         = useState({
     units: preloadedUnits||[], projects: preloadedProjects||[],
@@ -10131,6 +10131,7 @@ export default function App(){
   const[aiUnits,   setAiUnits]   = useState([]);
   const[aiSalePr,  setAiSalePr]  = useState([]);
   const[aiLeasePr, setAiLeasePr] = useState([]);
+  const[navFilter, setNavFilter]  = useState(null); // {type, value} passed from dashboard
   const[tab,       setTab]       = useState(()=>{
     // Start on correct dashboard based on stored app
     const lastApp = localStorage.getItem("propccrm_last_app")||"sales";
@@ -10463,14 +10464,14 @@ export default function App(){
         {(dataLoading&&leads.length===0&&aiUnits.length===0)?<Spinner msg="Loading your data…"/>:(<>
 
           {/* ── Sales CRM ─────────────────────────────────────── */}
-          {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={setTab}/>}
+          {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={(t,filter)=>{setTab(t);setNavFilter(filter||null);}}/>}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
-          {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
+          {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
-          {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast}/>}
+          {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast} initialFilter={navFilter}/>}
           {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leads={leads} activities={activities} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
+          {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leads={leads} activities={activities} initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
           {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
           {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
   const co = coObj || companies.find(c=>c.id===id);
@@ -10484,7 +10485,7 @@ export default function App(){
           {tab==="group_view"  &&<GroupConsolidatedView/>}
 
           {/* ── Leasing CRM ───────────────────────────────────── */}
-          {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={setTab} followupAlerts={followupAlerts} key="l_dash"/>}
+          {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={(t,filter)=>{setTab(t);setNavFilter(filter||null);}} followupAlerts={followupAlerts} key="l_dash"/>}
           {tab==="l_leads"     &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
           {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
