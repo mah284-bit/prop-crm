@@ -1158,6 +1158,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [showLog,    setShowLog]    = useState(false);
   const [showPayment,setShowPayment]= useState(false);
   const [showEmail,  setShowEmail]  = useState(false);
+  const [showStageGate, setShowStageGate] = useState(null); // stage name being gated
+  const [stageGateForm, setStageGateForm] = useState({});
   const [logForm,    setLogForm]    = useState({type:"Call",note:""});
   const [payForm,    setPayForm]    = useState({milestone:"Booking Deposit",amount:"",percentage:"",due_date:"",payment_type:"Cheque",cheque_number:"",cheque_date:"",bank_name:"",status:"Pending",notes:"",cheque_file_url:""});
   const [emailForm,  setEmailForm]  = useState({to:"",subject:"",body:""});
@@ -1182,17 +1184,37 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
     supabase.from("sales_contracts").select("*").eq("opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
   },[opp.id]);
 
-  const moveStage = async(toStage)=>{
-    const curIdx = OPP_STAGES.indexOf(opp.stage);
-    const toIdx  = OPP_STAGES.indexOf(toStage);
-    const newStatus = toStage==="Closed Won"?"Won":toStage==="Closed Lost"?"Lost":"Active";
-    const extra = toStage==="Closed Won"?{won_at:new Date().toISOString()}:toStage==="Closed Lost"?{lost_at:new Date().toISOString()}:{};
-    const{error}=await supabase.from("opportunities").update({stage:toStage,status:newStatus,stage_updated_at:new Date().toISOString(),...extra}).eq("id",opp.id);
-    if(!error){
-      onUpdated({...opp,stage:toStage,status:newStatus,...extra});
-      // Mark unit Sold if Won
-      if(toStage==="Closed Won"&&opp.unit_id) await supabase.from("project_units").update({status:"Sold"}).eq("id",opp.unit_id);
+  const GATED_STAGES = ["Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
+
+  const moveStage = async(toStage) => {
+    if(GATED_STAGES.includes(toStage)) {
+      setStageGateForm({});
+      setShowStageGate(toStage);
+      return;
     }
+    await commitStageMove(toStage, {});
+  };
+
+  const commitStageMove = async(toStage, extraData) => {
+    const newStatus = toStage==="Closed Won"?"Won":toStage==="Closed Lost"?"Lost":"Active";
+    const extra = {
+      ...(toStage==="Closed Won"?{won_at:new Date().toISOString()}:{}),
+      ...(toStage==="Closed Lost"?{lost_at:new Date().toISOString()}:{}),
+      ...extraData,
+    };
+    const{error}=await supabase.from("opportunities").update({
+      stage:toStage, status:newStatus,
+      stage_updated_at:new Date().toISOString(),
+      ...extra
+    }).eq("id",opp.id);
+    if(error){showToast(error.message,"error");return;}
+    onUpdated({...opp,stage:toStage,status:newStatus,...extra});
+    if(toStage==="Closed Won"&&opp.unit_id)
+      await supabase.from("project_units").update({status:"Sold"}).eq("id",opp.unit_id);
+    if(toStage==="Reserved"&&opp.unit_id)
+      await supabase.from("project_units").update({status:"Reserved"}).eq("id",opp.unit_id);
+    showToast(`Moved to ${toStage}`,"success");
+    setShowStageGate(null);
   };
 
   const saveLog = async()=>{
@@ -1699,6 +1721,176 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
               <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
                 <button onClick={()=>setShowLog(false)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
                 <button onClick={saveLog} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save"}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stage Gate Modal */}
+      {showStageGate&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1200,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"90vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.25)"}}>
+            <div style={{padding:"1.25rem 1.5rem",borderBottom:"1px solid #E8EDF4",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:15,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>
+                  {showStageGate==="Offer Accepted"&&"✅ Record Offer Accepted"}
+                  {showStageGate==="Reserved"&&"🔒 Record Reservation"}
+                  {showStageGate==="SPA Signed"&&"📄 Record SPA Signing"}
+                  {showStageGate==="Closed Won"&&"🏆 Close as Won"}
+                  {showStageGate==="Closed Lost"&&"❌ Close as Lost"}
+                </div>
+                <div style={{fontSize:12,color:"#94A3B8",marginTop:2}}>{opp.title||lead?.name}</div>
+              </div>
+              <button onClick={()=>setShowStageGate(null)} style={{background:"none",border:"none",fontSize:22,color:"#94A3B8",cursor:"pointer"}}>×</button>
+            </div>
+
+            <div style={{padding:"1.25rem 1.5rem",display:"flex",flexDirection:"column",gap:14}}>
+
+              {/* OFFER ACCEPTED fields */}
+              {showStageGate==="Offer Accepted"&&(<>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Offer Price (AED) *</label>
+                  <input type="number" placeholder="e.g. 2500000" value={stageGateForm.offer_price||""} onChange={e=>setStageGateForm(f=>({...f,offer_price:e.target.value}))}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Offer Valid Until</label>
+                  <input type="date" value={stageGateForm.offer_valid_until||""} onChange={e=>setStageGateForm(f=>({...f,offer_valid_until:e.target.value}))}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label>
+                  <textarea rows={2} placeholder="Any conditions or notes on the offer…" value={stageGateForm.notes||""} onChange={e=>setStageGateForm(f=>({...f,notes:e.target.value}))}/>
+                </div>
+              </>)}
+
+              {/* RESERVED fields */}
+              {showStageGate==="Reserved"&&(<>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Reservation Fee (AED) *</label>
+                    <input type="number" placeholder="e.g. 10000" value={stageGateForm.reservation_fee||""} onChange={e=>setStageGateForm(f=>({...f,reservation_fee:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Payment Method *</label>
+                    <select value={stageGateForm.payment_method||"Cheque"} onChange={e=>setStageGateForm(f=>({...f,payment_method:e.target.value}))}>
+                      {["Cheque","Bank Transfer","Cash","Credit Card"].map(m=><option key={m}>{m}</option>)}
+                    </select>
+                  </div>
+                  {(stageGateForm.payment_method==="Cheque"||!stageGateForm.payment_method)&&(
+                    <div>
+                      <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Cheque Number</label>
+                      <input placeholder="e.g. 001234" value={stageGateForm.cheque_number||""} onChange={e=>setStageGateForm(f=>({...f,cheque_number:e.target.value}))}/>
+                    </div>
+                  )}
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Reservation Date</label>
+                    <input type="date" value={stageGateForm.reservation_date||new Date().toISOString().slice(0,10)} onChange={e=>setStageGateForm(f=>({...f,reservation_date:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Expires (5 working days)</label>
+                    <input type="date" value={stageGateForm.expires_date||addWorkingDays(new Date(),5).toISOString().slice(0,10)} onChange={e=>setStageGateForm(f=>({...f,expires_date:e.target.value}))}/>
+                  </div>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label>
+                  <textarea rows={2} placeholder="Any conditions on the reservation…" value={stageGateForm.notes||""} onChange={e=>setStageGateForm(f=>({...f,notes:e.target.value}))}/>
+                </div>
+              </>)}
+
+              {/* SPA SIGNED fields */}
+              {showStageGate==="SPA Signed"&&(<>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Final Agreed Price (AED) *</label>
+                    <input type="number" placeholder="e.g. 2450000" value={stageGateForm.final_price||opp.offer_price||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>SPA Signing Date *</label>
+                    <input type="date" value={stageGateForm.spa_date||new Date().toISOString().slice(0,10)} onChange={e=>setStageGateForm(f=>({...f,spa_date:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Down Payment (AED)</label>
+                    <input type="number" placeholder="e.g. 245000" value={stageGateForm.down_payment||""} onChange={e=>setStageGateForm(f=>({...f,down_payment:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Down Payment Method</label>
+                    <select value={stageGateForm.down_payment_method||"Cheque"} onChange={e=>setStageGateForm(f=>({...f,down_payment_method:e.target.value}))}>
+                      {["Cheque","Bank Transfer","Cash","Credit Card"].map(m=><option key={m}>{m}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label>
+                  <textarea rows={2} placeholder="Any conditions or notes on the SPA…" value={stageGateForm.notes||""} onChange={e=>setStageGateForm(f=>({...f,notes:e.target.value}))}/>
+                </div>
+              </>)}
+
+              {/* CLOSED WON fields */}
+              {showStageGate==="Closed Won"&&(<>
+                <div style={{background:"#E6F4EE",border:"1px solid #A8D5BE",borderRadius:8,padding:"10px 14px",fontSize:12,color:"#1A7F5A",fontWeight:500}}>
+                  🎉 Congratulations! Confirm the final details to close this deal.
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Final Sale Price (AED) *</label>
+                    <input type="number" value={stageGateForm.final_price||opp.final_price||opp.offer_price||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Expected Handover Date</label>
+                    <input type="date" value={stageGateForm.handover_date||""} onChange={e=>setStageGateForm(f=>({...f,handover_date:e.target.value}))}/>
+                  </div>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label>
+                  <textarea rows={2} placeholder="Any final notes…" value={stageGateForm.notes||""} onChange={e=>setStageGateForm(f=>({...f,notes:e.target.value}))}/>
+                </div>
+              </>)}
+
+              {/* CLOSED LOST fields */}
+              {showStageGate==="Closed Lost"&&(<>
+                <div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:8,padding:"10px 14px",fontSize:12,color:"#B83232",fontWeight:500}}>
+                  Please record why this deal was lost — this helps improve future performance.
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Lost Reason *</label>
+                  <select value={stageGateForm.lost_reason||""} onChange={e=>setStageGateForm(f=>({...f,lost_reason:e.target.value}))}>
+                    <option value="">Select reason…</option>
+                    {["Price too high","Bought elsewhere","No longer interested","Budget constraints","Project not suitable","No response","Other"].map(r=><option key={r}>{r}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Additional Notes</label>
+                  <textarea rows={3} placeholder="Any additional context on why the deal was lost…" value={stageGateForm.notes||""} onChange={e=>setStageGateForm(f=>({...f,notes:e.target.value}))}/>
+                </div>
+              </>)}
+
+              {/* Action buttons */}
+              <div style={{display:"flex",gap:10,justifyContent:"flex-end",paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
+                <button onClick={()=>setShowStageGate(null)}
+                  style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",color:"#475569"}}>
+                  Cancel
+                </button>
+                <button onClick={async()=>{
+                  // Validation
+                  if(showStageGate==="Offer Accepted"&&!stageGateForm.offer_price){showToast("Offer price is required","error");return;}
+                  if(showStageGate==="Reserved"&&!stageGateForm.reservation_fee){showToast("Reservation fee is required","error");return;}
+                  if(showStageGate==="SPA Signed"&&!stageGateForm.final_price){showToast("Final price is required","error");return;}
+                  if(showStageGate==="Closed Won"&&!stageGateForm.final_price){showToast("Final sale price is required","error");return;}
+                  if(showStageGate==="Closed Lost"&&!stageGateForm.lost_reason){showToast("Please select a lost reason","error");return;}
+                  // Build extra data for DB
+                  const extraData = {
+                    ...(stageGateForm.offer_price?{offer_price:Number(stageGateForm.offer_price)}:{}),
+                    ...(stageGateForm.final_price?{final_price:Number(stageGateForm.final_price)}:{}),
+                    ...(stageGateForm.lost_reason?{lost_reason:stageGateForm.lost_reason}:{}),
+                    ...(stageGateForm.notes?{notes:stageGateForm.notes}:{}),
+                  };
+                  await commitStageMove(showStageGate, extraData);
+                }}
+                  style={{padding:"8px 20px",borderRadius:8,border:"none",
+                    background:showStageGate==="Closed Lost"?"#B83232":showStageGate==="Closed Won"?"#1A7F5A":"#0F2540",
+                    color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                  {showStageGate==="Closed Lost"?"✗ Confirm Lost":showStageGate==="Closed Won"?"🏆 Close Won":showStageGate==="Reserved"?"🔒 Confirm Reservation":showStageGate==="SPA Signed"?"📄 Confirm SPA Signed":"✅ Confirm"}
+                </button>
               </div>
             </div>
           </div>
