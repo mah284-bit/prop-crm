@@ -10195,24 +10195,26 @@ export default function App(){
   }, [tab]);
 
   useEffect(() => {
+    const lastApp = localStorage.getItem("propccrm_last_app")||"sales";
+    const dashboard = lastApp==="leasing"?"l_dashboard":"dashboard";
+
+    // Push two states: a sentinel at -1 and current at 0
+    // This means back button hits sentinel, we catch it and push forward again
+    window.history.replaceState({tab:"_sentinel"}, "", window.location.pathname);
+    window.history.pushState({tab: dashboard, filter: null}, "", window.location.pathname);
+
     const handlePop = (e) => {
-      if(e.state?.tab) {
+      if(!e.state||e.state.tab==="_sentinel") {
+        // User hit back past our app — push back in
+        window.history.pushState({tab: dashboard, filter: null}, "", window.location.pathname);
+        setTab(dashboard);
+        setNavFilter(null);
+      } else if(e.state?.tab) {
         setTab(e.state.tab);
         setNavFilter(e.state.filter||null);
-      } else {
-        // No state = user went back to before app loaded
-        // Replace with current dashboard to prevent exit
-        const lastApp = localStorage.getItem("propccrm_last_app")||"sales";
-        const dashboard = lastApp==="leasing"?"l_dashboard":"dashboard";
-        window.history.replaceState({tab: dashboard, filter: null}, "", window.location.pathname);
-        setTab(dashboard);
       }
     };
     window.addEventListener("popstate", handlePop);
-    // Set initial history state
-    const lastApp = localStorage.getItem("propccrm_last_app")||"sales";
-    const initTab = lastApp==="leasing"?"l_dashboard":"dashboard";
-    window.history.replaceState({tab: initTab, filter: null}, "", window.location.pathname);
     return () => window.removeEventListener("popstate", handlePop);
   }, []);
   const[activeApp, setActiveApp] = useState(()=>localStorage.getItem("propccrm_last_app")||"sales");
