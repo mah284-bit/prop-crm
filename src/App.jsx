@@ -10433,7 +10433,7 @@ export default function App(){
 
           {/* CENTRE: CRM Switcher */}
           {canSwitch&&(
-            <div style={{display:"flex",background:"rgba(255,255,255,.07)",borderRadius:10,padding:3,gap:3,flexShrink:0}}>
+            <div style={{display:"flex",background:"#F1F5F9",borderRadius:10,padding:3,gap:3,flexShrink:0}}>
               {[
                 {id:"sales",   label:"Sales",   icon:"🏷", accent:"#4A9EE8"},
                 {id:"leasing", label:"Leasing", icon:"🔑", accent:"#9B7FD4"},
@@ -10447,7 +10447,7 @@ export default function App(){
                   }} style={{
                     padding:"5px 12px",borderRadius:8,border:"none",
                     background:isActive?"#fff":"transparent",
-                    color:isActive?a.accent:"rgba(255,255,255,.5)",
+                    color:isActive?a.accent:"#64748B",
                     fontSize:12,fontWeight:isActive?700:400,cursor:"pointer",
                     display:"flex",alignItems:"center",gap:4,
                     transition:"all .2s",whiteSpace:"nowrap",
