@@ -1,9 +1,8 @@
-// /api/create-user.js
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseAdmin = createClient(
   process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // secret — server only
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
 export default async function handler(req, res) {
@@ -11,10 +10,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { email, password, full_name, role } = req.body
+  const { email, password, full_name, role, company_id } = req.body
 
   try {
-    // Create auth user
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -24,17 +22,17 @@ export default async function handler(req, res) {
 
     if (authError) throw authError
 
-    // Insert into your profiles/users table
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
-      .insert({
-        id: authData.user.id,
-        email,
+      .update({
         full_name,
-        role
+        role,
+        is_active: true,
+        company_id: company_id || null,
       })
+      .eq('id', authData.user.id)
 
-    if (profileError) throw profileError
+    if (profileError) console.error('Profile update error:', profileError.message)
 
     return res.status(200).json({ user: authData.user })
   } catch (error) {
