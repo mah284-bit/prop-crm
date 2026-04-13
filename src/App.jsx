@@ -1167,13 +1167,11 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [emailForm,  setEmailForm]  = useState({to:"",subject:"",body:""});
   const [editPayment,setEditPayment]= useState(null);
   const canEdit  = can(currentUser.role,"write");
+  const [tookOwnership, setTookOwnership] = useState(false);
   const isOwner  = opp.assigned_to === currentUser.id;
   const isAdmin  = ["super_admin","admin"].includes(currentUser.role);
   const isManager = ["sales_manager","leasing_manager"].includes(currentUser.role);
-  // canAction = can actually move stages, add payments, request discounts
-  // Must be the assigned agent OR an admin/manager who has taken ownership
   const canAction = isOwner || tookOwnership;
-  // canReassign = admin/manager can reassign or take ownership
   const canReassign = isAdmin || isManager;
   const isWon    = opp.stage==="Closed Won";
   const isDeveloper = (()=>{try{const c=JSON.parse(localStorage.getItem("propccrm_company_cache")||"null");return c?.company_category==="Developer";}catch{return false;}})();
