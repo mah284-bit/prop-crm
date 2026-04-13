@@ -5490,7 +5490,7 @@ function LeasingChequeManager({ lease, tenantName, unitLabel, currentUser, showT
 }
 
 function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=null,initialFilter=null}) {
-  const [tab,setTab]               = useState("dashboard");
+  const [tab,setTab]               = useState(initialFilter?.type==="tab"&&initialFilter?.value ? initialFilter.value : "dashboard");
   const [tenants,setTenants]       = useState([]);
   const [leases,setLeases]         = useState([]);
   const [payments,setPayments]     = useState([]);
@@ -5619,7 +5619,6 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
   if(loading) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100%",color:"#A0AEC0",fontSize:14}}>Loading Leasing…</div>;
 
   const TABS_L=[["dashboard","📊 Dashboard"],["tenants",`👤 Tenants (${tenants.length})`],["leases",`📄 Leases (${activeLeases.length})`],["payments",`💰 Payments (${overduePmts.length} overdue)`],["maintenance",`🔧 Maintenance (${openMaint.length})`]];
-  useEffect(()=>{ if(initialFilter?.type==="tab"&&initialFilter.value) setActiveTab(initialFilter.value); },[initialFilter]);
 
   return (
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
