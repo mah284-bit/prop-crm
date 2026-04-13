@@ -1160,6 +1160,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [showEmail,  setShowEmail]  = useState(false);
   const [showStageGate, setShowStageGate] = useState(null); // stage name being gated
   const [stageGateForm, setStageGateForm] = useState({});
+  const [showDiscReq, setShowDiscReq] = useState(false);
+  const [discReqForm, setDiscReqForm] = useState({type:"sale_price",discount_pct:"",reason:"",discount_source:"Developer",developer_auth_ref:""});
   const [logForm,    setLogForm]    = useState({type:"Call",note:""});
   const [payForm,    setPayForm]    = useState({milestone:"Booking Deposit",amount:"",percentage:"",due_date:"",payment_type:"Cheque",cheque_number:"",cheque_date:"",bank_name:"",status:"Pending",notes:"",cheque_file_url:""});
   const [emailForm,  setEmailForm]  = useState({to:"",subject:"",body:""});
@@ -1465,7 +1467,15 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
 
             {/* Financials */}
             <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
-              <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Financials</div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Financials</div>
+                {canEdit&&can(currentUser.role,"request_discount")&&!isWon&&(
+                  <button onClick={()=>{setDiscReqForm({type:"sale_price",discount_pct:"",reason:"",discount_source:"Developer",developer_auth_ref:""});setShowDiscReq(true);}}
+                    style={{padding:"5px 12px",borderRadius:7,border:"1.5px solid #C9A84C",background:"#FDF3DC",color:"#8A6200",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    💰 Request Discount
+                  </button>
+                )}
+              </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
                 {[["Budget",opp.budget],["Offer Price",opp.offer_price],["Final Price",opp.final_price],["Discount %",opp.discount_pct?opp.discount_pct+"%":null]].filter(([,v])=>v).map(([l,v])=>(
                   <div key={l} style={{background:"#FAFBFC",borderRadius:8,padding:"10px 12px"}}>
@@ -1749,9 +1759,29 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
 
               {/* OFFER ACCEPTED fields */}
               {showStageGate==="Offer Accepted"&&(<>
-                <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Offer Price (AED) *</label>
-                  <input type="number" placeholder="e.g. 2500000" value={stageGateForm.offer_price||""} onChange={e=>setStageGateForm(f=>({...f,offer_price:e.target.value}))}/>
+                {/* Pricing breakdown - read only */}
+                <div style={{background:"#F7F9FC",border:"1px solid #E8EDF4",borderRadius:10,padding:"14px 16px"}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>Agreed Pricing</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
+                    <div>
+                      <div style={{fontSize:10,color:"#94A3B8",marginBottom:3}}>Unit Asking Price</div>
+                      <div style={{fontSize:14,fontWeight:700,color:"#0F2540"}}>AED {opp.budget?Number(opp.budget).toLocaleString():"—"}</div>
+                    </div>
+                    <div>
+                      <div style={{fontSize:10,color:"#94A3B8",marginBottom:3}}>Approved Discount</div>
+                      <div style={{fontSize:14,fontWeight:700,color:"#B83232"}}>{opp.discount_pct?`${opp.discount_pct}%`:"None"}</div>
+                    </div>
+                    <div>
+                      <div style={{fontSize:10,color:"#94A3B8",marginBottom:3}}>Net Offer Price</div>
+                      <div style={{fontSize:14,fontWeight:700,color:"#1A7F5A"}}>
+                        AED {opp.budget?Number(opp.discount_pct?opp.budget*(1-opp.discount_pct/100):opp.budget).toLocaleString():"—"}
+                      </div>
+                    </div>
+                  </div>
+                  {opp.discount_pct&&<div style={{marginTop:8,fontSize:11,color:"#64748B"}}>Discount source: <strong>{opp.discount_source||"Not specified"}</strong></div>}
+                </div>
+                <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#92400E"}}>
+                  ℹ Price is based on approved inventory pricing. To request a discount, use the <strong>💰 Request Discount</strong> button in the Financials section first.
                 </div>
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Offer Valid Until</label>
@@ -1872,14 +1902,14 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                 </button>
                 <button onClick={async()=>{
                   // Validation
-                  if(showStageGate==="Offer Accepted"&&!stageGateForm.offer_price){showToast("Offer price is required","error");return;}
+                  // Offer Accepted - no required fields, price comes from inventory
                   if(showStageGate==="Reserved"&&!stageGateForm.reservation_fee){showToast("Reservation fee is required","error");return;}
                   if(showStageGate==="SPA Signed"&&!stageGateForm.final_price){showToast("Final price is required","error");return;}
                   if(showStageGate==="Closed Won"&&!stageGateForm.final_price){showToast("Final sale price is required","error");return;}
                   if(showStageGate==="Closed Lost"&&!stageGateForm.lost_reason){showToast("Please select a lost reason","error");return;}
                   // Build extra data for DB
                   const extraData = {
-                    ...(stageGateForm.offer_price?{offer_price:Number(stageGateForm.offer_price)}:{}),
+                    ...(opp.discount_pct?{offer_price:Number(opp.budget*(1-opp.discount_pct/100))}:{offer_price:opp.budget||null}),
                     ...(stageGateForm.final_price?{final_price:Number(stageGateForm.final_price)}:{}),
                     ...(stageGateForm.lost_reason?{lost_reason:stageGateForm.lost_reason}:{}),
                     ...(stageGateForm.notes?{notes:stageGateForm.notes}:{}),
@@ -1890,6 +1920,125 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
                     background:showStageGate==="Closed Lost"?"#B83232":showStageGate==="Closed Won"?"#1A7F5A":"#0F2540",
                     color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
                   {showStageGate==="Closed Lost"?"✗ Confirm Lost":showStageGate==="Closed Won"?"🏆 Close Won":showStageGate==="Reserved"?"🔒 Confirm Reservation":showStageGate==="SPA Signed"?"📄 Confirm SPA Signed":"✅ Confirm"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Discount Request Modal */}
+      {showDiscReq&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1200,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:520,maxWidth:"100%",maxHeight:"90vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.25)"}}>
+            <div style={{padding:"1.25rem 1.5rem",borderBottom:"1px solid #E8EDF4",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:15,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>💰 Request Discount</div>
+                <div style={{fontSize:12,color:"#94A3B8",marginTop:2}}>{opp.title||lead?.name} — requires manager approval</div>
+              </div>
+              <button onClick={()=>setShowDiscReq(false)} style={{background:"none",border:"none",fontSize:22,color:"#94A3B8",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{padding:"1.25rem 1.5rem",display:"flex",flexDirection:"column",gap:14}}>
+
+              {/* Info banner */}
+              <div style={{background:"#FDF3DC",border:"1px solid #E8C97A",borderRadius:8,padding:"10px 14px",fontSize:12,color:"#8A6200"}}>
+                ℹ Discounts up to <strong>5%</strong> go to your Sales Manager for approval. Above 5% are escalated to Admin.
+              </div>
+
+              {/* Discount Type */}
+              <div>
+                <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Discount Type</label>
+                <select value={discReqForm.type} onChange={e=>setDiscReqForm(f=>({...f,type:e.target.value}))}>
+                  <option value="sale_price">Sale Price Reduction</option>
+                  <option value="payment_plan">Payment Plan Change</option>
+                  <option value="agency_fee">Agency Fee Waiver</option>
+                </select>
+              </div>
+
+              {/* Discount Source — KEY NEW FIELD */}
+              <div>
+                <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:".5px"}}>Discount Source *</label>
+                <div style={{display:"flex",gap:8}}>
+                  {[["Developer","🏗 Developer","Developer is offering the discount"],["Our Company","🏢 Our Company","We absorb the discount from our margin"]].map(([v,l,desc])=>(
+                    <div key={v} onClick={()=>setDiscReqForm(f=>({...f,discount_source:v}))}
+                      style={{flex:1,padding:"10px 14px",borderRadius:10,border:`2px solid ${discReqForm.discount_source===v?"#7C3AED":"#E2E8F0"}`,
+                        background:discReqForm.discount_source===v?"#EDE9FE":"#fff",cursor:"pointer",transition:"all .15s"}}>
+                      <div style={{fontSize:13,fontWeight:700,color:discReqForm.discount_source===v?"#7C3AED":"#0F2540",marginBottom:3}}>{l}</div>
+                      <div style={{fontSize:11,color:"#94A3B8"}}>{desc}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Developer auth ref — only if Developer */}
+              {discReqForm.discount_source==="Developer"&&(
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Developer Authorization Reference</label>
+                  <input placeholder="e.g. Email ref, approval code, document number…" value={discReqForm.developer_auth_ref||""} onChange={e=>setDiscReqForm(f=>({...f,developer_auth_ref:e.target.value}))}/>
+                  <div style={{fontSize:11,color:"#94A3B8",marginTop:4}}>Attach proof of developer authorization (email, letter, etc.)</div>
+                </div>
+              )}
+
+              {/* Discount % and values */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Original Price (AED)</label>
+                  <input type="number" value={discReqForm.original_value||opp.budget||""} readOnly style={{background:"#F7F9FC",color:"#94A3B8"}}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Discount % *</label>
+                  <input type="number" min="0" max="50" step="0.5" placeholder="e.g. 5" value={discReqForm.discount_pct||""} onChange={e=>setDiscReqForm(f=>({...f,discount_pct:e.target.value,requested_value:Math.round((discReqForm.original_value||opp.budget||0)*(1-Number(e.target.value)/100))}))}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Discounted Price</label>
+                  <input type="number" value={discReqForm.requested_value||""} onChange={e=>setDiscReqForm(f=>({...f,requested_value:e.target.value,discount_pct:discReqForm.original_value||(opp.budget||0)?Math.round((1-Number(e.target.value)/(discReqForm.original_value||opp.budget||1))*1000)/10:""}))} placeholder="Auto-calculated"/>
+                </div>
+              </div>
+
+              {/* Reason */}
+              <div>
+                <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Reason for Discount *</label>
+                <textarea rows={3} placeholder="Explain why this discount is needed — client objection, competitor pricing, budget constraint…" value={discReqForm.reason||""} onChange={e=>setDiscReqForm(f=>({...f,reason:e.target.value}))}/>
+              </div>
+
+              {/* Approval notice */}
+              {discReqForm.discount_pct&&(
+                <div style={{padding:"8px 12px",borderRadius:8,fontSize:12,fontWeight:600,
+                  background:Number(discReqForm.discount_pct)>5?"#EEE8F9":"#E6EFF9",
+                  color:Number(discReqForm.discount_pct)>5?"#5B3FAA":"#1A5FA8",
+                  border:`1px solid ${Number(discReqForm.discount_pct)>5?"#C4B5FD":"#BFDBFE"}`}}>
+                  {Number(discReqForm.discount_pct)>5?"⚡ This request will be escalated to Admin for approval":"✓ This request will go to your Sales Manager for approval"}
+                </div>
+              )}
+
+              <div style={{display:"flex",gap:10,justifyContent:"flex-end",paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
+                <button onClick={()=>setShowDiscReq(false)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",color:"#475569"}}>Cancel</button>
+                <button onClick={async()=>{
+                  if(!discReqForm.discount_pct){showToast("Discount % is required","error");return;}
+                  if(!discReqForm.reason?.trim()){showToast("Please provide a reason","error");return;}
+                  const payload = {
+                    lead_id: lead?.id||null,
+                    lead_name: lead?.name||opp.title||"",
+                    unit_id: opp.unit_id||null,
+                    opportunity_id: opp.id,
+                    company_id: currentUser.company_id||null,
+                    type: discReqForm.type,
+                    discount_pct: Number(discReqForm.discount_pct),
+                    original_value: Number(discReqForm.original_value||opp.budget||0),
+                    requested_value: Number(discReqForm.requested_value||0),
+                    reason: discReqForm.reason,
+                    discount_source: discReqForm.discount_source,
+                    developer_auth_ref: discReqForm.developer_auth_ref||null,
+                    requested_by: currentUser.id,
+                    requested_by_name: currentUser.full_name||currentUser.email,
+                    status: "Pending",
+                  };
+                  const{error}=await supabase.from("discount_requests").insert(payload);
+                  if(error){showToast(error.message,"error");return;}
+                  showToast("Discount request submitted — pending manager approval","success");
+                  setShowDiscReq(false);
+                }}>
+                  Submit for Approval
                 </button>
               </div>
             </div>
@@ -4948,10 +5097,18 @@ function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
                 </div>
               </div>
 
-              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,background:"#FAFBFC",borderRadius:8,padding:"10px",marginBottom:10}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,background:"#FAFBFC",borderRadius:8,padding:"10px",marginBottom:10}}>
                 <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Original Value</div><div style={{fontSize:13,fontWeight:600,color:"#0F2540"}}>{d.original_value?`AED ${Number(d.original_value).toLocaleString()}`:"—"}</div></div>
                 <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Requested Value</div><div style={{fontSize:13,fontWeight:600,color:"#1A7F5A"}}>{d.requested_value?`AED ${Number(d.requested_value).toLocaleString()}`:"—"}</div></div>
                 <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Saving</div><div style={{fontSize:13,fontWeight:600,color:"#B83232"}}>{d.original_value&&d.requested_value?`AED ${Number(d.original_value-d.requested_value).toLocaleString()}`:"—"}</div></div>
+                <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Discount Source</div>
+                  <div style={{fontSize:12,fontWeight:700,padding:"2px 8px",borderRadius:20,display:"inline-block",
+                    background:d.discount_source==="Developer"?"#EDE9FE":"#E6EFF9",
+                    color:d.discount_source==="Developer"?"#7C3AED":"#1A5FA8"}}>
+                    {d.discount_source==="Developer"?"🏗 Developer":"🏢 Our Company"}
+                  </div>
+                  {d.developer_auth_ref&&<div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>Ref: {d.developer_auth_ref}</div>}
+                </div>
               </div>
 
               <div style={{background:"#F7F9FC",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:13,color:"#4A5568",lineHeight:1.6}}>
