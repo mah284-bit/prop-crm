@@ -10805,7 +10805,7 @@ function PropPulse({ currentUser, showToast }) {
             <div style={{fontSize:12,color:"#94A3B8",alignSelf:"center",whiteSpace:"nowrap"}}>{filteredProjects.length} projects</div>
           </div>
 
-          {/* Project Grid */}
+          {/* Project Table */}
           {filteredProjects.length===0?(
             <div style={{textAlign:"center",padding:"4rem",color:"#A0AEC0"}}>
               <div style={{fontSize:48,marginBottom:12}}>⚡</div>
@@ -10813,50 +10813,42 @@ function PropPulse({ currentUser, showToast }) {
               <div style={{fontSize:13}}>Add projects or adjust your filters</div>
             </div>
           ):(
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:14}}>
-              {filteredProjects.map(proj=>{
-                const sc = STATUS_COLORS[proj.project_status]||{bg:"#F7F9FC",c:"#718096"};
-                return (
-                  <div key={proj.id} onClick={()=>setSelProject(proj)}
-                    style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:14,padding:"16px",cursor:"pointer",transition:"all .15s",boxShadow:"0 1px 4px rgba(11,31,58,.04)"}}
-                    onMouseOver={e=>{e.currentTarget.style.boxShadow="0 4px 20px rgba(11,31,58,.1)";e.currentTarget.style.transform="translateY(-2px)";}}
-                    onMouseOut={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(11,31,58,.04)";e.currentTarget.style.transform="none";}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
-                      <div style={{flex:1}}>
-                        <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:3,lineHeight:1.3}}>{proj.name}</div>
-                        <div style={{fontSize:12,color:"#64748B"}}>{proj.pp_developers?.name||proj.developer||"—"}</div>
-                      </div>
-                      <span style={{fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:20,background:sc.bg,color:sc.c,whiteSpace:"nowrap",marginLeft:8}}>{proj.project_status||"—"}</span>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                      {[
-                        ["📍",proj.community||proj.location||"—"],
-                        ["🏙️",proj.emirate||"Dubai"],
-                        ["🏗️",proj.project_type||"—"],
-                        ["🏠",proj.total_units?`${proj.total_units} units`:"—"],
-                        ["💰",proj.starting_price?`AED ${(proj.starting_price/1e6).toFixed(2)}M`:"—"],
-                        ["📅",proj.handover_date?new Date(proj.handover_date).toLocaleDateString("en-AE",{month:"short",year:"numeric"}):"—"],
-                      ].map(([icon,val])=>(
-                        <div key={icon} style={{display:"flex",alignItems:"center",gap:5}}>
-                          <span style={{fontSize:12}}>{icon}</span>
-                          <span style={{fontSize:12,color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{val}</span>
+            <>
+              <div style={{display:"grid",gridTemplateColumns:"2.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr",gap:0,background:"#0F2540",borderRadius:"10px 10px 0 0",padding:"8px 14px"}}>
+                {["Project","Community","Type","Units","Starting Price","Handover",""].map(h=>(
+                  <div key={h} style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.7)",textTransform:"uppercase",letterSpacing:".5px"}}>{h}</div>
+                ))}
+              </div>
+              <div style={{border:"1px solid #E8EDF4",borderTop:"none",borderRadius:"0 0 10px 10px",overflow:"hidden"}}>
+                {filteredProjects.map((proj,ri)=>{
+                  const sc = STATUS_COLORS[proj.project_status]||{bg:"#F7F9FC",c:"#718096"};
+                  return (
+                    <div key={proj.id} onClick={()=>setSelProject(proj)}
+                      style={{display:"grid",gridTemplateColumns:"2.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr",gap:0,padding:"10px 14px",alignItems:"center",background:ri%2===0?"#fff":"#F7F9FC",borderBottom:"1px solid #F1F5F9",cursor:"pointer",transition:"background .1s"}}
+                      onMouseOver={e=>e.currentTarget.style.background="#EFF6FF"}
+                      onMouseOut={e=>e.currentTarget.style.background=ri%2===0?"#fff":"#F7F9FC"}>
+                      <div>
+                        <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{proj.name}</div>
+                        <div style={{fontSize:11,color:"#94A3B8"}}>{proj.pp_developers?.name||proj.developer||"—"}</div>
+                        <div style={{display:"flex",gap:4,marginTop:3}}>
+                          <span style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:20,background:sc.bg,color:sc.c}}>{proj.project_status||"—"}</span>
+                          {proj.is_pp_verified&&<span style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ Verified</span>}
                         </div>
-                      ))}
-                    </div>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
-                      <div style={{display:"flex",gap:6}}>
-                        {proj.is_pp_verified&&<span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ Verified</span>}
-                        {proj.brochure_url||proj.brochure_file_url?<span style={{fontSize:10,padding:"2px 8px",borderRadius:20,background:"#E6EFF9",color:"#1A5FA8"}}>📄 Brochure</span>:null}
                       </div>
-                      {proj.google_maps_url&&(
-                        <a href={proj.google_maps_url} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}
-                          style={{fontSize:11,color:"#1A5FA8",fontWeight:600,textDecoration:"none"}}>📍 Map</a>
-                      )}
+                      <div style={{fontSize:12,color:"#4A5568"}}>{proj.community||proj.location||"—"}<br/><span style={{fontSize:11,color:"#94A3B8"}}>{proj.emirate||"Dubai"}</span></div>
+                      <div style={{fontSize:12,color:"#64748B"}}>{proj.project_type||"—"}</div>
+                      <div style={{fontSize:12,color:"#0F2540",fontWeight:600}}>{proj.total_units?.toLocaleString()||"—"}</div>
+                      <div style={{fontSize:12,color:"#1A7F5A",fontWeight:600}}>{proj.starting_price?`AED ${(proj.starting_price/1e6).toFixed(1)}M`:"—"}</div>
+                      <div style={{fontSize:12,color:"#64748B"}}>{proj.handover_date?new Date(proj.handover_date).toLocaleDateString("en-AE",{month:"short",year:"numeric"}):"—"}</div>
+                      <div style={{display:"flex",gap:6"}}>
+                        {proj.google_maps_url&&<a href={proj.google_maps_url} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{fontSize:11,color:"#1A5FA8",fontWeight:600,textDecoration:"none"}}>📍</a>}
+                        {(proj.brochure_url||proj.brochure_file_url)&&<a href={proj.brochure_url||proj.brochure_file_url} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{fontSize:11,color:"#8A6200",fontWeight:600,textDecoration:"none"}}>📄</a>}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
       )}
