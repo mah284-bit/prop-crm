@@ -10615,6 +10615,7 @@ function PropPulse({ currentUser, showToast }) {
   const [showAddProject, setShowAddProject] = useState(false);
   const [showAddDev, setShowAddDev] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [agentRunning, setAgentRunning] = useState(false);
   const [devForm, setDevForm] = useState({ name:"", website:"", city:"Dubai", country:"UAE", rera_developer_no:"", description:"" });
   const [projForm, setProjForm] = useState({ name:"", pp_developer_id:"", emirate:"Dubai", community:"", project_type:"Residential", project_status:"Under Construction", announcement_date:"", handover_date:"", starting_price:"", total_units:"", description:"", latitude:"", longitude:"", google_maps_url:"" });
 
@@ -10637,6 +10638,19 @@ function PropPulse({ currentUser, showToast }) {
       setLaunches(l.data || []);
     } catch(e) { showToast("Failed to load PropPulse data", "error"); }
     setLoading(false);
+  };
+
+  const runAgent = async () => {
+    setAgentRunning(true);
+    showToast("⚡ PropPulse AI Agent running — collecting UAE project data…", "info");
+    try {
+      const res = await fetch('/api/collect-projects', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+      showToast(`✅ Agent complete — ${result.added} projects added, ${result.updated} updated`, "success");
+      loadAll();
+    } catch(e) { showToast(e.message, "error"); }
+    setAgentRunning(false);
   };
 
   const saveDeveloper = async () => {
@@ -10749,6 +10763,10 @@ function PropPulse({ currentUser, showToast }) {
         ))}
         {isAdmin && (
           <div style={{marginLeft:"auto",display:"flex",gap:8}}>
+            <button onClick={runAgent} disabled={agentRunning}
+              style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #5B3FAA",background:agentRunning?"#EEE8F9":"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:agentRunning?"not-allowed":"pointer"}}>
+              {agentRunning?"⚡ Running…":"🤖 Run AI Agent"}
+            </button>
             <button onClick={()=>setShowAddDev(true)}
               style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #C9A84C",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:600,cursor:"pointer"}}>
               + Developer
