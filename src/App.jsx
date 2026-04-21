@@ -3385,8 +3385,8 @@ const TABS=[
   {id:"discounts",  label:"Discounts",    icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"activity",   label:"Activity Log", icon:"📝", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"reports",    label:"Reports",      icon:"📊", app:"sales",   roles:["super_admin","admin","sales_manager"]},
-  {id:"proppulse",  label:"PropPulse",   icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   //{id:"ai",       label:"AI Assistant", icon:"✦",  app:"sales" -- removed, using AI bubble insteadles_manager","sales_agent"]},
+  {id:"proppulse",  label:"PropPulse",   icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"companies",  label:"Companies",    icon:"🏢", app:"sales",   roles:["super_admin"]},
   {id:"users",      label:"Users",        icon:"👥", app:"sales",   roles:["admin","super_admin"]},
   {id:"permissions",label:"Permissions",  icon:"🔒", app:"sales",   roles:["super_admin"]},
@@ -10516,16 +10516,16 @@ export default function App(){
         </div>
 
         {/* Tab bar */}
-        <div className="tab-bar" style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:40,gap:2,borderTop:"1px solid #F1F5F9",overflowX:"auto",background:"#FAFBFE"}}>
+        <div className="tab-bar" style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:40,gap:2,borderTop:"1px solid #F1F5F9",overflowX:"auto",background:"#FAFBFE",scrollbarWidth:"none"}}>
           {visibleTabs.map(t=>(
             <button key={t.id} onClick={()=>{navigateToTab(t.id);if(t.id==="ai"||t.id==="l_ai")loadAIData();}}
               style={{
                 padding:"5px 12px",borderRadius:"6px 6px 0 0",border:"none",
-                background:tab===t.id?(currentApp==="sales"?"#EFF6FF":"#F5F0FF"):"transparent",
-                color:tab===t.id?"#0F2540":"#64748B",
-                fontSize:12,fontWeight:tab===t.id?600:400,cursor:"pointer",
+                background:tab===t.id?(currentApp==="sales"?"#EFF6FF":"#F5F0FF"):(t.id==="proppulse"||t.id==="l_proppulse"?"rgba(201,168,76,.08)":"transparent"),
+                color:tab===t.id?"#0F2540":(t.id==="proppulse"||t.id==="l_proppulse"?"#8A6200":"#64748B"),
+                fontSize:12,fontWeight:(tab===t.id||(t.id==="proppulse"||t.id==="l_proppulse"))?600:400,cursor:"pointer",
                 whiteSpace:"nowrap",transition:"all .15s",flexShrink:0,
-                borderBottom:tab===t.id?`2px solid ${currentApp==="sales"?"#4A9EE8":"#9B7FD4"}`:"2px solid transparent",
+                borderBottom:tab===t.id?`2px solid ${currentApp==="sales"?"#4A9EE8":"#9B7FD4"}`:(t.id==="proppulse"||t.id==="l_proppulse"?"2px solid #C9A84C":"2px solid transparent"),
               }}>
               {t.icon} {t.label}
             </button>
