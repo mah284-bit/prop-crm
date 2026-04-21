@@ -90,8 +90,8 @@ const saveAppConfig = (cfg) => {
 };
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","discounts","activity","ai","reports","pay_plans","companies","users","permissions","permsets","group_view"],
-  leasing: ["l_dashboard","l_leads","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
+  sales:   ["dashboard","projects","builder","leads","discounts","activity","ai","reports","proppulse","pay_plans","companies","users","permissions","permsets","group_view"],
+  leasing: ["l_dashboard","l_leads","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_proppulse","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
   both:    ["dashboard","projects","builder","leads","leasing","discounts","activity","ai","reports","pay_plans","l_reports","companies","users","permissions"],
 };
 // Which roles each mode makes available
