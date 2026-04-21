@@ -10840,7 +10840,7 @@ function PropPulse({ currentUser, showToast }) {
                       <div style={{fontSize:12,color:"#0F2540",fontWeight:600}}>{proj.total_units?.toLocaleString()||"—"}</div>
                       <div style={{fontSize:12,color:"#1A7F5A",fontWeight:600}}>{proj.starting_price?`AED ${(proj.starting_price/1e6).toFixed(1)}M`:"—"}</div>
                       <div style={{fontSize:12,color:"#64748B"}}>{proj.handover_date?new Date(proj.handover_date).toLocaleDateString("en-AE",{month:"short",year:"numeric"}):"—"}</div>
-                      <div style={{display:"flex",gap:6"}}>
+                      <div style={{display:"flex",gap:6}}>
                         {proj.google_maps_url&&<a href={proj.google_maps_url} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{fontSize:11,color:"#1A5FA8",fontWeight:600,textDecoration:"none"}}>📍</a>}
                         {(proj.brochure_url||proj.brochure_file_url)&&<a href={proj.brochure_url||proj.brochure_file_url} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()} style={{fontSize:11,color:"#8A6200",fontWeight:600,textDecoration:"none"}}>📄</a>}
                       </div>
