@@ -92,7 +92,7 @@ const saveAppConfig = (cfg) => {
 const MODE_TABS = {
   sales:   ["dashboard","projects","builder","leads","discounts","activity","ai","reports","proppulse","pay_plans","companies","users","permissions","permsets","group_view"],
   leasing: ["l_dashboard","l_leads","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_proppulse","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
-  both:    ["dashboard","projects","builder","leads","leasing","discounts","activity","ai","reports","pay_plans","l_reports","companies","users","permissions"],
+  both:    ["dashboard","projects","builder","leads","leasing","discounts","activity","ai","reports","proppulse","pay_plans","l_reports","companies","users","permissions"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -10409,7 +10409,7 @@ export default function App(){
 
   if(!currentUser) return <LoginScreen onLogin={handleLogin}/>;
 
-  const cfg=appConfig||{mode:"both"};
+  const cfg=(appConfig&&typeof appConfig==="object")?appConfig:{mode:"both"};
   // Always use currentApp to pick allowed tabs — ignore cfg.mode when app is explicitly selected
   const allowedTabs = currentApp==="leasing" ? MODE_TABS.leasing : (MODE_TABS[cfg.mode]||MODE_TABS.both);
   const visibleTabs=TABS.filter(t=>t.app===currentApp&&t.roles.includes(userRole)&&allowedTabs.includes(t.id));
