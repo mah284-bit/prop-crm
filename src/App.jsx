@@ -10846,37 +10846,40 @@ function PropPulse({ currentUser, showToast }) {
       {/* ── DEVELOPERS TAB ── */}
       {activeTab==="developers"&&(
         <div style={{flex:1,overflowY:"auto"}}>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
-            {developers.map(dev=>{
+          {/* Table header */}
+          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1fr",gap:0,background:"#0F2540",borderRadius:"10px 10px 0 0",padding:"8px 14px"}}>
+            {["Developer","City","Projects","Active Builds","RERA No.",""].map(h=>(
+              <div key={h} style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,.7)",textTransform:"uppercase",letterSpacing:".5px"}}>{h}</div>
+            ))}
+          </div>
+          {/* Table rows */}
+          <div style={{border:"1px solid #E8EDF4",borderTop:"none",borderRadius:"0 0 10px 10px",overflow:"hidden"}}>
+            {developers.map((dev,ri)=>{
               const devProjects = projects.filter(p=>p.pp_developer_id===dev.id);
+              const activeBuilds = devProjects.filter(p=>p.project_status==="Under Construction").length;
               return (
-                <div key={dev.id} style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"16px"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                    <div style={{width:40,height:40,borderRadius:10,background:"#0F2540",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:"#C9A84C",flexShrink:0}}>
+                <div key={dev.id} style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1fr",gap:0,padding:"10px 14px",alignItems:"center",background:ri%2===0?"#fff":"#F7F9FC",borderBottom:"1px solid #F1F5F9"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:30,height:30,borderRadius:8,background:"#0F2540",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#C9A84C",flexShrink:0}}>
                       {dev.name.charAt(0)}
                     </div>
                     <div>
                       <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{dev.name}</div>
-                      <div style={{fontSize:11,color:"#94A3B8"}}>{dev.city}, {dev.country}</div>
-                    </div>
-                    {dev.is_verified&&<span style={{marginLeft:"auto",fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ Verified</span>}
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                    <div style={{background:"#F7F9FC",borderRadius:8,padding:"8px 10px",textAlign:"center"}}>
-                      <div style={{fontSize:18,fontWeight:700,color:"#0F2540"}}>{devProjects.length}</div>
-                      <div style={{fontSize:10,color:"#94A3B8"}}>Projects</div>
-                    </div>
-                    <div style={{background:"#F7F9FC",borderRadius:8,padding:"8px 10px",textAlign:"center"}}>
-                      <div style={{fontSize:18,fontWeight:700,color:"#1A7F5A"}}>{devProjects.filter(p=>p.project_status==="Under Construction").length}</div>
-                      <div style={{fontSize:10,color:"#94A3B8"}}>Active Builds</div>
+                      {dev.is_verified&&<span style={{fontSize:9,fontWeight:600,color:"#1A7F5A"}}>✓ Verified</span>}
                     </div>
                   </div>
-                  {dev.rera_developer_no&&<div style={{fontSize:11,color:"#64748B",marginBottom:6}}>RERA: {dev.rera_developer_no}</div>}
-                  {dev.website&&<a href={dev.website} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#1A5FA8",fontWeight:600,textDecoration:"none"}}>🌐 Website →</a>}
+                  <div style={{fontSize:12,color:"#64748B"}}>{dev.city||"—"}</div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{devProjects.length}</div>
+                  <div style={{fontSize:13,fontWeight:700,color:activeBuilds>0?"#1A7F5A":"#94A3B8"}}>{activeBuilds}</div>
+                  <div style={{fontSize:11,color:"#94A3B8"}}>{dev.rera_developer_no||"—"}</div>
+                  <div>
+                    {dev.website&&<a href={dev.website} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#1A5FA8",fontWeight:600,textDecoration:"none"}}>🌐 Website</a>}
+                  </div>
                 </div>
               );
             })}
           </div>
+          <div style={{fontSize:12,color:"#94A3B8",padding:"8px 4px"}}>{developers.length} developers</div>
         </div>
       )}
 
