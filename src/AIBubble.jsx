@@ -1,49 +1,22 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const AI_PROVIDERS = [
-  {
-    id:"groq", name:"Groq", badge:"FREE",
-    placeholder:"Get free key at console.groq.com",
-    link:"https://console.groq.com",
-    call: async (key, sys, msgs) => {
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
-        body:JSON.stringify({model:"llama-3.3-70b-versatile",messages:[{role:"system",content:sys},...msgs],max_tokens:1024,temperature:0.7})
-      });
-      if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"Groq error");}
-      return (await res.json()).choices[0]?.message?.content||"";
-    }
-  },
-  {
-    id:"gemini", name:"Gemini", badge:"FREE",
-    placeholder:"Get free key at aistudio.google.com",
-    link:"https://aistudio.google.com",
-    call: async (key, sys, msgs) => {
-      const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key="+key, {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({system_instruction:{parts:[{text:sys}]},contents:msgs.map(m=>({role:m.role==="assistant"?"model":"user",parts:[{text:m.content}]})),generationConfig:{maxOutputTokens:1024}})
-      });
-      if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"Gemini error");}
-      return (await res.json()).candidates[0]?.content?.parts[0]?.text||"";
-    }
-  },
-  {
-    id:"claude", name:"Claude", badge:"PAID",
-    placeholder:"Get key at console.anthropic.com",
-    link:"https://console.anthropic.com",
-    call: async (key, sys, msgs) => {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1024,system:sys,messages:msgs})
-      });
-      if(!res.ok){const e=await res.json();throw new Error(e.error?.message||"Claude error");}
-      return (await res.json()).content[0]?.text||"";
-    }
-  }
-];
+// Platform-hosted Claude via /api/ai (ANTHROPIC_API_KEY lives in Vercel env, never in browser)
+async function callAI(sys, msgs) {
+  const messages = (msgs || [])
+    .filter(m => m && m.content && (m.role === "user" || m.role === "assistant"))
+    .map(m => ({ role: m.role, content: m.content }));
+  const body = { messages };
+  if (sys) body.system = sys;
+
+  const res = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `AI request failed (${res.status})`);
+  return data.text || "";
+}
 
 function getLiveData() {
   try {
@@ -119,9 +92,6 @@ export default function AIBubble() {
   const [msgs, setMsgs] = useState([]);
   const [inp, setInp] = useState("");
   const [busy, setBusy] = useState(false);
-  const [provId, setProvId] = useState(() => localStorage.getItem("propccrm_ai_provider") || "groq");
-  const [key, setKey] = useState(() => localStorage.getItem("propccrm_ai_key_"+(localStorage.getItem("propccrm_ai_provider")||"groq"))||"");
-  const [cfg, setCfg] = useState(false);
   const [nm, setNm] = useState("Al AI");
   const [stats, setStats] = useState({ leads:0, avail:0 });
   const [dataReady, setDataReady] = useState(false);
@@ -132,8 +102,8 @@ export default function AIBubble() {
   const endRef = useRef(null);
   const inputRef = useRef(null);
 
-  const prov = AI_PROVIDERS.find(p=>p.id===provId)||AI_PROVIDERS[0];
-  const hasKey = !!key.trim();
+  // Platform-hosted Claude — always available, no user setup required
+  const hasKey = true;
 
   useEffect(() => {
     const refresh = () => {
@@ -194,8 +164,7 @@ export default function AIBubble() {
     return ()=>{window.removeEventListener("mousemove",mv);window.removeEventListener("mouseup",up);};
   }, [dragging]);
 
-  const saveKey = k => { setKey(k); localStorage.setItem("propccrm_ai_key_"+provId,k); };
-  const changeProv = id => { setProvId(id); localStorage.setItem("propccrm_ai_provider",id); setKey(localStorage.getItem("propccrm_ai_key_"+id)||""); };
+  // saveKey/changeProv removed — platform-hosted Claude, no user setup
 
   const buildCtx = () => {
     const {leads,units,projects,user,activeLead,activeTab} = getLiveData();
@@ -222,12 +191,11 @@ export default function AIBubble() {
   const send = async t => {
     const q = (t||inp).trim();
     if (!q||busy) return;
-    if (!hasKey) { setCfg(true); return; }
     setInp(""); setMinimized(false);
     const next = [...msgs,{role:"user",content:q}];
     setMsgs(next); setBusy(true);
     try {
-      const reply = await prov.call(key,buildCtx(),next);
+      const reply = await callAI(buildCtx(),next);
       setMsgs(m=>[...m,{role:"assistant",content:reply}]);
     } catch(e) {
       setMsgs(m=>[...m,{role:"assistant",content:"⚠️ "+e.message}]);
@@ -325,10 +293,10 @@ export default function AIBubble() {
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#F0D98A",letterSpacing:".3px"}}>{nm}</div>
           <div style={{fontSize:9,color:"rgba(201,168,76,.65)",textTransform:"uppercase",letterSpacing:"2px",marginTop:1}}>Real Estate Intelligence</div>
         </div>
-        <button onClick={e=>{e.stopPropagation();setCfg(v=>!v);}}
-          style={{background:cfg?"rgba(201,168,76,.25)":"rgba(255,255,255,.1)",border:"1px solid rgba(201,168,76,.4)",color:"#E8C97A",borderRadius:7,padding:"4px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-          {prov.name}
-        </button>
+        <div style={{background:"rgba(201,168,76,.18)",border:"1px solid rgba(201,168,76,.4)",color:"#E8C97A",borderRadius:7,padding:"4px 10px",fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:5}}>
+          <span style={{width:5,height:5,borderRadius:"50%",background:"#1A7F5A",display:"inline-block"}}/>
+          Claude
+        </div>
         {msgs.length>0&&<button onClick={e=>{e.stopPropagation();setMsgs([]);}}
           style={{background:"none",border:"none",color:"rgba(255,255,255,.5)",cursor:"pointer",fontSize:15,padding:"4px"}}>↺</button>}
         <button onClick={e=>{e.stopPropagation();setMinimized(true);}}
@@ -337,29 +305,7 @@ export default function AIBubble() {
           style={{background:"none",border:"none",color:"rgba(255,255,255,.4)",cursor:"pointer",fontSize:19,padding:"4px",lineHeight:1}}>×</button>
       </div>
 
-      {/* Config */}
-      {cfg&&(
-        <div style={{padding:"12px 16px",borderBottom:"1px solid rgba(201,168,76,.25)",background:"#F5EDD8",flexShrink:0}}>
-          <div style={{display:"flex",gap:6,marginBottom:10}}>
-            {AI_PROVIDERS.map(p=>(
-              <button key={p.id} onClick={()=>changeProv(p.id)} style={{
-                flex:1,padding:"7px 4px",borderRadius:8,cursor:"pointer",fontWeight:600,fontSize:11,
-                border:"1.5px solid",borderColor:provId===p.id?"#8A6200":"rgba(139,96,0,.25)",
-                background:provId===p.id?"rgba(139,96,0,.12)":"rgba(255,255,255,.6)",
-                color:provId===p.id?"#5C3A00":"#8A7A6A"
-              }}>
-                {p.name}<span style={{display:"block",fontSize:9,marginTop:1,color:provId===p.id?"#8A6200":"#A09080"}}>{p.badge}</span>
-              </button>
-            ))}
-          </div>
-          <input value={key} onChange={e=>saveKey(e.target.value)} placeholder={prov.placeholder} type="password"
-            style={{width:"100%",background:"#fff",border:"1px solid rgba(139,96,0,.3)",borderRadius:8,padding:"8px 12px",color:"#2C1810",fontSize:12,boxSizing:"border-box",outline:"none"}}/>
-          {hasKey
-            ?<div style={{marginTop:6,fontSize:11,color:"#1A7F5A",fontWeight:600}}>✓ API key saved</div>
-            :<a href={prov.link} target="_blank" rel="noreferrer" style={{display:"block",marginTop:6,fontSize:11,color:"#8A6200",textDecoration:"none",fontWeight:500}}>→ Get your free API key</a>
-          }
-        </div>
-      )}
+      {/* Configure panel removed — platform-hosted Claude, no user setup needed */}
 
       {/* Messages */}
       <div style={{flex:1,overflowY:"auto",padding:"16px",display:"flex",flexDirection:"column",gap:12}}>
@@ -379,15 +325,12 @@ export default function AIBubble() {
               </div>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:"#0B1F3A",marginBottom:4}}>{nm}</div>
               <div style={{fontSize:11,color:"#8A7A6A",letterSpacing:".5px",marginBottom:10}}>YOUR REAL ESTATE CONCIERGE</div>
-              {hasKey
-                ?<div style={{fontSize:12,color:"#5C4A2A",background:"rgba(201,168,76,.12)",borderRadius:20,padding:"5px 14px",display:"inline-block",border:"1px solid rgba(201,168,76,.3)"}}>
-                  {dataReady
-                    ? <span>📊 {stats.leads} leads &nbsp;·&nbsp; 🏠 {stats.avail} units available</span>
-                    : <span style={{animation:"ai-shimmer 1s ease-in-out infinite"}}>⏳ Loading your data…</span>
-                  }
-                </div>
-                :<div style={{fontSize:12,color:"#8A6200",fontWeight:500}}>Click {prov.name} above to configure</div>
-              }
+              <div style={{fontSize:12,color:"#5C4A2A",background:"rgba(201,168,76,.12)",borderRadius:20,padding:"5px 14px",display:"inline-block",border:"1px solid rgba(201,168,76,.3)"}}>
+                {dataReady
+                  ? <span>📊 {stats.leads} leads &nbsp;·&nbsp; 🏠 {stats.avail} units available</span>
+                  : <span style={{animation:"ai-shimmer 1s ease-in-out infinite"}}>⏳ Loading your data…</span>
+                }
+              </div>
             </div>
 
             {hasKey&&(
@@ -457,8 +400,8 @@ export default function AIBubble() {
           <input ref={inputRef} value={inp} className="ai-input"
             onChange={e=>setInp(e.target.value)}
             onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
-            placeholder={hasKey?"Ask your concierge…":"Configure API key to start"}
-            disabled={!hasKey||busy}
+            placeholder="Ask your concierge…"
+            disabled={busy}
             style={{
               flex:1,background:"#fff",
               border:"1px solid rgba(139,96,0,.25)",
