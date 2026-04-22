@@ -4926,7 +4926,6 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
   const [input,       setInput]       = useState("");
   const [loading,     setLoading]     = useState(false);
   const [showSetup,   setShowSetup]   = useState(false);
-  const [activeProvider, setActiveProvider] = useState(()=>localStorage.getItem("ai_provider")||"groq");
   const [keys,        setKeys]        = useState(()=>{ try{ return JSON.parse(localStorage.getItem("ai_keys")||"{}"); }catch{ return {}; } });
   const [suggestion,  setSuggestion]  = useState(null);
   const [usedProvider,setUsedProvider]= useState(null);
@@ -4953,8 +4952,6 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
   useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); },[messages,loading]);
 
   useEffect(()=>{
-    const prov = AI_PROVIDERS.find(p=>p.id===activeProvider)||AI_PROVIDERS[0];
-    const hasKey = !!keys[activeProvider];
     const hour = new Date().getHours();
     const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
     const firstName = currentUser.full_name.split(" ")[0];
@@ -4966,24 +4963,30 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
       (leads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage)).length > 0 ? `, and a pipeline of **${leads.filter(l=>!["Closed Won","Closed Lost"].includes(l.stage)).length} active opportunities**` : "")+`.
 
 `+
-      (hasKey
-        ? `How may I assist you today? Select a quick action below or type your question in natural language.`
-        : `⚙️ To activate, click **Configure ${aiFullName}** below and add a free API key. Setup takes under 2 minutes.`)
+      `How may I assist you today? Select a quick action below or type your question in natural language.`
     }]);
   },[]);
 
   const saveKeys = (k) => { setKeys(k); localStorage.setItem("ai_keys", JSON.stringify(k)); };
-  const saveProvider = (pid) => { setActiveProvider(pid); localStorage.setItem("ai_provider", pid); };
 
   const callAI = async (systemPrompt, msgs) => {
-    const order = [AI_PROVIDERS.find(p=>p.id===activeProvider),...AI_PROVIDERS.filter(p=>p.id!==activeProvider)].filter(Boolean);
-    for(const prov of order){
-      const key = keys[prov.id];
-      if(!key) continue;
-      try{ const reply = await prov.call(key, systemPrompt, msgs); setUsedProvider(prov); return reply; }
-      catch(e){ if(prov.id===order[order.length-1].id) throw e; }
-    }
-    throw new Error("No API key configured.");
+    // Platform-hosted Claude via /api/ai (ANTHROPIC_API_KEY lives in Vercel env, never in browser)
+    const messages = (msgs || [])
+      .filter(m => m && m.content && (m.role === "user" || m.role === "assistant"))
+      .map(m => ({ role: m.role, content: m.content }));
+    const body = { messages };
+    if (systemPrompt) body.system = systemPrompt;
+
+    const res = await fetch("/api/ai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `AI request failed (${res.status})`);
+
+    setUsedProvider({ id: "claude", name: "Claude" });
+    return data.text || "";
   };
 
   const send = async (text) => {
@@ -5037,7 +5040,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
     });
   };
 
-  const hasAnyKey = AI_PROVIDERS.some(p=>keys[p.id]);
+  const hasAnyKey = true; // Platform-hosted Claude via /api/ai — key managed in Vercel env
   const catColors = {analytics:"#1A5FA8",inventory:"#1A7F5A",leads:"#5B3FAA",leasing:"#9B7FD4",communication:"#A06810",action:"#B83232"};
 
   return (
@@ -5071,68 +5074,25 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
             </div>
           </div>
 
-          {/* Configure button */}
-          <button onClick={()=>setShowSetup(s=>!s)} style={{
-            padding:"7px 14px",borderRadius:8,
-            border:`1px solid ${showSetup?"#C9A84C":"rgba(255,255,255,.15)"}`,
-            background:showSetup?"rgba(201,168,76,.15)":"rgba(255,255,255,.07)",
-            color:showSetup?"#C9A84C":"rgba(255,255,255,.6)",
-            fontSize:11,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:5,
-            transition:"all .2s"
-          }}>
-            ⚙ Configure {aiFullName}
-          </button>
+          {/* Configure button removed — platform-hosted Claude, no user setup needed */}
         </div>
 
-        {/* Provider pills */}
+        {/* Powered by Claude badge */}
         <div style={{display:"flex",gap:5,marginTop:12,flexWrap:"wrap"}}>
-          {AI_PROVIDERS.map(p=>{
-            const hasKey=!!keys[p.id]; const isActive=activeProvider===p.id;
-            return (
-              <button key={p.id} onClick={()=>saveProvider(p.id)} style={{
-                padding:"4px 10px",borderRadius:20,fontSize:10,fontWeight:600,cursor:"pointer",
-                border:`1px solid ${isActive?"#C9A84C":"rgba(255,255,255,.1)"}`,
-                background:isActive?"rgba(201,168,76,.2)":"rgba(255,255,255,.05)",
-                color:isActive?"#C9A84C":hasKey?"rgba(255,255,255,.5)":"rgba(255,255,255,.25)",
-                display:"flex",alignItems:"center",gap:4,transition:"all .15s"
-              }}>
-                <span style={{width:5,height:5,borderRadius:"50%",background:hasKey?"#1A7F5A":"rgba(255,255,255,.2)",display:"inline-block"}}/>
-                {p.name}
-                {usedProvider?.id===p.id&&<span style={{fontSize:8,color:"#C9A84C"}}>● active</span>}
-              </button>
-            );
-          })}
+          <div style={{
+            padding:"4px 10px",borderRadius:20,fontSize:10,fontWeight:600,
+            border:"1px solid rgba(201,168,76,.3)",
+            background:"rgba(201,168,76,.15)",
+            color:"#C9A84C",
+            display:"flex",alignItems:"center",gap:4
+          }}>
+            <span style={{width:5,height:5,borderRadius:"50%",background:"#1A7F5A",display:"inline-block"}}/>
+            Powered by Claude
+          </div>
         </div>
       </div>
 
-      {/* ── Setup Panel ── */}
-      {showSetup&&(
-        <div style={{background:"#fff",borderBottom:"1px solid #E2E8F0",padding:"16px 24px",flexShrink:0}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:4}}>Configure {aiFullName}</div>
-          <div style={{fontSize:12,color:"#718096",marginBottom:12}}>Add at least one API key to activate. Groq is free — no credit card needed.</div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:10}}>
-            {AI_PROVIDERS.map(p=>(
-              <div key={p.id} style={{border:`1.5px solid ${keys[p.id]?"#A8D5BE":"#E2E8F0"}`,borderRadius:10,padding:"12px",background:keys[p.id]?"#F0FBF5":"#FAFBFC"}}>
-                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-                  <span style={{fontWeight:700,fontSize:12,color:"#0F2540"}}>{p.name}</span>
-                  <span style={{padding:"1px 6px",borderRadius:8,background:p.badgeBg,color:p.badgeColor,fontSize:9,fontWeight:700}}>{p.badge}</span>
-                  {keys[p.id]&&<span style={{marginLeft:"auto",fontSize:10,color:"#1A7F5A",fontWeight:600}}>✓ Active</span>}
-                </div>
-                <div style={{display:"flex",gap:6}}>
-                  <input type="password" defaultValue={keys[p.id]||""} id={`key-${p.id}`} placeholder={p.placeholder}
-                    style={{flex:1,padding:"7px 10px",border:"1.5px solid #D1D9E6",borderRadius:7,fontSize:11}}/>
-                  <button onClick={()=>{
-                    const val=document.getElementById(`key-${p.id}`).value.trim();
-                    if(val){saveKeys({...keys,[p.id]:val});showToast(`${p.name} activated`,"success");}
-                    else{const nk={...keys};delete nk[p.id];saveKeys(nk);}
-                  }} style={{padding:"7px 12px",borderRadius:7,border:"none",background:"#0F2540",color:"#C9A84C",fontSize:11,fontWeight:600,cursor:"pointer"}}>Save</button>
-                  <a href={p.link} target="_blank" style={{padding:"7px 10px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:11,color:"#1A5FA8",fontWeight:600,textDecoration:"none"}}>Get Key ↗</a>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Setup Panel removed — platform-hosted Claude, no user setup needed */}
 
       {/* ── Quick Action Buttons ── */}
       <div style={{padding:"12px 24px 0",flexShrink:0}}>
@@ -5259,9 +5219,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
         onBlur={e=>e.currentTarget.style.borderColor="#E2E8F0"}>
           <textarea value={input} onChange={e=>setInput(e.target.value)}
             onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
-            placeholder={hasAnyKey
-              ? `Ask ${aiFullName} anything… "Show units under AED 3M" · "Draft a proposal for Ahmed" · "Which leads need attention?"`
-              : `Configure ${aiFullName} above to start · Add a free Groq API key`}
+            placeholder={`Ask ${aiFullName} anything… "Show units under AED 3M" · "Draft a proposal for Ahmed" · "Which leads need attention?"`}
             rows={1}
             style={{flex:1,border:"none",outline:"none",resize:"none",fontSize:13,lineHeight:1.6,
               minHeight:40,maxHeight:120,fontFamily:"inherit",
@@ -5282,7 +5240,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
         </div>
         <div style={{display:"flex",justifyContent:"space-between",marginTop:6,fontSize:10,color:"#A0AEC0",padding:"0 4px"}}>
           <span>Enter to send · Shift+Enter for new line</span>
-          <span>{usedProvider?`${aiFullName} · ${usedProvider.name}`:`Select provider above`}</span>
+          <span>{aiFullName} · Powered by Claude</span>
         </div>
       </div>
     </div>
