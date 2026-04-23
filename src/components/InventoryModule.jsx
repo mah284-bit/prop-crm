@@ -5,6 +5,51 @@ const SUPABASE_URL  = "https://ysceukgpimzfqixtnbnp.supabase.co";
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzY2V1a2dwaW16ZnFpeHRuYm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNDI5OTQsImV4cCI6MjA4OTkxODk5NH0.WZSyGeOEbiRo1wt13syheTOyiAToMWXInxIaBgaqq8k";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
+// Role-based permission check.
+// Mirrors the can() defined in App.jsx — kept in sync here because
+// App.jsx's version is not exported. If you change roles/permissions
+// in App.jsx, update the table below too.
+const can = (role, action) => ({
+  super_admin:    ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_companies","manage_inventory","reserve_unit"],
+  admin:          ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_inventory","reserve_unit"],
+  sales_manager:  ["read","write","delete","see_all","delete_leads","approve_manager","view_sales","request_discount","manage_inventory","reserve_unit"],
+  sales_agent:    ["read","write","view_sales","request_discount","reserve_unit"],
+  leasing_manager:["read","write","delete","see_all","delete_leads","approve_manager","view_leasing","request_discount","manage_inventory","reserve_unit"],
+  leasing_agent:  ["read","write","view_leasing","reserve_unit"],
+  viewer:         ["read","view_sales","view_leasing"],
+}[role]||[]).includes(action);
+
+// Master dropdown lists. Mirrors the MASTER object in App.jsx — not exported there.
+const MASTER = {
+  unit_type:    ["Residential","Commercial"],
+  sub_type_res: ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed+","Penthouse","Duplex","Triplex","Villa","Townhouse","Loft"],
+  sub_type_com: ["Office","Retail / Shop","Restaurant","Warehouse","Labour Camp","Hotel Apartment","Showroom","Medical Centre"],
+  sub_type_all: ["Studio","1 Bed","2 Bed","3 Bed","4 Bed","5 Bed","6 Bed+","Penthouse","Duplex","Triplex","Villa","Townhouse","Loft","Office","Retail / Shop","Restaurant","Warehouse","Labour Camp","Hotel Apartment","Showroom"],
+  purpose:      ["Sale","Lease","Both"],
+  status:       ["Available","Reserved","Under Offer","Sold","Leased","Blocked","Cancelled"],
+  view:         ["Sea View","Pool View","Garden View","City View","Golf View","Park View","Community View","Burj View","Creek View","Lake View","Boulevard View","No View"],
+  furnishing:   ["Unfurnished","Semi-Furnished","Fully Furnished","Serviced"],
+  condition:    ["Off-plan","Shell & Core","Ready","Renovated","Brand New"],
+  facing:       ["North","South","East","West","North-East","North-West","South-East","South-West"],
+  nationality:  ["Emirati","Saudi","Egyptian","Indian","Pakistani","British","Russian","Chinese","American","European","Other"],
+  id_type:      ["Emirates ID","Passport","GCC ID","Residence Visa"],
+  tenant_type:  ["Individual","Corporate"],
+  cheques:      ["1","2","4","6","12"],
+  payment_method: ["Cash","Cheque","Bank Transfer","Card","Crypto"],
+  lead_source:  ["Referral","Website","Property Finder","Bayut","Dubizzle","Cold Call","Event","Social Media","WhatsApp","Walk-in","Agency","Developer","Other"],
+  company_type: ["Brokerage","Developer","Real Estate Agent","Property Management","Off-Plan Specialist","Leasing Company","RERA Registered Agency","Investment Company","Other"],
+};
+
+// Colour tokens for unit status badges. Mirrors App.jsx.
+const UNIT_STATUS_COLORS = {
+  Available:     {c:"#1A7F5A", bg:"#E6F4EE"},
+  Reserved:      {c:"#A06810", bg:"#FDF3DC"},
+  "Under Offer": {c:"#5B3FAA", bg:"#EEE8F9"},
+  Sold:          {c:"#1A5FA8", bg:"#E6EFF9"},
+  Leased:        {c:"#1A5FA8", bg:"#E6EFF9"},
+  Cancelled:     {c:"#718096", bg:"#F7F9FC"},
+};
+
 function InventoryModule({ currentUser, showToast, crmContext="sales", preloadedUnits=null, preloadedProjects=null, preloadedSalePricing=null, preloadedLeasePricing=null, activeCompanyId=null, globalOpps=[], initialFilter=null }) {
   // Company ID for all security filtering
   const activeCid = activeCompanyId || currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
@@ -115,9 +160,12 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
 
   useEffect(()=>{ load(); },[load]);
 
-  // Security: only show projects belonging to active company
+  // Security: only show projects belonging to active company.
+  // Strictly company-scoped — raw PropPulse catalog rows (company_id=null)
+  // stay in the PropPulse tab. They enter this view only after being
+  // imported (which stamps the tenant's company_id on the clone).
   const companyProjects = activeCid
-    ? projects.filter(p=>!p.company_id||p.company_id===activeCid)
+    ? projects.filter(p=>p.company_id===activeCid)
     : projects;
 
   // Filtered units

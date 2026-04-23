@@ -22,10 +22,14 @@ function PropPulse({ currentUser, showToast }) {
   const [showAddDev, setShowAddDev] = useState(false);
   const [saving, setSaving] = useState(false);
   const [agentRunning, setAgentRunning] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importedSourceIds, setImportedSourceIds] = useState(new Set());
   const [devForm, setDevForm] = useState({ name:"", website:"", city:"Dubai", country:"UAE", rera_developer_no:"", description:"" });
   const [projForm, setProjForm] = useState({ name:"", pp_developer_id:"", emirate:"Dubai", community:"", project_type:"Residential", project_status:"Under Construction", announcement_date:"", handover_date:"", starting_price:"", total_units:"", description:"", latitude:"", longitude:"", google_maps_url:"" });
 
   const isAdmin = ["super_admin","admin"].includes(currentUser.role);
+  // Sales Manager + Admin + Super Admin can import projects into their tenant inventory
+  const canImport = ["super_admin","admin","sales_manager","leasing_manager"].includes(currentUser.role);
 
   useEffect(() => { loadAll(); }, []);
 
@@ -34,7 +38,8 @@ function PropPulse({ currentUser, showToast }) {
     try {
       const [d, p, c, l] = await Promise.all([
         supabase.from("pp_developers").select("*").order("name"),
-        supabase.from("projects").select("*, pp_developers(name,logo_url)").order("name"),
+        // PropPulse catalog = verified projects only (shared across all tenants)
+        supabase.from("projects").select("*, pp_developers(name,logo_url)").eq("is_pp_verified", true).order("name"),
         supabase.from("pp_commissions").select("*, pp_developers(name), projects(name)").eq("is_active", true),
         supabase.from("pp_launch_events").select("*, projects(name), pp_developers(name)").gte("event_date", new Date().toISOString().slice(0,10)).order("event_date"),
       ]);
@@ -42,6 +47,39 @@ function PropPulse({ currentUser, showToast }) {
       setProjects(p.data || []);
       setCommissions(c.data || []);
       setLaunches(l.data || []);
+
+      // Load which of these catalog projects are effectively in the current user's
+      // company inventory — either imported via PropPulse (matched by pp_source_id)
+      // OR already present by name (e.g. added manually before PropPulse existed).
+      // Both cases should show the "In My Inventory" badge and disable re-import.
+      if (currentUser.company_id && (p.data||[]).length) {
+        const catalogIds   = (p.data||[]).map(x=>x.id);
+        const catalogNames = (p.data||[]).map(x=>x.name).filter(Boolean);
+        // Query 1: rows in my company that were imported from this catalog
+        const r1 = supabase
+          .from("projects")
+          .select("pp_source_id, name")
+          .eq("company_id", currentUser.company_id)
+          .in("pp_source_id", catalogIds);
+        // Query 2: rows in my company whose name matches a catalog entry
+        const r2 = supabase
+          .from("projects")
+          .select("pp_source_id, name")
+          .eq("company_id", currentUser.company_id)
+          .in("name", catalogNames);
+        const [a, b] = await Promise.all([r1, r2]);
+        const bySource = new Set(((a.data)||[]).map(x=>x.pp_source_id).filter(Boolean));
+        const byName   = new Set([...((a.data)||[]), ...((b.data)||[])].map(x=>x.name).filter(Boolean));
+        const resolved = new Set();
+        (p.data||[]).forEach(catalogProj => {
+          if (bySource.has(catalogProj.id) || byName.has(catalogProj.name)) {
+            resolved.add(catalogProj.id);
+          }
+        });
+        setImportedSourceIds(resolved);
+      } else {
+        setImportedSourceIds(new Set());
+      }
     } catch(e) { showToast("Failed to load PropPulse data", "error"); }
     setLoading(false);
   };
@@ -77,25 +115,134 @@ function PropPulse({ currentUser, showToast }) {
     if (!projForm.name.trim()) { showToast("Project name required", "error"); return; }
     setSaving(true);
     try {
+      // Admin-added projects in PropPulse go straight into the catalog (verified).
+      // They are NOT stamped with the admin's own company_id — PropPulse is the
+      // shared catalog, not any one tenant's inventory.
       const { error } = await supabase.from("projects").insert({
         ...projForm,
         starting_price: projForm.starting_price ? Number(projForm.starting_price) : null,
         total_units: projForm.total_units ? Number(projForm.total_units) : null,
         latitude: projForm.latitude ? Number(projForm.latitude) : null,
         longitude: projForm.longitude ? Number(projForm.longitude) : null,
-        is_pp_verified: false,
+        is_pp_verified: true,
         pp_data_source: "manual",
         pp_last_updated: new Date().toISOString(),
-        company_id: currentUser.company_id || null,
+        company_id: null,
         created_by: currentUser.id,
       });
       if (error) throw error;
-      showToast("Project added to PropPulse ⚡", "success");
+      showToast("Project added to PropPulse catalog ⚡", "success");
       setShowAddProject(false);
       setProjForm({ name:"", pp_developer_id:"", emirate:"Dubai", community:"", project_type:"Residential", project_status:"Under Construction", announcement_date:"", handover_date:"", starting_price:"", total_units:"", description:"", latitude:"", longitude:"", google_maps_url:"" });
       loadAll();
     } catch(e) { showToast(e.message, "error"); }
     setSaving(false);
+  };
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // IMPORT FLOW
+  // Clones a PropPulse catalog project (and all its units) into the current
+  // user's company inventory. Uses pp_source_id / pp_source_unit_id to track
+  // provenance and prevent duplicate imports.
+  // ═══════════════════════════════════════════════════════════════════════
+  const importProject = async (sourceProject) => {
+    if (!currentUser.company_id) {
+      showToast("Your user isn't linked to a company — can't import", "error");
+      return;
+    }
+    if (importedSourceIds.has(sourceProject.id)) {
+      showToast("This project is already in your inventory", "info");
+      return;
+    }
+    setImporting(true);
+    try {
+      // 1a. Dedup guard: has this PropPulse catalog entry already been imported by this tenant?
+      const { data: existingBySource } = await supabase
+        .from("projects")
+        .select("id")
+        .eq("company_id", currentUser.company_id)
+        .eq("pp_source_id", sourceProject.id)
+        .maybeSingle();
+      if (existingBySource) {
+        showToast("Already in your inventory", "info");
+        setImportedSourceIds(prev => new Set(prev).add(sourceProject.id));
+        setImporting(false);
+        return;
+      }
+
+      // 1b. Name-based dedup: a project with this name already exists in the tenant's
+      // inventory (likely added manually, not through PropPulse). We can't create another
+      // because projects_name_company_unique would block it. Tell the user clearly.
+      const { data: existingByName } = await supabase
+        .from("projects")
+        .select("id, pp_source_id")
+        .eq("company_id", currentUser.company_id)
+        .eq("name", sourceProject.name)
+        .maybeSingle();
+      if (existingByName) {
+        // Mark as "in inventory" so the UI stops offering to import
+        setImportedSourceIds(prev => new Set(prev).add(sourceProject.id));
+        showToast(
+          `"${sourceProject.name}" already exists in your inventory (added separately). Not re-imported.`,
+          "info"
+        );
+        setImporting(false);
+        return;
+      }
+
+      // 2. Clone the project row.
+      // Strip id/timestamps (DB regenerates), company_id (we swap it),
+      // and the joined relation (not a real column).
+      const { id: _id, created_at: _ca, updated_at: _ua, company_id: _ocid, pp_developers: _ppd, ...cloneable } = sourceProject;
+      const { data: newProject, error: pErr } = await supabase
+        .from("projects")
+        .insert({
+          ...cloneable,
+          company_id: currentUser.company_id,
+          pp_source_id: sourceProject.id,
+          is_pp_verified: false, // the tenant copy is inventory, not the catalog entry
+          created_by: currentUser.id,
+        })
+        .select()
+        .single();
+      if (pErr) throw pErr;
+
+      // 3. Clone any units attached to the source catalog project.
+      const { data: sourceUnits, error: uFetchErr } = await supabase
+        .from("project_units")
+        .select("*")
+        .eq("project_id", sourceProject.id);
+      if (uFetchErr) throw uFetchErr;
+
+      if (sourceUnits && sourceUnits.length) {
+        const unitClones = sourceUnits.map(u => {
+          const { id: _uid, created_at: _uca, updated_at: _uua, company_id: _uocid, project_id: _opid, ...rest } = u;
+          return {
+            ...rest,
+            project_id: newProject.id,
+            company_id: currentUser.company_id,
+            pp_source_unit_id: u.id,
+            is_pp_listed: false,
+            created_by: currentUser.id,
+          };
+        });
+        const { error: uErr } = await supabase.from("project_units").insert(unitClones);
+        if (uErr) {
+          // Project inserted but units failed — roll back the project insert so
+          // we don't leave an orphaned shell in the tenant's inventory.
+          await supabase.from("projects").delete().eq("id", newProject.id);
+          throw new Error("Unit import failed — project rolled back: " + uErr.message);
+        }
+        showToast(`✅ Imported "${sourceProject.name}" + ${sourceUnits.length} unit${sourceUnits.length===1?"":"s"} to your inventory`, "success");
+      } else {
+        showToast(`✅ Imported "${sourceProject.name}" to your inventory`, "success");
+      }
+
+      setImportedSourceIds(prev => new Set(prev).add(sourceProject.id));
+    } catch(e) {
+      showToast(e.message || "Import failed", "error");
+    }
+    setImporting(false);
   };
 
   const filteredProjects = projects.filter(p => {
@@ -228,6 +375,7 @@ function PropPulse({ currentUser, showToast }) {
               <div style={{border:"1px solid #E8EDF4",borderTop:"none",borderRadius:"0 0 10px 10px",overflow:"hidden"}}>
                 {filteredProjects.map((proj,ri)=>{
                   const sc = STATUS_COLORS[proj.project_status]||{bg:"#F7F9FC",c:"#718096"};
+                  const alreadyImported = importedSourceIds.has(proj.id);
                   return (
                     <div key={proj.id} onClick={()=>setSelProject(proj)}
                       style={{display:"grid",gridTemplateColumns:"2.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr",gap:0,padding:"10px 14px",alignItems:"center",background:ri%2===0?"#fff":"#F7F9FC",borderBottom:"1px solid #F1F5F9",cursor:"pointer",transition:"background .1s"}}
@@ -236,9 +384,10 @@ function PropPulse({ currentUser, showToast }) {
                       <div>
                         <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{proj.name}</div>
                         <div style={{fontSize:11,color:"#94A3B8"}}>{proj.pp_developers?.name||proj.developer||"—"}</div>
-                        <div style={{display:"flex",gap:4,marginTop:3}}>
+                        <div style={{display:"flex",gap:4,marginTop:3,flexWrap:"wrap"}}>
                           <span style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:20,background:sc.bg,color:sc.c}}>{proj.project_status||"—"}</span>
                           {proj.is_pp_verified&&<span style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ Verified</span>}
+                          {alreadyImported&&<span style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:20,background:"#E6EFF9",color:"#1A5FA8"}}>📥 In My Inventory</span>}
                         </div>
                       </div>
                       <div style={{fontSize:12,color:"#4A5568"}}>{proj.community||proj.location||"—"}<br/><span style={{fontSize:11,color:"#94A3B8"}}>{proj.emirate||"Dubai"}</span></div>
@@ -384,6 +533,7 @@ function PropPulse({ currentUser, showToast }) {
                   return <span key={tag} style={{fontSize:12,fontWeight:600,padding:"4px 12px",borderRadius:20,background:sc.bg,color:sc.c}}>{tag}</span>;
                 })}
                 {selProject.is_pp_verified&&<span style={{fontSize:12,fontWeight:600,padding:"4px 12px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ PropPulse Verified</span>}
+                {importedSourceIds.has(selProject.id)&&<span style={{fontSize:12,fontWeight:600,padding:"4px 12px",borderRadius:20,background:"#E6EFF9",color:"#1A5FA8"}}>📥 In Your Inventory</span>}
               </div>
               {/* Key stats */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
@@ -402,10 +552,23 @@ function PropPulse({ currentUser, showToast }) {
                 ))}
               </div>
               {selProject.description&&<p style={{fontSize:13,color:"#4A5568",lineHeight:1.6,margin:0}}>{selProject.description}</p>}
-              {/* Links */}
-              <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+              {/* Links + IMPORT */}
+              <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
                 {selProject.google_maps_url&&<a href={selProject.google_maps_url} target="_blank" rel="noreferrer" style={{padding:"8px 16px",borderRadius:8,background:"#E6EFF9",color:"#1A5FA8",fontSize:12,fontWeight:600,textDecoration:"none"}}>📍 View on Maps</a>}
                 {(selProject.brochure_url||selProject.brochure_file_url)&&<a href={selProject.brochure_url||selProject.brochure_file_url} target="_blank" rel="noreferrer" style={{padding:"8px 16px",borderRadius:8,background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:600,textDecoration:"none"}}>📄 Download Brochure</a>}
+                {canImport && (
+                  importedSourceIds.has(selProject.id) ? (
+                    <button disabled
+                      style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #CBD5E1",background:"#F1F5F9",color:"#64748B",fontSize:12,fontWeight:600,cursor:"not-allowed",marginLeft:"auto"}}>
+                      ✓ Already in Your Inventory
+                    </button>
+                  ) : (
+                    <button onClick={()=>importProject(selProject)} disabled={importing}
+                      style={{padding:"8px 18px",borderRadius:8,border:"none",background:importing?"#5B7FAA":"#0F2540",color:"#fff",fontSize:12,fontWeight:700,cursor:importing?"not-allowed":"pointer",marginLeft:"auto",boxShadow:"0 2px 8px rgba(15,37,64,.25)"}}>
+                      {importing?"⏳ Importing…":"📥 Import to My Inventory"}
+                    </button>
+                  )
+                )}
               </div>
             </div>
           </div>
