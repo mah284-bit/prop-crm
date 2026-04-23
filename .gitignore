@@ -27,3 +27,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+.vercel
+.env*.local
+
+# Claude Code workspace
+.claude/
+
+# Local env (never commit)
+.env.local
