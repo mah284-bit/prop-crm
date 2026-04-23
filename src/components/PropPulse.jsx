@@ -22,6 +22,10 @@ function PropPulse({ currentUser, showToast }) {
   const [showAddDev, setShowAddDev] = useState(false);
   const [saving, setSaving] = useState(false);
   const [agentRunning, setAgentRunning] = useState(false);
+  const [agentProgress, setAgentProgress] = useState(null); // { current, total, developer }
+  const [unverifiedProjects, setUnverifiedProjects] = useState([]); // catalog-scoped, is_pp_verified = false
+  const [showVerifyQueue, setShowVerifyQueue] = useState(false);
+  const [verifyingId, setVerifyingId] = useState(null);
   const [importing, setImporting] = useState(false);
   const [importedSourceIds, setImportedSourceIds] = useState(new Set());
   const [devForm, setDevForm] = useState({ name:"", website:"", city:"Dubai", country:"UAE", rera_developer_no:"", description:"" });
@@ -80,21 +84,98 @@ function PropPulse({ currentUser, showToast }) {
       } else {
         setImportedSourceIds(new Set());
       }
+
+      // Admins see a Verification Queue — catalog-scoped projects with is_pp_verified = false
+      if (isAdmin) {
+        const { data: unverified } = await supabase
+          .from("projects")
+          .select("*, pp_developers(name)")
+          .is("company_id", null)
+          .eq("is_pp_verified", false)
+          .order("pp_last_updated", { ascending: false })
+          .limit(100);
+        setUnverifiedProjects(unverified || []);
+      }
     } catch(e) { showToast("Failed to load PropPulse data", "error"); }
     setLoading(false);
   };
 
-  const runAgent = async () => {
-    setAgentRunning(true);
-    showToast("⚡ PropPulse AI Agent running — collecting UAE project data…", "info");
+  // Admin action: approve an unverified project → flips is_pp_verified = true,
+  // making it visible to all brokerages in the PropPulse catalog.
+  const verifyProject = async (proj) => {
+    setVerifyingId(proj.id);
     try {
-      const res = await fetch('/api/collect-projects', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error);
-      showToast(`✅ Agent complete — ${result.added} projects added, ${result.updated} updated`, "success");
+      const { error } = await supabase
+        .from("projects")
+        .update({ is_pp_verified: true, pp_last_updated: new Date().toISOString() })
+        .eq("id", proj.id);
+      if (error) throw error;
+      showToast(`✓ "${proj.name}" verified and published to catalog`, "success");
       loadAll();
     } catch(e) { showToast(e.message, "error"); }
+    setVerifyingId(null);
+  };
+
+  // Admin action: reject an unverified project → hard delete. Data can always
+  // be re-discovered by the agent later if it's legitimate.
+  const rejectProject = async (proj) => {
+    if (!window.confirm(`Reject and delete "${proj.name}"? This can't be undone.`)) return;
+    setVerifyingId(proj.id);
+    try {
+      const { error } = await supabase.from("projects").delete().eq("id", proj.id);
+      if (error) throw error;
+      showToast(`"${proj.name}" rejected and removed`, "info");
+      loadAll();
+    } catch(e) { showToast(e.message, "error"); }
+    setVerifyingId(null);
+  };
+
+  const runAgent = async () => {
+    if (!developers.length) {
+      showToast("No developers configured. Add a developer first.", "error");
+      return;
+    }
+    setAgentRunning(true);
+    let totalAdded = 0;
+    let totalUpdated = 0;
+    let totalQueued = 0;
+    let totalErrors = 0;
+
+    for (let i = 0; i < developers.length; i++) {
+      const dev = developers[i];
+      setAgentProgress({ current: i + 1, total: developers.length, developer: dev.name });
+      try {
+        const res = await fetch("/api/collect-projects-v2", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            developer_id: dev.id,
+            developer_name: dev.name,
+            developer_website: dev.website,
+          }),
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          totalErrors++;
+          console.warn(`Agent error for ${dev.name}:`, result.error);
+        } else {
+          totalAdded   += result.added   || 0;
+          totalUpdated += result.updated || 0;
+          totalQueued  += result.queued_for_review || 0;
+        }
+      } catch(e) {
+        totalErrors++;
+        console.warn(`Agent exception for ${dev.name}:`, e.message);
+      }
+    }
+
+    setAgentProgress(null);
     setAgentRunning(false);
+    const summary =
+      `✅ Agent run complete — ${totalAdded} new, ${totalUpdated} updated, ` +
+      `${totalQueued} awaiting review` + (totalErrors ? `, ${totalErrors} developer(s) failed` : "");
+    showToast(summary, "success");
+    loadAll();
   };
 
   const saveDeveloper = async () => {
@@ -315,11 +396,25 @@ function PropPulse({ currentUser, showToast }) {
           </button>
         ))}
         {isAdmin && (
-          <div style={{marginLeft:"auto",display:"flex",gap:8}}>
+          <div style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center"}}>
+            {agentProgress && (
+              <span style={{fontSize:11,color:"#5B3FAA",fontWeight:600,padding:"0 8px"}}>
+                Checking {agentProgress.current}/{agentProgress.total}: {agentProgress.developer}…
+              </span>
+            )}
             <button onClick={runAgent} disabled={agentRunning}
               style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #5B3FAA",background:agentRunning?"#EEE8F9":"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:agentRunning?"not-allowed":"pointer"}}>
               {agentRunning?"⚡ Running…":"🤖 Run AI Agent"}
             </button>
+            {unverifiedProjects.length > 0 && (
+              <button onClick={()=>setShowVerifyQueue(true)}
+                style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #B85C10",background:"#FDF0E6",color:"#8A4200",fontSize:12,fontWeight:700,cursor:"pointer",position:"relative"}}>
+                🔍 Verify Queue
+                <span style={{marginLeft:6,background:"#B85C10",color:"#fff",borderRadius:10,padding:"1px 7px",fontSize:10,fontWeight:700}}>
+                  {unverifiedProjects.length}
+                </span>
+              </button>
+            )}
             <button onClick={()=>setShowAddDev(true)}
               style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #C9A84C",background:"#FDF3DC",color:"#8A6200",fontSize:12,fontWeight:600,cursor:"pointer"}}>
               + Developer
@@ -571,6 +666,73 @@ function PropPulse({ currentUser, showToast }) {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── VERIFICATION QUEUE MODAL (admin only) ── */}
+      {showVerifyQueue && (
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1200,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:920,maxWidth:"100%",maxHeight:"90vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.25)"}}>
+            <div style={{padding:"1.25rem 1.5rem",borderBottom:"1px solid #E8EDF4",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:"#fff",zIndex:1}}>
+              <div>
+                <div style={{fontSize:15,fontWeight:700,color:"#0F2540"}}>🔍 Verification Queue</div>
+                <div style={{fontSize:12,color:"#64748B",marginTop:2}}>Review AI-discovered projects before publishing to the PropPulse catalog</div>
+              </div>
+              <button onClick={()=>setShowVerifyQueue(false)} style={{background:"none",border:"none",fontSize:22,color:"#94A3B8",cursor:"pointer"}}>×</button>
+            </div>
+            {unverifiedProjects.length === 0 ? (
+              <div style={{padding:"3rem",textAlign:"center",color:"#64748B"}}>
+                <div style={{fontSize:40,marginBottom:10}}>✨</div>
+                <div style={{fontSize:14,fontWeight:600,color:"#0F2540"}}>Queue is empty</div>
+                <div style={{fontSize:12,marginTop:4}}>Run the AI Agent to discover new UAE projects.</div>
+              </div>
+            ) : (
+              <div style={{padding:"1rem 1.5rem"}}>
+                {unverifiedProjects.map(proj => {
+                  const conf = proj.pp_confidence_score ?? 0;
+                  const confColor = conf >= 80 ? "#1A7F5A" : conf >= 60 ? "#A06810" : "#B83232";
+                  const confBg    = conf >= 80 ? "#E6F4EE" : conf >= 60 ? "#FDF3DC" : "#FAEAEA";
+                  return (
+                    <div key={proj.id} style={{border:"1px solid #E8EDF4",borderRadius:12,padding:"14px 16px",marginBottom:10,display:"flex",gap:14,alignItems:"flex-start"}}>
+                      <div style={{flex:1}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
+                          <span style={{fontSize:14,fontWeight:700,color:"#0F2540"}}>{proj.name}</span>
+                          <span style={{fontSize:11,fontWeight:600,padding:"2px 8px",borderRadius:20,background:confBg,color:confColor}}>
+                            {conf}% confidence
+                          </span>
+                          {proj.project_status && (
+                            <span style={{fontSize:10,fontWeight:600,padding:"2px 7px",borderRadius:20,background:"#F1F5F9",color:"#475569"}}>{proj.project_status}</span>
+                          )}
+                        </div>
+                        <div style={{fontSize:12,color:"#64748B",marginBottom:6}}>
+                          {proj.pp_developers?.name || proj.developer || "—"} · {proj.community || "—"} · {proj.emirate || "—"}
+                        </div>
+                        {proj.description && (
+                          <div style={{fontSize:12,color:"#4A5568",lineHeight:1.5,marginBottom:6}}>{proj.description}</div>
+                        )}
+                        <div style={{display:"flex",gap:14,fontSize:11,color:"#94A3B8",flexWrap:"wrap"}}>
+                          {proj.starting_price && <span>💰 AED {(proj.starting_price/1e6).toFixed(2)}M</span>}
+                          {proj.total_units && <span>🏠 {proj.total_units.toLocaleString()} units</span>}
+                          {proj.handover_date && <span>📅 {new Date(proj.handover_date).toLocaleDateString("en-AE",{month:"short",year:"numeric"})}</span>}
+                          {proj.pp_data_source && <span>🤖 {proj.pp_data_source}</span>}
+                        </div>
+                      </div>
+                      <div style={{display:"flex",flexDirection:"column",gap:6,flexShrink:0}}>
+                        <button onClick={()=>verifyProject(proj)} disabled={verifyingId===proj.id}
+                          style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#1A7F5A",color:"#fff",fontSize:12,fontWeight:700,cursor:verifyingId===proj.id?"not-allowed":"pointer"}}>
+                          {verifyingId===proj.id?"…":"✓ Verify"}
+                        </button>
+                        <button onClick={()=>rejectProject(proj)} disabled={verifyingId===proj.id}
+                          style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #B83232",background:"#fff",color:"#B83232",fontSize:12,fontWeight:600,cursor:verifyingId===proj.id?"not-allowed":"pointer"}}>
+                          ✗ Reject
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
