@@ -547,22 +547,24 @@ function LoginScreen({onLogin}){
       let profile = profRes.data;
 
       if(!profile){
-        // Profile missing — create it automatically
-        const meta = data.user.user_metadata||{};
-        const newProf = {
-          id:             data.user.id,
-          full_name:      meta.full_name || data.user.email?.split("@")[0] || "Admin",
-          email:          data.user.email,
-          role:           "super_admin",
-          is_super_admin: true,
-          is_active:      true,
-        };
-        const ins = await supabase.from("profiles").upsert(newProf, {onConflict:"id"}).select().maybeSingle();
-        profile = ins.data || newProf; // fall back to local object if RLS blocks insert
+        // SECURITY: Do NOT auto-create profiles. An authenticated user without
+        // a profile is one of: (a) someone provisioned by an admin who forgot
+        // to create the profiles row, (b) an unauthorized signup if Supabase
+        // Auth signups are enabled, (c) a stale/leaked session. In all cases,
+        // the safe response is to refuse access and require admin provisioning.
+        // (Sprint 0.5 / Block 8 — fixes auto-super_admin escalation bug.)
+        console.warn("[Auth] Authenticated user has no profile row:", data.user.id, data.user.email);
+        await supabase.auth.signOut();
+        setError("Your account has not been provisioned. Please contact your administrator.");
+        setLoading(false);
+        return;
       }
 
       if(!profile){
-        setError("Profile not found. Run the SQL fix in Supabase and try again.");
+        // Defensive — should be unreachable after the explicit check above,
+        // but kept as a belt-and-braces safety net.
+        await supabase.auth.signOut();
+        setError("Your account has not been provisioned. Please contact your administrator.");
         setLoading(false);
         return;
       }
