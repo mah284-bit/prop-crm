@@ -17,11 +17,17 @@ export default async function handler(req, res) {
       email,
       password,
       email_confirm: true,
-      user_metadata: { full_name, role }
+      user_metadata: { 
+        full_name, 
+        role,
+        company_id: company_id || null  // passed to trigger
+      }
     })
 
     if (authError) throw authError
 
+    // Also explicitly update profile in case trigger runs before metadata is set
+    await new Promise(r => setTimeout(r, 1500));
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .update({
