@@ -547,22 +547,24 @@ function LoginScreen({onLogin}){
       let profile = profRes.data;
 
       if(!profile){
-        // Profile missing — create it automatically
-        const meta = data.user.user_metadata||{};
-        const newProf = {
-          id:             data.user.id,
-          full_name:      meta.full_name || data.user.email?.split("@")[0] || "Admin",
-          email:          data.user.email,
-          role:           "super_admin",
-          is_super_admin: true,
-          is_active:      true,
-        };
-        const ins = await supabase.from("profiles").upsert(newProf, {onConflict:"id"}).select().maybeSingle();
-        profile = ins.data || newProf; // fall back to local object if RLS blocks insert
+        // SECURITY: Do NOT auto-create profiles. An authenticated user without
+        // a profile is one of: (a) someone provisioned by an admin who forgot
+        // to create the profiles row, (b) an unauthorized signup if Supabase
+        // Auth signups are enabled, (c) a stale/leaked session. In all cases,
+        // the safe response is to refuse access and require admin provisioning.
+        // (Sprint 0.5 / Block 8 — fixes auto-super_admin escalation bug.)
+        console.warn("[Auth] Authenticated user has no profile row:", data.user.id, data.user.email);
+        await supabase.auth.signOut();
+        setError("Your account has not been provisioned. Please contact your administrator.");
+        setLoading(false);
+        return;
       }
 
       if(!profile){
-        setError("Profile not found. Run the SQL fix in Supabase and try again.");
+        // Defensive — should be unreachable after the explicit check above,
+        // but kept as a belt-and-braces safety net.
+        await supabase.auth.signOut();
+        setError("Your account has not been provisioned. Please contact your administrator.");
         setLoading(false);
         return;
       }
@@ -2278,6 +2280,9 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const [showAdd,  setShowAdd]  = useState(false);
   const [editLead, setEditLead] = useState(null);
   const [saving,   setSaving]   = useState(false);
+  // Phase A.3 — Sprint 1 form (side-by-side feature flag)
+  const [useNewForm, setUseNewForm] = useState(false);
+  const [showAddV2, setShowAddV2] = useState(false);
   const [opps,     setOpps]     = useState(globalOppsFromParent); // sync with global
   const [units,    setUnits]    = useState([]);
   const [projects, setProjects] = useState([]);
@@ -2407,7 +2412,22 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           {["Walk-In","Referral","Online","Social Media","Cold Call","Exhibition","Portal","Other"].map(s=><option key={s}>{s}</option>)}
         </select>
         <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
-        {canEdit&&<button onClick={()=>{setForm(blank);setEditLead(null);setShowAdd(true);}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Contact</button>}
+        {canEdit&&(
+          <>
+            {/* Phase A.3 — feature toggle: switch between old and new form during rollout */}
+            <label style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:11,color:"#5A6B85",whiteSpace:"nowrap",cursor:"pointer",userSelect:"none"}}>
+              <input type="checkbox" checked={useNewForm} onChange={e=>setUseNewForm(e.target.checked)} style={{cursor:"pointer"}}/>
+              New form
+            </label>
+            <button onClick={()=>{
+              if(useNewForm){
+                setShowAddV2(true);
+              } else {
+                setForm(blank);setEditLead(null);setShowAdd(true);
+              }
+            }} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Contact</button>
+          </>
+        )}
       </div>
 
       {/* Lead summary strip */}
@@ -2461,13 +2481,24 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       </div>
 
       {/* Add/Edit Contact Modal */}
+      {/* Phase A.3 — new buyer-type-aware lead form (side-by-side with existing modal) */}
+      {showAddV2&&(
+        <LeadCreationFormV2
+          supabase={supabase}
+          companyId={currentUser?.company_id}
+          currentUserId={currentUser?.id}
+          onCancel={()=>setShowAddV2(false)}
+          onCreated={(newLead)=>{
+            setShowAddV2(false);
+            setLeads(p=>[newLead,...p]);
+            showToast("Contact added (new form)","success");
+            setSelLeadId(newLead.id);
+            setView("lead");
+          }}
+        />
+      )}
+
       {showAdd&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
-              <span style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>{editLead?"Edit":"New"} Contact</span>
-              <button onClick={()=>{setShowAdd(false);setEditLead(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
-            </div>
             <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                 <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Full Name *</label><input value={form.name} onChange={sf("name")}/></div>
@@ -4229,6 +4260,7 @@ import ReportsModule from "./components/ReportsModule.jsx";
 import LeaseOpportunityDetail from "./components/LeaseOpportunityDetail.jsx";
 import LeasingLeads from "./components/LeasingLeads.jsx";
 import PropPulse from "./components/PropPulse.jsx";
+import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";  // Phase A.3 — new buyer-type-aware form (side-by-side with old form)
 // ──────────────────────────────────────────────────────────────
 
 
