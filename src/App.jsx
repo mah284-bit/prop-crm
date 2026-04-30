@@ -2413,20 +2413,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         </select>
         <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
         {canEdit&&(
-          <>
-            {/* Phase A.3 — feature toggle: switch between old and new form during rollout */}
-            <label style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:11,color:"#5A6B85",whiteSpace:"nowrap",cursor:"pointer",userSelect:"none"}}>
-              <input type="checkbox" checked={useNewForm} onChange={e=>setUseNewForm(e.target.checked)} style={{cursor:"pointer"}}/>
-              New form
-            </label>
-            <button onClick={()=>{
-              if(useNewForm){
-                setShowAddV2(true);
-              } else {
-                setForm(blank);setEditLead(null);setShowAdd(true);
-              }
-            }} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Contact</button>
-          </>
+          <button onClick={()=>setShowAddV2(true)} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Lead</button>
         )}
       </div>
 
