@@ -2524,13 +2524,28 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   // ── LEAD DETAIL VIEW (contact + opportunities) ─────────────────
   if(view==="lead"&&selLead) return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
-      {/* Header */}
+      {/* ── Helpers (inline, used only in this view) ── */}
+      {(()=>{ /* no-op IIFE just to scope helpers via closures below */ })()}
+      {/* Header — redesigned */}
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap"}}>
-        <button onClick={()=>setView("list")} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Contacts</button>
+        <button onClick={()=>setView("list")} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Leads</button>
         <Av name={selLead.name} size={40}/>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px"}}>{selLead.name}</div>
-          <div style={{fontSize:12,color:"#718096"}}>{selLead.phone} {selLead.email?`· ${selLead.email}`:""} {selLead.nationality?`· ${selLead.nationality}`:""}</div>
+          <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
+            {(()=>{
+              const BT_LABEL = {local_national:"Local national",gcc_resident_expat:"GCC resident expat",international_non_resident:"International (non-resident)",corporate:"Corporate"};
+              const bt = selLead.buyer_type;
+              return bt ? <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#E8EDF4",color:"#0F2540"}}>{BT_LABEL[bt]||bt}</span> : null;
+            })()}
+            {(()=>{
+              const KYC_META = {not_started:{c:"#8A6200",bg:"#FDF3DC",l:"KYC: Not started"},in_progress:{c:"#1A5FA8",bg:"#E6EFF8",l:"KYC: In progress"},verified:{c:"#1A7F5A",bg:"#E6F4EE",l:"KYC: Verified"},expired:{c:"#C53030",bg:"#FED7D7",l:"KYC: Expired"}};
+              const k = selLead.kyc_status||"not_started";
+              const m = KYC_META[k]||KYC_META.not_started;
+              return <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:m.bg,color:m.c}}>{m.l}</span>;
+            })()}
+            {selLead.pep_flag&&<span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#FDF3DC",color:"#8A6200"}}>⚠ PEP</span>}
+          </div>
         </div>
         <div style={{display:"flex",gap:6}}>
           {canEdit&&<button onClick={()=>{setForm({...blank,...selLead});setEditLead(selLead);setShowAdd(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
@@ -2538,15 +2553,49 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         </div>
       </div>
 
-      {/* Contact info strip */}
-      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
-        {[["📞 Phone",selLead.phone||"—"],["✉ Email",selLead.email||"—"],["🌍 Nationality",selLead.nationality||"—"],["🏷 Source",selLead.source||"—"],["📋 Type",selLead.property_type||"—"]].map(([l,v])=>(
-          <div key={l} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 14px",flex:1,minWidth:120}}>
-            <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
-            <div style={{fontSize:13,fontWeight:600,color:"#0F2540",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div>
+      {/* Identity panel — only fields with data are shown */}
+      {(()=>{
+        const iso2ToFlag = (iso2)=>{ if(!iso2||iso2.length!==2)return ""; const c=iso2.toUpperCase(); return String.fromCodePoint(0x1F1E6+(c.charCodeAt(0)-65))+String.fromCodePoint(0x1F1E6+(c.charCodeAt(1)-65)); };
+          const SOF_LABEL = {salary:"Salary",business:"Business income",investments:"Investments",inheritance:"Inheritance",sale_of_property:"Sale of property",savings:"Savings",gift:"Gift",other:"Other"};
+        const rows = [];
+        if(selLead.legal_name_en) rows.push(["Legal name (English)", selLead.legal_name_en]);
+        if(selLead.legal_name_ar) rows.push(["Legal name (Arabic)", <span style={{direction:"rtl",unicodeBidi:"bidi-override",fontFamily:"'Noto Sans Arabic','Inter',sans-serif"}}>{selLead.legal_name_ar}</span>]);
+        if(selLead.nationality_iso2) rows.push(["Nationality", `${iso2ToFlag(selLead.nationality_iso2)} ${selLead.nationality_iso2}`]);
+        else if(selLead.nationality) rows.push(["Nationality", selLead.nationality]);
+        if(selLead.residence_iso2) rows.push(["Residence", `${iso2ToFlag(selLead.residence_iso2)} ${selLead.residence_iso2}`]);
+        if(selLead.tax_residency_iso2 && selLead.tax_residency_iso2!==selLead.residence_iso2) rows.push(["Tax residency", `${iso2ToFlag(selLead.tax_residency_iso2)} ${selLead.tax_residency_iso2}`]);
+        if(selLead.phone_e164||selLead.phone) {
+          const ph = selLead.phone_e164||selLead.phone;
+          rows.push(["Phone", <a href={`tel:${ph}`} style={{color:"#1A5FA8",textDecoration:"none",fontWeight:600}}>{ph}</a>]);
+        }
+        if(selLead.email) rows.push(["Email", <a href={`mailto:${selLead.email}`} style={{color:"#1A5FA8",textDecoration:"none",fontWeight:600}}>{selLead.email}</a>]);
+        if(selLead.source_of_funds) rows.push(["Source of funds", SOF_LABEL[selLead.source_of_funds]||selLead.source_of_funds]);
+        if(selLead.source) rows.push(["Lead source", selLead.source]);
+        if(selLead.property_type) rows.push(["Looking for", selLead.property_type]);
+        if(selLead.budget&&Number(selLead.budget)>0) rows.push(["Budget", `AED ${Number(selLead.budget).toLocaleString()}`]);
+        if(rows.length===0) return null;
+        return (
+          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"14px 18px",marginBottom:14}}>
+            <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",fontWeight:700,marginBottom:10}}>Identity</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:"6px 24px"}}>
+              {rows.map(([label,val],i)=>(
+                <div key={i} style={{display:"flex",alignItems:"baseline",gap:10,padding:"3px 0",borderBottom:i<rows.length-1?"1px dashed #EEF2F7":"none"}}>
+                  <div style={{fontSize:11,color:"#718096",minWidth:130}}>{label}</div>
+                  <div style={{fontSize:13,fontWeight:600,color:"#0F2540",flex:1,overflow:"hidden",textOverflow:"ellipsis"}}>{val}</div>
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
+        );
+      })()}
+
+      {/* Notes panel — separate from Identity for readability */}
+      {selLead.notes&&(
+        <div style={{background:"#FFFEF7",border:"1px solid #F0E5C8",borderRadius:12,padding:"12px 16px",marginBottom:14}}>
+          <div style={{fontSize:10,color:"#8A6200",textTransform:"uppercase",letterSpacing:".6px",fontWeight:700,marginBottom:6}}>Notes</div>
+          <div style={{fontSize:13,color:"#3A3A2E",whiteSpace:"pre-wrap",lineHeight:1.5}}>{selLead.notes}</div>
+        </div>
+      )}
 
       {/* Opportunities */}
       <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:12}}>
