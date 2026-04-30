@@ -2496,8 +2496,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
             setShowAddV2(false);
             setLeads(p=>[newLead,...p]);
             showToast("Contact added (new form)","success");
-            setSelLeadId(newLead.id);
-            setView("lead");
           }}
         />
       )}
