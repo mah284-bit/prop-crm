@@ -2484,9 +2484,13 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       {/* Phase A.3 — new buyer-type-aware lead form (side-by-side with existing modal) */}
       {showAddV2&&(
         <LeadCreationFormV2
-          supabase={supabase}
           companyId={currentUser?.company_id}
           currentUserId={currentUser?.id}
+          onSubmit={async(payload)=>{
+            const {data,error}=await supabase.from("leads").insert(payload).select().single();
+            if(error) throw new Error(error.message||"Failed to create lead");
+            return data;
+          }}
           onCancel={()=>setShowAddV2(false)}
           onCreated={(newLead)=>{
             setShowAddV2(false);

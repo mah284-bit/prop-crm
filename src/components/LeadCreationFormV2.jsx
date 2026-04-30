@@ -11,15 +11,15 @@
 // On submit: POSTs to /api/leads with the user's Supabase JWT.
 //   Returns the created lead via onCreated().
 //
-// Dependencies: React 19, @supabase/supabase-js (already in your repo).
-// No libphonenumber-js — phone validation is plain E.164 regex (server-side
-// validator is the source of truth).
+// Dependencies: React 19. Phone validation is plain E.164 regex.
+// No direct Supabase client — parent provides onSubmit(payload) callback
+// to perform the actual database write. Keeps this component portable.
 
 import React, { useEffect, useMemo, useState } from "react";
 
-// IMPORTANT: This component does NOT import supabase directly because in
-// this codebase the Supabase client is created in App.jsx (top-level const).
-// Pass `supabase` as a prop from the parent (App.jsx).
+// IMPORTANT: This component does NOT import supabase directly. The parent
+// (App.jsx) handles all data persistence via the `onSubmit` prop. This
+// avoids the multiple-GoTrueClient warning and makes the form storage-agnostic.
 
 // ----------------------------------------------------------------------------
 // Constants
@@ -119,13 +119,14 @@ const styles = {
 
 /**
  * Props:
- *   - supabase   (required): the Supabase client (passed from App.jsx)
+ *   - onSubmit   (required): async function (payload) => {lead} | throws Error
+ *                            Parent handles the actual database write.
  *   - companyId  (required): the company_id this lead belongs to
  *   - onCancel   (required): called when user clicks Cancel or close
  *   - onCreated  (required): called with the created lead object on success
  *   - currentUserId (optional): for created_by / assigned_to
  */
-export default function LeadCreationFormV2({ supabase, companyId, onCancel, onCreated, currentUserId }) {
+export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCreated, currentUserId }) {
   // Reference data (fetched once on mount)
   const [countries, setCountries] = useState([]);
   const [rules, setRules] = useState({});
@@ -290,10 +291,10 @@ export default function LeadCreationFormV2({ supabase, companyId, onCancel, onCr
 
     setSaving(true);
     try {
-      // Direct Supabase write — same pattern as the existing (old) form.
-      // RLS enforces tenant isolation (Sprint 0.5 work). Validation already
-      // ran client-side via validate(). The /api/leads endpoint exists for
-      // future programmatic clients; the in-app form writes directly.
+      // Build payload. The parent component (App.jsx) handles the actual
+      // database write via the onSubmit prop. Keeps this component free of
+      // any direct database client, fixes the multiple-GoTrueClient issue,
+      // and makes V2 portable to any future storage backend.
 
       const phoneE164 = buildE164();
 
@@ -317,20 +318,29 @@ export default function LeadCreationFormV2({ supabase, companyId, onCancel, onCr
         ...(currentUserId ? { assigned_to: currentUserId, created_by: currentUserId } : {}),
       };
 
-      const { data, error } = await supabase
-        .from("leads")
-        .insert(payload)
-        .select()
-        .single();
+      if (typeof onSubmit !== "function") {
+        setSubmitError("Form misconfigured: onSubmit callback missing.");
+        setSaving(false);
+        return;
+      }
 
-      if (error) {
-        setSubmitError(error.message || "Failed to create lead");
+      let createdLead;
+      try {
+        createdLead = await onSubmit(payload);
+      } catch (err) {
+        setSubmitError(err?.message || "Failed to create lead");
+        setSaving(false);
+        return;
+      }
+
+      if (!createdLead) {
+        setSubmitError("Failed to create lead (no result returned).");
         setSaving(false);
         return;
       }
 
       // Success
-      onCreated && onCreated(data);
+      onCreated && onCreated(createdLead);
     } catch (err) {
       setSubmitError(err.message || "Network error");
     } finally {
