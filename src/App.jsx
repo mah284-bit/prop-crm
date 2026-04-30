@@ -1284,7 +1284,12 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
           company_id,
           type: "Stage Change",
           note: activityNote,
-          created_by: currentUser.id,
+          status: "completed",
+          // Match existing activities schema (used by other inserts in App.jsx)
+          user_id: currentUser.id,
+          user_name: currentUser.full_name,
+          lead_name: lead?.name || "",
+          // Phase E W1 — new columns added by migration 005
           stage_at_event: toStage,
           from_stage: fromStage,
           to_stage: toStage,
