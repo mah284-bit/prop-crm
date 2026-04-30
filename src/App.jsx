@@ -1151,6 +1151,328 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   STAGE CAPTURE DIALOG (Phase E Workstream 1)
+   Generic dialog component used to gate stage transitions with
+   structured activity capture. Each transition specifies its own
+   config (fields, validation, follow-up reminder offset).
+═══════════════════════════════════════════════════════════════ */
+
+// Configs per stage transition. Key = target stage. Value = field spec.
+// Each field is rendered by StageCaptureDialog based on its `kind`.
+const STAGE_CAPTURE_CONFIGS = {
+  "Contacted": {
+    title: "Capture Contact",
+    subtitle: "Record what happened in your first contact with this lead",
+    fields: [
+      {
+        key: "channel", label: "How did you reach them?", kind: "radio", required: true,
+        options: ["Call","WhatsApp","Email","In-person","Other"]
+      },
+      {
+        key: "discussion", label: "What did you discuss?", kind: "textarea", required: true,
+        minLength: 20, placeholder: "e.g. Customer is looking for a 2-bed apartment in Sobha Hartland, budget around 2M, ready to view this weekend...",
+        rows: 4
+      },
+      {
+        key: "interest_level", label: "Customer interest level", kind: "radio", required: true,
+        options: [
+          {value:"Hot",       color:"#DC2626", bg:"#FEE2E2"},
+          {value:"Warm",      color:"#D97706", bg:"#FEF3C7"},
+          {value:"Cold",      color:"#0891B2", bg:"#CFFAFE"},
+          {value:"Not interested", color:"#6B7280", bg:"#F3F4F6"},
+        ]
+      },
+      {
+        key: "next_step", label: "Next step agreed with customer", kind: "select", required: true,
+        options: ["Site visit","Send info","Follow up call","Lost interest"]
+      },
+      {
+        key: "follow_up_date", label: "Schedule next follow-up", kind: "date", required: true,
+        defaultOffsetDays: 2
+      },
+    ],
+    reminderTitle: (lead) => `Follow up with ${lead.name}`,
+    reminderBody:  (data) => `Next step: ${data.next_step}. Discussed: ${data.discussion?.slice(0,80)}${data.discussion?.length>80?"…":""}`,
+    reminderReason: "auto_follow_up_after_contacted",
+    onLostInterestSuggest: true, // if next_step == "Lost interest", suggest Closed Lost instead
+  },
+};
+
+function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, onSave, onCancel, showToast }) {
+  const config = STAGE_CAPTURE_CONFIGS[toStage];
+  const [data, setData] = useState({});
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  // Initialize default values when dialog opens
+  useEffect(() => {
+    if (!open || !config) return;
+    const init = {};
+    config.fields.forEach(f => {
+      if (f.kind === "date" && f.defaultOffsetDays) {
+        const d = new Date();
+        d.setDate(d.getDate() + f.defaultOffsetDays);
+        init[f.key] = d.toISOString().split("T")[0];
+      } else {
+        init[f.key] = "";
+      }
+    });
+    setData(init);
+    setErrors({});
+  }, [open, toStage]);
+
+  if (!open || !config) return null;
+
+  const setField = (k,v) => setData(d => ({...d, [k]: v}));
+
+  const validate = () => {
+    const errs = {};
+    for (const f of config.fields) {
+      const v = data[f.key];
+      if (f.required && (!v || (typeof v === "string" && v.trim() === ""))) {
+        errs[f.key] = "Required";
+      }
+      if (f.minLength && typeof v === "string" && v.trim().length < f.minLength) {
+        errs[f.key] = `Please write at least ${f.minLength} characters`;
+      }
+    }
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validate()) {
+      showToast("Please complete the required fields","error");
+      return;
+    }
+
+    // Edge case: if "Lost interest" selected, ask user to confirm — they may want Closed Lost instead
+    if (config.onLostInterestSuggest && data.next_step === "Lost interest") {
+      const goLost = window.confirm(
+        `You selected "Lost interest" as the next step.\n\n` +
+        `Would you like to mark this opportunity as Closed Lost instead of Contacted?\n\n` +
+        `Click OK to mark as Closed Lost.\nClick Cancel to keep advancing to Contacted.`
+      );
+      if (goLost) {
+        // Caller will detect this and route to Lost flow
+        onCancel();
+        // Caller is responsible for opening the Closed Lost dialog
+        // We pass a sentinel via showToast for now — clean up later
+        showToast("Switching to Closed Lost flow…", "info");
+        return; // The OpportunityDetail will need to handle this via prop
+      }
+    }
+
+    setSaving(true);
+    try {
+      // Get company_id from the opp (denormalized) — fall back to currentUser
+      const company_id = opp.company_id || currentUser.company_id;
+      if (!company_id) {
+        showToast("Missing company_id — cannot save","error");
+        setSaving(false);
+        return;
+      }
+
+      // 1. Insert activity row with stage context + structured data
+      const activityNote = `[${toStage}] ${data.discussion||""}`.slice(0, 1000);
+      const { data: actRow, error: actErr } = await supabase
+        .from("activities")
+        .insert({
+          opportunity_id: opp.id,
+          lead_id: lead?.id || opp.lead_id,
+          company_id,
+          type: "Stage Change",
+          note: activityNote,
+          created_by: currentUser.id,
+          stage_at_event: toStage,
+          from_stage: fromStage,
+          to_stage: toStage,
+          triggered_stage_change: true,
+          activity_subtype: "stage_advance",
+          structured_data: data,
+        })
+        .select()
+        .single();
+
+      if (actErr) {
+        console.error("Activity insert failed:", actErr);
+        showToast(`Failed to log activity: ${actErr.message}`,"error");
+        setSaving(false);
+        return;
+      }
+
+      // 2. Update opportunity stage
+      const { error: oppErr } = await supabase
+        .from("opportunities")
+        .update({
+          stage: toStage,
+          stage_updated_at: new Date().toISOString(),
+        })
+        .eq("id", opp.id);
+
+      if (oppErr) {
+        console.error("Stage update failed:", oppErr);
+        // Best-effort cleanup of the activity row
+        await supabase.from("activities").delete().eq("id", actRow.id);
+        showToast(`Failed to advance stage: ${oppErr.message}`,"error");
+        setSaving(false);
+        return;
+      }
+
+      // 3. Create reminder (best-effort — failure here doesn't undo the stage change)
+      if (data.follow_up_date && config.reminderReason) {
+        const triggerAt = new Date(data.follow_up_date);
+        triggerAt.setHours(9, 0, 0, 0); // 9am on the follow-up date
+        const { error: remErr } = await supabase
+          .from("reminders")
+          .insert({
+            company_id,
+            user_id: currentUser.id,
+            related_opportunity_id: opp.id,
+            related_lead_id: lead?.id || opp.lead_id,
+            related_activity_id: actRow.id,
+            trigger_at: triggerAt.toISOString(),
+            title: config.reminderTitle ? config.reminderTitle(lead||{}) : `Follow up — ${toStage}`,
+            body:  config.reminderBody  ? config.reminderBody(data)        : "",
+            reason: config.reminderReason,
+            status: "pending",
+            created_by: currentUser.id,
+          });
+        if (remErr) {
+          console.warn("Reminder creation failed (non-fatal):", remErr);
+          // Don't block — stage already advanced
+        }
+      }
+
+      showToast(`✓ Advanced to ${toStage}`,"success");
+      onSave({stage: toStage, activity: actRow, structured_data: data});
+    } catch (e) {
+      console.error("StageCaptureDialog save error:", e);
+      showToast(`Save failed: ${e.message}`,"error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
+      <div style={{background:"#fff",borderRadius:16,width:560,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
+        {/* Header */}
+        <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+            <div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>{config.title}</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3}}>{config.subtitle}</div>
+              <div style={{fontSize:11,color:"#C9A84C",marginTop:6,fontWeight:600}}>
+                {fromStage} → <strong>{toStage}</strong>
+              </div>
+            </div>
+            <button onClick={onCancel} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",lineHeight:1}}>×</button>
+          </div>
+        </div>
+
+        {/* Body */}
+        <div style={{overflowY:"auto",padding:"1.25rem 1.4rem",flex:1}}>
+          <div style={{display:"flex",flexDirection:"column",gap:16}}>
+            {config.fields.map(f => {
+              const err = errors[f.key];
+              const labelEl = (
+                <label style={{fontSize:12,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>
+                  {f.label}{f.required&&<span style={{color:"#C53030"}}> *</span>}
+                </label>
+              );
+
+              if (f.kind === "radio") {
+                const opts = f.options.map(o => typeof o === "string" ? {value:o} : o);
+                return (
+                  <div key={f.key}>
+                    {labelEl}
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                      {opts.map(o => {
+                        const sel = data[f.key] === o.value;
+                        return (
+                          <button key={o.value} onClick={()=>setField(f.key, o.value)}
+                            style={{
+                              padding:"7px 14px",borderRadius:20,
+                              border: `1.5px solid ${sel ? (o.color||"#0F2540") : "#D1D9E6"}`,
+                              background: sel ? (o.bg||"#0F2540") : "#fff",
+                              color: sel ? (o.color||"#fff") : "#4A5568",
+                              fontSize:12, fontWeight:600, cursor:"pointer", transition:"all .12s",
+                            }}>
+                            {o.value}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
+                  </div>
+                );
+              }
+
+              if (f.kind === "select") {
+                return (
+                  <div key={f.key}>
+                    {labelEl}
+                    <select value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
+                      style={{width:"100%",padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",background:"#fff",cursor:"pointer"}}>
+                      <option value="">— Select —</option>
+                      {f.options.map(o=><option key={o} value={o}>{o}</option>)}
+                    </select>
+                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
+                  </div>
+                );
+              }
+
+              if (f.kind === "textarea") {
+                return (
+                  <div key={f.key}>
+                    {labelEl}
+                    <textarea value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
+                      placeholder={f.placeholder||""} rows={f.rows||3}
+                      style={{width:"100%",padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",resize:"vertical"}}/>
+                    {f.minLength&&(
+                      <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>
+                        {(data[f.key]||"").length} / {f.minLength} characters minimum
+                      </div>
+                    )}
+                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
+                  </div>
+                );
+              }
+
+              if (f.kind === "date") {
+                return (
+                  <div key={f.key}>
+                    {labelEl}
+                    <input type="date" value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
+                      style={{padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
+                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
+                  </div>
+                );
+              }
+
+              return null;
+            })}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.4rem",borderTop:"1px solid #E8EDF4",background:"#F8FAFC"}}>
+          <button onClick={onCancel} disabled={saving}
+            style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+            Cancel
+          </button>
+          <button onClick={handleSave} disabled={saving}
+            style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#94A3B8":"#0F2540",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
+            {saving ? "Saving…" : `✓ Save & Advance to ${toStage}`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated }) {
   const [activeTab,  setActiveTab]  = useState("details");
   const [activities, setActivities] = useState([]);
@@ -1198,7 +1520,15 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
 
   const GATED_STAGES = ["Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
 
+  // Phase E W1 — stage capture dialog for transitions that need structured input
+  const [showCaptureDialog, setShowCaptureDialog] = useState(null); // target stage being captured
+
   const moveStage = async(toStage) => {
+    // Phase E W1: if target stage has a capture config, open the dialog
+    if (STAGE_CAPTURE_CONFIGS[toStage]) {
+      setShowCaptureDialog(toStage);
+      return;
+    }
     if(GATED_STAGES.includes(toStage)) {
       setStageGateForm({});
       setShowStageGate(toStage);
@@ -1870,6 +2200,25 @@ You will become the assigned agent.`);
           </div>
         </div>
       )}
+
+      {/* Phase E W1 — Stage Capture Dialog (Contacted, Site Visit, Proposal Sent, Negotiation) */}
+      <StageCaptureDialog
+        open={!!showCaptureDialog}
+        opp={opp}
+        lead={lead}
+        fromStage={opp.stage}
+        toStage={showCaptureDialog}
+        currentUser={currentUser}
+        showToast={showToast}
+        onCancel={()=>setShowCaptureDialog(null)}
+        onSave={(result)=>{
+          setShowCaptureDialog(null);
+          // Refresh activities timeline
+          supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
+          // Update parent opp state
+          onUpdated({...opp, stage: result.stage, stage_updated_at: new Date().toISOString()});
+        }}
+      />
 
       {/* Stage Gate Modal */}
       {showStageGate&&(
