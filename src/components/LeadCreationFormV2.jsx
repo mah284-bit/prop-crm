@@ -290,19 +290,17 @@ export default function LeadCreationFormV2({ supabase, companyId, onCancel, onCr
 
     setSaving(true);
     try {
-      const session = (await supabase.auth.getSession()).data?.session;
-      if (!session) {
-        setSubmitError("You are not signed in. Please refresh and log in again.");
-        setSaving(false);
-        return;
-      }
+      // Direct Supabase write — same pattern as the existing (old) form.
+      // RLS enforces tenant isolation (Sprint 0.5 work). Validation already
+      // ran client-side via validate(). The /api/leads endpoint exists for
+      // future programmatic clients; the in-app form writes directly.
 
       const phoneE164 = buildE164();
 
       const payload = {
         company_id: companyId,
         display_name: form.display_name.trim(),
-        name: form.display_name.trim(), // mirror for legacy
+        name: form.display_name.trim(), // mirror for legacy code that reads `name`
         buyer_type: buyerType,
         legal_name_en: form.legal_name_en.trim() || null,
         legal_name_ar: form.legal_name_ar.trim() || null,
@@ -312,33 +310,27 @@ export default function LeadCreationFormV2({ supabase, companyId, onCancel, onCr
         email: form.email.trim() || null,
         phone_e164: phoneE164,
         phone_country_code: form.phone_country_code || null,
-        phone: phoneE164, // mirror for legacy code paths
+        phone: phoneE164, // mirror for legacy code paths that read `phone`
         source_of_funds: form.source_of_funds || null,
         pep_flag: !!form.pep_flag,
         notes: form.notes.trim() || null,
-        ...(currentUserId ? { assigned_to: currentUserId } : {}),
+        ...(currentUserId ? { assigned_to: currentUserId, created_by: currentUserId } : {}),
       };
 
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      const { data, error } = await supabase
+        .from("leads")
+        .insert(payload)
+        .select()
+        .single();
 
-      const result = await res.json();
-
-      if (!res.ok) {
-        const detailMsg = (result.details || []).map((d) => `${d.field}: ${d.message}`).join("; ");
-        setSubmitError(detailMsg || result.error || "Failed to create lead");
+      if (error) {
+        setSubmitError(error.message || "Failed to create lead");
         setSaving(false);
         return;
       }
 
       // Success
-      onCreated && onCreated(result.lead);
+      onCreated && onCreated(data);
     } catch (err) {
       setSubmitError(err.message || "Network error");
     } finally {
