@@ -1312,16 +1312,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
           </div>
           <div style={{fontSize:12,color:"#718096",marginTop:2}}>{lead.name} · {lead.phone||""} {unit?`· ${unit.unit_ref} — ${unit.sub_type}`:""}</div>
         </div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          {canEdit&&["New","Contacted","Site Visit"].includes(opp.stage)&&unit&&(
-            <button onClick={()=>{
-              setEmailForm({to:lead.email||"",subject:`Property Proposal — ${lead.name}`,
-                body:`Dear ${lead.name},\n\nPlease find your personalised property proposal.\n\nProperty: ${unit.unit_ref} — ${unit.sub_type}${proj?` (${proj.name})`:""}\n${sp?`Price: AED ${Number(sp.asking_price).toLocaleString()}\n`:""}\nKindly review and let us know your preferred next step.\n\nBest regards,\n${currentUser.full_name}`});
-              setShowEmail(true);
-            }} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#1A5FA8",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>📤 Send Proposal</button>
-          )}
-          {canEdit&&<button onClick={()=>setShowLog(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Task</button>}
-        </div>
+        {/* Header actions removed — Send Proposal and Task moved into stage workflow band below for visual coherence */}
       </div>
 
       {/* Summary strip */}
@@ -1439,51 +1430,89 @@ You will become the assigned agent.`);
                 const m=OPP_STAGE_META[opp.stage]||{c:"#718096",bg:"#F7F9FC"};
                 const stageIdx=OPP_STAGES.indexOf(opp.stage);
                 const nextStageName=OPP_STAGES[stageIdx+1];
-                const stageActionMap={
-                  "New":           [{label:"📞 Log Call",type:"Call"},{label:"💬 WhatsApp",type:"WhatsApp"},{label:"📝 Add Note",type:"Note"}],
-                  "Contacted":     [{label:"📅 Schedule Visit",type:"Site Visit"},{label:"📞 Follow Up",type:"Call"},{label:"📝 Add Note",type:"Note"}],
-                  "Site Visit":    [{label:"📋 Log Outcome",type:"Note"},{label:"📄 Send Proposal",type:"Proposal"},{label:"📞 Follow Up",type:"Call"}],
-                  "Proposal Sent": [{label:"📞 Follow Up",type:"Call"},{label:"💰 Negotiate",type:"Note"},{label:"📝 Add Note",type:"Note"}],
-                  "Negotiation":   [{label:"📄 Send Offer",type:"Note"},{label:"✅ Get Approval",type:"Note"},{label:"📝 Add Note",type:"Note"}],
-                  "Offer Accepted":[{label:"📋 Reservation Form",type:"Note"},{label:"💰 Collect Fee",type:"Note"},{label:"📝 Add Note",type:"Note"}],
-                  "Reserved":      [{label:"✅ Confirm Reservation",type:"Note"},{label:"📄 Draft SPA",type:"Note"},{label:"📝 Add Note",type:"Note"}],
-                  "SPA Signed":    [{label:"💰 Add Payment",type:"Note"},{label:"📋 Upload SPA",type:"Note"},{label:"📝 Add Note",type:"Note"}],
+                // Stage-aware "next action" suggestion (the primary CTA for this stage)
+                const NEXT_ACTION_BY_STAGE = {
+                  "New":            "Make first contact",
+                  "Contacted":      "Schedule a site visit",
+                  "Site Visit":     "Send proposal & follow up",
+                  "Proposal Sent":  "Capture customer response",
+                  "Negotiation":    "Lock in the offer",
+                  "Offer Accepted": "Collect reservation fee",
+                  "Reserved":       "Draft & send SPA",
+                  "SPA Signed":     "Verify payments and close",
                 };
-                const actions=stageActionMap[opp.stage]||[];
+                const nextActionLabel = NEXT_ACTION_BY_STAGE[opp.stage] || "";
+                const showSendProposal = canEdit && ["Site Visit","Proposal Sent","Negotiation"].includes(opp.stage) && unit;
                 return(
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",paddingTop:12,borderTop:"1px solid #F1F5F9"}}>
-                    <span style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".5px",marginRight:4}}>Actions</span>
-                    {actions.map((a,i)=>(
-                      <button key={i} onClick={()=>setShowLog(true)}
-                        style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540",transition:"all .12s"}}
-                        onMouseOver={e=>{e.currentTarget.style.borderColor=m.c;e.currentTarget.style.color=m.c;e.currentTarget.style.background=m.bg;}}
-                        onMouseOut={e=>{e.currentTarget.style.borderColor="#E2E8F0";e.currentTarget.style.color="#0F2540";e.currentTarget.style.background="#fff";}}>
-                        {a.label}
-                      </button>
-                    ))}
-                    <div style={{flex:1}}/>
-                    {nextStageName&&nextStageName!=="Closed Won"&&(
-                      <button onClick={()=>moveStage(nextStageName)}
-                        style={{padding:"6px 16px",borderRadius:7,border:"none",background:m.c,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
-                        → {nextStageName}
-                      </button>
+                  <div style={{paddingTop:12,borderTop:"1px solid #F1F5F9"}}>
+                    {/* Next-action hint */}
+                    {nextActionLabel&&(
+                      <div style={{fontSize:11,color:"#475569",marginBottom:10,fontStyle:"italic"}}>
+                        💡 What's next: <strong style={{color:"#0F2540",fontStyle:"normal"}}>{nextActionLabel}</strong>
+                      </div>
                     )}
-                    {(opp.stage==="Offer Accepted"||opp.stage==="Negotiation"||opp.stage==="Reserved")&&(
-                      <button onClick={()=>moveStage("Reserved")}
-                        style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                        🔒 Reserve Unit
-                      </button>
-                    )}
-                    {opp.stage==="SPA Signed"&&(
-                      <button onClick={()=>moveStage("Closed Won")}
-                        style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#1A7F5A",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                        ✓ Close Won
-                      </button>
-                    )}
-                    <button onClick={()=>moveStage("Closed Lost")}
-                      style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #FECACA",background:"#FEF2F2",color:"#B83232",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-                      ✗ Lost
-                    </button>
+
+                    {/* Two clearly separated zones: ACTIVITY (left) and STAGE (right) */}
+                    <div style={{display:"flex",gap:14,flexWrap:"wrap",alignItems:"flex-start"}}>
+
+                      {/* Activity zone — logging, doesn't change stage */}
+                      <div style={{flex:"1 1 280px",minWidth:260,background:"#F8FAFC",border:"1px solid #E8EDF4",borderRadius:10,padding:"10px 12px"}}>
+                        <div style={{fontSize:9,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:8}}>Log activity</div>
+                        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                          <button onClick={()=>{setLogForm({type:"Call",note:""});setShowLog(true);}}
+                            style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
+                            📞 Log Call
+                          </button>
+                          <button onClick={()=>{setLogForm({type:"WhatsApp",note:""});setShowLog(true);}}
+                            style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
+                            💬 WhatsApp
+                          </button>
+                          <button onClick={()=>{setLogForm({type:"Note",note:""});setShowLog(true);}}
+                            style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
+                            📝 Add Note
+                          </button>
+                          {showSendProposal&&(
+                            <button onClick={()=>{
+                              setEmailForm({to:lead.email||"",subject:`Property Proposal — ${lead.name}`,
+                                body:`Dear ${lead.name},\n\nPlease find your personalised property proposal.\n\nProperty: ${unit.unit_ref} — ${unit.sub_type}${proj?` (${proj.name})`:""}\n${sp?`Price: AED ${Number(sp.asking_price).toLocaleString()}\n`:""}\nKindly review and let us know your preferred next step.\n\nBest regards,\n${currentUser.full_name}`});
+                              setShowEmail(true);
+                            }}
+                              style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #BFDBFE",background:"#EFF6FF",fontSize:11,fontWeight:700,cursor:"pointer",color:"#1A5FA8"}}>
+                              📤 Send Proposal
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Stage advancement zone — changes stage */}
+                      <div style={{flex:"1 1 280px",minWidth:260,background:`${m.bg}`,border:`1px solid ${m.c}33`,borderRadius:10,padding:"10px 12px"}}>
+                        <div style={{fontSize:9,fontWeight:700,color:m.c,textTransform:"uppercase",letterSpacing:".6px",marginBottom:8}}>Move stage</div>
+                        <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                          {nextStageName&&nextStageName!=="Closed Won"&&(
+                            <button onClick={()=>moveStage(nextStageName)}
+                              style={{padding:"7px 14px",borderRadius:7,border:"none",background:m.c,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 6px rgba(0,0,0,.08)"}}>
+                              ✓ Advance to {nextStageName}
+                            </button>
+                          )}
+                          {(opp.stage==="Offer Accepted"||opp.stage==="Negotiation"||opp.stage==="Reserved")&&nextStageName!=="Reserved"&&(
+                            <button onClick={()=>moveStage("Reserved")}
+                              style={{padding:"6px 12px",borderRadius:7,border:"none",background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                              🔒 Reserve Unit
+                            </button>
+                          )}
+                          {opp.stage==="SPA Signed"&&(
+                            <button onClick={()=>moveStage("Closed Won")}
+                              style={{padding:"7px 14px",borderRadius:7,border:"none",background:"#1A7F5A",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                              ✓ Close Won
+                            </button>
+                          )}
+                          <button onClick={()=>moveStage("Closed Lost")}
+                            style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #FECACA",background:"#FEF2F2",color:"#B83232",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                            ✗ Mark Lost
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
               })()}
@@ -2295,6 +2324,56 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const blank = {name:"",phone:"",email:"",nationality:"",source:"Walk-In",property_type:"Sale",notes:"",assigned_to:currentUser.id,budget:""};
   const [form, setForm] = useState(blank);
   const sf = k => e => setForm(f=>({...f,[k]:e.target?.value??e}));
+
+  // ── Browser history sync ────────────────────────────────────────
+  // Push state changes into browser history so the browser back button
+  // navigates within the app (list ← lead ← opportunity) instead of
+  // exiting the app entirely. Uses a ref to distinguish user-driven
+  // back navigation from programmatic state changes.
+  const skipPushRef = useRef(false);
+
+  useEffect(()=>{
+    // On mount: replace current entry with our initial state so popstate has something to roll back to
+    window.history.replaceState({view:"list",selLeadId:null,selOppId:null}, "", window.location.pathname);
+
+    const onPopState = (e)=>{
+      const s = e.state;
+      if(!s){
+        // User went back past our entries — keep them on the list view
+        skipPushRef.current = true;
+        setView("list");
+        setSelLeadId(null);
+        setSelOpp(null);
+        return;
+      }
+      skipPushRef.current = true;
+      setView(s.view||"list");
+      setSelLeadId(s.selLeadId||null);
+      if(s.selOppId){
+        // Find the opp in current state and restore it
+        const found = opps.find(o=>o.id===s.selOppId) || globalOppsFromParent.find(o=>o.id===s.selOppId);
+        setSelOpp(found||null);
+      } else {
+        setSelOpp(null);
+      }
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return ()=>window.removeEventListener("popstate", onPopState);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
+  useEffect(()=>{
+    // After every view/selection change, push to history — unless the change came from popstate
+    if(skipPushRef.current){
+      skipPushRef.current = false;
+      return;
+    }
+    const state = {view, selLeadId, selOppId: selOpp?.id || null};
+    window.history.pushState(state, "", window.location.pathname);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[view, selLeadId, selOpp?.id]);
+  // ────────────────────────────────────────────────────────────────
 
   // Load data
   useEffect(()=>{
