@@ -1086,22 +1086,82 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
   const ActCard = ({a})=>{
     const st = a.status||(a.scheduled_at&&new Date(a.scheduled_at)>new Date()?"upcoming":"completed");
     const isUpcoming = st==="upcoming";
+    // Phase E: stage advance activities are rendered with extra context
+    const isStageAdvance = a.triggered_stage_change === true || a.activity_subtype === "stage_advance";
+    const sd = a.structured_data || {};
+
+    // Try to derive the headline channel/icon from structured_data for stage advances
+    let displayType = a.type;
+    let displayIcon = icons[a.type] || "📋";
+    if (isStageAdvance && sd.channel) {
+      // Use the captured channel (Call/WhatsApp/Email/etc.) for icon
+      const channelToType = {Call:"Call", WhatsApp:"WhatsApp", Email:"Email", "In-person":"Meeting", Other:"Note"};
+      const mapped = channelToType[sd.channel];
+      if (mapped) {
+        displayType = mapped;
+        displayIcon = icons[mapped] || displayIcon;
+      }
+    }
+
+    // Interest level color map
+    const interestColors = {Hot:{c:"#DC2626",bg:"#FEE2E2"},Warm:{c:"#D97706",bg:"#FEF3C7"},Cold:{c:"#0891B2",bg:"#CFFAFE"},"Not interested":{c:"#6B7280",bg:"#F3F4F6"}};
+
     return(
-      <div style={{background:"#fff",border:"1px solid "+(isUpcoming?"#C9A84C":"#E2E8F0"),borderRadius:10,padding:"12px 14px",display:"flex",gap:10}}>
-        <div style={{width:34,height:34,borderRadius:"50%",background:isUpcoming?"rgba(201,168,76,.12)":"#F7F9FC",border:isUpcoming?"1.5px solid #C9A84C":"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
-          {icons[a.type]||"📋"}
+      <div style={{background:"#fff",border:"1px solid "+(isStageAdvance?"#1A5FA8":isUpcoming?"#C9A84C":"#E2E8F0"),borderRadius:10,padding:"12px 14px",display:"flex",gap:10,borderLeft:isStageAdvance?"4px solid #1A5FA8":undefined}}>
+        <div style={{width:34,height:34,borderRadius:"50%",background:isStageAdvance?"#E6EFF8":isUpcoming?"rgba(201,168,76,.12)":"#F7F9FC",border:isStageAdvance?"1.5px solid #1A5FA8":isUpcoming?"1.5px solid #C9A84C":"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
+          {displayIcon}
         </div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4,flexWrap:"wrap",gap:6}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{a.type}</span>
-              <span style={{fontSize:10,fontWeight:700,color:statusColors[st]||"#718096",background:"rgba(0,0,0,.05)",padding:"2px 8px",borderRadius:10}}>
-                {statusLabels[st]||st}
+          {/* Phase E: stage transition badge */}
+          {isStageAdvance && a.from_stage && a.to_stage && (
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,fontSize:10,fontWeight:700,color:"#1A5FA8",textTransform:"uppercase",letterSpacing:".5px"}}>
+              <span>🎯 Stage advanced</span>
+              <span style={{fontWeight:500,color:"#94A3B8",textTransform:"none",letterSpacing:0}}>
+                {a.from_stage} → <strong style={{color:"#0F2540"}}>{a.to_stage}</strong>
               </span>
+            </div>
+          )}
+
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4,flexWrap:"wrap",gap:6}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{displayType}</span>
+              {!isStageAdvance && (
+                <span style={{fontSize:10,fontWeight:700,color:statusColors[st]||"#718096",background:"rgba(0,0,0,.05)",padding:"2px 8px",borderRadius:10}}>
+                  {statusLabels[st]||st}
+                </span>
+              )}
+              {/* Phase E: interest level badge */}
+              {isStageAdvance && sd.interest_level && interestColors[sd.interest_level] && (
+                <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:interestColors[sd.interest_level].bg,color:interestColors[sd.interest_level].c}}>
+                  {sd.interest_level}
+                </span>
+              )}
             </div>
             <span style={{fontSize:11,color:"#A0AEC0"}}>{new Date(a.created_at).toLocaleDateString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
           </div>
-          {a.note&&<div style={{fontSize:12,color:"#4A5568",lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:4}}>{a.note}</div>}
+
+          {/* Discussion / note */}
+          {(isStageAdvance ? sd.discussion : a.note) && (
+            <div style={{fontSize:12,color:"#4A5568",lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:6,fontStyle:isStageAdvance?"normal":"normal"}}>
+              {isStageAdvance ? sd.discussion : a.note}
+            </div>
+          )}
+
+          {/* Phase E: structured data summary row */}
+          {isStageAdvance && (sd.next_step || sd.follow_up_date) && (
+            <div style={{display:"flex",gap:14,flexWrap:"wrap",fontSize:11,color:"#475569",marginBottom:4,paddingTop:6,borderTop:"1px dashed #E2E8F0"}}>
+              {sd.next_step && (
+                <div><span style={{color:"#94A3B8",fontWeight:600}}>Next step:</span> <strong style={{color:"#0F2540"}}>{sd.next_step}</strong></div>
+              )}
+              {sd.follow_up_date && (
+                <div><span style={{color:"#94A3B8",fontWeight:600}}>⏰ Follow up:</span> <strong style={{color:"#0F2540"}}>{new Date(sd.follow_up_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}</strong></div>
+              )}
+              {sd.channel && (
+                <div><span style={{color:"#94A3B8",fontWeight:600}}>via:</span> <strong style={{color:"#0F2540"}}>{sd.channel}</strong></div>
+              )}
+            </div>
+          )}
+
           {a.outcome&&<div style={{fontSize:11,color:"#718096",fontStyle:"italic",marginBottom:4}}>Note: {a.outcome}</div>}
           <div style={{fontSize:11,color:"#A0AEC0"}}>{a.user_name}</div>
           {isUpcoming&&canEdit&&(
@@ -1670,7 +1730,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid #E2E8F0"}}>
         {[
           {id:"details",  label:"Details",   locked:false},
-          {id:"activities",label:`Tasks${activities.length>0?` (${activities.length})`:""}`,locked:false},
+          {id:"activities",label:`Activity${activities.length>0?` (${activities.length})`:""}`,locked:false},
           {id:"payments", label:isDeveloper?`Payments${payments.length>0?` (${payments.length})`:""}`:`Commission${payments.length>0?` (${payments.length})`:""}`  , locked:!isWon, lockMsg:"Unlocks at Closed Won"},
           {id:"contract", label:`Contract${contract?" ✓":""}`,  locked:!isWon, lockMsg:"Unlocks at Closed Won"},
         ].map(({id,label,locked,lockMsg})=>(
@@ -2014,7 +2074,7 @@ You will become the assigned agent.`);
         {activeTab==="activities"&&(
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             <button onClick={()=>setShowLog(true)} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Activity</button>
-            {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No tasks yet — log a call, meeting, site visit or note</div>}
+            {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No activity yet — log a call, meeting, or note. Stage advancements will also appear here.</div>}
             {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast}/>}
           </div>
         )}
