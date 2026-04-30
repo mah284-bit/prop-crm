@@ -547,24 +547,22 @@ function LoginScreen({onLogin}){
       let profile = profRes.data;
 
       if(!profile){
-        // SECURITY: Do NOT auto-create profiles. An authenticated user without
-        // a profile is one of: (a) someone provisioned by an admin who forgot
-        // to create the profiles row, (b) an unauthorized signup if Supabase
-        // Auth signups are enabled, (c) a stale/leaked session. In all cases,
-        // the safe response is to refuse access and require admin provisioning.
-        // (Sprint 0.5 / Block 8 — fixes auto-super_admin escalation bug.)
-        console.warn("[Auth] Authenticated user has no profile row:", data.user.id, data.user.email);
-        await supabase.auth.signOut();
-        setError("Your account has not been provisioned. Please contact your administrator.");
-        setLoading(false);
-        return;
+        // Profile missing — create it automatically
+        const meta = data.user.user_metadata||{};
+        const newProf = {
+          id:             data.user.id,
+          full_name:      meta.full_name || data.user.email?.split("@")[0] || "Admin",
+          email:          data.user.email,
+          role:           "super_admin",
+          is_super_admin: true,
+          is_active:      true,
+        };
+        const ins = await supabase.from("profiles").upsert(newProf, {onConflict:"id"}).select().maybeSingle();
+        profile = ins.data || newProf; // fall back to local object if RLS blocks insert
       }
 
       if(!profile){
-        // Defensive — should be unreachable after the explicit check above,
-        // but kept as a belt-and-braces safety net.
-        await supabase.auth.signOut();
-        setError("Your account has not been provisioned. Please contact your administrator.");
+        setError("Profile not found. Run the SQL fix in Supabase and try again.");
         setLoading(false);
         return;
       }
@@ -1086,82 +1084,22 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
   const ActCard = ({a})=>{
     const st = a.status||(a.scheduled_at&&new Date(a.scheduled_at)>new Date()?"upcoming":"completed");
     const isUpcoming = st==="upcoming";
-    // Phase E: stage advance activities are rendered with extra context
-    const isStageAdvance = a.triggered_stage_change === true || a.activity_subtype === "stage_advance";
-    const sd = a.structured_data || {};
-
-    // Try to derive the headline channel/icon from structured_data for stage advances
-    let displayType = a.type;
-    let displayIcon = icons[a.type] || "📋";
-    if (isStageAdvance && sd.channel) {
-      // Use the captured channel (Call/WhatsApp/Email/etc.) for icon
-      const channelToType = {Call:"Call", WhatsApp:"WhatsApp", Email:"Email", "In-person":"Meeting", Other:"Note"};
-      const mapped = channelToType[sd.channel];
-      if (mapped) {
-        displayType = mapped;
-        displayIcon = icons[mapped] || displayIcon;
-      }
-    }
-
-    // Interest level color map
-    const interestColors = {Hot:{c:"#DC2626",bg:"#FEE2E2"},Warm:{c:"#D97706",bg:"#FEF3C7"},Cold:{c:"#0891B2",bg:"#CFFAFE"},"Not interested":{c:"#6B7280",bg:"#F3F4F6"}};
-
     return(
-      <div style={{background:"#fff",border:"1px solid "+(isStageAdvance?"#1A5FA8":isUpcoming?"#C9A84C":"#E2E8F0"),borderRadius:10,padding:"12px 14px",display:"flex",gap:10,borderLeft:isStageAdvance?"4px solid #1A5FA8":undefined}}>
-        <div style={{width:34,height:34,borderRadius:"50%",background:isStageAdvance?"#E6EFF8":isUpcoming?"rgba(201,168,76,.12)":"#F7F9FC",border:isStageAdvance?"1.5px solid #1A5FA8":isUpcoming?"1.5px solid #C9A84C":"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
-          {displayIcon}
+      <div style={{background:"#fff",border:"1px solid "+(isUpcoming?"#C9A84C":"#E2E8F0"),borderRadius:10,padding:"12px 14px",display:"flex",gap:10}}>
+        <div style={{width:34,height:34,borderRadius:"50%",background:isUpcoming?"rgba(201,168,76,.12)":"#F7F9FC",border:isUpcoming?"1.5px solid #C9A84C":"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
+          {icons[a.type]||"📋"}
         </div>
         <div style={{flex:1,minWidth:0}}>
-          {/* Phase E: stage transition badge */}
-          {isStageAdvance && a.from_stage && a.to_stage && (
-            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,fontSize:10,fontWeight:700,color:"#1A5FA8",textTransform:"uppercase",letterSpacing:".5px"}}>
-              <span>🎯 Stage advanced</span>
-              <span style={{fontWeight:500,color:"#94A3B8",textTransform:"none",letterSpacing:0}}>
-                {a.from_stage} → <strong style={{color:"#0F2540"}}>{a.to_stage}</strong>
-              </span>
-            </div>
-          )}
-
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4,flexWrap:"wrap",gap:6}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-              <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{displayType}</span>
-              {!isStageAdvance && (
-                <span style={{fontSize:10,fontWeight:700,color:statusColors[st]||"#718096",background:"rgba(0,0,0,.05)",padding:"2px 8px",borderRadius:10}}>
-                  {statusLabels[st]||st}
-                </span>
-              )}
-              {/* Phase E: interest level badge */}
-              {isStageAdvance && sd.interest_level && interestColors[sd.interest_level] && (
-                <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:interestColors[sd.interest_level].bg,color:interestColors[sd.interest_level].c}}>
-                  {sd.interest_level}
-                </span>
-              )}
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{a.type}</span>
+              <span style={{fontSize:10,fontWeight:700,color:statusColors[st]||"#718096",background:"rgba(0,0,0,.05)",padding:"2px 8px",borderRadius:10}}>
+                {statusLabels[st]||st}
+              </span>
             </div>
             <span style={{fontSize:11,color:"#A0AEC0"}}>{new Date(a.created_at).toLocaleDateString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
           </div>
-
-          {/* Discussion / note */}
-          {(isStageAdvance ? sd.discussion : a.note) && (
-            <div style={{fontSize:12,color:"#4A5568",lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:6,fontStyle:isStageAdvance?"normal":"normal"}}>
-              {isStageAdvance ? sd.discussion : a.note}
-            </div>
-          )}
-
-          {/* Phase E: structured data summary row */}
-          {isStageAdvance && (sd.next_step || sd.follow_up_date) && (
-            <div style={{display:"flex",gap:14,flexWrap:"wrap",fontSize:11,color:"#475569",marginBottom:4,paddingTop:6,borderTop:"1px dashed #E2E8F0"}}>
-              {sd.next_step && (
-                <div><span style={{color:"#94A3B8",fontWeight:600}}>Next step:</span> <strong style={{color:"#0F2540"}}>{sd.next_step}</strong></div>
-              )}
-              {sd.follow_up_date && (
-                <div><span style={{color:"#94A3B8",fontWeight:600}}>⏰ Follow up:</span> <strong style={{color:"#0F2540"}}>{new Date(sd.follow_up_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}</strong></div>
-              )}
-              {sd.channel && (
-                <div><span style={{color:"#94A3B8",fontWeight:600}}>via:</span> <strong style={{color:"#0F2540"}}>{sd.channel}</strong></div>
-              )}
-            </div>
-          )}
-
+          {a.note&&<div style={{fontSize:12,color:"#4A5568",lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:4}}>{a.note}</div>}
           {a.outcome&&<div style={{fontSize:11,color:"#718096",fontStyle:"italic",marginBottom:4}}>Note: {a.outcome}</div>}
           <div style={{fontSize:11,color:"#A0AEC0"}}>{a.user_name}</div>
           {isUpcoming&&canEdit&&(
@@ -1207,333 +1145,6 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   STAGE CAPTURE DIALOG (Phase E Workstream 1)
-   Generic dialog component used to gate stage transitions with
-   structured activity capture. Each transition specifies its own
-   config (fields, validation, follow-up reminder offset).
-═══════════════════════════════════════════════════════════════ */
-
-// Configs per stage transition. Key = target stage. Value = field spec.
-// Each field is rendered by StageCaptureDialog based on its `kind`.
-const STAGE_CAPTURE_CONFIGS = {
-  "Contacted": {
-    title: "Capture Contact",
-    subtitle: "Record what happened in your first contact with this lead",
-    fields: [
-      {
-        key: "channel", label: "How did you reach them?", kind: "radio", required: true,
-        options: ["Call","WhatsApp","Email","In-person","Other"]
-      },
-      {
-        key: "discussion", label: "What did you discuss?", kind: "textarea", required: true,
-        minLength: 20, placeholder: "e.g. Customer is looking for a 2-bed apartment in Sobha Hartland, budget around 2M, ready to view this weekend...",
-        rows: 4
-      },
-      {
-        key: "interest_level", label: "Customer interest level", kind: "radio", required: true,
-        options: [
-          {value:"Hot",       color:"#DC2626", bg:"#FEE2E2"},
-          {value:"Warm",      color:"#D97706", bg:"#FEF3C7"},
-          {value:"Cold",      color:"#0891B2", bg:"#CFFAFE"},
-          {value:"Not interested", color:"#6B7280", bg:"#F3F4F6"},
-        ]
-      },
-      {
-        key: "next_step", label: "Next step agreed with customer", kind: "select", required: true,
-        options: ["Site visit","Send info","Follow up call","Lost interest"]
-      },
-      {
-        key: "follow_up_date", label: "Schedule next follow-up", kind: "date", required: true,
-        defaultOffsetDays: 2
-      },
-    ],
-    reminderTitle: (lead) => `Follow up with ${lead.name}`,
-    reminderBody:  (data) => `Next step: ${data.next_step}. Discussed: ${data.discussion?.slice(0,80)}${data.discussion?.length>80?"…":""}`,
-    reminderReason: "auto_follow_up_after_contacted",
-    onLostInterestSuggest: true, // if next_step == "Lost interest", suggest Closed Lost instead
-  },
-};
-
-function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, onSave, onCancel, showToast }) {
-  const config = STAGE_CAPTURE_CONFIGS[toStage];
-  const [data, setData] = useState({});
-  const [errors, setErrors] = useState({});
-  const [saving, setSaving] = useState(false);
-
-  // Initialize default values when dialog opens
-  useEffect(() => {
-    if (!open || !config) return;
-    const init = {};
-    config.fields.forEach(f => {
-      if (f.kind === "date" && f.defaultOffsetDays) {
-        const d = new Date();
-        d.setDate(d.getDate() + f.defaultOffsetDays);
-        init[f.key] = d.toISOString().split("T")[0];
-      } else {
-        init[f.key] = "";
-      }
-    });
-    setData(init);
-    setErrors({});
-  }, [open, toStage]);
-
-  if (!open || !config) return null;
-
-  const setField = (k,v) => setData(d => ({...d, [k]: v}));
-
-  const validate = () => {
-    const errs = {};
-    for (const f of config.fields) {
-      const v = data[f.key];
-      if (f.required && (!v || (typeof v === "string" && v.trim() === ""))) {
-        errs[f.key] = "Required";
-      }
-      if (f.minLength && typeof v === "string" && v.trim().length < f.minLength) {
-        errs[f.key] = `Please write at least ${f.minLength} characters`;
-      }
-    }
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
-  const handleSave = async () => {
-    if (!validate()) {
-      showToast("Please complete the required fields","error");
-      return;
-    }
-
-    // Edge case: if "Lost interest" selected, ask user to confirm — they may want Closed Lost instead
-    if (config.onLostInterestSuggest && data.next_step === "Lost interest") {
-      const goLost = window.confirm(
-        `You selected "Lost interest" as the next step.\n\n` +
-        `Would you like to mark this opportunity as Closed Lost instead of Contacted?\n\n` +
-        `Click OK to mark as Closed Lost.\nClick Cancel to keep advancing to Contacted.`
-      );
-      if (goLost) {
-        // Caller will detect this and route to Lost flow
-        onCancel();
-        // Caller is responsible for opening the Closed Lost dialog
-        // We pass a sentinel via showToast for now — clean up later
-        showToast("Switching to Closed Lost flow…", "info");
-        return; // The OpportunityDetail will need to handle this via prop
-      }
-    }
-
-    setSaving(true);
-    try {
-      // Get company_id from the opp (denormalized) — fall back to currentUser
-      const company_id = opp.company_id || currentUser.company_id;
-      if (!company_id) {
-        showToast("Missing company_id — cannot save","error");
-        setSaving(false);
-        return;
-      }
-
-      // 1. Insert activity row with stage context + structured data
-      const activityNote = `[${toStage}] ${data.discussion||""}`.slice(0, 1000);
-      const { data: actRow, error: actErr } = await supabase
-        .from("activities")
-        .insert({
-          opportunity_id: opp.id,
-          lead_id: lead?.id || opp.lead_id,
-          company_id,
-          type: "Stage Change",
-          note: activityNote,
-          status: "completed",
-          // Match existing activities schema (used by other inserts in App.jsx)
-          user_id: currentUser.id,
-          user_name: currentUser.full_name,
-          lead_name: lead?.name || "",
-          // Phase E W1 — new columns added by migration 005
-          stage_at_event: toStage,
-          from_stage: fromStage,
-          to_stage: toStage,
-          triggered_stage_change: true,
-          activity_subtype: "stage_advance",
-          structured_data: data,
-        })
-        .select()
-        .single();
-
-      if (actErr) {
-        console.error("Activity insert failed:", actErr);
-        showToast(`Failed to log activity: ${actErr.message}`,"error");
-        setSaving(false);
-        return;
-      }
-
-      // 2. Update opportunity stage
-      const { error: oppErr } = await supabase
-        .from("opportunities")
-        .update({
-          stage: toStage,
-          stage_updated_at: new Date().toISOString(),
-        })
-        .eq("id", opp.id);
-
-      if (oppErr) {
-        console.error("Stage update failed:", oppErr);
-        // Best-effort cleanup of the activity row
-        await supabase.from("activities").delete().eq("id", actRow.id);
-        showToast(`Failed to advance stage: ${oppErr.message}`,"error");
-        setSaving(false);
-        return;
-      }
-
-      // 3. Create reminder (best-effort — failure here doesn't undo the stage change)
-      if (data.follow_up_date && config.reminderReason) {
-        const triggerAt = new Date(data.follow_up_date);
-        triggerAt.setHours(9, 0, 0, 0); // 9am on the follow-up date
-        const { error: remErr } = await supabase
-          .from("reminders")
-          .insert({
-            company_id,
-            user_id: currentUser.id,
-            related_opportunity_id: opp.id,
-            related_lead_id: lead?.id || opp.lead_id,
-            related_activity_id: actRow.id,
-            trigger_at: triggerAt.toISOString(),
-            title: config.reminderTitle ? config.reminderTitle(lead||{}) : `Follow up — ${toStage}`,
-            body:  config.reminderBody  ? config.reminderBody(data)        : "",
-            reason: config.reminderReason,
-            status: "pending",
-            created_by: currentUser.id,
-          });
-        if (remErr) {
-          console.warn("Reminder creation failed (non-fatal):", remErr);
-          // Don't block — stage already advanced
-        }
-      }
-
-      showToast(`✓ Advanced to ${toStage}`,"success");
-      onSave({stage: toStage, activity: actRow, structured_data: data});
-    } catch (e) {
-      console.error("StageCaptureDialog save error:", e);
-      showToast(`Save failed: ${e.message}`,"error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
-      <div style={{background:"#fff",borderRadius:16,width:560,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
-        {/* Header */}
-        <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
-            <div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>{config.title}</div>
-              <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3}}>{config.subtitle}</div>
-              <div style={{fontSize:11,color:"#C9A84C",marginTop:6,fontWeight:600}}>
-                {fromStage} → <strong>{toStage}</strong>
-              </div>
-            </div>
-            <button onClick={onCancel} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",lineHeight:1}}>×</button>
-          </div>
-        </div>
-
-        {/* Body */}
-        <div style={{overflowY:"auto",padding:"1.25rem 1.4rem",flex:1}}>
-          <div style={{display:"flex",flexDirection:"column",gap:16}}>
-            {config.fields.map(f => {
-              const err = errors[f.key];
-              const labelEl = (
-                <label style={{fontSize:12,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>
-                  {f.label}{f.required&&<span style={{color:"#C53030"}}> *</span>}
-                </label>
-              );
-
-              if (f.kind === "radio") {
-                const opts = f.options.map(o => typeof o === "string" ? {value:o} : o);
-                return (
-                  <div key={f.key}>
-                    {labelEl}
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                      {opts.map(o => {
-                        const sel = data[f.key] === o.value;
-                        return (
-                          <button key={o.value} onClick={()=>setField(f.key, o.value)}
-                            style={{
-                              padding:"7px 14px",borderRadius:20,
-                              border: `1.5px solid ${sel ? (o.color||"#0F2540") : "#D1D9E6"}`,
-                              background: sel ? (o.bg||"#0F2540") : "#fff",
-                              color: sel ? (o.color||"#fff") : "#4A5568",
-                              fontSize:12, fontWeight:600, cursor:"pointer", transition:"all .12s",
-                            }}>
-                            {o.value}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
-                  </div>
-                );
-              }
-
-              if (f.kind === "select") {
-                return (
-                  <div key={f.key}>
-                    {labelEl}
-                    <select value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
-                      style={{width:"100%",padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",background:"#fff",cursor:"pointer"}}>
-                      <option value="">— Select —</option>
-                      {f.options.map(o=><option key={o} value={o}>{o}</option>)}
-                    </select>
-                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
-                  </div>
-                );
-              }
-
-              if (f.kind === "textarea") {
-                return (
-                  <div key={f.key}>
-                    {labelEl}
-                    <textarea value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
-                      placeholder={f.placeholder||""} rows={f.rows||3}
-                      style={{width:"100%",padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",resize:"vertical"}}/>
-                    {f.minLength&&(
-                      <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>
-                        {(data[f.key]||"").length} / {f.minLength} characters minimum
-                      </div>
-                    )}
-                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
-                  </div>
-                );
-              }
-
-              if (f.kind === "date") {
-                return (
-                  <div key={f.key}>
-                    {labelEl}
-                    <input type="date" value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
-                      style={{padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
-                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
-                  </div>
-                );
-              }
-
-              return null;
-            })}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.4rem",borderTop:"1px solid #E8EDF4",background:"#F8FAFC"}}>
-          <button onClick={onCancel} disabled={saving}
-            style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
-            Cancel
-          </button>
-          <button onClick={handleSave} disabled={saving}
-            style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#94A3B8":"#0F2540",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
-            {saving ? "Saving…" : `✓ Save & Advance to ${toStage}`}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -1585,15 +1196,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
 
   const GATED_STAGES = ["Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
 
-  // Phase E W1 — stage capture dialog for transitions that need structured input
-  const [showCaptureDialog, setShowCaptureDialog] = useState(null); // target stage being captured
-
   const moveStage = async(toStage) => {
-    // Phase E W1: if target stage has a capture config, open the dialog
-    if (STAGE_CAPTURE_CONFIGS[toStage]) {
-      setShowCaptureDialog(toStage);
-      return;
-    }
     if(GATED_STAGES.includes(toStage)) {
       setStageGateForm({});
       setShowStageGate(toStage);
@@ -1707,7 +1310,16 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
           </div>
           <div style={{fontSize:12,color:"#718096",marginTop:2}}>{lead.name} · {lead.phone||""} {unit?`· ${unit.unit_ref} — ${unit.sub_type}`:""}</div>
         </div>
-        {/* Header actions removed — Send Proposal and Task moved into stage workflow band below for visual coherence */}
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {canEdit&&["New","Contacted","Site Visit"].includes(opp.stage)&&unit&&(
+            <button onClick={()=>{
+              setEmailForm({to:lead.email||"",subject:`Property Proposal — ${lead.name}`,
+                body:`Dear ${lead.name},\n\nPlease find your personalised property proposal.\n\nProperty: ${unit.unit_ref} — ${unit.sub_type}${proj?` (${proj.name})`:""}\n${sp?`Price: AED ${Number(sp.asking_price).toLocaleString()}\n`:""}\nKindly review and let us know your preferred next step.\n\nBest regards,\n${currentUser.full_name}`});
+              setShowEmail(true);
+            }} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#1A5FA8",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>📤 Send Proposal</button>
+          )}
+          {canEdit&&<button onClick={()=>setShowLog(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Task</button>}
+        </div>
       </div>
 
       {/* Summary strip */}
@@ -1730,7 +1342,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid #E2E8F0"}}>
         {[
           {id:"details",  label:"Details",   locked:false},
-          {id:"activities",label:`Activity${activities.length>0?` (${activities.length})`:""}`,locked:false},
+          {id:"activities",label:`Tasks${activities.length>0?` (${activities.length})`:""}`,locked:false},
           {id:"payments", label:isDeveloper?`Payments${payments.length>0?` (${payments.length})`:""}`:`Commission${payments.length>0?` (${payments.length})`:""}`  , locked:!isWon, lockMsg:"Unlocks at Closed Won"},
           {id:"contract", label:`Contract${contract?" ✓":""}`,  locked:!isWon, lockMsg:"Unlocks at Closed Won"},
         ].map(({id,label,locked,lockMsg})=>(
@@ -1825,89 +1437,51 @@ You will become the assigned agent.`);
                 const m=OPP_STAGE_META[opp.stage]||{c:"#718096",bg:"#F7F9FC"};
                 const stageIdx=OPP_STAGES.indexOf(opp.stage);
                 const nextStageName=OPP_STAGES[stageIdx+1];
-                // Stage-aware "next action" suggestion (the primary CTA for this stage)
-                const NEXT_ACTION_BY_STAGE = {
-                  "New":            "Make first contact",
-                  "Contacted":      "Schedule a site visit",
-                  "Site Visit":     "Send proposal & follow up",
-                  "Proposal Sent":  "Capture customer response",
-                  "Negotiation":    "Lock in the offer",
-                  "Offer Accepted": "Collect reservation fee",
-                  "Reserved":       "Draft & send SPA",
-                  "SPA Signed":     "Verify payments and close",
+                const stageActionMap={
+                  "New":           [{label:"📞 Log Call",type:"Call"},{label:"💬 WhatsApp",type:"WhatsApp"},{label:"📝 Add Note",type:"Note"}],
+                  "Contacted":     [{label:"📅 Schedule Visit",type:"Site Visit"},{label:"📞 Follow Up",type:"Call"},{label:"📝 Add Note",type:"Note"}],
+                  "Site Visit":    [{label:"📋 Log Outcome",type:"Note"},{label:"📄 Send Proposal",type:"Proposal"},{label:"📞 Follow Up",type:"Call"}],
+                  "Proposal Sent": [{label:"📞 Follow Up",type:"Call"},{label:"💰 Negotiate",type:"Note"},{label:"📝 Add Note",type:"Note"}],
+                  "Negotiation":   [{label:"📄 Send Offer",type:"Note"},{label:"✅ Get Approval",type:"Note"},{label:"📝 Add Note",type:"Note"}],
+                  "Offer Accepted":[{label:"📋 Reservation Form",type:"Note"},{label:"💰 Collect Fee",type:"Note"},{label:"📝 Add Note",type:"Note"}],
+                  "Reserved":      [{label:"✅ Confirm Reservation",type:"Note"},{label:"📄 Draft SPA",type:"Note"},{label:"📝 Add Note",type:"Note"}],
+                  "SPA Signed":    [{label:"💰 Add Payment",type:"Note"},{label:"📋 Upload SPA",type:"Note"},{label:"📝 Add Note",type:"Note"}],
                 };
-                const nextActionLabel = NEXT_ACTION_BY_STAGE[opp.stage] || "";
-                const showSendProposal = canEdit && ["Site Visit","Proposal Sent","Negotiation"].includes(opp.stage) && unit;
+                const actions=stageActionMap[opp.stage]||[];
                 return(
-                  <div style={{paddingTop:12,borderTop:"1px solid #F1F5F9"}}>
-                    {/* Next-action hint */}
-                    {nextActionLabel&&(
-                      <div style={{fontSize:11,color:"#475569",marginBottom:10,fontStyle:"italic"}}>
-                        💡 What's next: <strong style={{color:"#0F2540",fontStyle:"normal"}}>{nextActionLabel}</strong>
-                      </div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",paddingTop:12,borderTop:"1px solid #F1F5F9"}}>
+                    <span style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".5px",marginRight:4}}>Actions</span>
+                    {actions.map((a,i)=>(
+                      <button key={i} onClick={()=>setShowLog(true)}
+                        style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540",transition:"all .12s"}}
+                        onMouseOver={e=>{e.currentTarget.style.borderColor=m.c;e.currentTarget.style.color=m.c;e.currentTarget.style.background=m.bg;}}
+                        onMouseOut={e=>{e.currentTarget.style.borderColor="#E2E8F0";e.currentTarget.style.color="#0F2540";e.currentTarget.style.background="#fff";}}>
+                        {a.label}
+                      </button>
+                    ))}
+                    <div style={{flex:1}}/>
+                    {nextStageName&&nextStageName!=="Closed Won"&&(
+                      <button onClick={()=>moveStage(nextStageName)}
+                        style={{padding:"6px 16px",borderRadius:7,border:"none",background:m.c,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                        → {nextStageName}
+                      </button>
                     )}
-
-                    {/* Two clearly separated zones: ACTIVITY (left) and STAGE (right) */}
-                    <div style={{display:"flex",gap:14,flexWrap:"wrap",alignItems:"flex-start"}}>
-
-                      {/* Activity zone — logging, doesn't change stage */}
-                      <div style={{flex:"1 1 280px",minWidth:260,background:"#F8FAFC",border:"1px solid #E8EDF4",borderRadius:10,padding:"10px 12px"}}>
-                        <div style={{fontSize:9,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:8}}>Log activity</div>
-                        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                          <button onClick={()=>{setLogForm({type:"Call",note:""});setShowLog(true);}}
-                            style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
-                            📞 Log Call
-                          </button>
-                          <button onClick={()=>{setLogForm({type:"WhatsApp",note:""});setShowLog(true);}}
-                            style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
-                            💬 WhatsApp
-                          </button>
-                          <button onClick={()=>{setLogForm({type:"Note",note:""});setShowLog(true);}}
-                            style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
-                            📝 Add Note
-                          </button>
-                          {showSendProposal&&(
-                            <button onClick={()=>{
-                              setEmailForm({to:lead.email||"",subject:`Property Proposal — ${lead.name}`,
-                                body:`Dear ${lead.name},\n\nPlease find your personalised property proposal.\n\nProperty: ${unit.unit_ref} — ${unit.sub_type}${proj?` (${proj.name})`:""}\n${sp?`Price: AED ${Number(sp.asking_price).toLocaleString()}\n`:""}\nKindly review and let us know your preferred next step.\n\nBest regards,\n${currentUser.full_name}`});
-                              setShowEmail(true);
-                            }}
-                              style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #BFDBFE",background:"#EFF6FF",fontSize:11,fontWeight:700,cursor:"pointer",color:"#1A5FA8"}}>
-                              📤 Send Proposal
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Stage advancement zone — changes stage */}
-                      <div style={{flex:"1 1 280px",minWidth:260,background:`${m.bg}`,border:`1px solid ${m.c}33`,borderRadius:10,padding:"10px 12px"}}>
-                        <div style={{fontSize:9,fontWeight:700,color:m.c,textTransform:"uppercase",letterSpacing:".6px",marginBottom:8}}>Move stage</div>
-                        <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-                          {nextStageName&&nextStageName!=="Closed Won"&&(
-                            <button onClick={()=>moveStage(nextStageName)}
-                              style={{padding:"7px 14px",borderRadius:7,border:"none",background:m.c,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 6px rgba(0,0,0,.08)"}}>
-                              ✓ Advance to {nextStageName}
-                            </button>
-                          )}
-                          {(opp.stage==="Offer Accepted"||opp.stage==="Negotiation"||opp.stage==="Reserved")&&nextStageName!=="Reserved"&&(
-                            <button onClick={()=>moveStage("Reserved")}
-                              style={{padding:"6px 12px",borderRadius:7,border:"none",background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                              🔒 Reserve Unit
-                            </button>
-                          )}
-                          {opp.stage==="SPA Signed"&&(
-                            <button onClick={()=>moveStage("Closed Won")}
-                              style={{padding:"7px 14px",borderRadius:7,border:"none",background:"#1A7F5A",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                              ✓ Close Won
-                            </button>
-                          )}
-                          <button onClick={()=>moveStage("Closed Lost")}
-                            style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #FECACA",background:"#FEF2F2",color:"#B83232",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-                            ✗ Mark Lost
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                    {(opp.stage==="Offer Accepted"||opp.stage==="Negotiation"||opp.stage==="Reserved")&&(
+                      <button onClick={()=>moveStage("Reserved")}
+                        style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                        🔒 Reserve Unit
+                      </button>
+                    )}
+                    {opp.stage==="SPA Signed"&&(
+                      <button onClick={()=>moveStage("Closed Won")}
+                        style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#1A7F5A",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                        ✓ Close Won
+                      </button>
+                    )}
+                    <button onClick={()=>moveStage("Closed Lost")}
+                      style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #FECACA",background:"#FEF2F2",color:"#B83232",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                      ✗ Lost
+                    </button>
                   </div>
                 );
               })()}
@@ -2074,7 +1648,7 @@ You will become the assigned agent.`);
         {activeTab==="activities"&&(
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             <button onClick={()=>setShowLog(true)} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Activity</button>
-            {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No activity yet — log a call, meeting, or note. Stage advancements will also appear here.</div>}
+            {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No tasks yet — log a call, meeting, site visit or note</div>}
             {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast}/>}
           </div>
         )}
@@ -2265,25 +1839,6 @@ You will become the assigned agent.`);
           </div>
         </div>
       )}
-
-      {/* Phase E W1 — Stage Capture Dialog (Contacted, Site Visit, Proposal Sent, Negotiation) */}
-      <StageCaptureDialog
-        open={!!showCaptureDialog}
-        opp={opp}
-        lead={lead}
-        fromStage={opp.stage}
-        toStage={showCaptureDialog}
-        currentUser={currentUser}
-        showToast={showToast}
-        onCancel={()=>setShowCaptureDialog(null)}
-        onSave={(result)=>{
-          setShowCaptureDialog(null);
-          // Refresh activities timeline
-          supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
-          // Update parent opp state
-          onUpdated({...opp, stage: result.stage, stage_updated_at: new Date().toISOString()});
-        }}
-      />
 
       {/* Stage Gate Modal */}
       {showStageGate&&(
@@ -2723,9 +2278,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const [showAdd,  setShowAdd]  = useState(false);
   const [editLead, setEditLead] = useState(null);
   const [saving,   setSaving]   = useState(false);
-  // Phase A.3 — Sprint 1 form (side-by-side feature flag)
-  const [useNewForm, setUseNewForm] = useState(false);
-  const [showAddV2, setShowAddV2] = useState(false);
   const [opps,     setOpps]     = useState(globalOppsFromParent); // sync with global
   const [units,    setUnits]    = useState([]);
   const [projects, setProjects] = useState([]);
@@ -2738,56 +2290,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const blank = {name:"",phone:"",email:"",nationality:"",source:"Walk-In",property_type:"Sale",notes:"",assigned_to:currentUser.id,budget:""};
   const [form, setForm] = useState(blank);
   const sf = k => e => setForm(f=>({...f,[k]:e.target?.value??e}));
-
-  // ── Browser history sync ────────────────────────────────────────
-  // Push state changes into browser history so the browser back button
-  // navigates within the app (list ← lead ← opportunity) instead of
-  // exiting the app entirely. Uses a ref to distinguish user-driven
-  // back navigation from programmatic state changes.
-  const skipPushRef = useRef(false);
-
-  useEffect(()=>{
-    // On mount: replace current entry with our initial state so popstate has something to roll back to
-    window.history.replaceState({view:"list",selLeadId:null,selOppId:null}, "", window.location.pathname);
-
-    const onPopState = (e)=>{
-      const s = e.state;
-      if(!s){
-        // User went back past our entries — keep them on the list view
-        skipPushRef.current = true;
-        setView("list");
-        setSelLeadId(null);
-        setSelOpp(null);
-        return;
-      }
-      skipPushRef.current = true;
-      setView(s.view||"list");
-      setSelLeadId(s.selLeadId||null);
-      if(s.selOppId){
-        // Find the opp in current state and restore it
-        const found = opps.find(o=>o.id===s.selOppId) || globalOppsFromParent.find(o=>o.id===s.selOppId);
-        setSelOpp(found||null);
-      } else {
-        setSelOpp(null);
-      }
-    };
-
-    window.addEventListener("popstate", onPopState);
-    return ()=>window.removeEventListener("popstate", onPopState);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
-
-  useEffect(()=>{
-    // After every view/selection change, push to history — unless the change came from popstate
-    if(skipPushRef.current){
-      skipPushRef.current = false;
-      return;
-    }
-    const state = {view, selLeadId, selOppId: selOpp?.id || null};
-    window.history.pushState(state, "", window.location.pathname);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[view, selLeadId, selOpp?.id]);
-  // ────────────────────────────────────────────────────────────────
 
   // Load data
   useEffect(()=>{
@@ -2905,9 +2407,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           {["Walk-In","Referral","Online","Social Media","Cold Call","Exhibition","Portal","Other"].map(s=><option key={s}>{s}</option>)}
         </select>
         <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
-        {canEdit&&(
-          <button onClick={()=>setShowAddV2(true)} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Lead</button>
-        )}
+        {canEdit&&<button onClick={()=>{setForm(blank);setEditLead(null);setShowAdd(true);}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Contact</button>}
       </div>
 
       {/* Lead summary strip */}
@@ -2961,25 +2461,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       </div>
 
       {/* Add/Edit Contact Modal */}
-      {/* Phase A.3 — new buyer-type-aware lead form (side-by-side with existing modal) */}
-      {showAddV2&&(
-        <LeadCreationFormV2
-          companyId={currentUser?.company_id}
-          currentUserId={currentUser?.id}
-          onSubmit={async(payload)=>{
-            const {data,error}=await supabase.from("leads").insert(payload).select().single();
-            if(error) throw new Error(error.message||"Failed to create lead");
-            return data;
-          }}
-          onCancel={()=>setShowAddV2(false)}
-          onCreated={(newLead)=>{
-            setShowAddV2(false);
-            setLeads(p=>[newLead,...p]);
-            showToast("Contact added (new form)","success");
-          }}
-        />
-      )}
-
       {showAdd&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
@@ -3017,28 +2498,13 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   // ── LEAD DETAIL VIEW (contact + opportunities) ─────────────────
   if(view==="lead"&&selLead) return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
-      {/* ── Helpers (inline, used only in this view) ── */}
-      {(()=>{ /* no-op IIFE just to scope helpers via closures below */ })()}
-      {/* Header — redesigned */}
+      {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap"}}>
-        <button onClick={()=>setView("list")} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Leads</button>
+        <button onClick={()=>setView("list")} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Contacts</button>
         <Av name={selLead.name} size={40}/>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px"}}>{selLead.name}</div>
-          <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
-            {(()=>{
-              const BT_LABEL = {local_national:"Local national",gcc_resident_expat:"GCC resident expat",international_non_resident:"International (non-resident)",corporate:"Corporate"};
-              const bt = selLead.buyer_type;
-              return bt ? <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#E8EDF4",color:"#0F2540"}}>{BT_LABEL[bt]||bt}</span> : null;
-            })()}
-            {(()=>{
-              const KYC_META = {not_started:{c:"#8A6200",bg:"#FDF3DC",l:"KYC: Not started"},in_progress:{c:"#1A5FA8",bg:"#E6EFF8",l:"KYC: In progress"},verified:{c:"#1A7F5A",bg:"#E6F4EE",l:"KYC: Verified"},expired:{c:"#C53030",bg:"#FED7D7",l:"KYC: Expired"}};
-              const k = selLead.kyc_status||"not_started";
-              const m = KYC_META[k]||KYC_META.not_started;
-              return <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:m.bg,color:m.c}}>{m.l}</span>;
-            })()}
-            {selLead.pep_flag&&<span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#FDF3DC",color:"#8A6200"}}>⚠ PEP</span>}
-          </div>
+          <div style={{fontSize:12,color:"#718096"}}>{selLead.phone} {selLead.email?`· ${selLead.email}`:""} {selLead.nationality?`· ${selLead.nationality}`:""}</div>
         </div>
         <div style={{display:"flex",gap:6}}>
           {canEdit&&<button onClick={()=>{setForm({...blank,...selLead});setEditLead(selLead);setShowAdd(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
@@ -3046,49 +2512,15 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         </div>
       </div>
 
-      {/* Identity panel — only fields with data are shown */}
-      {(()=>{
-        const iso2ToFlag = (iso2)=>{ if(!iso2||iso2.length!==2)return ""; const c=iso2.toUpperCase(); return String.fromCodePoint(0x1F1E6+(c.charCodeAt(0)-65))+String.fromCodePoint(0x1F1E6+(c.charCodeAt(1)-65)); };
-          const SOF_LABEL = {salary:"Salary",business:"Business income",investments:"Investments",inheritance:"Inheritance",sale_of_property:"Sale of property",savings:"Savings",gift:"Gift",other:"Other"};
-        const rows = [];
-        if(selLead.legal_name_en) rows.push(["Legal name (English)", selLead.legal_name_en]);
-        if(selLead.legal_name_ar) rows.push(["Legal name (Arabic)", <span style={{direction:"rtl",unicodeBidi:"bidi-override",fontFamily:"'Noto Sans Arabic','Inter',sans-serif"}}>{selLead.legal_name_ar}</span>]);
-        if(selLead.nationality_iso2) rows.push(["Nationality", `${iso2ToFlag(selLead.nationality_iso2)} ${selLead.nationality_iso2}`]);
-        else if(selLead.nationality) rows.push(["Nationality", selLead.nationality]);
-        if(selLead.residence_iso2) rows.push(["Residence", `${iso2ToFlag(selLead.residence_iso2)} ${selLead.residence_iso2}`]);
-        if(selLead.tax_residency_iso2 && selLead.tax_residency_iso2!==selLead.residence_iso2) rows.push(["Tax residency", `${iso2ToFlag(selLead.tax_residency_iso2)} ${selLead.tax_residency_iso2}`]);
-        if(selLead.phone_e164||selLead.phone) {
-          const ph = selLead.phone_e164||selLead.phone;
-          rows.push(["Phone", <a href={`tel:${ph}`} style={{color:"#1A5FA8",textDecoration:"none",fontWeight:600}}>{ph}</a>]);
-        }
-        if(selLead.email) rows.push(["Email", <a href={`mailto:${selLead.email}`} style={{color:"#1A5FA8",textDecoration:"none",fontWeight:600}}>{selLead.email}</a>]);
-        if(selLead.source_of_funds) rows.push(["Source of funds", SOF_LABEL[selLead.source_of_funds]||selLead.source_of_funds]);
-        if(selLead.source) rows.push(["Lead source", selLead.source]);
-        if(selLead.property_type) rows.push(["Looking for", selLead.property_type]);
-        if(selLead.budget&&Number(selLead.budget)>0) rows.push(["Budget", `AED ${Number(selLead.budget).toLocaleString()}`]);
-        if(rows.length===0) return null;
-        return (
-          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"14px 18px",marginBottom:14}}>
-            <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",fontWeight:700,marginBottom:10}}>Identity</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:"6px 24px"}}>
-              {rows.map(([label,val],i)=>(
-                <div key={i} style={{display:"flex",alignItems:"baseline",gap:10,padding:"3px 0",borderBottom:i<rows.length-1?"1px dashed #EEF2F7":"none"}}>
-                  <div style={{fontSize:11,color:"#718096",minWidth:130}}>{label}</div>
-                  <div style={{fontSize:13,fontWeight:600,color:"#0F2540",flex:1,overflow:"hidden",textOverflow:"ellipsis"}}>{val}</div>
-                </div>
-              ))}
-            </div>
+      {/* Contact info strip */}
+      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+        {[["📞 Phone",selLead.phone||"—"],["✉ Email",selLead.email||"—"],["🌍 Nationality",selLead.nationality||"—"],["🏷 Source",selLead.source||"—"],["📋 Type",selLead.property_type||"—"]].map(([l,v])=>(
+          <div key={l} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 14px",flex:1,minWidth:120}}>
+            <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
+            <div style={{fontSize:13,fontWeight:600,color:"#0F2540",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div>
           </div>
-        );
-      })()}
-
-      {/* Notes panel — separate from Identity for readability */}
-      {selLead.notes&&(
-        <div style={{background:"#FFFEF7",border:"1px solid #F0E5C8",borderRadius:12,padding:"12px 16px",marginBottom:14}}>
-          <div style={{fontSize:10,color:"#8A6200",textTransform:"uppercase",letterSpacing:".6px",fontWeight:700,marginBottom:6}}>Notes</div>
-          <div style={{fontSize:13,color:"#3A3A2E",whiteSpace:"pre-wrap",lineHeight:1.5}}>{selLead.notes}</div>
-        </div>
-      )}
+        ))}
+      </div>
 
       {/* Opportunities */}
       <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:12}}>
@@ -4797,7 +4229,6 @@ import ReportsModule from "./components/ReportsModule.jsx";
 import LeaseOpportunityDetail from "./components/LeaseOpportunityDetail.jsx";
 import LeasingLeads from "./components/LeasingLeads.jsx";
 import PropPulse from "./components/PropPulse.jsx";
-import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";  // Phase A.3 — new buyer-type-aware form (side-by-side with old form)
 // ──────────────────────────────────────────────────────────────
 
 
