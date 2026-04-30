@@ -300,8 +300,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
 
       const payload = {
         company_id: companyId,
-        display_name: form.display_name.trim(),
-        name: form.display_name.trim(), // mirror for legacy code that reads `name`
+        name: form.display_name.trim(), // sales-facing display name (existing column)
         buyer_type: buyerType,
         legal_name_en: form.legal_name_en.trim() || null,
         legal_name_ar: form.legal_name_ar.trim() || null,
