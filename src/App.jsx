@@ -1125,7 +1125,7 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
     const unitsViewedLabels = (Array.isArray(sd.units_viewed)?sd.units_viewed:[]).map(uid => {
       const u = (units||[]).find(x => x.id === uid);
       if (!u) return null;
-      return u.unit_no || u.name || uid;
+      return u.unit_ref || uid;
     }).filter(Boolean);
 
     // Body text: discussion (Contacted) or feedback (Site Visit) or note (free-form)
@@ -1683,10 +1683,18 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
                   const projectFilter = opp?.project_id;
                   opts = (units||[])
                     .filter(u => !projectFilter || u.project_id === projectFilter)
-                    .map(u => ({
-                      value: u.id,
-                      label: `${u.unit_no || u.name || u.id}${u.project_name ? ` · ${u.project_name}` : ""}${u.bedrooms ? ` · ${u.bedrooms}BR` : ""}`,
-                    }));
+                    .map(u => {
+                      // Match the unit shape used elsewhere in the app:
+                      //   - unit_ref is the human-readable unit code (e.g. "EBT-06-02")
+                      //   - project name comes from a separate projects[] lookup, not on the unit row
+                      const bedLabel = u.bedrooms === 0 ? "Studio" : (u.bedrooms ? `${u.bedrooms}BR` : "");
+                      const parts = [
+                        u.unit_ref || u.id,
+                        u.sub_type,
+                        bedLabel,
+                      ].filter(Boolean);
+                      return { value: u.id, label: parts.join(" · ") };
+                    });
                 } else if (Array.isArray(f.options)) {
                   opts = f.options.map(o => typeof o === "string" ? {value:o, label:o} : o);
                 }
