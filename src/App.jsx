@@ -2188,6 +2188,250 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
    Phase E W2 — Negotiation Round Dialog
    Captures a single round in the buyer/developer/broker thread.
 ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   Phase E W4 — Reminders Bell
+   Header bell that aggregates pending reminders across ALL of the
+   user's opportunities. Polls every 60 seconds, refreshes on focus.
+   Click → dropdown grouped by Overdue / Today / Tomorrow / This week.
+   Click a reminder → deep-links into that opportunity.
+═══════════════════════════════════════════════════════════════ */
+function RemindersBell({ currentUser, onNavigateToOpp, showToast }) {
+  const [open, setOpen] = useState(false);
+  const [reminders, setReminders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const dropdownRef = useRef(null);
+
+  const fetchReminders = async () => {
+    if (!currentUser?.id) return;
+    // Window: pending reminders triggered up to +14 days from now
+    // (overdue is included automatically — overdue = trigger_at < now)
+    const horizon = new Date();
+    horizon.setDate(horizon.getDate() + 14);
+    const { data, error } = await supabase
+      .from("reminders")
+      .select("id, title, body, trigger_at, reason, related_opportunity_id, related_lead_id, status")
+      .eq("user_id", currentUser.id)
+      .eq("status", "pending")
+      .lte("trigger_at", horizon.toISOString())
+      .order("trigger_at", { ascending: true });
+    if (error) {
+      console.warn("Bell fetch failed:", error);
+      setLoading(false);
+      return;
+    }
+    setReminders(data || []);
+    setLoading(false);
+  };
+
+  // Initial load + 60s polling
+  useEffect(() => {
+    fetchReminders();
+    const interval = setInterval(fetchReminders, 60_000);
+    // Refresh when tab becomes visible again
+    const onVis = () => { if (document.visibilityState === "visible") fetchReminders(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+    // eslint-disable-next-line
+  }, [currentUser?.id]);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [open]);
+
+  // Group reminders by time bucket
+  const now = new Date();
+  const startOfToday = new Date(now); startOfToday.setHours(0,0,0,0);
+  const endOfToday = new Date(startOfToday); endOfToday.setDate(endOfToday.getDate()+1);
+  const endOfTomorrow = new Date(endOfToday); endOfTomorrow.setDate(endOfTomorrow.getDate()+1);
+  const endOfWeek = new Date(startOfToday); endOfWeek.setDate(endOfWeek.getDate()+7);
+  const groups = { overdue: [], today: [], tomorrow: [], thisWeek: [], later: [] };
+  reminders.forEach(r => {
+    const t = new Date(r.trigger_at);
+    if (t < now) groups.overdue.push(r);
+    else if (t < endOfToday) groups.today.push(r);
+    else if (t < endOfTomorrow) groups.tomorrow.push(r);
+    else if (t < endOfWeek) groups.thisWeek.push(r);
+    else groups.later.push(r);
+  });
+
+  const overdueCount = groups.overdue.length;
+  const totalCount = reminders.length;
+
+  // Type icons by reminder.reason / title prefix
+  const guessIcon = (r) => {
+    const reason = r.reason || "";
+    if (reason.includes("site_visit") || reason === "auto_visit_imminent") return "🏠";
+    if (reason.includes("handover")) return "📅";
+    if (reason.includes("negotiation")) return "🤝";
+    if (reason === "auto_follow_up_after_contacted") return "📞";
+    // Title-based fallback
+    const titleStart = (r.title||"").split(" ")[0].toLowerCase();
+    if (titleStart === "call") return "📞";
+    if (titleStart === "whatsapp") return "💬";
+    if (titleStart === "email") return "✉️";
+    if (titleStart === "meeting") return "🤝";
+    if (titleStart.includes("site")) return "🏠";
+    if (titleStart === "send") return "📄"; // "Send proposal/brochure"
+    return "⏰";
+  };
+
+  const fmtDue = (iso) => {
+    const t = new Date(iso);
+    const diffMs = t - now;
+    const diffDays = Math.floor(diffMs / 86400000);
+    const dateStr = t.toLocaleDateString("en-AE", { day:"numeric", month:"short" });
+    const timeStr = t.toLocaleTimeString("en-AE", { hour:"2-digit", minute:"2-digit" });
+    if (diffMs < 0) {
+      const overdueDays = Math.ceil(-diffMs / 86400000);
+      const overdueHours = Math.ceil(-diffMs / 3600000);
+      const label = overdueHours < 24 ? `${overdueHours}h overdue` : (overdueDays === 1 ? "1 day overdue" : `${overdueDays} days overdue`);
+      return { label, color: "#C53030", bg: "#FEE2E2", date: `${dateStr} ${timeStr}` };
+    }
+    const minsAway = Math.floor(diffMs / 60000);
+    if (minsAway < 60) return { label: `in ${Math.max(1, minsAway)} min`, color: "#A06810", bg: "#FDF3DC", date: timeStr };
+    if (diffDays === 0) return { label: timeStr, color: "#A06810", bg: "#FDF3DC", date: dateStr };
+    if (diffDays === 1) return { label: `tomorrow ${timeStr}`, color: "#1A5FA8", bg: "#E6EFF8", date: "" };
+    return { label: dateStr, color: "#64748B", bg: "#F1F5F9", date: timeStr };
+  };
+
+  const handleClickReminder = (r) => {
+    setOpen(false);
+    if (r.related_opportunity_id) {
+      onNavigateToOpp(r.related_opportunity_id);
+    }
+  };
+
+  const ReminderRow = ({r}) => {
+    const due = fmtDue(r.trigger_at);
+    return (
+      <button onClick={() => handleClickReminder(r)}
+        style={{
+          display:"flex", gap:9, padding:"9px 12px", width:"100%",
+          background:"transparent", border:"none", borderBottom:"1px solid #F1F5F9",
+          cursor:"pointer", textAlign:"left", transition:"background .12s",
+        }}
+        onMouseOver={e=>{e.currentTarget.style.background="#F8FAFC";}}
+        onMouseOut={e=>{e.currentTarget.style.background="transparent";}}>
+        <span style={{fontSize:16, flexShrink:0, paddingTop:1}}>{guessIcon(r)}</span>
+        <div style={{flex:1, minWidth:0}}>
+          <div style={{display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", marginBottom:2}}>
+            <span style={{fontSize:12, fontWeight:700, color:"#0F2540"}}>{r.title}</span>
+            <span style={{fontSize:9, fontWeight:700, padding:"2px 7px", borderRadius:10, background:due.bg, color:due.color, whiteSpace:"nowrap"}}>{due.label}</span>
+          </div>
+          {r.body && <div style={{fontSize:11, color:"#64748B", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontStyle:"italic"}}>{r.body}</div>}
+          {due.date && <div style={{fontSize:10, color:"#94A3B8", marginTop:1}}>{due.date}</div>}
+        </div>
+        <span style={{color:"#CBD5E1", fontSize:14, alignSelf:"center"}}>›</span>
+      </button>
+    );
+  };
+
+  const SectionHeader = ({label, count, color}) => (
+    <div style={{display:"flex", alignItems:"center", gap:6, padding:"8px 12px", background:"#F8FAFC", borderTop:"1px solid #E2E8F0", borderBottom:"1px solid #E2E8F0"}}>
+      <span style={{fontSize:9, fontWeight:700, color, textTransform:"uppercase", letterSpacing:".5px"}}>{label}</span>
+      <span style={{fontSize:9, fontWeight:700, padding:"1px 6px", borderRadius:8, background:"#fff", color, border:`1px solid ${color}33`}}>{count}</span>
+    </div>
+  );
+
+  return (
+    <div ref={dropdownRef} style={{position:"relative"}}>
+      <button onClick={()=>setOpen(o=>!o)}
+        title={totalCount === 0 ? "No pending reminders" : `${totalCount} pending reminder${totalCount===1?"":"s"}${overdueCount?` · ${overdueCount} overdue`:""}`}
+        style={{
+          background:"transparent", border:"none", cursor:"pointer", position:"relative",
+          padding:"6px 8px", borderRadius:8, fontSize:18, lineHeight:1,
+          transition:"background .15s",
+        }}
+        onMouseOver={e=>{e.currentTarget.style.background="#F1F5F9";}}
+        onMouseOut={e=>{e.currentTarget.style.background="transparent";}}>
+        🔔
+        {totalCount > 0 && (
+          <span style={{
+            position:"absolute", top:2, right:2,
+            minWidth:16, height:16, padding:"0 4px",
+            borderRadius:8, fontSize:9, fontWeight:700,
+            background: overdueCount > 0 ? "#DC2626" : "#1A5FA8",
+            color:"#fff",
+            display:"flex", alignItems:"center", justifyContent:"center",
+            border:"1.5px solid #fff",
+            lineHeight:1,
+          }}>{totalCount > 99 ? "99+" : totalCount}</span>
+        )}
+      </button>
+
+      {open && (
+        <div style={{
+          position:"absolute", top:"calc(100% + 6px)", right:0,
+          width:380, maxHeight:520, overflowY:"auto",
+          background:"#fff", borderRadius:12,
+          border:"1px solid #E2E8F0",
+          boxShadow:"0 12px 32px rgba(11,31,58,.15)",
+          zIndex:9999,
+        }}>
+          <div style={{padding:"12px 14px", borderBottom:"1px solid #E2E8F0", background:"#0F2540"}}>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:13, fontWeight:700, color:"#fff"}}>⏰ Your follow-ups</div>
+                <div style={{fontSize:11, color:"rgba(255,255,255,.65)", marginTop:2}}>
+                  {loading ? "Loading…" : totalCount === 0 ? "All caught up" : `${totalCount} pending${overdueCount?` · ${overdueCount} overdue`:""}`}
+                </div>
+              </div>
+              <button onClick={fetchReminders} title="Refresh"
+                style={{background:"none", border:"none", color:"#C9A84C", cursor:"pointer", fontSize:14}}>↻</button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div style={{padding:"2rem", textAlign:"center", color:"#94A3B8", fontSize:12}}>Loading reminders…</div>
+          ) : totalCount === 0 ? (
+            <div style={{padding:"2.5rem 1.5rem", textAlign:"center"}}>
+              <div style={{fontSize:36, marginBottom:8}}>🎉</div>
+              <div style={{fontSize:13, fontWeight:700, color:"#0F2540", marginBottom:4}}>You're all caught up</div>
+              <div style={{fontSize:11, color:"#94A3B8"}}>No pending follow-ups in the next 2 weeks</div>
+            </div>
+          ) : (
+            <div>
+              {groups.overdue.length > 0 && (<>
+                <SectionHeader label="Overdue" count={groups.overdue.length} color="#C53030"/>
+                {groups.overdue.map(r => <ReminderRow key={r.id} r={r}/>)}
+              </>)}
+              {groups.today.length > 0 && (<>
+                <SectionHeader label="Today" count={groups.today.length} color="#A06810"/>
+                {groups.today.map(r => <ReminderRow key={r.id} r={r}/>)}
+              </>)}
+              {groups.tomorrow.length > 0 && (<>
+                <SectionHeader label="Tomorrow" count={groups.tomorrow.length} color="#1A5FA8"/>
+                {groups.tomorrow.map(r => <ReminderRow key={r.id} r={r}/>)}
+              </>)}
+              {groups.thisWeek.length > 0 && (<>
+                <SectionHeader label="This week" count={groups.thisWeek.length} color="#64748B"/>
+                {groups.thisWeek.map(r => <ReminderRow key={r.id} r={r}/>)}
+              </>)}
+              {groups.later.length > 0 && (<>
+                <SectionHeader label="Later" count={groups.later.length} color="#94A3B8"/>
+                {groups.later.map(r => <ReminderRow key={r.id} r={r}/>)}
+              </>)}
+            </div>
+          )}
+
+          <div style={{padding:"8px 12px", borderTop:"1px solid #E2E8F0", background:"#F8FAFC", textAlign:"center"}}>
+            <span style={{fontSize:10, color:"#94A3B8"}}>Click a reminder to open the opportunity · Auto-refreshes every minute</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function NegotiationRoundDialog({ opp, lead, currentUser, onClose, onSaved, showToast }) {
   const [actor, setActor] = useState("developer"); // who is speaking this round (most common: developer responding)
   const [roundAt, setRoundAt] = useState(()=>{
@@ -4340,7 +4584,7 @@ You will become the assigned agent.`);
 // ══════════════════════════════════════════════════════════════════
 // LEADS — Contact list with opportunities per lead
 // ══════════════════════════════════════════════════════════════════
-function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpps=()=>{},properties,activities,setActivities,discounts,setDiscounts,currentUser,users,showToast}){
+function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpps=()=>{},properties,activities,setActivities,discounts,setDiscounts,currentUser,users,showToast,initialFilter=null}){
   const [search,   setSearch]   = useState("");
   const [fStage,   setFStage]   = useState("All");
   const [fType,    setFType]    = useState("All");
@@ -4405,6 +4649,22 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
     return ()=>window.removeEventListener("popstate", onPopState);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
+
+  // Phase E W4 — deep-link handler: when bell icon (or any external nav)
+  // passes initialFilter={type:"opp", oppId}, jump straight to that opp's detail.
+  useEffect(()=>{
+    if(!initialFilter || initialFilter.type !== "opp" || !initialFilter.oppId) return;
+    // Find the opp in either local or parent state
+    const opp = (opps||[]).find(o => o.id === initialFilter.oppId)
+             || (globalOppsFromParent||[]).find(o => o.id === initialFilter.oppId);
+    if(!opp) {
+      // Opp may not be loaded yet — leave handling to a later render when opps fills
+      return;
+    }
+    setSelOpp(opp);
+    setSelLeadId(opp.lead_id);
+    setView("opportunity");
+  }, [initialFilter?.type, initialFilter?.oppId, opps.length, globalOppsFromParent.length]);
 
   useEffect(()=>{
     // After every view/selection change, push to history — unless the change came from popstate
@@ -9440,6 +9700,17 @@ export default function App(){
 
           {/* RIGHT: User info + PropCRM watermark */}
           <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+            {/* Phase E W4 — Reminders bell (cross-opp follow-up tracker) */}
+            <RemindersBell
+              currentUser={currentUser}
+              showToast={showToast}
+              onNavigateToOpp={(oppId)=>{
+                // Jump to Leads tab and pass an initialFilter that the Leads
+                // component picks up to deep-link straight into the opportunity.
+                const targetTab = currentApp === "leasing" ? "l_leads" : "leads";
+                navigateToTab(targetTab, {type:"opp", oppId});
+              }}
+            />
             {/* User */}
             <div style={{textAlign:"right"}}>
               <div style={{fontSize:12,color:"#0F2540",fontWeight:600,lineHeight:1.2,letterSpacing:"-.2px"}}>{currentUser.full_name}</div>
@@ -9491,7 +9762,7 @@ export default function App(){
 
           {/* ── Sales CRM ─────────────────────────────────────── */}
           {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={(t,filter)=>navigateToTab(t,filter)}/>}
-          {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast}/>}
+          {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
