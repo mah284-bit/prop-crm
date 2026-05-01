@@ -1294,6 +1294,24 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
 
 // Configs per stage transition. Key = target stage. Value = field spec.
 // Each field is rendered by StageCaptureDialog based on its `kind`.
+
+// Phase E W2 — standard asks the buyer can put on the negotiation table.
+// Each ask has a `key` (used in structured_data), `label`, optional `detail` config
+// for the conditional input that appears when the ask is ticked.
+//   detail.kind: "percent" | "text"
+//   detail.placeholder: hint shown in the input
+// Designed for UAE off-plan primary-market — items reflect what real buyers actually
+// negotiate (DLD fee, post-handover %, service charge waivers, free parking).
+const ASKS_GRID_OPTIONS = [
+  { key:"discount",       label:"Price discount",        icon:"💰", detail:{kind:"percent", placeholder:"e.g. 5"}, hint:"% off the asking price" },
+  { key:"payment_plan",   label:"Payment plan flex",     icon:"📅", detail:{kind:"text",    placeholder:"e.g. 50/50 with 30% post-handover over 2 yrs"}, hint:"Stretched, post-handover, more milestones" },
+  { key:"dld_waiver",     label:"DLD fee help",          icon:"🏛️", detail:{kind:"text",    placeholder:"e.g. 50/50 split, or full waiver"}, hint:"Dubai Land Department 4% fee" },
+  { key:"service_charge", label:"Service charge waiver", icon:"🧾", detail:{kind:"text",    placeholder:"e.g. First 2 years waived"}, hint:"Annual maintenance fees" },
+  { key:"free_parking",   label:"Extra parking / storage", icon:"🚗", detail:{kind:"text",    placeholder:"e.g. 1 extra parking + storage room"}, hint:"Additional bays, storage rooms" },
+  { key:"freebies",       label:"Furniture / freebies",  icon:"🎁", detail:{kind:"text",    placeholder:"e.g. White-goods package, light fittings"}, hint:"Furniture, appliances, fittings" },
+  { key:"other",          label:"Other request",         icon:"📌", detail:{kind:"text",    placeholder:"What else are they asking for?"}, hint:"Any custom ask" },
+];
+
 const STAGE_CAPTURE_CONFIGS = {
   "Contacted": {
     title: "Capture Contact",
@@ -1380,6 +1398,48 @@ const STAGE_CAPTURE_CONFIGS = {
     reminderReason: "auto_follow_up_after_site_visit",
     onLostInterestSuggest: true, // same Lost-interest escape hatch
   },
+
+  "Negotiation": {
+    title: "Open Negotiation",
+    subtitle: "Capture the buyer's initial asks. You'll relay these to the developer next.",
+    fields: [
+      {
+        key: "round_at", label: "When was this discussed?", kind: "datetime", required: true,
+        defaultOffsetHours: 0, // pre-fills with now
+      },
+      {
+        key: "asks", label: "What is the buyer asking for?", kind: "asks_grid", required: true,
+      },
+      {
+        key: "buyer_position", label: "Buyer's overall stance", kind: "radio", required: true,
+        options: [
+          {value:"Firm — won't budge",        color:"#DC2626", bg:"#FEE2E2"},
+          {value:"Open to discussion",        color:"#D97706", bg:"#FEF3C7"},
+          {value:"Just exploring",            color:"#0891B2", bg:"#CFFAFE"},
+        ],
+      },
+      {
+        key: "broker_notes", label: "Your read on this", kind: "textarea", required: true,
+        minLength: 15, rows: 3,
+        placeholder: "e.g. Buyer is comparing 2 other options. Developer rep mentioned flexibility on DLD if booking happens this month. Likely to close if we get 5% off + DLD split.",
+      },
+      {
+        key: "next_action", label: "What happens next?", kind: "select", required: true,
+        options: ["Take asks to developer","Wait for buyer to confirm","Schedule handover meeting","Buyer needs more time","Lost interest"],
+      },
+      {
+        key: "follow_up_date", label: "Follow up by", kind: "date", required: true,
+        defaultOffsetDays: 2,
+      },
+    ],
+    reminderTitle: (lead) => `Negotiation follow-up — ${lead.name}`,
+    reminderBody:  (data) => {
+      const askCount = Object.keys(data.asks||{}).filter(k => (data.asks||{})[k]?.enabled).length;
+      return `Next: ${data.next_action}. ${askCount} ask${askCount===1?"":"s"} on the table.`;
+    },
+    reminderReason: "auto_follow_up_after_negotiation_opened",
+    onLostInterestSuggest: true,
+  },
 };
 
 function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, onSave, onCancel, showToast, units = [], projects = [], salePricing = [] }) {
@@ -1411,6 +1471,8 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
         } else {
           init[f.key] = [];
         }
+      } else if (f.kind === "asks_grid") {
+        init[f.key] = {};
       } else {
         init[f.key] = "";
       }
@@ -1430,6 +1492,17 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
       if (f.required) {
         if (f.kind === "multi_select") {
           if (!Array.isArray(v) || v.length === 0) errs[f.key] = "Pick at least one";
+        } else if (f.kind === "asks_grid") {
+          const enabled = v && typeof v === "object" ? Object.keys(v).filter(k => v[k]?.enabled) : [];
+          if (enabled.length === 0) errs[f.key] = "Tick at least one ask";
+          // Require detail value for any enabled ask that has a detail field
+          for (const k of enabled) {
+            const def = ASKS_GRID_OPTIONS.find(o => o.key === k);
+            if (def?.detail && !((v[k]?.value||"").toString().trim())) {
+              errs[f.key] = `Add details for ${def.label}`;
+              break;
+            }
+          }
         } else if (!v || (typeof v === "string" && v.trim() === "")) {
           errs[f.key] = "Required";
         }
@@ -1681,6 +1754,72 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
                 );
               }
 
+              if (f.kind === "asks_grid") {
+                // Renders the standard set of UAE primary-market asks as toggleable rows.
+                // When a row is ticked, a conditional detail input appears (% or text).
+                const asks = (data[f.key] && typeof data[f.key]==="object") ? data[f.key] : {};
+                const setAsk = (key, patch) => {
+                  setField(f.key, {...asks, [key]: {...(asks[key]||{}), ...patch}});
+                };
+                return (
+                  <div key={f.key}>
+                    {labelEl}
+                    <div style={{display:"flex",flexDirection:"column",gap:5,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,borderRadius:8,padding:6,background:"#fff"}}>
+                      {ASKS_GRID_OPTIONS.map(opt => {
+                        const sel = !!asks[opt.key]?.enabled;
+                        return (
+                          <div key={opt.key} style={{
+                            background: sel ? "#FFFBEA" : "transparent",
+                            border: sel ? "1px solid #FCD34D" : "1px solid transparent",
+                            borderRadius:6, padding: sel ? "8px 10px" : "6px 10px", transition:"all .12s",
+                          }}>
+                            <button onClick={()=>setAsk(opt.key,{enabled:!sel})}
+                              style={{
+                                display:"flex",alignItems:"center",gap:9,width:"100%",
+                                background:"transparent",border:"none",cursor:"pointer",textAlign:"left",padding:0,
+                              }}>
+                              <span style={{
+                                display:"inline-flex",alignItems:"center",justifyContent:"center",
+                                width:16,height:16,borderRadius:4,
+                                border:`1.5px solid ${sel?"#0F2540":"#CBD5E1"}`,
+                                background: sel?"#0F2540":"#fff",
+                                color:"#fff",fontSize:11,lineHeight:1,flexShrink:0,
+                              }}>{sel?"✓":""}</span>
+                              <span style={{fontSize:14,flexShrink:0}}>{opt.icon}</span>
+                              <div style={{flex:1,minWidth:0}}>
+                                <div style={{fontSize:12,fontWeight:sel?700:600,color:"#0F2540"}}>{opt.label}</div>
+                                {!sel && opt.hint && <div style={{fontSize:10,color:"#94A3B8",marginTop:1}}>{opt.hint}</div>}
+                              </div>
+                            </button>
+                            {sel && opt.detail && (
+                              <div style={{marginTop:7,marginLeft:25,display:"flex",alignItems:"center",gap:6}}>
+                                {opt.detail.kind === "percent" ? (
+                                  <>
+                                    <input type="number" min="0" max="100" step="0.1"
+                                      value={asks[opt.key]?.value||""}
+                                      onChange={e=>setAsk(opt.key,{value:e.target.value})}
+                                      placeholder={opt.detail.placeholder||""}
+                                      style={{width:80,padding:"6px 9px",borderRadius:6,border:"1.5px solid #D1D9E6",fontSize:12,fontFamily:"inherit",background:"#fff"}}/>
+                                    <span style={{fontSize:12,color:"#64748B",fontWeight:600}}>%</span>
+                                  </>
+                                ) : (
+                                  <input type="text"
+                                    value={asks[opt.key]?.value||""}
+                                    onChange={e=>setAsk(opt.key,{value:e.target.value})}
+                                    placeholder={opt.detail.placeholder||""}
+                                    style={{flex:1,padding:"6px 9px",borderRadius:6,border:"1.5px solid #D1D9E6",fontSize:12,fontFamily:"inherit",background:"#fff"}}/>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
+                  </div>
+                );
+              }
+
               if (f.kind === "multi_select") {
                 // Source options: either explicit `f.options` array, or pulled from `units` prop via f.source.
                 // For `f.source === "units"`, each option carries enough fields to render a rich two-line row:
@@ -1817,6 +1956,330 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Phase E W2 — Negotiation Round Dialog
+   Captures a single round in the buyer/developer/broker thread.
+═══════════════════════════════════════════════════════════════ */
+function NegotiationRoundDialog({ opp, lead, currentUser, onClose, onSaved, showToast }) {
+  const [actor, setActor] = useState("developer"); // who is speaking this round (most common: developer responding)
+  const [roundAt, setRoundAt] = useState(()=>{
+    const d = new Date(); const pad = n=>String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
+  const [asks, setAsks] = useState({});
+  const [status, setStatus] = useState("Open");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const setAsk = (key, patch) => setAsks(prev => ({...prev, [key]: {...(prev[key]||{}), ...patch}}));
+
+  const submit = async()=>{
+    if(!notes.trim()){showToast("Add notes — what did they say?","error");return;}
+    if(!roundAt){showToast("Set the round date","error");return;}
+    setSaving(true);
+    try{
+      const enabledKeys = Object.keys(asks).filter(k=>asks[k]?.enabled);
+      const sd = {actor, round_at:new Date(roundAt).toISOString(), asks, status, notes:notes.trim()};
+      const summary = enabledKeys.map(k=>{
+        const def = ASKS_GRID_OPTIONS.find(o=>o.key===k);
+        if(!def) return null;
+        const v = asks[k]?.value;
+        const valLabel = def.detail?.kind==="percent" && v ? `${v}%` : v;
+        return `${def.label}${valLabel?`: ${valLabel}`:""}`;
+      }).filter(Boolean).join(" · ");
+      const actorLabels = {buyer:"Buyer", developer:"Developer", broker:"Broker"};
+      const noteText = `[${actorLabels[actor]} · ${status}] ${summary?summary+" — ":""}${notes.trim()}`;
+      const{data,error}=await supabase.from("activities").insert({
+        opportunity_id: opp.id, lead_id: lead.id,
+        company_id: opp.company_id || currentUser.company_id || null,
+        type: "Note", note: noteText, status: "completed",
+        user_id: currentUser.id, user_name: currentUser.full_name, lead_name: lead.name,
+        stage_at_event: opp.stage,
+        activity_subtype: "negotiation_round",
+        structured_data: sd,
+      }).select().single();
+      if(error){
+        console.error("Round insert failed:", error);
+        showToast(`Failed: ${error.message||"unknown"}`,"error");
+        setSaving(false);
+        return;
+      }
+      onSaved(data);
+    } catch(e){
+      console.error("Round save error:", e);
+      showToast(`Save failed: ${e.message||"unknown"}`,"error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const actorOptions = [
+    {value:"buyer",     label:"Buyer says",     icon:"🟦", color:"#1A5FA8", bg:"#E6EFF8"},
+    {value:"developer", label:"Developer says", icon:"🟩", color:"#1A7F5A", bg:"#E6F4EE"},
+    {value:"broker",    label:"Broker note",    icon:"🟧", color:"#A06810", bg:"#FDF3DC"},
+  ];
+  const statusOptions = [
+    {value:"Open",            color:"#1A5FA8", bg:"#E6EFF8"},
+    {value:"Accepted",        color:"#1A7F5A", bg:"#E6F4EE"},
+    {value:"Rejected",        color:"#C53030", bg:"#FEE2E2"},
+    {value:"Counter-pending", color:"#D97706", bg:"#FEF3C7"},
+  ];
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
+      <div style={{background:"#fff",borderRadius:16,width:600,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
+        <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+            <div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>🤝 Log Negotiation Round</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3}}>Capture the latest exchange between buyer, developer, and broker.</div>
+            </div>
+            <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",lineHeight:1}}>×</button>
+          </div>
+        </div>
+        <div style={{padding:"1.1rem 1.4rem",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:14}}>
+
+          {/* Who's speaking */}
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Who is this round from? *</label>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {actorOptions.map(o=>{
+                const sel = actor === o.value;
+                return (
+                  <button key={o.value} onClick={()=>setActor(o.value)}
+                    style={{
+                      padding:"7px 14px",borderRadius:20,
+                      border:`1.5px solid ${sel?o.color:"#D1D9E6"}`,
+                      background:sel?o.bg:"#fff",
+                      color:sel?o.color:"#4A5568",
+                      fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:5,
+                    }}>
+                    {o.icon} {o.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* When */}
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>When was this? *</label>
+            <input type="datetime-local" value={roundAt} onChange={e=>setRoundAt(e.target.value)}
+              style={{padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
+          </div>
+
+          {/* Asks grid */}
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>What's on the table this round?</label>
+            <div style={{fontSize:10,color:"#94A3B8",marginBottom:6}}>Tick what applies to this round. For developer rounds, this is what they offered/accepted. For buyer rounds, this is what they asked for.</div>
+            <div style={{display:"flex",flexDirection:"column",gap:5,border:"1.5px solid #D1D9E6",borderRadius:8,padding:6,background:"#fff"}}>
+              {ASKS_GRID_OPTIONS.map(opt=>{
+                const sel = !!asks[opt.key]?.enabled;
+                return (
+                  <div key={opt.key} style={{
+                    background: sel?"#FFFBEA":"transparent",
+                    border: sel?"1px solid #FCD34D":"1px solid transparent",
+                    borderRadius:6, padding: sel?"8px 10px":"6px 10px", transition:"all .12s",
+                  }}>
+                    <button onClick={()=>setAsk(opt.key,{enabled:!sel})}
+                      style={{display:"flex",alignItems:"center",gap:9,width:"100%",background:"transparent",border:"none",cursor:"pointer",textAlign:"left",padding:0}}>
+                      <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:16,height:16,borderRadius:4,border:`1.5px solid ${sel?"#0F2540":"#CBD5E1"}`,background:sel?"#0F2540":"#fff",color:"#fff",fontSize:11,lineHeight:1,flexShrink:0}}>{sel?"✓":""}</span>
+                      <span style={{fontSize:14,flexShrink:0}}>{opt.icon}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:12,fontWeight:sel?700:600,color:"#0F2540"}}>{opt.label}</div>
+                      </div>
+                    </button>
+                    {sel && opt.detail && (
+                      <div style={{marginTop:7,marginLeft:25,display:"flex",alignItems:"center",gap:6}}>
+                        {opt.detail.kind === "percent" ? (
+                          <>
+                            <input type="number" min="0" max="100" step="0.1"
+                              value={asks[opt.key]?.value||""} onChange={e=>setAsk(opt.key,{value:e.target.value})}
+                              placeholder={opt.detail.placeholder||""}
+                              style={{width:80,padding:"6px 9px",borderRadius:6,border:"1.5px solid #D1D9E6",fontSize:12,fontFamily:"inherit",background:"#fff"}}/>
+                            <span style={{fontSize:12,color:"#64748B",fontWeight:600}}>%</span>
+                          </>
+                        ) : (
+                          <input type="text" value={asks[opt.key]?.value||""} onChange={e=>setAsk(opt.key,{value:e.target.value})}
+                            placeholder={opt.detail.placeholder||""}
+                            style={{flex:1,padding:"6px 9px",borderRadius:6,border:"1.5px solid #D1D9E6",fontSize:12,fontFamily:"inherit",background:"#fff"}}/>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Status */}
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Status of this round *</label>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {statusOptions.map(o=>{
+                const sel = status === o.value;
+                return (
+                  <button key={o.value} onClick={()=>setStatus(o.value)}
+                    style={{
+                      padding:"6px 13px",borderRadius:20,
+                      border:`1.5px solid ${sel?o.color:"#D1D9E6"}`,
+                      background:sel?o.bg:"#fff",
+                      color:sel?o.color:"#4A5568",
+                      fontSize:11,fontWeight:600,cursor:"pointer",
+                    }}>
+                    {o.value}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Notes *</label>
+            <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3}
+              placeholder="What was actually said? Any deadlines? Hints about flexibility?"
+              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.4rem",borderTop:"1px solid #E8EDF4",background:"#F8FAFC"}}>
+          <button onClick={onClose} disabled={saving}
+            style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+            Cancel
+          </button>
+          <button onClick={submit} disabled={saving}
+            style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#94A3B8":"#0F2540",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
+            {saving?"Saving…":"✓ Log Round"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Phase E W2 — Handover Meeting Dialog
+   Schedules the buyer/broker/developer meeting where final terms
+   are signed off and broker hands the buyer over to the developer.
+═══════════════════════════════════════════════════════════════ */
+function HandoverMeetingDialog({ opp, lead, currentUser, onClose, onSaved, showToast }) {
+  const [meetingAt, setMeetingAt] = useState(()=>{
+    const d = new Date(); d.setDate(d.getDate()+3); d.setHours(11,0,0,0);
+    const pad = n=>String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
+  const [location, setLocation] = useState("");
+  const [attendees, setAttendees] = useState("");
+  const [agenda, setAgenda] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async()=>{
+    if(!meetingAt){showToast("Set the meeting date/time","error");return;}
+    if(!location.trim()){showToast("Where will it happen?","error");return;}
+    if(!attendees.trim()){showToast("List who's attending","error");return;}
+    setSaving(true);
+    try{
+      const company_id = opp.company_id || currentUser.company_id || null;
+      const sd = {meeting_at:new Date(meetingAt).toISOString(), location:location.trim(), attendees:attendees.trim(), agenda:agenda.trim()};
+      const{data:actRow,error}=await supabase.from("activities").insert({
+        opportunity_id: opp.id, lead_id: lead.id, company_id,
+        type:"Meeting",
+        note:`📅 Handover meeting scheduled at ${location.trim()} · attendees: ${attendees.trim()}${agenda.trim()?` · agenda: ${agenda.trim()}`:""}`,
+        scheduled_at: new Date(meetingAt).toISOString(),
+        status:"upcoming",
+        user_id: currentUser.id, user_name: currentUser.full_name, lead_name: lead.name,
+        stage_at_event: opp.stage,
+        activity_subtype: "handover_meeting",
+        structured_data: sd,
+      }).select().single();
+      if(error){
+        console.error("Handover insert failed:", error);
+        showToast(`Failed: ${error.message||"unknown"}`,"error");
+        setSaving(false);
+        return;
+      }
+      // Create reminder 1 day before the meeting
+      const remindAt = new Date(meetingAt);
+      remindAt.setDate(remindAt.getDate()-1);
+      remindAt.setHours(9,0,0,0);
+      let reminder = null;
+      if(remindAt > new Date()){
+        const{data:remRow,error:remErr}=await supabase.from("reminders").insert({
+          company_id, user_id: currentUser.id,
+          related_opportunity_id: opp.id, related_lead_id: lead.id, related_activity_id: actRow.id,
+          trigger_at: remindAt.toISOString(),
+          title: `Handover meeting tomorrow — ${lead.name}`,
+          body: `${location.trim()} · ${attendees.trim()}`,
+          reason: "auto_handover_meeting_reminder",
+          status: "pending",
+          created_by: currentUser.id,
+        }).select().single();
+        if(!remErr) reminder = remRow;
+      }
+      onSaved(actRow, reminder);
+    } catch(e){
+      console.error("Handover save error:", e);
+      showToast(`Save failed: ${e.message||"unknown"}`,"error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
+      <div style={{background:"#fff",borderRadius:16,width:520,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
+        <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+            <div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📅 Schedule Handover Meeting</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3}}>Where buyer, broker, and developer rep finalise the deal.</div>
+            </div>
+            <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",lineHeight:1}}>×</button>
+          </div>
+        </div>
+        <div style={{padding:"1.1rem 1.4rem",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:14}}>
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Meeting date & time *</label>
+            <input type="datetime-local" value={meetingAt} onChange={e=>setMeetingAt(e.target.value)}
+              style={{padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
+          </div>
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Location *</label>
+            <input type="text" value={location} onChange={e=>setLocation(e.target.value)}
+              placeholder="e.g. Sobha Sales Gallery, Sobha Hartland — or 3-way Zoom call"
+              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",boxSizing:"border-box"}}/>
+          </div>
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Attendees *</label>
+            <input type="text" value={attendees} onChange={e=>setAttendees(e.target.value)}
+              placeholder="e.g. Mr. Khan (buyer), Sara (Sobha rep), Abid (broker)"
+              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",boxSizing:"border-box"}}/>
+          </div>
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Agenda / prep notes</label>
+            <textarea value={agenda} onChange={e=>setAgenda(e.target.value)} rows={3}
+              placeholder="Final price, payment terms to confirm, documents needed, anything that could derail it"
+              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
+          </div>
+          <div style={{padding:"8px 12px",background:"#FFFBEA",borderRadius:7,border:"1px solid #FCD34D",fontSize:11,color:"#7A4F01"}}>
+            💡 A reminder will be auto-set for 9am the day before the meeting.
+          </div>
+        </div>
+        <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.4rem",borderTop:"1px solid #E8EDF4",background:"#F8FAFC"}}>
+          <button onClick={onClose} disabled={saving}
+            style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+            Cancel
+          </button>
+          <button onClick={submit} disabled={saving}
+            style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#94A3B8":"#7C3AED",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
+            {saving?"Saving…":"📅 Schedule"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated }) {
   const [activeTab,  setActiveTab]  = useState("activities");
   const [activities, setActivities] = useState([]);
@@ -1834,6 +2297,10 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [logForm,    setLogForm]    = useState({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
   // Phase E W3 — reminder action dialog (Done / Reschedule / Cancel)
   const [remAction, setRemAction] = useState(null); // {mode:"done"|"reschedule"|"cancel", reminder, note, date}
+
+  // Phase E W2 — Negotiation: "Log round" and "Handover meeting" dialogs
+  const [showLogRound, setShowLogRound] = useState(false);
+  const [showHandover, setShowHandover] = useState(false);
 
   // Phase E W3 — shared helper used by both the inline strip (snooze) and the action dialog (done/reschedule/cancel)
   const updateReminderStatus = async(reminderId, newStatus, extra={})=>{
@@ -2334,6 +2801,133 @@ You will become the assigned agent.`);
               );
             })()}
 
+            {/* ── NEGOTIATION ROUNDS — broker/buyer/developer thread (Phase E W2) ── */}
+            {(()=>{
+              // Show the rounds panel whenever we have negotiation activities OR the opp is in Negotiation+ stages
+              const negStages = ["Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won"];
+              const stageAllows = negStages.includes(opp.stage);
+              const rounds = activities.filter(a =>
+                (a.activity_subtype === "stage_advance" && a.to_stage === "Negotiation")
+                || a.activity_subtype === "negotiation_round"
+                || a.activity_subtype === "handover_meeting"
+              ).slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+
+              if(!stageAllows && rounds.length===0) return null;
+
+              const actorMeta = {
+                buyer:     {label:"Buyer",     icon:"🟦", c:"#1A5FA8", bg:"#E6EFF8", border:"#B8D2EE"},
+                developer: {label:"Developer", icon:"🟩", c:"#1A7F5A", bg:"#E6F4EE", border:"#A8D5BE"},
+                broker:    {label:"Broker",    icon:"🟧", c:"#A06810", bg:"#FDF3DC", border:"#F0D795"},
+              };
+
+              const fmtRoundDate = (iso) => new Date(iso).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"});
+
+              return (
+                <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"12px 16px",borderLeft:"3px solid #B83232"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
+                    <div>
+                      <div style={{fontSize:10,fontWeight:700,color:"#B83232",textTransform:"uppercase",letterSpacing:".6px"}}>
+                        🤝 Negotiation Rounds · broker / buyer / developer
+                      </div>
+                      <div style={{fontSize:11,color:"#94A3B8",marginTop:2}}>
+                        {rounds.length===0 ? "No rounds yet — log the first response from the developer." : `${rounds.length} round${rounds.length===1?"":"s"} on the table`}
+                      </div>
+                    </div>
+                    {canEdit && (
+                      <div style={{display:"flex",gap:6}}>
+                        <button onClick={()=>setShowLogRound(true)}
+                          style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #B83232",background:"#fff",color:"#B83232",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                          + Log Round
+                        </button>
+                        <button onClick={()=>setShowHandover(true)}
+                          style={{padding:"6px 12px",borderRadius:7,border:"none",background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                          📅 Schedule Handover
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {rounds.length===0 ? (
+                    <div style={{textAlign:"center",padding:"1.25rem",color:"#A0AEC0",fontSize:12,border:"1px dashed #E2E8F0",borderRadius:10}}>
+                      Once you've taken the buyer's asks to the developer, log their response here.
+                    </div>
+                  ) : (
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {rounds.map((r, idx) => {
+                        const sd = r.structured_data || {};
+                        const isHandover = r.activity_subtype === "handover_meeting";
+                        const isOpening = r.activity_subtype === "stage_advance";
+                        const actorKey = sd.actor || (isOpening ? "buyer" : "broker");
+                        const am = actorMeta[actorKey] || actorMeta.broker;
+                        const dateLabel = sd.round_at ? fmtRoundDate(sd.round_at) : fmtRoundDate(r.created_at);
+                        const enabledAsks = sd.asks ? Object.keys(sd.asks).filter(k=>sd.asks[k]?.enabled) : [];
+                        const status = sd.status || (isOpening ? "Open" : null);
+                        const statusColors = {"Open":{c:"#1A5FA8",bg:"#E6EFF8"},"Accepted":{c:"#1A7F5A",bg:"#E6F4EE"},"Rejected":{c:"#C53030",bg:"#FEE2E2"},"Counter-pending":{c:"#D97706",bg:"#FEF3C7"}};
+                        const sc = statusColors[status]||{};
+
+                        return (
+                          <div key={r.id} style={{display:"flex",gap:10,padding:"10px 12px",background:"#F8FAFC",borderRadius:8,border:`1px solid ${am.border}`,borderLeft:`3px solid ${am.c}`}}>
+                            <div style={{flexShrink:0,fontSize:18,paddingTop:1}}>{isHandover?"📅":am.icon}</div>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
+                                <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:am.bg,color:am.c,letterSpacing:".4px"}}>
+                                  {isHandover ? "HANDOVER MEETING" : `ROUND ${idx+1} · ${am.label.toUpperCase()}`}
+                                </span>
+                                {status && <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:sc.bg,color:sc.c}}>{status.toUpperCase()}</span>}
+                                <span style={{fontSize:10,color:"#94A3B8"}}>{dateLabel}</span>
+                              </div>
+
+                              {/* Asks summary */}
+                              {enabledAsks.length>0 && (
+                                <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:5}}>
+                                  {enabledAsks.map(k=>{
+                                    const def = ASKS_GRID_OPTIONS.find(o=>o.key===k);
+                                    if(!def) return null;
+                                    const val = sd.asks[k]?.value;
+                                    const valLabel = def.detail?.kind==="percent" && val ? `${val}%` : val;
+                                    return (
+                                      <span key={k} style={{fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:10,background:"#fff",border:"1px solid #E2E8F0",color:"#0F2540"}}>
+                                        {def.icon} {def.label}{valLabel?<span style={{color:"#1A5FA8",marginLeft:4,fontWeight:700}}>{valLabel}</span>:""}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {/* Handover meta */}
+                              {isHandover && (
+                                <div style={{display:"flex",flexWrap:"wrap",gap:10,fontSize:11,color:"#475569",marginBottom:5,padding:"6px 8px",background:"#fff",borderRadius:6,border:"1px solid #E2E8F0"}}>
+                                  {sd.meeting_at && <span><strong style={{color:"#94A3B8",fontWeight:600}}>📅</strong> {new Date(sd.meeting_at).toLocaleString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>}
+                                  {sd.location && <span><strong style={{color:"#94A3B8",fontWeight:600}}>📍</strong> {sd.location}</span>}
+                                  {sd.attendees && <span><strong style={{color:"#94A3B8",fontWeight:600}}>👥</strong> {sd.attendees}</span>}
+                                </div>
+                              )}
+
+                              {/* Free text */}
+                              {(sd.broker_notes || sd.notes) && (
+                                <div style={{fontSize:12,color:"#475569",lineHeight:1.5,whiteSpace:"pre-wrap"}}>
+                                  {sd.broker_notes || sd.notes}
+                                </div>
+                              )}
+                              {sd.buyer_position && (
+                                <div style={{fontSize:10,color:"#64748B",marginTop:4,fontStyle:"italic"}}>
+                                  Buyer stance: {sd.buyer_position}
+                                </div>
+                              )}
+
+                              <div style={{fontSize:10,color:"#A0AEC0",marginTop:5}}>
+                                logged by {r.user_name||"—"}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* ── ACTIVITY TIMELINE — moved up for prominence (Phase E dense layout) ── */}
             <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"12px 16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -2654,6 +3248,41 @@ You will become the assigned agent.`);
           onUpdated({...opp, stage: result.stage, stage_updated_at: new Date().toISOString()});
         }}
       />
+
+      {/* Phase E W2 — Log Negotiation Round Dialog */}
+      {showLogRound && (()=>{
+        const close = ()=>setShowLogRound(false);
+        return (
+          <NegotiationRoundDialog
+            opp={opp} lead={lead} currentUser={currentUser}
+            onClose={close}
+            onSaved={(actRow)=>{
+              setActivities(p=>[actRow, ...p]);
+              showToast("Round logged","success");
+              close();
+            }}
+            showToast={showToast}
+          />
+        );
+      })()}
+
+      {/* Phase E W2 — Schedule Handover Meeting Dialog */}
+      {showHandover && (()=>{
+        const close = ()=>setShowHandover(false);
+        return (
+          <HandoverMeetingDialog
+            opp={opp} lead={lead} currentUser={currentUser}
+            onClose={close}
+            onSaved={(actRow, reminder)=>{
+              setActivities(p=>[actRow, ...p]);
+              if(reminder) setReminders(p=>[...p, reminder].sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
+              showToast("Handover meeting scheduled","success");
+              close();
+            }}
+            showToast={showToast}
+          />
+        );
+      })()}
 
       {/* Phase E W3 — Reminder Action Dialog (Done / Reschedule / Cancel) */}
       {remAction && (()=>{
