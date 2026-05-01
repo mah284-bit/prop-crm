@@ -1077,8 +1077,8 @@ function OutcomeModal({activity, onClose, onSave}){
   };
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,padding:"1rem"}}>
-      <div style={{background:"#fff",borderRadius:16,width:440,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
+      <div style={{background:"#fff",borderRadius:16,width:440,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)",overflow:"hidden"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
           <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>{titles[outcome]}</span>
           <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
         </div>
@@ -1128,23 +1128,80 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
   const statusLabels = {completed:"✅ Completed",upcoming:"⏰ Upcoming",no_show:"📵 No Show",rescheduled:"🔄 Rescheduled",cancelled:"❌ Cancelled"};
 
   const markOutcome = async(a, outcome, notes, reschedDt)=>{
-    await supabase.from("activities").update({status:outcome, outcome:notes||null, rescheduled_to:reschedDt||null}).eq("id",a.id);
-    if(reschedDt){
+    // Phase E W2: rescheduling a stage-advance visit (Site Visit, Handover, etc.) should
+    // UPDATE the existing upcoming activity in place rather than mark it "rescheduled" and
+    // create a generic clone. This preserves structured_data (units, attendees, prep notes)
+    // and keeps the rich "Capture Outcome" button visible on the moved card.
+    const isStructuredVisit = outcome === "rescheduled"
+      && reschedDt
+      && (a.activity_subtype === "stage_advance" || a.activity_subtype === "handover_meeting");
+
+    if (isStructuredVisit) {
+      // Build the new note line — keep the existing prefix but update the date
+      const newSd = {...(a.structured_data||{}), visit_at: new Date(reschedDt).toISOString(), reschedule_reason: notes||"", rescheduled_at: new Date().toISOString()};
+      const{error:updErr}=await supabase.from("activities").update({
+        scheduled_at: reschedDt,
+        status: "upcoming",
+        structured_data: newSd,
+        outcome: notes ? `Rescheduled: ${notes}` : null,
+      }).eq("id", a.id);
+      if(updErr){
+        console.error("Reschedule update failed:", updErr);
+        showToast(`Reschedule failed: ${updErr.message||"unknown"}`,"error");
+        return;
+      }
+      // Move the imminent-visit reminder if we know about one
+      // (60 min before new visit time)
+      const newReminderAt = new Date(reschedDt);
+      newReminderAt.setMinutes(newReminderAt.getMinutes() - 60);
+      if(newReminderAt > new Date()){
+        await supabase.from("reminders")
+          .update({trigger_at: newReminderAt.toISOString()})
+          .eq("related_activity_id", a.id)
+          .eq("reason", "auto_visit_imminent")
+          .eq("status", "pending");
+      } else {
+        // New time is in the past or too close — cancel the imminent reminder
+        await supabase.from("reminders")
+          .update({status:"cancelled"})
+          .eq("related_activity_id", a.id)
+          .eq("reason", "auto_visit_imminent")
+          .eq("status", "pending");
+      }
+      // Drop a small audit note into the timeline so the move is visible historically
+      const visitDateLabel = new Date(reschedDt).toLocaleDateString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
       await supabase.from("activities").insert({
         opportunity_id:isLeasing?null:a.opportunity_id,
         lease_opportunity_id:isLeasing?opp.id:null,
         lead_id:isLeasing?null:a.lead_id,
-        type:a.type, note:"Rescheduled: "+(notes||""),
-        scheduled_at:reschedDt, status:"upcoming",
-        user_id:a.user_id, user_name:a.user_name,
-        lead_name:a.lead_name, company_id:a.company_id,
+        company_id:a.company_id,
+        type:"Note",
+        note:`🔄 ${a.to_stage||"Visit"} rescheduled → ${visitDateLabel}${notes?` — ${notes}`:""}`,
+        status:"completed",
+        user_id:a.user_id, user_name:a.user_name, lead_name:a.lead_name,
+        stage_at_event: a.stage_at_event||null,
+        activity_subtype: "visit_rescheduled",
       });
+    } else {
+      // Legacy/non-structured path — keeps existing behaviour for regular calls/emails/notes
+      await supabase.from("activities").update({status:outcome, outcome:notes||null, rescheduled_to:reschedDt||null}).eq("id",a.id);
+      if(reschedDt){
+        await supabase.from("activities").insert({
+          opportunity_id:isLeasing?null:a.opportunity_id,
+          lease_opportunity_id:isLeasing?opp.id:null,
+          lead_id:isLeasing?null:a.lead_id,
+          type:a.type, note:"Rescheduled: "+(notes||""),
+          scheduled_at:reschedDt, status:"upcoming",
+          user_id:a.user_id, user_name:a.user_name,
+          lead_name:a.lead_name, company_id:a.company_id,
+        });
+      }
     }
     const col=isLeasing?"lease_opportunity_id":"opportunity_id";
     const{data}=await supabase.from("activities").select("*").eq(col,opp.id).order("created_at",{ascending:false});
     if(data) setActivities(data);
     setOutcomeModal(null);
-    showToast("Task updated","success");
+    showToast(outcome==="rescheduled"?"Visit rescheduled":"Task updated","success");
   };
 
   const ActCard = ({a})=>{
