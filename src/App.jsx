@@ -58,64 +58,6 @@ const GlobalStyle = () => (
 );
 
 // ─── CONSTANTS ────────────────────────────────────────────────
-
-// Phase E W2 — Calendar invite helper.
-// Generates a minimal .ics (RFC 5545) calendar event and opens the user's
-// default mail client with a `mailto:` link pre-filled (subject, body, recipient).
-// The agent attaches the downloaded .ics file before sending — works with
-// Outlook, Apple Mail, Gmail in browser, no SMTP setup needed.
-function buildIcsEvent({uid, summary, description, location, startISO, endISO, organizerName, organizerEmail, attendeeName, attendeeEmail}) {
-  const fmtIcsDate = (iso) => {
-    const d = new Date(iso);
-    const pad = n => String(n).padStart(2,"0");
-    return `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
-  };
-  const escape = (s) => (s||"").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
-  const lines = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//PropCRM//Site Visit//EN",
-    "CALSCALE:GREGORIAN",
-    "METHOD:REQUEST",
-    "BEGIN:VEVENT",
-    `UID:${uid}`,
-    `DTSTAMP:${fmtIcsDate(new Date().toISOString())}`,
-    `DTSTART:${fmtIcsDate(startISO)}`,
-    `DTEND:${fmtIcsDate(endISO)}`,
-    `SUMMARY:${escape(summary)}`,
-    description ? `DESCRIPTION:${escape(description)}` : null,
-    location ? `LOCATION:${escape(location)}` : null,
-    organizerEmail ? `ORGANIZER;CN=${escape(organizerName||"")}:mailto:${organizerEmail}` : null,
-    attendeeEmail ? `ATTENDEE;CN=${escape(attendeeName||"")};RSVP=TRUE:mailto:${attendeeEmail}` : null,
-    "STATUS:CONFIRMED",
-    "BEGIN:VALARM",
-    "TRIGGER:-PT60M",
-    "ACTION:DISPLAY",
-    `DESCRIPTION:${escape("Reminder: "+summary)}`,
-    "END:VALARM",
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ].filter(Boolean);
-  return lines.join("\r\n");
-}
-
-function downloadIcsAndOpenMail({to, subject, body, ics, filename}) {
-  // 1. Trigger .ics download
-  const blob = new Blob([ics], {type:"text/calendar;charset=utf-8"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename || "site-visit.ics";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url), 1000);
-  // 2. Open mailto: with subject + body — user attaches the just-downloaded file
-  const mailto = `mailto:${encodeURIComponent(to||"")}?subject=${encodeURIComponent(subject||"")}&body=${encodeURIComponent(body||"")}`;
-  // Slight delay so the download dialog appears before the mailto handler
-  setTimeout(()=>{ window.location.href = mailto; }, 300);
-}
-
 const STAGES      = ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
 const UNIT_TYPES  = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
@@ -605,24 +547,22 @@ function LoginScreen({onLogin}){
       let profile = profRes.data;
 
       if(!profile){
-        // SECURITY: Do NOT auto-create profiles. An authenticated user without
-        // a profile is one of: (a) someone provisioned by an admin who forgot
-        // to create the profiles row, (b) an unauthorized signup if Supabase
-        // Auth signups are enabled, (c) a stale/leaked session. In all cases,
-        // the safe response is to refuse access and require admin provisioning.
-        // (Sprint 0.5 / Block 8 — fixes auto-super_admin escalation bug.)
-        console.warn("[Auth] Authenticated user has no profile row:", data.user.id, data.user.email);
-        await supabase.auth.signOut();
-        setError("Your account has not been provisioned. Please contact your administrator.");
-        setLoading(false);
-        return;
+        // Profile missing — create it automatically
+        const meta = data.user.user_metadata||{};
+        const newProf = {
+          id:             data.user.id,
+          full_name:      meta.full_name || data.user.email?.split("@")[0] || "Admin",
+          email:          data.user.email,
+          role:           "super_admin",
+          is_super_admin: true,
+          is_active:      true,
+        };
+        const ins = await supabase.from("profiles").upsert(newProf, {onConflict:"id"}).select().maybeSingle();
+        profile = ins.data || newProf; // fall back to local object if RLS blocks insert
       }
 
       if(!profile){
-        // Defensive — should be unreachable after the explicit check above,
-        // but kept as a belt-and-braces safety net.
-        await supabase.auth.signOut();
-        setError("Your account has not been provisioned. Please contact your administrator.");
+        setError("Profile not found. Run the SQL fix in Supabase and try again.");
         setLoading(false);
         return;
       }
@@ -1077,8 +1017,8 @@ function OutcomeModal({activity, onClose, onSave}){
   };
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:2000,padding:"1rem"}}>
-      <div style={{background:"#fff",borderRadius:16,width:440,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)",overflow:"hidden"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
+      <div style={{background:"#fff",borderRadius:16,width:440,maxWidth:"100%",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
           <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>{titles[outcome]}</span>
           <button onClick={onClose} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
         </div>
@@ -1113,260 +1053,66 @@ function OutcomeModal({activity, onClose, onSave}){
   );
 }
 
-function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isLeasing=false, currentStage=null, units=[], onCaptureVisitOutcome=null}){
+function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isLeasing=false}){
   const [outcomeModal, setOutcomeModal] = useState(null); // {activity, pendingOutcome}
-  const [scope, setScope] = useState("stage"); // "stage" | "all"
-  // Filter activities based on scope
-  const filtered = (currentStage && scope === "stage")
-    ? activities.filter(a => a.stage_at_event === currentStage)
-    : activities;
-  const upcoming = filtered.filter(a=>a.status==="upcoming"||(a.scheduled_at&&new Date(a.scheduled_at)>new Date()&&a.status!=="completed"&&a.status!=="no_show"&&a.status!=="cancelled"));
-  const past = filtered.filter(a=>!upcoming.find(u=>u.id===a.id));
-  const stageOnlyCount = currentStage ? activities.filter(a => a.stage_at_event === currentStage).length : 0;
+  const upcoming = activities.filter(a=>a.status==="upcoming"||(a.scheduled_at&&new Date(a.scheduled_at)>new Date()&&a.status!=="completed"&&a.status!=="no_show"&&a.status!=="cancelled"));
+  const past = activities.filter(a=>!upcoming.find(u=>u.id===a.id));
   const icons = {Call:"📞",Email:"✉️",Meeting:"🤝",Visit:"🏠",WhatsApp:"💬",Note:"📝"};
   const statusColors = {completed:"#1A7F5A",upcoming:"#C9A84C",no_show:"#E53E3E",rescheduled:"#1A5FA8",cancelled:"#718096"};
   const statusLabels = {completed:"✅ Completed",upcoming:"⏰ Upcoming",no_show:"📵 No Show",rescheduled:"🔄 Rescheduled",cancelled:"❌ Cancelled"};
 
   const markOutcome = async(a, outcome, notes, reschedDt)=>{
-    // Phase E W2: rescheduling a stage-advance visit (Site Visit, Handover, etc.) should
-    // UPDATE the existing upcoming activity in place rather than mark it "rescheduled" and
-    // create a generic clone. This preserves structured_data (units, attendees, prep notes)
-    // and keeps the rich "Capture Outcome" button visible on the moved card.
-    const isStructuredVisit = outcome === "rescheduled"
-      && reschedDt
-      && (a.activity_subtype === "stage_advance" || a.activity_subtype === "handover_meeting");
-
-    if (isStructuredVisit) {
-      // Build the new note line — keep the existing prefix but update the date
-      const newSd = {...(a.structured_data||{}), visit_at: new Date(reschedDt).toISOString(), reschedule_reason: notes||"", rescheduled_at: new Date().toISOString()};
-      const{error:updErr}=await supabase.from("activities").update({
-        scheduled_at: reschedDt,
-        status: "upcoming",
-        structured_data: newSd,
-        outcome: notes ? `Rescheduled: ${notes}` : null,
-      }).eq("id", a.id);
-      if(updErr){
-        console.error("Reschedule update failed:", updErr);
-        showToast(`Reschedule failed: ${updErr.message||"unknown"}`,"error");
-        return;
-      }
-      // Move the imminent-visit reminder if we know about one
-      // (60 min before new visit time)
-      const newReminderAt = new Date(reschedDt);
-      newReminderAt.setMinutes(newReminderAt.getMinutes() - 60);
-      if(newReminderAt > new Date()){
-        await supabase.from("reminders")
-          .update({trigger_at: newReminderAt.toISOString()})
-          .eq("related_activity_id", a.id)
-          .eq("reason", "auto_visit_imminent")
-          .eq("status", "pending");
-      } else {
-        // New time is in the past or too close — cancel the imminent reminder
-        await supabase.from("reminders")
-          .update({status:"cancelled"})
-          .eq("related_activity_id", a.id)
-          .eq("reason", "auto_visit_imminent")
-          .eq("status", "pending");
-      }
-      // Drop a small audit note into the timeline so the move is visible historically
-      const visitDateLabel = new Date(reschedDt).toLocaleDateString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+    await supabase.from("activities").update({status:outcome, outcome:notes||null, rescheduled_to:reschedDt||null}).eq("id",a.id);
+    if(reschedDt){
       await supabase.from("activities").insert({
         opportunity_id:isLeasing?null:a.opportunity_id,
         lease_opportunity_id:isLeasing?opp.id:null,
         lead_id:isLeasing?null:a.lead_id,
-        company_id:a.company_id,
-        type:"Note",
-        note:`🔄 ${a.to_stage||"Visit"} rescheduled → ${visitDateLabel}${notes?` — ${notes}`:""}`,
-        status:"completed",
-        user_id:a.user_id, user_name:a.user_name, lead_name:a.lead_name,
-        stage_at_event: a.stage_at_event||null,
-        activity_subtype: "visit_rescheduled",
+        type:a.type, note:"Rescheduled: "+(notes||""),
+        scheduled_at:reschedDt, status:"upcoming",
+        user_id:a.user_id, user_name:a.user_name,
+        lead_name:a.lead_name, company_id:a.company_id,
       });
-    } else {
-      // Legacy/non-structured path — keeps existing behaviour for regular calls/emails/notes
-      await supabase.from("activities").update({status:outcome, outcome:notes||null, rescheduled_to:reschedDt||null}).eq("id",a.id);
-      if(reschedDt){
-        await supabase.from("activities").insert({
-          opportunity_id:isLeasing?null:a.opportunity_id,
-          lease_opportunity_id:isLeasing?opp.id:null,
-          lead_id:isLeasing?null:a.lead_id,
-          type:a.type, note:"Rescheduled: "+(notes||""),
-          scheduled_at:reschedDt, status:"upcoming",
-          user_id:a.user_id, user_name:a.user_name,
-          lead_name:a.lead_name, company_id:a.company_id,
-        });
-      }
     }
     const col=isLeasing?"lease_opportunity_id":"opportunity_id";
     const{data}=await supabase.from("activities").select("*").eq(col,opp.id).order("created_at",{ascending:false});
     if(data) setActivities(data);
     setOutcomeModal(null);
-    showToast(outcome==="rescheduled"?"Visit rescheduled":"Task updated","success");
+    showToast("Task updated","success");
   };
 
   const ActCard = ({a})=>{
     const st = a.status||(a.scheduled_at&&new Date(a.scheduled_at)>new Date()?"upcoming":"completed");
     const isUpcoming = st==="upcoming";
-    // Phase E: stage advance activities are rendered with extra context
-    const isStageAdvance = a.triggered_stage_change === true || a.activity_subtype === "stage_advance";
-    const sd = a.structured_data || {};
-    const isSiteVisit = isStageAdvance && a.to_stage === "Site Visit";
-
-    // Try to derive the headline channel/icon from structured_data for stage advances
-    let displayType = a.type;
-    let displayIcon = icons[a.type] || "📋";
-    if (isStageAdvance && sd.channel) {
-      // Use the captured channel (Call/WhatsApp/Email/etc.) for icon
-      const channelToType = {Call:"Call", WhatsApp:"WhatsApp", Email:"Email", "In-person":"Meeting", Other:"Note"};
-      const mapped = channelToType[sd.channel];
-      if (mapped) {
-        displayType = mapped;
-        displayIcon = icons[mapped] || displayIcon;
-      }
-    }
-    // Site Visit: override icon/type even without channel
-    if (isSiteVisit) {
-      displayType = "Site Visit";
-      displayIcon = "🏠";
-    }
-
-    // Interest level color map — keyed by leading word so "Hot — ready to negotiate" maps to Hot
-    const interestColors = {Hot:{c:"#DC2626",bg:"#FEE2E2"},Warm:{c:"#D97706",bg:"#FEF3C7"},Cold:{c:"#0891B2",bg:"#CFFAFE"},Lost:{c:"#6B7280",bg:"#F3F4F6"},"Not interested":{c:"#6B7280",bg:"#F3F4F6"}};
-    const interestKey = (sd.interest_level||"").split("—")[0].trim().split(" ")[0]; // "Hot", "Warm", "Cold", "Lost", "Not"
-    const interestColor = interestColors[interestKey] || interestColors[sd.interest_level];
-    const interestLabel = (sd.interest_level||"").split("—")[0].trim();
-
-    // Resolve unit IDs -> readable labels for Site Visit
-    // Phase E W2: shape varies by lifecycle:
-    //   - Scheduled visit (upcoming):  sd.units_to_show
-    //   - Completed visit (after outcome capture): sd.units_viewed
-    const visitUnitIds = sd.units_viewed || sd.units_to_show || [];
-    const unitsViewedLabels = (Array.isArray(visitUnitIds) ? visitUnitIds : []).map(uid => {
-      const u = (units||[]).find(x => x.id === uid);
-      if (!u) return null;
-      return u.unit_ref || uid;
-    }).filter(Boolean);
-
-    // Attendees label — prefer actual over expected
-    const visitAttendees = sd.actual_attendees || sd.attendees || sd.expected_attendees;
-
-    // Body text: discussion (Contacted) or feedback (Site Visit) or prep_notes (scheduled visit) or note (free-form)
-    const bodyText = isStageAdvance ? (sd.discussion || sd.feedback || sd.prep_notes || sd.broker_notes) : a.note;
-
     return(
-      <div style={{background:"#fff",border:"1px solid "+(isStageAdvance?"#1A5FA8":isUpcoming?"#C9A84C":"#E2E8F0"),borderRadius:8,padding:"9px 12px",display:"flex",gap:8,borderLeft:isStageAdvance?"3px solid #1A5FA8":undefined}}>
-        <div style={{width:26,height:26,borderRadius:"50%",background:isStageAdvance?"#E6EFF8":isUpcoming?"rgba(201,168,76,.12)":"#F7F9FC",border:isStageAdvance?"1px solid #1A5FA8":isUpcoming?"1px solid #C9A84C":"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>
-          {displayIcon}
+      <div style={{background:"#fff",border:"1px solid "+(isUpcoming?"#C9A84C":"#E2E8F0"),borderRadius:10,padding:"12px 14px",display:"flex",gap:10}}>
+        <div style={{width:34,height:34,borderRadius:"50%",background:isUpcoming?"rgba(201,168,76,.12)":"#F7F9FC",border:isUpcoming?"1.5px solid #C9A84C":"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
+          {icons[a.type]||"📋"}
         </div>
         <div style={{flex:1,minWidth:0}}>
-          {/* Phase E: stage transition badge */}
-          {isStageAdvance && a.from_stage && a.to_stage && (
-            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,fontSize:9,fontWeight:700,color:"#1A5FA8",textTransform:"uppercase",letterSpacing:".5px"}}>
-              <span>🎯 Stage</span>
-              <span style={{fontWeight:500,color:"#94A3B8",textTransform:"none",letterSpacing:0}}>
-                {a.from_stage} → <strong style={{color:"#0F2540"}}>{a.to_stage}</strong>
-              </span>
-            </div>
-          )}
-
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:4,flexWrap:"wrap",gap:6}}>
-            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-              <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{displayType}</span>
-              {!isStageAdvance && (
-                <span style={{fontSize:10,fontWeight:700,color:statusColors[st]||"#718096",background:"rgba(0,0,0,.05)",padding:"2px 8px",borderRadius:10}}>
-                  {statusLabels[st]||st}
-                </span>
-              )}
-              {/* Phase E: subtle "during X stage" tag for free-form activities */}
-              {!isStageAdvance && a.stage_at_event && (
-                <span style={{fontSize:10,fontWeight:600,color:"#64748B",background:"#F1F5F9",padding:"2px 8px",borderRadius:10,border:"1px solid #E2E8F0"}}>
-                  during {a.stage_at_event}
-                </span>
-              )}
-              {/* Phase E: interest level badge */}
-              {isStageAdvance && interestColor && interestLabel && (
-                <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:interestColor.bg,color:interestColor.c}}>
-                  {interestLabel}
-                </span>
-              )}
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{a.type}</span>
+              <span style={{fontSize:10,fontWeight:700,color:statusColors[st]||"#718096",background:"rgba(0,0,0,.05)",padding:"2px 8px",borderRadius:10}}>
+                {statusLabels[st]||st}
+              </span>
             </div>
             <span style={{fontSize:11,color:"#A0AEC0"}}>{new Date(a.created_at).toLocaleDateString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
           </div>
-
-          {/* Phase E: Site Visit context strip — visit time + attendees + units */}
-          {isSiteVisit && (sd.visit_at || visitAttendees || unitsViewedLabels.length>0) && (
-            <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:11,color:"#475569",marginBottom:6,padding:"6px 8px",background:"#F8FAFC",borderRadius:6,border:"1px solid #E2E8F0"}}>
-              {sd.visit_at && (
-                <span><span style={{color:"#94A3B8",fontWeight:600}}>🗓</span> <strong style={{color:"#0F2540"}}>{new Date(sd.visit_at).toLocaleString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</strong></span>
-              )}
-              {visitAttendees && (
-                <span><span style={{color:"#94A3B8",fontWeight:600}}>👥</span> <strong style={{color:"#0F2540"}}>{visitAttendees}</strong></span>
-              )}
-              {unitsViewedLabels.length>0 && (
-                <span><span style={{color:"#94A3B8",fontWeight:600}}>🏢 {sd.units_viewed?"Units viewed":"Units to show"}:</span> <strong style={{color:"#0F2540"}}>{unitsViewedLabels.join(", ")}</strong></span>
-              )}
-            </div>
-          )}
-
-          {/* Discussion / feedback / note */}
-          {bodyText && (
-            <div style={{fontSize:12,color:"#4A5568",lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:6}}>
-              {bodyText}
-            </div>
-          )}
-
-          {/* Phase E: structured data summary row */}
-          {isStageAdvance && (sd.next_step || sd.follow_up_date) && (
-            <div style={{display:"flex",gap:14,flexWrap:"wrap",fontSize:11,color:"#475569",marginBottom:4,paddingTop:6,borderTop:"1px dashed #E2E8F0"}}>
-              {sd.next_step && (
-                <div><span style={{color:"#94A3B8",fontWeight:600}}>Next step:</span> <strong style={{color:"#0F2540"}}>{sd.next_step}</strong></div>
-              )}
-              {sd.follow_up_date && (
-                <div><span style={{color:"#94A3B8",fontWeight:600}}>⏰ Follow up:</span> <strong style={{color:"#0F2540"}}>{new Date(sd.follow_up_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}</strong></div>
-              )}
-              {sd.channel && (
-                <div><span style={{color:"#94A3B8",fontWeight:600}}>via:</span> <strong style={{color:"#0F2540"}}>{sd.channel}</strong></div>
-              )}
-            </div>
-          )}
-
+          {a.note&&<div style={{fontSize:12,color:"#4A5568",lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:4}}>{a.note}</div>}
           {a.outcome&&<div style={{fontSize:11,color:"#718096",fontStyle:"italic",marginBottom:4}}>Note: {a.outcome}</div>}
           <div style={{fontSize:11,color:"#A0AEC0"}}>{a.user_name}</div>
           {isUpcoming&&canEdit&&(
             <div style={{marginTop:10,paddingTop:10,borderTop:"1px dashed #E2E8F0"}}>
-              {/* Phase E W2 — for Site Visit upcoming cards, offer a rich outcome capture */}
-              {a.activity_subtype === "stage_advance" && a.to_stage === "Site Visit" && onCaptureVisitOutcome ? (
-                <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-                  <button onClick={()=>onCaptureVisitOutcome(a)}
-                    style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#0F2540",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                    📋 Capture Visit Outcome
+              <div style={{fontSize:11,fontWeight:600,color:"#718096",marginBottom:6}}>Mark outcome:</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {[["completed","✅ Completed","#1A7F5A"],["no_show","📵 No Show","#E53E3E"],["rescheduled","🔄 Reschedule","#1A5FA8"],["cancelled","❌ Cancel","#718096"]].map(([o,label,col])=>(
+                  <button key={o} onClick={()=>setOutcomeModal({activity:a,pendingOutcome:o})}
+                    style={{padding:"4px 12px",borderRadius:16,border:"1px solid "+col,background:"transparent",color:col,fontSize:11,cursor:"pointer",fontWeight:500}}>
+                    {label}
                   </button>
-                  <button onClick={()=>setOutcomeModal({activity:a,pendingOutcome:"no_show"})}
-                    style={{padding:"4px 12px",borderRadius:16,border:"1px solid #E53E3E",background:"transparent",color:"#E53E3E",fontSize:11,cursor:"pointer",fontWeight:500}}>
-                    📵 No Show
-                  </button>
-                  <button onClick={()=>setOutcomeModal({activity:a,pendingOutcome:"rescheduled"})}
-                    style={{padding:"4px 12px",borderRadius:16,border:"1px solid #1A5FA8",background:"transparent",color:"#1A5FA8",fontSize:11,cursor:"pointer",fontWeight:500}}>
-                    🔄 Reschedule
-                  </button>
-                  <button onClick={()=>setOutcomeModal({activity:a,pendingOutcome:"cancelled"})}
-                    style={{padding:"4px 12px",borderRadius:16,border:"1px solid #718096",background:"transparent",color:"#718096",fontSize:11,cursor:"pointer",fontWeight:500}}>
-                    ❌ Cancel
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div style={{fontSize:11,fontWeight:600,color:"#718096",marginBottom:6}}>Mark outcome:</div>
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    {[["completed","✅ Completed","#1A7F5A"],["no_show","📵 No Show","#E53E3E"],["rescheduled","🔄 Reschedule","#1A5FA8"],["cancelled","❌ Cancel","#718096"]].map(([o,label,col])=>(
-                      <button key={o} onClick={()=>setOutcomeModal({activity:a,pendingOutcome:o})}
-                        style={{padding:"4px 12px",borderRadius:16,border:"1px solid "+col,background:"transparent",color:col,fontSize:11,cursor:"pointer",fontWeight:500}}>
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -1377,34 +1123,6 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
   return(
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
       {outcomeModal&&<OutcomeModal activity={{...outcomeModal.activity,_pendingOutcome:outcomeModal.pendingOutcome}} onClose={()=>setOutcomeModal(null)} onSave={(o,n,r)=>markOutcome(outcomeModal.activity,o,n,r)}/>}
-
-      {/* Phase E dense layout: scope toggle — only when we know the current stage */}
-      {currentStage&&(
-        <div style={{display:"flex",gap:4,padding:3,background:"#F1F5F9",borderRadius:8,alignSelf:"flex-start",marginBottom:2}}>
-          <button onClick={()=>setScope("stage")}
-            style={{padding:"5px 12px",borderRadius:6,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",
-              background:scope==="stage"?"#fff":"transparent",
-              color:scope==="stage"?"#0F2540":"#64748B",
-              boxShadow:scope==="stage"?"0 1px 2px rgba(0,0,0,.06)":"none"}}>
-            This stage{stageOnlyCount>0?` (${stageOnlyCount})`:""}
-          </button>
-          <button onClick={()=>setScope("all")}
-            style={{padding:"5px 12px",borderRadius:6,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",
-              background:scope==="all"?"#fff":"transparent",
-              color:scope==="all"?"#0F2540":"#64748B",
-              boxShadow:scope==="all"?"0 1px 2px rgba(0,0,0,.06)":"none"}}>
-            All time{activities.length>0?` (${activities.length})`:""}
-          </button>
-        </div>
-      )}
-
-      {/* Empty state when filter returns nothing */}
-      {filtered.length===0&&currentStage&&scope==="stage"&&(
-        <div style={{textAlign:"center",padding:"1.5rem 1rem",color:"#94A3B8",fontSize:12,border:"1px dashed #E2E8F0",borderRadius:10}}>
-          No activity yet in <strong>{currentStage}</strong> stage. Use Quick log on the left to record your first interaction.
-        </div>
-      )}
-
       {upcoming.length>0&&(
         <div style={{marginBottom:4}}>
           <div style={{fontSize:11,fontWeight:700,color:"#C9A84C",textTransform:"uppercase",letterSpacing:"1px",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
@@ -1431,1333 +1149,9 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   STAGE CAPTURE DIALOG (Phase E Workstream 1)
-   Generic dialog component used to gate stage transitions with
-   structured activity capture. Each transition specifies its own
-   config (fields, validation, follow-up reminder offset).
-═══════════════════════════════════════════════════════════════ */
-
-// Configs per stage transition. Key = target stage. Value = field spec.
-// Each field is rendered by StageCaptureDialog based on its `kind`.
-
-// Phase E W2 — standard asks the buyer can put on the negotiation table.
-// Each ask has a `key` (used in structured_data), `label`, optional `detail` config
-// for the conditional input that appears when the ask is ticked.
-//   detail.kind: "percent" | "text"
-//   detail.placeholder: hint shown in the input
-// Designed for UAE off-plan primary-market — items reflect what real buyers actually
-// negotiate (DLD fee, post-handover %, service charge waivers, free parking).
-const ASKS_GRID_OPTIONS = [
-  { key:"discount",       label:"Price discount",        icon:"💰", detail:{kind:"percent", placeholder:"e.g. 5"}, hint:"% off the asking price" },
-  { key:"payment_plan",   label:"Payment plan flex",     icon:"📅", detail:{kind:"text",    placeholder:"e.g. 50/50 with 30% post-handover over 2 yrs"}, hint:"Stretched, post-handover, more milestones" },
-  { key:"dld_waiver",     label:"DLD fee help",          icon:"🏛️", detail:{kind:"text",    placeholder:"e.g. 50/50 split, or full waiver"}, hint:"Dubai Land Department 4% fee" },
-  { key:"service_charge", label:"Service charge waiver", icon:"🧾", detail:{kind:"text",    placeholder:"e.g. First 2 years waived"}, hint:"Annual maintenance fees" },
-  { key:"free_parking",   label:"Extra parking / storage", icon:"🚗", detail:{kind:"text",    placeholder:"e.g. 1 extra parking + storage room"}, hint:"Additional bays, storage rooms" },
-  { key:"freebies",       label:"Furniture / freebies",  icon:"🎁", detail:{kind:"text",    placeholder:"e.g. White-goods package, light fittings"}, hint:"Furniture, appliances, fittings" },
-  { key:"other",          label:"Other request",         icon:"📌", detail:{kind:"text",    placeholder:"What else are they asking for?"}, hint:"Any custom ask" },
-];
-
-const STAGE_CAPTURE_CONFIGS = {
-  "Contacted": {
-    title: "Capture Contact",
-    subtitle: "Record what happened in your first contact with this lead",
-    fields: [
-      {
-        key: "channel", label: "How did you reach them?", kind: "radio", required: true,
-        options: ["Call","WhatsApp","Email","In-person","Other"]
-      },
-      {
-        key: "discussion", label: "What did you discuss?", kind: "textarea", required: true,
-        minLength: 20, placeholder: "e.g. Customer is looking for a 2-bed apartment in Sobha Hartland, budget around 2M, ready to view this weekend...",
-        rows: 4
-      },
-      {
-        key: "interest_level", label: "Customer interest level", kind: "radio", required: true,
-        options: [
-          {value:"Hot",       color:"#DC2626", bg:"#FEE2E2"},
-          {value:"Warm",      color:"#D97706", bg:"#FEF3C7"},
-          {value:"Cold",      color:"#0891B2", bg:"#CFFAFE"},
-          {value:"Not interested", color:"#6B7280", bg:"#F3F4F6"},
-        ]
-      },
-      {
-        key: "next_step", label: "Next step agreed with customer", kind: "select", required: true,
-        options: ["Site visit","Send info","Follow up call","Lost interest"]
-      },
-      {
-        key: "follow_up_date", label: "Schedule next follow-up", kind: "date", required: true,
-        defaultOffsetDays: 2
-      },
-    ],
-    reminderTitle: (lead) => `Follow up with ${lead.name}`,
-    reminderBody:  (data) => `Next step: ${data.next_step}. Discussed: ${data.discussion?.slice(0,80)}${data.discussion?.length>80?"…":""}`,
-    reminderReason: "auto_follow_up_after_contacted",
-    onLostInterestSuggest: true, // if next_step == "Lost interest", suggest Closed Lost instead
-  },
-
-  "Site Visit": {
-    title: "Schedule Site Visit",
-    subtitle: "Set up the visit. Outcome and feedback come after the visit happens.",
-    fields: [
-      {
-        key: "visit_at", label: "Visit date & time", kind: "datetime", required: true,
-        defaultOffsetHours: 24, // default to ~tomorrow
-      },
-      {
-        key: "units_to_show", label: "Units to show", kind: "multi_select", required: true,
-        source: "units",
-        emptyHint: "No units in inventory yet — link a project to this opportunity, or add units in the Inventory module.",
-      },
-      {
-        key: "expected_attendees", label: "Who's expected to attend?", kind: "text", required: true,
-        placeholder: "e.g. Mr. Khan + spouse, possibly his son",
-      },
-      {
-        key: "prep_notes", label: "Prep notes (internal)", kind: "textarea", required: false,
-        rows: 3,
-        placeholder: "Anything to remember? Customer's preferences, pain points from the call, who's the decision-maker, what to highlight…",
-      },
-      {
-        key: "send_invite", label: "Send calendar invite to customer (opens email)", kind: "checkbox", required: false,
-      },
-    ],
-    // Reminder = 1 hour before visit (a "don't miss it" prompt)
-    reminderTitle: (lead) => `Site visit with ${lead.name} in 1 hour`,
-    reminderBody:  (data) => `Attendees: ${data.expected_attendees||""}`,
-    reminderReason: "auto_visit_imminent",
-    // Hook: after inserting the activity row, mark it upcoming with the visit time
-    activityScheduledAtKey: "visit_at",
-    activityType: "Site Visit",
-    // Custom reminder timing — 60 min before the visit, not at 9am of follow-up date
-    reminderTriggerKey: "visit_at",
-    reminderTriggerOffsetMinutes: -60,
-  },
-
-  "Negotiation": {
-    title: "Open Negotiation",
-    subtitle: "Capture the buyer's initial asks. You'll relay these to the developer next.",
-    fields: [
-      {
-        key: "round_at", label: "When was this discussed?", kind: "datetime", required: true,
-        defaultOffsetHours: 0, // pre-fills with now
-      },
-      {
-        key: "asks", label: "What is the buyer asking for?", kind: "asks_grid", required: true,
-      },
-      {
-        key: "buyer_position", label: "Buyer's overall stance", kind: "radio", required: true,
-        options: [
-          {value:"Firm — won't budge",        color:"#DC2626", bg:"#FEE2E2"},
-          {value:"Open to discussion",        color:"#D97706", bg:"#FEF3C7"},
-          {value:"Just exploring",            color:"#0891B2", bg:"#CFFAFE"},
-        ],
-      },
-      {
-        key: "broker_notes", label: "Your read on this", kind: "textarea", required: true,
-        minLength: 15, rows: 3,
-        placeholder: "e.g. Buyer is comparing 2 other options. Developer rep mentioned flexibility on DLD if booking happens this month. Likely to close if we get 5% off + DLD split.",
-      },
-      {
-        key: "next_action", label: "What happens next?", kind: "select", required: true,
-        options: ["Take asks to developer","Wait for buyer to confirm","Schedule handover meeting","Buyer needs more time","Lost interest"],
-      },
-      {
-        key: "follow_up_date", label: "Follow up by", kind: "date", required: true,
-        defaultOffsetDays: 2,
-      },
-    ],
-    reminderTitle: (lead) => `Negotiation follow-up — ${lead.name}`,
-    reminderBody:  (data) => {
-      const askCount = Object.keys(data.asks||{}).filter(k => (data.asks||{})[k]?.enabled).length;
-      return `Next: ${data.next_action}. ${askCount} ask${askCount===1?"":"s"} on the table.`;
-    },
-    reminderReason: "auto_follow_up_after_negotiation_opened",
-    onLostInterestSuggest: true,
-  },
-};
-
-function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, onSave, onCancel, showToast, units = [], projects = [], salePricing = [] }) {
-  const config = STAGE_CAPTURE_CONFIGS[toStage];
-  const [data, setData] = useState({});
-  const [errors, setErrors] = useState({});
-  const [saving, setSaving] = useState(false);
-
-  // Initialize default values when dialog opens
-  useEffect(() => {
-    if (!open || !config) return;
-    const init = {};
-    config.fields.forEach(f => {
-      if (f.kind === "date" && f.defaultOffsetDays) {
-        const d = new Date();
-        d.setDate(d.getDate() + f.defaultOffsetDays);
-        init[f.key] = d.toISOString().split("T")[0];
-      } else if (f.kind === "datetime" && f.defaultOffsetHours != null) {
-        const d = new Date();
-        d.setHours(d.getHours() + f.defaultOffsetHours, 0, 0, 0);
-        // Format as yyyy-MM-ddTHH:mm for <input type="datetime-local">
-        const pad = n => String(n).padStart(2,"0");
-        init[f.key] = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      } else if (f.kind === "multi_select") {
-        // Phase E: when this multi-select pulls from `units` and the opp has a linked unit,
-        // pre-select it — that unit is almost always the primary subject of a site visit.
-        if (f.source === "units" && opp?.unit_id) {
-          init[f.key] = [opp.unit_id];
-        } else {
-          init[f.key] = [];
-        }
-      } else if (f.kind === "asks_grid") {
-        init[f.key] = {};
-      } else if (f.kind === "checkbox") {
-        init[f.key] = false;
-      } else {
-        init[f.key] = "";
-      }
-    });
-    setData(init);
-    setErrors({});
-  }, [open, toStage]);
-
-  if (!open || !config) return null;
-
-  const setField = (k,v) => setData(d => ({...d, [k]: v}));
-
-  const validate = () => {
-    const errs = {};
-    for (const f of config.fields) {
-      const v = data[f.key];
-      if (f.required) {
-        if (f.kind === "multi_select") {
-          if (!Array.isArray(v) || v.length === 0) errs[f.key] = "Pick at least one";
-        } else if (f.kind === "asks_grid") {
-          const enabled = v && typeof v === "object" ? Object.keys(v).filter(k => v[k]?.enabled) : [];
-          if (enabled.length === 0) errs[f.key] = "Tick at least one ask";
-          // Require detail value for any enabled ask that has a detail field
-          for (const k of enabled) {
-            const def = ASKS_GRID_OPTIONS.find(o => o.key === k);
-            if (def?.detail && !((v[k]?.value||"").toString().trim())) {
-              errs[f.key] = `Add details for ${def.label}`;
-              break;
-            }
-          }
-        } else if (f.kind === "checkbox") {
-          // checkboxes are inherently optional — required just means "must be true"
-          if (!v) errs[f.key] = "Required";
-        } else if (!v || (typeof v === "string" && v.trim() === "")) {
-          errs[f.key] = "Required";
-        }
-      }
-      if (f.minLength && typeof v === "string" && v.trim().length < f.minLength) {
-        errs[f.key] = `Please write at least ${f.minLength} characters`;
-      }
-    }
-    setErrors(errs);
-    return Object.keys(errs).length === 0;
-  };
-
-  const handleSave = async () => {
-    if (!validate()) {
-      showToast("Please complete the required fields","error");
-      return;
-    }
-
-    // Edge case: if "Lost interest" selected, ask user to confirm — they may want Closed Lost instead
-    if (config.onLostInterestSuggest && data.next_step === "Lost interest") {
-      const goLost = window.confirm(
-        `You selected "Lost interest" as the next step.\n\n` +
-        `Would you like to mark this opportunity as Closed Lost instead of Contacted?\n\n` +
-        `Click OK to mark as Closed Lost.\nClick Cancel to keep advancing to Contacted.`
-      );
-      if (goLost) {
-        // Caller will detect this and route to Lost flow
-        onCancel();
-        // Caller is responsible for opening the Closed Lost dialog
-        // We pass a sentinel via showToast for now — clean up later
-        showToast("Switching to Closed Lost flow…", "info");
-        return; // The OpportunityDetail will need to handle this via prop
-      }
-    }
-
-    setSaving(true);
-    try {
-      // Get company_id from the opp (denormalized) — fall back to currentUser
-      const company_id = opp.company_id || currentUser.company_id;
-      if (!company_id) {
-        showToast("Missing company_id — cannot save","error");
-        setSaving(false);
-        return;
-      }
-
-      // 1. Insert activity row with stage context + structured data
-      // Phase E W2 refactor: Site Visit is a SCHEDULED visit (status="upcoming"),
-      // other stages are completed events. Config drives this via activityScheduledAtKey.
-      const scheduledAtKey = config.activityScheduledAtKey;
-      const scheduledAt = scheduledAtKey && data[scheduledAtKey] ? new Date(data[scheduledAtKey]).toISOString() : null;
-      const isScheduledFuture = scheduledAt && new Date(scheduledAt) > new Date();
-      const activityType = config.activityType || "Stage Change";
-      // Note text — for scheduled visits we summarise the scheduling, otherwise use captured discussion
-      const activityNote = isScheduledFuture
-        ? `[${toStage} scheduled] ${data.expected_attendees?`with ${data.expected_attendees}`:""}${data.prep_notes?` — ${data.prep_notes}`:""}`.slice(0,1000)
-        : `[${toStage}] ${data.discussion||data.broker_notes||""}`.slice(0, 1000);
-      const { data: actRow, error: actErr } = await supabase
-        .from("activities")
-        .insert({
-          opportunity_id: opp.id,
-          lead_id: lead?.id || opp.lead_id,
-          company_id,
-          type: activityType,
-          note: activityNote,
-          status: isScheduledFuture ? "upcoming" : "completed",
-          scheduled_at: scheduledAt,
-          // Match existing activities schema (used by other inserts in App.jsx)
-          user_id: currentUser.id,
-          user_name: currentUser.full_name,
-          lead_name: lead?.name || "",
-          // Phase E W1 — new columns added by migration 005
-          stage_at_event: toStage,
-          from_stage: fromStage,
-          to_stage: toStage,
-          triggered_stage_change: true,
-          activity_subtype: "stage_advance",
-          structured_data: data,
-        })
-        .select()
-        .single();
-
-      if (actErr) {
-        console.error("Activity insert failed:", actErr);
-        showToast(`Failed to log activity: ${actErr.message}`,"error");
-        setSaving(false);
-        return;
-      }
-
-      // 2. Update opportunity stage
-      const { error: oppErr } = await supabase
-        .from("opportunities")
-        .update({
-          stage: toStage,
-          stage_updated_at: new Date().toISOString(),
-        })
-        .eq("id", opp.id);
-
-      if (oppErr) {
-        console.error("Stage update failed:", oppErr);
-        // Best-effort cleanup of the activity row
-        await supabase.from("activities").delete().eq("id", actRow.id);
-        showToast(`Failed to advance stage: ${oppErr.message}`,"error");
-        setSaving(false);
-        return;
-      }
-
-      // 3. Create reminder (best-effort — failure here doesn't undo the stage change)
-      // Two timing modes:
-      //   - reminderTriggerKey: trigger relative to a date field (e.g. visit_at - 60 min)
-      //   - follow_up_date:    trigger at 9am on a chosen follow-up day (legacy)
-      let triggerAt = null;
-      if (config.reminderTriggerKey && data[config.reminderTriggerKey]) {
-        const base = new Date(data[config.reminderTriggerKey]);
-        base.setMinutes(base.getMinutes() + (config.reminderTriggerOffsetMinutes || 0));
-        triggerAt = base;
-      } else if (data.follow_up_date) {
-        triggerAt = new Date(data.follow_up_date);
-        triggerAt.setHours(9, 0, 0, 0);
-      }
-      if (triggerAt && triggerAt > new Date() && config.reminderReason) {
-        const { error: remErr } = await supabase
-          .from("reminders")
-          .insert({
-            company_id,
-            user_id: currentUser.id,
-            related_opportunity_id: opp.id,
-            related_lead_id: lead?.id || opp.lead_id,
-            related_activity_id: actRow.id,
-            trigger_at: triggerAt.toISOString(),
-            title: config.reminderTitle ? config.reminderTitle(lead||{}) : `Follow up — ${toStage}`,
-            body:  config.reminderBody  ? config.reminderBody(data)        : "",
-            reason: config.reminderReason,
-            status: "pending",
-            created_by: currentUser.id,
-          });
-        if (remErr) {
-          console.warn("Reminder creation failed (non-fatal):", remErr);
-          // Don't block — stage already advanced
-        }
-      }
-
-      // 4. Phase E W2 — if "send_invite" was checked, generate .ics + open mailto
-      if (data.send_invite && data.visit_at) {
-        try {
-          const visitStart = new Date(data.visit_at);
-          const visitEnd   = new Date(visitStart.getTime() + 60*60*1000); // default 1-hour duration
-          // Build a human-readable units list for the invite body
-          const shownIds = Array.isArray(data.units_to_show) ? data.units_to_show : [];
-          const unitsList = shownIds.map(uid => {
-            const u = (units||[]).find(x => x.id === uid);
-            if (!u) return null;
-            const proj = (projects||[]).find(p => p.id === u.project_id);
-            return `${u.unit_ref}${proj?.name?` (${proj.name})`:""}`;
-          }).filter(Boolean).join(", ");
-          const summary  = `Property Site Visit — ${lead?.name||"Buyer"}`;
-          const body = [
-            `Dear ${lead?.name||"Sir/Madam"},`,
-            ``,
-            `This is a confirmation of your property visit scheduled with ${currentUser.full_name||"our team"}.`,
-            ``,
-            `Date & time: ${visitStart.toLocaleString("en-AE",{dateStyle:"full", timeStyle:"short"})}`,
-            unitsList ? `Units to view: ${unitsList}` : null,
-            `Attendees: ${data.expected_attendees||"—"}`,
-            ``,
-            `Please find the calendar invite attached. Looking forward to meeting you.`,
-            ``,
-            `Best regards,`,
-            currentUser.full_name||"PropCRM",
-          ].filter(Boolean).join("\n");
-          const ics = buildIcsEvent({
-            uid: `visit-${actRow.id}@propcrm`,
-            summary,
-            description: body,
-            location: unitsList || "Property location to be confirmed",
-            startISO: visitStart.toISOString(),
-            endISO:   visitEnd.toISOString(),
-            organizerName: currentUser.full_name || "",
-            organizerEmail: currentUser.email || "",
-            attendeeName: lead?.name || "",
-            attendeeEmail: lead?.email || "",
-          });
-          downloadIcsAndOpenMail({
-            to: lead?.email || "",
-            subject: summary,
-            body,
-            ics,
-            filename: `site-visit-${(lead?.name||"buyer").replace(/\s+/g,"_")}.ics`,
-          });
-        } catch(invErr) {
-          console.warn("Calendar invite generation failed (non-fatal):", invErr);
-          showToast("Visit saved, but calendar invite couldn't be generated","error");
-        }
-      }
-
-      showToast(`✓ Advanced to ${toStage}`,"success");
-      onSave({stage: toStage, activity: actRow, structured_data: data});
-    } catch (e) {
-      console.error("StageCaptureDialog save error:", e);
-      showToast(`Save failed: ${e.message}`,"error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
-      <div style={{background:"#fff",borderRadius:16,width:560,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
-        {/* Header */}
-        <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
-            <div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>{config.title}</div>
-              <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3}}>{config.subtitle}</div>
-              <div style={{fontSize:11,color:"#C9A84C",marginTop:6,fontWeight:600}}>
-                {fromStage} → <strong>{toStage}</strong>
-              </div>
-            </div>
-            <button onClick={onCancel} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",lineHeight:1}}>×</button>
-          </div>
-        </div>
-
-        {/* Body */}
-        <div style={{overflowY:"auto",padding:"1.25rem 1.4rem",flex:1}}>
-          <div style={{display:"flex",flexDirection:"column",gap:16}}>
-            {config.fields.map(f => {
-              const err = errors[f.key];
-              const labelEl = (
-                <label style={{fontSize:12,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>
-                  {f.label}{f.required&&<span style={{color:"#C53030"}}> *</span>}
-                </label>
-              );
-
-              if (f.kind === "radio") {
-                const opts = f.options.map(o => typeof o === "string" ? {value:o} : o);
-                return (
-                  <div key={f.key}>
-                    {labelEl}
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                      {opts.map(o => {
-                        const sel = data[f.key] === o.value;
-                        return (
-                          <button key={o.value} onClick={()=>setField(f.key, o.value)}
-                            style={{
-                              padding:"7px 14px",borderRadius:20,
-                              border: `1.5px solid ${sel ? (o.color||"#0F2540") : "#D1D9E6"}`,
-                              background: sel ? (o.bg||"#0F2540") : "#fff",
-                              color: sel ? (o.color||"#fff") : "#4A5568",
-                              fontSize:12, fontWeight:600, cursor:"pointer", transition:"all .12s",
-                            }}>
-                            {o.value}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
-                  </div>
-                );
-              }
-
-              if (f.kind === "select") {
-                return (
-                  <div key={f.key}>
-                    {labelEl}
-                    <select value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
-                      style={{width:"100%",padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",background:"#fff",cursor:"pointer"}}>
-                      <option value="">— Select —</option>
-                      {f.options.map(o=><option key={o} value={o}>{o}</option>)}
-                    </select>
-                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
-                  </div>
-                );
-              }
-
-              if (f.kind === "textarea") {
-                return (
-                  <div key={f.key}>
-                    {labelEl}
-                    <textarea value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
-                      placeholder={f.placeholder||""} rows={f.rows||3}
-                      style={{width:"100%",padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",resize:"vertical"}}/>
-                    {f.minLength&&(
-                      <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>
-                        {(data[f.key]||"").length} / {f.minLength} characters minimum
-                      </div>
-                    )}
-                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
-                  </div>
-                );
-              }
-
-              if (f.kind === "date") {
-                return (
-                  <div key={f.key}>
-                    {labelEl}
-                    <input type="date" value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
-                      style={{padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
-                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
-                  </div>
-                );
-              }
-
-              if (f.kind === "datetime") {
-                return (
-                  <div key={f.key}>
-                    {labelEl}
-                    <input type="datetime-local" value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
-                      style={{padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
-                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
-                  </div>
-                );
-              }
-
-              if (f.kind === "text") {
-                return (
-                  <div key={f.key}>
-                    {labelEl}
-                    <input type="text" value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
-                      placeholder={f.placeholder||""}
-                      style={{width:"100%",padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
-                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
-                  </div>
-                );
-              }
-
-              if (f.kind === "checkbox") {
-                const checked = !!data[f.key];
-                return (
-                  <div key={f.key} style={{background:checked?"#FFFBEA":"#F8FAFC",border:`1px solid ${checked?"#FCD34D":"#E2E8F0"}`,borderRadius:8,padding:"10px 12px",transition:"all .15s"}}>
-                    <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,fontWeight:600,color:"#0F2540"}}>
-                      <input type="checkbox" checked={checked} onChange={e=>setField(f.key,e.target.checked)}
-                        style={{width:14,height:14,cursor:"pointer",accentColor:"#0F2540"}}/>
-                      {f.label}
-                    </label>
-                    {f.helpText && <div style={{fontSize:10,color:"#94A3B8",marginTop:4,marginLeft:22}}>{f.helpText}</div>}
-                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
-                  </div>
-                );
-              }
-
-              if (f.kind === "asks_grid") {
-                // Renders the standard set of UAE primary-market asks as toggleable rows.
-                // When a row is ticked, a conditional detail input appears (% or text).
-                const asks = (data[f.key] && typeof data[f.key]==="object") ? data[f.key] : {};
-                const setAsk = (key, patch) => {
-                  setField(f.key, {...asks, [key]: {...(asks[key]||{}), ...patch}});
-                };
-                return (
-                  <div key={f.key}>
-                    {labelEl}
-                    <div style={{display:"flex",flexDirection:"column",gap:5,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,borderRadius:8,padding:6,background:"#fff"}}>
-                      {ASKS_GRID_OPTIONS.map(opt => {
-                        const sel = !!asks[opt.key]?.enabled;
-                        return (
-                          <div key={opt.key} style={{
-                            background: sel ? "#FFFBEA" : "transparent",
-                            border: sel ? "1px solid #FCD34D" : "1px solid transparent",
-                            borderRadius:6, padding: sel ? "8px 10px" : "6px 10px", transition:"all .12s",
-                          }}>
-                            <button onClick={()=>setAsk(opt.key,{enabled:!sel})}
-                              style={{
-                                display:"flex",alignItems:"center",gap:9,width:"100%",
-                                background:"transparent",border:"none",cursor:"pointer",textAlign:"left",padding:0,
-                              }}>
-                              <span style={{
-                                display:"inline-flex",alignItems:"center",justifyContent:"center",
-                                width:16,height:16,borderRadius:4,
-                                border:`1.5px solid ${sel?"#0F2540":"#CBD5E1"}`,
-                                background: sel?"#0F2540":"#fff",
-                                color:"#fff",fontSize:11,lineHeight:1,flexShrink:0,
-                              }}>{sel?"✓":""}</span>
-                              <span style={{fontSize:14,flexShrink:0}}>{opt.icon}</span>
-                              <div style={{flex:1,minWidth:0}}>
-                                <div style={{fontSize:12,fontWeight:sel?700:600,color:"#0F2540"}}>{opt.label}</div>
-                                {!sel && opt.hint && <div style={{fontSize:10,color:"#94A3B8",marginTop:1}}>{opt.hint}</div>}
-                              </div>
-                            </button>
-                            {sel && opt.detail && (
-                              <div style={{marginTop:7,marginLeft:25,display:"flex",alignItems:"center",gap:6}}>
-                                {opt.detail.kind === "percent" ? (
-                                  <>
-                                    <input type="number" min="0" max="100" step="0.1"
-                                      value={asks[opt.key]?.value||""}
-                                      onChange={e=>setAsk(opt.key,{value:e.target.value})}
-                                      placeholder={opt.detail.placeholder||""}
-                                      style={{width:80,padding:"6px 9px",borderRadius:6,border:"1.5px solid #D1D9E6",fontSize:12,fontFamily:"inherit",background:"#fff"}}/>
-                                    <span style={{fontSize:12,color:"#64748B",fontWeight:600}}>%</span>
-                                  </>
-                                ) : (
-                                  <input type="text"
-                                    value={asks[opt.key]?.value||""}
-                                    onChange={e=>setAsk(opt.key,{value:e.target.value})}
-                                    placeholder={opt.detail.placeholder||""}
-                                    style={{flex:1,padding:"6px 9px",borderRadius:6,border:"1.5px solid #D1D9E6",fontSize:12,fontFamily:"inherit",background:"#fff"}}/>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
-                  </div>
-                );
-              }
-
-              if (f.kind === "multi_select") {
-                // Source options: either explicit `f.options` array, or pulled from `units` prop via f.source.
-                // For `f.source === "units"`, each option carries enough fields to render a rich two-line row:
-                // line 1: ref · BR · sqft · view ;  line 2: project · floor · price
-                let opts = [];
-                if (f.source === "units") {
-                  const projectFilter = opp?.project_id;
-                  // Don't filter to project alone — agents often show neighbouring/alternative units too.
-                  // We sort smartly instead of filtering hard.
-                  const fmtAed = (n) => n ? `AED ${Number(n).toLocaleString()}` : null;
-                  const allOpts = (units||[]).map(u => {
-                    const proj = (projects||[]).find(p => p.id === u.project_id);
-                    const sp = (salePricing||[]).find(s => s.unit_id === u.id);
-                    const bedLabel = u.bedrooms === 0 ? "Studio" : (u.bedrooms ? `${u.bedrooms}BR` : "");
-                    const sqft = u.size_sqft ? `${Number(u.size_sqft).toLocaleString()} sqft` : null;
-                    return {
-                      value: u.id,
-                      // Rich row data for the renderer (instead of a flat label string)
-                      isUnit: true,
-                      isPinned: u.id === opp?.unit_id, // the opp's linked unit
-                      sameProject: !!projectFilter && u.project_id === projectFilter,
-                      lineA: [u.unit_ref || u.id, bedLabel, sqft, u.view].filter(Boolean).join(" · "),
-                      lineB: [proj?.name, u.floor_number ? `Floor ${u.floor_number}` : null, fmtAed(sp?.asking_price)].filter(Boolean).join(" · "),
-                    };
-                  });
-                  // Sort: pinned first, then same-project, then alphabetical by unit_ref-equivalent (lineA)
-                  opts = allOpts.sort((a,b) => {
-                    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
-                    if (a.sameProject !== b.sameProject) return a.sameProject ? -1 : 1;
-                    return (a.lineA||"").localeCompare(b.lineA||"");
-                  });
-                } else if (Array.isArray(f.options)) {
-                  opts = f.options.map(o => typeof o === "string" ? {value:o, label:o} : o);
-                }
-                const selected = Array.isArray(data[f.key]) ? data[f.key] : [];
-                const toggle = (v) => {
-                  const next = selected.includes(v) ? selected.filter(x=>x!==v) : [...selected, v];
-                  setField(f.key, next);
-                };
-                return (
-                  <div key={f.key}>
-                    {labelEl}
-                    {opts.length === 0 ? (
-                      <div style={{fontSize:12,color:"#94A3B8",fontStyle:"italic",padding:"8px 12px",background:"#F8FAFC",borderRadius:8,border:"1px dashed #D1D9E6"}}>
-                        {f.emptyHint || "No options available"}
-                      </div>
-                    ) : (
-                      <div style={{display:"flex",flexDirection:"column",gap:3,maxHeight:260,overflowY:"auto",border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,borderRadius:8,padding:5,background:"#fff"}}>
-                        {opts.map(o => {
-                          const sel = selected.includes(o.value);
-                          // Rich row for unit options; flat row for everything else
-                          if (o.isUnit) {
-                            const pinBg   = o.isPinned ? "#FFFBEA" : null;          // soft yellow tint
-                            const pinSelBg= o.isPinned ? "#FEF3C7" : "#E6EFF9";
-                            return (
-                              <button key={o.value} onClick={()=>toggle(o.value)}
-                                style={{
-                                  display:"flex",alignItems:"flex-start",gap:9,padding:"8px 10px",borderRadius:6,
-                                  border: o.isPinned ? "1px solid #FCD34D" : "1px solid transparent",
-                                  background: sel ? pinSelBg : (pinBg || "transparent"),
-                                  color:"#0F2540",
-                                  cursor:"pointer", textAlign:"left", transition:"all .1s",
-                                }}>
-                                <span style={{
-                                  display:"inline-flex",alignItems:"center",justifyContent:"center",
-                                  width:16,height:16,borderRadius:4,marginTop:2,
-                                  border:`1.5px solid ${sel?"#0F2540":"#CBD5E1"}`,
-                                  background: sel?"#0F2540":"#fff",
-                                  color:"#fff",fontSize:11,lineHeight:1,flexShrink:0,
-                                }}>{sel?"✓":""}</span>
-                                <div style={{flex:1,minWidth:0}}>
-                                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                                    <span style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{o.lineA}</span>
-                                    {o.isPinned && (
-                                      <span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:8,background:"#FCD34D",color:"#7A4F01",letterSpacing:".3px"}}>
-                                        📍 THIS OPP
-                                      </span>
-                                    )}
-                                  </div>
-                                  {o.lineB && (
-                                    <div style={{fontSize:11,color:"#64748B",marginTop:2,fontWeight:500}}>{o.lineB}</div>
-                                  )}
-                                </div>
-                              </button>
-                            );
-                          }
-                          // Flat fallback for non-unit multi-selects
-                          return (
-                            <button key={o.value} onClick={()=>toggle(o.value)}
-                              style={{
-                                display:"flex",alignItems:"center",gap:8,padding:"7px 9px",borderRadius:6,
-                                border:"none",
-                                background: sel ? "#E6EFF9" : "transparent",
-                                color: sel ? "#0F2540" : "#4A5568",
-                                fontSize:12, fontWeight: sel?600:500, cursor:"pointer", textAlign:"left", transition:"all .1s",
-                              }}>
-                              <span style={{
-                                display:"inline-flex",alignItems:"center",justifyContent:"center",
-                                width:16,height:16,borderRadius:4,
-                                border:`1.5px solid ${sel?"#0F2540":"#CBD5E1"}`,
-                                background: sel?"#0F2540":"#fff",
-                                color:"#fff",fontSize:11,lineHeight:1,flexShrink:0,
-                              }}>{sel?"✓":""}</span>
-                              <span style={{flex:1}}>{o.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {selected.length>0&&<div style={{fontSize:10,color:"#64748B",marginTop:4}}>{selected.length} selected</div>}
-                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
-                  </div>
-                );
-              }
-
-              return null;
-            })}
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.4rem",borderTop:"1px solid #E8EDF4",background:"#F8FAFC"}}>
-          <button onClick={onCancel} disabled={saving}
-            style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
-            Cancel
-          </button>
-          <button onClick={handleSave} disabled={saving}
-            style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#94A3B8":"#0F2540",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
-            {saving ? "Saving…" : `✓ Save & Advance to ${toStage}`}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Phase E W2 — Negotiation Round Dialog
-   Captures a single round in the buyer/developer/broker thread.
-═══════════════════════════════════════════════════════════════ */
-function NegotiationRoundDialog({ opp, lead, currentUser, onClose, onSaved, showToast }) {
-  const [actor, setActor] = useState("developer"); // who is speaking this round (most common: developer responding)
-  const [roundAt, setRoundAt] = useState(()=>{
-    const d = new Date(); const pad = n=>String(n).padStart(2,"0");
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  });
-  const [asks, setAsks] = useState({});
-  const [status, setStatus] = useState("Open");
-  const [notes, setNotes] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const setAsk = (key, patch) => setAsks(prev => ({...prev, [key]: {...(prev[key]||{}), ...patch}}));
-
-  const submit = async()=>{
-    if(!notes.trim()){showToast("Add notes — what did they say?","error");return;}
-    if(!roundAt){showToast("Set the round date","error");return;}
-    setSaving(true);
-    try{
-      const enabledKeys = Object.keys(asks).filter(k=>asks[k]?.enabled);
-      const sd = {actor, round_at:new Date(roundAt).toISOString(), asks, status, notes:notes.trim()};
-      const summary = enabledKeys.map(k=>{
-        const def = ASKS_GRID_OPTIONS.find(o=>o.key===k);
-        if(!def) return null;
-        const v = asks[k]?.value;
-        const valLabel = def.detail?.kind==="percent" && v ? `${v}%` : v;
-        return `${def.label}${valLabel?`: ${valLabel}`:""}`;
-      }).filter(Boolean).join(" · ");
-      const actorLabels = {buyer:"Buyer", developer:"Developer", broker:"Broker"};
-      const noteText = `[${actorLabels[actor]} · ${status}] ${summary?summary+" — ":""}${notes.trim()}`;
-      const{data,error}=await supabase.from("activities").insert({
-        opportunity_id: opp.id, lead_id: lead.id,
-        company_id: opp.company_id || currentUser.company_id || null,
-        type: "Note", note: noteText, status: "completed",
-        user_id: currentUser.id, user_name: currentUser.full_name, lead_name: lead.name,
-        stage_at_event: opp.stage,
-        activity_subtype: "negotiation_round",
-        structured_data: sd,
-      }).select().single();
-      if(error){
-        console.error("Round insert failed:", error);
-        showToast(`Failed: ${error.message||"unknown"}`,"error");
-        setSaving(false);
-        return;
-      }
-      onSaved(data);
-    } catch(e){
-      console.error("Round save error:", e);
-      showToast(`Save failed: ${e.message||"unknown"}`,"error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const actorOptions = [
-    {value:"buyer",     label:"Buyer says",     icon:"🟦", color:"#1A5FA8", bg:"#E6EFF8"},
-    {value:"developer", label:"Developer says", icon:"🟩", color:"#1A7F5A", bg:"#E6F4EE"},
-    {value:"broker",    label:"Broker note",    icon:"🟧", color:"#A06810", bg:"#FDF3DC"},
-  ];
-  const statusOptions = [
-    {value:"Open",            color:"#1A5FA8", bg:"#E6EFF8"},
-    {value:"Accepted",        color:"#1A7F5A", bg:"#E6F4EE"},
-    {value:"Rejected",        color:"#C53030", bg:"#FEE2E2"},
-    {value:"Counter-pending", color:"#D97706", bg:"#FEF3C7"},
-  ];
-
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
-      <div style={{background:"#fff",borderRadius:16,width:600,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
-        <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
-            <div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>🤝 Log Negotiation Round</div>
-              <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3}}>Capture the latest exchange between buyer, developer, and broker.</div>
-            </div>
-            <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",lineHeight:1}}>×</button>
-          </div>
-        </div>
-        <div style={{padding:"1.1rem 1.4rem",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:14}}>
-
-          {/* Who's speaking */}
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Who is this round from? *</label>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {actorOptions.map(o=>{
-                const sel = actor === o.value;
-                return (
-                  <button key={o.value} onClick={()=>setActor(o.value)}
-                    style={{
-                      padding:"7px 14px",borderRadius:20,
-                      border:`1.5px solid ${sel?o.color:"#D1D9E6"}`,
-                      background:sel?o.bg:"#fff",
-                      color:sel?o.color:"#4A5568",
-                      fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:5,
-                    }}>
-                    {o.icon} {o.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* When */}
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>When was this? *</label>
-            <input type="datetime-local" value={roundAt} onChange={e=>setRoundAt(e.target.value)}
-              style={{padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
-          </div>
-
-          {/* Asks grid */}
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>What's on the table this round?</label>
-            <div style={{fontSize:10,color:"#94A3B8",marginBottom:6}}>Tick what applies to this round. For developer rounds, this is what they offered/accepted. For buyer rounds, this is what they asked for.</div>
-            <div style={{display:"flex",flexDirection:"column",gap:5,border:"1.5px solid #D1D9E6",borderRadius:8,padding:6,background:"#fff"}}>
-              {ASKS_GRID_OPTIONS.map(opt=>{
-                const sel = !!asks[opt.key]?.enabled;
-                return (
-                  <div key={opt.key} style={{
-                    background: sel?"#FFFBEA":"transparent",
-                    border: sel?"1px solid #FCD34D":"1px solid transparent",
-                    borderRadius:6, padding: sel?"8px 10px":"6px 10px", transition:"all .12s",
-                  }}>
-                    <button onClick={()=>setAsk(opt.key,{enabled:!sel})}
-                      style={{display:"flex",alignItems:"center",gap:9,width:"100%",background:"transparent",border:"none",cursor:"pointer",textAlign:"left",padding:0}}>
-                      <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:16,height:16,borderRadius:4,border:`1.5px solid ${sel?"#0F2540":"#CBD5E1"}`,background:sel?"#0F2540":"#fff",color:"#fff",fontSize:11,lineHeight:1,flexShrink:0}}>{sel?"✓":""}</span>
-                      <span style={{fontSize:14,flexShrink:0}}>{opt.icon}</span>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:12,fontWeight:sel?700:600,color:"#0F2540"}}>{opt.label}</div>
-                      </div>
-                    </button>
-                    {sel && opt.detail && (
-                      <div style={{marginTop:7,marginLeft:25,display:"flex",alignItems:"center",gap:6}}>
-                        {opt.detail.kind === "percent" ? (
-                          <>
-                            <input type="number" min="0" max="100" step="0.1"
-                              value={asks[opt.key]?.value||""} onChange={e=>setAsk(opt.key,{value:e.target.value})}
-                              placeholder={opt.detail.placeholder||""}
-                              style={{width:80,padding:"6px 9px",borderRadius:6,border:"1.5px solid #D1D9E6",fontSize:12,fontFamily:"inherit",background:"#fff"}}/>
-                            <span style={{fontSize:12,color:"#64748B",fontWeight:600}}>%</span>
-                          </>
-                        ) : (
-                          <input type="text" value={asks[opt.key]?.value||""} onChange={e=>setAsk(opt.key,{value:e.target.value})}
-                            placeholder={opt.detail.placeholder||""}
-                            style={{flex:1,padding:"6px 9px",borderRadius:6,border:"1.5px solid #D1D9E6",fontSize:12,fontFamily:"inherit",background:"#fff"}}/>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Status */}
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Status of this round *</label>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {statusOptions.map(o=>{
-                const sel = status === o.value;
-                return (
-                  <button key={o.value} onClick={()=>setStatus(o.value)}
-                    style={{
-                      padding:"6px 13px",borderRadius:20,
-                      border:`1.5px solid ${sel?o.color:"#D1D9E6"}`,
-                      background:sel?o.bg:"#fff",
-                      color:sel?o.color:"#4A5568",
-                      fontSize:11,fontWeight:600,cursor:"pointer",
-                    }}>
-                    {o.value}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Notes *</label>
-            <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={3}
-              placeholder="What was actually said? Any deadlines? Hints about flexibility?"
-              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
-          </div>
-        </div>
-        <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.4rem",borderTop:"1px solid #E8EDF4",background:"#F8FAFC"}}>
-          <button onClick={onClose} disabled={saving}
-            style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
-            Cancel
-          </button>
-          <button onClick={submit} disabled={saving}
-            style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#94A3B8":"#0F2540",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
-            {saving?"Saving…":"✓ Log Round"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Phase E W2 — Handover Meeting Dialog
-   Schedules the buyer/broker/developer meeting where final terms
-   are signed off and broker hands the buyer over to the developer.
-═══════════════════════════════════════════════════════════════ */
-function HandoverMeetingDialog({ opp, lead, currentUser, onClose, onSaved, showToast }) {
-  const [meetingAt, setMeetingAt] = useState(()=>{
-    const d = new Date(); d.setDate(d.getDate()+3); d.setHours(11,0,0,0);
-    const pad = n=>String(n).padStart(2,"0");
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  });
-  const [location, setLocation] = useState("");
-  const [attendees, setAttendees] = useState("");
-  const [agenda, setAgenda] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const submit = async()=>{
-    if(!meetingAt){showToast("Set the meeting date/time","error");return;}
-    if(!location.trim()){showToast("Where will it happen?","error");return;}
-    if(!attendees.trim()){showToast("List who's attending","error");return;}
-    setSaving(true);
-    try{
-      const company_id = opp.company_id || currentUser.company_id || null;
-      const sd = {meeting_at:new Date(meetingAt).toISOString(), location:location.trim(), attendees:attendees.trim(), agenda:agenda.trim()};
-      const{data:actRow,error}=await supabase.from("activities").insert({
-        opportunity_id: opp.id, lead_id: lead.id, company_id,
-        type:"Meeting",
-        note:`📅 Handover meeting scheduled at ${location.trim()} · attendees: ${attendees.trim()}${agenda.trim()?` · agenda: ${agenda.trim()}`:""}`,
-        scheduled_at: new Date(meetingAt).toISOString(),
-        status:"upcoming",
-        user_id: currentUser.id, user_name: currentUser.full_name, lead_name: lead.name,
-        stage_at_event: opp.stage,
-        activity_subtype: "handover_meeting",
-        structured_data: sd,
-      }).select().single();
-      if(error){
-        console.error("Handover insert failed:", error);
-        showToast(`Failed: ${error.message||"unknown"}`,"error");
-        setSaving(false);
-        return;
-      }
-      // Create reminder 1 day before the meeting
-      const remindAt = new Date(meetingAt);
-      remindAt.setDate(remindAt.getDate()-1);
-      remindAt.setHours(9,0,0,0);
-      let reminder = null;
-      if(remindAt > new Date()){
-        const{data:remRow,error:remErr}=await supabase.from("reminders").insert({
-          company_id, user_id: currentUser.id,
-          related_opportunity_id: opp.id, related_lead_id: lead.id, related_activity_id: actRow.id,
-          trigger_at: remindAt.toISOString(),
-          title: `Handover meeting tomorrow — ${lead.name}`,
-          body: `${location.trim()} · ${attendees.trim()}`,
-          reason: "auto_handover_meeting_reminder",
-          status: "pending",
-          created_by: currentUser.id,
-        }).select().single();
-        if(!remErr) reminder = remRow;
-      }
-      onSaved(actRow, reminder);
-    } catch(e){
-      console.error("Handover save error:", e);
-      showToast(`Save failed: ${e.message||"unknown"}`,"error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
-      <div style={{background:"#fff",borderRadius:16,width:520,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
-        <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
-            <div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📅 Schedule Handover Meeting</div>
-              <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3}}>Where buyer, broker, and developer rep finalise the deal.</div>
-            </div>
-            <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",lineHeight:1}}>×</button>
-          </div>
-        </div>
-        <div style={{padding:"1.1rem 1.4rem",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:14}}>
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Meeting date & time *</label>
-            <input type="datetime-local" value={meetingAt} onChange={e=>setMeetingAt(e.target.value)}
-              style={{padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
-          </div>
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Location *</label>
-            <input type="text" value={location} onChange={e=>setLocation(e.target.value)}
-              placeholder="e.g. Sobha Sales Gallery, Sobha Hartland — or 3-way Zoom call"
-              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",boxSizing:"border-box"}}/>
-          </div>
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Attendees *</label>
-            <input type="text" value={attendees} onChange={e=>setAttendees(e.target.value)}
-              placeholder="e.g. Mr. Khan (buyer), Sara (Sobha rep), Abid (broker)"
-              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",boxSizing:"border-box"}}/>
-          </div>
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Agenda / prep notes</label>
-            <textarea value={agenda} onChange={e=>setAgenda(e.target.value)} rows={3}
-              placeholder="Final price, payment terms to confirm, documents needed, anything that could derail it"
-              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
-          </div>
-          <div style={{padding:"8px 12px",background:"#FFFBEA",borderRadius:7,border:"1px solid #FCD34D",fontSize:11,color:"#7A4F01"}}>
-            💡 A reminder will be auto-set for 9am the day before the meeting.
-          </div>
-        </div>
-        <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.4rem",borderTop:"1px solid #E8EDF4",background:"#F8FAFC"}}>
-          <button onClick={onClose} disabled={saving}
-            style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
-            Cancel
-          </button>
-          <button onClick={submit} disabled={saving}
-            style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#94A3B8":"#7C3AED",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
-            {saving?"Saving…":"📅 Schedule"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   Phase E W2 — Visit Outcome Dialog
-   Captures what happened AFTER the site visit. Updates the original
-   upcoming visit activity to completed, writes outcome data into
-   structured_data, and creates a follow-up reminder.
-═══════════════════════════════════════════════════════════════ */
-function VisitOutcomeDialog({ visitActivity, opp, lead, units, projects, currentUser, onClose, onSaved, showToast }) {
-  const [unitsViewed, setUnitsViewed] = useState(()=>visitActivity?.structured_data?.units_to_show || []);
-  const [actualAttendees, setActualAttendees] = useState("");
-  const [feedback, setFeedback] = useState("");
-  const [interestLevel, setInterestLevel] = useState("");
-  const [nextStep, setNextStep] = useState("");
-  const [followUpDate, setFollowUpDate] = useState(()=>{
-    const d = new Date(); d.setDate(d.getDate()+2);
-    return d.toISOString().split("T")[0];
-  });
-  const [saving, setSaving] = useState(false);
-
-  if(!visitActivity) return null;
-
-  const sd = visitActivity.structured_data || {};
-  const expectedAttendees = sd.expected_attendees || "";
-  const visitTime = sd.visit_at ? new Date(sd.visit_at) : null;
-
-  // Resolve unit options the same way the multi-select does
-  const unitOpts = (units||[]).map(u => {
-    const proj = (projects||[]).find(p => p.id === u.project_id);
-    const bedLabel = u.bedrooms === 0 ? "Studio" : (u.bedrooms ? `${u.bedrooms}BR` : "");
-    return {
-      id: u.id,
-      label: [u.unit_ref || u.id, bedLabel, u.view].filter(Boolean).join(" · "),
-      sub: proj?.name,
-      isPlanned: (sd.units_to_show||[]).includes(u.id),
-    };
-  }).filter(u => u.isPlanned || (sd.units_to_show||[]).length === 0)
-    .sort((a,b) => (a.isPlanned===b.isPlanned?0:(a.isPlanned?-1:1)));
-
-  const toggleUnit = (id) => {
-    setUnitsViewed(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
-  };
-
-  const interestOpts = [
-    {value:"Hot — ready to negotiate", color:"#DC2626", bg:"#FEE2E2"},
-    {value:"Warm — needs more info",   color:"#D97706", bg:"#FEF3C7"},
-    {value:"Cold — not the right fit", color:"#0891B2", bg:"#CFFAFE"},
-    {value:"Lost interest",            color:"#6B7280", bg:"#F3F4F6"},
-  ];
-
-  const submit = async()=>{
-    if(unitsViewed.length===0){showToast("Tick at least one unit that was actually viewed","error");return;}
-    if(feedback.trim().length<20){showToast("Feedback needs at least 20 characters","error");return;}
-    if(!interestLevel){showToast("Pick an interest level","error");return;}
-    if(!nextStep){showToast("Pick a next step","error");return;}
-    if(!followUpDate){showToast("Set a follow-up date","error");return;}
-    setSaving(true);
-    try{
-      const company_id = opp.company_id || currentUser.company_id || null;
-      // Merge outcome data into the original activity's structured_data
-      const newSd = {
-        ...sd,
-        units_viewed: unitsViewed,
-        actual_attendees: actualAttendees.trim() || expectedAttendees,
-        feedback: feedback.trim(),
-        interest_level: interestLevel,
-        next_step: nextStep,
-        follow_up_date: followUpDate,
-        outcome_captured_at: new Date().toISOString(),
-      };
-      const newNote = `[Site Visit completed] ${feedback.trim().slice(0,200)}`;
-      const{data:updatedRow,error:updErr}=await supabase
-        .from("activities")
-        .update({
-          status: "completed",
-          note: newNote,
-          structured_data: newSd,
-          activity_subtype: "site_visit_completed",
-        })
-        .eq("id", visitActivity.id)
-        .select()
-        .single();
-      if(updErr){
-        console.error("Visit outcome update failed:", updErr);
-        showToast(`Failed: ${updErr.message||"unknown"}`,"error");
-        setSaving(false);
-        return;
-      }
-      // Cancel the imminent-visit reminder if it's still pending — visit is over
-      await supabase.from("reminders")
-        .update({status:"completed"})
-        .eq("related_activity_id", visitActivity.id)
-        .eq("reason", "auto_visit_imminent")
-        .eq("status", "pending");
-      // Create follow-up reminder for the agreed follow-up date
-      const triggerAt = new Date(followUpDate);
-      triggerAt.setHours(9,0,0,0);
-      let reminder = null;
-      if(triggerAt > new Date()){
-        const interestShort = interestLevel.split("—")[0].trim();
-        const{data:remRow,error:remErr}=await supabase.from("reminders").insert({
-          company_id, user_id: currentUser.id,
-          related_opportunity_id: opp.id, related_lead_id: lead.id, related_activity_id: visitActivity.id,
-          trigger_at: triggerAt.toISOString(),
-          title: `Follow up after site visit — ${lead.name}`,
-          body: `Next step: ${nextStep}${interestShort?` · Interest: ${interestShort}`:""}`,
-          reason: "auto_follow_up_after_site_visit",
-          status: "pending",
-          created_by: currentUser.id,
-        }).select().single();
-        if(!remErr) reminder = remRow;
-      }
-      onSaved(updatedRow, reminder);
-    } catch(e){
-      console.error("Visit outcome save error:", e);
-      showToast(`Save failed: ${e.message||"unknown"}`,"error");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
-      <div style={{background:"#fff",borderRadius:16,width:600,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
-        <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
-            <div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📋 Capture Visit Outcome</div>
-              <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3}}>What actually happened during the visit?</div>
-              {visitTime && (
-                <div style={{fontSize:11,color:"#C9A84C",marginTop:6,fontWeight:600}}>
-                  Visit was scheduled for {visitTime.toLocaleString("en-AE",{dateStyle:"medium",timeStyle:"short"})}
-                </div>
-              )}
-            </div>
-            <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",lineHeight:1}}>×</button>
-          </div>
-        </div>
-        <div style={{padding:"1.1rem 1.4rem",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:14}}>
-
-          {/* Units actually viewed */}
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>
-              Units actually viewed *
-            </label>
-            <div style={{fontSize:10,color:"#94A3B8",marginBottom:6}}>
-              Pre-filled with what was planned. Untick if a unit wasn't actually shown, or add others.
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:200,overflowY:"auto",border:"1.5px solid #D1D9E6",borderRadius:8,padding:6,background:"#fff"}}>
-              {unitOpts.length === 0 ? (
-                <div style={{fontSize:12,color:"#94A3B8",fontStyle:"italic",padding:"8px 12px"}}>No units to choose from.</div>
-              ) : unitOpts.map(o=>{
-                const sel = unitsViewed.includes(o.id);
-                return (
-                  <button key={o.id} onClick={()=>toggleUnit(o.id)}
-                    style={{
-                      display:"flex",alignItems:"center",gap:9,padding:"7px 10px",borderRadius:6,
-                      border:"none",
-                      background: sel ? "#E6EFF9" : "transparent",
-                      cursor:"pointer", textAlign:"left", transition:"all .1s",
-                    }}>
-                    <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:16,height:16,borderRadius:4,border:`1.5px solid ${sel?"#0F2540":"#CBD5E1"}`,background:sel?"#0F2540":"#fff",color:"#fff",fontSize:11,lineHeight:1,flexShrink:0}}>{sel?"✓":""}</span>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>{o.label}</div>
-                      {o.sub && <div style={{fontSize:11,color:"#64748B"}}>{o.sub}</div>}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Attendees (override) */}
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>
-              Who actually attended? <span style={{fontWeight:500,color:"#94A3B8",textTransform:"none",letterSpacing:0}}>(leave blank if as planned)</span>
-            </label>
-            {expectedAttendees && (
-              <div style={{fontSize:11,color:"#94A3B8",marginBottom:5,fontStyle:"italic"}}>Planned: {expectedAttendees}</div>
-            )}
-            <input type="text" value={actualAttendees} onChange={e=>setActualAttendees(e.target.value)}
-              placeholder={expectedAttendees ? `Same as planned, or override here` : `e.g. Mr. Khan only — wife couldn't make it`}
-              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",boxSizing:"border-box"}}/>
-          </div>
-
-          {/* Feedback */}
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Customer feedback *</label>
-            <textarea value={feedback} onChange={e=>setFeedback(e.target.value)} rows={4}
-              placeholder="What did they like? Any concerns? Reactions to specific units, layout, finish, view, location, price, payment plan…"
-              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
-            <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>{feedback.length} / 20 characters minimum</div>
-          </div>
-
-          {/* Interest */}
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Interest level after visit *</label>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {interestOpts.map(o=>{
-                const sel = interestLevel === o.value;
-                return (
-                  <button key={o.value} onClick={()=>setInterestLevel(o.value)}
-                    style={{
-                      padding:"7px 14px",borderRadius:20,
-                      border:`1.5px solid ${sel?o.color:"#D1D9E6"}`,
-                      background:sel?o.bg:"#fff",
-                      color:sel?o.color:"#4A5568",
-                      fontSize:12,fontWeight:600,cursor:"pointer",
-                    }}>
-                    {o.value}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Next step */}
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Next step agreed *</label>
-            <select value={nextStep} onChange={e=>setNextStep(e.target.value)}
-              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",background:"#fff",cursor:"pointer"}}>
-              <option value="">— Select —</option>
-              {["Send proposal","Show more units","Follow up call","Customer needs time","Lost interest"].map(o=><option key={o} value={o}>{o}</option>)}
-            </select>
-          </div>
-
-          {/* Follow up date */}
-          <div>
-            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Follow up by *</label>
-            <input type="date" value={followUpDate} onChange={e=>setFollowUpDate(e.target.value)}
-              style={{padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
-          </div>
-        </div>
-        <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.4rem",borderTop:"1px solid #E8EDF4",background:"#F8FAFC"}}>
-          <button onClick={onClose} disabled={saving}
-            style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
-            Cancel
-          </button>
-          <button onClick={submit} disabled={saving}
-            style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#94A3B8":"#1A7F5A",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
-            {saving?"Saving…":"✓ Save Visit Outcome"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated }) {
-  const [activeTab,  setActiveTab]  = useState("activities");
+  const [activeTab,  setActiveTab]  = useState("details");
   const [activities, setActivities] = useState([]);
-  const [reminders,  setReminders]  = useState([]); // Phase E W3 — pending follow-ups for this opp
   const [payments,   setPayments]   = useState([]);
   const [contract,   setContract]   = useState(null);
   const [saving,     setSaving]     = useState(false);
@@ -2768,33 +1162,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [stageGateForm, setStageGateForm] = useState({});
   const [showDiscReq, setShowDiscReq] = useState(false);
   const [discReqForm, setDiscReqForm] = useState({type:"sale_price",discount_pct:"",reason:"",discount_source:"Developer",developer_auth_ref:""});
-  const [logForm,    setLogForm]    = useState({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
-  // Phase E W3 — reminder action dialog (Done / Reschedule / Cancel)
-  const [remAction, setRemAction] = useState(null); // {mode:"done"|"reschedule"|"cancel", reminder, note, date}
-
-  // Phase E W2 — Negotiation: "Log round" and "Handover meeting" dialogs
-  const [showLogRound, setShowLogRound] = useState(false);
-  const [showHandover, setShowHandover] = useState(false);
-  // Phase E W2 — Site Visit outcome dialog (after the visit happens)
-  const [visitOutcomeFor, setVisitOutcomeFor] = useState(null); // an upcoming visit activity
-
-  // Phase E W3 — shared helper used by both the inline strip (snooze) and the action dialog (done/reschedule/cancel)
-  const updateReminderStatus = async(reminderId, newStatus, extra={})=>{
-    const{error}=await supabase.from("reminders").update({status:newStatus, ...extra}).eq("id",reminderId);
-    if(error){
-      console.error("Reminder update failed:", error);
-      showToast(`Failed to update reminder: ${error.message||"unknown error"}`,"error");
-      return false;
-    }
-    if(newStatus==="pending" && extra.trigger_at){
-      // rescheduled — keep in list with new date
-      setReminders(p=>p.map(r=>r.id===reminderId?{...r,trigger_at:extra.trigger_at}:r).sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
-    }else{
-      // done/cancelled — remove from pending list
-      setReminders(p=>p.filter(r=>r.id!==reminderId));
-    }
-    return true;
-  };
+  const [logForm,    setLogForm]    = useState({type:"Call",note:""});
   const [payForm,    setPayForm]    = useState({milestone:"Booking Deposit",amount:"",percentage:"",due_date:"",payment_type:"Cheque",cheque_number:"",cheque_date:"",bank_name:"",status:"Pending",notes:"",cheque_file_url:""});
   const [emailForm,  setEmailForm]  = useState({to:"",subject:"",body:""});
   const [editPayment,setEditPayment]= useState(null);
@@ -2824,21 +1192,11 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
     supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
     supabase.from("sales_payments").select("*").eq("opportunity_id",opp.id).order("created_at").then(({data})=>setPayments(data||[]));
     supabase.from("sales_contracts").select("*").eq("opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
-    // Phase E W3: load pending reminders for this opportunity
-    supabase.from("reminders").select("*").eq("related_opportunity_id",opp.id).eq("status","pending").order("trigger_at",{ascending:true}).then(({data})=>setReminders(data||[]));
   },[opp.id]);
 
   const GATED_STAGES = ["Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
 
-  // Phase E W1 — stage capture dialog for transitions that need structured input
-  const [showCaptureDialog, setShowCaptureDialog] = useState(null); // target stage being captured
-
   const moveStage = async(toStage) => {
-    // Phase E W1: if target stage has a capture config, open the dialog
-    if (STAGE_CAPTURE_CONFIGS[toStage]) {
-      setShowCaptureDialog(toStage);
-      return;
-    }
     if(GATED_STAGES.includes(toStage)) {
       setStageGateForm({});
       setShowStageGate(toStage);
@@ -2870,15 +1228,12 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   };
 
   const saveLog = async()=>{
-    const hasNextStep = logForm.ns_enabled && logForm.ns_due;
-    if(!(logForm.note||"").trim() && !hasNextStep){showToast("Please add discussion notes or set a next step","error");return;}
+    if(!(logForm.note||"").trim()&&!(logForm.next_steps||"").trim()){showToast("Please add discussion notes or next steps","error");return;}
     setSaving(true);
     const isScheduled = logForm.scheduled_at && new Date(logForm.scheduled_at) > new Date();
-    // Build the human-readable note (we still embed next steps text so the timeline reads well)
-    const nsLine = hasNextStep ? `\n\n✅ Next: ${logForm.ns_type} on ${new Date(logForm.ns_due).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}${logForm.ns_note?(" — "+logForm.ns_note):""}` : "";
     const noteText = [
       logForm.note,
-      nsLine,
+      logForm.next_steps?("\n\n✅ Next Steps: "+logForm.next_steps):"",
       logForm.scheduled_at?("\n📅 Scheduled: "+new Date(logForm.scheduled_at).toLocaleString("en-AE",{dateStyle:"medium",timeStyle:"short"})):"",
       logForm.duration_mins?("\n⏱ Duration: "+logForm.duration_mins+" mins"):"",
     ].filter(Boolean).join("");
@@ -2889,44 +1244,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       status:isScheduled?"upcoming":"completed",
       user_id:currentUser.id, user_name:currentUser.full_name,
       lead_name:lead.name, company_id:currentUser.company_id||null,
-      // Phase E: tag the activity with the current stage so the timeline
-      // can show "this call happened during Contacted" context
-      stage_at_event: opp.stage,
-      activity_subtype: "free_note",
     }).select().single();
-    if(error){showToast("Failed to log activity","error");setSaving(false);return;}
-    setActivities(p=>[data,...p]);
-
-    // Phase E W3 — write the structured next step to the reminders table
-    if(hasNextStep){
-      const triggerAt = new Date(logForm.ns_due);
-      triggerAt.setHours(9,0,0,0); // 9am on the due date
-      const{data:remRow,error:remErr}=await supabase.from("reminders").insert({
-        company_id: opp.company_id || currentUser.company_id || null,
-        user_id: currentUser.id,
-        related_opportunity_id: opp.id,
-        related_lead_id: lead.id,
-        related_activity_id: data.id,
-        trigger_at: triggerAt.toISOString(),
-        title: `${logForm.ns_type} — ${lead.name}`,
-        body: logForm.ns_note || "",
-        reason: "manual_next_step",
-        status: "pending",
-        created_by: currentUser.id,
-      }).select().single();
-      if(remErr){
-        console.warn("Reminder creation failed (non-fatal):", remErr);
-        showToast("Activity saved, but reminder failed to schedule","error");
-      }else{
-        setReminders(p=>[...p,remRow].sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
-        showToast("Activity logged & next step scheduled","success");
-      }
-    }else{
-      showToast("Activity logged","success");
-    }
-
-    setShowLog(false);
-    setLogForm({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
+    if(!error){setActivities(p=>[data,...p]);showToast("Task logged","success");setShowLog(false);setLogForm({type:"Call",note:"",scheduled_at:"",next_steps:"",duration_mins:""});}
     setSaving(false);
   };
 
@@ -2978,37 +1297,67 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const totalPaid = payments.filter(p=>["Cleared","Received","Deposited"].includes(p.status)).reduce((s,p)=>s+(p.amount||0),0);
   const totalDue  = payments.reduce((s,p)=>s+(p.amount||0),0);
 
-  // Stage age in days (Phase E dense layout)
-  const stageAgeDays = opp.stage_updated_at
-    ? Math.max(0, Math.floor((new Date() - new Date(opp.stage_updated_at)) / 86400000))
-    : null;
-
   return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
-      {/* Compact header — name + stage + meta in one row */}
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12,flexWrap:"wrap",paddingBottom:10,borderBottom:"1px solid #EEF2F7"}}>
-        <button onClick={onBack} style={{padding:"6px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+        <button onClick={onBack} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>{opp.title||`Opportunity — ${lead.name}`}</span>
-            <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>▶ {opp.stage}</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0F2540"}}>{opp.title||`Opportunity — ${lead.name}`}</span>
+            <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>{opp.stage}</span>
             {opp.status==="On Hold"&&<span style={{padding:"3px 10px",borderRadius:20,background:"#F7F9FC",color:"#718096",fontSize:11,fontWeight:600}}>On Hold</span>}
-            {stageAgeDays!==null&&<span style={{fontSize:11,color:"#94A3B8"}}>· {stageAgeDays===0?"today":stageAgeDays===1?"1 day":`${stageAgeDays} days`} in stage</span>}
           </div>
-          <div style={{fontSize:12,color:"#718096",marginTop:3,display:"flex",gap:10,flexWrap:"wrap"}}>
-            <span>{lead.name}</span>
-            {lead.phone&&<span>· {lead.phone}</span>}
-            {agent&&<span>· Owner: <strong style={{color:"#0F2540"}}>{agent.full_name}</strong></span>}
-            {opp.budget&&<span>· Budget: <strong style={{color:"#0F2540"}}>AED {Number(opp.budget).toLocaleString()}</strong></span>}
-          </div>
+          <div style={{fontSize:12,color:"#718096",marginTop:2}}>{lead.name} · {lead.phone||""} {unit?`· ${unit.unit_ref} — ${unit.sub_type}`:""}</div>
+        </div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {canEdit&&["New","Contacted","Site Visit"].includes(opp.stage)&&unit&&(
+            <button onClick={()=>{
+              setEmailForm({to:lead.email||"",subject:`Property Proposal — ${lead.name}`,
+                body:`Dear ${lead.name},\n\nPlease find your personalised property proposal.\n\nProperty: ${unit.unit_ref} — ${unit.sub_type}${proj?` (${proj.name})`:""}\n${sp?`Price: AED ${Number(sp.asking_price).toLocaleString()}\n`:""}\nKindly review and let us know your preferred next step.\n\nBest regards,\n${currentUser.full_name}`});
+              setShowEmail(true);
+            }} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#1A5FA8",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>📤 Send Proposal</button>
+          )}
+          {canEdit&&<button onClick={()=>setShowLog(true)} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Task</button>}
         </div>
       </div>
 
-      {/* Main content area — single unified scroll, no tabs */}
+      {/* Summary strip */}
+      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+        {[
+          ["💰 Budget",    opp.budget?`AED ${Number(opp.budget).toLocaleString()}`:"—",    "#0F2540","#C9A84C"],
+          ["🏠 Unit",      unit?`${unit.unit_ref} — ${unit.sub_type}`:"Not linked",         "#F7F9FC","#4A5568"],
+          ["👤 Agent",     agent?.full_name||"Unassigned",                                  "#F7F9FC","#4A5568"],
+          ["📊 Payments",  totalDue>0?`${totalPaid/totalDue*100|0}% collected`:"No payments","#F7F9FC","#4A5568"],
+          opp.final_price&&["✅ Final",`AED ${Number(opp.final_price).toLocaleString()}`,"#E6F4EE","#1A7F5A"],
+        ].filter(Boolean).map(([l,v,bg,col])=>(
+          <div key={l} style={{background:bg,borderRadius:8,padding:"8px 14px",flex:1,minWidth:120}}>
+            <div style={{fontSize:9,color:bg==="#0F2540"?"rgba(255,255,255,.5)":"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
+            <div style={{fontSize:13,fontWeight:700,color:col,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{v}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid #E2E8F0"}}>
+        {[
+          {id:"details",  label:"Details",   locked:false},
+          {id:"activities",label:`Tasks${activities.length>0?` (${activities.length})`:""}`,locked:false},
+          {id:"payments", label:isDeveloper?`Payments${payments.length>0?` (${payments.length})`:""}`:`Commission${payments.length>0?` (${payments.length})`:""}`  , locked:!isWon, lockMsg:"Unlocks at Closed Won"},
+          {id:"contract", label:`Contract${contract?" ✓":""}`,  locked:!isWon, lockMsg:"Unlocks at Closed Won"},
+        ].map(({id,label,locked,lockMsg})=>(
+          <button key={id} onClick={()=>{if(locked){showToast(`${lockMsg}`,"error");return;}setActiveTab(id);}}
+            style={{padding:"8px 16px",borderRadius:"8px 8px 0 0",border:"none",borderBottom:activeTab===id?"2.5px solid #1E3A5F":"2.5px solid transparent",background:"transparent",fontSize:13,fontWeight:activeTab===id?700:400,color:locked?"#CBD5E0":activeTab===id?"#0F2540":"#718096",cursor:locked?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:4}}>
+            {locked&&"🔒 "}{label}
+          </button>
+        ))}
+      </div>
+
       <div style={{flex:1,overflowY:"auto"}}>
 
-        {/* ── DEAL OVERVIEW: workflow band + property card + notes ── */}
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        {/* ── DETAILS TAB ── */}
+        {activeTab==="details"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:14}}>
             {/* Ownership Notice */}
             {!isOwner&&canEdit&&(
               <div style={{background:canAction?"#E6F4EE":"#FFFBEB",border:`1px solid ${canAction?"#A8D5BE":"#FDE68A"}`,borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
@@ -3050,11 +1399,11 @@ You will become the assigned agent.`);
             )}
 
             {/* Workflow bar */}
-            <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"12px 16px"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:8}}>Deal Journey</div>
+            <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"16px 20px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Deal Journey</div>
               
               {/* Stage pills */}
-              <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0,marginBottom:12,paddingBottom:4}}>
+              <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0,marginBottom:16,paddingBottom:4}}>
                 {OPP_STAGES.filter(s=>s!=="Closed Lost").map((s,i,arr)=>{
                   const curIdx=OPP_STAGES.indexOf(opp.stage);
                   const thisIdx=OPP_STAGES.indexOf(s);
@@ -3088,330 +1437,56 @@ You will become the assigned agent.`);
                 const m=OPP_STAGE_META[opp.stage]||{c:"#718096",bg:"#F7F9FC"};
                 const stageIdx=OPP_STAGES.indexOf(opp.stage);
                 const nextStageName=OPP_STAGES[stageIdx+1];
-                // Stage-aware "next action" suggestion (the primary CTA for this stage)
-                const NEXT_ACTION_BY_STAGE = {
-                  "New":            "Make first contact",
-                  "Contacted":      "Schedule a site visit",
-                  "Site Visit":     "Send proposal & follow up",
-                  "Proposal Sent":  "Capture customer response",
-                  "Negotiation":    "Lock in the offer",
-                  "Offer Accepted": "Collect reservation fee",
-                  "Reserved":       "Draft & send SPA",
-                  "SPA Signed":     "Verify payments and close",
+                const stageActionMap={
+                  "New":           [{label:"📞 Log Call",type:"Call"},{label:"💬 WhatsApp",type:"WhatsApp"},{label:"📝 Add Note",type:"Note"}],
+                  "Contacted":     [{label:"📅 Schedule Visit",type:"Site Visit"},{label:"📞 Follow Up",type:"Call"},{label:"📝 Add Note",type:"Note"}],
+                  "Site Visit":    [{label:"📋 Log Outcome",type:"Note"},{label:"📄 Send Proposal",type:"Proposal"},{label:"📞 Follow Up",type:"Call"}],
+                  "Proposal Sent": [{label:"📞 Follow Up",type:"Call"},{label:"💰 Negotiate",type:"Note"},{label:"📝 Add Note",type:"Note"}],
+                  "Negotiation":   [{label:"📄 Send Offer",type:"Note"},{label:"✅ Get Approval",type:"Note"},{label:"📝 Add Note",type:"Note"}],
+                  "Offer Accepted":[{label:"📋 Reservation Form",type:"Note"},{label:"💰 Collect Fee",type:"Note"},{label:"📝 Add Note",type:"Note"}],
+                  "Reserved":      [{label:"✅ Confirm Reservation",type:"Note"},{label:"📄 Draft SPA",type:"Note"},{label:"📝 Add Note",type:"Note"}],
+                  "SPA Signed":    [{label:"💰 Add Payment",type:"Note"},{label:"📋 Upload SPA",type:"Note"},{label:"📝 Add Note",type:"Note"}],
                 };
-                const nextActionLabel = NEXT_ACTION_BY_STAGE[opp.stage] || "";
-                const showSendProposal = canEdit && ["Site Visit","Proposal Sent","Negotiation"].includes(opp.stage) && unit;
+                const actions=stageActionMap[opp.stage]||[];
                 return(
-                  <div style={{paddingTop:12,borderTop:"1px solid #F1F5F9"}}>
-                    {/* Next-action hint */}
-                    {nextActionLabel&&(
-                      <div style={{fontSize:11,color:"#475569",marginBottom:10,fontStyle:"italic"}}>
-                        💡 What's next: <strong style={{color:"#0F2540",fontStyle:"normal"}}>{nextActionLabel}</strong>
-                      </div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",paddingTop:12,borderTop:"1px solid #F1F5F9"}}>
+                    <span style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".5px",marginRight:4}}>Actions</span>
+                    {actions.map((a,i)=>(
+                      <button key={i} onClick={()=>setShowLog(true)}
+                        style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540",transition:"all .12s"}}
+                        onMouseOver={e=>{e.currentTarget.style.borderColor=m.c;e.currentTarget.style.color=m.c;e.currentTarget.style.background=m.bg;}}
+                        onMouseOut={e=>{e.currentTarget.style.borderColor="#E2E8F0";e.currentTarget.style.color="#0F2540";e.currentTarget.style.background="#fff";}}>
+                        {a.label}
+                      </button>
+                    ))}
+                    <div style={{flex:1}}/>
+                    {nextStageName&&nextStageName!=="Closed Won"&&(
+                      <button onClick={()=>moveStage(nextStageName)}
+                        style={{padding:"6px 16px",borderRadius:7,border:"none",background:m.c,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+                        → {nextStageName}
+                      </button>
                     )}
-
-                    {/* Two clearly separated zones: ACTIVITY (left) and STAGE (right) */}
-                    <div style={{display:"flex",gap:14,flexWrap:"wrap",alignItems:"flex-start"}}>
-
-                      {/* Activity zone — logging, doesn't change stage */}
-                      <div style={{flex:"1 1 280px",minWidth:260,background:"#F8FAFC",border:"1px solid #E8EDF4",borderRadius:10,padding:"10px 12px"}}>
-                        <div style={{fontSize:9,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:8}}>Log activity</div>
-                        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                          <button onClick={()=>{setLogForm({type:"Call",note:""});setShowLog(true);}}
-                            style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
-                            📞 Log Call
-                          </button>
-                          <button onClick={()=>{setLogForm({type:"WhatsApp",note:""});setShowLog(true);}}
-                            style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
-                            💬 WhatsApp
-                          </button>
-                          <button onClick={()=>{setLogForm({type:"Note",note:""});setShowLog(true);}}
-                            style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
-                            📝 Add Note
-                          </button>
-                          {showSendProposal&&(
-                            <button onClick={()=>{
-                              setEmailForm({to:lead.email||"",subject:`Property Proposal — ${lead.name}`,
-                                body:`Dear ${lead.name},\n\nPlease find your personalised property proposal.\n\nProperty: ${unit.unit_ref} — ${unit.sub_type}${proj?` (${proj.name})`:""}\n${sp?`Price: AED ${Number(sp.asking_price).toLocaleString()}\n`:""}\nKindly review and let us know your preferred next step.\n\nBest regards,\n${currentUser.full_name}`});
-                              setShowEmail(true);
-                            }}
-                              style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #BFDBFE",background:"#EFF6FF",fontSize:11,fontWeight:700,cursor:"pointer",color:"#1A5FA8"}}>
-                              📤 Send Proposal
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Stage advancement zone — changes stage */}
-                      <div style={{flex:"1 1 280px",minWidth:260,background:`${m.bg}`,border:`1px solid ${m.c}33`,borderRadius:10,padding:"10px 12px"}}>
-                        <div style={{fontSize:9,fontWeight:700,color:m.c,textTransform:"uppercase",letterSpacing:".6px",marginBottom:8}}>Move stage</div>
-                        <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-                          {nextStageName&&nextStageName!=="Closed Won"&&(
-                            <button onClick={()=>moveStage(nextStageName)}
-                              style={{padding:"7px 14px",borderRadius:7,border:"none",background:m.c,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 6px rgba(0,0,0,.08)"}}>
-                              ✓ Advance to {nextStageName}
-                            </button>
-                          )}
-                          {(opp.stage==="Offer Accepted"||opp.stage==="Negotiation"||opp.stage==="Reserved")&&nextStageName!=="Reserved"&&(
-                            <button onClick={()=>moveStage("Reserved")}
-                              style={{padding:"6px 12px",borderRadius:7,border:"none",background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                              🔒 Reserve Unit
-                            </button>
-                          )}
-                          {opp.stage==="SPA Signed"&&(
-                            <button onClick={()=>moveStage("Closed Won")}
-                              style={{padding:"7px 14px",borderRadius:7,border:"none",background:"#1A7F5A",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                              ✓ Close Won
-                            </button>
-                          )}
-                          <button onClick={()=>moveStage("Closed Lost")}
-                            style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #FECACA",background:"#FEF2F2",color:"#B83232",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-                            ✗ Mark Lost
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+                    {(opp.stage==="Offer Accepted"||opp.stage==="Negotiation"||opp.stage==="Reserved")&&(
+                      <button onClick={()=>moveStage("Reserved")}
+                        style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                        🔒 Reserve Unit
+                      </button>
+                    )}
+                    {opp.stage==="SPA Signed"&&(
+                      <button onClick={()=>moveStage("Closed Won")}
+                        style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#1A7F5A",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                        ✓ Close Won
+                      </button>
+                    )}
+                    <button onClick={()=>moveStage("Closed Lost")}
+                      style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #FECACA",background:"#FEF2F2",color:"#B83232",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                      ✗ Lost
+                    </button>
                   </div>
                 );
               })()}
 
               {isWon&&<div style={{padding:"8px 12px",background:"#E6F4EE",borderRadius:8,fontSize:12,color:"#1A7F5A",fontWeight:600,border:"1px solid #A8D5BE"}}>🎉 Deal Won — Payments and Contract are unlocked</div>}
-            </div>
-
-            {/* ── NEXT STEPS — pending follow-ups for this opportunity (Phase E W3) ── */}
-            {(()=>{
-              const now = new Date();
-              const reminderTypeIcons = {Call:"📞",WhatsApp:"💬",Email:"✉️",Meeting:"🤝","Site Visit":"🏠","Send proposal":"📄","Send brochure":"📋","Note to self":"📝",Other:"📌"};
-              // Sort: overdue first, then upcoming chronologically
-              const sorted = [...reminders].sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at));
-              if(sorted.length===0) return null;
-
-              const fmtDue = (iso)=>{
-                const d = new Date(iso);
-                const diffMs = d - now;
-                const diffDays = Math.floor(diffMs / 86400000);
-                const dateStr = d.toLocaleDateString("en-AE",{day:"numeric",month:"short"});
-                if(diffMs < 0){
-                  const overdueDays = Math.abs(Math.ceil(diffMs / 86400000));
-                  return {label: overdueDays===0?"due today":overdueDays===1?"1 day overdue":`${overdueDays} days overdue`, color:"#C53030", bg:"#FEE2E2", date:dateStr};
-                }
-                if(diffDays===0) return {label:"due today", color:"#A06810", bg:"#FDF3DC", date:dateStr};
-                if(diffDays===1) return {label:"due tomorrow", color:"#1A5FA8", bg:"#E6EFF8", date:dateStr};
-                if(diffDays<=7) return {label:`in ${diffDays} days`, color:"#1A5FA8", bg:"#E6EFF8", date:dateStr};
-                return {label:dateStr, color:"#64748B", bg:"#F1F5F9", date:dateStr};
-              };
-
-              const markDone = (rem)=>{
-                setRemAction({mode:"done", reminder:rem, note:"", date:""});
-              };
-
-              const snooze1Day = async(rem)=>{
-                const newDate = new Date(rem.trigger_at);
-                newDate.setDate(newDate.getDate()+1);
-                const ok = await updateReminderStatus(rem.id,"pending",{trigger_at:newDate.toISOString()});
-                if(ok) showToast("Snoozed 1 day","success");
-              };
-
-              const reschedule = (rem)=>{
-                const currentDate = new Date(rem.trigger_at).toISOString().split("T")[0];
-                setRemAction({mode:"reschedule", reminder:rem, note:"", date:currentDate});
-              };
-
-              const cancel = (rem)=>{
-                setRemAction({mode:"cancel", reminder:rem, note:"", date:""});
-              };
-
-              return (
-                <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"12px 16px",borderLeft:"3px solid #1A5FA8"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                    <div style={{fontSize:10,fontWeight:700,color:"#1A5FA8",textTransform:"uppercase",letterSpacing:".6px"}}>
-                      ⏰ Next Steps · what you owe this customer
-                    </div>
-                    <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:10,background:"#E6EFF8",color:"#1A5FA8"}}>{sorted.length} pending</span>
-                  </div>
-                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                    {sorted.map(rem=>{
-                      const due = fmtDue(rem.trigger_at);
-                      // Try to derive the action icon from the title prefix ("Call — name" → "Call")
-                      const actionFromTitle = (rem.title||"").split("—")[0].trim();
-                      const icon = reminderTypeIcons[actionFromTitle] || "📌";
-                      const isAuto = rem.reason && rem.reason.startsWith("auto_");
-                      return (
-                        <div key={rem.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:"#F8FAFC",borderRadius:8,border:`1px solid ${due.color==="#C53030"?"#FECACA":"#E2E8F0"}`,flexWrap:"wrap"}}>
-                          <span style={{fontSize:18,flexShrink:0}}>{icon}</span>
-                          <div style={{flex:1,minWidth:200}}>
-                            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                              <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{rem.title}</span>
-                              <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:due.bg,color:due.color}}>{due.label}</span>
-                              {isAuto && <span style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:8,background:"#F1F5F9",color:"#64748B"}}>auto</span>}
-                              <span style={{fontSize:10,color:"#94A3B8"}}>{due.date}</span>
-                            </div>
-                            {rem.body && <div style={{fontSize:11,color:"#64748B",marginTop:3,fontStyle:"italic"}}>{rem.body}</div>}
-                          </div>
-                          {canEdit && (
-                            <div style={{display:"flex",gap:5,flexShrink:0,flexWrap:"wrap"}}>
-                              <button onClick={()=>markDone(rem)}
-                                style={{padding:"5px 11px",borderRadius:6,border:"1px solid #1A7F5A",background:"#fff",color:"#1A7F5A",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-                                ✓ Done
-                              </button>
-                              <button onClick={()=>snooze1Day(rem)}
-                                style={{padding:"5px 11px",borderRadius:6,border:"1px solid #D1D9E6",background:"#fff",color:"#64748B",fontSize:11,fontWeight:600,cursor:"pointer"}}
-                                title="Snooze 1 day">
-                                💤 +1d
-                              </button>
-                              <button onClick={()=>reschedule(rem)}
-                                style={{padding:"5px 11px",borderRadius:6,border:"1px solid #D1D9E6",background:"#fff",color:"#64748B",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-                                📅
-                              </button>
-                              <button onClick={()=>cancel(rem)}
-                                style={{padding:"5px 11px",borderRadius:6,border:"1px solid #FECACA",background:"#fff",color:"#C53030",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-                                ✕
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* ── NEGOTIATION ROUNDS — broker/buyer/developer thread (Phase E W2) ── */}
-            {(()=>{
-              // Show the rounds panel whenever we have negotiation activities OR the opp is in Negotiation+ stages
-              const negStages = ["Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won"];
-              const stageAllows = negStages.includes(opp.stage);
-              const rounds = activities.filter(a =>
-                (a.activity_subtype === "stage_advance" && a.to_stage === "Negotiation")
-                || a.activity_subtype === "negotiation_round"
-                || a.activity_subtype === "handover_meeting"
-              ).slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
-
-              if(!stageAllows && rounds.length===0) return null;
-
-              const actorMeta = {
-                buyer:     {label:"Buyer",     icon:"🟦", c:"#1A5FA8", bg:"#E6EFF8", border:"#B8D2EE"},
-                developer: {label:"Developer", icon:"🟩", c:"#1A7F5A", bg:"#E6F4EE", border:"#A8D5BE"},
-                broker:    {label:"Broker",    icon:"🟧", c:"#A06810", bg:"#FDF3DC", border:"#F0D795"},
-              };
-
-              const fmtRoundDate = (iso) => new Date(iso).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"});
-
-              return (
-                <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"12px 16px",borderLeft:"3px solid #B83232"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
-                    <div>
-                      <div style={{fontSize:10,fontWeight:700,color:"#B83232",textTransform:"uppercase",letterSpacing:".6px"}}>
-                        🤝 Negotiation Rounds · broker / buyer / developer
-                      </div>
-                      <div style={{fontSize:11,color:"#94A3B8",marginTop:2}}>
-                        {rounds.length===0 ? "No rounds yet — log the first response from the developer." : `${rounds.length} round${rounds.length===1?"":"s"} on the table`}
-                      </div>
-                    </div>
-                    {canEdit && (
-                      <div style={{display:"flex",gap:6}}>
-                        <button onClick={()=>setShowLogRound(true)}
-                          style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #B83232",background:"#fff",color:"#B83232",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                          + Log Round
-                        </button>
-                        <button onClick={()=>setShowHandover(true)}
-                          style={{padding:"6px 12px",borderRadius:7,border:"none",background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                          📅 Schedule Handover
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {rounds.length===0 ? (
-                    <div style={{textAlign:"center",padding:"1.25rem",color:"#A0AEC0",fontSize:12,border:"1px dashed #E2E8F0",borderRadius:10}}>
-                      Once you've taken the buyer's asks to the developer, log their response here.
-                    </div>
-                  ) : (
-                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                      {rounds.map((r, idx) => {
-                        const sd = r.structured_data || {};
-                        const isHandover = r.activity_subtype === "handover_meeting";
-                        const isOpening = r.activity_subtype === "stage_advance";
-                        const actorKey = sd.actor || (isOpening ? "buyer" : "broker");
-                        const am = actorMeta[actorKey] || actorMeta.broker;
-                        const dateLabel = sd.round_at ? fmtRoundDate(sd.round_at) : fmtRoundDate(r.created_at);
-                        const enabledAsks = sd.asks ? Object.keys(sd.asks).filter(k=>sd.asks[k]?.enabled) : [];
-                        const status = sd.status || (isOpening ? "Open" : null);
-                        const statusColors = {"Open":{c:"#1A5FA8",bg:"#E6EFF8"},"Accepted":{c:"#1A7F5A",bg:"#E6F4EE"},"Rejected":{c:"#C53030",bg:"#FEE2E2"},"Counter-pending":{c:"#D97706",bg:"#FEF3C7"}};
-                        const sc = statusColors[status]||{};
-
-                        return (
-                          <div key={r.id} style={{display:"flex",gap:10,padding:"10px 12px",background:"#F8FAFC",borderRadius:8,border:`1px solid ${am.border}`,borderLeft:`3px solid ${am.c}`}}>
-                            <div style={{flexShrink:0,fontSize:18,paddingTop:1}}>{isHandover?"📅":am.icon}</div>
-                            <div style={{flex:1,minWidth:0}}>
-                              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
-                                <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:am.bg,color:am.c,letterSpacing:".4px"}}>
-                                  {isHandover ? "HANDOVER MEETING" : `ROUND ${idx+1} · ${am.label.toUpperCase()}`}
-                                </span>
-                                {status && <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:sc.bg,color:sc.c}}>{status.toUpperCase()}</span>}
-                                <span style={{fontSize:10,color:"#94A3B8"}}>{dateLabel}</span>
-                              </div>
-
-                              {/* Asks summary */}
-                              {enabledAsks.length>0 && (
-                                <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:5}}>
-                                  {enabledAsks.map(k=>{
-                                    const def = ASKS_GRID_OPTIONS.find(o=>o.key===k);
-                                    if(!def) return null;
-                                    const val = sd.asks[k]?.value;
-                                    const valLabel = def.detail?.kind==="percent" && val ? `${val}%` : val;
-                                    return (
-                                      <span key={k} style={{fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:10,background:"#fff",border:"1px solid #E2E8F0",color:"#0F2540"}}>
-                                        {def.icon} {def.label}{valLabel?<span style={{color:"#1A5FA8",marginLeft:4,fontWeight:700}}>{valLabel}</span>:""}
-                                      </span>
-                                    );
-                                  })}
-                                </div>
-                              )}
-
-                              {/* Handover meta */}
-                              {isHandover && (
-                                <div style={{display:"flex",flexWrap:"wrap",gap:10,fontSize:11,color:"#475569",marginBottom:5,padding:"6px 8px",background:"#fff",borderRadius:6,border:"1px solid #E2E8F0"}}>
-                                  {sd.meeting_at && <span><strong style={{color:"#94A3B8",fontWeight:600}}>📅</strong> {new Date(sd.meeting_at).toLocaleString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>}
-                                  {sd.location && <span><strong style={{color:"#94A3B8",fontWeight:600}}>📍</strong> {sd.location}</span>}
-                                  {sd.attendees && <span><strong style={{color:"#94A3B8",fontWeight:600}}>👥</strong> {sd.attendees}</span>}
-                                </div>
-                              )}
-
-                              {/* Free text */}
-                              {(sd.broker_notes || sd.notes) && (
-                                <div style={{fontSize:12,color:"#475569",lineHeight:1.5,whiteSpace:"pre-wrap"}}>
-                                  {sd.broker_notes || sd.notes}
-                                </div>
-                              )}
-                              {sd.buyer_position && (
-                                <div style={{fontSize:10,color:"#64748B",marginTop:4,fontStyle:"italic"}}>
-                                  Buyer stance: {sd.buyer_position}
-                                </div>
-                              )}
-
-                              <div style={{fontSize:10,color:"#A0AEC0",marginTop:5}}>
-                                logged by {r.user_name||"—"}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* ── ACTIVITY TIMELINE — moved up for prominence (Phase E dense layout) ── */}
-            <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"12px 16px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-                <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px"}}>Activity</div>
-                <button onClick={()=>setShowLog(true)} style={{padding:"5px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>+ Log Activity</button>
-              </div>
-              {activities.length===0&&<div style={{textAlign:"center",padding:"1.5rem 1rem",color:"#A0AEC0",fontSize:12,border:"1px dashed #E2E8F0",borderRadius:10}}>No activity yet — log a call, meeting, or note. Stage advancements will also appear here.</div>}
-              {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast} currentStage={opp.stage} units={units} onCaptureVisitOutcome={(act)=>setVisitOutcomeFor(act)}/>}
             </div>
 
             {/* Unit details */}
@@ -3567,9 +1642,95 @@ You will become the assigned agent.`);
               </div>
             )}
           </div>
+        )}
 
-        {/* ── (Activity Timeline moved up — dense layout) ── */}
+        {/* ── ACTIVITIES TAB ── */}
+        {activeTab==="activities"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <button onClick={()=>setShowLog(true)} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Activity</button>
+            {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No tasks yet — log a call, meeting, site visit or note</div>}
+            {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast}/>}
+          </div>
+        )}
 
+        {/* ── PAYMENTS TAB ── */}
+        {activeTab==="payments"&&(
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {!isWon?(
+              <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
+                <div style={{fontSize:40,marginBottom:10}}>🔒</div>
+                <div style={{fontSize:14,fontWeight:600,color:"#0F2540",marginBottom:6}}>Locked until Closed Won</div>
+                <div style={{fontSize:12}}>{isDeveloper?"Track developer payment collection here":"Track your commission once deal is closed"}</div>
+              </div>
+            ):(
+              <>
+                {/* Progress bar */}
+                {totalDue>0&&(
+                  <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"14px 16px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+                      <span style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>AED {totalPaid.toLocaleString()} collected</span>
+                      <span style={{fontSize:12,color:"#718096"}}>of AED {totalDue.toLocaleString()}</span>
+                    </div>
+                    <div style={{background:"#F7F9FC",borderRadius:6,height:10,overflow:"hidden"}}>
+                      <div style={{width:`${totalDue>0?totalPaid/totalDue*100:0}%`,height:"100%",background:"#1A7F5A",borderRadius:6,transition:"width .4s"}}/>
+                    </div>
+                  </div>
+                )}
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <span style={{fontSize:13,fontWeight:600,color:"#0F2540"}}>Payment Schedule ({payments.length})</span>
+                  <button onClick={()=>{setPayForm({milestone:"Booking Deposit",amount:"",percentage:"",due_date:"",payment_type:"Cheque",cheque_number:"",cheque_date:"",bank_name:"",status:"Pending",notes:"",cheque_file_url:""});setEditPayment(null);setShowPayment(true);}}
+                    style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Add Payment</button>
+                </div>
+                {payments.map(pay=>{
+                  const pm=PAYMENT_STATUS_META[pay.status]||{c:"#718096",bg:"#F7F9FC"};
+                  return (
+                    <div key={pay.id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
+                        <div>
+                          <div style={{fontWeight:700,fontSize:14,color:"#0F2540",marginBottom:2}}>AED {Number(pay.amount).toLocaleString()}</div>
+                          <div style={{fontSize:12,color:"#718096"}}>{pay.milestone}{pay.percentage?` · ${pay.percentage}%`:""}</div>
+                          {pay.cheque_number&&<div style={{fontSize:11,color:"#A0AEC0",marginTop:2}}>Cheque #{pay.cheque_number}{pay.bank_name?` · ${pay.bank_name}`:""}</div>}
+                          {pay.due_date&&<div style={{fontSize:11,color:"#A0AEC0"}}>Due: {fmtDate(pay.due_date)}</div>}
+                        </div>
+                        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                          <span style={{fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:pm.bg,color:pm.c}}>{pay.status}</span>
+                          <select value={pay.status} onChange={async e=>{
+                            await supabase.from("sales_payments").update({status:e.target.value}).eq("id",pay.id);
+                            setPayments(p=>p.map(x=>x.id===pay.id?{...x,status:e.target.value}:x));
+                          }} style={{fontSize:11,padding:"3px 6px",borderRadius:5,border:"1px solid #E2E8F0"}}>
+                            {Object.keys(PAYMENT_STATUS_META).map(s=><option key={s}>{s}</option>)}
+                          </select>
+                          <button onClick={()=>{setPayForm({...pay});setEditPayment(pay);setShowPayment(true);}} style={{fontSize:11,padding:"3px 8px",borderRadius:5,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer"}}>✏</button>
+                          <button onClick={()=>printReceipt(pay)} style={{fontSize:11,padding:"3px 8px",borderRadius:5,border:"none",background:"#1A5FA8",color:"#fff",cursor:"pointer"}}>🖨</button>
+                        </div>
+                      </div>
+                      {pay.cheque_file_url&&<a href={pay.cheque_file_url} target="_blank" rel="noreferrer" style={{fontSize:11,color:"#1A5FA8",marginTop:6,display:"inline-block"}}>📎 View cheque</a>}
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── CONTRACT TAB ── */}
+        {activeTab==="contract"&&(
+          <div>
+            {!isWon?(
+              <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
+                <div style={{fontSize:40,marginBottom:10}}>🔒</div>
+                <div style={{fontSize:14,fontWeight:600,color:"#0F2540",marginBottom:6}}>Locked until Closed Won</div>
+              </div>
+            ):contract?(
+              <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
+                <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:10}}>📄 Sales Contract</div>
+                <div style={{fontSize:12,color:"#718096"}}>Contract #{contract.contract_number||"—"} · SPA signed {fmtDate(contract.spa_date)}</div>
+              </div>
+            ):(
+              <div style={{textAlign:"center",padding:"2rem",color:"#A0AEC0",fontSize:12}}>No contract yet — create one after confirming payment plan</div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Log Activity Modal */}
@@ -3611,33 +1772,9 @@ You will become the assigned agent.`);
                 <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>💬 Discussion / Key Details</label>
                 <textarea value={logForm.note} onChange={e=>setLogForm(f=>({...f,note:e.target.value}))} rows={3} placeholder="What was discussed? Key points, client feedback, objections…" style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,resize:"vertical",outline:"none",boxSizing:"border-box"}}/>
               </div>
-              <div style={{marginBottom:12,background:logForm.ns_enabled?"#FFFEF7":"#F8FAFC",border:`1px solid ${logForm.ns_enabled?"#F0E5C8":"#E2E8F0"}`,borderRadius:8,padding:"10px 12px",transition:"all .15s"}}>
-                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,fontWeight:600,color:"#0F2540"}}>
-                  <input type="checkbox" checked={logForm.ns_enabled} onChange={e=>setLogForm(f=>({...f,ns_enabled:e.target.checked, ns_due: e.target.checked && !f.ns_due ? (()=>{const d=new Date();d.setDate(d.getDate()+2);return d.toISOString().split("T")[0];})() : f.ns_due }))} style={{width:14,height:14,cursor:"pointer",accentColor:"#0F2540"}}/>
-                  ✅ Schedule a next step
-                  {logForm.ns_enabled && <span style={{fontSize:10,fontWeight:500,color:"#94A3B8",marginLeft:"auto"}}>creates a reminder</span>}
-                </label>
-                {logForm.ns_enabled && (
-                  <div style={{marginTop:10,display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                    <div>
-                      <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Action</label>
-                      <select value={logForm.ns_type} onChange={e=>setLogForm(f=>({...f,ns_type:e.target.value}))}
-                        style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,outline:"none",background:"#fff",cursor:"pointer",boxSizing:"border-box"}}>
-                        {["Call","WhatsApp","Email","Meeting","Site Visit","Send proposal","Send brochure","Note to self","Other"].map(t=><option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Due Date</label>
-                      <input type="date" value={logForm.ns_due} onChange={e=>setLogForm(f=>({...f,ns_due:e.target.value}))}
-                        style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,outline:"none",background:"#fff",boxSizing:"border-box"}}/>
-                    </div>
-                    <div style={{gridColumn:"1/-1"}}>
-                      <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Note (optional)</label>
-                      <input type="text" value={logForm.ns_note} onChange={e=>setLogForm(f=>({...f,ns_note:e.target.value}))} placeholder="e.g. Confirm payment plan options"
-                        style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,outline:"none",boxSizing:"border-box"}}/>
-                    </div>
-                  </div>
-                )}
+              <div style={{marginBottom:12}}>
+                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>✅ Next Steps</label>
+                <textarea value={logForm.next_steps} onChange={e=>setLogForm(f=>({...f,next_steps:e.target.value}))} rows={2} placeholder="Follow-up action, who's responsible, by when?" style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,resize:"vertical",outline:"none",boxSizing:"border-box"}}/>
               </div>
               <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
                 <button onClick={()=>setShowLog(false)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
@@ -3702,215 +1839,6 @@ You will become the assigned agent.`);
           </div>
         </div>
       )}
-
-      {/* Phase E W1 — Stage Capture Dialog (Contacted, Site Visit, Proposal Sent, Negotiation) */}
-      <StageCaptureDialog
-        open={!!showCaptureDialog}
-        opp={opp}
-        lead={lead}
-        units={units}
-        projects={projects}
-        salePricing={salePricing}
-        fromStage={opp.stage}
-        toStage={showCaptureDialog}
-        currentUser={currentUser}
-        showToast={showToast}
-        onCancel={()=>setShowCaptureDialog(null)}
-        onSave={(result)=>{
-          setShowCaptureDialog(null);
-          // Refresh activities timeline
-          supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
-          // Update parent opp state
-          onUpdated({...opp, stage: result.stage, stage_updated_at: new Date().toISOString()});
-        }}
-      />
-
-      {/* Phase E W2 — Visit Outcome Dialog */}
-      {visitOutcomeFor && (
-        <VisitOutcomeDialog
-          visitActivity={visitOutcomeFor}
-          opp={opp} lead={lead}
-          units={units} projects={projects}
-          currentUser={currentUser}
-          onClose={()=>setVisitOutcomeFor(null)}
-          onSaved={(updatedRow, reminder)=>{
-            // Replace the upcoming activity with the completed version
-            setActivities(p=>p.map(a => a.id===updatedRow.id ? updatedRow : a));
-            if(reminder) setReminders(p=>[...p, reminder].sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
-            // Also remove any pending visit-imminent reminder from the panel state
-            setReminders(p=>p.filter(r => !(r.related_activity_id===updatedRow.id && r.reason==="auto_visit_imminent")));
-            showToast("Visit outcome captured","success");
-            setVisitOutcomeFor(null);
-          }}
-          showToast={showToast}
-        />
-      )}
-
-      {/* Phase E W2 — Log Negotiation Round Dialog */}
-      {showLogRound && (()=>{
-        const close = ()=>setShowLogRound(false);
-        return (
-          <NegotiationRoundDialog
-            opp={opp} lead={lead} currentUser={currentUser}
-            onClose={close}
-            onSaved={(actRow)=>{
-              setActivities(p=>[actRow, ...p]);
-              showToast("Round logged","success");
-              close();
-            }}
-            showToast={showToast}
-          />
-        );
-      })()}
-
-      {/* Phase E W2 — Schedule Handover Meeting Dialog */}
-      {showHandover && (()=>{
-        const close = ()=>setShowHandover(false);
-        return (
-          <HandoverMeetingDialog
-            opp={opp} lead={lead} currentUser={currentUser}
-            onClose={close}
-            onSaved={(actRow, reminder)=>{
-              setActivities(p=>[actRow, ...p]);
-              if(reminder) setReminders(p=>[...p, reminder].sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
-              showToast("Handover meeting scheduled","success");
-              close();
-            }}
-            showToast={showToast}
-          />
-        );
-      })()}
-
-      {/* Phase E W3 — Reminder Action Dialog (Done / Reschedule / Cancel) */}
-      {remAction && (()=>{
-        const meta = {
-          done:      {title:"✓ Mark as Done",      subtitle:"Capture what actually happened.",        accent:"#1A7F5A", btn:"Mark Done",   noteLabel:"What happened?",          notePh:"e.g. Spoke to him, confirmed Sunday viewing at 11am",   noteRequired:true,  showDate:false},
-          reschedule:{title:"📅 Reschedule",        subtitle:"Move this reminder to a new date.",      accent:"#1A5FA8", btn:"Reschedule",  noteLabel:"Reason (optional)",       notePh:"e.g. Customer is traveling until Tuesday",              noteRequired:false, showDate:true },
-          cancel:    {title:"✕ Cancel Reminder",    subtitle:"This is recorded — no silent deletion.", accent:"#C53030", btn:"Cancel It",   noteLabel:"Why are you cancelling?", notePh:"e.g. Customer went silent after 3 attempts, dropping",  noteRequired:true,  showDate:false},
-        }[remAction.mode];
-        const close = ()=>setRemAction(null);
-        const submit = async()=>{
-          const noteTrim = (remAction.note||"").trim();
-          if(meta.noteRequired && !noteTrim){
-            showToast(`Please ${remAction.mode==="cancel"?"give a reason":"describe what happened"}`,"error");
-            return;
-          }
-          if(meta.showDate){
-            const newDate = new Date(remAction.date);
-            if(isNaN(newDate.getTime())){showToast("Pick a valid date","error");return;}
-          }
-          setSaving(true);
-          try{
-            const rem = remAction.reminder;
-            if(remAction.mode==="reschedule"){
-              const newDate = new Date(remAction.date);
-              newDate.setHours(9,0,0,0);
-              const ok = await updateReminderStatus(rem.id,"pending",{trigger_at:newDate.toISOString()});
-              if(!ok){setSaving(false);return;}
-              // Drop a small activity note so the trail shows the move
-              const{data:actRow}=await supabase.from("activities").insert({
-                opportunity_id:opp.id, lead_id:lead.id, company_id:opp.company_id||currentUser.company_id||null,
-                type:"Note",
-                note:`📅 Rescheduled: "${rem.title}" → ${newDate.toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}${noteTrim?` — ${noteTrim}`:""}`,
-                status:"completed", user_id:currentUser.id, user_name:currentUser.full_name, lead_name:lead.name,
-                stage_at_event:opp.stage, activity_subtype:"reminder_rescheduled",
-              }).select().single();
-              if(actRow) setActivities(p=>[actRow,...p]);
-              showToast("Reminder rescheduled","success");
-            } else if(remAction.mode==="done"){
-              const ok = await updateReminderStatus(rem.id,"completed");
-              if(!ok){setSaving(false);return;}
-              const{data:actRow}=await supabase.from("activities").insert({
-                opportunity_id:opp.id, lead_id:lead.id, company_id:opp.company_id||currentUser.company_id||null,
-                type:"Note",
-                note:`✓ Completed: ${rem.title}\n\n${noteTrim}`,
-                status:"completed", user_id:currentUser.id, user_name:currentUser.full_name, lead_name:lead.name,
-                stage_at_event:opp.stage, activity_subtype:"reminder_completed",
-              }).select().single();
-              if(actRow) setActivities(p=>[actRow,...p]);
-              showToast("Marked as done","success");
-            } else if(remAction.mode==="cancel"){
-              const ok = await updateReminderStatus(rem.id,"cancelled");
-              if(!ok){setSaving(false);return;}
-              const{data:actRow}=await supabase.from("activities").insert({
-                opportunity_id:opp.id, lead_id:lead.id, company_id:opp.company_id||currentUser.company_id||null,
-                type:"Note",
-                note:`✕ Cancelled: ${rem.title}\nReason: ${noteTrim}`,
-                status:"completed", user_id:currentUser.id, user_name:currentUser.full_name, lead_name:lead.name,
-                stage_at_event:opp.stage, activity_subtype:"reminder_cancelled",
-              }).select().single();
-              if(actRow) setActivities(p=>[actRow,...p]);
-              showToast("Reminder cancelled","success");
-            }
-            close();
-          } catch(e){
-            console.error("Reminder action failed:", e);
-            showToast(`Failed: ${e.message||"unknown error"}`,"error");
-          } finally {
-            setSaving(false);
-          }
-        };
-        return (
-          <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
-            <div style={{background:"#fff",borderRadius:16,width:520,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
-              <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
-                  <div>
-                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>{meta.title}</div>
-                    <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3}}>{meta.subtitle}</div>
-                  </div>
-                  <button onClick={close} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",lineHeight:1}}>×</button>
-                </div>
-              </div>
-              <div style={{padding:"1.1rem 1.4rem",flex:1,overflowY:"auto"}}>
-                {/* Reminder context — read-only */}
-                <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 12px",marginBottom:14}}>
-                  <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>Reminder</div>
-                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{remAction.reminder.title}</div>
-                  {remAction.reminder.body && <div style={{fontSize:12,color:"#64748B",marginTop:3,fontStyle:"italic"}}>{remAction.reminder.body}</div>}
-                  <div style={{fontSize:11,color:"#94A3B8",marginTop:4}}>
-                    Originally due: {new Date(remAction.reminder.trigger_at).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}
-                  </div>
-                </div>
-
-                {meta.showDate && (
-                  <div style={{marginBottom:14}}>
-                    <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>
-                      New due date *
-                    </label>
-                    <input type="date" value={remAction.date}
-                      onChange={e=>setRemAction(a=>({...a,date:e.target.value}))}
-                      style={{padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
-                  </div>
-                )}
-
-                <div>
-                  <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>
-                    {meta.noteLabel}{meta.noteRequired&&<span style={{color:"#C53030"}}> *</span>}
-                  </label>
-                  <textarea value={remAction.note}
-                    onChange={e=>setRemAction(a=>({...a,note:e.target.value}))}
-                    placeholder={meta.notePh} rows={4}
-                    style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
-                  <div style={{fontSize:10,color:"#94A3B8",marginTop:4}}>
-                    This will be saved permanently to the activity timeline.
-                  </div>
-                </div>
-              </div>
-              <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.4rem",borderTop:"1px solid #E8EDF4",background:"#F8FAFC"}}>
-                <button onClick={close} disabled={saving}
-                  style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
-                  Back
-                </button>
-                <button onClick={submit} disabled={saving}
-                  style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#94A3B8":meta.accent,color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
-                  {saving ? "Saving…" : meta.btn}
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* Stage Gate Modal */}
       {showStageGate&&(
@@ -4350,73 +2278,18 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const [showAdd,  setShowAdd]  = useState(false);
   const [editLead, setEditLead] = useState(null);
   const [saving,   setSaving]   = useState(false);
-  // Phase A.3 — Sprint 1 form (side-by-side feature flag)
-  const [useNewForm, setUseNewForm] = useState(false);
-  const [showAddV2, setShowAddV2] = useState(false);
   const [opps,     setOpps]     = useState(globalOppsFromParent); // sync with global
   const [units,    setUnits]    = useState([]);
   const [projects, setProjects] = useState([]);
   const [salePricing,setSalePricing]=useState([]);
   const [showAddOpp, setShowAddOpp]=useState(false);
   const [oppForm,  setOppForm]  = useState({title:"",unit_id:"",budget:"",assigned_to:"",notes:"",property_category:"Off-Plan"});
-  // Phase E dense layout: activities for ALL of this lead's opportunities (used to enrich opp rows)
-  const [leadActivities, setLeadActivities] = useState([]);
   const canEdit = can(currentUser.role,"write");
   const canDel  = can(currentUser.role,"delete_leads");
 
   const blank = {name:"",phone:"",email:"",nationality:"",source:"Walk-In",property_type:"Sale",notes:"",assigned_to:currentUser.id,budget:""};
   const [form, setForm] = useState(blank);
   const sf = k => e => setForm(f=>({...f,[k]:e.target?.value??e}));
-
-  // ── Browser history sync ────────────────────────────────────────
-  // Push state changes into browser history so the browser back button
-  // navigates within the app (list ← lead ← opportunity) instead of
-  // exiting the app entirely. Uses a ref to distinguish user-driven
-  // back navigation from programmatic state changes.
-  const skipPushRef = useRef(false);
-
-  useEffect(()=>{
-    // On mount: replace current entry with our initial state so popstate has something to roll back to
-    window.history.replaceState({view:"list",selLeadId:null,selOppId:null}, "", window.location.pathname);
-
-    const onPopState = (e)=>{
-      const s = e.state;
-      if(!s){
-        // User went back past our entries — keep them on the list view
-        skipPushRef.current = true;
-        setView("list");
-        setSelLeadId(null);
-        setSelOpp(null);
-        return;
-      }
-      skipPushRef.current = true;
-      setView(s.view||"list");
-      setSelLeadId(s.selLeadId||null);
-      if(s.selOppId){
-        // Find the opp in current state and restore it
-        const found = opps.find(o=>o.id===s.selOppId) || globalOppsFromParent.find(o=>o.id===s.selOppId);
-        setSelOpp(found||null);
-      } else {
-        setSelOpp(null);
-      }
-    };
-
-    window.addEventListener("popstate", onPopState);
-    return ()=>window.removeEventListener("popstate", onPopState);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[]);
-
-  useEffect(()=>{
-    // After every view/selection change, push to history — unless the change came from popstate
-    if(skipPushRef.current){
-      skipPushRef.current = false;
-      return;
-    }
-    const state = {view, selLeadId, selOppId: selOpp?.id || null};
-    window.history.pushState(state, "", window.location.pathname);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[view, selLeadId, selOpp?.id]);
-  // ────────────────────────────────────────────────────────────────
 
   // Load data
   useEffect(()=>{
@@ -4425,18 +2298,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
     supabase.from("projects").select("id,name").then(({data})=>setProjects(data||[]));
     supabase.from("unit_sale_pricing").select("unit_id,asking_price").then(({data})=>setSalePricing(data||[]));
   },[]);
-
-  // Phase E dense layout: when a lead is selected, fetch all activities for all its opportunities
-  // so the opportunities list rows can show "last activity" preview inline.
-  useEffect(()=>{
-    if(!selLeadId){ setLeadActivities([]); return; }
-    supabase
-      .from("activities")
-      .select("id,opportunity_id,type,note,created_at,stage_at_event,activity_subtype,structured_data,user_name")
-      .eq("lead_id", selLeadId)
-      .order("created_at",{ascending:false})
-      .then(({data})=>setLeadActivities(data||[]));
-  },[selLeadId]);
 
   if(!currentUser) return null;
   const selLead = leads.find(l=>l&&l.id===selLeadId);
@@ -4546,9 +2407,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           {["Walk-In","Referral","Online","Social Media","Cold Call","Exhibition","Portal","Other"].map(s=><option key={s}>{s}</option>)}
         </select>
         <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
-        {canEdit&&(
-          <button onClick={()=>setShowAddV2(true)} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Lead</button>
-        )}
+        {canEdit&&<button onClick={()=>{setForm(blank);setEditLead(null);setShowAdd(true);}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Contact</button>}
       </div>
 
       {/* Lead summary strip */}
@@ -4602,25 +2461,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       </div>
 
       {/* Add/Edit Contact Modal */}
-      {/* Phase A.3 — new buyer-type-aware lead form (side-by-side with existing modal) */}
-      {showAddV2&&(
-        <LeadCreationFormV2
-          companyId={currentUser?.company_id}
-          currentUserId={currentUser?.id}
-          onSubmit={async(payload)=>{
-            const {data,error}=await supabase.from("leads").insert(payload).select().single();
-            if(error) throw new Error(error.message||"Failed to create lead");
-            return data;
-          }}
-          onCancel={()=>setShowAddV2(false)}
-          onCreated={(newLead)=>{
-            setShowAddV2(false);
-            setLeads(p=>[newLead,...p]);
-            showToast("Contact added (new form)","success");
-          }}
-        />
-      )}
-
       {showAdd&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
@@ -4658,28 +2498,13 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   // ── LEAD DETAIL VIEW (contact + opportunities) ─────────────────
   if(view==="lead"&&selLead) return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
-      {/* ── Helpers (inline, used only in this view) ── */}
-      {(()=>{ /* no-op IIFE just to scope helpers via closures below */ })()}
-      {/* Header — redesigned */}
+      {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,flexWrap:"wrap"}}>
-        <button onClick={()=>setView("list")} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Leads</button>
+        <button onClick={()=>setView("list")} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Contacts</button>
         <Av name={selLead.name} size={40}/>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px"}}>{selLead.name}</div>
-          <div style={{display:"flex",gap:6,marginTop:4,flexWrap:"wrap"}}>
-            {(()=>{
-              const BT_LABEL = {local_national:"Local national",gcc_resident_expat:"GCC resident expat",international_non_resident:"International (non-resident)",corporate:"Corporate"};
-              const bt = selLead.buyer_type;
-              return bt ? <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#E8EDF4",color:"#0F2540"}}>{BT_LABEL[bt]||bt}</span> : null;
-            })()}
-            {(()=>{
-              const KYC_META = {not_started:{c:"#8A6200",bg:"#FDF3DC",l:"KYC: Not started"},in_progress:{c:"#1A5FA8",bg:"#E6EFF8",l:"KYC: In progress"},verified:{c:"#1A7F5A",bg:"#E6F4EE",l:"KYC: Verified"},expired:{c:"#C53030",bg:"#FED7D7",l:"KYC: Expired"}};
-              const k = selLead.kyc_status||"not_started";
-              const m = KYC_META[k]||KYC_META.not_started;
-              return <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:m.bg,color:m.c}}>{m.l}</span>;
-            })()}
-            {selLead.pep_flag&&<span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#FDF3DC",color:"#8A6200"}}>⚠ PEP</span>}
-          </div>
+          <div style={{fontSize:12,color:"#718096"}}>{selLead.phone} {selLead.email?`· ${selLead.email}`:""} {selLead.nationality?`· ${selLead.nationality}`:""}</div>
         </div>
         <div style={{display:"flex",gap:6}}>
           {canEdit&&<button onClick={()=>{setForm({...blank,...selLead});setEditLead(selLead);setShowAdd(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
@@ -4687,210 +2512,62 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         </div>
       </div>
 
-      {/* Identity + Notes — dense single-card layout */}
-      {(()=>{
-        const iso2ToFlag = (iso2)=>{ if(!iso2||iso2.length!==2)return ""; const c=iso2.toUpperCase(); return String.fromCodePoint(0x1F1E6+(c.charCodeAt(0)-65))+String.fromCodePoint(0x1F1E6+(c.charCodeAt(1)-65)); };
-        const SOF_LABEL = {salary:"Salary",business:"Business income",investments:"Investments",inheritance:"Inheritance",sale_of_property:"Sale of property",savings:"Savings",gift:"Gift",other:"Other"};
-        const items = [];
-        if(selLead.phone_e164||selLead.phone) {
-          const ph = selLead.phone_e164||selLead.phone;
-          items.push({icon:"📞", label:"Phone", val:<a href={`tel:${ph}`} style={{color:"#1A5FA8",textDecoration:"none",fontWeight:600}}>{ph}</a>});
-        }
-        if(selLead.email) items.push({icon:"✉️", label:"Email", val:<a href={`mailto:${selLead.email}`} style={{color:"#1A5FA8",textDecoration:"none",fontWeight:600}}>{selLead.email}</a>});
-        if(selLead.nationality_iso2) items.push({icon:"🌍", label:"Nationality", val:`${iso2ToFlag(selLead.nationality_iso2)} ${selLead.nationality_iso2}`});
-        else if(selLead.nationality) items.push({icon:"🌍", label:"Nationality", val:selLead.nationality});
-        if(selLead.residence_iso2) items.push({icon:"🏠", label:"Residence", val:`${iso2ToFlag(selLead.residence_iso2)} ${selLead.residence_iso2}`});
-        if(selLead.tax_residency_iso2 && selLead.tax_residency_iso2!==selLead.residence_iso2) items.push({icon:"💼", label:"Tax residency", val:`${iso2ToFlag(selLead.tax_residency_iso2)} ${selLead.tax_residency_iso2}`});
-        if(selLead.source_of_funds) items.push({icon:"💰", label:"Source of funds", val:SOF_LABEL[selLead.source_of_funds]||selLead.source_of_funds});
-        if(selLead.source) items.push({icon:"📍", label:"Lead source", val:selLead.source});
-        if(selLead.property_type) items.push({icon:"🔍", label:"Looking for", val:selLead.property_type});
-        if(selLead.budget&&Number(selLead.budget)>0) items.push({icon:"💵", label:"Budget", val:`AED ${Number(selLead.budget).toLocaleString()}`});
-        if(selLead.legal_name_en && selLead.legal_name_en!==selLead.name) items.push({icon:"📛", label:"Legal name", val:selLead.legal_name_en});
-        if(selLead.legal_name_ar) items.push({icon:"📛", label:"Legal (Arabic)", val:<span style={{direction:"rtl",unicodeBidi:"bidi-override",fontFamily:"'Noto Sans Arabic','Inter',sans-serif"}}>{selLead.legal_name_ar}</span>});
-        if(items.length===0 && !selLead.notes) return null;
-        return (
-          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"12px 16px",marginBottom:14}}>
-            {items.length>0 && (
-              <div style={{display:"flex",flexWrap:"wrap",gap:"8px 22px",alignItems:"center"}}>
-                {items.map((it,i)=>(
-                  <div key={i} style={{display:"flex",alignItems:"center",gap:7,fontSize:12,minWidth:0}}>
-                    <span style={{fontSize:13,opacity:.85}}>{it.icon}</span>
-                    <span style={{color:"#94A3B8",fontWeight:500}}>{it.label}:</span>
-                    <span style={{color:"#0F2540",fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:240}}>{it.val}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            {selLead.notes && (
-              <div style={{marginTop:items.length>0?10:0,paddingTop:items.length>0?10:0,borderTop:items.length>0?"1px dashed #EEF2F7":"none",display:"flex",gap:10,alignItems:"flex-start"}}>
-                <span style={{fontSize:10,color:"#8A6200",textTransform:"uppercase",letterSpacing:".5px",fontWeight:700,minWidth:50,paddingTop:1}}>Notes</span>
-                <div style={{fontSize:12,color:"#3A3A2E",whiteSpace:"pre-wrap",lineHeight:1.5,flex:1}}>{selLead.notes}</div>
-              </div>
-            )}
+      {/* Contact info strip */}
+      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+        {[["📞 Phone",selLead.phone||"—"],["✉ Email",selLead.email||"—"],["🌍 Nationality",selLead.nationality||"—"],["🏷 Source",selLead.source||"—"],["📋 Type",selLead.property_type||"—"]].map(([l,v])=>(
+          <div key={l} style={{background:"#F7F9FC",borderRadius:8,padding:"8px 14px",flex:1,minWidth:120}}>
+            <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
+            <div style={{fontSize:13,fontWeight:600,color:"#0F2540",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</div>
           </div>
-        );
-      })()}
-
-      {/* Opportunities — dense table layout */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-        <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540"}}>
-          Opportunities ({leadOpps.length})
-        </div>
-        {leadOpps.length>0&&(
-          <div style={{fontSize:11,color:"#94A3B8"}}>
-            Click any row to open the opportunity
-          </div>
-        )}
+        ))}
       </div>
-      <div style={{flex:1,overflowY:"auto"}}>
+
+      {/* Opportunities */}
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:12}}>
+        Opportunities ({leadOpps.length})
+      </div>
+      <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8}}>
         {leadOpps.length===0&&(
-          <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0",background:"#fff",border:"1px dashed #E2E8F0",borderRadius:12}}>
+          <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
             <div style={{fontSize:36,marginBottom:10}}>🎯</div>
             <div style={{fontSize:14,fontWeight:600,color:"#0F2540",marginBottom:6}}>No opportunities yet</div>
             <div style={{fontSize:12,marginBottom:16}}>Add an opportunity for each property this contact is interested in</div>
             {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Opportunity</button>}
           </div>
         )}
-
-        {leadOpps.length>0&&(
-          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,overflow:"hidden"}}>
-            {/* Header row */}
-            <div style={{
-              display:"grid",
-              gridTemplateColumns:"110px minmax(220px,1.7fr) 130px 110px minmax(180px,1.4fr) 70px 28px",
-              gap:12,padding:"9px 14px",
-              background:"#F8FAFC",borderBottom:"1px solid #E2E8F0",
-              fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".5px",
-            }}>
-              <div>Stage</div>
-              <div>Title · Unit</div>
-              <div style={{textAlign:"right"}}>Value</div>
-              <div>In stage</div>
-              <div>Last activity</div>
-              <div>Owner</div>
-              <div></div>
-            </div>
-
-            {/* Data rows */}
-            {leadOpps.map((opp,idx)=>{
-              const unit=units.find(u=>u.id===opp.unit_id);
-              const proj=unit?projects.find(p=>p.id===unit.project_id):null;
-              const sp=unit?salePricing.find(s=>s.unit_id===unit.id):null;
-              const sm3=OPP_STAGE_META[opp.stage]||{c:"#718096",bg:"#F7F9FC"};
-              const agent=users.find(u=>u.id===opp.assigned_to);
-              const oppActivities = leadActivities.filter(a=>a.opportunity_id===opp.id);
-              const lastAct = oppActivities[0];
-              const fmtRelative = (d)=>{
-                const diff = (new Date() - new Date(d)) / 1000;
-                if(diff<60) return "just now";
-                if(diff<3600) return `${Math.floor(diff/60)}m ago`;
-                if(diff<86400) return `${Math.floor(diff/3600)}h ago`;
-                const days = Math.floor(diff/86400);
-                return days===1?"1d ago":`${days}d ago`;
-              };
-              const actIcons = {Call:"📞",Email:"✉️",Meeting:"🤝",Visit:"🏠","Site Visit":"🏠",WhatsApp:"💬",Note:"📝","Stage Change":"🎯",Proposal:"📄"};
-              const lastActText = lastAct ? (lastAct.structured_data?.discussion || lastAct.structured_data?.feedback || lastAct.note || "") : "";
-              const lastActPreview = lastActText.slice(0,55) + (lastActText.length>55?"…":"");
-              const stageAge = opp.stage_updated_at?Math.floor((new Date()-new Date(opp.stage_updated_at))/864e5):null;
-              const isStale = stageAge!==null && stageAge>=7 && opp.status==="Active";
-              const stageAgeLabel = stageAge===null?"—":stageAge===0?"today":stageAge===1?"1 day":`${stageAge} days`;
-              const initials = (agent?.full_name||"?").split(" ").map(w=>w[0]).filter(Boolean).slice(0,2).join("").toUpperCase();
-              const value = sp?.asking_price || opp.budget || null;
-
-              return (
-                <div key={opp.id}
-                  onClick={()=>{setSelOpp(opp);setView("opportunity");}}
-                  onMouseOver={e=>{e.currentTarget.style.background="#F8FAFC";}}
-                  onMouseOut={e=>{e.currentTarget.style.background="#fff";}}
-                  style={{
-                    display:"grid",
-                    gridTemplateColumns:"110px minmax(220px,1.7fr) 130px 110px minmax(180px,1.4fr) 70px 28px",
-                    gap:12,padding:"11px 14px",
-                    borderTop: idx===0?"none":"1px solid #EEF2F7",
-                    borderLeft:`3px solid ${sm3.c}`,
-                    cursor:"pointer",transition:"background .12s",
-                    alignItems:"center",
-                    background:"#fff",
-                  }}>
-
-                  {/* Stage */}
-                  <div style={{minWidth:0}}>
-                    <span style={{
-                      display:"inline-block",fontSize:10,fontWeight:700,padding:"3px 9px",borderRadius:20,
-                      background:sm3.bg,color:sm3.c,whiteSpace:"nowrap",
-                    }}>{opp.stage}</span>
-                    {opp.status==="Won"&&<div style={{fontSize:9,fontWeight:700,color:"#1A7F5A",marginTop:3}}>✓ WON</div>}
-                    {opp.status==="Lost"&&<div style={{fontSize:9,fontWeight:700,color:"#718096",marginTop:3}}>LOST</div>}
-                    {opp.status==="On Hold"&&<div style={{fontSize:9,fontWeight:700,color:"#8A6200",marginTop:3}}>ON HOLD</div>}
+        {leadOpps.map(opp=>{
+          const unit=units.find(u=>u.id===opp.unit_id);
+          const proj=unit?projects.find(p=>p.id===unit.project_id):null;
+          const sp=unit?salePricing.find(s=>s.unit_id===unit.id):null;
+          const sm3=OPP_STAGE_META[opp.stage]||{c:"#718096",bg:"#F7F9FC"};
+          const agent=users.find(u=>u.id===opp.assigned_to);
+          return (
+            <div key={opp.id} onClick={()=>{setSelOpp(opp);setView("opportunity");}}
+              style={{background:"#fff",border:"1.5px solid #E2E8F0",borderRadius:12,padding:"14px 16px",cursor:"pointer",borderLeft:`4px solid ${sm3.c}`,transition:"all .12s"}}
+              onMouseOver={e=>{e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.08)";e.currentTarget.style.transform="translateY(-1px)";}}
+              onMouseOut={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
+                    <span style={{fontWeight:700,fontSize:14,color:"#0F2540"}}>{opp.title||"Opportunity"}</span>
+                    <span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:sm3.bg,color:sm3.c}}>{opp.stage}</span>
+                    {opp.status==="Won"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ Won</span>}
+                    {opp.status==="Lost"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#F7F9FC",color:"#718096"}}>Lost</span>}
+                    {opp.status==="On Hold"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#FDF3DC",color:"#8A6200"}}>On Hold</span>}
                   </div>
-
-                  {/* Title + Unit/Project */}
-                  <div style={{minWidth:0}}>
-                    <div style={{fontSize:13,fontWeight:700,color:"#0F2540",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                      {opp.title||"Opportunity"}
-                    </div>
-                    <div style={{fontSize:11,color:"#64748B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginTop:2}}>
-                      {unit ? `🏠 ${unit.unit_ref}${unit.sub_type?` · ${unit.sub_type}`:""}${proj?` · ${proj.name}`:""}` : <span style={{color:"#94A3B8",fontStyle:"italic"}}>No unit linked</span>}
-                    </div>
-                  </div>
-
-                  {/* Value */}
-                  <div style={{textAlign:"right",minWidth:0}}>
-                    {value ? (
-                      <>
-                        <div style={{fontSize:13,fontWeight:700,color:"#1A5FA8"}}>AED {Number(value).toLocaleString()}</div>
-                        {sp ? null : <div style={{fontSize:9,color:"#94A3B8",fontWeight:600,marginTop:1}}>budget</div>}
-                      </>
-                    ) : (
-                      <span style={{fontSize:11,color:"#CBD5E1"}}>—</span>
-                    )}
-                  </div>
-
-                  {/* In stage */}
-                  <div style={{minWidth:0}}>
-                    <div style={{fontSize:12,color:isStale?"#C53030":"#475569",fontWeight:isStale?700:500}}>
-                      {stageAgeLabel}
-                    </div>
-                    {isStale&&<div style={{fontSize:9,fontWeight:700,color:"#C53030",marginTop:1}}>⚠ STALE</div>}
-                    {opp.proposal_sent_at&&<div style={{fontSize:9,color:"#A06810",marginTop:1}}>📤 sent {fmtDate(opp.proposal_sent_at)}</div>}
-                  </div>
-
-                  {/* Last activity */}
-                  <div style={{minWidth:0,fontSize:11,color:"#475569",overflow:"hidden"}}>
-                    {lastAct ? (
-                      <>
-                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:1}}>
-                          <span style={{fontSize:12}}>{actIcons[lastAct.type]||"📋"}</span>
-                          <span style={{color:"#94A3B8",fontWeight:600,fontSize:10}}>{fmtRelative(lastAct.created_at)}</span>
-                          {lastAct.stage_at_event&&<span style={{fontSize:9,fontWeight:700,padding:"1px 5px",borderRadius:6,background:"#F1F5F9",color:"#64748B"}}>{lastAct.stage_at_event}</span>}
-                        </div>
-                        {lastActPreview&&<div style={{fontSize:11,color:"#64748B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontStyle:"italic"}}>"{lastActPreview}"</div>}
-                      </>
-                    ) : (
-                      <span style={{fontSize:11,color:"#94A3B8",fontStyle:"italic"}}>No activity yet</span>
-                    )}
-                  </div>
-
-                  {/* Owner */}
-                  <div style={{minWidth:0}} title={agent?.full_name||"Unassigned"}>
-                    {agent ? (
-                      <div style={{display:"flex",alignItems:"center",gap:6}}>
-                        <div style={{width:24,height:24,borderRadius:"50%",background:"#0F2540",color:"#C9A84C",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0}}>
-                          {initials}
-                        </div>
-                      </div>
-                    ) : (
-                      <span style={{fontSize:11,color:"#CBD5E1"}}>—</span>
-                    )}
-                  </div>
-
-                  {/* Chevron */}
-                  <div style={{textAlign:"right",color:"#CBD5E1",fontSize:14}}>›</div>
+                  {unit&&<div style={{fontSize:12,color:"#4A5568",marginBottom:2}}>🏠 {unit.unit_ref} — {unit.sub_type}{proj?` · ${proj.name}`:""}</div>}
+                  {sp&&<div style={{fontSize:13,fontWeight:700,color:"#1A5FA8"}}>AED {Number(sp.asking_price).toLocaleString()}</div>}
+                  {opp.budget&&!sp&&<div style={{fontSize:13,fontWeight:700,color:"#1A5FA8"}}>Budget: AED {Number(opp.budget).toLocaleString()}</div>}
                 </div>
-              );
-            })}
-          </div>
-        )}
+                <div style={{textAlign:"right",flexShrink:0}}>
+                  <div style={{fontSize:11,color:"#A0AEC0"}}>{agent?.full_name||"Unassigned"}</div>
+                  <div style={{fontSize:11,color:"#A0AEC0",marginTop:2}}>{opp.stage_updated_at?Math.floor((new Date()-new Date(opp.stage_updated_at))/864e5)+"d in stage":""}</div>
+                  {opp.proposal_sent_at&&<div style={{fontSize:10,color:"#A06810",marginTop:2}}>📤 Proposal sent {fmtDate(opp.proposal_sent_at)}</div>}
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Add Opportunity Modal */}
@@ -6552,7 +4229,6 @@ import ReportsModule from "./components/ReportsModule.jsx";
 import LeaseOpportunityDetail from "./components/LeaseOpportunityDetail.jsx";
 import LeasingLeads from "./components/LeasingLeads.jsx";
 import PropPulse from "./components/PropPulse.jsx";
-import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";  // Phase A.3 — new buyer-type-aware form (side-by-side with old form)
 // ──────────────────────────────────────────────────────────────
 
 
