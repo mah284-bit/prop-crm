@@ -1382,7 +1382,7 @@ const STAGE_CAPTURE_CONFIGS = {
   },
 };
 
-function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, onSave, onCancel, showToast, units = [] }) {
+function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, onSave, onCancel, showToast, units = [], projects = [], salePricing = [] }) {
   const config = STAGE_CAPTURE_CONFIGS[toStage];
   const [data, setData] = useState({});
   const [errors, setErrors] = useState({});
@@ -1404,7 +1404,13 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
         const pad = n => String(n).padStart(2,"0");
         init[f.key] = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
       } else if (f.kind === "multi_select") {
-        init[f.key] = [];
+        // Phase E: when this multi-select pulls from `units` and the opp has a linked unit,
+        // pre-select it — that unit is almost always the primary subject of a site visit.
+        if (f.source === "units" && opp?.unit_id) {
+          init[f.key] = [opp.unit_id];
+        } else {
+          init[f.key] = [];
+        }
       } else {
         init[f.key] = "";
       }
@@ -1676,25 +1682,36 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
               }
 
               if (f.kind === "multi_select") {
-                // Source options: either explicit `f.options` array, or pulled from `units` prop via f.source
+                // Source options: either explicit `f.options` array, or pulled from `units` prop via f.source.
+                // For `f.source === "units"`, each option carries enough fields to render a rich two-line row:
+                // line 1: ref · BR · sqft · view ;  line 2: project · floor · price
                 let opts = [];
                 if (f.source === "units") {
-                  // Filter to relevant project if opp has one, otherwise show all
                   const projectFilter = opp?.project_id;
-                  opts = (units||[])
-                    .filter(u => !projectFilter || u.project_id === projectFilter)
-                    .map(u => {
-                      // Match the unit shape used elsewhere in the app:
-                      //   - unit_ref is the human-readable unit code (e.g. "EBT-06-02")
-                      //   - project name comes from a separate projects[] lookup, not on the unit row
-                      const bedLabel = u.bedrooms === 0 ? "Studio" : (u.bedrooms ? `${u.bedrooms}BR` : "");
-                      const parts = [
-                        u.unit_ref || u.id,
-                        u.sub_type,
-                        bedLabel,
-                      ].filter(Boolean);
-                      return { value: u.id, label: parts.join(" · ") };
-                    });
+                  // Don't filter to project alone — agents often show neighbouring/alternative units too.
+                  // We sort smartly instead of filtering hard.
+                  const fmtAed = (n) => n ? `AED ${Number(n).toLocaleString()}` : null;
+                  const allOpts = (units||[]).map(u => {
+                    const proj = (projects||[]).find(p => p.id === u.project_id);
+                    const sp = (salePricing||[]).find(s => s.unit_id === u.id);
+                    const bedLabel = u.bedrooms === 0 ? "Studio" : (u.bedrooms ? `${u.bedrooms}BR` : "");
+                    const sqft = u.size_sqft ? `${Number(u.size_sqft).toLocaleString()} sqft` : null;
+                    return {
+                      value: u.id,
+                      // Rich row data for the renderer (instead of a flat label string)
+                      isUnit: true,
+                      isPinned: u.id === opp?.unit_id, // the opp's linked unit
+                      sameProject: !!projectFilter && u.project_id === projectFilter,
+                      lineA: [u.unit_ref || u.id, bedLabel, sqft, u.view].filter(Boolean).join(" · "),
+                      lineB: [proj?.name, u.floor_number ? `Floor ${u.floor_number}` : null, fmtAed(sp?.asking_price)].filter(Boolean).join(" · "),
+                    };
+                  });
+                  // Sort: pinned first, then same-project, then alphabetical by unit_ref-equivalent (lineA)
+                  opts = allOpts.sort((a,b) => {
+                    if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+                    if (a.sameProject !== b.sameProject) return a.sameProject ? -1 : 1;
+                    return (a.lineA||"").localeCompare(b.lineA||"");
+                  });
                 } else if (Array.isArray(f.options)) {
                   opts = f.options.map(o => typeof o === "string" ? {value:o, label:o} : o);
                 }
@@ -1711,9 +1728,46 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
                         {f.emptyHint || "No options available"}
                       </div>
                     ) : (
-                      <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:180,overflowY:"auto",border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,borderRadius:8,padding:6,background:"#fff"}}>
+                      <div style={{display:"flex",flexDirection:"column",gap:3,maxHeight:260,overflowY:"auto",border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,borderRadius:8,padding:5,background:"#fff"}}>
                         {opts.map(o => {
                           const sel = selected.includes(o.value);
+                          // Rich row for unit options; flat row for everything else
+                          if (o.isUnit) {
+                            const pinBg   = o.isPinned ? "#FFFBEA" : null;          // soft yellow tint
+                            const pinSelBg= o.isPinned ? "#FEF3C7" : "#E6EFF9";
+                            return (
+                              <button key={o.value} onClick={()=>toggle(o.value)}
+                                style={{
+                                  display:"flex",alignItems:"flex-start",gap:9,padding:"8px 10px",borderRadius:6,
+                                  border: o.isPinned ? "1px solid #FCD34D" : "1px solid transparent",
+                                  background: sel ? pinSelBg : (pinBg || "transparent"),
+                                  color:"#0F2540",
+                                  cursor:"pointer", textAlign:"left", transition:"all .1s",
+                                }}>
+                                <span style={{
+                                  display:"inline-flex",alignItems:"center",justifyContent:"center",
+                                  width:16,height:16,borderRadius:4,marginTop:2,
+                                  border:`1.5px solid ${sel?"#0F2540":"#CBD5E1"}`,
+                                  background: sel?"#0F2540":"#fff",
+                                  color:"#fff",fontSize:11,lineHeight:1,flexShrink:0,
+                                }}>{sel?"✓":""}</span>
+                                <div style={{flex:1,minWidth:0}}>
+                                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                                    <span style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{o.lineA}</span>
+                                    {o.isPinned && (
+                                      <span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:8,background:"#FCD34D",color:"#7A4F01",letterSpacing:".3px"}}>
+                                        📍 THIS OPP
+                                      </span>
+                                    )}
+                                  </div>
+                                  {o.lineB && (
+                                    <div style={{fontSize:11,color:"#64748B",marginTop:2,fontWeight:500}}>{o.lineB}</div>
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          }
+                          // Flat fallback for non-unit multi-selects
                           return (
                             <button key={o.value} onClick={()=>toggle(o.value)}
                               style={{
@@ -2585,6 +2639,8 @@ You will become the assigned agent.`);
         opp={opp}
         lead={lead}
         units={units}
+        projects={projects}
+        salePricing={salePricing}
         fromStage={opp.stage}
         toStage={showCaptureDialog}
         currentUser={currentUser}
