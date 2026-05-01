@@ -1758,6 +1758,7 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
 function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated }) {
   const [activeTab,  setActiveTab]  = useState("activities");
   const [activities, setActivities] = useState([]);
+  const [reminders,  setReminders]  = useState([]); // Phase E W3 — pending follow-ups for this opp
   const [payments,   setPayments]   = useState([]);
   const [contract,   setContract]   = useState(null);
   const [saving,     setSaving]     = useState(false);
@@ -1768,7 +1769,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [stageGateForm, setStageGateForm] = useState({});
   const [showDiscReq, setShowDiscReq] = useState(false);
   const [discReqForm, setDiscReqForm] = useState({type:"sale_price",discount_pct:"",reason:"",discount_source:"Developer",developer_auth_ref:""});
-  const [logForm,    setLogForm]    = useState({type:"Call",note:""});
+  const [logForm,    setLogForm]    = useState({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
   const [payForm,    setPayForm]    = useState({milestone:"Booking Deposit",amount:"",percentage:"",due_date:"",payment_type:"Cheque",cheque_number:"",cheque_date:"",bank_name:"",status:"Pending",notes:"",cheque_file_url:""});
   const [emailForm,  setEmailForm]  = useState({to:"",subject:"",body:""});
   const [editPayment,setEditPayment]= useState(null);
@@ -1798,6 +1799,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
     supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
     supabase.from("sales_payments").select("*").eq("opportunity_id",opp.id).order("created_at").then(({data})=>setPayments(data||[]));
     supabase.from("sales_contracts").select("*").eq("opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
+    // Phase E W3: load pending reminders for this opportunity
+    supabase.from("reminders").select("*").eq("related_opportunity_id",opp.id).eq("status","pending").order("trigger_at",{ascending:true}).then(({data})=>setReminders(data||[]));
   },[opp.id]);
 
   const GATED_STAGES = ["Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
@@ -1842,12 +1845,15 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   };
 
   const saveLog = async()=>{
-    if(!(logForm.note||"").trim()&&!(logForm.next_steps||"").trim()){showToast("Please add discussion notes or next steps","error");return;}
+    const hasNextStep = logForm.ns_enabled && logForm.ns_due;
+    if(!(logForm.note||"").trim() && !hasNextStep){showToast("Please add discussion notes or set a next step","error");return;}
     setSaving(true);
     const isScheduled = logForm.scheduled_at && new Date(logForm.scheduled_at) > new Date();
+    // Build the human-readable note (we still embed next steps text so the timeline reads well)
+    const nsLine = hasNextStep ? `\n\n✅ Next: ${logForm.ns_type} on ${new Date(logForm.ns_due).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}${logForm.ns_note?(" — "+logForm.ns_note):""}` : "";
     const noteText = [
       logForm.note,
-      logForm.next_steps?("\n\n✅ Next Steps: "+logForm.next_steps):"",
+      nsLine,
       logForm.scheduled_at?("\n📅 Scheduled: "+new Date(logForm.scheduled_at).toLocaleString("en-AE",{dateStyle:"medium",timeStyle:"short"})):"",
       logForm.duration_mins?("\n⏱ Duration: "+logForm.duration_mins+" mins"):"",
     ].filter(Boolean).join("");
@@ -1863,7 +1869,39 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       stage_at_event: opp.stage,
       activity_subtype: "free_note",
     }).select().single();
-    if(!error){setActivities(p=>[data,...p]);showToast("Task logged","success");setShowLog(false);setLogForm({type:"Call",note:"",scheduled_at:"",next_steps:"",duration_mins:""});}
+    if(error){showToast("Failed to log activity","error");setSaving(false);return;}
+    setActivities(p=>[data,...p]);
+
+    // Phase E W3 — write the structured next step to the reminders table
+    if(hasNextStep){
+      const triggerAt = new Date(logForm.ns_due);
+      triggerAt.setHours(9,0,0,0); // 9am on the due date
+      const{data:remRow,error:remErr}=await supabase.from("reminders").insert({
+        company_id: opp.company_id || currentUser.company_id || null,
+        user_id: currentUser.id,
+        related_opportunity_id: opp.id,
+        related_lead_id: lead.id,
+        related_activity_id: data.id,
+        trigger_at: triggerAt.toISOString(),
+        title: `${logForm.ns_type} — ${lead.name}`,
+        body: logForm.ns_note || "",
+        reason: "manual_next_step",
+        status: "pending",
+        created_by: currentUser.id,
+      }).select().single();
+      if(remErr){
+        console.warn("Reminder creation failed (non-fatal):", remErr);
+        showToast("Activity saved, but reminder failed to schedule","error");
+      }else{
+        setReminders(p=>[...p,remRow].sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
+        showToast("Activity logged & next step scheduled","success");
+      }
+    }else{
+      showToast("Activity logged","success");
+    }
+
+    setShowLog(false);
+    setLogForm({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
     setSaving(false);
   };
 
@@ -2115,6 +2153,135 @@ You will become the assigned agent.`);
               {isWon&&<div style={{padding:"8px 12px",background:"#E6F4EE",borderRadius:8,fontSize:12,color:"#1A7F5A",fontWeight:600,border:"1px solid #A8D5BE"}}>🎉 Deal Won — Payments and Contract are unlocked</div>}
             </div>
 
+            {/* ── NEXT STEPS — pending follow-ups for this opportunity (Phase E W3) ── */}
+            {(()=>{
+              const now = new Date();
+              const reminderTypeIcons = {Call:"📞",WhatsApp:"💬",Email:"✉️",Meeting:"🤝","Site Visit":"🏠","Send proposal":"📄","Send brochure":"📋","Note to self":"📝",Other:"📌"};
+              // Sort: overdue first, then upcoming chronologically
+              const sorted = [...reminders].sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at));
+              if(sorted.length===0) return null;
+
+              const fmtDue = (iso)=>{
+                const d = new Date(iso);
+                const diffMs = d - now;
+                const diffDays = Math.floor(diffMs / 86400000);
+                const dateStr = d.toLocaleDateString("en-AE",{day:"numeric",month:"short"});
+                if(diffMs < 0){
+                  const overdueDays = Math.abs(Math.ceil(diffMs / 86400000));
+                  return {label: overdueDays===0?"due today":overdueDays===1?"1 day overdue":`${overdueDays} days overdue`, color:"#C53030", bg:"#FEE2E2", date:dateStr};
+                }
+                if(diffDays===0) return {label:"due today", color:"#A06810", bg:"#FDF3DC", date:dateStr};
+                if(diffDays===1) return {label:"due tomorrow", color:"#1A5FA8", bg:"#E6EFF8", date:dateStr};
+                if(diffDays<=7) return {label:`in ${diffDays} days`, color:"#1A5FA8", bg:"#E6EFF8", date:dateStr};
+                return {label:dateStr, color:"#64748B", bg:"#F1F5F9", date:dateStr};
+              };
+
+              const updateReminderStatus = async(reminderId, newStatus, extra={})=>{
+                const{error}=await supabase.from("reminders").update({status:newStatus, ...extra}).eq("id",reminderId);
+                if(error){showToast("Failed to update reminder","error");return false;}
+                if(newStatus==="pending" && extra.trigger_at){
+                  // rescheduled — keep in list with new date
+                  setReminders(p=>p.map(r=>r.id===reminderId?{...r,trigger_at:extra.trigger_at}:r).sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
+                }else{
+                  // done/cancelled — remove from pending list
+                  setReminders(p=>p.filter(r=>r.id!==reminderId));
+                }
+                return true;
+              };
+
+              const markDone = async(rem)=>{
+                const ok = await updateReminderStatus(rem.id,"completed",{completed_at:new Date().toISOString(), completed_by:currentUser.id});
+                if(!ok) return;
+                // Also log a brief activity so the timeline reflects that this step was completed
+                const{data:actRow}=await supabase.from("activities").insert({
+                  opportunity_id:opp.id, lead_id:lead.id, company_id:opp.company_id||currentUser.company_id||null,
+                  type:"Note", note:`✓ Completed: ${rem.title}${rem.body?` — ${rem.body}`:""}`,
+                  status:"completed", user_id:currentUser.id, user_name:currentUser.full_name, lead_name:lead.name,
+                  stage_at_event:opp.stage, activity_subtype:"reminder_completed",
+                }).select().single();
+                if(actRow) setActivities(p=>[actRow,...p]);
+                showToast("Marked as done","success");
+              };
+
+              const snooze1Day = async(rem)=>{
+                const newDate = new Date(rem.trigger_at);
+                newDate.setDate(newDate.getDate()+1);
+                const ok = await updateReminderStatus(rem.id,"pending",{trigger_at:newDate.toISOString()});
+                if(ok) showToast("Snoozed 1 day","success");
+              };
+
+              const reschedule = async(rem)=>{
+                const newDateStr = window.prompt("Reschedule to (YYYY-MM-DD):", new Date(rem.trigger_at).toISOString().split("T")[0]);
+                if(!newDateStr) return;
+                const newDate = new Date(newDateStr);
+                if(isNaN(newDate.getTime())){showToast("Invalid date","error");return;}
+                newDate.setHours(9,0,0,0);
+                const ok = await updateReminderStatus(rem.id,"pending",{trigger_at:newDate.toISOString()});
+                if(ok) showToast("Rescheduled","success");
+              };
+
+              const cancel = async(rem)=>{
+                if(!window.confirm(`Cancel this reminder?\n\n"${rem.title}"`)) return;
+                const ok = await updateReminderStatus(rem.id,"cancelled",{cancelled_at:new Date().toISOString()});
+                if(ok) showToast("Reminder cancelled","success");
+              };
+
+              return (
+                <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"12px 16px",borderLeft:"3px solid #1A5FA8"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <div style={{fontSize:10,fontWeight:700,color:"#1A5FA8",textTransform:"uppercase",letterSpacing:".6px"}}>
+                      ⏰ Next Steps · what you owe this customer
+                    </div>
+                    <span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:10,background:"#E6EFF8",color:"#1A5FA8"}}>{sorted.length} pending</span>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {sorted.map(rem=>{
+                      const due = fmtDue(rem.trigger_at);
+                      // Try to derive the action icon from the title prefix ("Call — name" → "Call")
+                      const actionFromTitle = (rem.title||"").split("—")[0].trim();
+                      const icon = reminderTypeIcons[actionFromTitle] || "📌";
+                      const isAuto = rem.reason && rem.reason.startsWith("auto_");
+                      return (
+                        <div key={rem.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:"#F8FAFC",borderRadius:8,border:`1px solid ${due.color==="#C53030"?"#FECACA":"#E2E8F0"}`,flexWrap:"wrap"}}>
+                          <span style={{fontSize:18,flexShrink:0}}>{icon}</span>
+                          <div style={{flex:1,minWidth:200}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                              <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{rem.title}</span>
+                              <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:due.bg,color:due.color}}>{due.label}</span>
+                              {isAuto && <span style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:8,background:"#F1F5F9",color:"#64748B"}}>auto</span>}
+                              <span style={{fontSize:10,color:"#94A3B8"}}>{due.date}</span>
+                            </div>
+                            {rem.body && <div style={{fontSize:11,color:"#64748B",marginTop:3,fontStyle:"italic"}}>{rem.body}</div>}
+                          </div>
+                          {canEdit && (
+                            <div style={{display:"flex",gap:5,flexShrink:0,flexWrap:"wrap"}}>
+                              <button onClick={()=>markDone(rem)}
+                                style={{padding:"5px 11px",borderRadius:6,border:"1px solid #1A7F5A",background:"#fff",color:"#1A7F5A",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                ✓ Done
+                              </button>
+                              <button onClick={()=>snooze1Day(rem)}
+                                style={{padding:"5px 11px",borderRadius:6,border:"1px solid #D1D9E6",background:"#fff",color:"#64748B",fontSize:11,fontWeight:600,cursor:"pointer"}}
+                                title="Snooze 1 day">
+                                💤 +1d
+                              </button>
+                              <button onClick={()=>reschedule(rem)}
+                                style={{padding:"5px 11px",borderRadius:6,border:"1px solid #D1D9E6",background:"#fff",color:"#64748B",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                📅
+                              </button>
+                              <button onClick={()=>cancel(rem)}
+                                style={{padding:"5px 11px",borderRadius:6,border:"1px solid #FECACA",background:"#fff",color:"#C53030",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                ✕
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* ── ACTIVITY TIMELINE — moved up for prominence (Phase E dense layout) ── */}
             <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"12px 16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
@@ -2322,9 +2489,33 @@ You will become the assigned agent.`);
                 <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>💬 Discussion / Key Details</label>
                 <textarea value={logForm.note} onChange={e=>setLogForm(f=>({...f,note:e.target.value}))} rows={3} placeholder="What was discussed? Key points, client feedback, objections…" style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,resize:"vertical",outline:"none",boxSizing:"border-box"}}/>
               </div>
-              <div style={{marginBottom:12}}>
-                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>✅ Next Steps</label>
-                <textarea value={logForm.next_steps} onChange={e=>setLogForm(f=>({...f,next_steps:e.target.value}))} rows={2} placeholder="Follow-up action, who's responsible, by when?" style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,resize:"vertical",outline:"none",boxSizing:"border-box"}}/>
+              <div style={{marginBottom:12,background:logForm.ns_enabled?"#FFFEF7":"#F8FAFC",border:`1px solid ${logForm.ns_enabled?"#F0E5C8":"#E2E8F0"}`,borderRadius:8,padding:"10px 12px",transition:"all .15s"}}>
+                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,fontWeight:600,color:"#0F2540"}}>
+                  <input type="checkbox" checked={logForm.ns_enabled} onChange={e=>setLogForm(f=>({...f,ns_enabled:e.target.checked, ns_due: e.target.checked && !f.ns_due ? (()=>{const d=new Date();d.setDate(d.getDate()+2);return d.toISOString().split("T")[0];})() : f.ns_due }))} style={{width:14,height:14,cursor:"pointer",accentColor:"#0F2540"}}/>
+                  ✅ Schedule a next step
+                  {logForm.ns_enabled && <span style={{fontSize:10,fontWeight:500,color:"#94A3B8",marginLeft:"auto"}}>creates a reminder</span>}
+                </label>
+                {logForm.ns_enabled && (
+                  <div style={{marginTop:10,display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                    <div>
+                      <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Action</label>
+                      <select value={logForm.ns_type} onChange={e=>setLogForm(f=>({...f,ns_type:e.target.value}))}
+                        style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,outline:"none",background:"#fff",cursor:"pointer",boxSizing:"border-box"}}>
+                        {["Call","WhatsApp","Email","Meeting","Site Visit","Send proposal","Send brochure","Note to self","Other"].map(t=><option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Due Date</label>
+                      <input type="date" value={logForm.ns_due} onChange={e=>setLogForm(f=>({...f,ns_due:e.target.value}))}
+                        style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,outline:"none",background:"#fff",boxSizing:"border-box"}}/>
+                    </div>
+                    <div style={{gridColumn:"1/-1"}}>
+                      <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Note (optional)</label>
+                      <input type="text" value={logForm.ns_note} onChange={e=>setLogForm(f=>({...f,ns_note:e.target.value}))} placeholder="e.g. Confirm payment plan options"
+                        style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,outline:"none",boxSizing:"border-box"}}/>
+                    </div>
+                  </div>
+                )}
               </div>
               <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
                 <button onClick={()=>setShowLog(false)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
