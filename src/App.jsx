@@ -1055,10 +1055,16 @@ function OutcomeModal({activity, onClose, onSave}){
   );
 }
 
-function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isLeasing=false}){
+function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isLeasing=false, currentStage=null}){
   const [outcomeModal, setOutcomeModal] = useState(null); // {activity, pendingOutcome}
-  const upcoming = activities.filter(a=>a.status==="upcoming"||(a.scheduled_at&&new Date(a.scheduled_at)>new Date()&&a.status!=="completed"&&a.status!=="no_show"&&a.status!=="cancelled"));
-  const past = activities.filter(a=>!upcoming.find(u=>u.id===a.id));
+  const [scope, setScope] = useState("stage"); // "stage" | "all"
+  // Filter activities based on scope
+  const filtered = (currentStage && scope === "stage")
+    ? activities.filter(a => a.stage_at_event === currentStage)
+    : activities;
+  const upcoming = filtered.filter(a=>a.status==="upcoming"||(a.scheduled_at&&new Date(a.scheduled_at)>new Date()&&a.status!=="completed"&&a.status!=="no_show"&&a.status!=="cancelled"));
+  const past = filtered.filter(a=>!upcoming.find(u=>u.id===a.id));
+  const stageOnlyCount = currentStage ? activities.filter(a => a.stage_at_event === currentStage).length : 0;
   const icons = {Call:"📞",Email:"✉️",Meeting:"🤝",Visit:"🏠",WhatsApp:"💬",Note:"📝"};
   const statusColors = {completed:"#1A7F5A",upcoming:"#C9A84C",no_show:"#E53E3E",rescheduled:"#1A5FA8",cancelled:"#718096"};
   const statusLabels = {completed:"✅ Completed",upcoming:"⏰ Upcoming",no_show:"📵 No Show",rescheduled:"🔄 Rescheduled",cancelled:"❌ Cancelled"};
@@ -1107,15 +1113,15 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
     const interestColors = {Hot:{c:"#DC2626",bg:"#FEE2E2"},Warm:{c:"#D97706",bg:"#FEF3C7"},Cold:{c:"#0891B2",bg:"#CFFAFE"},"Not interested":{c:"#6B7280",bg:"#F3F4F6"}};
 
     return(
-      <div style={{background:"#fff",border:"1px solid "+(isStageAdvance?"#1A5FA8":isUpcoming?"#C9A84C":"#E2E8F0"),borderRadius:10,padding:"12px 14px",display:"flex",gap:10,borderLeft:isStageAdvance?"4px solid #1A5FA8":undefined}}>
-        <div style={{width:34,height:34,borderRadius:"50%",background:isStageAdvance?"#E6EFF8":isUpcoming?"rgba(201,168,76,.12)":"#F7F9FC",border:isStageAdvance?"1.5px solid #1A5FA8":isUpcoming?"1.5px solid #C9A84C":"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>
+      <div style={{background:"#fff",border:"1px solid "+(isStageAdvance?"#1A5FA8":isUpcoming?"#C9A84C":"#E2E8F0"),borderRadius:8,padding:"9px 12px",display:"flex",gap:8,borderLeft:isStageAdvance?"3px solid #1A5FA8":undefined}}>
+        <div style={{width:26,height:26,borderRadius:"50%",background:isStageAdvance?"#E6EFF8":isUpcoming?"rgba(201,168,76,.12)":"#F7F9FC",border:isStageAdvance?"1px solid #1A5FA8":isUpcoming?"1px solid #C9A84C":"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>
           {displayIcon}
         </div>
         <div style={{flex:1,minWidth:0}}>
           {/* Phase E: stage transition badge */}
           {isStageAdvance && a.from_stage && a.to_stage && (
-            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,fontSize:10,fontWeight:700,color:"#1A5FA8",textTransform:"uppercase",letterSpacing:".5px"}}>
-              <span>🎯 Stage advanced</span>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4,fontSize:9,fontWeight:700,color:"#1A5FA8",textTransform:"uppercase",letterSpacing:".5px"}}>
+              <span>🎯 Stage</span>
               <span style={{fontWeight:500,color:"#94A3B8",textTransform:"none",letterSpacing:0}}>
                 {a.from_stage} → <strong style={{color:"#0F2540"}}>{a.to_stage}</strong>
               </span>
@@ -1191,6 +1197,34 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
   return(
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
       {outcomeModal&&<OutcomeModal activity={{...outcomeModal.activity,_pendingOutcome:outcomeModal.pendingOutcome}} onClose={()=>setOutcomeModal(null)} onSave={(o,n,r)=>markOutcome(outcomeModal.activity,o,n,r)}/>}
+
+      {/* Phase E dense layout: scope toggle — only when we know the current stage */}
+      {currentStage&&(
+        <div style={{display:"flex",gap:4,padding:3,background:"#F1F5F9",borderRadius:8,alignSelf:"flex-start",marginBottom:2}}>
+          <button onClick={()=>setScope("stage")}
+            style={{padding:"5px 12px",borderRadius:6,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",
+              background:scope==="stage"?"#fff":"transparent",
+              color:scope==="stage"?"#0F2540":"#64748B",
+              boxShadow:scope==="stage"?"0 1px 2px rgba(0,0,0,.06)":"none"}}>
+            This stage{stageOnlyCount>0?` (${stageOnlyCount})`:""}
+          </button>
+          <button onClick={()=>setScope("all")}
+            style={{padding:"5px 12px",borderRadius:6,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",
+              background:scope==="all"?"#fff":"transparent",
+              color:scope==="all"?"#0F2540":"#64748B",
+              boxShadow:scope==="all"?"0 1px 2px rgba(0,0,0,.06)":"none"}}>
+            All time{activities.length>0?` (${activities.length})`:""}
+          </button>
+        </div>
+      )}
+
+      {/* Empty state when filter returns nothing */}
+      {filtered.length===0&&currentStage&&scope==="stage"&&(
+        <div style={{textAlign:"center",padding:"1.5rem 1rem",color:"#94A3B8",fontSize:12,border:"1px dashed #E2E8F0",borderRadius:10}}>
+          No activity yet in <strong>{currentStage}</strong> stage. Use Quick log on the left to record your first interaction.
+        </div>
+      )}
+
       {upcoming.length>0&&(
         <div style={{marginBottom:4}}>
           <div style={{fontSize:11,fontWeight:700,color:"#C9A84C",textTransform:"uppercase",letterSpacing:"1px",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
@@ -1704,36 +1738,30 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const totalPaid = payments.filter(p=>["Cleared","Received","Deposited"].includes(p.status)).reduce((s,p)=>s+(p.amount||0),0);
   const totalDue  = payments.reduce((s,p)=>s+(p.amount||0),0);
 
+  // Stage age in days (Phase E dense layout)
+  const stageAgeDays = opp.stage_updated_at
+    ? Math.max(0, Math.floor((new Date() - new Date(opp.stage_updated_at)) / 86400000))
+    : null;
+
   return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
-      {/* Header */}
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
-        <button onClick={onBack} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
+      {/* Compact header — name + stage + meta in one row */}
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12,flexWrap:"wrap",paddingBottom:10,borderBottom:"1px solid #EEF2F7"}}>
+        <button onClick={onBack} style={{padding:"6px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0F2540"}}>{opp.title||`Opportunity — ${lead.name}`}</span>
-            <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>{opp.stage}</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>{opp.title||`Opportunity — ${lead.name}`}</span>
+            <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>▶ {opp.stage}</span>
             {opp.status==="On Hold"&&<span style={{padding:"3px 10px",borderRadius:20,background:"#F7F9FC",color:"#718096",fontSize:11,fontWeight:600}}>On Hold</span>}
+            {stageAgeDays!==null&&<span style={{fontSize:11,color:"#94A3B8"}}>· {stageAgeDays===0?"today":stageAgeDays===1?"1 day":`${stageAgeDays} days`} in stage</span>}
           </div>
-          <div style={{fontSize:12,color:"#718096",marginTop:2}}>{lead.name} · {lead.phone||""} {unit?`· ${unit.unit_ref} — ${unit.sub_type}`:""}</div>
+          <div style={{fontSize:12,color:"#718096",marginTop:3,display:"flex",gap:10,flexWrap:"wrap"}}>
+            <span>{lead.name}</span>
+            {lead.phone&&<span>· {lead.phone}</span>}
+            {agent&&<span>· Owner: <strong style={{color:"#0F2540"}}>{agent.full_name}</strong></span>}
+            {opp.budget&&<span>· Budget: <strong style={{color:"#0F2540"}}>AED {Number(opp.budget).toLocaleString()}</strong></span>}
+          </div>
         </div>
-        {/* Header actions removed — Send Proposal and Task moved into stage workflow band below for visual coherence */}
-      </div>
-
-      {/* Summary strip */}
-      <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
-        {[
-          ["💰 Budget",    opp.budget?`AED ${Number(opp.budget).toLocaleString()}`:"—",    "#0F2540","#C9A84C"],
-          ["🏠 Unit",      unit?`${unit.unit_ref} — ${unit.sub_type}`:"Not linked",         "#F7F9FC","#4A5568"],
-          ["👤 Agent",     agent?.full_name||"Unassigned",                                  "#F7F9FC","#4A5568"],
-          ["📊 Payments",  totalDue>0?`${totalPaid/totalDue*100|0}% collected`:"No payments","#F7F9FC","#4A5568"],
-          opp.final_price&&["✅ Final",`AED ${Number(opp.final_price).toLocaleString()}`,"#E6F4EE","#1A7F5A"],
-        ].filter(Boolean).map(([l,v,bg,col])=>(
-          <div key={l} style={{background:bg,borderRadius:8,padding:"8px 14px",flex:1,minWidth:120}}>
-            <div style={{fontSize:9,color:bg==="#0F2540"?"rgba(255,255,255,.5)":"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",fontWeight:600,marginBottom:3}}>{l}</div>
-            <div style={{fontSize:13,fontWeight:700,color:col,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{v}</div>
-          </div>
-        ))}
       </div>
 
       {/* Main content area — single unified scroll, no tabs */}
@@ -1782,11 +1810,11 @@ You will become the assigned agent.`);
             )}
 
             {/* Workflow bar */}
-            <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"16px 20px"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Deal Journey</div>
+            <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"12px 16px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:8}}>Deal Journey</div>
               
               {/* Stage pills */}
-              <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0,marginBottom:16,paddingBottom:4}}>
+              <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0,marginBottom:12,paddingBottom:4}}>
                 {OPP_STAGES.filter(s=>s!=="Closed Lost").map((s,i,arr)=>{
                   const curIdx=OPP_STAGES.indexOf(opp.stage);
                   const thisIdx=OPP_STAGES.indexOf(s);
@@ -1908,6 +1936,16 @@ You will become the assigned agent.`);
               })()}
 
               {isWon&&<div style={{padding:"8px 12px",background:"#E6F4EE",borderRadius:8,fontSize:12,color:"#1A7F5A",fontWeight:600,border:"1px solid #A8D5BE"}}>🎉 Deal Won — Payments and Contract are unlocked</div>}
+            </div>
+
+            {/* ── ACTIVITY TIMELINE — moved up for prominence (Phase E dense layout) ── */}
+            <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"12px 16px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px"}}>Activity</div>
+                <button onClick={()=>setShowLog(true)} style={{padding:"5px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>+ Log Activity</button>
+              </div>
+              {activities.length===0&&<div style={{textAlign:"center",padding:"1.5rem 1rem",color:"#A0AEC0",fontSize:12,border:"1px dashed #E2E8F0",borderRadius:10}}>No activity yet — log a call, meeting, or note. Stage advancements will also appear here.</div>}
+              {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast} currentStage={opp.stage}/>}
             </div>
 
             {/* Unit details */}
@@ -2064,15 +2102,7 @@ You will become the assigned agent.`);
             )}
           </div>
 
-        {/* ── ACTIVITY TIMELINE (rendered below the deal overview) ── */}
-        <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:14}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div style={{fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px"}}>Activity Timeline</div>
-              <button onClick={()=>setShowLog(true)} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Activity</button>
-            </div>
-            {activities.length===0&&<div style={{textAlign:"center",padding:"2rem",color:"#A0AEC0",border:"1px dashed #E2E8F0",borderRadius:10}}>No activity yet — log a call, meeting, or note. Stage advancements will also appear here.</div>}
-            {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast}/>}
-          </div>
+        {/* ── (Activity Timeline moved up — dense layout) ── */}
 
       </div>
 
