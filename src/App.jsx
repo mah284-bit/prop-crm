@@ -58,6 +58,64 @@ const GlobalStyle = () => (
 );
 
 // ─── CONSTANTS ────────────────────────────────────────────────
+
+// Phase E W2 — Calendar invite helper.
+// Generates a minimal .ics (RFC 5545) calendar event and opens the user's
+// default mail client with a `mailto:` link pre-filled (subject, body, recipient).
+// The agent attaches the downloaded .ics file before sending — works with
+// Outlook, Apple Mail, Gmail in browser, no SMTP setup needed.
+function buildIcsEvent({uid, summary, description, location, startISO, endISO, organizerName, organizerEmail, attendeeName, attendeeEmail}) {
+  const fmtIcsDate = (iso) => {
+    const d = new Date(iso);
+    const pad = n => String(n).padStart(2,"0");
+    return `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+  };
+  const escape = (s) => (s||"").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//PropCRM//Site Visit//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:REQUEST",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${fmtIcsDate(new Date().toISOString())}`,
+    `DTSTART:${fmtIcsDate(startISO)}`,
+    `DTEND:${fmtIcsDate(endISO)}`,
+    `SUMMARY:${escape(summary)}`,
+    description ? `DESCRIPTION:${escape(description)}` : null,
+    location ? `LOCATION:${escape(location)}` : null,
+    organizerEmail ? `ORGANIZER;CN=${escape(organizerName||"")}:mailto:${organizerEmail}` : null,
+    attendeeEmail ? `ATTENDEE;CN=${escape(attendeeName||"")};RSVP=TRUE:mailto:${attendeeEmail}` : null,
+    "STATUS:CONFIRMED",
+    "BEGIN:VALARM",
+    "TRIGGER:-PT60M",
+    "ACTION:DISPLAY",
+    `DESCRIPTION:${escape("Reminder: "+summary)}`,
+    "END:VALARM",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].filter(Boolean);
+  return lines.join("\r\n");
+}
+
+function downloadIcsAndOpenMail({to, subject, body, ics, filename}) {
+  // 1. Trigger .ics download
+  const blob = new Blob([ics], {type:"text/calendar;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename || "site-visit.ics";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  // 2. Open mailto: with subject + body — user attaches the just-downloaded file
+  const mailto = `mailto:${encodeURIComponent(to||"")}?subject=${encodeURIComponent(subject||"")}&body=${encodeURIComponent(body||"")}`;
+  // Slight delay so the download dialog appears before the mailto handler
+  setTimeout(()=>{ window.location.href = mailto; }, 300);
+}
+
 const STAGES      = ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
 const UNIT_TYPES  = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
@@ -1055,7 +1113,7 @@ function OutcomeModal({activity, onClose, onSave}){
   );
 }
 
-function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isLeasing=false, currentStage=null, units=[]}){
+function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isLeasing=false, currentStage=null, units=[], onCaptureVisitOutcome=null}){
   const [outcomeModal, setOutcomeModal] = useState(null); // {activity, pendingOutcome}
   const [scope, setScope] = useState("stage"); // "stage" | "all"
   // Filter activities based on scope
@@ -1122,14 +1180,21 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
     const interestLabel = (sd.interest_level||"").split("—")[0].trim();
 
     // Resolve unit IDs -> readable labels for Site Visit
-    const unitsViewedLabels = (Array.isArray(sd.units_viewed)?sd.units_viewed:[]).map(uid => {
+    // Phase E W2: shape varies by lifecycle:
+    //   - Scheduled visit (upcoming):  sd.units_to_show
+    //   - Completed visit (after outcome capture): sd.units_viewed
+    const visitUnitIds = sd.units_viewed || sd.units_to_show || [];
+    const unitsViewedLabels = (Array.isArray(visitUnitIds) ? visitUnitIds : []).map(uid => {
       const u = (units||[]).find(x => x.id === uid);
       if (!u) return null;
       return u.unit_ref || uid;
     }).filter(Boolean);
 
-    // Body text: discussion (Contacted) or feedback (Site Visit) or note (free-form)
-    const bodyText = isStageAdvance ? (sd.discussion || sd.feedback) : a.note;
+    // Attendees label — prefer actual over expected
+    const visitAttendees = sd.actual_attendees || sd.attendees || sd.expected_attendees;
+
+    // Body text: discussion (Contacted) or feedback (Site Visit) or prep_notes (scheduled visit) or note (free-form)
+    const bodyText = isStageAdvance ? (sd.discussion || sd.feedback || sd.prep_notes || sd.broker_notes) : a.note;
 
     return(
       <div style={{background:"#fff",border:"1px solid "+(isStageAdvance?"#1A5FA8":isUpcoming?"#C9A84C":"#E2E8F0"),borderRadius:8,padding:"9px 12px",display:"flex",gap:8,borderLeft:isStageAdvance?"3px solid #1A5FA8":undefined}}>
@@ -1172,16 +1237,16 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
           </div>
 
           {/* Phase E: Site Visit context strip — visit time + attendees + units */}
-          {isSiteVisit && (sd.visit_at || sd.attendees || unitsViewedLabels.length>0) && (
+          {isSiteVisit && (sd.visit_at || visitAttendees || unitsViewedLabels.length>0) && (
             <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:11,color:"#475569",marginBottom:6,padding:"6px 8px",background:"#F8FAFC",borderRadius:6,border:"1px solid #E2E8F0"}}>
               {sd.visit_at && (
                 <span><span style={{color:"#94A3B8",fontWeight:600}}>🗓</span> <strong style={{color:"#0F2540"}}>{new Date(sd.visit_at).toLocaleString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</strong></span>
               )}
-              {sd.attendees && (
-                <span><span style={{color:"#94A3B8",fontWeight:600}}>👥</span> <strong style={{color:"#0F2540"}}>{sd.attendees}</strong></span>
+              {visitAttendees && (
+                <span><span style={{color:"#94A3B8",fontWeight:600}}>👥</span> <strong style={{color:"#0F2540"}}>{visitAttendees}</strong></span>
               )}
               {unitsViewedLabels.length>0 && (
-                <span><span style={{color:"#94A3B8",fontWeight:600}}>🏢 Units shown:</span> <strong style={{color:"#0F2540"}}>{unitsViewedLabels.join(", ")}</strong></span>
+                <span><span style={{color:"#94A3B8",fontWeight:600}}>🏢 {sd.units_viewed?"Units viewed":"Units to show"}:</span> <strong style={{color:"#0F2540"}}>{unitsViewedLabels.join(", ")}</strong></span>
               )}
             </div>
           )}
@@ -1212,15 +1277,39 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
           <div style={{fontSize:11,color:"#A0AEC0"}}>{a.user_name}</div>
           {isUpcoming&&canEdit&&(
             <div style={{marginTop:10,paddingTop:10,borderTop:"1px dashed #E2E8F0"}}>
-              <div style={{fontSize:11,fontWeight:600,color:"#718096",marginBottom:6}}>Mark outcome:</div>
-              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                {[["completed","✅ Completed","#1A7F5A"],["no_show","📵 No Show","#E53E3E"],["rescheduled","🔄 Reschedule","#1A5FA8"],["cancelled","❌ Cancel","#718096"]].map(([o,label,col])=>(
-                  <button key={o} onClick={()=>setOutcomeModal({activity:a,pendingOutcome:o})}
-                    style={{padding:"4px 12px",borderRadius:16,border:"1px solid "+col,background:"transparent",color:col,fontSize:11,cursor:"pointer",fontWeight:500}}>
-                    {label}
+              {/* Phase E W2 — for Site Visit upcoming cards, offer a rich outcome capture */}
+              {a.activity_subtype === "stage_advance" && a.to_stage === "Site Visit" && onCaptureVisitOutcome ? (
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                  <button onClick={()=>onCaptureVisitOutcome(a)}
+                    style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#0F2540",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                    📋 Capture Visit Outcome
                   </button>
-                ))}
-              </div>
+                  <button onClick={()=>setOutcomeModal({activity:a,pendingOutcome:"no_show"})}
+                    style={{padding:"4px 12px",borderRadius:16,border:"1px solid #E53E3E",background:"transparent",color:"#E53E3E",fontSize:11,cursor:"pointer",fontWeight:500}}>
+                    📵 No Show
+                  </button>
+                  <button onClick={()=>setOutcomeModal({activity:a,pendingOutcome:"rescheduled"})}
+                    style={{padding:"4px 12px",borderRadius:16,border:"1px solid #1A5FA8",background:"transparent",color:"#1A5FA8",fontSize:11,cursor:"pointer",fontWeight:500}}>
+                    🔄 Reschedule
+                  </button>
+                  <button onClick={()=>setOutcomeModal({activity:a,pendingOutcome:"cancelled"})}
+                    style={{padding:"4px 12px",borderRadius:16,border:"1px solid #718096",background:"transparent",color:"#718096",fontSize:11,cursor:"pointer",fontWeight:500}}>
+                    ❌ Cancel
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div style={{fontSize:11,fontWeight:600,color:"#718096",marginBottom:6}}>Mark outcome:</div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    {[["completed","✅ Completed","#1A7F5A"],["no_show","📵 No Show","#E53E3E"],["rescheduled","🔄 Reschedule","#1A5FA8"],["cancelled","❌ Cancel","#718096"]].map(([o,label,col])=>(
+                      <button key={o} onClick={()=>setOutcomeModal({activity:a,pendingOutcome:o})}
+                        style={{padding:"4px 12px",borderRadius:16,border:"1px solid "+col,background:"transparent",color:col,fontSize:11,cursor:"pointer",fontWeight:500}}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -1351,52 +1440,41 @@ const STAGE_CAPTURE_CONFIGS = {
   },
 
   "Site Visit": {
-    title: "Capture Site Visit",
-    subtitle: "Record what happened at the property visit",
+    title: "Schedule Site Visit",
+    subtitle: "Set up the visit. Outcome and feedback come after the visit happens.",
     fields: [
       {
         key: "visit_at", label: "Visit date & time", kind: "datetime", required: true,
-        defaultOffsetHours: 0, // pre-fills with now; agent adjusts
+        defaultOffsetHours: 24, // default to ~tomorrow
       },
       {
-        key: "units_viewed", label: "Units shown", kind: "multi_select", required: true,
+        key: "units_to_show", label: "Units to show", kind: "multi_select", required: true,
         source: "units",
-        emptyHint: "No units in inventory yet — link a project to this opportunity, or capture freeform in the feedback field below.",
+        emptyHint: "No units in inventory yet — link a project to this opportunity, or add units in the Inventory module.",
       },
       {
-        key: "attendees", label: "Who attended?", kind: "text", required: true,
-        placeholder: "e.g. Mr. & Mrs. Khan, plus their son",
+        key: "expected_attendees", label: "Who's expected to attend?", kind: "text", required: true,
+        placeholder: "e.g. Mr. Khan + spouse, possibly his son",
       },
       {
-        key: "feedback", label: "Customer feedback", kind: "textarea", required: true,
-        minLength: 20, rows: 4,
-        placeholder: "What did they like? Any concerns? Reactions to specific units, layout, finish, view, location, price, payment plan…",
+        key: "prep_notes", label: "Prep notes (internal)", kind: "textarea", required: false,
+        rows: 3,
+        placeholder: "Anything to remember? Customer's preferences, pain points from the call, who's the decision-maker, what to highlight…",
       },
       {
-        key: "interest_level", label: "Interest level after visit", kind: "radio", required: true,
-        options: [
-          {value:"Hot — ready to negotiate", color:"#DC2626", bg:"#FEE2E2"},
-          {value:"Warm — needs more info",   color:"#D97706", bg:"#FEF3C7"},
-          {value:"Cold — not the right fit", color:"#0891B2", bg:"#CFFAFE"},
-          {value:"Lost interest",            color:"#6B7280", bg:"#F3F4F6"},
-        ],
-      },
-      {
-        key: "next_step", label: "Next step agreed", kind: "select", required: true,
-        options: ["Send proposal","Show more units","Follow up call","Customer needs time","Lost interest"],
-      },
-      {
-        key: "follow_up_date", label: "Schedule next follow-up", kind: "date", required: true,
-        defaultOffsetDays: 2,
+        key: "send_invite", label: "Send calendar invite to customer (opens email)", kind: "checkbox", required: false,
       },
     ],
-    reminderTitle: (lead) => `Follow up after site visit — ${lead.name}`,
-    reminderBody:  (data) => {
-      const interest = (data.interest_level||"").split("—")[0].trim();
-      return `Next step: ${data.next_step}${interest?` · Interest: ${interest}`:""}. ${data.feedback?.slice(0,80)||""}${data.feedback?.length>80?"…":""}`;
-    },
-    reminderReason: "auto_follow_up_after_site_visit",
-    onLostInterestSuggest: true, // same Lost-interest escape hatch
+    // Reminder = 1 hour before visit (a "don't miss it" prompt)
+    reminderTitle: (lead) => `Site visit with ${lead.name} in 1 hour`,
+    reminderBody:  (data) => `Attendees: ${data.expected_attendees||""}`,
+    reminderReason: "auto_visit_imminent",
+    // Hook: after inserting the activity row, mark it upcoming with the visit time
+    activityScheduledAtKey: "visit_at",
+    activityType: "Site Visit",
+    // Custom reminder timing — 60 min before the visit, not at 9am of follow-up date
+    reminderTriggerKey: "visit_at",
+    reminderTriggerOffsetMinutes: -60,
   },
 
   "Negotiation": {
@@ -1473,6 +1551,8 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
         }
       } else if (f.kind === "asks_grid") {
         init[f.key] = {};
+      } else if (f.kind === "checkbox") {
+        init[f.key] = false;
       } else {
         init[f.key] = "";
       }
@@ -1503,6 +1583,9 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
               break;
             }
           }
+        } else if (f.kind === "checkbox") {
+          // checkboxes are inherently optional — required just means "must be true"
+          if (!v) errs[f.key] = "Required";
         } else if (!v || (typeof v === "string" && v.trim() === "")) {
           errs[f.key] = "Required";
         }
@@ -1549,16 +1632,26 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
       }
 
       // 1. Insert activity row with stage context + structured data
-      const activityNote = `[${toStage}] ${data.discussion||""}`.slice(0, 1000);
+      // Phase E W2 refactor: Site Visit is a SCHEDULED visit (status="upcoming"),
+      // other stages are completed events. Config drives this via activityScheduledAtKey.
+      const scheduledAtKey = config.activityScheduledAtKey;
+      const scheduledAt = scheduledAtKey && data[scheduledAtKey] ? new Date(data[scheduledAtKey]).toISOString() : null;
+      const isScheduledFuture = scheduledAt && new Date(scheduledAt) > new Date();
+      const activityType = config.activityType || "Stage Change";
+      // Note text — for scheduled visits we summarise the scheduling, otherwise use captured discussion
+      const activityNote = isScheduledFuture
+        ? `[${toStage} scheduled] ${data.expected_attendees?`with ${data.expected_attendees}`:""}${data.prep_notes?` — ${data.prep_notes}`:""}`.slice(0,1000)
+        : `[${toStage}] ${data.discussion||data.broker_notes||""}`.slice(0, 1000);
       const { data: actRow, error: actErr } = await supabase
         .from("activities")
         .insert({
           opportunity_id: opp.id,
           lead_id: lead?.id || opp.lead_id,
           company_id,
-          type: "Stage Change",
+          type: activityType,
           note: activityNote,
-          status: "completed",
+          status: isScheduledFuture ? "upcoming" : "completed",
+          scheduled_at: scheduledAt,
           // Match existing activities schema (used by other inserts in App.jsx)
           user_id: currentUser.id,
           user_name: currentUser.full_name,
@@ -1600,9 +1693,19 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
       }
 
       // 3. Create reminder (best-effort — failure here doesn't undo the stage change)
-      if (data.follow_up_date && config.reminderReason) {
-        const triggerAt = new Date(data.follow_up_date);
-        triggerAt.setHours(9, 0, 0, 0); // 9am on the follow-up date
+      // Two timing modes:
+      //   - reminderTriggerKey: trigger relative to a date field (e.g. visit_at - 60 min)
+      //   - follow_up_date:    trigger at 9am on a chosen follow-up day (legacy)
+      let triggerAt = null;
+      if (config.reminderTriggerKey && data[config.reminderTriggerKey]) {
+        const base = new Date(data[config.reminderTriggerKey]);
+        base.setMinutes(base.getMinutes() + (config.reminderTriggerOffsetMinutes || 0));
+        triggerAt = base;
+      } else if (data.follow_up_date) {
+        triggerAt = new Date(data.follow_up_date);
+        triggerAt.setHours(9, 0, 0, 0);
+      }
+      if (triggerAt && triggerAt > new Date() && config.reminderReason) {
         const { error: remErr } = await supabase
           .from("reminders")
           .insert({
@@ -1621,6 +1724,59 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
         if (remErr) {
           console.warn("Reminder creation failed (non-fatal):", remErr);
           // Don't block — stage already advanced
+        }
+      }
+
+      // 4. Phase E W2 — if "send_invite" was checked, generate .ics + open mailto
+      if (data.send_invite && data.visit_at) {
+        try {
+          const visitStart = new Date(data.visit_at);
+          const visitEnd   = new Date(visitStart.getTime() + 60*60*1000); // default 1-hour duration
+          // Build a human-readable units list for the invite body
+          const shownIds = Array.isArray(data.units_to_show) ? data.units_to_show : [];
+          const unitsList = shownIds.map(uid => {
+            const u = (units||[]).find(x => x.id === uid);
+            if (!u) return null;
+            const proj = (projects||[]).find(p => p.id === u.project_id);
+            return `${u.unit_ref}${proj?.name?` (${proj.name})`:""}`;
+          }).filter(Boolean).join(", ");
+          const summary  = `Property Site Visit — ${lead?.name||"Buyer"}`;
+          const body = [
+            `Dear ${lead?.name||"Sir/Madam"},`,
+            ``,
+            `This is a confirmation of your property visit scheduled with ${currentUser.full_name||"our team"}.`,
+            ``,
+            `Date & time: ${visitStart.toLocaleString("en-AE",{dateStyle:"full", timeStyle:"short"})}`,
+            unitsList ? `Units to view: ${unitsList}` : null,
+            `Attendees: ${data.expected_attendees||"—"}`,
+            ``,
+            `Please find the calendar invite attached. Looking forward to meeting you.`,
+            ``,
+            `Best regards,`,
+            currentUser.full_name||"PropCRM",
+          ].filter(Boolean).join("\n");
+          const ics = buildIcsEvent({
+            uid: `visit-${actRow.id}@propcrm`,
+            summary,
+            description: body,
+            location: unitsList || "Property location to be confirmed",
+            startISO: visitStart.toISOString(),
+            endISO:   visitEnd.toISOString(),
+            organizerName: currentUser.full_name || "",
+            organizerEmail: currentUser.email || "",
+            attendeeName: lead?.name || "",
+            attendeeEmail: lead?.email || "",
+          });
+          downloadIcsAndOpenMail({
+            to: lead?.email || "",
+            subject: summary,
+            body,
+            ics,
+            filename: `site-visit-${(lead?.name||"buyer").replace(/\s+/g,"_")}.ics`,
+          });
+        } catch(invErr) {
+          console.warn("Calendar invite generation failed (non-fatal):", invErr);
+          showToast("Visit saved, but calendar invite couldn't be generated","error");
         }
       }
 
@@ -1749,6 +1905,21 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
                     <input type="text" value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
                       placeholder={f.placeholder||""}
                       style={{width:"100%",padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
+                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
+                  </div>
+                );
+              }
+
+              if (f.kind === "checkbox") {
+                const checked = !!data[f.key];
+                return (
+                  <div key={f.key} style={{background:checked?"#FFFBEA":"#F8FAFC",border:`1px solid ${checked?"#FCD34D":"#E2E8F0"}`,borderRadius:8,padding:"10px 12px",transition:"all .15s"}}>
+                    <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,fontWeight:600,color:"#0F2540"}}>
+                      <input type="checkbox" checked={checked} onChange={e=>setField(f.key,e.target.checked)}
+                        style={{width:14,height:14,cursor:"pointer",accentColor:"#0F2540"}}/>
+                      {f.label}
+                    </label>
+                    {f.helpText && <div style={{fontSize:10,color:"#94A3B8",marginTop:4,marginLeft:22}}>{f.helpText}</div>}
                     {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
                   </div>
                 );
@@ -2280,6 +2451,252 @@ function HandoverMeetingDialog({ opp, lead, currentUser, onClose, onSaved, showT
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Phase E W2 — Visit Outcome Dialog
+   Captures what happened AFTER the site visit. Updates the original
+   upcoming visit activity to completed, writes outcome data into
+   structured_data, and creates a follow-up reminder.
+═══════════════════════════════════════════════════════════════ */
+function VisitOutcomeDialog({ visitActivity, opp, lead, units, projects, currentUser, onClose, onSaved, showToast }) {
+  const [unitsViewed, setUnitsViewed] = useState(()=>visitActivity?.structured_data?.units_to_show || []);
+  const [actualAttendees, setActualAttendees] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [interestLevel, setInterestLevel] = useState("");
+  const [nextStep, setNextStep] = useState("");
+  const [followUpDate, setFollowUpDate] = useState(()=>{
+    const d = new Date(); d.setDate(d.getDate()+2);
+    return d.toISOString().split("T")[0];
+  });
+  const [saving, setSaving] = useState(false);
+
+  if(!visitActivity) return null;
+
+  const sd = visitActivity.structured_data || {};
+  const expectedAttendees = sd.expected_attendees || "";
+  const visitTime = sd.visit_at ? new Date(sd.visit_at) : null;
+
+  // Resolve unit options the same way the multi-select does
+  const unitOpts = (units||[]).map(u => {
+    const proj = (projects||[]).find(p => p.id === u.project_id);
+    const bedLabel = u.bedrooms === 0 ? "Studio" : (u.bedrooms ? `${u.bedrooms}BR` : "");
+    return {
+      id: u.id,
+      label: [u.unit_ref || u.id, bedLabel, u.view].filter(Boolean).join(" · "),
+      sub: proj?.name,
+      isPlanned: (sd.units_to_show||[]).includes(u.id),
+    };
+  }).filter(u => u.isPlanned || (sd.units_to_show||[]).length === 0)
+    .sort((a,b) => (a.isPlanned===b.isPlanned?0:(a.isPlanned?-1:1)));
+
+  const toggleUnit = (id) => {
+    setUnitsViewed(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
+  };
+
+  const interestOpts = [
+    {value:"Hot — ready to negotiate", color:"#DC2626", bg:"#FEE2E2"},
+    {value:"Warm — needs more info",   color:"#D97706", bg:"#FEF3C7"},
+    {value:"Cold — not the right fit", color:"#0891B2", bg:"#CFFAFE"},
+    {value:"Lost interest",            color:"#6B7280", bg:"#F3F4F6"},
+  ];
+
+  const submit = async()=>{
+    if(unitsViewed.length===0){showToast("Tick at least one unit that was actually viewed","error");return;}
+    if(feedback.trim().length<20){showToast("Feedback needs at least 20 characters","error");return;}
+    if(!interestLevel){showToast("Pick an interest level","error");return;}
+    if(!nextStep){showToast("Pick a next step","error");return;}
+    if(!followUpDate){showToast("Set a follow-up date","error");return;}
+    setSaving(true);
+    try{
+      const company_id = opp.company_id || currentUser.company_id || null;
+      // Merge outcome data into the original activity's structured_data
+      const newSd = {
+        ...sd,
+        units_viewed: unitsViewed,
+        actual_attendees: actualAttendees.trim() || expectedAttendees,
+        feedback: feedback.trim(),
+        interest_level: interestLevel,
+        next_step: nextStep,
+        follow_up_date: followUpDate,
+        outcome_captured_at: new Date().toISOString(),
+      };
+      const newNote = `[Site Visit completed] ${feedback.trim().slice(0,200)}`;
+      const{data:updatedRow,error:updErr}=await supabase
+        .from("activities")
+        .update({
+          status: "completed",
+          note: newNote,
+          structured_data: newSd,
+          activity_subtype: "site_visit_completed",
+        })
+        .eq("id", visitActivity.id)
+        .select()
+        .single();
+      if(updErr){
+        console.error("Visit outcome update failed:", updErr);
+        showToast(`Failed: ${updErr.message||"unknown"}`,"error");
+        setSaving(false);
+        return;
+      }
+      // Cancel the imminent-visit reminder if it's still pending — visit is over
+      await supabase.from("reminders")
+        .update({status:"completed"})
+        .eq("related_activity_id", visitActivity.id)
+        .eq("reason", "auto_visit_imminent")
+        .eq("status", "pending");
+      // Create follow-up reminder for the agreed follow-up date
+      const triggerAt = new Date(followUpDate);
+      triggerAt.setHours(9,0,0,0);
+      let reminder = null;
+      if(triggerAt > new Date()){
+        const interestShort = interestLevel.split("—")[0].trim();
+        const{data:remRow,error:remErr}=await supabase.from("reminders").insert({
+          company_id, user_id: currentUser.id,
+          related_opportunity_id: opp.id, related_lead_id: lead.id, related_activity_id: visitActivity.id,
+          trigger_at: triggerAt.toISOString(),
+          title: `Follow up after site visit — ${lead.name}`,
+          body: `Next step: ${nextStep}${interestShort?` · Interest: ${interestShort}`:""}`,
+          reason: "auto_follow_up_after_site_visit",
+          status: "pending",
+          created_by: currentUser.id,
+        }).select().single();
+        if(!remErr) reminder = remRow;
+      }
+      onSaved(updatedRow, reminder);
+    } catch(e){
+      console.error("Visit outcome save error:", e);
+      showToast(`Save failed: ${e.message||"unknown"}`,"error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
+      <div style={{background:"#fff",borderRadius:16,width:600,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
+        <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+            <div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📋 Capture Visit Outcome</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3}}>What actually happened during the visit?</div>
+              {visitTime && (
+                <div style={{fontSize:11,color:"#C9A84C",marginTop:6,fontWeight:600}}>
+                  Visit was scheduled for {visitTime.toLocaleString("en-AE",{dateStyle:"medium",timeStyle:"short"})}
+                </div>
+              )}
+            </div>
+            <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",lineHeight:1}}>×</button>
+          </div>
+        </div>
+        <div style={{padding:"1.1rem 1.4rem",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:14}}>
+
+          {/* Units actually viewed */}
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>
+              Units actually viewed *
+            </label>
+            <div style={{fontSize:10,color:"#94A3B8",marginBottom:6}}>
+              Pre-filled with what was planned. Untick if a unit wasn't actually shown, or add others.
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:200,overflowY:"auto",border:"1.5px solid #D1D9E6",borderRadius:8,padding:6,background:"#fff"}}>
+              {unitOpts.length === 0 ? (
+                <div style={{fontSize:12,color:"#94A3B8",fontStyle:"italic",padding:"8px 12px"}}>No units to choose from.</div>
+              ) : unitOpts.map(o=>{
+                const sel = unitsViewed.includes(o.id);
+                return (
+                  <button key={o.id} onClick={()=>toggleUnit(o.id)}
+                    style={{
+                      display:"flex",alignItems:"center",gap:9,padding:"7px 10px",borderRadius:6,
+                      border:"none",
+                      background: sel ? "#E6EFF9" : "transparent",
+                      cursor:"pointer", textAlign:"left", transition:"all .1s",
+                    }}>
+                    <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:16,height:16,borderRadius:4,border:`1.5px solid ${sel?"#0F2540":"#CBD5E1"}`,background:sel?"#0F2540":"#fff",color:"#fff",fontSize:11,lineHeight:1,flexShrink:0}}>{sel?"✓":""}</span>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>{o.label}</div>
+                      {o.sub && <div style={{fontSize:11,color:"#64748B"}}>{o.sub}</div>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Attendees (override) */}
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>
+              Who actually attended? <span style={{fontWeight:500,color:"#94A3B8",textTransform:"none",letterSpacing:0}}>(leave blank if as planned)</span>
+            </label>
+            {expectedAttendees && (
+              <div style={{fontSize:11,color:"#94A3B8",marginBottom:5,fontStyle:"italic"}}>Planned: {expectedAttendees}</div>
+            )}
+            <input type="text" value={actualAttendees} onChange={e=>setActualAttendees(e.target.value)}
+              placeholder={expectedAttendees ? `Same as planned, or override here` : `e.g. Mr. Khan only — wife couldn't make it`}
+              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",boxSizing:"border-box"}}/>
+          </div>
+
+          {/* Feedback */}
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Customer feedback *</label>
+            <textarea value={feedback} onChange={e=>setFeedback(e.target.value)} rows={4}
+              placeholder="What did they like? Any concerns? Reactions to specific units, layout, finish, view, location, price, payment plan…"
+              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
+            <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>{feedback.length} / 20 characters minimum</div>
+          </div>
+
+          {/* Interest */}
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Interest level after visit *</label>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {interestOpts.map(o=>{
+                const sel = interestLevel === o.value;
+                return (
+                  <button key={o.value} onClick={()=>setInterestLevel(o.value)}
+                    style={{
+                      padding:"7px 14px",borderRadius:20,
+                      border:`1.5px solid ${sel?o.color:"#D1D9E6"}`,
+                      background:sel?o.bg:"#fff",
+                      color:sel?o.color:"#4A5568",
+                      fontSize:12,fontWeight:600,cursor:"pointer",
+                    }}>
+                    {o.value}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Next step */}
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Next step agreed *</label>
+            <select value={nextStep} onChange={e=>setNextStep(e.target.value)}
+              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",background:"#fff",cursor:"pointer"}}>
+              <option value="">— Select —</option>
+              {["Send proposal","Show more units","Follow up call","Customer needs time","Lost interest"].map(o=><option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+
+          {/* Follow up date */}
+          <div>
+            <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Follow up by *</label>
+            <input type="date" value={followUpDate} onChange={e=>setFollowUpDate(e.target.value)}
+              style={{padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.4rem",borderTop:"1px solid #E8EDF4",background:"#F8FAFC"}}>
+          <button onClick={onClose} disabled={saving}
+            style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+            Cancel
+          </button>
+          <button onClick={submit} disabled={saving}
+            style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#94A3B8":"#1A7F5A",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
+            {saving?"Saving…":"✓ Save Visit Outcome"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated }) {
   const [activeTab,  setActiveTab]  = useState("activities");
   const [activities, setActivities] = useState([]);
@@ -2301,6 +2718,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   // Phase E W2 — Negotiation: "Log round" and "Handover meeting" dialogs
   const [showLogRound, setShowLogRound] = useState(false);
   const [showHandover, setShowHandover] = useState(false);
+  // Phase E W2 — Site Visit outcome dialog (after the visit happens)
+  const [visitOutcomeFor, setVisitOutcomeFor] = useState(null); // an upcoming visit activity
 
   // Phase E W3 — shared helper used by both the inline strip (snooze) and the action dialog (done/reschedule/cancel)
   const updateReminderStatus = async(reminderId, newStatus, extra={})=>{
@@ -2935,7 +3354,7 @@ You will become the assigned agent.`);
                 <button onClick={()=>setShowLog(true)} style={{padding:"5px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>+ Log Activity</button>
               </div>
               {activities.length===0&&<div style={{textAlign:"center",padding:"1.5rem 1rem",color:"#A0AEC0",fontSize:12,border:"1px dashed #E2E8F0",borderRadius:10}}>No activity yet — log a call, meeting, or note. Stage advancements will also appear here.</div>}
-              {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast} currentStage={opp.stage} units={units}/>}
+              {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast} currentStage={opp.stage} units={units} onCaptureVisitOutcome={(act)=>setVisitOutcomeFor(act)}/>}
             </div>
 
             {/* Unit details */}
@@ -3248,6 +3667,27 @@ You will become the assigned agent.`);
           onUpdated({...opp, stage: result.stage, stage_updated_at: new Date().toISOString()});
         }}
       />
+
+      {/* Phase E W2 — Visit Outcome Dialog */}
+      {visitOutcomeFor && (
+        <VisitOutcomeDialog
+          visitActivity={visitOutcomeFor}
+          opp={opp} lead={lead}
+          units={units} projects={projects}
+          currentUser={currentUser}
+          onClose={()=>setVisitOutcomeFor(null)}
+          onSaved={(updatedRow, reminder)=>{
+            // Replace the upcoming activity with the completed version
+            setActivities(p=>p.map(a => a.id===updatedRow.id ? updatedRow : a));
+            if(reminder) setReminders(p=>[...p, reminder].sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
+            // Also remove any pending visit-imminent reminder from the panel state
+            setReminders(p=>p.filter(r => !(r.related_activity_id===updatedRow.id && r.reason==="auto_visit_imminent")));
+            showToast("Visit outcome captured","success");
+            setVisitOutcomeFor(null);
+          }}
+          showToast={showToast}
+        />
+      )}
 
       {/* Phase E W2 — Log Negotiation Round Dialog */}
       {showLogRound && (()=>{
