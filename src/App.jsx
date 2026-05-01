@@ -1055,7 +1055,7 @@ function OutcomeModal({activity, onClose, onSave}){
   );
 }
 
-function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isLeasing=false, currentStage=null}){
+function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isLeasing=false, currentStage=null, units=[]}){
   const [outcomeModal, setOutcomeModal] = useState(null); // {activity, pendingOutcome}
   const [scope, setScope] = useState("stage"); // "stage" | "all"
   // Filter activities based on scope
@@ -1095,6 +1095,7 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
     // Phase E: stage advance activities are rendered with extra context
     const isStageAdvance = a.triggered_stage_change === true || a.activity_subtype === "stage_advance";
     const sd = a.structured_data || {};
+    const isSiteVisit = isStageAdvance && a.to_stage === "Site Visit";
 
     // Try to derive the headline channel/icon from structured_data for stage advances
     let displayType = a.type;
@@ -1108,9 +1109,27 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
         displayIcon = icons[mapped] || displayIcon;
       }
     }
+    // Site Visit: override icon/type even without channel
+    if (isSiteVisit) {
+      displayType = "Site Visit";
+      displayIcon = "🏠";
+    }
 
-    // Interest level color map
-    const interestColors = {Hot:{c:"#DC2626",bg:"#FEE2E2"},Warm:{c:"#D97706",bg:"#FEF3C7"},Cold:{c:"#0891B2",bg:"#CFFAFE"},"Not interested":{c:"#6B7280",bg:"#F3F4F6"}};
+    // Interest level color map — keyed by leading word so "Hot — ready to negotiate" maps to Hot
+    const interestColors = {Hot:{c:"#DC2626",bg:"#FEE2E2"},Warm:{c:"#D97706",bg:"#FEF3C7"},Cold:{c:"#0891B2",bg:"#CFFAFE"},Lost:{c:"#6B7280",bg:"#F3F4F6"},"Not interested":{c:"#6B7280",bg:"#F3F4F6"}};
+    const interestKey = (sd.interest_level||"").split("—")[0].trim().split(" ")[0]; // "Hot", "Warm", "Cold", "Lost", "Not"
+    const interestColor = interestColors[interestKey] || interestColors[sd.interest_level];
+    const interestLabel = (sd.interest_level||"").split("—")[0].trim();
+
+    // Resolve unit IDs -> readable labels for Site Visit
+    const unitsViewedLabels = (Array.isArray(sd.units_viewed)?sd.units_viewed:[]).map(uid => {
+      const u = (units||[]).find(x => x.id === uid);
+      if (!u) return null;
+      return u.unit_no || u.name || uid;
+    }).filter(Boolean);
+
+    // Body text: discussion (Contacted) or feedback (Site Visit) or note (free-form)
+    const bodyText = isStageAdvance ? (sd.discussion || sd.feedback) : a.note;
 
     return(
       <div style={{background:"#fff",border:"1px solid "+(isStageAdvance?"#1A5FA8":isUpcoming?"#C9A84C":"#E2E8F0"),borderRadius:8,padding:"9px 12px",display:"flex",gap:8,borderLeft:isStageAdvance?"3px solid #1A5FA8":undefined}}>
@@ -1143,19 +1162,34 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
                 </span>
               )}
               {/* Phase E: interest level badge */}
-              {isStageAdvance && sd.interest_level && interestColors[sd.interest_level] && (
-                <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:interestColors[sd.interest_level].bg,color:interestColors[sd.interest_level].c}}>
-                  {sd.interest_level}
+              {isStageAdvance && interestColor && interestLabel && (
+                <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:interestColor.bg,color:interestColor.c}}>
+                  {interestLabel}
                 </span>
               )}
             </div>
             <span style={{fontSize:11,color:"#A0AEC0"}}>{new Date(a.created_at).toLocaleDateString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>
           </div>
 
-          {/* Discussion / note */}
-          {(isStageAdvance ? sd.discussion : a.note) && (
-            <div style={{fontSize:12,color:"#4A5568",lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:6,fontStyle:isStageAdvance?"normal":"normal"}}>
-              {isStageAdvance ? sd.discussion : a.note}
+          {/* Phase E: Site Visit context strip — visit time + attendees + units */}
+          {isSiteVisit && (sd.visit_at || sd.attendees || unitsViewedLabels.length>0) && (
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",fontSize:11,color:"#475569",marginBottom:6,padding:"6px 8px",background:"#F8FAFC",borderRadius:6,border:"1px solid #E2E8F0"}}>
+              {sd.visit_at && (
+                <span><span style={{color:"#94A3B8",fontWeight:600}}>🗓</span> <strong style={{color:"#0F2540"}}>{new Date(sd.visit_at).toLocaleString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</strong></span>
+              )}
+              {sd.attendees && (
+                <span><span style={{color:"#94A3B8",fontWeight:600}}>👥</span> <strong style={{color:"#0F2540"}}>{sd.attendees}</strong></span>
+              )}
+              {unitsViewedLabels.length>0 && (
+                <span><span style={{color:"#94A3B8",fontWeight:600}}>🏢 Units shown:</span> <strong style={{color:"#0F2540"}}>{unitsViewedLabels.join(", ")}</strong></span>
+              )}
+            </div>
+          )}
+
+          {/* Discussion / feedback / note */}
+          {bodyText && (
+            <div style={{fontSize:12,color:"#4A5568",lineHeight:1.6,whiteSpace:"pre-wrap",marginBottom:6}}>
+              {bodyText}
             </div>
           )}
 
@@ -1297,9 +1331,58 @@ const STAGE_CAPTURE_CONFIGS = {
     reminderReason: "auto_follow_up_after_contacted",
     onLostInterestSuggest: true, // if next_step == "Lost interest", suggest Closed Lost instead
   },
+
+  "Site Visit": {
+    title: "Capture Site Visit",
+    subtitle: "Record what happened at the property visit",
+    fields: [
+      {
+        key: "visit_at", label: "Visit date & time", kind: "datetime", required: true,
+        defaultOffsetHours: 0, // pre-fills with now; agent adjusts
+      },
+      {
+        key: "units_viewed", label: "Units shown", kind: "multi_select", required: true,
+        source: "units",
+        emptyHint: "No units in inventory yet — link a project to this opportunity, or capture freeform in the feedback field below.",
+      },
+      {
+        key: "attendees", label: "Who attended?", kind: "text", required: true,
+        placeholder: "e.g. Mr. & Mrs. Khan, plus their son",
+      },
+      {
+        key: "feedback", label: "Customer feedback", kind: "textarea", required: true,
+        minLength: 20, rows: 4,
+        placeholder: "What did they like? Any concerns? Reactions to specific units, layout, finish, view, location, price, payment plan…",
+      },
+      {
+        key: "interest_level", label: "Interest level after visit", kind: "radio", required: true,
+        options: [
+          {value:"Hot — ready to negotiate", color:"#DC2626", bg:"#FEE2E2"},
+          {value:"Warm — needs more info",   color:"#D97706", bg:"#FEF3C7"},
+          {value:"Cold — not the right fit", color:"#0891B2", bg:"#CFFAFE"},
+          {value:"Lost interest",            color:"#6B7280", bg:"#F3F4F6"},
+        ],
+      },
+      {
+        key: "next_step", label: "Next step agreed", kind: "select", required: true,
+        options: ["Send proposal","Show more units","Follow up call","Customer needs time","Lost interest"],
+      },
+      {
+        key: "follow_up_date", label: "Schedule next follow-up", kind: "date", required: true,
+        defaultOffsetDays: 2,
+      },
+    ],
+    reminderTitle: (lead) => `Follow up after site visit — ${lead.name}`,
+    reminderBody:  (data) => {
+      const interest = (data.interest_level||"").split("—")[0].trim();
+      return `Next step: ${data.next_step}${interest?` · Interest: ${interest}`:""}. ${data.feedback?.slice(0,80)||""}${data.feedback?.length>80?"…":""}`;
+    },
+    reminderReason: "auto_follow_up_after_site_visit",
+    onLostInterestSuggest: true, // same Lost-interest escape hatch
+  },
 };
 
-function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, onSave, onCancel, showToast }) {
+function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, onSave, onCancel, showToast, units = [] }) {
   const config = STAGE_CAPTURE_CONFIGS[toStage];
   const [data, setData] = useState({});
   const [errors, setErrors] = useState({});
@@ -1314,6 +1397,14 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
         const d = new Date();
         d.setDate(d.getDate() + f.defaultOffsetDays);
         init[f.key] = d.toISOString().split("T")[0];
+      } else if (f.kind === "datetime" && f.defaultOffsetHours != null) {
+        const d = new Date();
+        d.setHours(d.getHours() + f.defaultOffsetHours, 0, 0, 0);
+        // Format as yyyy-MM-ddTHH:mm for <input type="datetime-local">
+        const pad = n => String(n).padStart(2,"0");
+        init[f.key] = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      } else if (f.kind === "multi_select") {
+        init[f.key] = [];
       } else {
         init[f.key] = "";
       }
@@ -1330,8 +1421,12 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
     const errs = {};
     for (const f of config.fields) {
       const v = data[f.key];
-      if (f.required && (!v || (typeof v === "string" && v.trim() === ""))) {
-        errs[f.key] = "Required";
+      if (f.required) {
+        if (f.kind === "multi_select") {
+          if (!Array.isArray(v) || v.length === 0) errs[f.key] = "Pick at least one";
+        } else if (!v || (typeof v === "string" && v.trim() === "")) {
+          errs[f.key] = "Required";
+        }
       }
       if (f.minLength && typeof v === "string" && v.trim().length < f.minLength) {
         errs[f.key] = `Please write at least ${f.minLength} characters`;
@@ -1552,6 +1647,88 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
                     {labelEl}
                     <input type="date" value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
                       style={{padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
+                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
+                  </div>
+                );
+              }
+
+              if (f.kind === "datetime") {
+                return (
+                  <div key={f.key}>
+                    {labelEl}
+                    <input type="datetime-local" value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
+                      style={{padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
+                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
+                  </div>
+                );
+              }
+
+              if (f.kind === "text") {
+                return (
+                  <div key={f.key}>
+                    {labelEl}
+                    <input type="text" value={data[f.key]||""} onChange={e=>setField(f.key, e.target.value)}
+                      placeholder={f.placeholder||""}
+                      style={{width:"100%",padding:"9px 12px",borderRadius:8,border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
+                    {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
+                  </div>
+                );
+              }
+
+              if (f.kind === "multi_select") {
+                // Source options: either explicit `f.options` array, or pulled from `units` prop via f.source
+                let opts = [];
+                if (f.source === "units") {
+                  // Filter to relevant project if opp has one, otherwise show all
+                  const projectFilter = opp?.project_id;
+                  opts = (units||[])
+                    .filter(u => !projectFilter || u.project_id === projectFilter)
+                    .map(u => ({
+                      value: u.id,
+                      label: `${u.unit_no || u.name || u.id}${u.project_name ? ` · ${u.project_name}` : ""}${u.bedrooms ? ` · ${u.bedrooms}BR` : ""}`,
+                    }));
+                } else if (Array.isArray(f.options)) {
+                  opts = f.options.map(o => typeof o === "string" ? {value:o, label:o} : o);
+                }
+                const selected = Array.isArray(data[f.key]) ? data[f.key] : [];
+                const toggle = (v) => {
+                  const next = selected.includes(v) ? selected.filter(x=>x!==v) : [...selected, v];
+                  setField(f.key, next);
+                };
+                return (
+                  <div key={f.key}>
+                    {labelEl}
+                    {opts.length === 0 ? (
+                      <div style={{fontSize:12,color:"#94A3B8",fontStyle:"italic",padding:"8px 12px",background:"#F8FAFC",borderRadius:8,border:"1px dashed #D1D9E6"}}>
+                        {f.emptyHint || "No options available"}
+                      </div>
+                    ) : (
+                      <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:180,overflowY:"auto",border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,borderRadius:8,padding:6,background:"#fff"}}>
+                        {opts.map(o => {
+                          const sel = selected.includes(o.value);
+                          return (
+                            <button key={o.value} onClick={()=>toggle(o.value)}
+                              style={{
+                                display:"flex",alignItems:"center",gap:8,padding:"7px 9px",borderRadius:6,
+                                border:"none",
+                                background: sel ? "#E6EFF9" : "transparent",
+                                color: sel ? "#0F2540" : "#4A5568",
+                                fontSize:12, fontWeight: sel?600:500, cursor:"pointer", textAlign:"left", transition:"all .1s",
+                              }}>
+                              <span style={{
+                                display:"inline-flex",alignItems:"center",justifyContent:"center",
+                                width:16,height:16,borderRadius:4,
+                                border:`1.5px solid ${sel?"#0F2540":"#CBD5E1"}`,
+                                background: sel?"#0F2540":"#fff",
+                                color:"#fff",fontSize:11,lineHeight:1,flexShrink:0,
+                              }}>{sel?"✓":""}</span>
+                              <span style={{flex:1}}>{o.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {selected.length>0&&<div style={{fontSize:10,color:"#64748B",marginTop:4}}>{selected.length} selected</div>}
                     {err&&<div style={{fontSize:11,color:"#C53030",marginTop:4}}>{err}</div>}
                   </div>
                 );
@@ -1945,7 +2122,7 @@ You will become the assigned agent.`);
                 <button onClick={()=>setShowLog(true)} style={{padding:"5px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>+ Log Activity</button>
               </div>
               {activities.length===0&&<div style={{textAlign:"center",padding:"1.5rem 1rem",color:"#A0AEC0",fontSize:12,border:"1px dashed #E2E8F0",borderRadius:10}}>No activity yet — log a call, meeting, or note. Stage advancements will also appear here.</div>}
-              {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast} currentStage={opp.stage}/>}
+              {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast} currentStage={opp.stage} units={units}/>}
             </div>
 
             {/* Unit details */}
@@ -2218,6 +2395,7 @@ You will become the assigned agent.`);
         open={!!showCaptureDialog}
         opp={opp}
         lead={lead}
+        units={units}
         fromStage={opp.stage}
         toStage={showCaptureDialog}
         currentUser={currentUser}
@@ -3084,8 +3262,8 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           };
           const actIcons = {Call:"📞",Email:"✉️",Meeting:"🤝",Visit:"🏠",WhatsApp:"💬",Note:"📝","Stage Change":"🎯"};
           const lastActPreview = lastAct ? (
-            (lastAct.structured_data?.discussion || lastAct.note || "").slice(0,70) +
-            ((lastAct.structured_data?.discussion || lastAct.note || "").length>70?"…":"")
+            (lastAct.structured_data?.discussion || lastAct.structured_data?.feedback || lastAct.note || "").slice(0,70) +
+            ((lastAct.structured_data?.discussion || lastAct.structured_data?.feedback || lastAct.note || "").length>70?"…":"")
           ) : null;
           const stageAge = opp.stage_updated_at?Math.floor((new Date()-new Date(opp.stage_updated_at))/864e5):null;
           const isStale = stageAge!==null && stageAge>=7 && opp.status==="Active";
