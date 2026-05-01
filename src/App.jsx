@@ -3185,135 +3185,210 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         </div>
       </div>
 
-      {/* Identity panel — only fields with data are shown */}
+      {/* Identity + Notes — dense single-card layout */}
       {(()=>{
         const iso2ToFlag = (iso2)=>{ if(!iso2||iso2.length!==2)return ""; const c=iso2.toUpperCase(); return String.fromCodePoint(0x1F1E6+(c.charCodeAt(0)-65))+String.fromCodePoint(0x1F1E6+(c.charCodeAt(1)-65)); };
-          const SOF_LABEL = {salary:"Salary",business:"Business income",investments:"Investments",inheritance:"Inheritance",sale_of_property:"Sale of property",savings:"Savings",gift:"Gift",other:"Other"};
-        const rows = [];
-        if(selLead.legal_name_en) rows.push(["Legal name (English)", selLead.legal_name_en]);
-        if(selLead.legal_name_ar) rows.push(["Legal name (Arabic)", <span style={{direction:"rtl",unicodeBidi:"bidi-override",fontFamily:"'Noto Sans Arabic','Inter',sans-serif"}}>{selLead.legal_name_ar}</span>]);
-        if(selLead.nationality_iso2) rows.push(["Nationality", `${iso2ToFlag(selLead.nationality_iso2)} ${selLead.nationality_iso2}`]);
-        else if(selLead.nationality) rows.push(["Nationality", selLead.nationality]);
-        if(selLead.residence_iso2) rows.push(["Residence", `${iso2ToFlag(selLead.residence_iso2)} ${selLead.residence_iso2}`]);
-        if(selLead.tax_residency_iso2 && selLead.tax_residency_iso2!==selLead.residence_iso2) rows.push(["Tax residency", `${iso2ToFlag(selLead.tax_residency_iso2)} ${selLead.tax_residency_iso2}`]);
+        const SOF_LABEL = {salary:"Salary",business:"Business income",investments:"Investments",inheritance:"Inheritance",sale_of_property:"Sale of property",savings:"Savings",gift:"Gift",other:"Other"};
+        const items = [];
         if(selLead.phone_e164||selLead.phone) {
           const ph = selLead.phone_e164||selLead.phone;
-          rows.push(["Phone", <a href={`tel:${ph}`} style={{color:"#1A5FA8",textDecoration:"none",fontWeight:600}}>{ph}</a>]);
+          items.push({icon:"📞", label:"Phone", val:<a href={`tel:${ph}`} style={{color:"#1A5FA8",textDecoration:"none",fontWeight:600}}>{ph}</a>});
         }
-        if(selLead.email) rows.push(["Email", <a href={`mailto:${selLead.email}`} style={{color:"#1A5FA8",textDecoration:"none",fontWeight:600}}>{selLead.email}</a>]);
-        if(selLead.source_of_funds) rows.push(["Source of funds", SOF_LABEL[selLead.source_of_funds]||selLead.source_of_funds]);
-        if(selLead.source) rows.push(["Lead source", selLead.source]);
-        if(selLead.property_type) rows.push(["Looking for", selLead.property_type]);
-        if(selLead.budget&&Number(selLead.budget)>0) rows.push(["Budget", `AED ${Number(selLead.budget).toLocaleString()}`]);
-        if(rows.length===0) return null;
+        if(selLead.email) items.push({icon:"✉️", label:"Email", val:<a href={`mailto:${selLead.email}`} style={{color:"#1A5FA8",textDecoration:"none",fontWeight:600}}>{selLead.email}</a>});
+        if(selLead.nationality_iso2) items.push({icon:"🌍", label:"Nationality", val:`${iso2ToFlag(selLead.nationality_iso2)} ${selLead.nationality_iso2}`});
+        else if(selLead.nationality) items.push({icon:"🌍", label:"Nationality", val:selLead.nationality});
+        if(selLead.residence_iso2) items.push({icon:"🏠", label:"Residence", val:`${iso2ToFlag(selLead.residence_iso2)} ${selLead.residence_iso2}`});
+        if(selLead.tax_residency_iso2 && selLead.tax_residency_iso2!==selLead.residence_iso2) items.push({icon:"💼", label:"Tax residency", val:`${iso2ToFlag(selLead.tax_residency_iso2)} ${selLead.tax_residency_iso2}`});
+        if(selLead.source_of_funds) items.push({icon:"💰", label:"Source of funds", val:SOF_LABEL[selLead.source_of_funds]||selLead.source_of_funds});
+        if(selLead.source) items.push({icon:"📍", label:"Lead source", val:selLead.source});
+        if(selLead.property_type) items.push({icon:"🔍", label:"Looking for", val:selLead.property_type});
+        if(selLead.budget&&Number(selLead.budget)>0) items.push({icon:"💵", label:"Budget", val:`AED ${Number(selLead.budget).toLocaleString()}`});
+        if(selLead.legal_name_en && selLead.legal_name_en!==selLead.name) items.push({icon:"📛", label:"Legal name", val:selLead.legal_name_en});
+        if(selLead.legal_name_ar) items.push({icon:"📛", label:"Legal (Arabic)", val:<span style={{direction:"rtl",unicodeBidi:"bidi-override",fontFamily:"'Noto Sans Arabic','Inter',sans-serif"}}>{selLead.legal_name_ar}</span>});
+        if(items.length===0 && !selLead.notes) return null;
         return (
-          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"14px 18px",marginBottom:14}}>
-            <div style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",fontWeight:700,marginBottom:10}}>Identity</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:"6px 24px"}}>
-              {rows.map(([label,val],i)=>(
-                <div key={i} style={{display:"flex",alignItems:"baseline",gap:10,padding:"3px 0",borderBottom:i<rows.length-1?"1px dashed #EEF2F7":"none"}}>
-                  <div style={{fontSize:11,color:"#718096",minWidth:130}}>{label}</div>
-                  <div style={{fontSize:13,fontWeight:600,color:"#0F2540",flex:1,overflow:"hidden",textOverflow:"ellipsis"}}>{val}</div>
-                </div>
-              ))}
-            </div>
+          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"12px 16px",marginBottom:14}}>
+            {items.length>0 && (
+              <div style={{display:"flex",flexWrap:"wrap",gap:"8px 22px",alignItems:"center"}}>
+                {items.map((it,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:7,fontSize:12,minWidth:0}}>
+                    <span style={{fontSize:13,opacity:.85}}>{it.icon}</span>
+                    <span style={{color:"#94A3B8",fontWeight:500}}>{it.label}:</span>
+                    <span style={{color:"#0F2540",fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:240}}>{it.val}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {selLead.notes && (
+              <div style={{marginTop:items.length>0?10:0,paddingTop:items.length>0?10:0,borderTop:items.length>0?"1px dashed #EEF2F7":"none",display:"flex",gap:10,alignItems:"flex-start"}}>
+                <span style={{fontSize:10,color:"#8A6200",textTransform:"uppercase",letterSpacing:".5px",fontWeight:700,minWidth:50,paddingTop:1}}>Notes</span>
+                <div style={{fontSize:12,color:"#3A3A2E",whiteSpace:"pre-wrap",lineHeight:1.5,flex:1}}>{selLead.notes}</div>
+              </div>
+            )}
           </div>
         );
       })()}
 
-      {/* Notes panel — separate from Identity for readability */}
-      {selLead.notes&&(
-        <div style={{background:"#FFFEF7",border:"1px solid #F0E5C8",borderRadius:12,padding:"12px 16px",marginBottom:14}}>
-          <div style={{fontSize:10,color:"#8A6200",textTransform:"uppercase",letterSpacing:".6px",fontWeight:700,marginBottom:6}}>Notes</div>
-          <div style={{fontSize:13,color:"#3A3A2E",whiteSpace:"pre-wrap",lineHeight:1.5}}>{selLead.notes}</div>
+      {/* Opportunities — dense table layout */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540"}}>
+          Opportunities ({leadOpps.length})
         </div>
-      )}
-
-      {/* Opportunities */}
-      <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:12}}>
-        Opportunities ({leadOpps.length})
+        {leadOpps.length>0&&(
+          <div style={{fontSize:11,color:"#94A3B8"}}>
+            Click any row to open the opportunity
+          </div>
+        )}
       </div>
-      <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8}}>
+      <div style={{flex:1,overflowY:"auto"}}>
         {leadOpps.length===0&&(
-          <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}>
+          <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0",background:"#fff",border:"1px dashed #E2E8F0",borderRadius:12}}>
             <div style={{fontSize:36,marginBottom:10}}>🎯</div>
             <div style={{fontSize:14,fontWeight:600,color:"#0F2540",marginBottom:6}}>No opportunities yet</div>
             <div style={{fontSize:12,marginBottom:16}}>Add an opportunity for each property this contact is interested in</div>
             {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Opportunity</button>}
           </div>
         )}
-        {leadOpps.map(opp=>{
-          const unit=units.find(u=>u.id===opp.unit_id);
-          const proj=unit?projects.find(p=>p.id===unit.project_id):null;
-          const sp=unit?salePricing.find(s=>s.unit_id===unit.id):null;
-          const sm3=OPP_STAGE_META[opp.stage]||{c:"#718096",bg:"#F7F9FC"};
-          const agent=users.find(u=>u.id===opp.assigned_to);
-          // Phase E dense: find latest activity for this opp
-          const oppActivities = leadActivities.filter(a=>a.opportunity_id===opp.id);
-          const lastAct = oppActivities[0]; // already sorted desc
-          // Compute activity preview
-          const fmtRelative = (d)=>{
-            const diff = (new Date() - new Date(d)) / 1000;
-            if(diff<60) return "just now";
-            if(diff<3600) return `${Math.floor(diff/60)}m ago`;
-            if(diff<86400) return `${Math.floor(diff/3600)}h ago`;
-            const days = Math.floor(diff/86400);
-            return days===1?"1d ago":`${days}d ago`;
-          };
-          const actIcons = {Call:"📞",Email:"✉️",Meeting:"🤝",Visit:"🏠",WhatsApp:"💬",Note:"📝","Stage Change":"🎯"};
-          const lastActPreview = lastAct ? (
-            (lastAct.structured_data?.discussion || lastAct.structured_data?.feedback || lastAct.note || "").slice(0,70) +
-            ((lastAct.structured_data?.discussion || lastAct.structured_data?.feedback || lastAct.note || "").length>70?"…":"")
-          ) : null;
-          const stageAge = opp.stage_updated_at?Math.floor((new Date()-new Date(opp.stage_updated_at))/864e5):null;
-          const isStale = stageAge!==null && stageAge>=7 && opp.status==="Active";
-          return (
-            <div key={opp.id} onClick={()=>{setSelOpp(opp);setView("opportunity");}}
-              style={{background:"#fff",border:"1.5px solid "+(isStale?"#FCA5A5":"#E2E8F0"),borderRadius:12,padding:"12px 14px",cursor:"pointer",borderLeft:`4px solid ${sm3.c}`,transition:"all .12s"}}
-              onMouseOver={e=>{e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,.08)";e.currentTarget.style.transform="translateY(-1px)";}}
-              onMouseOut={e=>{e.currentTarget.style.boxShadow="none";e.currentTarget.style.transform="none";}}>
 
-              {/* Top row: title + stage + status */}
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8,marginBottom:6}}>
-                <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                  <span style={{fontWeight:700,fontSize:14,color:"#0F2540"}}>{opp.title||"Opportunity"}</span>
-                  <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:20,background:sm3.bg,color:sm3.c}}>▶ {opp.stage}</span>
-                  {opp.status==="Won"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ Won</span>}
-                  {opp.status==="Lost"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#F7F9FC",color:"#718096"}}>Lost</span>}
-                  {opp.status==="On Hold"&&<span style={{fontSize:11,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#FDF3DC",color:"#8A6200"}}>On Hold</span>}
-                  {isStale&&<span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#FEE2E2",color:"#C53030"}}>⚠ STALE</span>}
-                </div>
-                <div style={{textAlign:"right",flexShrink:0,fontSize:11,color:"#94A3B8"}}>
-                  {agent?.full_name||"Unassigned"}
-                </div>
-              </div>
-
-              {/* Property + price line */}
-              <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:lastAct?6:0}}>
-                {unit&&<span style={{fontSize:12,color:"#4A5568"}}>🏠 {unit.unit_ref} — {unit.sub_type}{proj?` · ${proj.name}`:""}</span>}
-                {sp&&<span style={{fontSize:12,fontWeight:700,color:"#1A5FA8"}}>AED {Number(sp.asking_price).toLocaleString()}</span>}
-                {opp.budget&&!sp&&<span style={{fontSize:12,fontWeight:700,color:"#1A5FA8"}}>Budget: AED {Number(opp.budget).toLocaleString()}</span>}
-                {stageAge!==null&&<span style={{fontSize:11,color:"#94A3B8"}}>· {stageAge===0?"today":stageAge+"d"} in stage</span>}
-                {opp.proposal_sent_at&&<span style={{fontSize:11,color:"#A06810"}}>· 📤 Proposal sent {fmtDate(opp.proposal_sent_at)}</span>}
-              </div>
-
-              {/* Phase E dense: last activity preview */}
-              {lastAct&&(
-                <div style={{display:"flex",alignItems:"center",gap:6,paddingTop:6,borderTop:"1px dashed #EEF2F7",fontSize:11,color:"#64748B"}}>
-                  <span style={{fontSize:13}}>{actIcons[lastAct.type]||"📋"}</span>
-                  <span style={{color:"#94A3B8",fontWeight:600,minWidth:55}}>{fmtRelative(lastAct.created_at)}</span>
-                  {lastAct.stage_at_event&&<span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:8,background:"#F1F5F9",color:"#64748B"}}>{lastAct.stage_at_event}</span>}
-                  <span style={{flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"#475569"}}>"{lastActPreview}"</span>
-                </div>
-              )}
-              {!lastAct&&(
-                <div style={{paddingTop:6,borderTop:"1px dashed #EEF2F7",fontSize:11,color:"#94A3B8",fontStyle:"italic"}}>
-                  No activity yet — open this opportunity to log the first contact
-                </div>
-              )}
+        {leadOpps.length>0&&(
+          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,overflow:"hidden"}}>
+            {/* Header row */}
+            <div style={{
+              display:"grid",
+              gridTemplateColumns:"110px minmax(220px,1.7fr) 130px 110px minmax(180px,1.4fr) 70px 28px",
+              gap:12,padding:"9px 14px",
+              background:"#F8FAFC",borderBottom:"1px solid #E2E8F0",
+              fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".5px",
+            }}>
+              <div>Stage</div>
+              <div>Title · Unit</div>
+              <div style={{textAlign:"right"}}>Value</div>
+              <div>In stage</div>
+              <div>Last activity</div>
+              <div>Owner</div>
+              <div></div>
             </div>
-          );
-        })}
+
+            {/* Data rows */}
+            {leadOpps.map((opp,idx)=>{
+              const unit=units.find(u=>u.id===opp.unit_id);
+              const proj=unit?projects.find(p=>p.id===unit.project_id):null;
+              const sp=unit?salePricing.find(s=>s.unit_id===unit.id):null;
+              const sm3=OPP_STAGE_META[opp.stage]||{c:"#718096",bg:"#F7F9FC"};
+              const agent=users.find(u=>u.id===opp.assigned_to);
+              const oppActivities = leadActivities.filter(a=>a.opportunity_id===opp.id);
+              const lastAct = oppActivities[0];
+              const fmtRelative = (d)=>{
+                const diff = (new Date() - new Date(d)) / 1000;
+                if(diff<60) return "just now";
+                if(diff<3600) return `${Math.floor(diff/60)}m ago`;
+                if(diff<86400) return `${Math.floor(diff/3600)}h ago`;
+                const days = Math.floor(diff/86400);
+                return days===1?"1d ago":`${days}d ago`;
+              };
+              const actIcons = {Call:"📞",Email:"✉️",Meeting:"🤝",Visit:"🏠","Site Visit":"🏠",WhatsApp:"💬",Note:"📝","Stage Change":"🎯",Proposal:"📄"};
+              const lastActText = lastAct ? (lastAct.structured_data?.discussion || lastAct.structured_data?.feedback || lastAct.note || "") : "";
+              const lastActPreview = lastActText.slice(0,55) + (lastActText.length>55?"…":"");
+              const stageAge = opp.stage_updated_at?Math.floor((new Date()-new Date(opp.stage_updated_at))/864e5):null;
+              const isStale = stageAge!==null && stageAge>=7 && opp.status==="Active";
+              const stageAgeLabel = stageAge===null?"—":stageAge===0?"today":stageAge===1?"1 day":`${stageAge} days`;
+              const initials = (agent?.full_name||"?").split(" ").map(w=>w[0]).filter(Boolean).slice(0,2).join("").toUpperCase();
+              const value = sp?.asking_price || opp.budget || null;
+
+              return (
+                <div key={opp.id}
+                  onClick={()=>{setSelOpp(opp);setView("opportunity");}}
+                  onMouseOver={e=>{e.currentTarget.style.background="#F8FAFC";}}
+                  onMouseOut={e=>{e.currentTarget.style.background="#fff";}}
+                  style={{
+                    display:"grid",
+                    gridTemplateColumns:"110px minmax(220px,1.7fr) 130px 110px minmax(180px,1.4fr) 70px 28px",
+                    gap:12,padding:"11px 14px",
+                    borderTop: idx===0?"none":"1px solid #EEF2F7",
+                    borderLeft:`3px solid ${sm3.c}`,
+                    cursor:"pointer",transition:"background .12s",
+                    alignItems:"center",
+                    background:"#fff",
+                  }}>
+
+                  {/* Stage */}
+                  <div style={{minWidth:0}}>
+                    <span style={{
+                      display:"inline-block",fontSize:10,fontWeight:700,padding:"3px 9px",borderRadius:20,
+                      background:sm3.bg,color:sm3.c,whiteSpace:"nowrap",
+                    }}>{opp.stage}</span>
+                    {opp.status==="Won"&&<div style={{fontSize:9,fontWeight:700,color:"#1A7F5A",marginTop:3}}>✓ WON</div>}
+                    {opp.status==="Lost"&&<div style={{fontSize:9,fontWeight:700,color:"#718096",marginTop:3}}>LOST</div>}
+                    {opp.status==="On Hold"&&<div style={{fontSize:9,fontWeight:700,color:"#8A6200",marginTop:3}}>ON HOLD</div>}
+                  </div>
+
+                  {/* Title + Unit/Project */}
+                  <div style={{minWidth:0}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#0F2540",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                      {opp.title||"Opportunity"}
+                    </div>
+                    <div style={{fontSize:11,color:"#64748B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginTop:2}}>
+                      {unit ? `🏠 ${unit.unit_ref}${unit.sub_type?` · ${unit.sub_type}`:""}${proj?` · ${proj.name}`:""}` : <span style={{color:"#94A3B8",fontStyle:"italic"}}>No unit linked</span>}
+                    </div>
+                  </div>
+
+                  {/* Value */}
+                  <div style={{textAlign:"right",minWidth:0}}>
+                    {value ? (
+                      <>
+                        <div style={{fontSize:13,fontWeight:700,color:"#1A5FA8"}}>AED {Number(value).toLocaleString()}</div>
+                        {sp ? null : <div style={{fontSize:9,color:"#94A3B8",fontWeight:600,marginTop:1}}>budget</div>}
+                      </>
+                    ) : (
+                      <span style={{fontSize:11,color:"#CBD5E1"}}>—</span>
+                    )}
+                  </div>
+
+                  {/* In stage */}
+                  <div style={{minWidth:0}}>
+                    <div style={{fontSize:12,color:isStale?"#C53030":"#475569",fontWeight:isStale?700:500}}>
+                      {stageAgeLabel}
+                    </div>
+                    {isStale&&<div style={{fontSize:9,fontWeight:700,color:"#C53030",marginTop:1}}>⚠ STALE</div>}
+                    {opp.proposal_sent_at&&<div style={{fontSize:9,color:"#A06810",marginTop:1}}>📤 sent {fmtDate(opp.proposal_sent_at)}</div>}
+                  </div>
+
+                  {/* Last activity */}
+                  <div style={{minWidth:0,fontSize:11,color:"#475569",overflow:"hidden"}}>
+                    {lastAct ? (
+                      <>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:1}}>
+                          <span style={{fontSize:12}}>{actIcons[lastAct.type]||"📋"}</span>
+                          <span style={{color:"#94A3B8",fontWeight:600,fontSize:10}}>{fmtRelative(lastAct.created_at)}</span>
+                          {lastAct.stage_at_event&&<span style={{fontSize:9,fontWeight:700,padding:"1px 5px",borderRadius:6,background:"#F1F5F9",color:"#64748B"}}>{lastAct.stage_at_event}</span>}
+                        </div>
+                        {lastActPreview&&<div style={{fontSize:11,color:"#64748B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontStyle:"italic"}}>"{lastActPreview}"</div>}
+                      </>
+                    ) : (
+                      <span style={{fontSize:11,color:"#94A3B8",fontStyle:"italic"}}>No activity yet</span>
+                    )}
+                  </div>
+
+                  {/* Owner */}
+                  <div style={{minWidth:0}} title={agent?.full_name||"Unassigned"}>
+                    {agent ? (
+                      <div style={{display:"flex",alignItems:"center",gap:6}}>
+                        <div style={{width:24,height:24,borderRadius:"50%",background:"#0F2540",color:"#C9A84C",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,flexShrink:0}}>
+                          {initials}
+                        </div>
+                      </div>
+                    ) : (
+                      <span style={{fontSize:11,color:"#CBD5E1"}}>—</span>
+                    )}
+                  </div>
+
+                  {/* Chevron */}
+                  <div style={{textAlign:"right",color:"#CBD5E1",fontSize:14}}>›</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Add Opportunity Modal */}
