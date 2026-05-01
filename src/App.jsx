@@ -1770,6 +1770,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [showDiscReq, setShowDiscReq] = useState(false);
   const [discReqForm, setDiscReqForm] = useState({type:"sale_price",discount_pct:"",reason:"",discount_source:"Developer",developer_auth_ref:""});
   const [logForm,    setLogForm]    = useState({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
+  // Phase E W3 — reminder action dialog (Done / Reschedule / Cancel)
+  const [remAction, setRemAction] = useState(null); // {mode:"done"|"reschedule"|"cancel", reminder, note, date}
   const [payForm,    setPayForm]    = useState({milestone:"Booking Deposit",amount:"",percentage:"",due_date:"",payment_type:"Cheque",cheque_number:"",cheque_date:"",bank_name:"",status:"Pending",notes:"",cheque_file_url:""});
   const [emailForm,  setEmailForm]  = useState({to:"",subject:"",body:""});
   const [editPayment,setEditPayment]= useState(null);
@@ -2178,7 +2180,11 @@ You will become the assigned agent.`);
 
               const updateReminderStatus = async(reminderId, newStatus, extra={})=>{
                 const{error}=await supabase.from("reminders").update({status:newStatus, ...extra}).eq("id",reminderId);
-                if(error){showToast("Failed to update reminder","error");return false;}
+                if(error){
+                  console.error("Reminder update failed:", error);
+                  showToast(`Failed to update reminder: ${error.message||"unknown error"}`,"error");
+                  return false;
+                }
                 if(newStatus==="pending" && extra.trigger_at){
                   // rescheduled — keep in list with new date
                   setReminders(p=>p.map(r=>r.id===reminderId?{...r,trigger_at:extra.trigger_at}:r).sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
@@ -2189,18 +2195,8 @@ You will become the assigned agent.`);
                 return true;
               };
 
-              const markDone = async(rem)=>{
-                const ok = await updateReminderStatus(rem.id,"completed",{completed_at:new Date().toISOString(), completed_by:currentUser.id});
-                if(!ok) return;
-                // Also log a brief activity so the timeline reflects that this step was completed
-                const{data:actRow}=await supabase.from("activities").insert({
-                  opportunity_id:opp.id, lead_id:lead.id, company_id:opp.company_id||currentUser.company_id||null,
-                  type:"Note", note:`✓ Completed: ${rem.title}${rem.body?` — ${rem.body}`:""}`,
-                  status:"completed", user_id:currentUser.id, user_name:currentUser.full_name, lead_name:lead.name,
-                  stage_at_event:opp.stage, activity_subtype:"reminder_completed",
-                }).select().single();
-                if(actRow) setActivities(p=>[actRow,...p]);
-                showToast("Marked as done","success");
+              const markDone = (rem)=>{
+                setRemAction({mode:"done", reminder:rem, note:"", date:""});
               };
 
               const snooze1Day = async(rem)=>{
@@ -2210,20 +2206,13 @@ You will become the assigned agent.`);
                 if(ok) showToast("Snoozed 1 day","success");
               };
 
-              const reschedule = async(rem)=>{
-                const newDateStr = window.prompt("Reschedule to (YYYY-MM-DD):", new Date(rem.trigger_at).toISOString().split("T")[0]);
-                if(!newDateStr) return;
-                const newDate = new Date(newDateStr);
-                if(isNaN(newDate.getTime())){showToast("Invalid date","error");return;}
-                newDate.setHours(9,0,0,0);
-                const ok = await updateReminderStatus(rem.id,"pending",{trigger_at:newDate.toISOString()});
-                if(ok) showToast("Rescheduled","success");
+              const reschedule = (rem)=>{
+                const currentDate = new Date(rem.trigger_at).toISOString().split("T")[0];
+                setRemAction({mode:"reschedule", reminder:rem, note:"", date:currentDate});
               };
 
-              const cancel = async(rem)=>{
-                if(!window.confirm(`Cancel this reminder?\n\n"${rem.title}"`)) return;
-                const ok = await updateReminderStatus(rem.id,"cancelled",{cancelled_at:new Date().toISOString()});
-                if(ok) showToast("Reminder cancelled","success");
+              const cancel = (rem)=>{
+                setRemAction({mode:"cancel", reminder:rem, note:"", date:""});
               };
 
               return (
@@ -2600,6 +2589,137 @@ You will become the assigned agent.`);
           onUpdated({...opp, stage: result.stage, stage_updated_at: new Date().toISOString()});
         }}
       />
+
+      {/* Phase E W3 — Reminder Action Dialog (Done / Reschedule / Cancel) */}
+      {remAction && (()=>{
+        const meta = {
+          done:      {title:"✓ Mark as Done",      subtitle:"Capture what actually happened.",        accent:"#1A7F5A", btn:"Mark Done",   noteLabel:"What happened?",          notePh:"e.g. Spoke to him, confirmed Sunday viewing at 11am",   noteRequired:true,  showDate:false},
+          reschedule:{title:"📅 Reschedule",        subtitle:"Move this reminder to a new date.",      accent:"#1A5FA8", btn:"Reschedule",  noteLabel:"Reason (optional)",       notePh:"e.g. Customer is traveling until Tuesday",              noteRequired:false, showDate:true },
+          cancel:    {title:"✕ Cancel Reminder",    subtitle:"This is recorded — no silent deletion.", accent:"#C53030", btn:"Cancel It",   noteLabel:"Why are you cancelling?", notePh:"e.g. Customer went silent after 3 attempts, dropping",  noteRequired:true,  showDate:false},
+        }[remAction.mode];
+        const close = ()=>setRemAction(null);
+        const submit = async()=>{
+          const noteTrim = (remAction.note||"").trim();
+          if(meta.noteRequired && !noteTrim){
+            showToast(`Please ${remAction.mode==="cancel"?"give a reason":"describe what happened"}`,"error");
+            return;
+          }
+          if(meta.showDate){
+            const newDate = new Date(remAction.date);
+            if(isNaN(newDate.getTime())){showToast("Pick a valid date","error");return;}
+          }
+          setSaving(true);
+          try{
+            const rem = remAction.reminder;
+            if(remAction.mode==="reschedule"){
+              const newDate = new Date(remAction.date);
+              newDate.setHours(9,0,0,0);
+              const ok = await updateReminderStatus(rem.id,"pending",{trigger_at:newDate.toISOString()});
+              if(!ok){setSaving(false);return;}
+              // Drop a small activity note so the trail shows the move
+              const{data:actRow}=await supabase.from("activities").insert({
+                opportunity_id:opp.id, lead_id:lead.id, company_id:opp.company_id||currentUser.company_id||null,
+                type:"Note",
+                note:`📅 Rescheduled: "${rem.title}" → ${newDate.toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}${noteTrim?` — ${noteTrim}`:""}`,
+                status:"completed", user_id:currentUser.id, user_name:currentUser.full_name, lead_name:lead.name,
+                stage_at_event:opp.stage, activity_subtype:"reminder_rescheduled",
+              }).select().single();
+              if(actRow) setActivities(p=>[actRow,...p]);
+              showToast("Reminder rescheduled","success");
+            } else if(remAction.mode==="done"){
+              const ok = await updateReminderStatus(rem.id,"completed");
+              if(!ok){setSaving(false);return;}
+              const{data:actRow}=await supabase.from("activities").insert({
+                opportunity_id:opp.id, lead_id:lead.id, company_id:opp.company_id||currentUser.company_id||null,
+                type:"Note",
+                note:`✓ Completed: ${rem.title}\n\n${noteTrim}`,
+                status:"completed", user_id:currentUser.id, user_name:currentUser.full_name, lead_name:lead.name,
+                stage_at_event:opp.stage, activity_subtype:"reminder_completed",
+              }).select().single();
+              if(actRow) setActivities(p=>[actRow,...p]);
+              showToast("Marked as done","success");
+            } else if(remAction.mode==="cancel"){
+              const ok = await updateReminderStatus(rem.id,"cancelled");
+              if(!ok){setSaving(false);return;}
+              const{data:actRow}=await supabase.from("activities").insert({
+                opportunity_id:opp.id, lead_id:lead.id, company_id:opp.company_id||currentUser.company_id||null,
+                type:"Note",
+                note:`✕ Cancelled: ${rem.title}\nReason: ${noteTrim}`,
+                status:"completed", user_id:currentUser.id, user_name:currentUser.full_name, lead_name:lead.name,
+                stage_at_event:opp.stage, activity_subtype:"reminder_cancelled",
+              }).select().single();
+              if(actRow) setActivities(p=>[actRow,...p]);
+              showToast("Reminder cancelled","success");
+            }
+            close();
+          } catch(e){
+            console.error("Reminder action failed:", e);
+            showToast(`Failed: ${e.message||"unknown error"}`,"error");
+          } finally {
+            setSaving(false);
+          }
+        };
+        return (
+          <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
+            <div style={{background:"#fff",borderRadius:16,width:520,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
+              <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+                  <div>
+                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>{meta.title}</div>
+                    <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3}}>{meta.subtitle}</div>
+                  </div>
+                  <button onClick={close} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",lineHeight:1}}>×</button>
+                </div>
+              </div>
+              <div style={{padding:"1.1rem 1.4rem",flex:1,overflowY:"auto"}}>
+                {/* Reminder context — read-only */}
+                <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 12px",marginBottom:14}}>
+                  <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>Reminder</div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{remAction.reminder.title}</div>
+                  {remAction.reminder.body && <div style={{fontSize:12,color:"#64748B",marginTop:3,fontStyle:"italic"}}>{remAction.reminder.body}</div>}
+                  <div style={{fontSize:11,color:"#94A3B8",marginTop:4}}>
+                    Originally due: {new Date(remAction.reminder.trigger_at).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}
+                  </div>
+                </div>
+
+                {meta.showDate && (
+                  <div style={{marginBottom:14}}>
+                    <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>
+                      New due date *
+                    </label>
+                    <input type="date" value={remAction.date}
+                      onChange={e=>setRemAction(a=>({...a,date:e.target.value}))}
+                      style={{padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",background:"#fff"}}/>
+                  </div>
+                )}
+
+                <div>
+                  <label style={{fontSize:11,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>
+                    {meta.noteLabel}{meta.noteRequired&&<span style={{color:"#C53030"}}> *</span>}
+                  </label>
+                  <textarea value={remAction.note}
+                    onChange={e=>setRemAction(a=>({...a,note:e.target.value}))}
+                    placeholder={meta.notePh} rows={4}
+                    style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
+                  <div style={{fontSize:10,color:"#94A3B8",marginTop:4}}>
+                    This will be saved permanently to the activity timeline.
+                  </div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.4rem",borderTop:"1px solid #E8EDF4",background:"#F8FAFC"}}>
+                <button onClick={close} disabled={saving}
+                  style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+                  Back
+                </button>
+                <button onClick={submit} disabled={saving}
+                  style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#94A3B8":meta.accent,color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
+                  {saving ? "Saving…" : meta.btn}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Stage Gate Modal */}
       {showStageGate&&(
