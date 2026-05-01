@@ -1772,6 +1772,24 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [logForm,    setLogForm]    = useState({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
   // Phase E W3 — reminder action dialog (Done / Reschedule / Cancel)
   const [remAction, setRemAction] = useState(null); // {mode:"done"|"reschedule"|"cancel", reminder, note, date}
+
+  // Phase E W3 — shared helper used by both the inline strip (snooze) and the action dialog (done/reschedule/cancel)
+  const updateReminderStatus = async(reminderId, newStatus, extra={})=>{
+    const{error}=await supabase.from("reminders").update({status:newStatus, ...extra}).eq("id",reminderId);
+    if(error){
+      console.error("Reminder update failed:", error);
+      showToast(`Failed to update reminder: ${error.message||"unknown error"}`,"error");
+      return false;
+    }
+    if(newStatus==="pending" && extra.trigger_at){
+      // rescheduled — keep in list with new date
+      setReminders(p=>p.map(r=>r.id===reminderId?{...r,trigger_at:extra.trigger_at}:r).sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
+    }else{
+      // done/cancelled — remove from pending list
+      setReminders(p=>p.filter(r=>r.id!==reminderId));
+    }
+    return true;
+  };
   const [payForm,    setPayForm]    = useState({milestone:"Booking Deposit",amount:"",percentage:"",due_date:"",payment_type:"Cheque",cheque_number:"",cheque_date:"",bank_name:"",status:"Pending",notes:"",cheque_file_url:""});
   const [emailForm,  setEmailForm]  = useState({to:"",subject:"",body:""});
   const [editPayment,setEditPayment]= useState(null);
@@ -2176,23 +2194,6 @@ You will become the assigned agent.`);
                 if(diffDays===1) return {label:"due tomorrow", color:"#1A5FA8", bg:"#E6EFF8", date:dateStr};
                 if(diffDays<=7) return {label:`in ${diffDays} days`, color:"#1A5FA8", bg:"#E6EFF8", date:dateStr};
                 return {label:dateStr, color:"#64748B", bg:"#F1F5F9", date:dateStr};
-              };
-
-              const updateReminderStatus = async(reminderId, newStatus, extra={})=>{
-                const{error}=await supabase.from("reminders").update({status:newStatus, ...extra}).eq("id",reminderId);
-                if(error){
-                  console.error("Reminder update failed:", error);
-                  showToast(`Failed to update reminder: ${error.message||"unknown error"}`,"error");
-                  return false;
-                }
-                if(newStatus==="pending" && extra.trigger_at){
-                  // rescheduled — keep in list with new date
-                  setReminders(p=>p.map(r=>r.id===reminderId?{...r,trigger_at:extra.trigger_at}:r).sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
-                }else{
-                  // done/cancelled — remove from pending list
-                  setReminders(p=>p.filter(r=>r.id!==reminderId));
-                }
-                return true;
               };
 
               const markDone = (rem)=>{
