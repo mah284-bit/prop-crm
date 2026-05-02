@@ -2229,7 +2229,7 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
    Click → dropdown grouped by Overdue / Today / Tomorrow / This week.
    Click a reminder → deep-links into that opportunity.
 ═══════════════════════════════════════════════════════════════ */
-function RemindersBell({ currentUser, onNavigateToOpp, showToast }) {
+function RemindersBell({ currentUser, onNavigateToOpp, onNavigateToLead, showToast }) {
   const [open, setOpen] = useState(false);
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -2308,26 +2308,55 @@ function RemindersBell({ currentUser, onNavigateToOpp, showToast }) {
         .gte("stage_updated_at", thirtyDaysAgo.toISOString())
         .limit(40);
       if (oppErr) throw new Error(`Couldn't load opportunities: ${oppErr.message}`);
-      if (!opps || opps.length < 2) {
-        setBriefingError("Once you have a few active deals, AI will summarise your day here.");
+
+      // Phase F W4 ext — also fetch ALL active leads owned by this user (not just those with opps)
+      // so the AI can flag raw leads not yet worked, leads gone cold, and so on.
+      const { data: allLeads, error: leadsErr } = await supabase
+        .from("leads")
+        .select("id, name, nationality, source, budget, notes, status, created_at, assigned_to")
+        .eq("assigned_to", currentUser.id)
+        .order("created_at", { ascending: false })
+        .limit(60);
+      if (leadsErr) throw new Error(`Couldn't load leads: ${leadsErr.message}`);
+
+      // Need at least SOMETHING to brief on
+      if ((!opps || opps.length === 0) && (!allLeads || allLeads.length === 0)) {
+        setBriefingError("Once you have a few leads or active deals, AI will summarise your day here.");
         return;
       }
 
-      // Fetch supporting data: leads, latest activity per opp, pending reminders
-      const leadIds = [...new Set(opps.map(o => o.lead_id).filter(Boolean))];
-      const oppIds = opps.map(o => o.id);
-      const [leadsRes, actsRes, remRes, propsRes] = await Promise.all([
-        supabase.from("leads").select("id, name, nationality, source, budget, notes").in("id", leadIds),
-        supabase.from("activities").select("opportunity_id, type, status, note, created_at, activity_subtype").in("opportunity_id", oppIds).order("created_at", {ascending:false}).limit(120),
-        supabase.from("reminders").select("related_opportunity_id, title, trigger_at, status").eq("user_id", currentUser.id).eq("status","pending").in("related_opportunity_id", oppIds),
-        supabase.from("proposals").select("opportunity_id, status, expiry_date, total_value, created_at").in("opportunity_id", oppIds).order("created_at", {ascending:false}).limit(60),
+      // Fetch supporting data: lead profiles, activities (per opp + per lead), reminders, proposals
+      const oppIds = (opps || []).map(o => o.id);
+      const allLeadIds = (allLeads || []).map(l => l.id);
+      const oppLeadIds = (opps || []).map(o => o.lead_id).filter(Boolean);
+      const fetchableLeadIds = [...new Set([...oppLeadIds, ...allLeadIds])];
+
+      const [actsRes, leadActsRes, remRes, propsRes] = await Promise.all([
+        oppIds.length > 0
+          ? supabase.from("activities").select("opportunity_id, type, status, note, created_at, activity_subtype").in("opportunity_id", oppIds).order("created_at", {ascending:false}).limit(120)
+          : Promise.resolve({data:[]}),
+        // Lead-scoped activities (calls/whatsapp on the lead, even if no opp yet)
+        fetchableLeadIds.length > 0
+          ? supabase.from("activities").select("lead_id, type, status, note, created_at").in("lead_id", fetchableLeadIds).order("created_at", {ascending:false}).limit(150)
+          : Promise.resolve({data:[]}),
+        oppIds.length > 0
+          ? supabase.from("reminders").select("related_opportunity_id, title, trigger_at, status").eq("user_id", currentUser.id).eq("status","pending").in("related_opportunity_id", oppIds)
+          : Promise.resolve({data:[]}),
+        oppIds.length > 0
+          ? supabase.from("proposals").select("opportunity_id, status, expiry_date, total_value, created_at").in("opportunity_id", oppIds).order("created_at", {ascending:false}).limit(60)
+          : Promise.resolve({data:[]}),
       ]);
 
-      const leadsById = Object.fromEntries((leadsRes.data||[]).map(l => [l.id, l]));
+      // Build lookup tables
       const actsByOpp = {};
       (actsRes.data||[]).forEach(a => {
         if (!actsByOpp[a.opportunity_id]) actsByOpp[a.opportunity_id] = [];
         actsByOpp[a.opportunity_id].push(a);
+      });
+      const actsByLead = {};
+      (leadActsRes.data||[]).forEach(a => {
+        if (!actsByLead[a.lead_id]) actsByLead[a.lead_id] = [];
+        actsByLead[a.lead_id].push(a);
       });
       const remsByOpp = {};
       (remRes.data||[]).forEach(r => {
@@ -2340,10 +2369,13 @@ function RemindersBell({ currentUser, onNavigateToOpp, showToast }) {
         propsByOpp[p.opportunity_id].push(p);
       });
 
-      // Build a compact book snapshot for the AI — token-disciplined
-      const book = opps.map(o => {
+      // Lead lookup (combine all leads)
+      const leadsById = Object.fromEntries((allLeads||[]).map(l => [l.id, l]));
+
+      // OPP BOOK SNAPSHOT — same shape as before
+      const book = (opps||[]).map(o => {
         const lead = leadsById[o.lead_id];
-        const acts = (actsByOpp[o.id] || []).slice(0, 3); // last 3 only per opp
+        const acts = (actsByOpp[o.id] || []).slice(0, 3);
         const rems = (remsByOpp[o.id] || []);
         const props = (propsByOpp[o.id] || []);
         const lastActivityAt = acts[0]?.created_at || o.stage_updated_at;
@@ -2362,14 +2394,50 @@ function RemindersBell({ currentUser, onNavigateToOpp, showToast }) {
         };
       });
 
-      const system = `You are PropPulse AI, briefing a UAE real-estate broker on their day. Read their active book and surface the 3-4 most important things they should focus on TODAY. Examples of priorities to surface: deals stalling (no activity 7+ days), proposals expiring soon, deals where buyer engaged recently, deals at decision stage. Speak as a senior advisor — concise, specific, actionable. Reference SPECIFIC opps by lead name. Always respond with valid JSON only — no prose, no markdown fences.`;
+      // LEAD BOOK SNAPSHOT — leads with NO active opp OR leads where the AI should
+      // notice neglect. Distinguish: "raw leads not yet converted to opp" vs
+      // "leads with opps already in the book above".
+      const oppLeadIdSet = new Set(oppLeadIds);
+      const leadBook = (allLeads||[]).map(l => {
+        const acts = (actsByLead[l.id] || []);
+        const lastTouchAt = acts[0]?.created_at || l.created_at;
+        const daysSinceContact = lastTouchAt ? Math.round((new Date() - new Date(lastTouchAt)) / (1000*60*60*24)) : null;
+        const has_active_opp = oppLeadIdSet.has(l.id);
+        return {
+          lead_id: l.id,
+          lead_name: l.name || "Unknown",
+          source: l.source || null,
+          status: l.status || null,
+          stated_budget: l.budget || null,
+          days_since_contact: daysSinceContact,
+          last_contact_type: acts[0]?.type || null,
+          contact_count: acts.length,
+          has_active_opp,
+        };
+      });
+
+      const system = `You are PropPulse AI, briefing a UAE real-estate broker on their day. Read their full book — both ACTIVE OPPORTUNITIES (deals in progress) and LEADS (contacts, some with opps, some still raw). Surface the 3-5 most important things they should focus on TODAY across both.
+
+Examples of priorities to surface (in order of importance):
+- Hot opps: deals where buyer engaged recently, decisions imminent, proposals expiring
+- Stale opps: deals stalling (no activity 7+ days) — reignite or mark lost
+- Raw leads not yet worked: leads with no contact in 3+ days, especially from paid sources (Bayut, PropertyFinder) which go cold fast
+- Cold leads: leads with no contact in 14+ days that should be re-engaged or archived
+- Overdue reminders pointing to neglected items
+- Proposals expiring within 3 days
+
+Speak as a senior advisor — concise, specific, actionable. Reference SPECIFIC names. When the highlight is about a lead with no opp yet, set opp_id=null and use lead_id instead. Always respond with valid JSON only — no prose, no markdown fences.`;
 
       const userPrompt = `BROKER: ${currentUser.full_name || "Agent"}
 DATE: ${new Date().toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
-ACTIVE BOOK (${book.length} opps):
+
+ACTIVE OPPORTUNITIES (${book.length}):
 ${JSON.stringify(book, null, 2)}
 
-TASK: Generate a morning briefing. 1-sentence overview, then 2-4 prioritised highlights.
+ALL LEADS (${leadBook.length}):
+${JSON.stringify(leadBook, null, 2)}
+
+TASK: Generate a morning briefing covering BOTH opps and leads. 1-sentence overview, then 3-5 prioritised highlights. Mix opp-focused and lead-focused highlights as appropriate. If there's a clear pattern (e.g. multiple raw leads not contacted), surface that as a single highlight.
 
 PRIORITY values: "high" | "medium" | "low"
 
@@ -2380,7 +2448,8 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     {
       "title": "<short imperative — 'Call Aisha — proposal expires today'>",
       "body": "<1-2 sentences with specifics>",
-      "opp_id": "<opp_id from list, or null if cross-deal>",
+      "opp_id": "<opp_id from active opps list, or null if lead-only or cross-cutting>",
+      "lead_id": "<lead_id from leads list if it's about a specific lead with no opp, else null>",
       "priority": "high" | "medium" | "low"
     }
   ]
@@ -2398,12 +2467,14 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       if (!parsed.highlights || !Array.isArray(parsed.highlights) || parsed.highlights.length === 0) {
         throw new Error("AI returned no highlights");
       }
-      // Filter highlights to opps that actually exist (defensive)
-      const validOppIds = new Set(opps.map(o=>o.id));
+      // Defensive: filter to opp_ids and lead_ids that actually exist
+      const validOppIds = new Set((opps||[]).map(o=>o.id));
+      const validLeadIds = new Set((allLeads||[]).map(l=>l.id));
       const cleanHighlights = parsed.highlights.map(h => ({
         ...h,
         opp_id: validOppIds.has(h.opp_id) ? h.opp_id : null,
-      })).slice(0, 4);
+        lead_id: validLeadIds.has(h.lead_id) ? h.lead_id : null,
+      })).slice(0, 5);
       setBriefing({
         summary: parsed.summary || "",
         highlights: cleanHighlights,
@@ -2612,14 +2683,17 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
                     const priBg = pri==="high"?"#FEE2E2":pri==="medium"?"#FEF3C7":"#F1F5F9";
                     return (
                       <div key={idx}
-                        onClick={()=>{ if(h.opp_id && onNavigateToOpp){ onNavigateToOpp(h.opp_id); setOpen(false); } }}
-                        style={{background:"#fff", border:"1px solid #CCFBF1", borderRadius:6, padding:"7px 9px", cursor: h.opp_id?"pointer":"default"}}>
+                        onClick={()=>{
+                          if (h.opp_id && onNavigateToOpp) { onNavigateToOpp(h.opp_id); setOpen(false); }
+                          else if (h.lead_id && onNavigateToLead) { onNavigateToLead(h.lead_id); setOpen(false); }
+                        }}
+                        style={{background:"#fff", border:"1px solid #CCFBF1", borderRadius:6, padding:"7px 9px", cursor: (h.opp_id||h.lead_id)?"pointer":"default"}}>
                         <div style={{display:"flex", alignItems:"flex-start", gap:6, marginBottom:3, flexWrap:"wrap"}}>
                           <span style={{fontSize:8, fontWeight:700, padding:"1px 5px", borderRadius:8, background:priBg, color:priColor, letterSpacing:".4px", textTransform:"uppercase"}}>
                             {pri}
                           </span>
                           <span style={{fontSize:11, fontWeight:700, color:"#0F2540", flex:1}}>{h.title}</span>
-                          {h.opp_id && <span style={{fontSize:9, color:"#0E7490"}}>→</span>}
+                          {(h.opp_id || h.lead_id) && <span style={{fontSize:9, color:"#0E7490"}}>→</span>}
                         </div>
                         {h.body && (
                           <div style={{fontSize:10, color:"#475569", lineHeight:1.4}}>
@@ -7056,6 +7130,15 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
     setSelLeadId(opp.lead_id);
     setView("opportunity");
   }, [initialFilter?.type, initialFilter?.oppId, opps.length, globalOppsFromParent.length]);
+
+  // Phase F W4 ext — deep-link handler for leads (e.g. AI briefing surfaces a raw lead)
+  useEffect(()=>{
+    if(!initialFilter || initialFilter.type !== "lead" || !initialFilter.leadId) return;
+    const lead = (leads||[]).find(l => l.id === initialFilter.leadId);
+    if(!lead) return; // wait for leads to load
+    setSelLeadId(lead.id);
+    setView("lead");
+  }, [initialFilter?.type, initialFilter?.leadId, leads.length]);
 
   useEffect(()=>{
     // After every view/selection change, push to history — unless the change came from popstate
@@ -12102,6 +12185,11 @@ export default function App(){
                 // component picks up to deep-link straight into the opportunity.
                 const targetTab = currentApp === "leasing" ? "l_leads" : "leads";
                 navigateToTab(targetTab, {type:"opp", oppId});
+              }}
+              onNavigateToLead={(leadId)=>{
+                // Same Leads tab but pass type:"lead" so the lead detail opens directly
+                const targetTab = currentApp === "leasing" ? "l_leads" : "leads";
+                navigateToTab(targetTab, {type:"lead", leadId});
               }}
             />
             {/* User */}
