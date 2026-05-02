@@ -3508,7 +3508,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
               </label>
               <div style={{display:"flex",gap:6}}>
                 <button onClick={()=>{setShowAiMatch(s=>!s); if(!showAiMatch)setShowAddUnit(false);}}
-                  style={{padding:"6px 12px",borderRadius:7,border:`1.5px solid ${showAiMatch?"#A78BFA":"#C4B5FD"}`,background:showAiMatch?"#EDE9FE":"#FAF5FF",color:"#6D28D9",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                  style={{padding:"6px 12px",borderRadius:7,border:`1.5px solid ${showAiMatch?"#2DD4BF":"#5EEAD4"}`,background:showAiMatch?"#CCFBF1":"#FAF5FF",color:"#0F766E",fontSize:11,fontWeight:700,cursor:"pointer"}}>
                   {showAiMatch?"Cancel":"🪄 AI Match"}
                 </button>
                 <button onClick={()=>{setShowAddUnit(s=>!s); if(!showAddUnit)setShowAiMatch(false);}}
@@ -3520,20 +3520,20 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
 
             {/* AI Match panel */}
             {showAiMatch && (
-              <div style={{marginBottom:10,background:"#FBFAFF",border:"1px solid #EDE9FE",borderRadius:10,padding:12}}>
-                <div style={{fontSize:11,fontWeight:700,color:"#6D28D9",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
+              <div style={{marginBottom:10,background:"#F0FDFA",border:"1px solid #CCFBF1",borderRadius:10,padding:12}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#0F766E",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
                   <span>🪄 PropPulse AI · Smart Match</span>
-                  <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:"#F5F3FF",color:"#7C3AED",fontWeight:600,border:"1px solid #EDE9FE"}}>BETA</span>
+                  <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:"#ECFEFF",color:"#0E7490",fontWeight:600,border:"1px solid #CCFBF1"}}>BETA</span>
                 </div>
                 <div style={{fontSize:11,color:"#64748B",marginBottom:8}}>
                   Describe what the buyer is looking for. AI will rank the top matches from your inventory with reasons.
                 </div>
                 <textarea value={aiMatchPrompt} onChange={e=>setAiMatchPrompt(e.target.value)} rows={3}
                   placeholder="e.g. 2BR around AED 1.5-2M, sea or pool view, prefers Sobha or Damac, willing to wait for off-plan handover, payment plan flexibility important"
-                  style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #EDE9FE",fontSize:12,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",background:"#fff"}}/>
+                  style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #CCFBF1",fontSize:12,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",background:"#fff"}}/>
                 <div style={{display:"flex",gap:8,alignItems:"center",marginTop:8,flexWrap:"wrap"}}>
                   <button onClick={runAiMatch} disabled={aiMatching}
-                    style={{padding:"7px 16px",borderRadius:7,border:"1px solid #C4B5FD",background:aiMatching?"#EDE9FE":"#F5F3FF",color:"#6D28D9",fontSize:12,fontWeight:700,cursor:aiMatching?"wait":"pointer",display:"flex",alignItems:"center",gap:6}}>
+                    style={{padding:"7px 16px",borderRadius:7,border:"1px solid #5EEAD4",background:aiMatching?"#CCFBF1":"#ECFEFF",color:"#0F766E",fontSize:12,fontWeight:700,cursor:aiMatching?"wait":"pointer",display:"flex",alignItems:"center",gap:6}}>
                     {aiMatching?<>🪄 Matching…</>:<>🪄 Find best matches</>}
                   </button>
                   <span style={{fontSize:10,color:"#94A3B8"}}>
@@ -3547,7 +3547,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
                 )}
                 {aiMatches.length > 0 && (
                   <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
-                    <div style={{fontSize:10,fontWeight:700,color:"#6D28D9",textTransform:"uppercase",letterSpacing:".5px"}}>
+                    <div style={{fontSize:10,fontWeight:700,color:"#0F766E",textTransform:"uppercase",letterSpacing:".5px"}}>
                       ✨ Top {aiMatches.length} Match{aiMatches.length===1?"":"es"}
                     </div>
                     {aiMatches.map((m,idx) => {
@@ -3678,12 +3678,12 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           </div>
 
           {/* AI Suggest Terms — recommend payment plan / DLD / SC / validity */}
-          <div style={{background:"#FBFAFF",border:"1px solid #EDE9FE",borderRadius:10,padding:12}}>
+          <div style={{background:"#F0FDFA",border:"1px solid #CCFBF1",borderRadius:10,padding:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
               <div>
-                <div style={{fontSize:11,fontWeight:700,color:"#6D28D9",textTransform:"uppercase",letterSpacing:".5px",display:"flex",alignItems:"center",gap:6}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#0F766E",textTransform:"uppercase",letterSpacing:".5px",display:"flex",alignItems:"center",gap:6}}>
                   <span>💡 PropPulse AI · Suggest Terms</span>
-                  <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:"#F5F3FF",color:"#7C3AED",fontWeight:600,border:"1px solid #EDE9FE"}}>BETA</span>
+                  <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:"#ECFEFF",color:"#0E7490",fontWeight:600,border:"1px solid #CCFBF1"}}>BETA</span>
                 </div>
                 <div style={{fontSize:11,color:"#64748B",marginTop:3}}>
                   AI recommends payment plan, DLD handling, service charge, and validity based on UAE market norms and the buyer's profile.
@@ -3691,7 +3691,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
               </div>
               <button onClick={runAiSuggestTerms} disabled={aiSuggestingTerms || proposalUnits.length===0}
                 title={proposalUnits.length===0?"Add at least one unit first":"Get AI's recommendation"}
-                style={{padding:"7px 14px",borderRadius:7,border:"1px solid #C4B5FD",background:aiSuggestingTerms?"#EDE9FE":"#F5F3FF",color:"#6D28D9",fontSize:11,fontWeight:700,cursor:(aiSuggestingTerms||proposalUnits.length===0)?"not-allowed":"pointer",opacity:proposalUnits.length===0?0.5:1,whiteSpace:"nowrap"}}>
+                style={{padding:"7px 14px",borderRadius:7,border:"1px solid #5EEAD4",background:aiSuggestingTerms?"#CCFBF1":"#ECFEFF",color:"#0F766E",fontSize:11,fontWeight:700,cursor:(aiSuggestingTerms||proposalUnits.length===0)?"not-allowed":"pointer",opacity:proposalUnits.length===0?0.5:1,whiteSpace:"nowrap"}}>
                 {aiSuggestingTerms?"💡 Thinking…":"💡 Suggest"}
               </button>
             </div>
@@ -3701,8 +3701,8 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
               </div>
             )}
             {aiTermsSuggestion && (
-              <div style={{marginTop:10,background:"#fff",border:"1px solid #EDE9FE",borderRadius:8,padding:"10px 12px"}}>
-                <div style={{fontSize:10,fontWeight:700,color:"#6D28D9",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>
+              <div style={{marginTop:10,background:"#fff",border:"1px solid #CCFBF1",borderRadius:8,padding:"10px 12px"}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#0F766E",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>
                   ✨ AI Recommendation
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
@@ -3733,7 +3733,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
                 )}
                 <div style={{display:"flex",gap:6}}>
                   <button onClick={applyAiTerms}
-                    style={{padding:"6px 14px",borderRadius:6,border:"1px solid #A78BFA",background:"#F5F3FF",color:"#6D28D9",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                    style={{padding:"6px 14px",borderRadius:6,border:"1px solid #2DD4BF",background:"#ECFEFF",color:"#0F766E",fontSize:11,fontWeight:700,cursor:"pointer"}}>
                     ✓ Apply suggestions
                   </button>
                   <button onClick={()=>setAiTermsSuggestion(null)}
@@ -3835,7 +3835,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
               <label style={{fontSize:12,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px"}}>Cover message *</label>
               <button onClick={runAiCompose} disabled={aiComposing || proposalUnits.length===0}
                 title={proposalUnits.length===0 ? "Add at least one unit first" : "Let AI draft this for you"}
-                style={{padding:"5px 12px",borderRadius:6,border:"1px solid #C4B5FD",background:aiComposing?"#EDE9FE":"#F5F3FF",color:"#6D28D9",fontSize:11,fontWeight:700,cursor:(aiComposing||proposalUnits.length===0)?"not-allowed":"pointer",opacity:proposalUnits.length===0?0.5:1}}>
+                style={{padding:"5px 12px",borderRadius:6,border:"1px solid #5EEAD4",background:aiComposing?"#CCFBF1":"#ECFEFF",color:"#0F766E",fontSize:11,fontWeight:700,cursor:(aiComposing||proposalUnits.length===0)?"not-allowed":"pointer",opacity:proposalUnits.length===0?0.5:1}}>
                 {aiComposing?"✨ Generating…":"✨ Generate with AI"}
               </button>
             </div>
@@ -4453,6 +4453,12 @@ function VisitOutcomeDialog({ visitActivity, opp, lead, units, projects, current
 }
 
 function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated }) {
+  // Phase F W4 — AI Coach state (panel that analyses the deal and suggests next moves)
+  const [coachLoading, setCoachLoading] = useState(false);
+  const [coachResult, setCoachResult] = useState(null); // {summary, suggestions:[{title,reasoning,confidence,action_type,action_params}], analysed_at}
+  const [coachError, setCoachError] = useState("");
+  const [coachInfoOpen, setCoachInfoOpen] = useState(false);
+
   const [activeTab,  setActiveTab]  = useState("activities");
   const [activities, setActivities] = useState([]);
   const [reminders,  setReminders]  = useState([]); // Phase E W3 — pending follow-ups for this opp
@@ -4558,6 +4564,150 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
 
   // Phase E W1 — stage capture dialog for transitions that need structured input
   const [showCaptureDialog, setShowCaptureDialog] = useState(null); // target stage being captured
+
+  // Phase F W4 — AI Coach: analyse the deal and surface 1-3 actionable next moves.
+  // Pattern: visible always, runs on click, caches in component state until refresh.
+  // We don't auto-run because (a) it burns tokens on opps the user might just glance at,
+  // (b) users dislike AI doing work without their consent, (c) on-click feels purposeful.
+  const runCoach = async () => {
+    setCoachLoading(true);
+    setCoachError("");
+    try {
+      // Build the deal context for the AI — keep it lean to control token spend
+      const proj = units.find(u => u.id === opp.unit_id) ? projects.find(p => p.id === units.find(u => u.id === opp.unit_id).project_id) : null;
+      const unit = units.find(u => u.id === opp.unit_id) || null;
+      const dealContext = {
+        opportunity: {
+          stage: opp.stage,
+          status: opp.status,
+          budget_aed: opp.budget,
+          days_in_stage: opp.stage_updated_at ? Math.round((new Date() - new Date(opp.stage_updated_at)) / (1000*60*60*24)) : null,
+          days_since_created: opp.created_at ? Math.round((new Date() - new Date(opp.created_at)) / (1000*60*60*24)) : null,
+          unit_ref: unit?.unit_ref || null,
+          unit_project: proj?.name || null,
+          unit_handover: proj?.handover_date || null,
+        },
+        lead: {
+          name: lead?.name || null,
+          nationality: lead?.nationality || null,
+          source: lead?.source || null,
+          property_type_interest: lead?.property_type || null,
+          notes: lead?.notes || null,
+          stated_budget: lead?.budget || null,
+        },
+        recent_activities: (activities || []).slice(0, 10).map(a => ({
+          type: a.type,
+          subtype: a.activity_subtype,
+          status: a.status,
+          note: a.note,
+          when: a.created_at,
+          stage_at_event: a.stage_at_event,
+        })),
+        proposals_sent: (proposals || []).map(p => ({
+          status: p.status,
+          total_value_aed: p.total_value || (p.structured_data?.total_value),
+          payment_plan: p.payment_plan || (p.structured_data?.payment_plan),
+          dld_handling: p.structured_data?.dld_handling,
+          discount_applied_pct: p.structured_data?.units?.[0]?.discount_pct,
+          sent_at: p.created_at,
+          expires_at: p.expiry_date || (p.structured_data?.expiry_date),
+        })),
+        pending_reminders: (reminders || []).map(r => ({
+          message: r.message,
+          due_at: r.trigger_at,
+          overdue: new Date(r.trigger_at) < new Date(),
+        })),
+      };
+
+      const system = `You are PropPulse Coach, an expert UAE real-estate broker advisor reviewing a single deal in progress. Your job: analyse the deal data and recommend the SINGLE MOST IMPORTANT next move, plus 1-2 secondary suggestions. Be specific, reference actual events from the timeline (not generic advice), and respect UAE market norms (DLD 4%, off-plan vs ready dynamics, common payment plans 10/90, 20/80, 50/50 PHP, 40/60).
+
+Action types you can recommend:
+- build_proposal: send a (revised) proposal. Provide suggested_discount_pct and suggested_payment_plan in action_params if you have a basis.
+- schedule_followup: schedule a call/whatsapp/meeting follow-up. Provide suggested_followup_type and suggested_days_out in action_params.
+- mark_lost: deal looks dead, recommend closing as Lost. Provide suggested_lost_reason in action_params.
+- advance_stage: agent should manually move to a specific later stage. Provide suggested_stage in action_params.
+- note_only: just an observation, no specific action.
+
+Always respond with valid JSON only — no prose, no markdown fences. Confidence is one of: "high", "medium", "low".`;
+
+      const userPrompt = `Analyse this real-estate deal and recommend the next moves.
+
+DEAL CONTEXT:
+${JSON.stringify(dealContext, null, 2)}
+
+TASK: Return 1-3 actionable suggestions ranked by importance. Be specific — reference actual events ("Site Visit on May 1 had price-concern feedback", "Proposal #2 expires in 3 days", etc).
+
+RESPOND WITH VALID JSON ONLY in this exact shape:
+{
+  "summary": "<1-sentence high-level read of where the deal stands>",
+  "suggestions": [
+    {
+      "title": "<short imperative — 'Send revised proposal at 5% discount'>",
+      "reasoning": "<2-3 sentences citing specific events>",
+      "confidence": "high" | "medium" | "low",
+      "action_type": "<one of the action types listed>",
+      "action_params": { /* depends on action_type, can be empty */ }
+    }
+  ]
+}`;
+
+      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const cleaned = reply.replace(/```json\s*/g,"").replace(/```\s*$/g,"").trim();
+      let parsed;
+      try { parsed = JSON.parse(cleaned); }
+      catch (e) {
+        const m = cleaned.match(/\{[\s\S]*\}/);
+        if (!m) throw new Error("AI response was not valid JSON");
+        parsed = JSON.parse(m[0]);
+      }
+      if (!parsed.suggestions || !Array.isArray(parsed.suggestions) || parsed.suggestions.length === 0) {
+        throw new Error("AI returned no suggestions");
+      }
+      setCoachResult({
+        summary: parsed.summary || "",
+        suggestions: parsed.suggestions.slice(0, 3),
+        analysed_at: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.error("AI Coach failed:", e);
+      setCoachError(`Couldn't analyse: ${e.message || "unknown error"}`);
+    } finally {
+      setCoachLoading(false);
+    }
+  };
+
+  // Apply a coach action — opens the relevant existing dialog with sensible pre-fills
+  const applyCoachAction = (suggestion) => {
+    const { action_type, action_params = {} } = suggestion;
+    if (action_type === "build_proposal") {
+      // Open proposal builder; pre-fill happens via the builder's defaults +
+      // we'll rely on the user reading the suggestion. Future: pass action_params
+      // through to ProposalBuilderDialog as initial overrides.
+      requestProposalDialog();
+    } else if (action_type === "schedule_followup") {
+      const days = Number(action_params.suggested_days_out) || 2;
+      const due = new Date(); due.setDate(due.getDate()+days); due.setHours(9,0,0,0);
+      setLogForm(f => ({
+        ...f,
+        type: action_params.suggested_followup_type || "Call",
+        ns_enabled: true,
+        ns_type: action_params.suggested_followup_type || "Call",
+        ns_due: due.toISOString().split("T")[0],
+        ns_note: suggestion.title,
+      }));
+      setShowLog(true);
+    } else if (action_type === "mark_lost") {
+      setShowStageGate("Closed Lost");
+      setStageGateForm({ lost_reason: action_params.suggested_lost_reason || "", lost_notes: suggestion.reasoning });
+    } else if (action_type === "advance_stage" && action_params.suggested_stage) {
+      // Don't auto-execute — show the stage capture dialog so agent confirms with details
+      const target = action_params.suggested_stage;
+      if (STAGE_CAPTURE_CONFIGS[target]) setShowCaptureDialog(target);
+      else if (GATED_STAGES.includes(target)) setShowStageGate(target);
+      else moveStage(target);
+    }
+    // note_only — no action
+  };
 
   const moveStage = async(toStage) => {
     // Phase E W3: advancing to "Proposal Sent" should open the proposal builder,
@@ -4908,6 +5058,134 @@ You will become the assigned agent.`);
 
               {isWon&&<div style={{padding:"8px 12px",background:"#E6F4EE",borderRadius:8,fontSize:12,color:"#1A7F5A",fontWeight:600,border:"1px solid #A8D5BE"}}>🎉 Deal Won — Payments and Contract are unlocked</div>}
             </div>
+
+            {/* ── 🤖 AI COACH — analyses deal data and recommends next moves (Phase F W4) ──
+                 Pattern: visible always (so users know AI is here + demo punch),
+                 runs on click (so users stay in control + token spend is opt-in),
+                 caches in component state (so re-mounts don't re-bill).
+            ── */}
+            {!["Closed Won","Closed Lost"].includes(opp.stage) && (()=>{
+              const dataPoints = activities.length + proposals.length + reminders.filter(r=>r.status==="pending").length;
+              const analysedAgo = coachResult?.analysed_at ? Math.round((new Date() - new Date(coachResult.analysed_at)) / 60000) : null;
+              return (
+                <div style={{background:"#F0FDFA",border:"1px solid #CCFBF1",borderRadius:10,padding:14,marginBottom:14}}>
+                  {/* Header */}
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#0F766E",letterSpacing:"-.2px",display:"flex",alignItems:"center",gap:6}}>
+                      🤖 PropPulse Coach
+                      <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:"#ECFEFF",color:"#0E7490",fontWeight:600,border:"1px solid #CCFBF1"}}>BETA</span>
+                    </div>
+                    <button onClick={()=>setCoachInfoOpen(o=>!o)} title="How does this work?"
+                      style={{padding:"2px 7px",borderRadius:6,border:"1px solid #CCFBF1",background:"#fff",color:"#0E7490",fontSize:10,fontWeight:600,cursor:"pointer"}}>
+                      ⓘ
+                    </button>
+                    {analysedAgo !== null && (
+                      <span style={{fontSize:10,color:"#64748B",marginLeft:"auto"}}>
+                        Analysed {analysedAgo===0?"just now":`${analysedAgo} min ago`}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Info tooltip explanation (toggle) */}
+                  {coachInfoOpen && (
+                    <div style={{marginBottom:10,padding:"8px 10px",background:"#fff",border:"1px solid #CCFBF1",borderRadius:8,fontSize:11,color:"#475569",lineHeight:1.6}}>
+                      <strong style={{color:"#0F766E"}}>How it works:</strong> When you click <em>Analyse</em>, PropPulse Coach reads this deal's history (activities, proposals, visits, reminders, lead profile) and recommends 1-3 next moves. We don't run it automatically — you stay in control of when AI is consulted, and it keeps your token usage predictable. Results stay until you click Refresh.
+                    </div>
+                  )}
+
+                  {/* Initial state — no analysis yet */}
+                  {!coachResult && !coachLoading && (
+                    <div>
+                      <div style={{fontSize:12,color:"#0F766E",marginBottom:8,lineHeight:1.5}}>
+                        I can analyse this deal and recommend your next move.
+                      </div>
+                      <div style={{fontSize:11,color:"#64748B",marginBottom:10}}>
+                        Based on: {activities.length} activit{activities.length===1?"y":"ies"} · {proposals.length} proposal{proposals.length===1?"":"s"} · {reminders.filter(r=>r.status==="pending").length} pending reminder{reminders.filter(r=>r.status==="pending").length===1?"":"s"}
+                      </div>
+                      <button onClick={runCoach} disabled={dataPoints===0}
+                        title={dataPoints===0?"Add some activity first — there's nothing to analyse":"Analyse this deal with AI"}
+                        style={{padding:"8px 16px",borderRadius:7,border:"1px solid #5EEAD4",background:dataPoints===0?"#F0FDFA":"#ECFEFF",color:"#0F766E",fontSize:12,fontWeight:700,cursor:dataPoints===0?"not-allowed":"pointer",opacity:dataPoints===0?0.5:1}}>
+                        ✨ Analyse this deal →
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Loading */}
+                  {coachLoading && (
+                    <div style={{padding:"12px 0",fontSize:12,color:"#0F766E",display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{display:"inline-block",animation:"spin 1.2s linear infinite"}}>⚙️</span>
+                      Reading the deal history and forming recommendations…
+                    </div>
+                  )}
+
+                  {/* Error */}
+                  {coachError && !coachLoading && (
+                    <div style={{padding:"8px 10px",background:"#FEE2E2",border:"1px solid #FCA5A5",borderRadius:6,fontSize:11,color:"#C53030",marginBottom:8}}>
+                      {coachError}
+                      <button onClick={runCoach} style={{marginLeft:10,padding:"3px 10px",borderRadius:5,border:"1px solid #C53030",background:"#fff",color:"#C53030",fontSize:10,fontWeight:600,cursor:"pointer"}}>
+                        Retry
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Results */}
+                  {coachResult && !coachLoading && (
+                    <div>
+                      {coachResult.summary && (
+                        <div style={{fontSize:12,color:"#0F766E",marginBottom:10,padding:"8px 10px",background:"#fff",border:"1px solid #CCFBF1",borderRadius:6,fontStyle:"italic"}}>
+                          📊 {coachResult.summary}
+                        </div>
+                      )}
+                      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                        {coachResult.suggestions.map((s, idx) => {
+                          const conf = s.confidence || "medium";
+                          const confColor = conf==="high"?"#0F766E":conf==="medium"?"#A06810":"#64748B";
+                          const confBg = conf==="high"?"#CCFBF1":conf==="medium"?"#FEF3C7":"#F1F5F9";
+                          const actionLabel = ({
+                            build_proposal:"📤 Build proposal",
+                            schedule_followup:"📅 Schedule follow-up",
+                            mark_lost:"✗ Mark as lost",
+                            advance_stage: s.action_params?.suggested_stage ? `→ Move to ${s.action_params.suggested_stage}` : "→ Advance stage",
+                            note_only:null,
+                          })[s.action_type] || null;
+                          return (
+                            <div key={idx} style={{background:"#fff",border:"1px solid #CCFBF1",borderRadius:8,padding:"10px 12px"}}>
+                              <div style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                                <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:confBg,color:confColor,letterSpacing:".4px",textTransform:"uppercase"}}>
+                                  {conf}
+                                </span>
+                                <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{s.title}</span>
+                              </div>
+                              {s.reasoning && (
+                                <div style={{fontSize:11,color:"#475569",lineHeight:1.5,marginBottom:8}}>
+                                  💭 {s.reasoning}
+                                </div>
+                              )}
+                              {actionLabel && (
+                                <button onClick={()=>applyCoachAction(s)}
+                                  style={{padding:"5px 12px",borderRadius:6,border:"1px solid #5EEAD4",background:"#ECFEFF",color:"#0F766E",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                                  {actionLabel}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div style={{marginTop:10,display:"flex",gap:6}}>
+                        <button onClick={runCoach} disabled={coachLoading}
+                          style={{padding:"5px 12px",borderRadius:6,border:"1px solid #CCFBF1",background:"#fff",color:"#0E7490",fontSize:10,fontWeight:600,cursor:"pointer"}}>
+                          🔄 Refresh
+                        </button>
+                        <button onClick={()=>{setCoachResult(null); setCoachError("");}}
+                          style={{padding:"5px 12px",borderRadius:6,border:"1px solid #E2E8F0",background:"#fff",color:"#64748B",fontSize:10,fontWeight:600,cursor:"pointer"}}>
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* ── NEXT STEPS — pending follow-ups for this opportunity (Phase E W3) ── */}
             {(()=>{
@@ -6165,7 +6443,7 @@ You will become the assigned agent.`);
                   {[["Developer","🏗 Developer","Developer is offering the discount"],["Our Company","🏢 Our Company","We absorb the discount from our margin"]].map(([v,l,desc])=>(
                     <div key={v} onClick={()=>setDiscReqForm(f=>({...f,discount_source:v}))}
                       style={{flex:1,padding:"10px 14px",borderRadius:10,border:`2px solid ${discReqForm.discount_source===v?"#7C3AED":"#E2E8F0"}`,
-                        background:discReqForm.discount_source===v?"#EDE9FE":"#fff",cursor:"pointer",transition:"all .15s"}}>
+                        background:discReqForm.discount_source===v?"#CCFBF1":"#fff",cursor:"pointer",transition:"all .15s"}}>
                       <div style={{fontSize:13,fontWeight:700,color:discReqForm.discount_source===v?"#7C3AED":"#0F2540",marginBottom:3}}>{l}</div>
                       <div style={{fontSize:11,color:"#94A3B8"}}>{desc}</div>
                     </div>
@@ -6209,7 +6487,7 @@ You will become the assigned agent.`);
                 <div style={{padding:"8px 12px",borderRadius:8,fontSize:12,fontWeight:600,
                   background:Number(discReqForm.discount_pct)>5?"#EEE8F9":"#E6EFF9",
                   color:Number(discReqForm.discount_pct)>5?"#5B3FAA":"#1A5FA8",
-                  border:`1px solid ${Number(discReqForm.discount_pct)>5?"#C4B5FD":"#BFDBFE"}`}}>
+                  border:`1px solid ${Number(discReqForm.discount_pct)>5?"#5EEAD4":"#BFDBFE"}`}}>
                   {Number(discReqForm.discount_pct)>5?"⚡ This request will be escalated to Admin for approval":"✓ This request will go to your Sales Manager for approval"}
                 </div>
               )}
@@ -7489,7 +7767,7 @@ function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activiti
           <Arrow/>
           <StagePill stage="Contacted"      count={myOpps.filter(o=>o.stage==="Contacted").length}      value={myOpps.filter(o=>o.stage==="Contacted").reduce((s,o)=>s+(o.budget||0),0)}      color="#1A5FA8" bg="#E6EFF9" border="#BFDBFE"/>
           <Arrow/>
-          <StagePill stage="Site Visit"     count={myOpps.filter(o=>o.stage==="Site Visit").length}     value={myOpps.filter(o=>o.stage==="Site Visit").reduce((s,o)=>s+(o.budget||0),0)}     color="#5B3FAA" bg="#EEE8F9" border="#C4B5FD"/>
+          <StagePill stage="Site Visit"     count={myOpps.filter(o=>o.stage==="Site Visit").length}     value={myOpps.filter(o=>o.stage==="Site Visit").reduce((s,o)=>s+(o.budget||0),0)}     color="#5B3FAA" bg="#EEE8F9" border="#5EEAD4"/>
           <Arrow/>
           <StagePill stage="Proposal Sent"  count={myOpps.filter(o=>o.stage==="Proposal Sent").length}  value={myOpps.filter(o=>o.stage==="Proposal Sent").reduce((s,o)=>s+(o.budget||0),0)}  color="#A06810" bg="#FDF3DC" border="#FCD34D"/>
           <Arrow/>
@@ -8723,7 +9001,7 @@ function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
                 <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Saving</div><div style={{fontSize:13,fontWeight:600,color:"#B83232"}}>{d.original_value&&d.requested_value?`AED ${Number(d.original_value-d.requested_value).toLocaleString()}`:"—"}</div></div>
                 <div><div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Discount Source</div>
                   <div style={{fontSize:12,fontWeight:700,padding:"2px 8px",borderRadius:20,display:"inline-block",
-                    background:d.discount_source==="Developer"?"#EDE9FE":"#E6EFF9",
+                    background:d.discount_source==="Developer"?"#CCFBF1":"#E6EFF9",
                     color:d.discount_source==="Developer"?"#7C3AED":"#1A5FA8"}}>
                     {d.discount_source==="Developer"?"🏗 Developer":"🏢 Our Company"}
                   </div>
