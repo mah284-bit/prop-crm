@@ -3095,28 +3095,27 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
         return;
       }
 
-      // 2. Update opportunity: stamp proposal_sent_at + advance stage
+      // 2. Stamp proposal_sent_at on opportunity (do NOT auto-advance stage —
+      //    agent owns stage progression. Sending a proposal is just an event
+      //    in the timeline; stage moves are deliberate, separate decisions.)
       const { error: oppErr } = await supabase.from("opportunities").update({
-        stage: "Proposal Sent",
-        stage_updated_at: new Date().toISOString(),
         proposal_sent_at: new Date().toISOString(),
-        status: "Active",
       }).eq("id", opp.id);
       if (oppErr) {
-        console.warn("Stage update failed (proposal saved):", oppErr);
+        console.warn("proposal_sent_at stamp failed (non-fatal):", oppErr);
       }
 
-      // 3. Insert activity
+      // 3. Insert activity — stage_at_event reflects current stage, not "Proposal Sent"
       const { data: actRow } = await supabase.from("activities").insert({
         opportunity_id: opp.id, lead_id: lead.id, company_id,
         type: "Proposal",
         note: `📤 Proposal sent — ${proposalUnits.length} unit${proposalUnits.length===1?"":"s"} · Total ${fmtAed(totalValue)}`,
         status: "completed",
         user_id: currentUser.id, user_name: currentUser.full_name, lead_name: lead.name,
-        stage_at_event: "Proposal Sent",
-        from_stage: opp.stage,
-        to_stage: "Proposal Sent",
-        triggered_stage_change: true,
+        stage_at_event: opp.stage,
+        from_stage: null,
+        to_stage: null,
+        triggered_stage_change: false,
         activity_subtype: "proposal_sent",
         structured_data: {proposal_id: propData.id, ...fullPayload.structured_data},
       }).select().single();
@@ -3300,7 +3299,7 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
                         <div>
                           <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Asking price</label>
                           <div style={{position:"relative"}}>
-                            <input type="number" value={pu.asking_price||""}
+                            <input type="number" value={pu.asking_price ?? 0}
                               onChange={e=>updateUnit(idx,{asking_price:e.target.value, discounted_price: Math.round(Number(e.target.value||0)*(1-Number(pu.discount_pct||0)/100))})}
                               style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,fontFamily:"inherit",boxSizing:"border-box",background:"#fff"}}/>
                           </div>
@@ -3309,13 +3308,13 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
                           <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>
                             Discount % {showApprovalBadge && <span style={{color:"#C53030",fontWeight:700}}>· approval needed</span>}
                           </label>
-                          <input type="number" min="0" max="50" step="0.1" value={pu.discount_pct||""}
+                          <input type="number" min="0" max="50" step="0.1" value={pu.discount_pct ?? 0}
                             onChange={e=>updateUnit(idx,{discount_pct:e.target.value})}
                             style={{width:"100%",padding:"7px 10px",border:`1.5px solid ${showApprovalBadge?"#FCA5A5":"#E2E8F0"}`,borderRadius:7,fontSize:12,fontFamily:"inherit",boxSizing:"border-box",background:"#fff"}}/>
                         </div>
                         <div>
                           <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Discounted price</label>
-                          <input type="number" value={pu.discounted_price||""}
+                          <input type="number" value={pu.discounted_price ?? 0}
                             onChange={e=>updateUnit(idx,{discounted_price:e.target.value})}
                             style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,fontFamily:"inherit",boxSizing:"border-box",background:"#fff",fontWeight:700,color:"#1A5FA8"}}/>
                         </div>
@@ -4402,7 +4401,10 @@ You will become the assigned agent.`);
                   "SPA Signed":     "Verify payments and close",
                 };
                 const nextActionLabel = NEXT_ACTION_BY_STAGE[opp.stage] || "";
-                const showSendProposal = canEdit && ["Site Visit","Proposal Sent","Negotiation"].includes(opp.stage) && unit;
+                // Phase E W3 — Send Proposal available from any active stage.
+                // Agent decides when to send a proposal independent of stage progression.
+                // Excluded only from terminal stages (Closed Won/Lost) where deal is done.
+                const showSendProposal = canEdit && !["Closed Won","Closed Lost"].includes(opp.stage) && unit;
                 return(
                   <div style={{paddingTop:12,borderTop:"1px solid #F1F5F9"}}>
                     {/* Next-action hint */}
@@ -4575,11 +4577,13 @@ You will become the assigned agent.`);
               );
             })()}
 
-            {/* ── PROPOSALS — sent proposals with status (Phase E W3) ── */}
+            {/* ── PROPOSALS — visible whenever proposals exist OR the agent can edit
+                 (so the empty-state "+ Build proposal" call-to-action shows from any stage).
+                 Hidden only for terminal closed stages where deal is done. ── */}
             {(()=>{
-              const proposalStages = ["Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won"];
-              const stageAllows = proposalStages.includes(opp.stage);
-              if(!stageAllows && proposals.length === 0) return null;
+              const isTerminal = ["Closed Won","Closed Lost"].includes(opp.stage);
+              if (isTerminal && proposals.length === 0) return null;
+              if (!canEdit && proposals.length === 0) return null;
 
               const fmtAed = (n) => `AED ${Number(n||0).toLocaleString()}`;
               const STATUS_META = {
@@ -5133,7 +5137,7 @@ You will become the assigned agent.`);
               <div style={{marginBottom:12,background:logForm.ns_enabled?"#FFFEF7":"#F8FAFC",border:`1px solid ${logForm.ns_enabled?"#F0E5C8":"#E2E8F0"}`,borderRadius:8,padding:"10px 12px",transition:"all .15s"}}>
                 <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,fontWeight:600,color:"#0F2540"}}>
                   <input type="checkbox" checked={logForm.ns_enabled} onChange={e=>setLogForm(f=>({...f,ns_enabled:e.target.checked, ns_due: e.target.checked && !f.ns_due ? (()=>{const d=new Date();d.setDate(d.getDate()+2);return d.toISOString().split("T")[0];})() : f.ns_due }))} style={{width:14,height:14,cursor:"pointer",accentColor:"#0F2540"}}/>
-                  ✅ Schedule a next step
+                  📅 Schedule a next step
                   {logForm.ns_enabled && <span style={{fontSize:10,fontWeight:500,color:"#94A3B8",marginLeft:"auto"}}>creates a reminder</span>}
                 </label>
                 {logForm.ns_enabled && (
@@ -5331,8 +5335,8 @@ You will become the assigned agent.`);
             if(actRow) setActivities(p=>[actRow, ...p]);
             // Refresh reminders so the new follow-up + expiry reminders show in the strip
             supabase.from("reminders").select("*").eq("related_opportunity_id",opp.id).eq("status","pending").order("trigger_at",{ascending:true}).then(({data})=>setReminders(data||[]));
-            // Bump opp local state
-            onUpdated({...opp, stage:"Proposal Sent", proposal_sent_at: new Date().toISOString(), stage_updated_at: new Date().toISOString()});
+            // Stamp proposal_sent_at locally (stage stays as-is — agent decides when to move)
+            onUpdated({...opp, proposal_sent_at: new Date().toISOString()});
             setShowProposalDialog(false);
           }}
           showToast={showToast}
