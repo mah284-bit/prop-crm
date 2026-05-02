@@ -2649,23 +2649,242 @@ function OpenItemsGuard({ opp, lead, activities, units, projects, currentUser, o
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Phase E W3 — Proposal Viewer Dialog (read-only)
+   Opens an existing proposal in presentation mode so the broker can
+   see exactly what was sent, with a "Copy email body" action for
+   re-sharing.
+═══════════════════════════════════════════════════════════════ */
+function ProposalViewerDialog({ proposal, opp, lead, units, projects, currentUser, onClose, showToast }) {
+  if (!proposal) return null;
+  const sd = proposal.structured_data || {};
+  // Reconstruct the unit list — prefer multi-unit array, fallback to legacy single unit
+  const proposalUnits = sd.proposal_units || [{
+    unit_id: proposal.unit_id,
+    asking_price: proposal.asking_price ?? sd.asking_price,
+    discount_pct: proposal.discount_pct ?? sd.discount_pct,
+    discounted_price: proposal.discounted_price ?? sd.discounted_price,
+  }];
+  const totalValue = sd.total_value || proposalUnits.reduce((s,pu)=>s+Number(pu.discounted_price||0),0);
+  const expiry = proposal.expiry_date || sd.expiry_date;
+  const expiryDate = expiry ? new Date(expiry) : null;
+  const dldLabel = DLD_OPTIONS.find(o=>o.value===sd.dld_handling)?.label || sd.dld_handling || "—";
+  const scLabel = SERVICE_CHARGE_PRESETS.find(o=>o.value===sd.service_charge_preset)?.label || "None";
+  const paymentPlan = proposal.payment_plan || sd.payment_plan || "—";
+  const coverNotes = proposal.notes || sd.notes || "";
+
+  const fmtAed = (n) => `AED ${Number(n||0).toLocaleString()}`;
+
+  const STATUS_META = {
+    sent:     {label:"SENT",     c:"#1A5FA8", bg:"#E6EFF8"},
+    viewed:   {label:"VIEWED",   c:"#A06810", bg:"#FDF3DC"},
+    accepted: {label:"ACCEPTED", c:"#1A7F5A", bg:"#E6F4EE"},
+    rejected: {label:"REJECTED", c:"#C53030", bg:"#FEE2E2"},
+    expired:  {label:"EXPIRED",  c:"#6B7280", bg:"#F3F4F6"},
+    superseded:{label:"SUPERSEDED",c:"#6B7280",bg:"#F3F4F6"},
+  };
+  const sm = STATUS_META[proposal.status] || STATUS_META.sent;
+
+  // Build the email body (matches what was sent originally)
+  const buildEmailBody = () => {
+    const lines = [];
+    if (coverNotes) {
+      lines.push(coverNotes);
+      lines.push("");
+    }
+    lines.push("PROPOSAL SUMMARY");
+    lines.push("─".repeat(40));
+    proposalUnits.forEach((pu, i) => {
+      const u = units.find(x => x.id === pu.unit_id);
+      const proj = u ? projects.find(p => p.id === u.project_id) : null;
+      const bedLabel = u?.bedrooms === 0 ? "Studio" : (u?.bedrooms ? `${u.bedrooms} BR` : "");
+      lines.push(`Option ${i+1}: ${u?.unit_ref||"—"}${proj?.name?` · ${proj.name}`:""}`);
+      lines.push(`  ${[bedLabel, u?.size_sqft?`${u.size_sqft} sqft`:null, u?.view].filter(Boolean).join(" · ")}`);
+      lines.push(`  Asking price: ${fmtAed(pu.asking_price)}`);
+      if (Number(pu.discount_pct||0) > 0) {
+        lines.push(`  Discount: ${pu.discount_pct}%`);
+        lines.push(`  Final price: ${fmtAed(pu.discounted_price)}`);
+      }
+      lines.push("");
+    });
+    lines.push(`Payment plan: ${paymentPlan}`);
+    lines.push(`DLD fee: ${dldLabel}`);
+    if (sd.service_charge_preset && sd.service_charge_preset !== "none") {
+      lines.push(`Service charge waiver: ${scLabel}${sd.service_charge_custom?` (${sd.service_charge_custom})`:""}`);
+    }
+    if (expiryDate) lines.push(`Valid until: ${expiryDate.toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}`);
+    return lines.join("\n");
+  };
+
+  const copyEmailBody = async () => {
+    try {
+      await navigator.clipboard.writeText(buildEmailBody());
+      showToast("Email body copied to clipboard","success");
+    } catch (e) {
+      // Fallback: manual select-and-copy via temp textarea
+      const ta = document.createElement("textarea");
+      ta.value = buildEmailBody();
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      showToast("Email body copied","success");
+    }
+  };
+
+  const reopenInMail = () => {
+    const subject = `Property Proposal — ${proposalUnits.length} Option${proposalUnits.length===1?"":"s"} for ${lead?.name||"Buyer"}`;
+    const mailto = `mailto:${encodeURIComponent(lead?.email||"")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(buildEmailBody())}`;
+    window.location.href = mailto;
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
+      <div style={{background:"#fff",borderRadius:16,width:680,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
+        <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:3}}>
+                <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#fff"}}>👁 View Proposal</span>
+                <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:sm.bg,color:sm.c,letterSpacing:".4px"}}>{sm.label}</span>
+              </div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,.65)"}}>
+                Sent {proposal.sent_at ? new Date(proposal.sent_at).toLocaleString("en-AE",{dateStyle:"medium",timeStyle:"short"}) : "—"}
+                {expiryDate && ` · Valid until ${expiryDate.toLocaleDateString("en-AE",{day:"numeric",month:"short"})}`}
+              </div>
+            </div>
+            <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",lineHeight:1}}>×</button>
+          </div>
+        </div>
+
+        <div style={{padding:"1.1rem 1.4rem",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:18}}>
+
+          {/* Cover message */}
+          {coverNotes && (
+            <div>
+              <div style={{fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>Cover message</div>
+              <div style={{padding:"10px 14px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,fontSize:13,color:"#0F2540",whiteSpace:"pre-wrap",lineHeight:1.6}}>
+                {coverNotes}
+              </div>
+            </div>
+          )}
+
+          {/* Units */}
+          <div>
+            <div style={{fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>
+              {proposalUnits.length} unit{proposalUnits.length===1?"":"s"} · Total {fmtAed(totalValue)}
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {proposalUnits.map((pu,idx)=>{
+                const u = units.find(x => x.id === pu.unit_id);
+                const proj = u ? projects.find(p=>p.id===u.project_id) : null;
+                const bedLabel = u?.bedrooms === 0 ? "Studio" : (u?.bedrooms ? `${u.bedrooms}BR` : "");
+                const isLinked = u?.id === opp.unit_id;
+                return (
+                  <div key={pu.unit_id} style={{background:"#FAFBFE",border:`1px solid ${isLinked?"#FCD34D":"#E2E8F0"}`,borderRadius:10,padding:"11px 13px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                      <span style={{fontSize:9,fontWeight:700,color:"#94A3B8"}}>OPTION {idx+1}</span>
+                      <span style={{fontSize:14,fontWeight:700,color:"#0F2540"}}>{u?.unit_ref||"—"}</span>
+                      {isLinked && <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:"#FEF3C7",color:"#7A4F01"}}>📍 LINKED</span>}
+                    </div>
+                    <div style={{fontSize:11,color:"#64748B",marginBottom:8}}>
+                      {[bedLabel, u?.size_sqft?`${u.size_sqft} sqft`:null, u?.view, proj?.name].filter(Boolean).join(" · ")}
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,fontSize:11}}>
+                      <div>
+                        <div style={{color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",fontWeight:600,fontSize:9,marginBottom:2}}>Asking</div>
+                        <div style={{fontWeight:700,color:"#0F2540"}}>{fmtAed(pu.asking_price)}</div>
+                      </div>
+                      <div>
+                        <div style={{color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",fontWeight:600,fontSize:9,marginBottom:2}}>Discount</div>
+                        <div style={{fontWeight:700,color:Number(pu.discount_pct||0)>0?"#A06810":"#94A3B8"}}>{Number(pu.discount_pct||0)>0 ? `${pu.discount_pct}%` : "—"}</div>
+                      </div>
+                      <div>
+                        <div style={{color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",fontWeight:600,fontSize:9,marginBottom:2}}>Final</div>
+                        <div style={{fontWeight:700,color:"#1A5FA8"}}>{fmtAed(pu.discounted_price)}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Terms */}
+          <div>
+            <div style={{fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>Terms</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"9px 12px"}}>
+                <div style={{fontSize:9,color:"#94A3B8",fontWeight:600,textTransform:"uppercase",letterSpacing:".4px",marginBottom:3}}>📅 Payment plan</div>
+                <div style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>{paymentPlan}</div>
+              </div>
+              <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"9px 12px"}}>
+                <div style={{fontSize:9,color:"#94A3B8",fontWeight:600,textTransform:"uppercase",letterSpacing:".4px",marginBottom:3}}>🏛️ DLD fee</div>
+                <div style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>{dldLabel}</div>
+                {sd.dld_handling==="specific_amount" && sd.dld_custom_amount && (
+                  <div style={{fontSize:11,color:"#64748B",marginTop:2}}>{fmtAed(sd.dld_custom_amount)} waived</div>
+                )}
+              </div>
+              <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"9px 12px"}}>
+                <div style={{fontSize:9,color:"#94A3B8",fontWeight:600,textTransform:"uppercase",letterSpacing:".4px",marginBottom:3}}>🧾 Service charge</div>
+                <div style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>{scLabel}{sd.service_charge_custom?` (${sd.service_charge_custom})`:""}</div>
+              </div>
+              <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:"9px 12px"}}>
+                <div style={{fontSize:9,color:"#94A3B8",fontWeight:600,textTransform:"uppercase",letterSpacing:".4px",marginBottom:3}}>⏰ Validity</div>
+                <div style={{fontSize:12,fontWeight:600,color:"#0F2540"}}>
+                  {sd.validity_days?`${sd.validity_days} days`:"—"}
+                  {expiryDate && ` (until ${expiryDate.toLocaleDateString("en-AE",{day:"numeric",month:"short"})})`}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.4rem",borderTop:"1px solid #E8EDF4",background:"#F8FAFC",flexWrap:"wrap",gap:8}}>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={copyEmailBody}
+              style={{padding:"8px 14px",borderRadius:7,border:"1.5px solid #D1D9E6",background:"#fff",color:"#0F2540",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+              📋 Copy email body
+            </button>
+            <button onClick={reopenInMail}
+              style={{padding:"8px 14px",borderRadius:7,border:"1.5px solid #1A5FA8",background:"#EFF6FF",color:"#1A5FA8",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+              📧 Open in mail client
+            </button>
+          </div>
+          <button onClick={onClose}
+            style={{padding:"8px 18px",borderRadius:7,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, currentUser, onClose, onSaved, showToast }) {
   // Multi-unit proposal: each unit has its own pricing block
   // Pre-seed with the opp's linked unit if available
-  const initialUnit = (() => {
-    const u = units.find(x => x.id === opp.unit_id);
-    if (!u) return null;
-    const sp = (salePricing||[]).find(s => s.unit_id === u.id);
+  const linkedUnit = units.find(x => x.id === opp.unit_id);
+  const buildLinkedUnitRow = () => {
+    if (!linkedUnit) return null;
+    const sp = (salePricing||[]).find(s => s.unit_id === linkedUnit.id);
     const askingPrice = sp?.asking_price || opp.budget || 0;
     return {
-      unit_id: u.id,
+      unit_id: linkedUnit.id,
       asking_price: askingPrice,
       discount_pct: 0,
       discounted_price: askingPrice,
     };
-  })();
+  };
 
-  const [proposalUnits, setProposalUnits] = useState(initialUnit ? [initialUnit] : []);
+  // Toggle: should the opp's linked unit pre-load as the starting point?
+  // Default: true (most common — broker is proposing the unit they qualified the buyer for)
+  // Flip OFF: agent wants a totally different proposal (e.g. buyer changed their mind on size)
+  const [useLinkedUnit, setUseLinkedUnit] = useState(true);
+  const [proposalUnits, setProposalUnits] = useState(() => {
+    const row = buildLinkedUnitRow();
+    return row ? [row] : [];
+  });
   const [paymentPlanPreset, setPaymentPlanPreset] = useState("10/90");
   const [paymentPlan, setPaymentPlan] = useState("10% on booking · 90% on handover");
   const [dldHandling, setDldHandling] = useState("buyer_pays");
@@ -2676,6 +2895,22 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
   const [coverNotes, setCoverNotes] = useState("");
   const [showAddUnit, setShowAddUnit] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // React to the toggle: when flipped on, add linked unit if not present;
+  // when flipped off, remove it (only if it's the linked unit and unmodified).
+  useEffect(() => {
+    if (useLinkedUnit) {
+      setProposalUnits(prev => {
+        if (!linkedUnit) return prev;
+        if (prev.find(u => u.unit_id === linkedUnit.id)) return prev;
+        const row = buildLinkedUnitRow();
+        return row ? [row, ...prev] : prev;
+      });
+    } else {
+      setProposalUnits(prev => prev.filter(u => u.unit_id !== opp.unit_id));
+    }
+    // eslint-disable-next-line
+  }, [useLinkedUnit]);
 
   // Compute expiry date
   const expiryDate = (()=>{
@@ -2961,6 +3196,24 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
         </div>
 
         <div style={{padding:"1.1rem 1.4rem",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:18}}>
+
+          {/* Linked-unit toggle: opt-in to pre-seeding the opp's linked unit */}
+          {linkedUnit && (
+            <label style={{display:"flex",alignItems:"center",gap:9,padding:"9px 12px",background:useLinkedUnit?"#FFFBEA":"#F8FAFC",border:`1px solid ${useLinkedUnit?"#FCD34D":"#E2E8F0"}`,borderRadius:8,cursor:"pointer",transition:"all .15s"}}>
+              <input type="checkbox" checked={useLinkedUnit} onChange={e=>setUseLinkedUnit(e.target.checked)}
+                style={{width:14,height:14,cursor:"pointer",accentColor:"#0F2540",flexShrink:0}}/>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>
+                  Use linked unit (📍 {linkedUnit.unit_ref}) as starting point
+                </div>
+                <div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>
+                  {useLinkedUnit
+                    ? "The opportunity's unit is pre-loaded as Option 1. You can still add more or remove it."
+                    : "Starting fresh — pick whichever units suit this proposal. Use this when the buyer wants something different."}
+                </div>
+              </div>
+            </label>
+          )}
 
           {/* Units */}
           <div>
@@ -3790,6 +4043,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [showOpenItemsGuard, setShowOpenItemsGuard] = useState(false);
   const [proposals, setProposals] = useState([]);
+  const [viewingProposal, setViewingProposal] = useState(null); // proposal row to show in viewer
 
   // Phase E W3 — open-items guard: a proposal is the first official document.
   // Before opening the proposal builder, check for upcoming Site Visits / Handover
@@ -4352,6 +4606,19 @@ You will become the assigned agent.`);
                 showToast(`Marked as ${newStatus}`,"success");
               };
 
+              // Compute status counts for the header summary
+              const counts = proposals.reduce((acc,p)=>{
+                const k = p.status === "sent" ? "active" : (p.status === "superseded" ? "superseded" : p.status);
+                acc[k] = (acc[k]||0) + 1;
+                return acc;
+              }, {});
+              const summaryBits = [];
+              if (counts.active) summaryBits.push(`${counts.active} active`);
+              if (counts.accepted) summaryBits.push(`${counts.accepted} accepted`);
+              if (counts.rejected) summaryBits.push(`${counts.rejected} rejected`);
+              if (counts.superseded) summaryBits.push(`${counts.superseded} superseded`);
+              if (counts.expired) summaryBits.push(`${counts.expired} expired`);
+
               return (
                 <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"12px 16px",borderLeft:"3px solid #1A5FA8"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
@@ -4360,7 +4627,13 @@ You will become the assigned agent.`);
                         📤 Proposals
                       </div>
                       <div style={{fontSize:11,color:"#94A3B8",marginTop:2}}>
-                        {proposals.length===0 ? "No proposal sent yet" : `${proposals.length} proposal${proposals.length===1?"":"s"} on record`}
+                        {proposals.length===0
+                          ? "No proposal sent yet"
+                          : <>
+                              <strong style={{color:"#0F2540"}}>{proposals.length}</strong> total
+                              {summaryBits.length>0 && <> · {summaryBits.join(" · ")}</>}
+                            </>
+                        }
                       </div>
                     </div>
                     {canEdit && (
@@ -4391,11 +4664,15 @@ You will become the assigned agent.`);
                         const isExpired = expiry && expiry < new Date() && p.status === "sent";
                         const dldLabel = DLD_OPTIONS.find(o=>o.value===sd.dld_handling)?.label;
                         const isLatest = idx === 0;
+                        const proposalNumber = proposals.length - idx; // chronological #
 
                         return (
                           <div key={p.id} style={{background: isLatest?"#FAFBFE":"#F8FAFC",border:`1px solid ${isLatest?"#B8D2EE":"#E2E8F0"}`,borderRadius:10,padding:"11px 13px",borderLeft:`3px solid ${sm.c}`,opacity: isLatest?1:0.85}}>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:7,flexWrap:"wrap"}}>
                               <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
+                                <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:"#0F2540",color:"#fff",letterSpacing:".4px"}}>
+                                  PROPOSAL #{proposalNumber}
+                                </span>
                                 <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:sm.bg,color:sm.c,letterSpacing:".4px"}}>
                                   {sm.label}
                                 </span>
@@ -4451,23 +4728,29 @@ You will become the assigned agent.`);
                               </details>
                             )}
 
-                            {/* Actions — only on latest, sent proposal */}
-                            {isLatest && p.status === "sent" && canEdit && (
-                              <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:5}}>
-                                <button onClick={()=>updateProposalStatus(p.id,"viewed")}
-                                  style={{padding:"5px 11px",borderRadius:6,border:"1px solid #A06810",background:"#fff",color:"#A06810",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-                                  👁 Customer viewed
-                                </button>
-                                <button onClick={()=>updateProposalStatus(p.id,"accepted")}
-                                  style={{padding:"5px 11px",borderRadius:6,border:"1px solid #1A7F5A",background:"#fff",color:"#1A7F5A",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-                                  ✓ Accepted
-                                </button>
-                                <button onClick={()=>updateProposalStatus(p.id,"rejected")}
-                                  style={{padding:"5px 11px",borderRadius:6,border:"1px solid #C53030",background:"#fff",color:"#C53030",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-                                  ✕ Rejected
-                                </button>
-                              </div>
-                            )}
+                            {/* Actions: View always visible; lifecycle buttons only on latest sent */}
+                            <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:5}}>
+                              <button onClick={()=>setViewingProposal(p)}
+                                style={{padding:"5px 11px",borderRadius:6,border:"1px solid #1A5FA8",background:"#fff",color:"#1A5FA8",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                👁 View
+                              </button>
+                              {isLatest && p.status === "sent" && canEdit && (
+                                <>
+                                  <button onClick={()=>updateProposalStatus(p.id,"viewed")}
+                                    style={{padding:"5px 11px",borderRadius:6,border:"1px solid #A06810",background:"#fff",color:"#A06810",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                    Customer viewed
+                                  </button>
+                                  <button onClick={()=>updateProposalStatus(p.id,"accepted")}
+                                    style={{padding:"5px 11px",borderRadius:6,border:"1px solid #1A7F5A",background:"#fff",color:"#1A7F5A",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                    ✓ Accepted
+                                  </button>
+                                  <button onClick={()=>updateProposalStatus(p.id,"rejected")}
+                                    style={{padding:"5px 11px",borderRadius:6,border:"1px solid #C53030",background:"#fff",color:"#C53030",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                    ✕ Rejected
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </div>
                         );
                       })}
@@ -4983,6 +5266,18 @@ You will become the assigned agent.`);
           refreshActivities={()=>{
             supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
           }}
+          showToast={showToast}
+        />
+      )}
+
+      {/* Phase E W3 — Proposal Viewer Dialog (read-only) */}
+      {viewingProposal && (
+        <ProposalViewerDialog
+          proposal={viewingProposal}
+          opp={opp} lead={lead}
+          units={units} projects={projects}
+          currentUser={currentUser}
+          onClose={()=>setViewingProposal(null)}
           showToast={showToast}
         />
       )}
