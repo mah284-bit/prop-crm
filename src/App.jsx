@@ -2313,7 +2313,7 @@ function RemindersBell({ currentUser, onNavigateToOpp, onNavigateToLead, showToa
       // so the AI can flag raw leads not yet worked, leads gone cold, and so on.
       const { data: allLeads, error: leadsErr } = await supabase
         .from("leads")
-        .select("id, name, nationality, source, budget, notes, status, created_at, assigned_to")
+        .select("id, name, nationality, source, budget, notes, created_at, assigned_to")
         .eq("assigned_to", currentUser.id)
         .order("created_at", { ascending: false })
         .limit(60);
@@ -2407,7 +2407,6 @@ function RemindersBell({ currentUser, onNavigateToOpp, onNavigateToLead, showToa
           lead_id: l.id,
           lead_name: l.name || "Unknown",
           source: l.source || null,
-          status: l.status || null,
           stated_budget: l.budget || null,
           days_since_contact: daysSinceContact,
           last_contact_type: acts[0]?.type || null,
