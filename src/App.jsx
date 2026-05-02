@@ -2903,6 +2903,13 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
   const [aiMatches, setAiMatches] = useState([]); // [{unit_id, score, reason}]
   const [aiMatchError, setAiMatchError] = useState("");
 
+  // Phase F — AI Compose state (cover message + smart terms suggestion)
+  const [aiComposing, setAiComposing] = useState(false);
+  const [aiComposeError, setAiComposeError] = useState("");
+  const [aiSuggestingTerms, setAiSuggestingTerms] = useState(false);
+  const [aiTermsSuggestion, setAiTermsSuggestion] = useState(null); // {payment_plan, dld_handling, service_charge_preset, validity_days, reasoning}
+  const [aiTermsError, setAiTermsError] = useState("");
+
   // React to the toggle: when flipped on, add linked unit if not present;
   // when flipped off, remove it (only if it's the linked unit and unmodified).
   useEffect(() => {
@@ -3068,6 +3075,183 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     } finally {
       setAiMatching(false);
     }
+  };
+
+  // Phase F — AI Compose: generate a UAE business-tone cover message that references
+  // the buyer's specific situation (units in proposal, terms set, prior conversations).
+  const runAiCompose = async () => {
+    if (proposalUnits.length === 0) {
+      setAiComposeError("Add at least one unit before generating the cover message.");
+      return;
+    }
+    setAiComposing(true);
+    setAiComposeError("");
+    try {
+      // Build unit summary for the prompt
+      const unitsContext = proposalUnits.map(pu => {
+        const u = units.find(x => x.id === pu.unit_id);
+        const proj = u ? projects.find(p => p.id === u.project_id) : null;
+        const bedLabel = u?.bedrooms === 0 ? "Studio" : (u?.bedrooms ? `${u.bedrooms} BR` : "");
+        return {
+          ref: u?.unit_ref,
+          project: proj?.name,
+          type: u?.sub_type,
+          beds: bedLabel,
+          size_sqft: u?.size_sqft,
+          view: u?.view,
+          asking_price_aed: pu.asking_price,
+          discount_pct: pu.discount_pct,
+          final_price_aed: pu.discounted_price,
+        };
+      });
+      const dldLabel = DLD_OPTIONS.find(o=>o.value===dldHandling)?.label || dldHandling;
+      const scLabel = SERVICE_CHARGE_PRESETS.find(o=>o.value===serviceChargePreset)?.label || "None";
+      // Determine language hint from lead nationality
+      const arabicLeaning = ["UAE","Emirati","Saudi","Egyptian","Lebanese","Jordanian","Syrian","Iraqi","Kuwaiti","Qatari","Bahraini","Omani"].includes(lead?.nationality || "");
+      const system = `You are PropPulse AI, drafting professional UAE real-estate proposal cover messages on behalf of a real estate broker. Tone: respectful, professional, warm but not over-friendly. UAE business style. Short and clear. Address the buyer by name. Reference SPECIFIC units in the proposal and SPECIFIC terms (payment plan, DLD handling). Mention validity. Sign off with the broker's name. Do NOT invent facts — only use what's provided. Output ONLY the cover message text — no preamble, no commentary, no markdown.`;
+      const userPrompt = `Draft a cover message for this property proposal.
+
+BUYER:
+- Name: ${lead?.name || "—"}
+- Nationality: ${lead?.nationality || "—"}
+- Source: ${lead?.source || "—"}
+- Stated requirements: ${lead?.notes || "—"}
+- Budget: ${lead?.budget ? `AED ${Number(lead.budget).toLocaleString()}` : "—"}
+
+UNITS IN THIS PROPOSAL:
+${JSON.stringify(unitsContext, null, 2)}
+
+TERMS:
+- Payment plan: ${paymentPlan}
+- DLD fee: ${dldLabel}${dldHandling==="specific_amount" && dldCustomAmount ? ` (AED ${Number(dldCustomAmount).toLocaleString()} waived)` : ""}
+- Service charge waiver: ${scLabel}
+- Validity: ${validityDays} days (until ${expiryDate.toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})})
+
+BROKER:
+- Name: ${currentUser.full_name || "PropCRM"}
+
+LANGUAGE: English${arabicLeaning ? " (the buyer is from an Arabic-speaking region — feel free to add a brief Arabic greeting like 'السلام عليكم' if culturally appropriate, but keep the body in English unless instructed otherwise)" : ""}
+
+Write the cover message now. Keep it under 200 words.`;
+      const reply = await aiInvoke({ system, prompt: userPrompt });
+      // Strip any accidental markdown fences
+      const cleaned = reply.replace(/^```[a-z]*\s*/i,"").replace(/```\s*$/,"").trim();
+      setCoverNotes(cleaned);
+      showToast("✨ Cover message generated","success");
+    } catch (e) {
+      console.error("AI Compose failed:", e);
+      setAiComposeError(`Couldn't generate: ${e.message || "unknown error"}`);
+      showToast("AI Compose failed — see proposal builder","error");
+    } finally {
+      setAiComposing(false);
+    }
+  };
+
+  // Phase F — AI Suggest Terms: recommend payment plan, DLD handling, service charge,
+  // validity based on unit type/price/buyer profile and UAE market norms.
+  const runAiSuggestTerms = async () => {
+    if (proposalUnits.length === 0) {
+      setAiTermsError("Add at least one unit first.");
+      return;
+    }
+    setAiSuggestingTerms(true);
+    setAiTermsError("");
+    setAiTermsSuggestion(null);
+    try {
+      const unitsContext = proposalUnits.map(pu => {
+        const u = units.find(x => x.id === pu.unit_id);
+        const proj = u ? projects.find(p => p.id === u.project_id) : null;
+        return {
+          ref: u?.unit_ref,
+          project: proj?.name,
+          handover: proj?.handover_date || null, // off-plan signal
+          type: u?.sub_type,
+          beds: u?.bedrooms,
+          size_sqft: u?.size_sqft,
+          asking_price_aed: pu.asking_price,
+          final_price_aed: pu.discounted_price,
+        };
+      });
+      const totalValue = proposalUnits.reduce((s,p)=>s+Number(p.discounted_price||0),0);
+      const system = `You are PropPulse AI, an expert UAE real-estate broker advisor. Recommend optimal proposal terms based on UAE market norms. Consider:
+- OFF-PLAN units: payment plan should typically be 10/90, 20/80, 40/60, or 50/50 with post-handover. Service-charge waivers (1-2 years) are common as developer concessions.
+- READY units: payment plan is usually a single payment or short installments. Service-charge waivers less common.
+- DLD fee (4% of property value) handling: typically buyer pays; 50/50 split is a common concession in slow markets; full developer absorption is for premium/distress sales.
+- Validity: 7-14 days standard for off-plan (default 10), 3-7 days for resale.
+- Higher-budget buyers may benefit from more flexible payment plans to ease cashflow.
+
+Always respond with valid JSON only — no prose, no markdown fences.`;
+      const userPrompt = `Recommend the BEST proposal terms for this deal.
+
+BUYER:
+- Name: ${lead?.name || "—"}
+- Nationality: ${lead?.nationality || "—"}
+- Stated requirements: ${lead?.notes || "—"}
+- Budget: ${lead?.budget ? `AED ${Number(lead.budget).toLocaleString()}` : "—"}
+
+UNITS (${proposalUnits.length} total, AED ${totalValue.toLocaleString()}):
+${JSON.stringify(unitsContext, null, 2)}
+
+CURRENT (agent's draft) terms:
+- Payment plan: ${paymentPlan}
+- DLD: ${dldHandling}
+- Service charge: ${serviceChargePreset}
+- Validity: ${validityDays} days
+
+TASK: Recommend the optimal terms. Give a one-sentence reason for each choice.
+
+RESPOND WITH VALID JSON ONLY in this exact shape:
+{
+  "payment_plan_preset": "<one of: 10/90 | 20/80 | 50/50 PHP | 40/60 | Custom>",
+  "payment_plan_text": "<full payment plan description if Custom, else copy the standard text for the preset>",
+  "dld_handling": "<one of: buyer_pays | split_5050 | developer_pays | specific_amount>",
+  "service_charge_preset": "<one of: none | 6_months | 1_year | 2_years | custom>",
+  "validity_days": <one of: 7 | 10 | 14 | 21>,
+  "reasoning": "<2-3 short sentences explaining the recommendations>"
+}`;
+      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const cleaned = reply.replace(/```json\s*/g,"").replace(/```\s*$/g,"").trim();
+      let parsed;
+      try { parsed = JSON.parse(cleaned); }
+      catch (e) {
+        const m = cleaned.match(/\{[\s\S]*\}/);
+        if (!m) throw new Error("AI response was not valid JSON");
+        parsed = JSON.parse(m[0]);
+      }
+      setAiTermsSuggestion(parsed);
+    } catch (e) {
+      console.error("AI Suggest Terms failed:", e);
+      setAiTermsError(`Couldn't suggest: ${e.message || "unknown error"}`);
+    } finally {
+      setAiSuggestingTerms(false);
+    }
+  };
+
+  // Apply AI's term suggestion to the form (one-click accept)
+  const applyAiTerms = () => {
+    if (!aiTermsSuggestion) return;
+    const s = aiTermsSuggestion;
+    if (s.payment_plan_preset) {
+      const preset = PAYMENT_PLAN_PRESETS.find(p => p.label === s.payment_plan_preset);
+      if (preset) {
+        setPaymentPlanPreset(preset.label);
+        setPaymentPlan(s.payment_plan_text || preset.value || s.payment_plan_preset);
+      } else if (s.payment_plan_text) {
+        setPaymentPlanPreset("Custom");
+        setPaymentPlan(s.payment_plan_text);
+      }
+    }
+    if (s.dld_handling && DLD_OPTIONS.find(o=>o.value===s.dld_handling)) {
+      setDldHandling(s.dld_handling);
+    }
+    if (s.service_charge_preset && SERVICE_CHARGE_PRESETS.find(o=>o.value===s.service_charge_preset)) {
+      setServiceChargePreset(s.service_charge_preset);
+    }
+    if (s.validity_days && VALIDITY_PRESETS.includes(Number(s.validity_days))) {
+      setValidityDays(Number(s.validity_days));
+    }
+    showToast("✓ AI suggestions applied — review before sending","success");
+    setAiTermsSuggestion(null); // collapse the suggestion card after apply
   };
 
   // Build a human-readable summary for email body / activity note
@@ -3493,6 +3677,74 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
             )}
           </div>
 
+          {/* AI Suggest Terms — recommend payment plan / DLD / SC / validity */}
+          <div style={{background:"linear-gradient(180deg, #FAF5FF 0%, #F5F0FF 100%)",border:"1.5px solid #DDD6FE",borderRadius:10,padding:12}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+              <div>
+                <div style={{fontSize:11,fontWeight:700,color:"#7C3AED",textTransform:"uppercase",letterSpacing:".5px",display:"flex",alignItems:"center",gap:6}}>
+                  <span>💡 PropPulse AI · Suggest Terms</span>
+                  <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:"#EDE9FE",color:"#7C3AED",fontWeight:600}}>BETA</span>
+                </div>
+                <div style={{fontSize:11,color:"#64748B",marginTop:3}}>
+                  AI recommends payment plan, DLD handling, service charge, and validity based on UAE market norms and the buyer's profile.
+                </div>
+              </div>
+              <button onClick={runAiSuggestTerms} disabled={aiSuggestingTerms || proposalUnits.length===0}
+                title={proposalUnits.length===0?"Add at least one unit first":"Get AI's recommendation"}
+                style={{padding:"7px 14px",borderRadius:7,border:"none",background:aiSuggestingTerms?"#A78BFA":"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:(aiSuggestingTerms||proposalUnits.length===0)?"not-allowed":"pointer",opacity:proposalUnits.length===0?0.5:1,whiteSpace:"nowrap"}}>
+                {aiSuggestingTerms?"💡 Thinking…":"💡 Suggest"}
+              </button>
+            </div>
+            {aiTermsError && (
+              <div style={{marginTop:8,padding:"8px 10px",background:"#FEE2E2",border:"1px solid #FCA5A5",borderRadius:6,fontSize:11,color:"#C53030"}}>
+                {aiTermsError}
+              </div>
+            )}
+            {aiTermsSuggestion && (
+              <div style={{marginTop:10,background:"#fff",border:"1px solid #DDD6FE",borderRadius:8,padding:"10px 12px"}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#7C3AED",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>
+                  ✨ AI Recommendation
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                  <div style={{background:"#F8FAFC",borderRadius:6,padding:"7px 10px"}}>
+                    <div style={{fontSize:9,color:"#94A3B8",fontWeight:600,textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Payment plan</div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{aiTermsSuggestion.payment_plan_preset||"—"}</div>
+                    {aiTermsSuggestion.payment_plan_text && aiTermsSuggestion.payment_plan_text !== aiTermsSuggestion.payment_plan_preset && (
+                      <div style={{fontSize:10,color:"#64748B",marginTop:2}}>{aiTermsSuggestion.payment_plan_text}</div>
+                    )}
+                  </div>
+                  <div style={{background:"#F8FAFC",borderRadius:6,padding:"7px 10px"}}>
+                    <div style={{fontSize:9,color:"#94A3B8",fontWeight:600,textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>DLD fee</div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{DLD_OPTIONS.find(o=>o.value===aiTermsSuggestion.dld_handling)?.label||aiTermsSuggestion.dld_handling||"—"}</div>
+                  </div>
+                  <div style={{background:"#F8FAFC",borderRadius:6,padding:"7px 10px"}}>
+                    <div style={{fontSize:9,color:"#94A3B8",fontWeight:600,textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Service charge</div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{SERVICE_CHARGE_PRESETS.find(o=>o.value===aiTermsSuggestion.service_charge_preset)?.label||"None"}</div>
+                  </div>
+                  <div style={{background:"#F8FAFC",borderRadius:6,padding:"7px 10px"}}>
+                    <div style={{fontSize:9,color:"#94A3B8",fontWeight:600,textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Validity</div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{aiTermsSuggestion.validity_days?`${aiTermsSuggestion.validity_days} days`:"—"}</div>
+                  </div>
+                </div>
+                {aiTermsSuggestion.reasoning && (
+                  <div style={{fontSize:11,color:"#475569",fontStyle:"italic",lineHeight:1.5,padding:"6px 8px",background:"#F8FAFC",borderRadius:6,marginBottom:8}}>
+                    💡 {aiTermsSuggestion.reasoning}
+                  </div>
+                )}
+                <div style={{display:"flex",gap:6}}>
+                  <button onClick={applyAiTerms}
+                    style={{padding:"6px 14px",borderRadius:6,border:"none",background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                    ✓ Apply suggestions
+                  </button>
+                  <button onClick={()=>setAiTermsSuggestion(null)}
+                    style={{padding:"6px 14px",borderRadius:6,border:"1.5px solid #D1D9E6",background:"#fff",color:"#64748B",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Payment plan */}
           <div>
             <label style={{fontSize:12,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Payment plan *</label>
@@ -3579,10 +3831,22 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
 
           {/* Cover notes */}
           <div>
-            <label style={{fontSize:12,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Cover message *</label>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,gap:8,flexWrap:"wrap"}}>
+              <label style={{fontSize:12,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px"}}>Cover message *</label>
+              <button onClick={runAiCompose} disabled={aiComposing || proposalUnits.length===0}
+                title={proposalUnits.length===0 ? "Add at least one unit first" : "Let AI draft this for you"}
+                style={{padding:"5px 12px",borderRadius:6,border:"1.5px solid #7C3AED",background:aiComposing?"#7C3AED":"#FAF5FF",color:aiComposing?"#fff":"#7C3AED",fontSize:11,fontWeight:700,cursor:(aiComposing||proposalUnits.length===0)?"not-allowed":"pointer",opacity:proposalUnits.length===0?0.5:1}}>
+                {aiComposing?"✨ Generating…":"✨ Generate with AI"}
+              </button>
+            </div>
             <textarea value={coverNotes} onChange={e=>setCoverNotes(e.target.value)} rows={5}
               placeholder="Personal note to the customer — gets included in the email body"
               style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
+            {aiComposeError && (
+              <div style={{marginTop:6,padding:"7px 10px",background:"#FEE2E2",border:"1px solid #FCA5A5",borderRadius:6,fontSize:11,color:"#C53030"}}>
+                {aiComposeError}
+              </div>
+            )}
           </div>
 
           {/* Summary preview */}
