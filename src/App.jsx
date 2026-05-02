@@ -3016,9 +3016,16 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
     setSaving(true);
     try {
       const company_id = opp.company_id || currentUser.company_id || null;
-      const primaryUnit = proposalUnits[0];
+      // Coerce all numeric fields to numbers (input values come back as strings)
+      const cleanProposalUnits = proposalUnits.map(pu => ({
+        unit_id: pu.unit_id,
+        asking_price: Number(pu.asking_price||0),
+        discount_pct: Number(pu.discount_pct||0),
+        discounted_price: Number(pu.discounted_price||0),
+      }));
+      const primaryUnit = cleanProposalUnits[0];
       // Sum total proposal value (sum of discounted prices)
-      const totalValue = proposalUnits.reduce((sum, pu) => sum + Number(pu.discounted_price||0), 0);
+      const totalValue = cleanProposalUnits.reduce((sum, pu) => sum + pu.discounted_price, 0);
 
       // Build the FULL desired payload. We then attempt the insert and, if Supabase
       // complains about missing columns, retry with a minimal payload that puts
@@ -3039,7 +3046,7 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
         sent_at: new Date().toISOString(),
         created_by: currentUser.id,
         structured_data: {
-          proposal_units: proposalUnits,
+          proposal_units: cleanProposalUnits,
           payment_plan_preset: paymentPlanPreset,
           payment_plan: paymentPlan,
           dld_handling: dldHandling,
@@ -4653,18 +4660,45 @@ You will become the assigned agent.`);
                       {proposals.map((p, idx)=>{
                         const sm = STATUS_META[p.status] || STATUS_META.sent;
                         const sd = p.structured_data || {};
-                        const proposalUnits = sd.proposal_units || [{
-                          unit_id: p.unit_id,
-                          asking_price: p.asking_price,
-                          discount_pct: p.discount_pct,
-                          discounted_price: p.discounted_price,
-                        }];
-                        const totalValue = sd.total_value || proposalUnits.reduce((s,pu)=>s+Number(pu.discounted_price||0),0);
-                        const expiry = p.expiry_date ? new Date(p.expiry_date) : null;
+                        // Multi-source fallback for unit-level fields:
+                        //   1. structured_data.proposal_units (multi-unit, the source of truth)
+                        //   2. column values from p (legacy single-unit schema)
+                        //   3. structured_data flat fields (defensive insert moved them here)
+                        //   4. salePricing for asking_price (last resort)
+                        const proposalUnits = (sd.proposal_units && sd.proposal_units.length>0)
+                          ? sd.proposal_units.map(pu => {
+                              const sp = (salePricing||[]).find(s => s.unit_id === pu.unit_id);
+                              return {
+                                ...pu,
+                                asking_price: Number(pu.asking_price||0) || Number(sp?.asking_price||0),
+                                discount_pct: Number(pu.discount_pct||0),
+                                discounted_price: Number(pu.discounted_price||0) || Number(pu.asking_price||0) || Number(sp?.asking_price||0),
+                              };
+                            })
+                          : [(()=>{
+                              const sp = (salePricing||[]).find(s => s.unit_id === p.unit_id);
+                              const asking = Number(p.asking_price||sd.asking_price||sp?.asking_price||0);
+                              const discPct = Number(p.discount_pct||sd.discount_pct||0);
+                              const discPrice = Number(p.discounted_price||sd.discounted_price||0) || asking;
+                              return {
+                                unit_id: p.unit_id,
+                                asking_price: asking,
+                                discount_pct: discPct,
+                                discounted_price: discPrice,
+                              };
+                            })()];
+                        const totalValue = Number(sd.total_value||0) || proposalUnits.reduce((s,pu)=>s+Number(pu.discounted_price||0),0);
+                        // Display-time values for terms strip (with fallback)
+                        const dPaymentPlan = p.payment_plan || sd.payment_plan;
+                        const dDldHandling = sd.dld_handling;
+                        const dServiceCharge = sd.service_charge_preset;
+                        const expiry = (p.expiry_date||sd.expiry_date) ? new Date(p.expiry_date||sd.expiry_date) : null;
                         const isExpired = expiry && expiry < new Date() && p.status === "sent";
-                        const dldLabel = DLD_OPTIONS.find(o=>o.value===sd.dld_handling)?.label;
+                        const dldLabel = DLD_OPTIONS.find(o=>o.value===dDldHandling)?.label;
                         const isLatest = idx === 0;
                         const proposalNumber = proposals.length - idx; // chronological #
+                        // Hide terms strip entirely if there's nothing to show
+                        const hasAnyTerms = dPaymentPlan || dldLabel || (dServiceCharge && dServiceCharge !== "none");
 
                         return (
                           <div key={p.id} style={{background: isLatest?"#FAFBFE":"#F8FAFC",border:`1px solid ${isLatest?"#B8D2EE":"#E2E8F0"}`,borderRadius:10,padding:"11px 13px",borderLeft:`3px solid ${sm.c}`,opacity: isLatest?1:0.85}}>
@@ -4709,21 +4743,23 @@ You will become the assigned agent.`);
                               })}
                             </div>
 
-                            {/* Terms strip */}
-                            <div style={{display:"flex",flexWrap:"wrap",gap:8,fontSize:11,color:"#475569",padding:"6px 8px",background:"#fff",borderRadius:6,border:"1px solid #EEF2F7",marginBottom:7}}>
-                              {p.payment_plan && <span>📅 <strong style={{color:"#0F2540"}}>{p.payment_plan}</strong></span>}
-                              {dldLabel && <span>🏛️ {dldLabel}</span>}
-                              {sd.service_charge_preset && sd.service_charge_preset !== "none" && (
-                                <span>🧾 SC: {SERVICE_CHARGE_PRESETS.find(o=>o.value===sd.service_charge_preset)?.label||sd.service_charge_preset}</span>
-                              )}
-                            </div>
+                            {/* Terms strip — only render if any term has data */}
+                            {hasAnyTerms && (
+                              <div style={{display:"flex",flexWrap:"wrap",gap:8,fontSize:11,color:"#475569",padding:"6px 8px",background:"#fff",borderRadius:6,border:"1px solid #EEF2F7",marginBottom:7}}>
+                                {dPaymentPlan && <span>📅 <strong style={{color:"#0F2540"}}>{dPaymentPlan}</strong></span>}
+                                {dldLabel && <span>🏛️ {dldLabel}</span>}
+                                {dServiceCharge && dServiceCharge !== "none" && (
+                                  <span>🧾 SC: {SERVICE_CHARGE_PRESETS.find(o=>o.value===dServiceCharge)?.label||dServiceCharge}</span>
+                                )}
+                              </div>
+                            )}
 
                             {/* Cover notes preview */}
-                            {p.notes && (
+                            {(p.notes || sd.notes) && (
                               <details style={{marginBottom:7}}>
                                 <summary style={{fontSize:10,color:"#94A3B8",fontWeight:600,cursor:"pointer",textTransform:"uppercase",letterSpacing:".4px"}}>Cover message</summary>
                                 <div style={{fontSize:11,color:"#475569",marginTop:5,padding:"6px 8px",background:"#fff",borderRadius:6,border:"1px solid #EEF2F7",whiteSpace:"pre-wrap",lineHeight:1.5}}>
-                                  {p.notes}
+                                  {p.notes || sd.notes}
                                 </div>
                               </details>
                             )}
