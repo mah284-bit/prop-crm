@@ -7033,7 +7033,15 @@ async function aiInvoke({ system, prompt, messages }) {
    This is Step 1: a placeholder so the tab is wired into nav.
    Subsequent commits will replace this with the full module.
 ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   Phase F W5 — Opportunities Tab (real implementation)
+   List view: filterable/searchable table of all opps.
+   Click a row → opens OpportunityDetail (reuses existing component).
+   Future (Commit G): "+ New Opportunity" with lead lookup-or-create.
+═══════════════════════════════════════════════════════════════ */
 function OpportunitiesPlaceholder({ currentUser, crmContext }) {
+  // Used by the LEASING tab only — sales has the full Opportunities component below.
+  // Sunday: leasing will get its own mirrored implementation.
   return (
     <div style={{padding:"1.25rem 1.5rem"}}>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
@@ -7044,6 +7052,252 @@ function OpportunitiesPlaceholder({ currentUser, crmContext }) {
       <div style={{fontSize:12,color:"#64748B"}}>
         Dedicated deal-pipeline workspace ({crmContext}). For now, manage opportunities from the <strong>Leads</strong> tab.
       </div>
+    </div>
+  );
+}
+
+function Opportunities({ leads, setLeads, opps, setOpps, units, projects, salePricing, activities, setActivities, currentUser, users, showToast, initialFilter=null }) {
+  const [view, setView] = useState("list"); // "list" | "opportunity"
+  const [selOpp, setSelOpp] = useState(null);
+
+  // Filters
+  const [search, setSearch] = useState("");
+  const [fStage, setFStage] = useState("All");
+  const [fOwner, setFOwner] = useState("All"); // "All" | "Mine" | userId
+
+  // Deep-link: if initialFilter says open a specific opp, do it
+  useEffect(()=>{
+    if (!initialFilter || initialFilter.type !== "opp" || !initialFilter.oppId) return;
+    const opp = (opps||[]).find(o => o.id === initialFilter.oppId);
+    if (!opp) return;
+    setSelOpp(opp);
+    setView("opportunity");
+  }, [initialFilter?.type, initialFilter?.oppId, opps?.length]);
+
+  const STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
+  const STAGE_COLORS = {
+    "New":            {c:"#1A5FA8", bg:"#E6EFF8"},
+    "Contacted":      {c:"#0F766E", bg:"#CCFBF1"},
+    "Site Visit":     {c:"#7C3AED", bg:"#EDE9FE"},
+    "Proposal Sent":  {c:"#A06810", bg:"#FDF3DC"},
+    "Negotiation":    {c:"#C2410C", bg:"#FFEDD5"},
+    "Offer Accepted": {c:"#1A7F5A", bg:"#D1FAE5"},
+    "Reserved":       {c:"#7C3AED", bg:"#EDE9FE"},
+    "SPA Signed":     {c:"#0F2540", bg:"#E2E8F0"},
+    "Closed Won":     {c:"#1A7F5A", bg:"#D1FAE5"},
+    "Closed Lost":    {c:"#C53030", bg:"#FEE2E2"},
+  };
+
+  // Index lookup helpers
+  const leadById = useMemo(()=>Object.fromEntries((leads||[]).map(l=>[l.id,l])), [leads]);
+  const userById = useMemo(()=>Object.fromEntries((users||[]).map(u=>[u.id,u])), [users]);
+  const unitById = useMemo(()=>Object.fromEntries((units||[]).map(u=>[u.id,u])), [units]);
+  const projectById = useMemo(()=>Object.fromEntries((projects||[]).map(p=>[p.id,p])), [projects]);
+
+  // Apply filters
+  const visible = useMemo(()=>{
+    let rows = (opps||[]).filter(o => o && o.id);
+    // Stage filter
+    if (fStage !== "All") rows = rows.filter(o => o.stage === fStage);
+    // Owner filter
+    if (fOwner === "Mine") rows = rows.filter(o => o.assigned_to === currentUser.id);
+    else if (fOwner !== "All") rows = rows.filter(o => o.assigned_to === fOwner);
+    // Search filter
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      rows = rows.filter(o => {
+        const lead = leadById[o.lead_id];
+        const unit = unitById[o.unit_id];
+        const proj = unit ? projectById[unit.project_id] : null;
+        const haystack = [
+          lead?.name, lead?.phone, lead?.email,
+          unit?.unit_ref, proj?.name,
+          o.stage,
+        ].filter(Boolean).join(" ").toLowerCase();
+        return haystack.includes(q);
+      });
+    }
+    // Sort: stage_updated_at desc (most recent activity first)
+    return rows.sort((a,b)=>{
+      const at = a.stage_updated_at ? new Date(a.stage_updated_at).getTime() : 0;
+      const bt = b.stage_updated_at ? new Date(b.stage_updated_at).getTime() : 0;
+      return bt - at;
+    });
+  }, [opps, fStage, fOwner, search, leadById, unitById, projectById, currentUser.id]);
+
+  // Stage counts (for chip badges)
+  const stageCounts = useMemo(()=>{
+    const c = {};
+    (opps||[]).forEach(o => { if(o?.stage) c[o.stage] = (c[o.stage]||0)+1; });
+    return c;
+  }, [opps]);
+
+  const fmtAed = (n) => n ? `AED ${Number(n).toLocaleString()}` : "—";
+  const fmtRelative = (iso) => {
+    if (!iso) return "—";
+    const days = Math.floor((new Date() - new Date(iso)) / (1000*60*60*24));
+    if (days === 0) return "today";
+    if (days === 1) return "1 day ago";
+    if (days < 7) return `${days} days ago`;
+    if (days < 30) return `${Math.floor(days/7)}w ago`;
+    if (days < 365) return `${Math.floor(days/30)}mo ago`;
+    return `${Math.floor(days/365)}y ago`;
+  };
+
+  // ─── DETAIL VIEW ───────────────────────────────────
+  if (view === "opportunity" && selOpp) {
+    const lead = leadById[selOpp.lead_id];
+    return (
+      <OpportunityDetail
+        opp={selOpp}
+        lead={lead}
+        units={units}
+        projects={projects}
+        salePricing={salePricing}
+        users={users}
+        currentUser={currentUser}
+        showToast={showToast}
+        onBack={()=>{ setSelOpp(null); setView("list"); }}
+        onUpdated={(updated)=>{
+          setSelOpp(updated);
+          if (setOpps) setOpps(prev => prev.map(o => o.id === updated.id ? updated : o));
+        }}
+      />
+    );
+  }
+
+  // ─── LIST VIEW ────────────────────────────────────
+  return (
+    <div style={{padding:"1.25rem 1.5rem"}}>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:12,flexWrap:"wrap",marginBottom:14}}>
+        <div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:20}}>🎯</span>
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px"}}>Opportunities</span>
+            <span style={{fontSize:12,color:"#64748B",fontWeight:500}}>{visible.length} of {(opps||[]).length}</span>
+          </div>
+          <div style={{fontSize:12,color:"#64748B",marginTop:2}}>Your deal pipeline — click any row to open the workspace</div>
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <button disabled
+            title="Coming next: create opportunity with lead lookup"
+            style={{padding:"8px 16px",borderRadius:8,border:"1.5px dashed #CBD5E1",background:"#F8FAFC",color:"#94A3B8",fontSize:12,fontWeight:700,cursor:"not-allowed"}}>
+            + New Opportunity (next commit)
+          </button>
+        </div>
+      </div>
+
+      {/* Filters: search + owner */}
+      <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
+        <div style={{position:"relative",flex:"1 1 280px",minWidth:240}}>
+          <input type="text" value={search} onChange={e=>setSearch(e.target.value)}
+            placeholder="🔍 Search by lead name, phone, email, unit ref, project…"
+            style={{width:"100%",padding:"8px 32px 8px 12px",borderRadius:8,border:"1.5px solid #E2E8F0",fontSize:13,boxSizing:"border-box",outline:"none",background:"#fff"}}/>
+          {search && (
+            <button onClick={()=>setSearch("")} title="Clear"
+              style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",padding:"2px 8px",borderRadius:5,border:"none",background:"#E2E8F0",color:"#64748B",fontSize:10,fontWeight:700,cursor:"pointer"}}>
+              ✕
+            </button>
+          )}
+        </div>
+        <select value={fOwner} onChange={e=>setFOwner(e.target.value)}
+          style={{padding:"8px 12px",borderRadius:8,border:"1.5px solid #E2E8F0",fontSize:12,fontWeight:600,color:"#0F2540",background:"#fff",cursor:"pointer",outline:"none"}}>
+          <option value="All">👥 All owners</option>
+          <option value="Mine">⭐ My opportunities</option>
+          {(users||[]).map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+        </select>
+      </div>
+
+      {/* Stage filter chips */}
+      <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:14}}>
+        <button onClick={()=>setFStage("All")}
+          style={{padding:"5px 12px",borderRadius:16,border:`1.5px solid ${fStage==="All"?"#0F2540":"#E2E8F0"}`,background:fStage==="All"?"#0F2540":"#fff",color:fStage==="All"?"#fff":"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+          All <span style={{opacity:.7,marginLeft:4}}>{(opps||[]).length}</span>
+        </button>
+        {STAGES.map(s => {
+          const sel = fStage === s;
+          const meta = STAGE_COLORS[s] || {c:"#475569", bg:"#F1F5F9"};
+          const count = stageCounts[s] || 0;
+          return (
+            <button key={s} onClick={()=>setFStage(s)}
+              style={{padding:"5px 12px",borderRadius:16,border:`1.5px solid ${sel?meta.c:"#E2E8F0"}`,background:sel?meta.bg:"#fff",color:sel?meta.c:"#475569",fontSize:11,fontWeight:600,cursor:"pointer",opacity:count===0?0.5:1}}>
+              {s} <span style={{opacity:.7,marginLeft:4}}>{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Table */}
+      {visible.length === 0 ? (
+        <div style={{padding:"3rem 2rem",textAlign:"center",border:"1px dashed #D1D9E6",borderRadius:12,background:"#F8FAFC"}}>
+          <div style={{fontSize:36,marginBottom:8}}>🎯</div>
+          <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:4}}>
+            {(opps||[]).length === 0 ? "No opportunities yet" : "No matches"}
+          </div>
+          <div style={{fontSize:12,color:"#64748B"}}>
+            {(opps||[]).length === 0
+              ? "Create one from the Leads tab, or use the new flow once it ships."
+              : "Try adjusting filters or search."}
+          </div>
+        </div>
+      ) : (
+        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,overflow:"hidden"}}>
+          {/* Table header */}
+          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1.2fr 30px",gap:10,padding:"10px 14px",background:"#F8FAFC",borderBottom:"1px solid #E2E8F0",fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".5px"}}>
+            <div>Lead / Unit</div>
+            <div>Stage</div>
+            <div>Budget</div>
+            <div>Days in stage</div>
+            <div>Last activity</div>
+            <div>Owner</div>
+            <div></div>
+          </div>
+          {/* Rows */}
+          {visible.map(o => {
+            const lead = leadById[o.lead_id];
+            const unit = unitById[o.unit_id];
+            const proj = unit ? projectById[unit.project_id] : null;
+            const owner = userById[o.assigned_to];
+            const stageMeta = STAGE_COLORS[o.stage] || {c:"#475569", bg:"#F1F5F9"};
+            const daysInStage = o.stage_updated_at ? Math.floor((new Date() - new Date(o.stage_updated_at)) / (1000*60*60*24)) : null;
+            return (
+              <div key={o.id}
+                onClick={()=>{ setSelOpp(o); setView("opportunity"); }}
+                style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1.2fr 30px",gap:10,padding:"11px 14px",borderBottom:"1px solid #F1F5F9",cursor:"pointer",alignItems:"center",transition:"background .12s"}}
+                onMouseOver={e=>e.currentTarget.style.background="#F8FAFC"}
+                onMouseOut={e=>e.currentTarget.style.background="transparent"}>
+                <div style={{minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                    {lead?.name || "—"}
+                  </div>
+                  <div style={{fontSize:11,color:"#64748B",marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                    {[unit?.unit_ref, proj?.name].filter(Boolean).join(" · ") || (lead?.phone || "no unit")}
+                  </div>
+                </div>
+                <div>
+                  <span style={{fontSize:10,fontWeight:700,padding:"3px 9px",borderRadius:10,background:stageMeta.bg,color:stageMeta.c,letterSpacing:".4px"}}>
+                    {o.stage}
+                  </span>
+                </div>
+                <div style={{fontSize:12,color:"#0F2540",fontWeight:600}}>
+                  {fmtAed(o.budget)}
+                </div>
+                <div style={{fontSize:11,color:daysInStage > 7 ? "#C2410C" : "#475569"}}>
+                  {daysInStage === null ? "—" : daysInStage === 0 ? "today" : `${daysInStage}d`}
+                </div>
+                <div style={{fontSize:11,color:"#64748B"}}>
+                  {fmtRelative(o.stage_updated_at)}
+                </div>
+                <div style={{fontSize:11,color:"#475569",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                  {owner?.full_name || "Unassigned"}
+                </div>
+                <div style={{fontSize:14,color:"#94A3B8",textAlign:"right"}}>→</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -12180,13 +12434,13 @@ export default function App(){
               currentUser={currentUser}
               showToast={showToast}
               onNavigateToOpp={(oppId)=>{
-                // Jump to Leads tab and pass an initialFilter that the Leads
-                // component picks up to deep-link straight into the opportunity.
-                const targetTab = currentApp === "leasing" ? "l_leads" : "leads";
+                // Sales: route to new Opportunities tab. Leasing: still routes to
+                // l_leads until leasing gets its own Opportunities component (Sunday).
+                const targetTab = currentApp === "leasing" ? "l_leads" : "opportunities";
                 navigateToTab(targetTab, {type:"opp", oppId});
               }}
               onNavigateToLead={(leadId)=>{
-                // Same Leads tab but pass type:"lead" so the lead detail opens directly
+                // Lead-only highlights still go to Leads tab (no-opp leads belong there).
                 const targetTab = currentApp === "leasing" ? "l_leads" : "leads";
                 navigateToTab(targetTab, {type:"lead", leadId});
               }}
@@ -12246,7 +12500,7 @@ export default function App(){
           {/* ── Sales CRM ─────────────────────────────────────── */}
           {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={(t,filter)=>navigateToTab(t,filter)}/>}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter}/>}
-          {tab==="opportunities" &&<OpportunitiesPlaceholder currentUser={currentUser} crmContext="sales"/>}
+          {tab==="opportunities" &&<Opportunities leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} activities={activities} setActivities={setActivities} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
