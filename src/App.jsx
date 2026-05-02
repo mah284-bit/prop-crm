@@ -2201,6 +2201,11 @@ function RemindersBell({ currentUser, onNavigateToOpp, showToast }) {
   const [loading, setLoading] = useState(true);
   const dropdownRef = useRef(null);
 
+  // Phase F W4 — AI morning briefing state
+  const [briefing, setBriefing] = useState(null); // {summary, highlights:[{title,body,opp_id,priority}], generated_at}
+  const [briefingLoading, setBriefingLoading] = useState(false);
+  const [briefingError, setBriefingError] = useState("");
+
   const fetchReminders = async () => {
     if (!currentUser?.id) return;
     // Window: pending reminders triggered up to +14 days from now
@@ -2246,6 +2251,140 @@ function RemindersBell({ currentUser, onNavigateToOpp, showToast }) {
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
+
+  // Phase F W4 — AI Morning Briefing
+  // Reads the user's active book of business and surfaces the day's priorities.
+  // Manual trigger (button); cached for 1 hour after generation.
+  const runBriefing = async () => {
+    if (!currentUser?.id || !currentUser?.company_id) {
+      setBriefingError("User context missing — please reload.");
+      return;
+    }
+    setBriefingLoading(true);
+    setBriefingError("");
+    try {
+      // Fetch active opps owned by this user (last 30 days of activity)
+      const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate()-30);
+      const { data: opps, error: oppErr } = await supabase
+        .from("opportunities")
+        .select("id, lead_id, stage, status, budget, unit_id, created_at, stage_updated_at, proposal_sent_at")
+        .eq("assigned_to", currentUser.id)
+        .neq("stage", "Closed Won")
+        .neq("stage", "Closed Lost")
+        .gte("stage_updated_at", thirtyDaysAgo.toISOString())
+        .limit(40);
+      if (oppErr) throw new Error(`Couldn't load opportunities: ${oppErr.message}`);
+      if (!opps || opps.length < 2) {
+        setBriefingError("Once you have a few active deals, AI will summarise your day here.");
+        return;
+      }
+
+      // Fetch supporting data: leads, latest activity per opp, pending reminders
+      const leadIds = [...new Set(opps.map(o => o.lead_id).filter(Boolean))];
+      const oppIds = opps.map(o => o.id);
+      const [leadsRes, actsRes, remRes, propsRes] = await Promise.all([
+        supabase.from("leads").select("id, name, nationality, source, budget, notes").in("id", leadIds),
+        supabase.from("activities").select("opportunity_id, type, status, note, created_at, activity_subtype").in("opportunity_id", oppIds).order("created_at", {ascending:false}).limit(120),
+        supabase.from("reminders").select("related_opportunity_id, title, trigger_at, status").eq("user_id", currentUser.id).eq("status","pending").in("related_opportunity_id", oppIds),
+        supabase.from("proposals").select("opportunity_id, status, expiry_date, total_value, created_at").in("opportunity_id", oppIds).order("created_at", {ascending:false}).limit(60),
+      ]);
+
+      const leadsById = Object.fromEntries((leadsRes.data||[]).map(l => [l.id, l]));
+      const actsByOpp = {};
+      (actsRes.data||[]).forEach(a => {
+        if (!actsByOpp[a.opportunity_id]) actsByOpp[a.opportunity_id] = [];
+        actsByOpp[a.opportunity_id].push(a);
+      });
+      const remsByOpp = {};
+      (remRes.data||[]).forEach(r => {
+        if (!remsByOpp[r.related_opportunity_id]) remsByOpp[r.related_opportunity_id] = [];
+        remsByOpp[r.related_opportunity_id].push(r);
+      });
+      const propsByOpp = {};
+      (propsRes.data||[]).forEach(p => {
+        if (!propsByOpp[p.opportunity_id]) propsByOpp[p.opportunity_id] = [];
+        propsByOpp[p.opportunity_id].push(p);
+      });
+
+      // Build a compact book snapshot for the AI — token-disciplined
+      const book = opps.map(o => {
+        const lead = leadsById[o.lead_id];
+        const acts = (actsByOpp[o.id] || []).slice(0, 3); // last 3 only per opp
+        const rems = (remsByOpp[o.id] || []);
+        const props = (propsByOpp[o.id] || []);
+        const lastActivityAt = acts[0]?.created_at || o.stage_updated_at;
+        const daysSinceActivity = lastActivityAt ? Math.round((new Date() - new Date(lastActivityAt)) / (1000*60*60*24)) : null;
+        return {
+          opp_id: o.id,
+          stage: o.stage,
+          lead_name: lead?.name || "Unknown",
+          budget_aed: o.budget,
+          days_since_activity: daysSinceActivity,
+          last_activity: acts[0]?.note?.slice(0, 100) || null,
+          pending_reminders: rems.length,
+          overdue_reminders: rems.filter(r => new Date(r.trigger_at) < new Date()).length,
+          proposals_sent: props.filter(p => p.status === "sent").length,
+          latest_proposal_expires: props[0]?.expiry_date || null,
+        };
+      });
+
+      const system = `You are PropPulse AI, briefing a UAE real-estate broker on their day. Read their active book and surface the 3-4 most important things they should focus on TODAY. Examples of priorities to surface: deals stalling (no activity 7+ days), proposals expiring soon, deals where buyer engaged recently, deals at decision stage. Speak as a senior advisor — concise, specific, actionable. Reference SPECIFIC opps by lead name. Always respond with valid JSON only — no prose, no markdown fences.`;
+
+      const userPrompt = `BROKER: ${currentUser.full_name || "Agent"}
+DATE: ${new Date().toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
+ACTIVE BOOK (${book.length} opps):
+${JSON.stringify(book, null, 2)}
+
+TASK: Generate a morning briefing. 1-sentence overview, then 2-4 prioritised highlights.
+
+PRIORITY values: "high" | "medium" | "low"
+
+RESPOND WITH VALID JSON ONLY in this exact shape:
+{
+  "summary": "<1-sentence 'state of your day' overview>",
+  "highlights": [
+    {
+      "title": "<short imperative — 'Call Aisha — proposal expires today'>",
+      "body": "<1-2 sentences with specifics>",
+      "opp_id": "<opp_id from list, or null if cross-deal>",
+      "priority": "high" | "medium" | "low"
+    }
+  ]
+}`;
+
+      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const cleaned = reply.replace(/```json\s*/g,"").replace(/```\s*$/g,"").trim();
+      let parsed;
+      try { parsed = JSON.parse(cleaned); }
+      catch (e) {
+        const m = cleaned.match(/\{[\s\S]*\}/);
+        if (!m) throw new Error("AI response was not valid JSON");
+        parsed = JSON.parse(m[0]);
+      }
+      if (!parsed.highlights || !Array.isArray(parsed.highlights) || parsed.highlights.length === 0) {
+        throw new Error("AI returned no highlights");
+      }
+      // Filter highlights to opps that actually exist (defensive)
+      const validOppIds = new Set(opps.map(o=>o.id));
+      const cleanHighlights = parsed.highlights.map(h => ({
+        ...h,
+        opp_id: validOppIds.has(h.opp_id) ? h.opp_id : null,
+      })).slice(0, 4);
+      setBriefing({
+        summary: parsed.summary || "",
+        highlights: cleanHighlights,
+        generated_at: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.error("AI Briefing failed:", e);
+      setBriefingError(`Couldn't generate briefing: ${e.message || "unknown error"}`);
+    } finally {
+      setBriefingLoading(false);
+    }
+  };
+
+  // Briefing is "fresh" if generated less than 1 hour ago — used to gate auto-rerun
+  const briefingIsFresh = briefing && briefing.generated_at && (new Date() - new Date(briefing.generated_at)) < 60*60*1000;
 
   // Group reminders by time bucket
   const now = new Date();
@@ -2388,6 +2527,81 @@ function RemindersBell({ currentUser, onNavigateToOpp, showToast }) {
               <button onClick={fetchReminders} title="Refresh"
                 style={{background:"none", border:"none", color:"#C9A84C", cursor:"pointer", fontSize:14}}>↻</button>
             </div>
+          </div>
+
+          {/* Phase F W4 — AI Morning Briefing block */}
+          <div style={{padding:"10px 12px", borderBottom:"1px solid #F1F5F9", background:"#F0FDFA"}}>
+            <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom: briefing||briefingLoading||briefingError ? 8 : 0}}>
+              <div style={{fontSize:11, fontWeight:700, color:"#0F766E", textTransform:"uppercase", letterSpacing:".5px", display:"flex", alignItems:"center", gap:6}}>
+                🤖 Today's AI Briefing
+                <span style={{fontSize:9, padding:"2px 6px", borderRadius:8, background:"#ECFEFF", color:"#0E7490", fontWeight:600, border:"1px solid #CCFBF1"}}>BETA</span>
+              </div>
+              {!briefing && !briefingLoading && (
+                <button onClick={runBriefing}
+                  style={{padding:"4px 10px", borderRadius:6, border:"1px solid #5EEAD4", background:"#ECFEFF", color:"#0F766E", fontSize:10, fontWeight:700, cursor:"pointer"}}>
+                  ✨ Get my briefing
+                </button>
+              )}
+              {briefing && !briefingLoading && (
+                <button onClick={runBriefing} title={briefingIsFresh ? "Refresh — last generated less than 1 hour ago" : "Refresh briefing"}
+                  style={{padding:"3px 8px", borderRadius:5, border:"1px solid #CCFBF1", background:"#fff", color:"#0E7490", fontSize:10, fontWeight:600, cursor:"pointer"}}>
+                  🔄
+                </button>
+              )}
+            </div>
+
+            {briefingLoading && (
+              <div style={{fontSize:11, color:"#0F766E", display:"flex", alignItems:"center", gap:6, padding:"4px 0"}}>
+                <span style={{animation:"spin 1.2s linear infinite"}}>⚙️</span>
+                Reading your book of business…
+              </div>
+            )}
+
+            {briefingError && !briefingLoading && (
+              <div style={{padding:"7px 9px", background:"#FFFBEA", border:"1px solid #FCD34D", borderRadius:5, fontSize:10, color:"#7A4F01"}}>
+                {briefingError}
+              </div>
+            )}
+
+            {briefing && !briefingLoading && (
+              <div>
+                {briefing.summary && (
+                  <div style={{fontSize:11, color:"#0F766E", marginBottom:8, fontStyle:"italic", lineHeight:1.5}}>
+                    📊 {briefing.summary}
+                  </div>
+                )}
+                <div style={{display:"flex", flexDirection:"column", gap:6}}>
+                  {briefing.highlights.map((h, idx) => {
+                    const pri = h.priority || "medium";
+                    const priColor = pri==="high"?"#C53030":pri==="medium"?"#A06810":"#64748B";
+                    const priBg = pri==="high"?"#FEE2E2":pri==="medium"?"#FEF3C7":"#F1F5F9";
+                    return (
+                      <div key={idx}
+                        onClick={()=>{ if(h.opp_id && onNavigateToOpp){ onNavigateToOpp(h.opp_id); setOpen(false); } }}
+                        style={{background:"#fff", border:"1px solid #CCFBF1", borderRadius:6, padding:"7px 9px", cursor: h.opp_id?"pointer":"default"}}>
+                        <div style={{display:"flex", alignItems:"flex-start", gap:6, marginBottom:3, flexWrap:"wrap"}}>
+                          <span style={{fontSize:8, fontWeight:700, padding:"1px 5px", borderRadius:8, background:priBg, color:priColor, letterSpacing:".4px", textTransform:"uppercase"}}>
+                            {pri}
+                          </span>
+                          <span style={{fontSize:11, fontWeight:700, color:"#0F2540", flex:1}}>{h.title}</span>
+                          {h.opp_id && <span style={{fontSize:9, color:"#0E7490"}}>→</span>}
+                        </div>
+                        {h.body && (
+                          <div style={{fontSize:10, color:"#475569", lineHeight:1.4}}>
+                            {h.body}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {briefingIsFresh && (
+                  <div style={{fontSize:9, color:"#94A3B8", marginTop:6, textAlign:"right"}}>
+                    Cached · Click 🔄 to refresh
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {loading ? (
