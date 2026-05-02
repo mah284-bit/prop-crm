@@ -148,9 +148,9 @@ const saveAppConfig = (cfg) => {
 };
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","discounts","activity","ai","reports","proppulse","pay_plans","companies","users","permissions","permsets","group_view"],
-  leasing: ["l_dashboard","l_leads","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_proppulse","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
-  both:    ["dashboard","projects","builder","leads","leasing","discounts","activity","ai","reports","proppulse","pay_plans","l_reports","companies","users","permissions"],
+  sales:   ["dashboard","projects","builder","leads","opportunities","discounts","activity","ai","reports","proppulse","pay_plans","companies","users","permissions","permsets","group_view"],
+  leasing: ["l_dashboard","l_leads","l_opportunities","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_proppulse","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
+  both:    ["dashboard","projects","builder","leads","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","pay_plans","l_reports","companies","users","permissions"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -5937,6 +5937,40 @@ You will become the assigned agent.`);
 // ══════════════════════════════════════════════════════════════════
 // LEADS — Contact list with opportunities per lead
 // ══════════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════
+   Phase F — Opportunities Tab (information architecture restructure)
+   This is Step 1: a placeholder so the tab is wired into nav.
+   Subsequent commits will replace this with the full module:
+     - OpportunitiesList (table view with filters/search)
+     - CreateOpportunityDialog (lead lookup-or-create flow)
+     - Routes the existing OpportunityDetail
+═══════════════════════════════════════════════════════════════ */
+function OpportunitiesPlaceholder({ currentUser, crmContext }) {
+  return (
+    <div style={{padding:"2rem"}}>
+      <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px"}}>
+        🎯 Opportunities
+      </div>
+      <div style={{fontSize:13,color:"#64748B",marginTop:4}}>
+        Manage your deal pipeline {crmContext==="leasing"?"(leasing)":"(sales)"}
+      </div>
+      <div style={{marginTop:32,padding:"2.5rem 2rem",background:"#FFFBEA",border:"1.5px dashed #FCD34D",borderRadius:12,textAlign:"center"}}>
+        <div style={{fontSize:36,marginBottom:10}}>🚧</div>
+        <div style={{fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:6}}>Opportunities tab is being built</div>
+        <div style={{fontSize:12,color:"#64748B",lineHeight:1.6,maxWidth:480,margin:"0 auto"}}>
+          This is the new dedicated workspace for managing deals — separate from the Leads contact database.<br/><br/>
+          Coming next:
+          <ul style={{textAlign:"left",margin:"10px auto 0",maxWidth:360,paddingLeft:20,lineHeight:1.8}}>
+            <li>Pipeline table with filters by stage, owner, value</li>
+            <li>"+ New Opportunity" with smart lead lookup-or-create</li>
+            <li>Full-page deal workspace per opportunity</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpps=()=>{},properties,activities,setActivities,discounts,setDiscounts,currentUser,users,showToast,initialFilter=null}){
   const [search,   setSearch]   = useState("");
   const [fStage,   setFStage]   = useState("All");
@@ -7316,6 +7350,7 @@ const TABS=[
   // ── Sales CRM ──────────────────────────────────────────────────
   {id:"dashboard",  label:"Dashboard",    icon:"⊞",  app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent","viewer"]},
   {id:"leads",      label:"Leads",        icon:"👤", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"opportunities",label:"Opportunities",icon:"🎯", app:"sales",  roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"projects",   label:"Projects",     icon:"🏗️", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"builder",    label:"Inventory",    icon:"🏠", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"discounts",  label:"Discounts",    icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager"]},
@@ -7331,6 +7366,7 @@ const TABS=[
   // ── Leasing CRM ────────────────────────────────────────────────
   {id:"l_dashboard",label:"Dashboard",    icon:"⊞",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
   {id:"l_leads",    label:"Leads",        icon:"👤", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
+  {id:"l_opportunities",label:"Opportunities",icon:"🎯", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_projects",  label:"Projects",     icon:"🏗️", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_inventory",label:"Inventory",    icon:"📋", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"leasing",    label:"Prop. Mgmt",  icon:"🏘️", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
@@ -11116,6 +11152,7 @@ export default function App(){
           {/* ── Sales CRM ─────────────────────────────────────── */}
           {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={(t,filter)=>navigateToTab(t,filter)}/>}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter}/>}
+          {tab==="opportunities" &&<OpportunitiesPlaceholder currentUser={currentUser} crmContext="sales"/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
@@ -11138,6 +11175,7 @@ export default function App(){
           {/* ── Leasing CRM ───────────────────────────────────── */}
           {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={(t,filter)=>navigateToTab(t,filter)} followupAlerts={followupAlerts} key="l_dash"/>}
           {tab==="l_leads"     &&<LeasingLeads currentUser={currentUser} showToast={showToast} users={users}/>}
+          {tab==="l_opportunities" &&<OpportunitiesPlaceholder currentUser={currentUser} crmContext="leasing"/>}
           {tab==="l_projects"  &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="l_inventory" &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="leasing" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
           {tab==="leasing"     &&<LeasingModule currentUser={currentUser} showToast={showToast} leasingData={leasingData} setLeasingData={setLeasingData} initialFilter={navFilter}/>}
