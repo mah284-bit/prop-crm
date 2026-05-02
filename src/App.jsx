@@ -2432,6 +2432,553 @@ function RemindersBell({ currentUser, onNavigateToOpp, showToast }) {
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Phase E W3 — Proposal Builder Dialog
+   Builds and "sends" a proposal: multiple units, discount/discounted price,
+   payment plan, DLD handling, service charge waiver, validity, cover notes.
+   Writes to proposals table + creates auto-reminders for follow-up + expiry.
+   "Send" generates a structured email body via mailto: with .txt summary.
+═══════════════════════════════════════════════════════════════ */
+const PAYMENT_PLAN_PRESETS = [
+  { label: "10/90", value: "10% on booking · 90% on handover" },
+  { label: "20/80", value: "20% during construction · 80% on handover" },
+  { label: "50/50 PHP", value: "50/50 with 30% post-handover over 2 years" },
+  { label: "40/60", value: "40% during construction · 60% on handover" },
+  { label: "Custom", value: "" },
+];
+
+const DLD_OPTIONS = [
+  { value: "buyer_pays",       label: "Buyer pays (4% standard)",          color:"#64748B", bg:"#F1F5F9" },
+  { value: "split_5050",       label: "50/50 split with developer",         color:"#1A5FA8", bg:"#E6EFF8" },
+  { value: "developer_pays",   label: "Developer absorbs full DLD",         color:"#1A7F5A", bg:"#E6F4EE" },
+  { value: "specific_amount",  label: "Specific amount waived (custom)",    color:"#A06810", bg:"#FDF3DC" },
+];
+
+const SERVICE_CHARGE_PRESETS = [
+  { label:"None",       value:"none",        months:0 },
+  { label:"6 months",   value:"6_months",    months:6 },
+  { label:"1 year",     value:"1_year",      months:12 },
+  { label:"2 years",    value:"2_years",     months:24 },
+  { label:"Custom",     value:"custom",      months:null },
+];
+
+const VALIDITY_PRESETS = [7, 10, 14, 21]; // days
+
+function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, currentUser, onClose, onSaved, showToast }) {
+  // Multi-unit proposal: each unit has its own pricing block
+  // Pre-seed with the opp's linked unit if available
+  const initialUnit = (() => {
+    const u = units.find(x => x.id === opp.unit_id);
+    if (!u) return null;
+    const sp = (salePricing||[]).find(s => s.unit_id === u.id);
+    const askingPrice = sp?.asking_price || opp.budget || 0;
+    return {
+      unit_id: u.id,
+      asking_price: askingPrice,
+      discount_pct: 0,
+      discounted_price: askingPrice,
+    };
+  })();
+
+  const [proposalUnits, setProposalUnits] = useState(initialUnit ? [initialUnit] : []);
+  const [paymentPlanPreset, setPaymentPlanPreset] = useState("10/90");
+  const [paymentPlan, setPaymentPlan] = useState("10% on booking · 90% on handover");
+  const [dldHandling, setDldHandling] = useState("buyer_pays");
+  const [dldCustomAmount, setDldCustomAmount] = useState("");
+  const [serviceChargePreset, setServiceChargePreset] = useState("none");
+  const [serviceChargeCustom, setServiceChargeCustom] = useState("");
+  const [validityDays, setValidityDays] = useState(10);
+  const [coverNotes, setCoverNotes] = useState("");
+  const [showAddUnit, setShowAddUnit] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Compute expiry date
+  const expiryDate = (()=>{
+    const d = new Date(); d.setDate(d.getDate() + Number(validityDays||0)); d.setHours(23,59,59,0);
+    return d;
+  })();
+
+  const fmtAed = (n) => `AED ${Number(n||0).toLocaleString()}`;
+
+  // Default cover note template — generated from current state
+  useEffect(() => {
+    if (coverNotes) return; // don't overwrite user edits
+    if (!lead) return;
+    const greeting = lead.name ? `Dear ${lead.name},` : `Dear Sir/Madam,`;
+    const closing = `Looking forward to your response. The terms above are valid until ${expiryDate.toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}.\n\nBest regards,\n${currentUser.full_name||"PropCRM"}`;
+    setCoverNotes(`${greeting}\n\nThank you for your interest. Please find below our proposal for your consideration.\n\n${closing}`);
+    // eslint-disable-next-line
+  }, [lead?.name]);
+
+  // Update a unit row
+  const updateUnit = (idx, patch) => {
+    setProposalUnits(prev => prev.map((u, i) => {
+      if (i !== idx) return u;
+      const next = {...u, ...patch};
+      // Recompute discounted_price when discount_pct changes
+      if ("discount_pct" in patch && !("discounted_price" in patch)) {
+        const pct = Number(patch.discount_pct||0);
+        next.discounted_price = Math.round(Number(u.asking_price||0) * (1 - pct/100));
+      }
+      // If discounted_price changes directly, recompute discount_pct
+      if ("discounted_price" in patch && !("discount_pct" in patch)) {
+        const ask = Number(u.asking_price||0);
+        const disc = Number(patch.discounted_price||0);
+        next.discount_pct = ask > 0 ? Number((((ask - disc) / ask) * 100).toFixed(2)) : 0;
+      }
+      return next;
+    }));
+  };
+
+  const addUnit = (unitId) => {
+    if (proposalUnits.find(u => u.unit_id === unitId)) {
+      showToast("Unit already in proposal","error");
+      return;
+    }
+    const u = units.find(x => x.id === unitId);
+    if (!u) return;
+    const sp = (salePricing||[]).find(s => s.unit_id === u.id);
+    const askingPrice = sp?.asking_price || 0;
+    setProposalUnits(prev => [...prev, {
+      unit_id: u.id,
+      asking_price: askingPrice,
+      discount_pct: 0,
+      discounted_price: askingPrice,
+    }]);
+    setShowAddUnit(false);
+  };
+
+  const removeUnit = (idx) => {
+    setProposalUnits(prev => prev.filter((_,i)=>i!==idx));
+  };
+
+  // Picker for the "Add another unit" sub-flow — same rich-row approach as Site Visit picker
+  const availableUnits = units.filter(u => !proposalUnits.find(p => p.unit_id === u.id));
+
+  // Build a human-readable summary for email body / activity note
+  const buildSummaryText = () => {
+    const lines = [];
+    lines.push("PROPOSAL SUMMARY");
+    lines.push("─".repeat(40));
+    proposalUnits.forEach((pu, i) => {
+      const u = units.find(x => x.id === pu.unit_id);
+      const proj = u ? projects.find(p => p.id === u.project_id) : null;
+      lines.push(`Option ${i+1}: ${u?.unit_ref||"—"}${proj?.name?` · ${proj.name}`:""}`);
+      const bedLabel = u?.bedrooms === 0 ? "Studio" : (u?.bedrooms ? `${u.bedrooms} BR` : "");
+      lines.push(`  ${[bedLabel, u?.size_sqft?`${u.size_sqft} sqft`:null, u?.view].filter(Boolean).join(" · ")}`);
+      lines.push(`  Asking price: ${fmtAed(pu.asking_price)}`);
+      if (Number(pu.discount_pct||0) > 0) {
+        lines.push(`  Discount: ${pu.discount_pct}%`);
+        lines.push(`  Final price: ${fmtAed(pu.discounted_price)}`);
+      }
+      lines.push("");
+    });
+    lines.push(`Payment plan: ${paymentPlan}`);
+    const dldLabel = DLD_OPTIONS.find(o=>o.value===dldHandling)?.label || dldHandling;
+    lines.push(`DLD fee: ${dldLabel}${dldHandling==="specific_amount" && dldCustomAmount ? ` — ${fmtAed(dldCustomAmount)} waived` : ""}`);
+    if (serviceChargePreset !== "none") {
+      const scLabel = SERVICE_CHARGE_PRESETS.find(o=>o.value===serviceChargePreset)?.label || serviceChargePreset;
+      lines.push(`Service charge waiver: ${scLabel}${serviceChargePreset==="custom" && serviceChargeCustom ? ` (${serviceChargeCustom})` : ""}`);
+    }
+    lines.push(`Valid until: ${expiryDate.toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}`);
+    return lines.join("\n");
+  };
+
+  const submit = async (sendEmail) => {
+    if (proposalUnits.length === 0) {
+      showToast("Add at least one unit to the proposal","error");
+      return;
+    }
+    if (!paymentPlan.trim()) {
+      showToast("Set a payment plan","error");
+      return;
+    }
+    setSaving(true);
+    try {
+      const company_id = opp.company_id || currentUser.company_id || null;
+      const primaryUnit = proposalUnits[0];
+      // Sum total proposal value (sum of discounted prices)
+      const totalValue = proposalUnits.reduce((sum, pu) => sum + Number(pu.discounted_price||0), 0);
+
+      const proposalRow = {
+        opportunity_id: opp.id,
+        lead_id: lead.id,
+        company_id,
+        unit_id: primaryUnit.unit_id, // legacy schema may need single unit; we store all in structured_data
+        asking_price: primaryUnit.asking_price,
+        discount_pct: primaryUnit.discount_pct,
+        discounted_price: primaryUnit.discounted_price,
+        payment_plan: paymentPlan,
+        expiry_date: expiryDate.toISOString().split("T")[0],
+        notes: coverNotes,
+        status: "sent",
+        sent_at: new Date().toISOString(),
+        created_by: currentUser.id,
+        // Everything multi-unit / structured into one JSON column for forward compatibility
+        structured_data: {
+          proposal_units: proposalUnits,
+          payment_plan_preset: paymentPlanPreset,
+          dld_handling: dldHandling,
+          dld_custom_amount: dldHandling==="specific_amount" ? Number(dldCustomAmount||0) : null,
+          service_charge_preset: serviceChargePreset,
+          service_charge_custom: serviceChargePreset==="custom" ? serviceChargeCustom : null,
+          validity_days: validityDays,
+          total_value: totalValue,
+        },
+      };
+
+      // 1. Insert proposal
+      const { data: propData, error: propErr } = await supabase.from("proposals").insert(proposalRow).select().single();
+      if (propErr) {
+        console.error("Proposal insert failed:", propErr);
+        showToast(`Failed to save proposal: ${propErr.message}`,"error");
+        setSaving(false);
+        return;
+      }
+
+      // 2. Update opportunity: stamp proposal_sent_at + advance stage
+      const { error: oppErr } = await supabase.from("opportunities").update({
+        stage: "Proposal Sent",
+        stage_updated_at: new Date().toISOString(),
+        proposal_sent_at: new Date().toISOString(),
+        status: "Active",
+      }).eq("id", opp.id);
+      if (oppErr) {
+        console.warn("Stage update failed (proposal saved):", oppErr);
+      }
+
+      // 3. Insert activity
+      const { data: actRow } = await supabase.from("activities").insert({
+        opportunity_id: opp.id, lead_id: lead.id, company_id,
+        type: "Proposal",
+        note: `📤 Proposal sent — ${proposalUnits.length} unit${proposalUnits.length===1?"":"s"} · Total ${fmtAed(totalValue)}`,
+        status: "completed",
+        user_id: currentUser.id, user_name: currentUser.full_name, lead_name: lead.name,
+        stage_at_event: "Proposal Sent",
+        from_stage: opp.stage,
+        to_stage: "Proposal Sent",
+        triggered_stage_change: true,
+        activity_subtype: "proposal_sent",
+        structured_data: {proposal_id: propData.id, ...proposalRow.structured_data},
+      }).select().single();
+
+      // 4. Auto-reminders: follow-up in 3 days, expiry warning on validity day
+      const followUp = new Date(); followUp.setDate(followUp.getDate()+3); followUp.setHours(9,0,0,0);
+      const expiryRemind = new Date(expiryDate); expiryRemind.setHours(9,0,0,0);
+
+      const reminderRows = [
+        {
+          company_id, user_id: currentUser.id,
+          related_opportunity_id: opp.id, related_lead_id: lead.id, related_activity_id: actRow?.id,
+          trigger_at: followUp.toISOString(),
+          title: `Follow up on proposal — ${lead.name}`,
+          body: `${proposalUnits.length} unit${proposalUnits.length===1?"":"s"} · Total ${fmtAed(totalValue)}. Has the buyer responded?`,
+          reason: "auto_proposal_followup",
+          status: "pending",
+          created_by: currentUser.id,
+        },
+      ];
+      // Only add expiry reminder if it's after the follow-up (otherwise it's redundant)
+      if (expiryRemind > followUp && expiryRemind > new Date()) {
+        reminderRows.push({
+          company_id, user_id: currentUser.id,
+          related_opportunity_id: opp.id, related_lead_id: lead.id, related_activity_id: actRow?.id,
+          trigger_at: expiryRemind.toISOString(),
+          title: `Proposal expires today — ${lead.name}`,
+          body: `Proposal validity ends today. Chase or extend.`,
+          reason: "auto_proposal_expiring",
+          status: "pending",
+          created_by: currentUser.id,
+        });
+      }
+      await supabase.from("reminders").insert(reminderRows);
+
+      // 5. If sendEmail, generate the .txt + open mailto:
+      if (sendEmail) {
+        try {
+          const summary = buildSummaryText();
+          const fullBody = `${coverNotes}\n\n${summary}`;
+          const subject = `Property Proposal — ${proposalUnits.length} Option${proposalUnits.length===1?"":"s"} for ${lead.name}`;
+          // Generate a .txt file as the "attachment" stand-in (real PDF post-Sunday)
+          const blob = new Blob([fullBody], {type:"text/plain;charset=utf-8"});
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `proposal-${(lead.name||"buyer").replace(/\s+/g,"_")}.txt`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(()=>URL.revokeObjectURL(url), 1000);
+          // Open mail client
+          const mailto = `mailto:${encodeURIComponent(lead.email||"")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(fullBody)}`;
+          setTimeout(()=>{ window.location.href = mailto; }, 300);
+        } catch (e) {
+          console.warn("Send email step failed (non-fatal):", e);
+          showToast("Proposal saved, but email step failed","error");
+        }
+      }
+
+      showToast("✓ Proposal sent","success");
+      onSaved(propData, actRow);
+    } catch (e) {
+      console.error("Proposal save error:", e);
+      showToast(`Save failed: ${e.message||"unknown"}`,"error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
+      <div style={{background:"#fff",borderRadius:16,width:680,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
+        <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+            <div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#fff"}}>📤 Send Proposal</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,.65)",marginTop:3}}>
+                Site Visit → <strong style={{color:"#C9A84C"}}>Proposal Sent</strong> · {lead?.name || "Buyer"}
+              </div>
+            </div>
+            <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",lineHeight:1}}>×</button>
+          </div>
+        </div>
+
+        <div style={{padding:"1.1rem 1.4rem",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:18}}>
+
+          {/* Units */}
+          <div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <label style={{fontSize:12,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px"}}>
+                Units in this proposal *
+              </label>
+              <button onClick={()=>setShowAddUnit(s=>!s)}
+                style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #1A5FA8",background:showAddUnit?"#1A5FA8":"#fff",color:showAddUnit?"#fff":"#1A5FA8",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                {showAddUnit?"Cancel":"+ Add another unit"}
+              </button>
+            </div>
+
+            {/* Add-unit picker */}
+            {showAddUnit && (
+              <div style={{marginBottom:10,background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:8,maxHeight:180,overflowY:"auto"}}>
+                {availableUnits.length === 0 ? (
+                  <div style={{fontSize:11,color:"#94A3B8",fontStyle:"italic",padding:"10px"}}>No more units available to add</div>
+                ) : availableUnits.map(u => {
+                  const proj = projects.find(p=>p.id===u.project_id);
+                  const sp = (salePricing||[]).find(s => s.unit_id === u.id);
+                  const bedLabel = u.bedrooms === 0 ? "Studio" : (u.bedrooms ? `${u.bedrooms}BR` : "");
+                  return (
+                    <button key={u.id} onClick={()=>addUnit(u.id)}
+                      style={{display:"block",width:"100%",textAlign:"left",padding:"7px 10px",border:"none",background:"transparent",borderRadius:6,cursor:"pointer"}}
+                      onMouseOver={e=>e.currentTarget.style.background="#fff"}
+                      onMouseOut={e=>e.currentTarget.style.background="transparent"}>
+                      <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>
+                        {u.unit_ref} · {bedLabel}{u.size_sqft?` · ${u.size_sqft} sqft`:""}{u.view?` · ${u.view}`:""}
+                      </div>
+                      <div style={{fontSize:11,color:"#64748B",marginTop:1}}>
+                        {[proj?.name, u.floor_number?`Floor ${u.floor_number}`:null, sp?.asking_price?fmtAed(sp.asking_price):null].filter(Boolean).join(" · ")}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Unit rows */}
+            {proposalUnits.length === 0 ? (
+              <div style={{padding:"1.5rem",textAlign:"center",color:"#94A3B8",border:"1px dashed #D1D9E6",borderRadius:8,fontSize:12}}>
+                No units yet — click "Add another unit" above to start
+              </div>
+            ) : (
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {proposalUnits.map((pu, idx) => {
+                  const u = units.find(x => x.id === pu.unit_id);
+                  const proj = u ? projects.find(p=>p.id===u.project_id) : null;
+                  const bedLabel = u?.bedrooms === 0 ? "Studio" : (u?.bedrooms ? `${u.bedrooms}BR` : "");
+                  const isPrimary = u?.id === opp.unit_id;
+                  const discountPct = Number(pu.discount_pct||0);
+                  const showApprovalBadge = discountPct >= 5;
+
+                  return (
+                    <div key={pu.unit_id} style={{background:"#FAFBFE",border:`1.5px solid ${isPrimary?"#C9A84C":"#E2E8F0"}`,borderRadius:10,padding:"12px 14px"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,gap:8}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:3}}>
+                            <span style={{fontSize:11,fontWeight:700,color:"#94A3B8"}}>OPTION {idx+1}</span>
+                            <span style={{fontSize:14,fontWeight:700,color:"#0F2540"}}>{u?.unit_ref||"—"}</span>
+                            {isPrimary && <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:"#FEF3C7",color:"#7A4F01"}}>📍 LINKED UNIT</span>}
+                          </div>
+                          <div style={{fontSize:11,color:"#64748B"}}>
+                            {[bedLabel, u?.size_sqft?`${u.size_sqft} sqft`:null, u?.view, proj?.name].filter(Boolean).join(" · ")}
+                          </div>
+                        </div>
+                        {proposalUnits.length > 1 && (
+                          <button onClick={()=>removeUnit(idx)}
+                            style={{padding:"4px 10px",borderRadius:6,border:"1px solid #FCA5A5",background:"#fff",color:"#C53030",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                            Remove
+                          </button>
+                        )}
+                      </div>
+
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+                        <div>
+                          <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Asking price</label>
+                          <div style={{position:"relative"}}>
+                            <input type="number" value={pu.asking_price||""}
+                              onChange={e=>updateUnit(idx,{asking_price:e.target.value, discounted_price: Math.round(Number(e.target.value||0)*(1-Number(pu.discount_pct||0)/100))})}
+                              style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,fontFamily:"inherit",boxSizing:"border-box",background:"#fff"}}/>
+                          </div>
+                        </div>
+                        <div>
+                          <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>
+                            Discount % {showApprovalBadge && <span style={{color:"#C53030",fontWeight:700}}>· approval needed</span>}
+                          </label>
+                          <input type="number" min="0" max="50" step="0.1" value={pu.discount_pct||""}
+                            onChange={e=>updateUnit(idx,{discount_pct:e.target.value})}
+                            style={{width:"100%",padding:"7px 10px",border:`1.5px solid ${showApprovalBadge?"#FCA5A5":"#E2E8F0"}`,borderRadius:7,fontSize:12,fontFamily:"inherit",boxSizing:"border-box",background:"#fff"}}/>
+                        </div>
+                        <div>
+                          <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Discounted price</label>
+                          <input type="number" value={pu.discounted_price||""}
+                            onChange={e=>updateUnit(idx,{discounted_price:e.target.value})}
+                            style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,fontFamily:"inherit",boxSizing:"border-box",background:"#fff",fontWeight:700,color:"#1A5FA8"}}/>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Payment plan */}
+          <div>
+            <label style={{fontSize:12,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Payment plan *</label>
+            <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:7}}>
+              {PAYMENT_PLAN_PRESETS.map(p => {
+                const sel = paymentPlanPreset === p.label;
+                return (
+                  <button key={p.label} onClick={()=>{setPaymentPlanPreset(p.label); if(p.value)setPaymentPlan(p.value);}}
+                    style={{padding:"5px 12px",borderRadius:16,border:`1.5px solid ${sel?"#0F2540":"#D1D9E6"}`,background:sel?"#0F2540":"#fff",color:sel?"#fff":"#4A5568",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
+            <input type="text" value={paymentPlan} onChange={e=>{setPaymentPlan(e.target.value); setPaymentPlanPreset("Custom");}}
+              placeholder="e.g. 20% on booking, 30% during construction, 50% on handover"
+              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",boxSizing:"border-box"}}/>
+          </div>
+
+          {/* DLD fee handling */}
+          <div>
+            <label style={{fontSize:12,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>DLD fee handling *</label>
+            <div style={{fontSize:10,color:"#94A3B8",marginBottom:6}}>UAE standard: Dubai Land Department charges 4% of property value + AED 580 admin + AED 4,200 trustee for off-plan.</div>
+            <div style={{display:"flex",flexDirection:"column",gap:4}}>
+              {DLD_OPTIONS.map(o => {
+                const sel = dldHandling === o.value;
+                return (
+                  <button key={o.value} onClick={()=>setDldHandling(o.value)}
+                    style={{display:"flex",alignItems:"center",gap:8,padding:"8px 11px",borderRadius:7,border:`1.5px solid ${sel?o.color:"#E2E8F0"}`,background:sel?o.bg:"#fff",cursor:"pointer",textAlign:"left"}}>
+                    <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:16,height:16,borderRadius:"50%",border:`1.5px solid ${sel?o.color:"#CBD5E1"}`,background:sel?o.color:"#fff",flexShrink:0}}>
+                      {sel && <span style={{width:6,height:6,borderRadius:"50%",background:"#fff"}}></span>}
+                    </span>
+                    <span style={{fontSize:12,color:sel?o.color:"#0F2540",fontWeight:sel?700:600}}>{o.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {dldHandling==="specific_amount" && (
+              <input type="number" value={dldCustomAmount} onChange={e=>setDldCustomAmount(e.target.value)}
+                placeholder="Amount waived in AED (e.g. 50000)"
+                style={{marginTop:6,width:"100%",padding:"7px 10px",border:"1.5px solid #D1D9E6",borderRadius:7,fontSize:12,fontFamily:"inherit",boxSizing:"border-box"}}/>
+            )}
+          </div>
+
+          {/* Service charge waiver */}
+          <div>
+            <label style={{fontSize:12,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Service charge waiver</label>
+            <div style={{fontSize:10,color:"#94A3B8",marginBottom:6}}>Service charges = annual maintenance fees. Common developer concession: 1 year (max 2 in premium projects).</div>
+            <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+              {SERVICE_CHARGE_PRESETS.map(p => {
+                const sel = serviceChargePreset === p.value;
+                return (
+                  <button key={p.value} onClick={()=>setServiceChargePreset(p.value)}
+                    style={{padding:"5px 12px",borderRadius:16,border:`1.5px solid ${sel?"#1A7F5A":"#D1D9E6"}`,background:sel?"#E6F4EE":"#fff",color:sel?"#1A7F5A":"#4A5568",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
+            {serviceChargePreset === "custom" && (
+              <input type="text" value={serviceChargeCustom} onChange={e=>setServiceChargeCustom(e.target.value)}
+                placeholder="e.g. 18 months waived, AED-capped at 50k"
+                style={{marginTop:6,width:"100%",padding:"7px 10px",border:"1.5px solid #D1D9E6",borderRadius:7,fontSize:12,fontFamily:"inherit",boxSizing:"border-box"}}/>
+            )}
+          </div>
+
+          {/* Validity */}
+          <div>
+            <label style={{fontSize:12,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Validity *</label>
+            <div style={{fontSize:10,color:"#94A3B8",marginBottom:6}}>UAE off-plan standard: 7-14 days. Default 10 days.</div>
+            <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
+              {VALIDITY_PRESETS.map(d => {
+                const sel = validityDays === d;
+                return (
+                  <button key={d} onClick={()=>setValidityDays(d)}
+                    style={{padding:"5px 12px",borderRadius:16,border:`1.5px solid ${sel?"#0F2540":"#D1D9E6"}`,background:sel?"#0F2540":"#fff",color:sel?"#fff":"#4A5568",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    {d} days
+                  </button>
+                );
+              })}
+              <span style={{fontSize:11,color:"#64748B",marginLeft:6}}>→ expires <strong style={{color:"#0F2540"}}>{expiryDate.toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}</strong></span>
+            </div>
+          </div>
+
+          {/* Cover notes */}
+          <div>
+            <label style={{fontSize:12,fontWeight:700,color:"#0F2540",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".4px"}}>Cover message *</label>
+            <textarea value={coverNotes} onChange={e=>setCoverNotes(e.target.value)} rows={5}
+              placeholder="Personal note to the customer — gets included in the email body"
+              style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box"}}/>
+          </div>
+
+          {/* Summary preview */}
+          {proposalUnits.length>0 && (
+            <details style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8}}>
+              <summary style={{padding:"10px 14px",fontSize:11,fontWeight:700,color:"#0F2540",cursor:"pointer",textTransform:"uppercase",letterSpacing:".4px"}}>
+                👀 Preview email body
+              </summary>
+              <pre style={{padding:"10px 14px",fontSize:11,color:"#475569",fontFamily:"'Inter',monospace",whiteSpace:"pre-wrap",margin:0,borderTop:"1px solid #E2E8F0",lineHeight:1.5}}>
+                {coverNotes}{"\n\n"}{buildSummaryText()}
+              </pre>
+            </details>
+          )}
+        </div>
+
+        <div style={{display:"flex",gap:10,justifyContent:"space-between",alignItems:"center",padding:"1rem 1.4rem",borderTop:"1px solid #E8EDF4",background:"#F8FAFC"}}>
+          <div style={{fontSize:11,color:"#64748B"}}>
+            {proposalUnits.length>0 && <>Total proposal value: <strong style={{color:"#0F2540"}}>{fmtAed(proposalUnits.reduce((s,p)=>s+Number(p.discounted_price||0),0))}</strong></>}
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={onClose} disabled={saving}
+              style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+              Cancel
+            </button>
+            <button onClick={()=>submit(false)} disabled={saving}
+              style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #1A5FA8",background:"#fff",color:"#1A5FA8",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
+              {saving?"Saving…":"Save (don't email)"}
+            </button>
+            <button onClick={()=>submit(true)} disabled={saving}
+              style={{padding:"9px 22px",borderRadius:8,border:"none",background:saving?"#94A3B8":"#0F2540",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
+              {saving?"Sending…":"📤 Save & Email"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function NegotiationRoundDialog({ opp, lead, currentUser, onClose, onSaved, showToast }) {
   const [actor, setActor] = useState("developer"); // who is speaking this round (most common: developer responding)
   const [roundAt, setRoundAt] = useState(()=>{
@@ -3021,6 +3568,9 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [showHandover, setShowHandover] = useState(false);
   // Phase E W2 — Site Visit outcome dialog (after the visit happens)
   const [visitOutcomeFor, setVisitOutcomeFor] = useState(null); // an upcoming visit activity
+  // Phase E W3 — Proposal Builder dialog & loaded proposals for this opp
+  const [showProposalDialog, setShowProposalDialog] = useState(false);
+  const [proposals, setProposals] = useState([]);
 
   // Phase E W3 — shared helper used by both the inline strip (snooze) and the action dialog (done/reschedule/cancel)
   const updateReminderStatus = async(reminderId, newStatus, extra={})=>{
@@ -3070,6 +3620,11 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
     supabase.from("sales_contracts").select("*").eq("opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
     // Phase E W3: load pending reminders for this opportunity
     supabase.from("reminders").select("*").eq("related_opportunity_id",opp.id).eq("status","pending").order("trigger_at",{ascending:true}).then(({data})=>setReminders(data||[]));
+    // Phase E W3: load proposals for this opportunity (latest first)
+    supabase.from("proposals").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data,error})=>{
+      if(error){console.warn("Proposal load failed:",error);}
+      setProposals(data||[]);
+    });
   },[opp.id]);
 
   const GATED_STAGES = ["Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
@@ -3078,6 +3633,12 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [showCaptureDialog, setShowCaptureDialog] = useState(null); // target stage being captured
 
   const moveStage = async(toStage) => {
+    // Phase E W3: advancing to "Proposal Sent" should open the proposal builder,
+    // not just bump the stage. The dialog handles stage advance + activity + reminders.
+    if (toStage === "Proposal Sent") {
+      setShowProposalDialog(true);
+      return;
+    }
     // Phase E W1: if target stage has a capture config, open the dialog
     if (STAGE_CAPTURE_CONFIGS[toStage]) {
       setShowCaptureDialog(toStage);
@@ -3374,11 +3935,7 @@ You will become the assigned agent.`);
                             📝 Add Note
                           </button>
                           {showSendProposal&&(
-                            <button onClick={()=>{
-                              setEmailForm({to:lead.email||"",subject:`Property Proposal — ${lead.name}`,
-                                body:`Dear ${lead.name},\n\nPlease find your personalised property proposal.\n\nProperty: ${unit.unit_ref} — ${unit.sub_type}${proj?` (${proj.name})`:""}\n${sp?`Price: AED ${Number(sp.asking_price).toLocaleString()}\n`:""}\nKindly review and let us know your preferred next step.\n\nBest regards,\n${currentUser.full_name}`});
-                              setShowEmail(true);
-                            }}
+                            <button onClick={()=>setShowProposalDialog(true)}
                               style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #BFDBFE",background:"#EFF6FF",fontSize:11,fontWeight:700,cursor:"pointer",color:"#1A5FA8"}}>
                               📤 Send Proposal
                             </button>
@@ -3517,6 +4074,169 @@ You will become the assigned agent.`);
                       );
                     })}
                   </div>
+                </div>
+              );
+            })()}
+
+            {/* ── PROPOSALS — sent proposals with status (Phase E W3) ── */}
+            {(()=>{
+              const proposalStages = ["Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won"];
+              const stageAllows = proposalStages.includes(opp.stage);
+              if(!stageAllows && proposals.length === 0) return null;
+
+              const fmtAed = (n) => `AED ${Number(n||0).toLocaleString()}`;
+              const STATUS_META = {
+                sent:     {label:"SENT",     c:"#1A5FA8", bg:"#E6EFF8"},
+                viewed:   {label:"VIEWED",   c:"#A06810", bg:"#FDF3DC"},
+                accepted: {label:"ACCEPTED", c:"#1A7F5A", bg:"#E6F4EE"},
+                rejected: {label:"REJECTED", c:"#C53030", bg:"#FEE2E2"},
+                expired:  {label:"EXPIRED",  c:"#6B7280", bg:"#F3F4F6"},
+                superseded:{label:"SUPERSEDED",c:"#6B7280",bg:"#F3F4F6"},
+              };
+
+              const updateProposalStatus = async (propId, newStatus) => {
+                const{error}=await supabase.from("proposals").update({status:newStatus}).eq("id",propId);
+                if(error){
+                  console.error("Proposal status update failed:", error);
+                  showToast(`Failed: ${error.message}`,"error");
+                  return;
+                }
+                setProposals(p => p.map(x => x.id===propId ? {...x, status:newStatus} : x));
+                // Drop activity note for audit
+                await supabase.from("activities").insert({
+                  opportunity_id: opp.id, lead_id: lead.id, company_id: opp.company_id||currentUser.company_id||null,
+                  type:"Note",
+                  note:`📤 Proposal marked as ${newStatus.toUpperCase()}`,
+                  status:"completed",
+                  user_id: currentUser.id, user_name: currentUser.full_name, lead_name: lead.name,
+                  stage_at_event: opp.stage, activity_subtype: "proposal_status_change",
+                });
+                // Refresh activities so the timeline shows it
+                supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
+                showToast(`Marked as ${newStatus}`,"success");
+              };
+
+              return (
+                <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"12px 16px",borderLeft:"3px solid #1A5FA8"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,flexWrap:"wrap",gap:8}}>
+                    <div>
+                      <div style={{fontSize:10,fontWeight:700,color:"#1A5FA8",textTransform:"uppercase",letterSpacing:".6px"}}>
+                        📤 Proposals
+                      </div>
+                      <div style={{fontSize:11,color:"#94A3B8",marginTop:2}}>
+                        {proposals.length===0 ? "No proposal sent yet" : `${proposals.length} proposal${proposals.length===1?"":"s"} on record`}
+                      </div>
+                    </div>
+                    {canEdit && (
+                      <button onClick={()=>setShowProposalDialog(true)}
+                        style={{padding:"6px 14px",borderRadius:7,border:"none",background:"#0F2540",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                        {proposals.length===0 ? "+ Build proposal" : "+ Send revised proposal"}
+                      </button>
+                    )}
+                  </div>
+
+                  {proposals.length===0 ? (
+                    <div style={{textAlign:"center",padding:"1.25rem",color:"#A0AEC0",fontSize:12,border:"1px dashed #E2E8F0",borderRadius:10}}>
+                      Build a proposal — multi-unit options, pricing, payment plan, DLD handling, validity.
+                    </div>
+                  ) : (
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {proposals.map((p, idx)=>{
+                        const sm = STATUS_META[p.status] || STATUS_META.sent;
+                        const sd = p.structured_data || {};
+                        const proposalUnits = sd.proposal_units || [{
+                          unit_id: p.unit_id,
+                          asking_price: p.asking_price,
+                          discount_pct: p.discount_pct,
+                          discounted_price: p.discounted_price,
+                        }];
+                        const totalValue = sd.total_value || proposalUnits.reduce((s,pu)=>s+Number(pu.discounted_price||0),0);
+                        const expiry = p.expiry_date ? new Date(p.expiry_date) : null;
+                        const isExpired = expiry && expiry < new Date() && p.status === "sent";
+                        const dldLabel = DLD_OPTIONS.find(o=>o.value===sd.dld_handling)?.label;
+                        const isLatest = idx === 0;
+
+                        return (
+                          <div key={p.id} style={{background: isLatest?"#FAFBFE":"#F8FAFC",border:`1px solid ${isLatest?"#B8D2EE":"#E2E8F0"}`,borderRadius:10,padding:"11px 13px",borderLeft:`3px solid ${sm.c}`,opacity: isLatest?1:0.85}}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:7,flexWrap:"wrap"}}>
+                              <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
+                                <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:sm.bg,color:sm.c,letterSpacing:".4px"}}>
+                                  {sm.label}
+                                </span>
+                                {isExpired && <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:"#FEE2E2",color:"#C53030",letterSpacing:".4px"}}>⚠ EXPIRED</span>}
+                                {isLatest && <span style={{fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:8,background:"#FEF3C7",color:"#7A4F01"}}>LATEST</span>}
+                                <span style={{fontSize:11,color:"#64748B"}}>
+                                  {proposalUnits.length} option{proposalUnits.length===1?"":"s"} · <strong style={{color:"#1A5FA8"}}>{fmtAed(totalValue)}</strong>
+                                </span>
+                              </div>
+                              <span style={{fontSize:10,color:"#94A3B8"}}>
+                                {p.sent_at ? `sent ${new Date(p.sent_at).toLocaleDateString("en-AE",{day:"numeric",month:"short"})}` : ""}
+                                {expiry ? ` · expires ${expiry.toLocaleDateString("en-AE",{day:"numeric",month:"short"})}` : ""}
+                              </span>
+                            </div>
+
+                            {/* Unit options summary */}
+                            <div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:7}}>
+                              {proposalUnits.map((pu,puIdx) => {
+                                const u = (units||[]).find(x => x.id === pu.unit_id);
+                                const proj = u ? (projects||[]).find(pp => pp.id === u.project_id) : null;
+                                const bedLabel = u?.bedrooms === 0 ? "Studio" : (u?.bedrooms ? `${u.bedrooms}BR` : "");
+                                return (
+                                  <div key={puIdx} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 8px",background:"#fff",borderRadius:6,border:"1px solid #EEF2F7",fontSize:11,flexWrap:"wrap"}}>
+                                    <span style={{fontWeight:700,color:"#0F2540"}}>{u?.unit_ref||"—"}</span>
+                                    <span style={{color:"#64748B"}}>
+                                      {[bedLabel, proj?.name].filter(Boolean).join(" · ")}
+                                    </span>
+                                    {Number(pu.discount_pct||0)>0 && (
+                                      <span style={{color:"#A06810",fontWeight:600}}>−{pu.discount_pct}%</span>
+                                    )}
+                                    <span style={{marginLeft:"auto",fontWeight:700,color:"#1A5FA8"}}>{fmtAed(pu.discounted_price)}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {/* Terms strip */}
+                            <div style={{display:"flex",flexWrap:"wrap",gap:8,fontSize:11,color:"#475569",padding:"6px 8px",background:"#fff",borderRadius:6,border:"1px solid #EEF2F7",marginBottom:7}}>
+                              {p.payment_plan && <span>📅 <strong style={{color:"#0F2540"}}>{p.payment_plan}</strong></span>}
+                              {dldLabel && <span>🏛️ {dldLabel}</span>}
+                              {sd.service_charge_preset && sd.service_charge_preset !== "none" && (
+                                <span>🧾 SC: {SERVICE_CHARGE_PRESETS.find(o=>o.value===sd.service_charge_preset)?.label||sd.service_charge_preset}</span>
+                              )}
+                            </div>
+
+                            {/* Cover notes preview */}
+                            {p.notes && (
+                              <details style={{marginBottom:7}}>
+                                <summary style={{fontSize:10,color:"#94A3B8",fontWeight:600,cursor:"pointer",textTransform:"uppercase",letterSpacing:".4px"}}>Cover message</summary>
+                                <div style={{fontSize:11,color:"#475569",marginTop:5,padding:"6px 8px",background:"#fff",borderRadius:6,border:"1px solid #EEF2F7",whiteSpace:"pre-wrap",lineHeight:1.5}}>
+                                  {p.notes}
+                                </div>
+                              </details>
+                            )}
+
+                            {/* Actions — only on latest, sent proposal */}
+                            {isLatest && p.status === "sent" && canEdit && (
+                              <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:5}}>
+                                <button onClick={()=>updateProposalStatus(p.id,"viewed")}
+                                  style={{padding:"5px 11px",borderRadius:6,border:"1px solid #A06810",background:"#fff",color:"#A06810",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                  👁 Customer viewed
+                                </button>
+                                <button onClick={()=>updateProposalStatus(p.id,"accepted")}
+                                  style={{padding:"5px 11px",borderRadius:6,border:"1px solid #1A7F5A",background:"#fff",color:"#1A7F5A",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                  ✓ Accepted
+                                </button>
+                                <button onClick={()=>updateProposalStatus(p.id,"rejected")}
+                                  style={{padding:"5px 11px",borderRadius:6,border:"1px solid #C53030",background:"#fff",color:"#C53030",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                  ✕ Rejected
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -3985,6 +4705,27 @@ You will become the assigned agent.`);
             setReminders(p=>p.filter(r => !(r.related_activity_id===updatedRow.id && r.reason==="auto_visit_imminent")));
             showToast("Visit outcome captured","success");
             setVisitOutcomeFor(null);
+          }}
+          showToast={showToast}
+        />
+      )}
+
+      {/* Phase E W3 — Proposal Builder Dialog */}
+      {showProposalDialog && (
+        <ProposalBuilderDialog
+          opp={opp} lead={lead}
+          units={units} projects={projects} salePricing={salePricing}
+          currentUser={currentUser}
+          onClose={()=>setShowProposalDialog(false)}
+          onSaved={(propRow, actRow)=>{
+            // Mark previous "sent" proposals as "superseded" since this is a revision
+            setProposals(prev => [propRow, ...prev.map(p => p.status==="sent" ? {...p, status:"superseded"} : p)]);
+            if(actRow) setActivities(p=>[actRow, ...p]);
+            // Refresh reminders so the new follow-up + expiry reminders show in the strip
+            supabase.from("reminders").select("*").eq("related_opportunity_id",opp.id).eq("status","pending").order("trigger_at",{ascending:true}).then(({data})=>setReminders(data||[]));
+            // Bump opp local state
+            onUpdated({...opp, stage:"Proposal Sent", proposal_sent_at: new Date().toISOString(), stage_updated_at: new Date().toISOString()});
+            setShowProposalDialog(false);
           }}
           showToast={showToast}
         />
