@@ -2896,6 +2896,13 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
   const [showAddUnit, setShowAddUnit] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Phase F — AI Match state
+  const [showAiMatch, setShowAiMatch] = useState(false);
+  const [aiMatchPrompt, setAiMatchPrompt] = useState("");
+  const [aiMatching, setAiMatching] = useState(false);
+  const [aiMatches, setAiMatches] = useState([]); // [{unit_id, score, reason}]
+  const [aiMatchError, setAiMatchError] = useState("");
+
   // React to the toggle: when flipped on, add linked unit if not present;
   // when flipped off, remove it (only if it's the linked unit and unmodified).
   useEffect(() => {
@@ -2929,6 +2936,18 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
     setCoverNotes(`${greeting}\n\nThank you for your interest. Please find below our proposal for your consideration.\n\n${closing}`);
     // eslint-disable-next-line
   }, [lead?.name]);
+
+  // Seed AI Match prompt from lead requirements / opp budget
+  useEffect(() => {
+    if (aiMatchPrompt) return;
+    const bits = [];
+    if (lead?.budget) bits.push(`Budget around AED ${Number(lead.budget).toLocaleString()}`);
+    else if (opp?.budget) bits.push(`Budget around AED ${Number(opp.budget).toLocaleString()}`);
+    if (lead?.property_type) bits.push(lead.property_type);
+    if (lead?.notes) bits.push(lead.notes);
+    setAiMatchPrompt(bits.join(". "));
+    // eslint-disable-next-line
+  }, [lead?.id]);
 
   // Update a unit row
   const updateUnit = (idx, patch) => {
@@ -2974,6 +2993,82 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
 
   // Picker for the "Add another unit" sub-flow — same rich-row approach as Site Visit picker
   const availableUnits = units.filter(u => !proposalUnits.find(p => p.unit_id === u.id));
+
+  // Phase F — AI Match: send buyer requirements + inventory snapshot to Claude,
+  // get back ranked unit IDs with reasons. Filters to units not already in proposal.
+  const runAiMatch = async () => {
+    if (!aiMatchPrompt.trim()) {
+      setAiMatchError("Please describe what the buyer is looking for.");
+      return;
+    }
+    if (availableUnits.length === 0) {
+      setAiMatchError("No more units in inventory to match against.");
+      return;
+    }
+    setAiMatching(true);
+    setAiMatchError("");
+    setAiMatches([]);
+    try {
+      // Compact, structured snapshot of inventory for the model
+      const inventory = availableUnits.slice(0, 80).map(u => {
+        const proj = projects.find(p => p.id === u.project_id);
+        const sp = (salePricing||[]).find(s => s.unit_id === u.id);
+        return {
+          id: u.id,
+          ref: u.unit_ref,
+          project: proj?.name || null,
+          bedrooms: u.bedrooms,
+          sub_type: u.sub_type,
+          size_sqft: u.size_sqft,
+          floor: u.floor_number,
+          view: u.view,
+          status: u.status,
+          asking_price: sp?.asking_price || null,
+        };
+      });
+      const system = `You are PropPulse AI, an expert UAE real-estate broker assistant. Match available property units to a buyer's requirements with precision. UAE market context: AED prices, Dubai/Sharjah/Abu Dhabi markets, off-plan vs ready, 4% DLD fees, common payment plans (10/90, 20/80, 50/50). Always respond with valid JSON only — no prose, no markdown fences.`;
+      const userPrompt = `BUYER REQUIREMENTS:
+${aiMatchPrompt}
+
+LEAD CONTEXT:
+- Name: ${lead?.name || "—"}
+- Nationality: ${lead?.nationality || "—"}
+- Source: ${lead?.source || "—"}
+- Property type interest: ${lead?.property_type || "—"}
+- Stated budget: ${lead?.budget ? `AED ${Number(lead.budget).toLocaleString()}` : opp?.budget ? `AED ${Number(opp.budget).toLocaleString()}` : "—"}
+- Notes: ${lead?.notes || "—"}
+
+AVAILABLE UNITS:
+${JSON.stringify(inventory, null, 2)}
+
+TASK: Pick the TOP 5 best matches (or fewer if fewer good fits). For each, give a one-sentence reason mentioning SPECIFIC features matching the requirements (price, bedroom count, view, project, etc.). Do not invent fields. Score 0-100.
+
+RESPOND WITH VALID JSON ONLY in this exact shape:
+{"matches":[{"unit_id":"<id from list>","score":<0-100>,"reason":"<one-sentence reason>"}]}`;
+      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const cleaned = reply.replace(/```json\s*/g,"").replace(/```\s*$/g,"").trim();
+      let parsed;
+      try { parsed = JSON.parse(cleaned); }
+      catch (e) {
+        const m = cleaned.match(/\{[\s\S]*\}/);
+        if (!m) throw new Error("AI response was not valid JSON");
+        parsed = JSON.parse(m[0]);
+      }
+      const matches = Array.isArray(parsed.matches) ? parsed.matches : [];
+      const available_ids = new Set(availableUnits.map(u=>u.id));
+      const filtered = matches.filter(m => available_ids.has(m.unit_id)).slice(0, 5);
+      if (filtered.length === 0) {
+        setAiMatchError("AI didn't find good matches. Try giving more detail in the requirements.");
+      } else {
+        setAiMatches(filtered);
+      }
+    } catch (e) {
+      console.error("AI Match failed:", e);
+      setAiMatchError(`AI Match failed: ${e.message || "unknown error"}`);
+    } finally {
+      setAiMatching(false);
+    }
+  };
 
   // Build a human-readable summary for email body / activity note
   const buildSummaryText = () => {
@@ -3223,15 +3318,87 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
 
           {/* Units */}
           <div>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,gap:8,flexWrap:"wrap"}}>
               <label style={{fontSize:12,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px"}}>
                 Units in this proposal *
               </label>
-              <button onClick={()=>setShowAddUnit(s=>!s)}
-                style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #1A5FA8",background:showAddUnit?"#1A5FA8":"#fff",color:showAddUnit?"#fff":"#1A5FA8",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                {showAddUnit?"Cancel":"+ Add another unit"}
-              </button>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={()=>{setShowAiMatch(s=>!s); if(!showAiMatch)setShowAddUnit(false);}}
+                  style={{padding:"6px 12px",borderRadius:7,border:`1.5px solid ${showAiMatch?"#7C3AED":"#7C3AED"}`,background:showAiMatch?"#7C3AED":"#FAF5FF",color:showAiMatch?"#fff":"#7C3AED",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                  {showAiMatch?"Cancel":"🪄 AI Match"}
+                </button>
+                <button onClick={()=>{setShowAddUnit(s=>!s); if(!showAddUnit)setShowAiMatch(false);}}
+                  style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #1A5FA8",background:showAddUnit?"#1A5FA8":"#fff",color:showAddUnit?"#fff":"#1A5FA8",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                  {showAddUnit?"Cancel":"+ Add another unit"}
+                </button>
+              </div>
             </div>
+
+            {/* AI Match panel */}
+            {showAiMatch && (
+              <div style={{marginBottom:10,background:"linear-gradient(180deg, #FAF5FF 0%, #F5F0FF 100%)",border:"1.5px solid #DDD6FE",borderRadius:10,padding:12}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#7C3AED",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
+                  <span>🪄 PropPulse AI · Smart Match</span>
+                  <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:"#EDE9FE",color:"#7C3AED",fontWeight:600}}>BETA</span>
+                </div>
+                <div style={{fontSize:11,color:"#64748B",marginBottom:8}}>
+                  Describe what the buyer is looking for. AI will rank the top matches from your inventory with reasons.
+                </div>
+                <textarea value={aiMatchPrompt} onChange={e=>setAiMatchPrompt(e.target.value)} rows={3}
+                  placeholder="e.g. 2BR around AED 1.5-2M, sea or pool view, prefers Sobha or Damac, willing to wait for off-plan handover, payment plan flexibility important"
+                  style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #DDD6FE",fontSize:12,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",background:"#fff"}}/>
+                <div style={{display:"flex",gap:8,alignItems:"center",marginTop:8,flexWrap:"wrap"}}>
+                  <button onClick={runAiMatch} disabled={aiMatching}
+                    style={{padding:"7px 16px",borderRadius:7,border:"none",background:aiMatching?"#A78BFA":"#7C3AED",color:"#fff",fontSize:12,fontWeight:700,cursor:aiMatching?"wait":"pointer",display:"flex",alignItems:"center",gap:6}}>
+                    {aiMatching?<>🪄 Matching…</>:<>🪄 Find best matches</>}
+                  </button>
+                  <span style={{fontSize:10,color:"#94A3B8"}}>
+                    Searching {availableUnits.length} available unit{availableUnits.length===1?"":"s"}
+                  </span>
+                </div>
+                {aiMatchError && (
+                  <div style={{marginTop:8,padding:"8px 10px",background:"#FEE2E2",border:"1px solid #FCA5A5",borderRadius:6,fontSize:11,color:"#C53030"}}>
+                    {aiMatchError}
+                  </div>
+                )}
+                {aiMatches.length > 0 && (
+                  <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
+                    <div style={{fontSize:10,fontWeight:700,color:"#7C3AED",textTransform:"uppercase",letterSpacing:".5px"}}>
+                      ✨ Top {aiMatches.length} Match{aiMatches.length===1?"":"es"}
+                    </div>
+                    {aiMatches.map((m,idx) => {
+                      const u = units.find(x => x.id === m.unit_id);
+                      if (!u) return null;
+                      const proj = projects.find(p => p.id === u.project_id);
+                      const sp = (salePricing||[]).find(s => s.unit_id === u.id);
+                      const bedLabel = u.bedrooms === 0 ? "Studio" : (u.bedrooms ? `${u.bedrooms}BR` : "");
+                      const scoreColor = m.score >= 85 ? "#1A7F5A" : m.score >= 65 ? "#A06810" : "#64748B";
+                      const scoreBg = m.score >= 85 ? "#D1FAE5" : m.score >= 65 ? "#FEF3C7" : "#F1F5F9";
+                      return (
+                        <div key={m.unit_id} style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:8,padding:"10px 12px"}}>
+                          <div style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:6,flexWrap:"wrap"}}>
+                            <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:scoreBg,color:scoreColor,letterSpacing:".4px"}}>
+                              {m.score}% MATCH
+                            </span>
+                            <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{u.unit_ref}</span>
+                            <span style={{fontSize:11,color:"#64748B"}}>
+                              {[bedLabel, proj?.name, u.size_sqft?`${u.size_sqft} sqft`:null, u.view, sp?.asking_price?fmtAed(sp.asking_price):null].filter(Boolean).join(" · ")}
+                            </span>
+                          </div>
+                          <div style={{fontSize:11,color:"#475569",fontStyle:"italic",marginBottom:8,lineHeight:1.5}}>
+                            💡 {m.reason}
+                          </div>
+                          <button onClick={()=>{addUnit(m.unit_id); setAiMatches(prev=>prev.filter(x=>x.unit_id!==m.unit_id));}}
+                            style={{padding:"5px 12px",borderRadius:6,border:"none",background:"#0F2540",color:"#fff",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                            + Add to proposal
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Add-unit picker */}
             {showAddUnit && (
@@ -5938,34 +6105,43 @@ You will become the assigned agent.`);
 // LEADS — Contact list with opportunities per lead
 // ══════════════════════════════════════════════════════════════════
 /* ═══════════════════════════════════════════════════════════════
+   Phase F — AI plumbing (Module-level helper)
+   Lets any component call Claude via the existing /api/ai endpoint
+   (ANTHROPIC_API_KEY lives in Vercel env, never in the browser).
+═══════════════════════════════════════════════════════════════ */
+async function aiInvoke({ system, prompt, messages }) {
+  // Either pass a single prompt (becomes one user message) or pass full messages array
+  const msgs = messages || [{ role: "user", content: prompt || "" }];
+  const cleaned = msgs
+    .filter(m => m && m.content && (m.role === "user" || m.role === "assistant"))
+    .map(m => ({ role: m.role, content: m.content }));
+  const body = { messages: cleaned };
+  if (system) body.system = system;
+  const res = await fetch("/api/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `AI request failed (${res.status})`);
+  return data.text || "";
+}
+
+/* ═══════════════════════════════════════════════════════════════
    Phase F — Opportunities Tab (information architecture restructure)
    This is Step 1: a placeholder so the tab is wired into nav.
-   Subsequent commits will replace this with the full module:
-     - OpportunitiesList (table view with filters/search)
-     - CreateOpportunityDialog (lead lookup-or-create flow)
-     - Routes the existing OpportunityDetail
+   Subsequent commits will replace this with the full module.
 ═══════════════════════════════════════════════════════════════ */
 function OpportunitiesPlaceholder({ currentUser, crmContext }) {
   return (
-    <div style={{padding:"2rem"}}>
-      <div style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px"}}>
-        🎯 Opportunities
+    <div style={{padding:"1.25rem 1.5rem"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+        <span style={{fontSize:18}}>🎯</span>
+        <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>Opportunities</span>
+        <span style={{fontSize:11,padding:"3px 9px",borderRadius:10,background:"#FEF3C7",color:"#7A4F01",fontWeight:600}}>Coming next</span>
       </div>
-      <div style={{fontSize:13,color:"#64748B",marginTop:4}}>
-        Manage your deal pipeline {crmContext==="leasing"?"(leasing)":"(sales)"}
-      </div>
-      <div style={{marginTop:32,padding:"2.5rem 2rem",background:"#FFFBEA",border:"1.5px dashed #FCD34D",borderRadius:12,textAlign:"center"}}>
-        <div style={{fontSize:36,marginBottom:10}}>🚧</div>
-        <div style={{fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:6}}>Opportunities tab is being built</div>
-        <div style={{fontSize:12,color:"#64748B",lineHeight:1.6,maxWidth:480,margin:"0 auto"}}>
-          This is the new dedicated workspace for managing deals — separate from the Leads contact database.<br/><br/>
-          Coming next:
-          <ul style={{textAlign:"left",margin:"10px auto 0",maxWidth:360,paddingLeft:20,lineHeight:1.8}}>
-            <li>Pipeline table with filters by stage, owner, value</li>
-            <li>"+ New Opportunity" with smart lead lookup-or-create</li>
-            <li>Full-page deal workspace per opportunity</li>
-          </ul>
-        </div>
+      <div style={{fontSize:12,color:"#64748B"}}>
+        Dedicated deal-pipeline workspace ({crmContext}). For now, manage opportunities from the <strong>Leads</strong> tab.
       </div>
     </div>
   );
