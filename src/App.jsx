@@ -3508,7 +3508,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
               </label>
               <div style={{display:"flex",gap:6}}>
                 <button onClick={()=>{setShowAiMatch(s=>!s); if(!showAiMatch)setShowAddUnit(false);}}
-                  style={{padding:"6px 12px",borderRadius:7,border:`1.5px solid ${showAiMatch?"#7C3AED":"#7C3AED"}`,background:showAiMatch?"#7C3AED":"#FAF5FF",color:showAiMatch?"#fff":"#7C3AED",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                  style={{padding:"6px 12px",borderRadius:7,border:`1.5px solid ${showAiMatch?"#A78BFA":"#C4B5FD"}`,background:showAiMatch?"#EDE9FE":"#FAF5FF",color:"#6D28D9",fontSize:11,fontWeight:700,cursor:"pointer"}}>
                   {showAiMatch?"Cancel":"🪄 AI Match"}
                 </button>
                 <button onClick={()=>{setShowAddUnit(s=>!s); if(!showAddUnit)setShowAiMatch(false);}}
@@ -3520,20 +3520,20 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
 
             {/* AI Match panel */}
             {showAiMatch && (
-              <div style={{marginBottom:10,background:"linear-gradient(180deg, #FAF5FF 0%, #F5F0FF 100%)",border:"1.5px solid #DDD6FE",borderRadius:10,padding:12}}>
-                <div style={{fontSize:11,fontWeight:700,color:"#7C3AED",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
+              <div style={{marginBottom:10,background:"#FBFAFF",border:"1px solid #EDE9FE",borderRadius:10,padding:12}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#6D28D9",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
                   <span>🪄 PropPulse AI · Smart Match</span>
-                  <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:"#EDE9FE",color:"#7C3AED",fontWeight:600}}>BETA</span>
+                  <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:"#F5F3FF",color:"#7C3AED",fontWeight:600,border:"1px solid #EDE9FE"}}>BETA</span>
                 </div>
                 <div style={{fontSize:11,color:"#64748B",marginBottom:8}}>
                   Describe what the buyer is looking for. AI will rank the top matches from your inventory with reasons.
                 </div>
                 <textarea value={aiMatchPrompt} onChange={e=>setAiMatchPrompt(e.target.value)} rows={3}
                   placeholder="e.g. 2BR around AED 1.5-2M, sea or pool view, prefers Sobha or Damac, willing to wait for off-plan handover, payment plan flexibility important"
-                  style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #DDD6FE",fontSize:12,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",background:"#fff"}}/>
+                  style={{width:"100%",padding:"9px 12px",borderRadius:8,border:"1.5px solid #EDE9FE",fontSize:12,fontFamily:"inherit",resize:"vertical",boxSizing:"border-box",background:"#fff"}}/>
                 <div style={{display:"flex",gap:8,alignItems:"center",marginTop:8,flexWrap:"wrap"}}>
                   <button onClick={runAiMatch} disabled={aiMatching}
-                    style={{padding:"7px 16px",borderRadius:7,border:"none",background:aiMatching?"#A78BFA":"#7C3AED",color:"#fff",fontSize:12,fontWeight:700,cursor:aiMatching?"wait":"pointer",display:"flex",alignItems:"center",gap:6}}>
+                    style={{padding:"7px 16px",borderRadius:7,border:"1px solid #C4B5FD",background:aiMatching?"#EDE9FE":"#F5F3FF",color:"#6D28D9",fontSize:12,fontWeight:700,cursor:aiMatching?"wait":"pointer",display:"flex",alignItems:"center",gap:6}}>
                     {aiMatching?<>🪄 Matching…</>:<>🪄 Find best matches</>}
                   </button>
                   <span style={{fontSize:10,color:"#94A3B8"}}>
@@ -3547,7 +3547,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
                 )}
                 {aiMatches.length > 0 && (
                   <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
-                    <div style={{fontSize:10,fontWeight:700,color:"#7C3AED",textTransform:"uppercase",letterSpacing:".5px"}}>
+                    <div style={{fontSize:10,fontWeight:700,color:"#6D28D9",textTransform:"uppercase",letterSpacing:".5px"}}>
                       ✨ Top {aiMatches.length} Match{aiMatches.length===1?"":"es"}
                     </div>
                     {aiMatches.map((m,idx) => {
@@ -3678,12 +3678,12 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           </div>
 
           {/* AI Suggest Terms — recommend payment plan / DLD / SC / validity */}
-          <div style={{background:"linear-gradient(180deg, #FAF5FF 0%, #F5F0FF 100%)",border:"1.5px solid #DDD6FE",borderRadius:10,padding:12}}>
+          <div style={{background:"#FBFAFF",border:"1px solid #EDE9FE",borderRadius:10,padding:12}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap"}}>
               <div>
-                <div style={{fontSize:11,fontWeight:700,color:"#7C3AED",textTransform:"uppercase",letterSpacing:".5px",display:"flex",alignItems:"center",gap:6}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#6D28D9",textTransform:"uppercase",letterSpacing:".5px",display:"flex",alignItems:"center",gap:6}}>
                   <span>💡 PropPulse AI · Suggest Terms</span>
-                  <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:"#EDE9FE",color:"#7C3AED",fontWeight:600}}>BETA</span>
+                  <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:"#F5F3FF",color:"#7C3AED",fontWeight:600,border:"1px solid #EDE9FE"}}>BETA</span>
                 </div>
                 <div style={{fontSize:11,color:"#64748B",marginTop:3}}>
                   AI recommends payment plan, DLD handling, service charge, and validity based on UAE market norms and the buyer's profile.
@@ -3691,7 +3691,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
               </div>
               <button onClick={runAiSuggestTerms} disabled={aiSuggestingTerms || proposalUnits.length===0}
                 title={proposalUnits.length===0?"Add at least one unit first":"Get AI's recommendation"}
-                style={{padding:"7px 14px",borderRadius:7,border:"none",background:aiSuggestingTerms?"#A78BFA":"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:(aiSuggestingTerms||proposalUnits.length===0)?"not-allowed":"pointer",opacity:proposalUnits.length===0?0.5:1,whiteSpace:"nowrap"}}>
+                style={{padding:"7px 14px",borderRadius:7,border:"1px solid #C4B5FD",background:aiSuggestingTerms?"#EDE9FE":"#F5F3FF",color:"#6D28D9",fontSize:11,fontWeight:700,cursor:(aiSuggestingTerms||proposalUnits.length===0)?"not-allowed":"pointer",opacity:proposalUnits.length===0?0.5:1,whiteSpace:"nowrap"}}>
                 {aiSuggestingTerms?"💡 Thinking…":"💡 Suggest"}
               </button>
             </div>
@@ -3701,8 +3701,8 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
               </div>
             )}
             {aiTermsSuggestion && (
-              <div style={{marginTop:10,background:"#fff",border:"1px solid #DDD6FE",borderRadius:8,padding:"10px 12px"}}>
-                <div style={{fontSize:10,fontWeight:700,color:"#7C3AED",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>
+              <div style={{marginTop:10,background:"#fff",border:"1px solid #EDE9FE",borderRadius:8,padding:"10px 12px"}}>
+                <div style={{fontSize:10,fontWeight:700,color:"#6D28D9",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>
                   ✨ AI Recommendation
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
@@ -3733,7 +3733,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
                 )}
                 <div style={{display:"flex",gap:6}}>
                   <button onClick={applyAiTerms}
-                    style={{padding:"6px 14px",borderRadius:6,border:"none",background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                    style={{padding:"6px 14px",borderRadius:6,border:"1px solid #A78BFA",background:"#F5F3FF",color:"#6D28D9",fontSize:11,fontWeight:700,cursor:"pointer"}}>
                     ✓ Apply suggestions
                   </button>
                   <button onClick={()=>setAiTermsSuggestion(null)}
@@ -3835,7 +3835,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
               <label style={{fontSize:12,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px"}}>Cover message *</label>
               <button onClick={runAiCompose} disabled={aiComposing || proposalUnits.length===0}
                 title={proposalUnits.length===0 ? "Add at least one unit first" : "Let AI draft this for you"}
-                style={{padding:"5px 12px",borderRadius:6,border:"1.5px solid #7C3AED",background:aiComposing?"#7C3AED":"#FAF5FF",color:aiComposing?"#fff":"#7C3AED",fontSize:11,fontWeight:700,cursor:(aiComposing||proposalUnits.length===0)?"not-allowed":"pointer",opacity:proposalUnits.length===0?0.5:1}}>
+                style={{padding:"5px 12px",borderRadius:6,border:"1px solid #C4B5FD",background:aiComposing?"#EDE9FE":"#F5F3FF",color:"#6D28D9",fontSize:11,fontWeight:700,cursor:(aiComposing||proposalUnits.length===0)?"not-allowed":"pointer",opacity:proposalUnits.length===0?0.5:1}}>
                 {aiComposing?"✨ Generating…":"✨ Generate with AI"}
               </button>
             </div>
