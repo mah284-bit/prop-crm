@@ -1582,6 +1582,7 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
   const [data, setData] = useState({});
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
+  const [unitSearch, setUnitSearch] = useState({}); // per-field-key search query for unit pickers
 
   // Initialize default values when dialog opens
   useEffect(() => {
@@ -2087,6 +2088,14 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
                   const next = selected.includes(v) ? selected.filter(x=>x!==v) : [...selected, v];
                   setField(f.key, next);
                 };
+                // For unit pickers, filter opts by per-field search query.
+                // Search matches: lineA (ref/BR/sqft/view) + lineB (project/floor/price)
+                const isUnitPicker = f.source === "units" && opts.length > 0 && opts[0]?.isUnit;
+                const queryRaw = (unitSearch[f.key] || "");
+                const query = queryRaw.trim().toLowerCase();
+                const filteredOpts = (isUnitPicker && query)
+                  ? opts.filter(o => `${o.lineA||""} ${o.lineB||""}`.toLowerCase().includes(query))
+                  : opts;
                 return (
                   <div key={f.key}>
                     {labelEl}
@@ -2095,29 +2104,52 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
                         {f.emptyHint || "No options available"}
                       </div>
                     ) : (
-                      <div style={{display:"flex",flexDirection:"column",gap:3,maxHeight:260,overflowY:"auto",border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,borderRadius:8,padding:5,background:"#fff"}}>
-                        {opts.map(o => {
-                          const sel = selected.includes(o.value);
-                          // Rich row for unit options; flat row for everything else
-                          if (o.isUnit) {
-                            const pinBg   = o.isPinned ? "#FFFBEA" : null;          // soft yellow tint
-                            const pinSelBg= o.isPinned ? "#FEF3C7" : "#E6EFF9";
-                            return (
-                              <button key={o.value} onClick={()=>toggle(o.value)}
-                                style={{
-                                  display:"flex",alignItems:"flex-start",gap:9,padding:"8px 10px",borderRadius:6,
-                                  border: o.isPinned ? "1px solid #FCD34D" : "1px solid transparent",
-                                  background: sel ? pinSelBg : (pinBg || "transparent"),
-                                  color:"#0F2540",
-                                  cursor:"pointer", textAlign:"left", transition:"all .1s",
-                                }}>
-                                <span style={{
-                                  display:"inline-flex",alignItems:"center",justifyContent:"center",
-                                  width:16,height:16,borderRadius:4,marginTop:2,
-                                  border:`1.5px solid ${sel?"#0F2540":"#CBD5E1"}`,
-                                  background: sel?"#0F2540":"#fff",
-                                  color:"#fff",fontSize:11,lineHeight:1,flexShrink:0,
-                                }}>{sel?"✓":""}</span>
+                      <div>
+                        {/* Search bar — only for unit pickers (where lists can be long) */}
+                        {isUnitPicker && (
+                          <div style={{position:"relative",marginBottom:6}}>
+                            <input type="text"
+                              value={queryRaw}
+                              onChange={e=>setUnitSearch(s=>({...s, [f.key]: e.target.value}))}
+                              placeholder="🔍 Search units — e.g. AGR, Sobha, 2BR, sea view…"
+                              style={{width:"100%",padding:"7px 28px 7px 10px",borderRadius:6,border:"1.5px solid #D1D9E6",fontSize:12,boxSizing:"border-box",outline:"none"}}/>
+                            {queryRaw && (
+                              <button onClick={()=>setUnitSearch(s=>({...s, [f.key]: ""}))}
+                                title="Clear" type="button"
+                                style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",padding:"2px 7px",borderRadius:5,border:"none",background:"#E2E8F0",color:"#64748B",fontSize:10,fontWeight:700,cursor:"pointer"}}>
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        {filteredOpts.length === 0 ? (
+                          <div style={{fontSize:11,color:"#94A3B8",fontStyle:"italic",padding:"10px",background:"#F8FAFC",borderRadius:8,border:"1px dashed #D1D9E6",textAlign:"center"}}>
+                            No units match "{queryRaw}"
+                          </div>
+                        ) : (
+                          <div style={{display:"flex",flexDirection:"column",gap:3,maxHeight:260,overflowY:"auto",border:`1.5px solid ${err?"#C53030":"#D1D9E6"}`,borderRadius:8,padding:5,background:"#fff"}}>
+                            {filteredOpts.map(o => {
+                              const sel = selected.includes(o.value);
+                              // Rich row for unit options; flat row for everything else
+                              if (o.isUnit) {
+                                const pinBg   = o.isPinned ? "#FFFBEA" : null;          // soft yellow tint
+                                const pinSelBg= o.isPinned ? "#FEF3C7" : "#E6EFF9";
+                                return (
+                                  <button key={o.value} onClick={()=>toggle(o.value)}
+                                    style={{
+                                      display:"flex",alignItems:"flex-start",gap:9,padding:"8px 10px",borderRadius:6,
+                                      border: o.isPinned ? "1px solid #FCD34D" : "1px solid transparent",
+                                      background: sel ? pinSelBg : (pinBg || "transparent"),
+                                      color:"#0F2540",
+                                      cursor:"pointer", textAlign:"left", transition:"all .1s",
+                                    }}>
+                                    <span style={{
+                                      display:"inline-flex",alignItems:"center",justifyContent:"center",
+                                      width:16,height:16,borderRadius:4,marginTop:2,
+                                      border:`1.5px solid ${sel?"#0F2540":"#CBD5E1"}`,
+                                      background: sel?"#0F2540":"#fff",
+                                      color:"#fff",fontSize:11,lineHeight:1,flexShrink:0,
+                                    }}>{sel?"✓":""}</span>
                                 <div style={{flex:1,minWidth:0}}>
                                   <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                                     <span style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{o.lineA}</span>
@@ -2155,6 +2187,8 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
                             </button>
                           );
                         })}
+                      </div>
+                        )}
                       </div>
                     )}
                     {selected.length>0&&<div style={{fontSize:10,color:"#64748B",marginTop:4}}>{selected.length} selected</div>}
@@ -2486,12 +2520,13 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       <button onClick={()=>setOpen(o=>!o)}
         title={totalCount === 0 ? "No pending reminders" : `${totalCount} pending reminder${totalCount===1?"":"s"}${overdueCount?` · ${overdueCount} overdue`:""}`}
         style={{
-          background:"transparent", border:"none", cursor:"pointer", position:"relative",
-          padding:"6px 8px", borderRadius:8, fontSize:18, lineHeight:1,
-          transition:"background .15s",
+          background:"#F1F5F9", border:"1px solid #E2E8F0", cursor:"pointer", position:"relative",
+          padding:"6px 9px", borderRadius:"50%", fontSize:16, lineHeight:1,
+          transition:"all .15s",
+          width:36, height:36, display:"inline-flex", alignItems:"center", justifyContent:"center",
         }}
-        onMouseOver={e=>{e.currentTarget.style.background="#F1F5F9";}}
-        onMouseOut={e=>{e.currentTarget.style.background="transparent";}}>
+        onMouseOver={e=>{e.currentTarget.style.background="#E2E8F0"; e.currentTarget.style.borderColor="#CBD5E1";}}
+        onMouseOut={e=>{e.currentTarget.style.background="#F1F5F9"; e.currentTarget.style.borderColor="#E2E8F0";}}>
         🔔
         {totalCount > 0 && (
           <span style={{
@@ -3108,6 +3143,7 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
   const [validityDays, setValidityDays] = useState(10);
   const [coverNotes, setCoverNotes] = useState("");
   const [showAddUnit, setShowAddUnit] = useState(false);
+  const [unitPickerQuery, setUnitPickerQuery] = useState(""); // search filter for the manual unit picker
   const [saving, setSaving] = useState(false);
 
   // Phase F — AI Match state
@@ -3800,27 +3836,63 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
 
             {/* Add-unit picker */}
             {showAddUnit && (
-              <div style={{marginBottom:10,background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:8,maxHeight:180,overflowY:"auto"}}>
-                {availableUnits.length === 0 ? (
-                  <div style={{fontSize:11,color:"#94A3B8",fontStyle:"italic",padding:"10px"}}>No more units available to add</div>
-                ) : availableUnits.map(u => {
-                  const proj = projects.find(p=>p.id===u.project_id);
-                  const sp = (salePricing||[]).find(s => s.unit_id === u.id);
-                  const bedLabel = u.bedrooms === 0 ? "Studio" : (u.bedrooms ? `${u.bedrooms}BR` : "");
-                  return (
-                    <button key={u.id} onClick={()=>addUnit(u.id)}
-                      style={{display:"block",width:"100%",textAlign:"left",padding:"7px 10px",border:"none",background:"transparent",borderRadius:6,cursor:"pointer"}}
-                      onMouseOver={e=>e.currentTarget.style.background="#fff"}
-                      onMouseOut={e=>e.currentTarget.style.background="transparent"}>
-                      <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>
-                        {u.unit_ref} · {bedLabel}{u.size_sqft?` · ${u.size_sqft} sqft`:""}{u.view?` · ${u.view}`:""}
-                      </div>
-                      <div style={{fontSize:11,color:"#64748B",marginTop:1}}>
-                        {[proj?.name, u.floor_number?`Floor ${u.floor_number}`:null, sp?.asking_price?fmtAed(sp.asking_price):null].filter(Boolean).join(" · ")}
-                      </div>
+              <div style={{marginBottom:10,background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:8}}>
+                {/* Search input — filter by unit_ref, project name, bedrooms, view, sub_type */}
+                <div style={{position:"relative",marginBottom:8}}>
+                  <input type="text" autoFocus
+                    value={unitPickerQuery}
+                    onChange={e=>setUnitPickerQuery(e.target.value)}
+                    placeholder="🔍 Search units — e.g. AGR, Sobha, 2BR, sea view, villa…"
+                    style={{width:"100%",padding:"7px 10px 7px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",fontSize:12,boxSizing:"border-box",outline:"none"}}/>
+                  {unitPickerQuery && (
+                    <button onClick={()=>setUnitPickerQuery("")}
+                      title="Clear"
+                      style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",padding:"2px 7px",borderRadius:5,border:"none",background:"#E2E8F0",color:"#64748B",fontSize:10,fontWeight:700,cursor:"pointer"}}>
+                      ✕
                     </button>
+                  )}
+                </div>
+                {(() => {
+                  const q = unitPickerQuery.trim().toLowerCase();
+                  const filtered = !q ? availableUnits : availableUnits.filter(u => {
+                    const proj = projects.find(p=>p.id===u.project_id);
+                    const bedLabel = u.bedrooms === 0 ? "studio" : (u.bedrooms ? `${u.bedrooms}br ${u.bedrooms} bed ${u.bedrooms} bedroom` : "");
+                    const haystack = [
+                      u.unit_ref, proj?.name, u.sub_type, u.view,
+                      bedLabel, u.size_sqft?String(u.size_sqft):null,
+                      u.floor_number?`floor ${u.floor_number}`:null,
+                    ].filter(Boolean).join(" ").toLowerCase();
+                    return haystack.includes(q);
+                  });
+                  if (availableUnits.length === 0) {
+                    return <div style={{fontSize:11,color:"#94A3B8",fontStyle:"italic",padding:"10px"}}>No more units available to add</div>;
+                  }
+                  if (filtered.length === 0) {
+                    return <div style={{fontSize:11,color:"#94A3B8",fontStyle:"italic",padding:"10px"}}>No units match "{unitPickerQuery}"</div>;
+                  }
+                  return (
+                    <div style={{maxHeight:180,overflowY:"auto"}}>
+                      {filtered.map(u => {
+                        const proj = projects.find(p=>p.id===u.project_id);
+                        const sp = (salePricing||[]).find(s => s.unit_id === u.id);
+                        const bedLabel = u.bedrooms === 0 ? "Studio" : (u.bedrooms ? `${u.bedrooms}BR` : "");
+                        return (
+                          <button key={u.id} onClick={()=>{addUnit(u.id); setUnitPickerQuery("");}}
+                            style={{display:"block",width:"100%",textAlign:"left",padding:"7px 10px",border:"none",background:"transparent",borderRadius:6,cursor:"pointer"}}
+                            onMouseOver={e=>e.currentTarget.style.background="#fff"}
+                            onMouseOut={e=>e.currentTarget.style.background="transparent"}>
+                            <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>
+                              {u.unit_ref} · {bedLabel}{u.size_sqft?` · ${u.size_sqft} sqft`:""}{u.view?` · ${u.view}`:""}
+                            </div>
+                            <div style={{fontSize:11,color:"#64748B",marginTop:1}}>
+                              {[proj?.name, u.floor_number?`Floor ${u.floor_number}`:null, sp?.asking_price?fmtAed(sp.asking_price):null].filter(Boolean).join(" · ")}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   );
-                })}
+                })()}
               </div>
             )}
 
@@ -12040,9 +12112,12 @@ export default function App(){
             <Av name={currentUser.full_name||currentUser.email} size={32} bg="#C9A84C" tc="#0F2540"/>
             {showPwModal&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:99998,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setShowPwModal(false)}><div style={{background:"#fff",borderRadius:16,padding:"2rem",width:400,maxWidth:"90vw",boxShadow:"0 20px 60px rgba(0,0,0,.3)"}} onClick={e=>e.stopPropagation()}><div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:36,marginBottom:6}}>🔑</div><div style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px",marginBottom:4}}>Change Password</div></div><PwRecoveryForm onDone={()=>{setShowPwModal(false);showToast("Password changed","success");supabase.auth.signOut();}}/></div></div>)}
             <button onClick={()=>setShowPwModal(true)} title="Change my password" style={{fontSize:16,color:"#C9A84C",background:"none",border:"none",cursor:"pointer",padding:"0 4px"}}>🔑</button>
-            <button onClick={handleLogout} title="Sign out" style={{fontSize:11,color:"#94A3B8",background:"none",border:"1px solid #E2E8F0",borderRadius:6,padding:"4px 8px",cursor:"pointer",whiteSpace:"nowrap",transition:"color .15s"}}
-              onMouseOver={e=>e.currentTarget.style.color="rgba(255,255,255,.8)"}
-              onMouseOut={e=>e.currentTarget.style.color="rgba(255,255,255,.35)"}>↩</button>
+            <button onClick={handleLogout} title="Sign out"
+              style={{fontSize:11,color:"#64748B",background:"#fff",border:"1px solid #E2E8F0",borderRadius:6,padding:"5px 10px",cursor:"pointer",whiteSpace:"nowrap",transition:"all .15s",fontWeight:600,display:"inline-flex",alignItems:"center",gap:5}}
+              onMouseOver={e=>{e.currentTarget.style.background="#FEE2E2"; e.currentTarget.style.borderColor="#FCA5A5"; e.currentTarget.style.color="#C53030";}}
+              onMouseOut={e=>{e.currentTarget.style.background="#fff"; e.currentTarget.style.borderColor="#E2E8F0"; e.currentTarget.style.color="#64748B";}}>
+              ⏏ Sign out
+            </button>
             {/* PropCRM subtle watermark */}
             <div style={{borderLeft:"1px solid #E8EDF4",paddingLeft:10,display:"flex",alignItems:"center",gap:3}}>
               <span style={{color:"#C9A84C",fontSize:10}}>◆</span>
