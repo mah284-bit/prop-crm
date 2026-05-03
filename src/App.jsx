@@ -7155,6 +7155,13 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
     notes: "", property_category: "Off-Plan",
   });
 
+  // Step 2: unit picker state (Phase F W6.2 — searchable)
+  const [unitPickerOpen, setUnitPickerOpen] = useState(false);
+  const [unitSearch, setUnitSearch] = useState("");
+  const [unitProjFilter, setUnitProjFilter] = useState("All"); // project_id or "All"
+  const [unitBedFilter, setUnitBedFilter] = useState("All");   // "All" | "Studio" | "1" | "2" | "3" | "4+"
+  const [unitShowReserved, setUnitShowReserved] = useState(false);
+
   // Detect what kind of input the agent typed (email / phone / name)
   const detectKind = (s) => {
     const trimmed = s.trim();
@@ -7789,15 +7796,157 @@ What should the second agent know?`;
               </div>
               <div style={{gridColumn:"1 / -1"}}>
                 <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Linked unit (optional)</label>
-                <select value={oppForm.unit_id} onChange={e=>setOppForm(f=>({...f,unit_id:e.target.value}))}
-                  style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box",background:"#fff"}}>
-                  <option value="">— No unit linked yet —</option>
-                  {(units||[]).filter(u=>u.status!=="Reserved"&&u.status!=="Sold").slice(0,80).map(u => {
-                    const proj = projects?.find(p=>p.id===u.project_id);
-                    const bedLabel = u.bedrooms===0?"Studio":(u.bedrooms?`${u.bedrooms}BR`:"");
-                    return <option key={u.id} value={u.id}>{u.unit_ref} · {[bedLabel, proj?.name].filter(Boolean).join(" · ")}</option>;
-                  })}
-                </select>
+                {/* Phase F W6.2 — searchable unit picker. Plain <select> doesn't
+                    scale: at 84 units it's painful, at 8000+ it's unusable. */}
+                {(() => {
+                  const selectedUnit = (units||[]).find(u => u.id === oppForm.unit_id);
+                  const selectedProj = selectedUnit ? (projects||[]).find(p => p.id === selectedUnit.project_id) : null;
+
+                  // Build filtered list
+                  const projectOptions = Array.from(new Set((units||[]).map(u => u.project_id).filter(Boolean)))
+                    .map(pid => (projects||[]).find(p => p.id === pid))
+                    .filter(Boolean);
+
+                  let pool = (units||[]);
+                  if (!unitShowReserved) pool = pool.filter(u => u.status !== "Reserved" && u.status !== "Sold");
+                  if (unitProjFilter !== "All") pool = pool.filter(u => u.project_id === unitProjFilter);
+                  if (unitBedFilter !== "All") {
+                    if (unitBedFilter === "Studio") pool = pool.filter(u => u.bedrooms === 0);
+                    else if (unitBedFilter === "4+") pool = pool.filter(u => u.bedrooms >= 4);
+                    else pool = pool.filter(u => String(u.bedrooms) === unitBedFilter);
+                  }
+                  if (unitSearch.trim()) {
+                    const q = unitSearch.trim().toLowerCase();
+                    pool = pool.filter(u => {
+                      const proj = (projects||[]).find(p => p.id === u.project_id);
+                      const haystack = [u.unit_ref, u.sub_type, u.view, proj?.name, u.bedrooms===0?"studio":`${u.bedrooms}br`].filter(Boolean).join(" ").toLowerCase();
+                      return haystack.includes(q);
+                    });
+                  }
+                  // Sort by project name then unit_ref
+                  pool = pool.sort((a,b)=>{
+                    const pa = (projects||[]).find(p=>p.id===a.project_id)?.name || "";
+                    const pb = (projects||[]).find(p=>p.id===b.project_id)?.name || "";
+                    if (pa !== pb) return pa.localeCompare(pb);
+                    return (a.unit_ref||"").localeCompare(b.unit_ref||"");
+                  });
+                  const visible = pool.slice(0, 200);
+
+                  return (
+                    <div style={{position:"relative"}}>
+                      {/* Display field — shows selection or placeholder */}
+                      <div onClick={()=>setUnitPickerOpen(o=>!o)}
+                        style={{padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,background:"#fff",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+                        {selectedUnit ? (
+                          <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:8}}>
+                            <span style={{fontWeight:700,color:"#0F2540"}}>{selectedUnit.unit_ref}</span>
+                            <span style={{fontSize:11,color:"#64748B",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                              {[
+                                selectedUnit.bedrooms===0?"Studio":selectedUnit.bedrooms?`${selectedUnit.bedrooms}BR`:null,
+                                selectedUnit.sub_type,
+                                selectedProj?.name,
+                                selectedUnit.size_sqft && `${selectedUnit.size_sqft} sqft`,
+                              ].filter(Boolean).join(" · ")}
+                            </span>
+                          </div>
+                        ) : (
+                          <span style={{color:"#94A3B8"}}>— No unit linked yet — click to search 🔍</span>
+                        )}
+                        <div style={{display:"flex",gap:4,alignItems:"center"}}>
+                          {selectedUnit && (
+                            <button onClick={e=>{e.stopPropagation();setOppForm(f=>({...f,unit_id:""}));setUnitPickerOpen(false);}}
+                              style={{padding:"2px 7px",borderRadius:5,border:"none",background:"#E2E8F0",color:"#64748B",fontSize:10,fontWeight:700,cursor:"pointer"}}>
+                              ✕
+                            </button>
+                          )}
+                          <span style={{color:"#94A3B8",fontSize:11}}>{unitPickerOpen ? "▲" : "▼"}</span>
+                        </div>
+                      </div>
+
+                      {/* Picker panel */}
+                      {unitPickerOpen && (
+                        <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"#fff",border:"1.5px solid #D1D9E6",borderRadius:8,boxShadow:"0 14px 32px rgba(15,37,64,.15)",zIndex:50,maxHeight:380,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+                          {/* Search box */}
+                          <div style={{padding:"10px 12px",borderBottom:"1px solid #E2E8F0"}}>
+                            <input type="text" autoFocus value={unitSearch} onChange={e=>setUnitSearch(e.target.value)}
+                              placeholder="🔍 Search by ref, project, BR, view (e.g. 'DAM 2BR' or 'villa')"
+                              style={{width:"100%",padding:"7px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",fontSize:12,boxSizing:"border-box",outline:"none"}}/>
+                            {/* Filter row 1: project pills */}
+                            <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:8,alignItems:"center"}}>
+                              <button onClick={()=>setUnitProjFilter("All")}
+                                style={{padding:"3px 9px",borderRadius:11,border:`1px solid ${unitProjFilter==="All"?"#0F2540":"#E2E8F0"}`,background:unitProjFilter==="All"?"#0F2540":"#fff",color:unitProjFilter==="All"?"#fff":"#64748B",fontSize:10,fontWeight:600,cursor:"pointer"}}>All projects</button>
+                              {projectOptions.map(p => (
+                                <button key={p.id} onClick={()=>setUnitProjFilter(p.id)}
+                                  style={{padding:"3px 9px",borderRadius:11,border:`1px solid ${unitProjFilter===p.id?"#0F2540":"#E2E8F0"}`,background:unitProjFilter===p.id?"#0F2540":"#fff",color:unitProjFilter===p.id?"#fff":"#64748B",fontSize:10,fontWeight:600,cursor:"pointer"}}>
+                                  {p.name}
+                                </button>
+                              ))}
+                            </div>
+                            {/* Filter row 2: bedroom pills + show reserved */}
+                            <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:6,alignItems:"center"}}>
+                              {["All","Studio","1","2","3","4+"].map(b => {
+                                const sel = unitBedFilter === b;
+                                const label = b==="All"?"All sizes":b==="Studio"?"Studio":b==="4+"?"4BR+":`${b}BR`;
+                                return (
+                                  <button key={b} onClick={()=>setUnitBedFilter(b)}
+                                    style={{padding:"3px 9px",borderRadius:11,border:`1px solid ${sel?"#0F2540":"#E2E8F0"}`,background:sel?"#0F2540":"#fff",color:sel?"#fff":"#64748B",fontSize:10,fontWeight:600,cursor:"pointer"}}>{label}</button>
+                                );
+                              })}
+                              <label style={{display:"flex",alignItems:"center",gap:4,fontSize:10,color:"#64748B",cursor:"pointer",marginLeft:"auto"}}>
+                                <input type="checkbox" checked={unitShowReserved} onChange={e=>setUnitShowReserved(e.target.checked)}/>
+                                Show Reserved/Sold
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Result count */}
+                          <div style={{padding:"6px 12px",fontSize:10,color:"#94A3B8",fontWeight:600,letterSpacing:".4px",textTransform:"uppercase",borderBottom:"1px solid #F1F5F9"}}>
+                            {pool.length} unit{pool.length===1?"":"s"}{visible.length < pool.length && ` (showing first ${visible.length})`}
+                          </div>
+
+                          {/* Results */}
+                          <div style={{flex:1,overflowY:"auto",maxHeight:280}}>
+                            {visible.length === 0 ? (
+                              <div style={{padding:"22px 12px",textAlign:"center",color:"#94A3B8",fontSize:12}}>
+                                No units match. Try a different filter or search term.
+                              </div>
+                            ) : (
+                              visible.map(u => {
+                                const proj = (projects||[]).find(p => p.id === u.project_id);
+                                const bedLabel = u.bedrooms===0?"Studio":(u.bedrooms?`${u.bedrooms}BR`:"");
+                                const isReserved = u.status === "Reserved" || u.status === "Sold";
+                                return (
+                                  <div key={u.id}
+                                    onClick={()=>{setOppForm(f=>({...f,unit_id:u.id}));setUnitPickerOpen(false);setUnitSearch("");}}
+                                    onMouseOver={e=>e.currentTarget.style.background="#F8FAFC"}
+                                    onMouseOut={e=>e.currentTarget.style.background="#fff"}
+                                    style={{padding:"8px 12px",borderBottom:"1px solid #F1F5F9",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,opacity:isReserved?0.6:1}}>
+                                    <div style={{minWidth:0,flex:1}}>
+                                      <div style={{fontSize:12,fontWeight:700,color:"#0F2540",display:"flex",alignItems:"center",gap:6}}>
+                                        {u.unit_ref}
+                                        {isReserved && <span style={{fontSize:9,padding:"1px 5px",borderRadius:7,background:"#FEE2E2",color:"#C53030",fontWeight:700}}>{u.status?.toUpperCase()}</span>}
+                                      </div>
+                                      <div style={{fontSize:10,color:"#64748B",marginTop:1}}>
+                                        {[bedLabel, u.sub_type, proj?.name, u.size_sqft && `${u.size_sqft} sqft`, u.view].filter(Boolean).join(" · ")}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+
+                          {/* Footer */}
+                          <div style={{padding:"6px 12px",borderTop:"1px solid #E2E8F0",background:"#F8FAFC",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                            <span style={{fontSize:10,color:"#94A3B8"}}>Click a unit to select. Esc or click outside to close.</span>
+                            <button onClick={()=>setUnitPickerOpen(false)}
+                              style={{padding:"3px 10px",borderRadius:5,border:"1px solid #D1D9E6",background:"#fff",color:"#64748B",fontSize:10,fontWeight:600,cursor:"pointer"}}>Close</button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>
                   💡 Don't worry if you don't have a unit yet. AI Match in the proposal builder will help you pick one later.
                 </div>
