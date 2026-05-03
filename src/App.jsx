@@ -7042,6 +7042,409 @@ async function aiInvoke({ system, prompt, messages }) {
    Subsequent commits will replace this with the full module.
 ═══════════════════════════════════════════════════════════════ */
 /* ═══════════════════════════════════════════════════════════════
+   Phase F W6 — CreateOpportunityDialog
+   Two-step flow: (1) lookup-or-create lead by phone/email, (2) opp details.
+   Eliminates the existing window.confirm duplicate-detection in the lead
+   form by giving inline UI for "use existing" vs "create new".
+═══════════════════════════════════════════════════════════════ */
+function CreateOpportunityDialog({ leads, setLeads, units, projects, users, currentUser, showToast, onClose, onCreated }) {
+  // Step state
+  const [step, setStep] = useState(1); // 1 = find/create lead, 2 = opp details
+  const [saving, setSaving] = useState(false);
+
+  // Step 1: lead lookup
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [matches, setMatches] = useState([]);
+  const [selectedLead, setSelectedLead] = useState(null);
+  const [showCreateLeadForm, setShowCreateLeadForm] = useState(false);
+  const [newLeadForm, setNewLeadForm] = useState({
+    name: "", phone: "", email: "", source: "Walk-in", nationality: "", budget: "", notes: "",
+  });
+
+  // Step 2: opp form (pre-filled from selectedLead where possible)
+  const [oppForm, setOppForm] = useState({
+    title: "", unit_id: "", budget: "", assigned_to: currentUser?.id || "",
+    notes: "", property_category: "Off-Plan",
+  });
+
+  // Debounced lead search by phone OR email
+  useEffect(() => {
+    if (!query.trim() || query.trim().length < 3) {
+      setMatches([]);
+      return;
+    }
+    const handle = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const q = query.trim();
+        // Match by phone OR email (case-insensitive). Filter by company_id for
+        // multi-tenant isolation. Fall back to scanning loaded leads if Supabase
+        // call fails for any reason.
+        let rows = [];
+        try {
+          const { data, error } = await supabase
+            .from("leads")
+            .select("id, name, phone, email, source, nationality, budget, notes, created_at, assigned_to")
+            .or(`phone.ilike.%${q}%,email.ilike.%${q}%`)
+            .eq("company_id", currentUser.company_id)
+            .limit(8);
+          if (error) throw error;
+          rows = data || [];
+        } catch (e) {
+          // Defensive: scan in-memory leads if DB query fails
+          const ql = q.toLowerCase();
+          rows = (leads || []).filter(l =>
+            (l.phone || "").toLowerCase().includes(ql) ||
+            (l.email || "").toLowerCase().includes(ql)
+          ).slice(0, 8);
+        }
+        setMatches(rows);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [query]);
+
+  // Detect if query looks like email vs phone — used to pre-fill the new-lead form
+  const detectKind = (s) => {
+    const trimmed = s.trim();
+    if (trimmed.includes("@")) return "email";
+    if (/^[+\d\s()-]+$/.test(trimmed) && trimmed.replace(/\D/g,"").length >= 5) return "phone";
+    return "name"; // fallback
+  };
+
+  const startCreateLead = () => {
+    const kind = detectKind(query);
+    setNewLeadForm(prev => ({
+      ...prev,
+      [kind === "email" ? "email" : kind === "phone" ? "phone" : "name"]: query.trim(),
+    }));
+    setShowCreateLeadForm(true);
+  };
+
+  const useExistingLead = (lead) => {
+    setSelectedLead(lead);
+    // Pre-fill opp form from lead data
+    setOppForm(prev => ({
+      ...prev,
+      title: `Inquiry from ${lead.name || "buyer"}`,
+      budget: lead.budget ? String(lead.budget) : "",
+    }));
+    setStep(2);
+  };
+
+  const createLeadAndContinue = async () => {
+    if (!newLeadForm.name.trim()) {
+      showToast("Name is required", "error");
+      return;
+    }
+    if (!newLeadForm.phone.trim() && !newLeadForm.email.trim()) {
+      showToast("Phone or email is required", "error");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        name: newLeadForm.name.trim(),
+        phone: newLeadForm.phone.trim() || null,
+        email: newLeadForm.email.trim() || null,
+        source: newLeadForm.source || null,
+        nationality: newLeadForm.nationality || null,
+        budget: newLeadForm.budget ? Number(newLeadForm.budget) : null,
+        notes: newLeadForm.notes || null,
+        company_id: currentUser.company_id || null,
+        assigned_to: currentUser.id,
+        created_by: currentUser.id,
+      };
+      const { data, error } = await supabase
+        .from("leads")
+        .insert(payload)
+        .select()
+        .single();
+      if (error) throw error;
+      setSelectedLead(data);
+      setOppForm(prev => ({
+        ...prev,
+        title: `Inquiry from ${data.name}`,
+        budget: data.budget ? String(data.budget) : "",
+      }));
+      setStep(2);
+      showToast("Lead created", "success");
+    } catch (e) {
+      showToast(`Couldn't create lead: ${e.message}`, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveOpp = async () => {
+    if (!selectedLead?.id) {
+      showToast("No lead selected", "error");
+      return;
+    }
+    setSaving(true);
+    try {
+      const unit = units.find(u => u.id === oppForm.unit_id);
+      const payload = {
+        lead_id: selectedLead.id,
+        company_id: currentUser.company_id || null,
+        title: oppForm.title || (unit ? `${unit.unit_ref} — ${selectedLead.name}` : `Opportunity — ${selectedLead.name}`),
+        unit_id: oppForm.unit_id || null,
+        budget: oppForm.budget ? Number(oppForm.budget) : null,
+        assigned_to: oppForm.assigned_to || currentUser.id,
+        notes: oppForm.notes || null,
+        property_category: oppForm.property_category || "Off-Plan",
+        stage: "New",
+        status: "Active",
+        created_by: currentUser.id,
+      };
+      const { data, error } = await supabase.from("opportunities").insert(payload).select().single();
+      if (error) throw error;
+      showToast("Opportunity created", "success");
+      // Pass back both the new lead (if it was newly created — parent dedupes) AND new opp
+      const wasNewLead = !(leads || []).find(l => l.id === selectedLead.id);
+      onCreated(data, wasNewLead ? selectedLead : null);
+    } catch (e) {
+      showToast(`Couldn't create opportunity: ${e.message}`, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ─── RENDER ────────────────────────────────────────────────
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(15,37,64,.55)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:"2rem"}}>
+      <div style={{background:"#fff",borderRadius:14,padding:0,maxWidth:600,width:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 56px rgba(15,37,64,.18)"}}>
+
+        {/* Header */}
+        <div style={{padding:"18px 22px",borderBottom:"1px solid #E2E8F0",background:"#0F2540",color:"#fff",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,letterSpacing:"-.3px"}}>
+              {step === 1 ? "🎯 New Opportunity — Step 1: Find or create buyer" : "🎯 New Opportunity — Step 2: Deal details"}
+            </div>
+            {selectedLead && step === 2 && (
+              <div style={{fontSize:11,color:"rgba(255,255,255,.7)",marginTop:3}}>
+                For: <strong>{selectedLead.name}</strong> · {selectedLead.phone || selectedLead.email}
+              </div>
+            )}
+          </div>
+          <button onClick={onClose} style={{background:"none",border:"none",color:"#C9A84C",fontSize:24,cursor:"pointer",lineHeight:1}}>×</button>
+        </div>
+
+        {/* Body */}
+        <div style={{padding:"20px 22px",overflowY:"auto",flex:1}}>
+
+          {/* ─── STEP 1: lead lookup-or-create ─── */}
+          {step === 1 && !showCreateLeadForm && (
+            <div>
+              <div style={{fontSize:12,color:"#64748B",marginBottom:10,lineHeight:1.5}}>
+                Type the buyer's <strong>phone</strong> or <strong>email</strong>. If they're already in your contacts, you'll see them below — pick to continue. Otherwise, create a new contact first.
+              </div>
+
+              <div style={{position:"relative",marginBottom:14}}>
+                <input type="text" autoFocus
+                  value={query}
+                  onChange={e=>setQuery(e.target.value)}
+                  placeholder="🔍 +9715... or buyer@email.com"
+                  style={{width:"100%",padding:"11px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box",outline:"none"}}/>
+                {searching && (
+                  <span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:11,color:"#64748B"}}>
+                    Searching…
+                  </span>
+                )}
+              </div>
+
+              {/* Matches */}
+              {query.trim().length >= 3 && !searching && matches.length === 0 && (
+                <div style={{padding:"12px 14px",background:"#FFFBEA",border:"1px solid #FCD34D",borderRadius:8,fontSize:12,color:"#7A4F01",marginBottom:10}}>
+                  No matching contacts found. <button onClick={startCreateLead} style={{marginLeft:6,padding:"3px 10px",borderRadius:5,border:"1px solid #7A4F01",background:"#fff",color:"#7A4F01",fontSize:11,fontWeight:700,cursor:"pointer"}}>+ Create new contact</button>
+                </div>
+              )}
+
+              {matches.length > 0 && (
+                <div style={{marginBottom:10}}>
+                  <div style={{fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>
+                    {matches.length} matching contact{matches.length===1?"":"s"} found
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {matches.map(l => {
+                      const owner = users?.find(u => u.id === l.assigned_to);
+                      return (
+                        <div key={l.id} style={{padding:"10px 12px",background:"#FFFBEA",border:"1px solid #FCD34D",borderRadius:8}}>
+                          <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:3}}>
+                            📇 {l.name || "Unnamed contact"}
+                          </div>
+                          <div style={{fontSize:11,color:"#64748B",marginBottom:7}}>
+                            {[l.phone, l.email, l.source && `Source: ${l.source}`, l.nationality, owner && `Owner: ${owner.full_name}`].filter(Boolean).join(" · ")}
+                          </div>
+                          <button onClick={()=>useExistingLead(l)}
+                            style={{padding:"5px 12px",borderRadius:6,border:"none",background:"#0F2540",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                            ✓ Use this contact
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{textAlign:"center",marginTop:10}}>
+                    <button onClick={startCreateLead}
+                      style={{padding:"6px 14px",borderRadius:6,border:"1.5px solid #D1D9E6",background:"#fff",color:"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                      None of these — create new contact instead
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ─── STEP 1: create new lead form ─── */}
+          {step === 1 && showCreateLeadForm && (
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                <button onClick={()=>setShowCreateLeadForm(false)} style={{background:"none",border:"none",color:"#64748B",fontSize:13,cursor:"pointer"}}>← Back to search</button>
+                <span style={{fontSize:12,color:"#64748B"}}>Creating new contact</span>
+              </div>
+
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                <div style={{gridColumn:"1 / -1"}}>
+                  <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Name *</label>
+                  <input value={newLeadForm.name} onChange={e=>setNewLeadForm(f=>({...f,name:e.target.value}))} placeholder="Mr. Khan" autoFocus
+                    style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box"}}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Phone</label>
+                  <input value={newLeadForm.phone} onChange={e=>setNewLeadForm(f=>({...f,phone:e.target.value}))} placeholder="+9715..."
+                    style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box"}}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Email</label>
+                  <input value={newLeadForm.email} onChange={e=>setNewLeadForm(f=>({...f,email:e.target.value}))} placeholder="buyer@email.com"
+                    style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box"}}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Source</label>
+                  <select value={newLeadForm.source} onChange={e=>setNewLeadForm(f=>({...f,source:e.target.value}))}
+                    style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box",background:"#fff"}}>
+                    <option>Walk-in</option>
+                    <option>Bayut</option>
+                    <option>PropertyFinder</option>
+                    <option>Dubizzle</option>
+                    <option>Referral</option>
+                    <option>Repeat customer</option>
+                    <option>Cold call</option>
+                    <option>Social media</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Nationality</label>
+                  <input value={newLeadForm.nationality} onChange={e=>setNewLeadForm(f=>({...f,nationality:e.target.value}))} placeholder="UAE / Indian / British / …"
+                    style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box"}}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Stated budget (AED)</label>
+                  <input type="number" value={newLeadForm.budget} onChange={e=>setNewLeadForm(f=>({...f,budget:e.target.value}))} placeholder="2000000"
+                    style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box"}}/>
+                </div>
+                <div style={{gridColumn:"1 / -1"}}>
+                  <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Notes</label>
+                  <textarea value={newLeadForm.notes} onChange={e=>setNewLeadForm(f=>({...f,notes:e.target.value}))} rows={2} placeholder="Initial requirements, preferences, anything notable…"
+                    style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box",fontFamily:"inherit",resize:"vertical"}}/>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── STEP 2: opp details ─── */}
+          {step === 2 && selectedLead && (
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+              <div style={{gridColumn:"1 / -1"}}>
+                <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Title</label>
+                <input value={oppForm.title} onChange={e=>setOppForm(f=>({...f,title:e.target.value}))} placeholder="auto-generated if blank"
+                  style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box"}}/>
+              </div>
+              <div>
+                <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Property category</label>
+                <select value={oppForm.property_category} onChange={e=>setOppForm(f=>({...f,property_category:e.target.value}))}
+                  style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box",background:"#fff"}}>
+                  <option>Off-Plan</option>
+                  <option>Ready</option>
+                  <option>Resale</option>
+                </select>
+              </div>
+              <div>
+                <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Budget (AED)</label>
+                <input type="number" value={oppForm.budget} onChange={e=>setOppForm(f=>({...f,budget:e.target.value}))} placeholder="2000000"
+                  style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box"}}/>
+              </div>
+              <div style={{gridColumn:"1 / -1"}}>
+                <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Linked unit (optional)</label>
+                <select value={oppForm.unit_id} onChange={e=>setOppForm(f=>({...f,unit_id:e.target.value}))}
+                  style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box",background:"#fff"}}>
+                  <option value="">— No unit linked yet —</option>
+                  {(units||[]).filter(u=>u.status!=="Reserved"&&u.status!=="Sold").slice(0,80).map(u => {
+                    const proj = projects?.find(p=>p.id===u.project_id);
+                    const bedLabel = u.bedrooms===0?"Studio":(u.bedrooms?`${u.bedrooms}BR`:"");
+                    return <option key={u.id} value={u.id}>{u.unit_ref} · {[bedLabel, proj?.name].filter(Boolean).join(" · ")}</option>;
+                  })}
+                </select>
+                <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>
+                  💡 Don't worry if you don't have a unit yet. AI Match in the proposal builder will help you pick one later.
+                </div>
+              </div>
+              <div>
+                <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Owner</label>
+                <select value={oppForm.assigned_to} onChange={e=>setOppForm(f=>({...f,assigned_to:e.target.value}))}
+                  style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box",background:"#fff"}}>
+                  {(users||[]).map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
+                </select>
+              </div>
+              <div style={{gridColumn:"1 / -1"}}>
+                <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Notes</label>
+                <textarea value={oppForm.notes} onChange={e=>setOppForm(f=>({...f,notes:e.target.value}))} rows={2} placeholder="Specific requirements, context for this deal…"
+                  style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box",fontFamily:"inherit",resize:"vertical"}}/>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{padding:"14px 22px",borderTop:"1px solid #E2E8F0",background:"#F8FAFC",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
+          <div style={{fontSize:11,color:"#94A3B8"}}>
+            Step {step} of 2
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={onClose} disabled={saving}
+              style={{padding:"9px 16px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",color:"#475569",fontSize:12,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+              Cancel
+            </button>
+            {step === 1 && showCreateLeadForm && (
+              <button onClick={createLeadAndContinue} disabled={saving}
+                style={{padding:"9px 18px",borderRadius:8,border:"none",background:saving?"#94A3B8":"#0F2540",color:"#fff",fontSize:12,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
+                {saving ? "Creating…" : "Create contact & continue →"}
+              </button>
+            )}
+            {step === 2 && (
+              <>
+                <button onClick={()=>setStep(1)} disabled={saving}
+                  style={{padding:"9px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",color:"#475569",fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                  ← Back
+                </button>
+                <button onClick={saveOpp} disabled={saving}
+                  style={{padding:"9px 18px",borderRadius:8,border:"none",background:saving?"#94A3B8":"#0F2540",color:"#fff",fontSize:12,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
+                  {saving ? "Creating…" : "Create opportunity"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
    Phase F W5 — Opportunities Tab (real implementation)
    List view: filterable/searchable table of all opps.
    Click a row → opens OpportunityDetail (reuses existing component).
@@ -7067,6 +7470,7 @@ function OpportunitiesPlaceholder({ currentUser, crmContext }) {
 function Opportunities({ leads, setLeads, opps, setOpps, units, projects, salePricing, activities, setActivities, currentUser, users, showToast, initialFilter=null }) {
   const [view, setView] = useState("list"); // "list" | "opportunity"
   const [selOpp, setSelOpp] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -7188,13 +7592,35 @@ function Opportunities({ leads, setLeads, opps, setOpps, units, projects, salePr
           <div style={{fontSize:12,color:"#64748B",marginTop:2}}>Your deal pipeline — click any row to open the workspace</div>
         </div>
         <div style={{display:"flex",gap:8}}>
-          <button disabled
-            title="Coming next: create opportunity with lead lookup"
-            style={{padding:"8px 16px",borderRadius:8,border:"1.5px dashed #CBD5E1",background:"#F8FAFC",color:"#94A3B8",fontSize:12,fontWeight:700,cursor:"not-allowed"}}>
-            + New Opportunity (next commit)
+          <button onClick={()=>setShowCreate(true)}
+            style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+            + New Opportunity
           </button>
         </div>
       </div>
+
+      {/* Create Opportunity dialog */}
+      {showCreate && (
+        <CreateOpportunityDialog
+          leads={leads}
+          setLeads={setLeads}
+          units={units}
+          projects={projects}
+          users={users}
+          currentUser={currentUser}
+          showToast={showToast}
+          onClose={()=>setShowCreate(false)}
+          onCreated={(newOpp, newLead)=>{
+            // Append to parent opps list, optionally append new lead
+            if (newLead && setLeads) setLeads(prev => prev.find(l=>l.id===newLead.id) ? prev : [newLead, ...prev]);
+            if (setOpps) setOpps(prev => [newOpp, ...prev]);
+            setShowCreate(false);
+            // Drop straight into the new opp's detail page
+            setSelOpp(newOpp);
+            setView("opportunity");
+          }}
+        />
+      )}
 
       {/* Filters: search + owner */}
       <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
