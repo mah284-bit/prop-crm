@@ -1051,6 +1051,21 @@ const PAYMENT_STATUS_META = {
 // OPPORTUNITY DETAIL — full workflow per opportunity
 // ══════════════════════════════════════════════════════════════════
 const OPP_STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
+
+// addWorkingDays — UAE working week (post-2022 federal change) is Mon-Fri.
+// Saturday (6) and Sunday (0) are weekend. Used by reservation validity expiry,
+// proposal validity, etc.
+// Phase F W7 — was referenced in stage gate but never defined; defining now.
+function addWorkingDays(startDate, days) {
+  const d = new Date(startDate);
+  let added = 0;
+  while (added < days) {
+    d.setDate(d.getDate() + 1);
+    const day = d.getDay(); // 0=Sun, 6=Sat — weekend
+    if (day !== 0 && day !== 6) added++;
+  }
+  return d;
+}
 // Expose globally so external component files (ReportsModule, InventoryModule etc.)
 // that reference OPP_STAGES as a bare identifier can find it. Hot-fix for runtime
 // ReferenceError; long-term these external files should import the constant
