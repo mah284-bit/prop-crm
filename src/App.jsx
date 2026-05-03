@@ -7042,11 +7042,83 @@ async function aiInvoke({ system, prompt, messages }) {
    Subsequent commits will replace this with the full module.
 ═══════════════════════════════════════════════════════════════ */
 /* ═══════════════════════════════════════════════════════════════
-   Phase F W6 — CreateOpportunityDialog
+   Phase F W6 — CreateOpportunityDialog (Layer 3 dedup + Layer 1 awareness)
    Two-step flow: (1) lookup-or-create lead by phone/email, (2) opp details.
-   Eliminates the existing window.confirm duplicate-detection in the lead
-   form by giving inline UI for "use existing" vs "create new".
+
+   Layer 3 — DATA HYGIENE:
+     - Email-first dedup (email match = strong signal, hard warn)
+     - Phone normalisation before compare (strip spaces/dashes/+/leading 0)
+     - Server-side check on save (catches race conditions)
+     - V2-quality form: country code dropdown, structured nationality
+
+   Layer 1 — CONFLICT AWARENESS:
+     - When existing lead found, surface owner + last contact + stage + units
+     - AI summary of the situation
+     - Block-and-coordinate flow (no transfer/co-broker — that's Layer 2,
+       deferred until Al Mansoori defines lead-ownership policy)
 ═══════════════════════════════════════════════════════════════ */
+
+// Normalise phone for fuzzy comparison: strip everything that isn't a digit,
+// then drop leading "971" or "0" so "+9715012345" / "9715012345" / "0501-2345"
+// all become "5012345" (the "interesting" part of the number).
+function normalisePhone(p) {
+  if (!p) return "";
+  let s = String(p).replace(/\D/g, "");
+  if (s.startsWith("971")) s = s.slice(3);
+  if (s.startsWith("0")) s = s.slice(1);
+  return s;
+}
+
+// Common UAE country code list — used by the inline form
+const COUNTRY_CODES = [
+  { code: "+971", country: "UAE" },
+  { code: "+966", country: "Saudi Arabia" },
+  { code: "+91",  country: "India" },
+  { code: "+92",  country: "Pakistan" },
+  { code: "+44",  country: "UK" },
+  { code: "+1",   country: "USA/Canada" },
+  { code: "+20",  country: "Egypt" },
+  { code: "+961", country: "Lebanon" },
+  { code: "+962", country: "Jordan" },
+  { code: "+963", country: "Syria" },
+  { code: "+964", country: "Iraq" },
+  { code: "+965", country: "Kuwait" },
+  { code: "+968", country: "Oman" },
+  { code: "+973", country: "Bahrain" },
+  { code: "+974", country: "Qatar" },
+  { code: "+33",  country: "France" },
+  { code: "+49",  country: "Germany" },
+  { code: "+39",  country: "Italy" },
+  { code: "+34",  country: "Spain" },
+  { code: "+86",  country: "China" },
+  { code: "+81",  country: "Japan" },
+  { code: "+82",  country: "South Korea" },
+  { code: "+63",  country: "Philippines" },
+  { code: "+62",  country: "Indonesia" },
+  { code: "+60",  country: "Malaysia" },
+  { code: "+27",  country: "South Africa" },
+  { code: "+234", country: "Nigeria" },
+  { code: "+254", country: "Kenya" },
+  { code: "+90",  country: "Turkey" },
+  { code: "+98",  country: "Iran" },
+  { code: "+7",   country: "Russia" },
+  { code: "+380", country: "Ukraine" },
+  { code: "+61",  country: "Australia" },
+  { code: "+64",  country: "New Zealand" },
+];
+
+// UAE-relevant nationality list (most common)
+const NATIONALITIES = [
+  "UAE","Saudi Arabia","Kuwait","Qatar","Bahrain","Oman",  // GCC
+  "India","Pakistan","Bangladesh","Sri Lanka","Nepal","Philippines",  // South & SE Asia
+  "Egypt","Lebanon","Jordan","Syria","Iraq","Palestine","Morocco","Tunisia","Algeria","Yemen","Sudan",  // MENA
+  "UK","USA","Canada","Australia","New Zealand","South Africa",  // Western
+  "France","Germany","Italy","Spain","Netherlands","Belgium","Switzerland","Sweden","Norway","Denmark","Russia","Ukraine",  // Europe
+  "China","Japan","South Korea","Iran","Turkey","Indonesia","Malaysia","Thailand","Vietnam",  // Asia
+  "Nigeria","Kenya","Ethiopia","Ghana",  // Africa
+  "Other",
+];
+
 function CreateOpportunityDialog({ leads, setLeads, units, projects, users, currentUser, showToast, onClose, onCreated }) {
   // Step state
   const [step, setStep] = useState(1); // 1 = find/create lead, 2 = opp details
@@ -7058,9 +7130,24 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
   const [matches, setMatches] = useState([]);
   const [selectedLead, setSelectedLead] = useState(null);
   const [showCreateLeadForm, setShowCreateLeadForm] = useState(false);
+
+  // Phase F W6 ext — AI conflict context for the chosen match (Layer 1)
+  const [conflictContext, setConflictContext] = useState(null); // {ownerName, daysSinceContact, stage, unitRefs, recentProposals, aiSummary}
+  const [loadingContext, setLoadingContext] = useState(false);
+
+  // V2-style new lead form — split phone into country code + number,
+  // structured nationality dropdown, named source list
   const [newLeadForm, setNewLeadForm] = useState({
-    name: "", phone: "", email: "", source: "Walk-in", nationality: "", budget: "", notes: "",
+    name: "",
+    countryCode: "+971",
+    phone: "",       // local part only (the number AFTER the country code)
+    email: "",
+    source: "Walk-in",
+    nationality: "",
+    budget: "",
+    notes: "",
   });
+  const [serverDupeBlock, setServerDupeBlock] = useState(null); // {kind, existingLead}
 
   // Step 2: opp form (pre-filled from selectedLead where possible)
   const [oppForm, setOppForm] = useState({
@@ -7068,7 +7155,17 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
     notes: "", property_category: "Off-Plan",
   });
 
-  // Debounced lead search by phone OR email
+  // Detect what kind of input the agent typed (email / phone / name)
+  const detectKind = (s) => {
+    const trimmed = s.trim();
+    if (trimmed.includes("@")) return "email";
+    if (/^[+\d\s()-]+$/.test(trimmed) && trimmed.replace(/\D/g,"").length >= 4) return "phone";
+    return "name";
+  };
+
+  // Debounced lead search by phone OR email — Layer 3 dedup detection.
+  // Uses normalised phone matching: agent might type "0501234" or "+97150 1234"
+  // and we still find the existing "+971 50 1234" lead.
   useEffect(() => {
     if (!query.trim() || query.trim().length < 3) {
       setMatches([]);
@@ -7078,61 +7175,212 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
       setSearching(true);
       try {
         const q = query.trim();
-        // Match by phone OR email (case-insensitive). Filter by company_id for
-        // multi-tenant isolation. Fall back to scanning loaded leads if Supabase
-        // call fails for any reason.
+        const kind = detectKind(q);
         let rows = [];
-        try {
+
+        if (kind === "email") {
+          // Email match — very strong dedup signal. Use ILIKE (case-insensitive).
           const { data, error } = await supabase
             .from("leads")
-            .select("id, name, phone, email, source, nationality, budget, notes, created_at, assigned_to")
-            .or(`phone.ilike.%${q}%,email.ilike.%${q}%`)
+            .select("id, name, phone, email, source, nationality, budget, notes, created_at, assigned_to, country_code")
+            .ilike("email", `%${q}%`)
             .eq("company_id", currentUser.company_id)
             .limit(8);
           if (error) throw error;
-          rows = data || [];
-        } catch (e) {
-          // Defensive: scan in-memory leads if DB query fails
-          const ql = q.toLowerCase();
-          rows = (leads || []).filter(l =>
-            (l.phone || "").toLowerCase().includes(ql) ||
-            (l.email || "").toLowerCase().includes(ql)
-          ).slice(0, 8);
+          rows = (data || []).map(r => ({...r, _matchType: "email"}));
+        } else if (kind === "phone") {
+          // Phone match — pull all leads with phones in this company, then
+          // filter by normalised phone in JS. Avoids needing a stored
+          // normalised column.
+          const queryNorm = normalisePhone(q);
+          if (!queryNorm) { setMatches([]); return; }
+          const { data, error } = await supabase
+            .from("leads")
+            .select("id, name, phone, email, source, nationality, budget, notes, created_at, assigned_to, country_code")
+            .not("phone", "is", null)
+            .eq("company_id", currentUser.company_id)
+            .limit(200); // generous so we don't miss matches
+          if (error) throw error;
+          rows = (data || [])
+            .filter(r => {
+              const rn = normalisePhone(r.phone);
+              if (!rn) return false;
+              // Match if either contains the other (handles partial typing)
+              return rn.includes(queryNorm) || queryNorm.includes(rn);
+            })
+            .slice(0, 8)
+            .map(r => ({...r, _matchType: "phone"}));
+        } else {
+          // Name fallback — least useful for dedup, but help the agent
+          const { data, error } = await supabase
+            .from("leads")
+            .select("id, name, phone, email, source, nationality, budget, notes, created_at, assigned_to, country_code")
+            .ilike("name", `%${q}%`)
+            .eq("company_id", currentUser.company_id)
+            .limit(8);
+          if (error) throw error;
+          rows = (data || []).map(r => ({...r, _matchType: "name"}));
         }
         setMatches(rows);
+      } catch (e) {
+        // Defensive: scan in-memory leads if DB query fails
+        const ql = query.trim().toLowerCase();
+        const qn = normalisePhone(query);
+        const fallback = (leads || []).filter(l => {
+          if ((l.email || "").toLowerCase().includes(ql)) return true;
+          if (l.phone && qn && (normalisePhone(l.phone).includes(qn) || qn.includes(normalisePhone(l.phone)))) return true;
+          if ((l.name || "").toLowerCase().includes(ql)) return true;
+          return false;
+        }).slice(0, 8);
+        setMatches(fallback);
       } finally {
         setSearching(false);
       }
     }, 300);
     return () => clearTimeout(handle);
-  }, [query]);
+  }, [query, currentUser.company_id]);
 
-  // Detect if query looks like email vs phone — used to pre-fill the new-lead form
-  const detectKind = (s) => {
-    const trimmed = s.trim();
-    if (trimmed.includes("@")) return "email";
-    if (/^[+\d\s()-]+$/.test(trimmed) && trimmed.replace(/\D/g,"").length >= 5) return "phone";
-    return "name"; // fallback
+  // Phase F W6 ext — when a match is HOVERED or selected, fetch its conflict
+  // context (current owner, recent activity, in-flight opps). Run once per
+  // selected lead, cached locally on conflictContext.
+  const loadConflictContext = async (lead) => {
+    setLoadingContext(true);
+    setConflictContext(null);
+    try {
+      const owner = (users || []).find(u => u.id === lead.assigned_to);
+
+      // Fetch active opps for this lead
+      const { data: leadOpps } = await supabase
+        .from("opportunities")
+        .select("id, stage, status, budget, unit_id, stage_updated_at, created_at, assigned_to")
+        .eq("lead_id", lead.id)
+        .neq("stage", "Closed Won")
+        .neq("stage", "Closed Lost")
+        .limit(10);
+
+      // Fetch recent activities on this lead
+      const { data: recentActs } = await supabase
+        .from("activities")
+        .select("type, note, created_at, user_name")
+        .eq("lead_id", lead.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      const lastActAt = recentActs?.[0]?.created_at || lead.created_at;
+      const daysSinceContact = lastActAt ? Math.round((new Date() - new Date(lastActAt)) / (1000*60*60*24)) : null;
+
+      const oppDetails = (leadOpps || []).map(o => {
+        const u = (units || []).find(x => x.id === o.unit_id);
+        return {
+          stage: o.stage,
+          unit_ref: u?.unit_ref || null,
+          owner_id: o.assigned_to,
+          ownerName: (users || []).find(uu => uu.id === o.assigned_to)?.full_name || null,
+        };
+      });
+
+      // Quick AI summary of the situation
+      let aiSummary = "";
+      try {
+        const system = `You are a UAE real-estate brokerage advisor. A second agent is about to create a new opportunity for a buyer who already exists in the company's database. Summarise the situation in ONE sentence — what the second agent should know and what the recommended next step is. Be diplomatic, professional, brief. Do not assume bad intent. Output only the sentence, no preamble.`;
+        const userPrompt = `Existing lead: ${lead.name || "Unknown"} (owned by ${owner?.full_name || "another agent"}).
+Last contact: ${daysSinceContact === 0 ? "today" : daysSinceContact === 1 ? "yesterday" : daysSinceContact != null ? daysSinceContact + " days ago" : "unknown"}.
+Active opportunities: ${oppDetails.length} (stages: ${oppDetails.map(o=>o.stage).join(", ") || "none"}).
+${oppDetails.length > 0 ? `Units in flight: ${oppDetails.map(o=>o.unit_ref).filter(Boolean).join(", ")}.` : ""}
+The agent attempting creation is ${currentUser.full_name || "another agent"}.
+What should the second agent know?`;
+        aiSummary = await aiInvoke({ system, prompt: userPrompt });
+        aiSummary = (aiSummary || "").trim().replace(/^["']|["']$/g, "");
+      } catch (e) {
+        aiSummary = "";
+      }
+
+      setConflictContext({
+        owner,
+        daysSinceContact,
+        opps: oppDetails,
+        recentActs: recentActs || [],
+        aiSummary,
+      });
+    } catch (e) {
+      setConflictContext({ owner: null, daysSinceContact: null, opps: [], recentActs: [], aiSummary: "" });
+    } finally {
+      setLoadingContext(false);
+    }
   };
 
   const startCreateLead = () => {
     const kind = detectKind(query);
-    setNewLeadForm(prev => ({
-      ...prev,
-      [kind === "email" ? "email" : kind === "phone" ? "phone" : "name"]: query.trim(),
-    }));
+    if (kind === "email") {
+      setNewLeadForm(prev => ({ ...prev, email: query.trim() }));
+    } else if (kind === "phone") {
+      // Strip the country code from query if present
+      let raw = query.trim();
+      let cc = "+971";
+      const matchCC = COUNTRY_CODES.find(c => raw.startsWith(c.code));
+      if (matchCC) {
+        cc = matchCC.code;
+        raw = raw.slice(matchCC.code.length).trim();
+      }
+      const localPart = raw.replace(/\D/g, "").replace(/^0/, "");
+      setNewLeadForm(prev => ({ ...prev, countryCode: cc, phone: localPart }));
+    } else {
+      setNewLeadForm(prev => ({ ...prev, name: query.trim() }));
+    }
     setShowCreateLeadForm(true);
+    setServerDupeBlock(null);
   };
 
   const useExistingLead = (lead) => {
     setSelectedLead(lead);
-    // Pre-fill opp form from lead data
     setOppForm(prev => ({
       ...prev,
       title: `Inquiry from ${lead.name || "buyer"}`,
       budget: lead.budget ? String(lead.budget) : "",
     }));
-    setStep(2);
+    loadConflictContext(lead);
+    // Don't auto-advance to step 2 — let the agent see context first and decide
+  };
+
+  // Final Layer 3 check — runs RIGHT BEFORE inserting a new lead. Catches:
+  // (1) agent skipped search and typed dup details, (2) race condition where
+  // another agent created the same lead between search and save.
+  const finalDupeCheck = async (form) => {
+    const fullPhone = (form.countryCode || "") + form.phone.replace(/\D/g, "");
+    const phoneNorm = normalisePhone(fullPhone);
+    const emailLower = (form.email || "").trim().toLowerCase();
+
+    if (!emailLower && !phoneNorm) return null;
+
+    // Check email first (stronger signal)
+    if (emailLower) {
+      const { data } = await supabase
+        .from("leads")
+        .select("id, name, phone, email, assigned_to, country_code")
+        .ilike("email", emailLower)
+        .eq("company_id", currentUser.company_id)
+        .limit(1);
+      if (data && data.length > 0) return { kind: "email", existingLead: data[0] };
+    }
+
+    // Then phone (weaker but still meaningful)
+    if (phoneNorm && phoneNorm.length >= 5) {
+      const { data } = await supabase
+        .from("leads")
+        .select("id, name, phone, email, assigned_to, country_code")
+        .not("phone", "is", null)
+        .eq("company_id", currentUser.company_id)
+        .limit(200);
+      if (data) {
+        const dupe = data.find(r => {
+          const rn = normalisePhone(r.phone);
+          return rn && (rn === phoneNorm || rn.includes(phoneNorm) || phoneNorm.includes(rn));
+        });
+        if (dupe) return { kind: "phone", existingLead: dupe };
+      }
+    }
+
+    return null;
   };
 
   const createLeadAndContinue = async () => {
@@ -7145,10 +7393,23 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
       return;
     }
     setSaving(true);
+    setServerDupeBlock(null);
     try {
+      // Layer 3 final check
+      const dupe = await finalDupeCheck(newLeadForm);
+      if (dupe) {
+        setServerDupeBlock(dupe);
+        setSaving(false);
+        return;
+      }
+
+      const fullPhone = newLeadForm.phone
+        ? `${newLeadForm.countryCode}${newLeadForm.phone.replace(/\D/g, "")}`
+        : null;
+
       const payload = {
         name: newLeadForm.name.trim(),
-        phone: newLeadForm.phone.trim() || null,
+        phone: fullPhone,
         email: newLeadForm.email.trim() || null,
         source: newLeadForm.source || null,
         nationality: newLeadForm.nationality || null,
@@ -7158,12 +7419,32 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
         assigned_to: currentUser.id,
         created_by: currentUser.id,
       };
+      // Some installations have a country_code column; include if not null
+      if (newLeadForm.countryCode) payload.country_code = newLeadForm.countryCode;
+
       const { data, error } = await supabase
         .from("leads")
         .insert(payload)
         .select()
         .single();
-      if (error) throw error;
+      if (error) {
+        // Defensive: column country_code might not exist — retry without it
+        if (error.message && error.message.toLowerCase().includes("country_code")) {
+          delete payload.country_code;
+          const retry = await supabase.from("leads").insert(payload).select().single();
+          if (retry.error) throw retry.error;
+          setSelectedLead(retry.data);
+          setOppForm(prev => ({
+            ...prev,
+            title: `Inquiry from ${retry.data.name}`,
+            budget: retry.data.budget ? String(retry.data.budget) : "",
+          }));
+          setStep(2);
+          showToast("Lead created", "success");
+          return;
+        }
+        throw error;
+      }
       setSelectedLead(data);
       setOppForm(prev => ({
         ...prev,
@@ -7203,7 +7484,6 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
       const { data, error } = await supabase.from("opportunities").insert(payload).select().single();
       if (error) throw error;
       showToast("Opportunity created", "success");
-      // Pass back both the new lead (if it was newly created — parent dedupes) AND new opp
       const wasNewLead = !(leads || []).find(l => l.id === selectedLead.id);
       onCreated(data, wasNewLead ? selectedLead : null);
     } catch (e) {
@@ -7213,10 +7493,17 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
     }
   };
 
+  // Has the selected lead got an active conflict (i.e. owned by someone other
+  // than the current user, or has active opps owned by another agent)?
+  const hasConflict = selectedLead && conflictContext && (
+    (selectedLead.assigned_to && selectedLead.assigned_to !== currentUser.id) ||
+    conflictContext.opps.some(o => o.owner_id && o.owner_id !== currentUser.id)
+  );
+
   // ─── RENDER ────────────────────────────────────────────────
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(15,37,64,.55)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:"2rem"}}>
-      <div style={{background:"#fff",borderRadius:14,padding:0,maxWidth:600,width:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 56px rgba(15,37,64,.18)"}}>
+      <div style={{background:"#fff",borderRadius:14,padding:0,maxWidth:640,width:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 56px rgba(15,37,64,.18)"}}>
 
         {/* Header */}
         <div style={{padding:"18px 22px",borderBottom:"1px solid #E2E8F0",background:"#0F2540",color:"#fff",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -7237,17 +7524,17 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
         <div style={{padding:"20px 22px",overflowY:"auto",flex:1}}>
 
           {/* ─── STEP 1: lead lookup-or-create ─── */}
-          {step === 1 && !showCreateLeadForm && (
+          {step === 1 && !showCreateLeadForm && !selectedLead && (
             <div>
               <div style={{fontSize:12,color:"#64748B",marginBottom:10,lineHeight:1.5}}>
-                Type the buyer's <strong>phone</strong> or <strong>email</strong>. If they're already in your contacts, you'll see them below — pick to continue. Otherwise, create a new contact first.
+                Type the buyer's <strong>email</strong> (most reliable) or <strong>phone</strong>. If they're already in our database, you'll see them — pick to continue. Otherwise, create a new contact.
               </div>
 
               <div style={{position:"relative",marginBottom:14}}>
                 <input type="text" autoFocus
                   value={query}
                   onChange={e=>setQuery(e.target.value)}
-                  placeholder="🔍 +9715... or buyer@email.com"
+                  placeholder="🔍 buyer@email.com or +9715... or name"
                   style={{width:"100%",padding:"11px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box",outline:"none"}}/>
                 {searching && (
                   <span style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",fontSize:11,color:"#64748B"}}>
@@ -7256,7 +7543,6 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
                 )}
               </div>
 
-              {/* Matches */}
               {query.trim().length >= 3 && !searching && matches.length === 0 && (
                 <div style={{padding:"12px 14px",background:"#FFFBEA",border:"1px solid #FCD34D",borderRadius:8,fontSize:12,color:"#7A4F01",marginBottom:10}}>
                   No matching contacts found. <button onClick={startCreateLead} style={{marginLeft:6,padding:"3px 10px",borderRadius:5,border:"1px solid #7A4F01",background:"#fff",color:"#7A4F01",fontSize:11,fontWeight:700,cursor:"pointer"}}>+ Create new contact</button>
@@ -7265,19 +7551,30 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
 
               {matches.length > 0 && (
                 <div style={{marginBottom:10}}>
-                  <div style={{fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>
+                  <div style={{fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
                     {matches.length} matching contact{matches.length===1?"":"s"} found
+                    {matches[0]?._matchType === "email" && (
+                      <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:"#FEE2E2",color:"#C53030",fontWeight:700,letterSpacing:".4px"}}>EMAIL MATCH</span>
+                    )}
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:6}}>
                     {matches.map(l => {
                       const owner = users?.find(u => u.id === l.assigned_to);
+                      const isMine = l.assigned_to === currentUser.id;
+                      const cardBg = l._matchType === "email" ? "#FEF2F2" : "#FFFBEA";
+                      const cardBd = l._matchType === "email" ? "#FCA5A5" : "#FCD34D";
                       return (
-                        <div key={l.id} style={{padding:"10px 12px",background:"#FFFBEA",border:"1px solid #FCD34D",borderRadius:8}}>
-                          <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:3}}>
+                        <div key={l.id} style={{padding:"10px 12px",background:cardBg,border:`1px solid ${cardBd}`,borderRadius:8}}>
+                          <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:3,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                             📇 {l.name || "Unnamed contact"}
+                            {!isMine && owner && (
+                              <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:"#FEE2E2",color:"#C53030",fontWeight:700,letterSpacing:".4px"}}>
+                                OWNED BY {owner.full_name?.toUpperCase()}
+                              </span>
+                            )}
                           </div>
                           <div style={{fontSize:11,color:"#64748B",marginBottom:7}}>
-                            {[l.phone, l.email, l.source && `Source: ${l.source}`, l.nationality, owner && `Owner: ${owner.full_name}`].filter(Boolean).join(" · ")}
+                            {[l.phone, l.email, l.source && `Source: ${l.source}`, l.nationality].filter(Boolean).join(" · ")}
                           </div>
                           <button onClick={()=>useExistingLead(l)}
                             style={{padding:"5px 12px",borderRadius:6,border:"none",background:"#0F2540",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
@@ -7298,13 +7595,116 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
             </div>
           )}
 
-          {/* ─── STEP 1: create new lead form ─── */}
+          {/* ─── STEP 1.5: lead picked, show conflict context (if any) ─── */}
+          {step === 1 && !showCreateLeadForm && selectedLead && (
+            <div>
+              <div style={{padding:"10px 12px",background:"#F0FDFA",border:"1px solid #CCFBF1",borderRadius:8,marginBottom:14}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:3}}>
+                  ✓ Selected: {selectedLead.name}
+                </div>
+                <div style={{fontSize:11,color:"#64748B"}}>
+                  {[selectedLead.phone, selectedLead.email].filter(Boolean).join(" · ")}
+                </div>
+              </div>
+
+              {loadingContext && (
+                <div style={{fontSize:12,color:"#64748B",padding:"10px 0"}}>
+                  Loading deal context…
+                </div>
+              )}
+
+              {!loadingContext && hasConflict && conflictContext && (
+                <div style={{padding:"12px 14px",background:"#FEF2F2",border:"1.5px solid #FCA5A5",borderRadius:10,marginBottom:14}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#C53030",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+                    ⚠ Heads up — this lead has activity with another agent
+                  </div>
+                  {conflictContext.aiSummary && (
+                    <div style={{fontSize:12,color:"#7B1F1F",marginBottom:10,fontStyle:"italic",lineHeight:1.5,padding:"8px 10px",background:"#fff",borderRadius:6,border:"1px solid #FCA5A5"}}>
+                      🤖 {conflictContext.aiSummary}
+                    </div>
+                  )}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+                    {conflictContext.owner && (
+                      <div style={{background:"#fff",border:"1px solid #FCA5A5",borderRadius:6,padding:"6px 9px"}}>
+                        <div style={{fontSize:9,color:"#94A3B8",fontWeight:600,textTransform:"uppercase"}}>Lead owner</div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{conflictContext.owner.full_name}</div>
+                      </div>
+                    )}
+                    {conflictContext.daysSinceContact !== null && (
+                      <div style={{background:"#fff",border:"1px solid #FCA5A5",borderRadius:6,padding:"6px 9px"}}>
+                        <div style={{fontSize:9,color:"#94A3B8",fontWeight:600,textTransform:"uppercase"}}>Last contact</div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>
+                          {conflictContext.daysSinceContact === 0 ? "Today" : conflictContext.daysSinceContact === 1 ? "Yesterday" : conflictContext.daysSinceContact + " days ago"}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {conflictContext.opps.length > 0 && (
+                    <div style={{marginBottom:10}}>
+                      <div style={{fontSize:9,color:"#94A3B8",fontWeight:600,textTransform:"uppercase",marginBottom:4}}>
+                        Active opportunities ({conflictContext.opps.length})
+                      </div>
+                      {conflictContext.opps.map((o, idx) => (
+                        <div key={idx} style={{fontSize:11,color:"#475569",padding:"3px 0"}}>
+                          · {o.unit_ref || "no unit"} — {o.stage}{o.ownerName && ` (${o.ownerName})`}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{fontSize:11,color:"#64748B",lineHeight:1.5,padding:"6px 8px",background:"#FFF8E1",borderRadius:5,border:"1px solid #FCD34D"}}>
+                    💡 Recommended: contact <strong>{conflictContext.owner?.full_name || "the lead owner"}</strong> or your manager before creating a parallel opportunity. Inter-agent coordination prevents customer confusion and team disputes.
+                  </div>
+                </div>
+              )}
+
+              <div style={{display:"flex",gap:8,justifyContent:"space-between",alignItems:"center",flexWrap:"wrap"}}>
+                <button onClick={()=>{setSelectedLead(null);setConflictContext(null);}}
+                  style={{padding:"6px 14px",borderRadius:6,border:"1.5px solid #D1D9E6",background:"#fff",color:"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                  ← Pick a different contact
+                </button>
+                <button onClick={()=>setStep(2)}
+                  disabled={loadingContext}
+                  style={{padding:"8px 18px",borderRadius:7,border:"none",background:hasConflict?"#A06810":"#0F2540",color:"#fff",fontSize:12,fontWeight:700,cursor:loadingContext?"not-allowed":"pointer"}}>
+                  {hasConflict ? "Proceed anyway →" : "Continue to deal details →"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ─── STEP 1: create new lead form (V2-quality) ─── */}
           {step === 1 && showCreateLeadForm && (
             <div>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-                <button onClick={()=>setShowCreateLeadForm(false)} style={{background:"none",border:"none",color:"#64748B",fontSize:13,cursor:"pointer"}}>← Back to search</button>
+                <button onClick={()=>{setShowCreateLeadForm(false);setServerDupeBlock(null);}} style={{background:"none",border:"none",color:"#64748B",fontSize:13,cursor:"pointer"}}>← Back to search</button>
                 <span style={{fontSize:12,color:"#64748B"}}>Creating new contact</span>
               </div>
+
+              {serverDupeBlock && (
+                <div style={{padding:"12px 14px",background:"#FEF2F2",border:"1.5px solid #FCA5A5",borderRadius:10,marginBottom:14}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#C53030",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>
+                    ⚠ Duplicate detected — {serverDupeBlock.kind} match
+                  </div>
+                  <div style={{fontSize:12,color:"#7B1F1F",marginBottom:10,lineHeight:1.5}}>
+                    A contact with this {serverDupeBlock.kind} already exists: <strong>{serverDupeBlock.existingLead.name}</strong>
+                    {" "}({serverDupeBlock.existingLead.phone || serverDupeBlock.existingLead.email}).
+                    {serverDupeBlock.kind === "email"
+                      ? " Email is a strong duplicate signal — please use the existing contact unless this is a confirmed different person."
+                      : " Phone numbers can change — please verify whether this is the same person before creating a duplicate."}
+                  </div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    <button onClick={()=>{useExistingLead(serverDupeBlock.existingLead); setShowCreateLeadForm(false); setServerDupeBlock(null);}}
+                      style={{padding:"6px 12px",borderRadius:6,border:"none",background:"#0F2540",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                      ✓ Use existing contact
+                    </button>
+                    {serverDupeBlock.kind === "phone" && (
+                      <button onClick={()=>setServerDupeBlock(null)}
+                        style={{padding:"6px 12px",borderRadius:6,border:"1.5px solid #C53030",background:"#fff",color:"#C53030",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                        Different person — create anyway
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                 <div style={{gridColumn:"1 / -1"}}>
@@ -7314,12 +7714,18 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
                 </div>
                 <div>
                   <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Phone</label>
-                  <input value={newLeadForm.phone} onChange={e=>setNewLeadForm(f=>({...f,phone:e.target.value}))} placeholder="+9715..."
-                    style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box"}}/>
+                  <div style={{display:"flex",gap:5}}>
+                    <select value={newLeadForm.countryCode} onChange={e=>setNewLeadForm(f=>({...f,countryCode:e.target.value}))}
+                      style={{flex:"0 0 auto",minWidth:90,padding:"8px 6px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:12,background:"#fff",cursor:"pointer"}}>
+                      {COUNTRY_CODES.map(c => <option key={c.code} value={c.code}>{c.code} {c.country}</option>)}
+                    </select>
+                    <input value={newLeadForm.phone} onChange={e=>setNewLeadForm(f=>({...f,phone:e.target.value.replace(/\D/g,"")}))} placeholder="50 1234 567"
+                      style={{flex:1,padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box",minWidth:0}}/>
+                  </div>
                 </div>
                 <div>
                   <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Email</label>
-                  <input value={newLeadForm.email} onChange={e=>setNewLeadForm(f=>({...f,email:e.target.value}))} placeholder="buyer@email.com"
+                  <input type="email" value={newLeadForm.email} onChange={e=>setNewLeadForm(f=>({...f,email:e.target.value}))} placeholder="buyer@email.com"
                     style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box"}}/>
                 </div>
                 <div>
@@ -7339,8 +7745,11 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
                 </div>
                 <div>
                   <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Nationality</label>
-                  <input value={newLeadForm.nationality} onChange={e=>setNewLeadForm(f=>({...f,nationality:e.target.value}))} placeholder="UAE / Indian / British / …"
-                    style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box"}}/>
+                  <select value={newLeadForm.nationality} onChange={e=>setNewLeadForm(f=>({...f,nationality:e.target.value}))}
+                    style={{width:"100%",padding:"8px 12px",borderRadius:7,border:"1.5px solid #D1D9E6",fontSize:13,boxSizing:"border-box",background:"#fff"}}>
+                    <option value="">— Select —</option>
+                    {NATIONALITIES.map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Stated budget (AED)</label>
@@ -7443,6 +7852,7 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
     </div>
   );
 }
+
 
 /* ═══════════════════════════════════════════════════════════════
    Phase F W5 — Opportunities Tab (real implementation)
