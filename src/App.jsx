@@ -7310,7 +7310,7 @@ function Opportunities({ leads, setLeads, opps, setOpps, units, projects, salePr
   );
 }
 
-function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpps=()=>{},properties,activities,setActivities,discounts,setDiscounts,currentUser,users,showToast,initialFilter=null}){
+function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpps=()=>{},properties,activities,setActivities,discounts,setDiscounts,currentUser,users,showToast,initialFilter=null,onNavigateToOpp=null}){
   const [search,   setSearch]   = useState("");
   const [fStage,   setFStage]   = useState("All");
   const [fType,    setFType]    = useState("All");
@@ -7376,21 +7376,23 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[]);
 
-  // Phase E W4 — deep-link handler: when bell icon (or any external nav)
-  // passes initialFilter={type:"opp", oppId}, jump straight to that opp's detail.
+  // Phase E W4 — deep-link handler: legacy code paths might pass opp filter.
+  // Phase F W5 cut-over: redirect to Opportunities tab where opps live now.
+  // Falls back to in-Leads view only if onNavigateToOpp is not wired.
   useEffect(()=>{
     if(!initialFilter || initialFilter.type !== "opp" || !initialFilter.oppId) return;
-    // Find the opp in either local or parent state
-    const opp = (opps||[]).find(o => o.id === initialFilter.oppId)
-             || (globalOppsFromParent||[]).find(o => o.id === initialFilter.oppId);
-    if(!opp) {
-      // Opp may not be loaded yet — leave handling to a later render when opps fills
+    if (onNavigateToOpp) {
+      onNavigateToOpp(initialFilter.oppId);
       return;
     }
+    // Defensive fallback (should rarely fire now)
+    const opp = (opps||[]).find(o => o.id === initialFilter.oppId)
+             || (globalOppsFromParent||[]).find(o => o.id === initialFilter.oppId);
+    if(!opp) return;
     setSelOpp(opp);
     setSelLeadId(opp.lead_id);
     setView("opportunity");
-  }, [initialFilter?.type, initialFilter?.oppId, opps.length, globalOppsFromParent.length]);
+  }, [initialFilter?.type, initialFilter?.oppId, opps.length, globalOppsFromParent.length, onNavigateToOpp]);
 
   // Phase F W4 ext — deep-link handler for leads (e.g. AI briefing surfaces a raw lead)
   useEffect(()=>{
@@ -7515,9 +7517,15 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       showToast("Opportunity created","success");
       setShowAddOpp(false);
       setOppForm({title:"",unit_id:"",budget:"",assigned_to:"",notes:"",property_category:"Off-Plan"});
-      // Open the opportunity immediately
-      setSelOpp(data);
-      setView("opportunity");
+      // Phase F W5 cut-over: navigate to Opportunities tab instead of opening
+      // OpportunityDetail inside Leads. Falls back to old in-place open if the
+      // navigation prop wasn't passed (defensive).
+      if (onNavigateToOpp) {
+        onNavigateToOpp(data.id);
+      } else {
+        setSelOpp(data);
+        setView("opportunity");
+      }
     }catch(e){showToast(e.message,"error");}
     setSaving(false);
   };
@@ -7794,7 +7802,12 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
 
               return (
                 <div key={opp.id}
-                  onClick={()=>{setSelOpp(opp);setView("opportunity");}}
+                  onClick={()=>{
+                    // Phase F W5 cut-over — navigate to Opportunities tab.
+                    // Falls back to in-Leads view if prop wasn't passed.
+                    if (onNavigateToOpp) onNavigateToOpp(opp.id);
+                    else { setSelOpp(opp); setView("opportunity"); }
+                  }}
                   onMouseOver={e=>{e.currentTarget.style.background="#F8FAFC";}}
                   onMouseOut={e=>{e.currentTarget.style.background="#fff";}}
                   style={{
@@ -8702,7 +8715,7 @@ const TABS=[
   {id:"projects",   label:"Projects",     icon:"🏗️", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"builder",    label:"Inventory",    icon:"🏠", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"discounts",  label:"Discounts",    icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager"]},
-  {id:"activity",   label:"Activity Log", icon:"📝", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"activity",   label:"Activity Log", icon:"📝", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"reports",    label:"Reports",      icon:"📊", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   //{id:"ai",       label:"AI Assistant", icon:"✦",  app:"sales" -- removed, using AI bubble insteadles_manager","sales_agent"]},
   {id:"proppulse",  label:"PropPulse",   icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
@@ -8719,7 +8732,7 @@ const TABS=[
   {id:"l_inventory",label:"Inventory",    icon:"📋", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"leasing",    label:"Prop. Mgmt",  icon:"🏘️", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_discounts",label:"Discounts",    icon:"⚡", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
-  {id:"l_activity", label:"Activity Log", icon:"📝", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
+  {id:"l_activity", label:"Activity Log", icon:"📝", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_reports",  label:"Reports",      icon:"📊", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_proppulse",label:"PropPulse",   icon:"⚡", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"l_companies",label:"Companies",    icon:"🏢", app:"leasing", roles:["super_admin"]},
@@ -12507,7 +12520,7 @@ export default function App(){
 
           {/* ── Sales CRM ─────────────────────────────────────── */}
           {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={(t,filter)=>navigateToTab(t,filter)}/>}
-          {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter}/>}
+          {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})}/>}
           {tab==="opportunities" &&<Opportunities leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} activities={activities} setActivities={setActivities} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
