@@ -7189,7 +7189,7 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
           // Email match — very strong dedup signal. Use ILIKE (case-insensitive).
           const { data, error } = await supabase
             .from("leads")
-            .select("id, name, phone, email, source, nationality, budget, notes, created_at, assigned_to, country_code")
+            .select("id, name, phone, email, source, nationality, budget, notes, created_at, assigned_to")
             .ilike("email", `%${q}%`)
             .eq("company_id", currentUser.company_id)
             .limit(8);
@@ -7203,7 +7203,7 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
           if (!queryNorm) { setMatches([]); return; }
           const { data, error } = await supabase
             .from("leads")
-            .select("id, name, phone, email, source, nationality, budget, notes, created_at, assigned_to, country_code")
+            .select("id, name, phone, email, source, nationality, budget, notes, created_at, assigned_to")
             .not("phone", "is", null)
             .eq("company_id", currentUser.company_id)
             .limit(200); // generous so we don't miss matches
@@ -7221,7 +7221,7 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
           // Name fallback — least useful for dedup, but help the agent
           const { data, error } = await supabase
             .from("leads")
-            .select("id, name, phone, email, source, nationality, budget, notes, created_at, assigned_to, country_code")
+            .select("id, name, phone, email, source, nationality, budget, notes, created_at, assigned_to")
             .ilike("name", `%${q}%`)
             .eq("company_id", currentUser.company_id)
             .limit(8);
@@ -7363,7 +7363,7 @@ What should the second agent know?`;
     if (emailLower) {
       const { data } = await supabase
         .from("leads")
-        .select("id, name, phone, email, assigned_to, country_code")
+        .select("id, name, phone, email, assigned_to")
         .ilike("email", emailLower)
         .eq("company_id", currentUser.company_id)
         .limit(1);
@@ -7374,7 +7374,7 @@ What should the second agent know?`;
     if (phoneNorm && phoneNorm.length >= 5) {
       const { data } = await supabase
         .from("leads")
-        .select("id, name, phone, email, assigned_to, country_code")
+        .select("id, name, phone, email, assigned_to")
         .not("phone", "is", null)
         .eq("company_id", currentUser.company_id)
         .limit(200);
