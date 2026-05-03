@@ -1051,6 +1051,14 @@ const PAYMENT_STATUS_META = {
 // OPPORTUNITY DETAIL — full workflow per opportunity
 // ══════════════════════════════════════════════════════════════════
 const OPP_STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
+// Expose globally so external component files (ReportsModule, InventoryModule etc.)
+// that reference OPP_STAGES as a bare identifier can find it. Hot-fix for runtime
+// ReferenceError; long-term these external files should import the constant
+// explicitly from a shared lib/ module.
+if (typeof window !== "undefined") {
+  window.OPP_STAGES = OPP_STAGES;
+  globalThis.OPP_STAGES = OPP_STAGES;
+}
 const OPP_STAGE_META = {
   "New":            {c:"#718096", bg:"#F7F9FC"},
   "Contacted":      {c:"#1A5FA8", bg:"#E6EFF9"},

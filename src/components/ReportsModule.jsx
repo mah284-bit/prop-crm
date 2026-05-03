@@ -5,6 +5,12 @@ const SUPABASE_URL  = "https://ysceukgpimzfqixtnbnp.supabase.co";
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzY2V1a2dwaW16ZnFpeHRuYm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNDI5OTQsImV4cCI6MjA4OTkxODk5NH0.WZSyGeOEbiRo1wt13syheTOyiAToMWXInxIaBgaqq8k";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
 
+// Phase F hotfix — OPP_STAGES was being referenced but not defined here, causing
+// 'ReferenceError: OPP_STAGES is not defined' when the pipeline report renders.
+// Defining locally to keep this file self-contained. Long-term, all shared
+// constants should move to src/lib/stages.js and be imported here + in App.jsx.
+const OPP_STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
+
 function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activities=[], leasingData=null, initialFilter=null, crmContext="sales", preloadedUnits=[], preloadedProjects=[], preloadedSalePricing=[], preloadedLeasePricing=[], preloadedUsers=[] }) {
   const [activeReport, setActiveReport] = useState(initialFilter?.value||( crmContext==="leasing"?"rent_roll":"pipeline"));
   const [loading,      setLoading]      = useState(false);
