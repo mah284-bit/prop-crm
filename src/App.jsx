@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { supabase } from "./lib/supabase";
 
 /* ═══════════════════════════════════════════════════════════════
    PROPCCRM v3.0
@@ -9,10 +9,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
    · WhatsApp / Email / Meeting / Follow-up comms
    · Role-based permissions throughout
 ═══════════════════════════════════════════════════════════════ */
-const SUPABASE_URL  = "https://ysceukgpimzfqixtnbnp.supabase.co";
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzY2V1a2dwaW16ZnFpeHRuYm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNDI5OTQsImV4cCI6MjA4OTkxODk5NH0.WZSyGeOEbiRo1wt13syheTOyiAToMWXInxIaBgaqq8k";
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
-
 // ─── STYLES ───────────────────────────────────────────────────
 const GlobalStyle = () => (
   <style>{`
