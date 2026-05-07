@@ -26,7 +26,7 @@ const SYSTEM_PROMPT = `You are PropPulse Research Agent — a specialist in UAE 
 
 Your job: for the ONE developer the user names, use web search to find real-estate projects they have announced, launched, or updated IN THE LAST 90 DAYS (new launches, new phases, significant construction updates, price releases, or handover date changes).
 
-STRICT OUTPUT FORMAT — return ONLY a JSON array, no prose before or after, no markdown fences. Each element:
+STRICT OUTPUT FORMAT — Your VERY FIRST character of output MUST be `[`. Your VERY LAST character MUST be `]`. Do not narrate. Do not explain your process. Do not say "I will search" or "Based on my research" or "Here are the projects". Output the JSON array immediately as your first and only content, with nothing else surrounding it. No prose. No markdown fences. Each element:
 
 {
   "name": "string (required) — the project's marketing name",
@@ -137,19 +137,29 @@ Return the JSON array as specified in the system prompt. Empty array [] is a val
   const textBlocks = (claudeResp.content || []).filter((b) => b.type === "text");
   const rawText = textBlocks.map((b) => b.text).join("\n").trim();
 
-  // Parse — defensive, tolerate occasional markdown fences despite the prompt
+  // Parse — defensive, tolerate prose narration AND markdown fences
   let projects = [];
   try {
-    const cleaned = rawText
+    let cleaned = rawText
       .replace(/^```json\s*/i, "")
       .replace(/^```\s*/i, "")
       .replace(/```\s*$/i, "")
       .trim();
+
+    // If response starts with prose (not "["), extract JSON array from it
+    if (!cleaned.startsWith("[")) {
+      const firstBracket = cleaned.indexOf("[");
+      const lastBracket = cleaned.lastIndexOf("]");
+      if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+        cleaned = cleaned.substring(firstBracket, lastBracket + 1);
+      }
+    }
+
     projects = JSON.parse(cleaned);
     if (!Array.isArray(projects)) throw new Error("Response was not a JSON array");
   } catch (err) {
     console.error("Failed to parse Claude response:", rawText.slice(0, 500));
-    results.errors.push(`Parse error: ${err.message}`);
+    results.errors.push(`Parse error: ${err.message} | Response start: ${rawText.slice(0, 200)}`);
     await logJob(developer, results, "failed");
     return res.status(200).json(results);
   }
