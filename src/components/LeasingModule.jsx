@@ -1,10 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const SUPABASE_URL  = "https://ysceukgpimzfqixtnbnp.supabase.co";
-const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzY2V1a2dwaW16ZnFpeHRuYm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzNDI5OTQsImV4cCI6MjA4OTkxODk5NH0.WZSyGeOEbiRo1wt13syheTOyiAToMWXInxIaBgaqq8k";
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
-
+import { supabase } from "../lib/supabase";
 function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=null,initialFilter=null}) {
   const [tab,setTab]               = useState(initialFilter?.type==="tab"&&initialFilter?.value ? initialFilter.value : "dashboard");
   const [tenants,setTenants]       = useState([]);
