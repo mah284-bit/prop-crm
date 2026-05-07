@@ -3,6 +3,7 @@
 **Date:** 07 May 2026
 **Purpose:** Locked process flow for UAE off-plan property sale — broker workflow from agreement to commission. Foundation for module build plan.
 **Status:** APPROVED by Abid Mirza — design decisions locked
+**Numbering update:** 09 May 2026 — renumbered Stage 0→1 through Stage 5→6 for investor clarity. Master Developer Agreement is now Stage 1.
 **For:** Internal product team + investor pitch + onboarding new customers
 
 ---
@@ -23,7 +24,7 @@ UAE off-plan brokerage works on a **commission model paid by the developer to th
 ## 2. THE 6-STAGE LIFECYCLE
 
 ```
-Stage 0          Stage 1         Stage 2         Stage 3         Stage 4         Stage 5
+Stage 1          Stage 2         Stage 3         Stage 4         Stage 5         Stage 6
 ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐
 │ Master   │→ │ Lead to  │→ │ Booking  │→ │ Buyer    │→ │ SPA /    │→ │ Commission│
 │Agreement │  │Opportunity│  │with      │  │Payment   │  │Sale Deed │  │Invoicing  │
@@ -41,7 +42,7 @@ Each stage has: actors, inputs, outputs, edge cases, and CRM data captured.
 
 ## 3. STAGE-BY-STAGE DETAIL
 
-### STAGE 0 — Master Broker-Developer Agreement
+### STAGE 1 — Master Broker-Developer Agreement
 **One-time setup per developer relationship (e.g., Emaar, Damac, Sobha, Aldar, Nakheel)**
 
 **Actors:** Brokerage management + Developer's broker relations team
@@ -68,7 +69,7 @@ Each stage has: actors, inputs, outputs, edge cases, and CRM data captured.
 
 ---
 
-### STAGE 1 — Lead → Opportunity (CURRENT WORKFLOW IN PROPPLATFORM)
+### STAGE 2 — Lead → Opportunity (CURRENT WORKFLOW IN PROPPLATFORM)
 **Status: ✅ Already exists in app**
 
 **Actors:** Broker + Buyer
@@ -86,13 +87,13 @@ Each stage has: actors, inputs, outputs, edge cases, and CRM data captured.
 **This stage works today. No major changes needed.**
 
 **Minor improvements to consider:**
-- Show **default commission %** from Stage 0 agreement when project is selected (auto-populate)
+- Show **default commission %** from Stage 1 agreement when project is selected (auto-populate)
 - Better source attribution (link to Pillar 3 leads inbox once built)
 - Activity timeline showing all touchpoints with buyer
 
 ---
 
-### STAGE 2 — Booking with Developer (Discount Application)
+### STAGE 3 — Booking with Developer (Discount Application)
 **Status: ⚠️ Partially exists (Discount Approvals module exists, needs wiring into sales cycle)**
 
 **Actors:** Broker + Buyer + Developer (sales person at developer's office)
@@ -101,7 +102,7 @@ Each stage has: actors, inputs, outputs, edge cases, and CRM data captured.
 **What happens:**
 1. Buyer offer accepted → broker takes buyer to developer
 2. Developer presents official price + their discount (if any)
-3. Broker may offer additional discount **only if pre-approved by developer in master agreement** (Stage 0)
+3. Broker may offer additional discount **only if pre-approved by developer in master agreement** (Stage 1)
 4. Buyer pays booking fee directly to developer (typically 5-10% of property value)
 5. Booking form filled at developer's office
 6. Unit is now reserved/booked
@@ -114,7 +115,7 @@ Each stage has: actors, inputs, outputs, edge cases, and CRM data captured.
 - Status: "Booking Confirmed"
 
 **Connection to Discount Approvals:**
-Discount Approvals module today probably exists for internal approval workflow — broker requests discount approval from manager before offering to buyer. This needs to wire into Stage 2:
+Discount Approvals module today probably exists for internal approval workflow — broker requests discount approval from manager before offering to buyer. This needs to wire into Stage 3:
 - If broker has master agreement authority → discount auto-approved
 - If broker exceeds authority → goes to brokerage manager for approval
 - Once approved → discount visible in opportunity
@@ -126,7 +127,7 @@ Discount Approvals module today probably exists for internal approval workflow �
 
 ---
 
-### STAGE 3 — Buyer Payment Tracking (NEW — THIS IS THE BIG MISSING PIECE)
+### STAGE 4 — Buyer Payment Tracking (NEW — THIS IS THE BIG MISSING PIECE)
 **Status: ❌ Not built. THIS IS THE CORE GAP TODAY.**
 
 **The problem you described:**
@@ -165,7 +166,7 @@ Today brokers spend 20-40% of their daily time logging into developer portals to
 
 ---
 
-### STAGE 4 — SPA / Sale Deed Execution (NEW)
+### STAGE 5 — SPA / Sale Deed Execution (NEW)
 **Status: ❌ Not built**
 
 **Actors:** Buyer + Developer (notary or DLD office) + Broker (witness/facilitator)
@@ -182,7 +183,7 @@ Today brokers spend 20-40% of their daily time logging into developer portals to
 - Final unit number/floor/specifications confirmed
 - SPA document uploaded
 - Property officially "Sold" status in PropPlatform
-- Triggers Stage 5 (commission invoice generation eligible)
+- Triggers Stage 6 (commission invoice generation eligible)
 
 **This is the milestone that triggers the commission claim.**
 
@@ -190,7 +191,7 @@ Today brokers spend 20-40% of their daily time logging into developer portals to
 
 ---
 
-### STAGE 5 — Commission Invoicing & Receiving (NEW)
+### STAGE 6 — Commission Invoicing & Receiving (NEW)
 **Status: ❌ Not built. Critical for closing the loop.**
 
 **Actors:** Broker + Developer's accounts payable team
@@ -243,8 +244,8 @@ Today brokers spend 20-40% of their daily time logging into developer portals to
 ## 4. EDGE CASES SPANNING MULTIPLE STAGES
 
 ### What if buyer cancels mid-deal?
-- Stage 1-2 (before SPA): Update opportunity status to "Lost — Cancelled", optional reason capture
-- Stage 3-4 (after SPA): Trigger refund workflow per developer policy, broker may have clawback obligation
+- Stage 2-2 (before SPA): Update opportunity status to "Lost — Cancelled", optional reason capture
+- Stage 4-4 (after SPA): Trigger refund workflow per developer policy, broker may have clawback obligation
 - **CRM behavior:** preserve all history, mark deal as cancelled, exclude from active pipeline
 
 ### What if buyer changes unit?
@@ -296,7 +297,7 @@ New tables/modules needed:
 
 ### Modifications to existing tables
 - `opportunities`: add `developer_agreement_id`, `commission_pct_override`, `final_sale_price`, `spa_signed_date`, `spa_reference_number`
-- `discount_approvals`: link to opportunity stage (Stage 2)
+- `discount_approvals`: link to opportunity stage (Stage 3)
 - Add `documents` table (or polymorphic doc storage) for receipts, SPAs, agreements, booking forms
 
 ---
@@ -312,11 +313,11 @@ New tables/modules needed:
 - One-way: PropPlatform generates invoice data → pushes to accounting tool
 
 ### Phase B (months 4-6, after DLD APIs go live)
-- Stage 4 SPA auto-update via Oqood API (DLD)
-- Stage 5 commission tracking with bank statement reconciliation
+- Stage 5 SPA auto-update via Oqood API (DLD)
+- Stage 6 commission tracking with bank statement reconciliation
 
 ### Phase C (months 6-12, if developers cooperate)
-- Per-developer API integrations (Emaar, Damac, Sobha) for Stage 3 auto-sync
+- Per-developer API integrations (Emaar, Damac, Sobha) for Stage 4 auto-sync
 - This is upsell territory — premium tier feature
 
 ---
@@ -324,11 +325,11 @@ New tables/modules needed:
 ## 7. IMMEDIATE BUILD PRIORITIES
 
 ### Must build now (Phase 1A — 4-6 weeks):
-1. **Developer Agreements module** (Stage 0)
-2. **Payment Milestone tracking** (Stage 3) — manual + document upload
-3. **SPA execution stage** (Stage 4)
-4. **Commission Invoice tracking** (Stage 5) — receivable management, no accounting integration yet
-5. **Wire Discount Approvals** into Stage 2 (already exists, needs connection)
+1. **Developer Agreements module** (Stage 1)
+2. **Payment Milestone tracking** (Stage 4) — manual + document upload
+3. **SPA execution stage** (Stage 5)
+4. **Commission Invoice tracking** (Stage 6) — receivable management, no accounting integration yet
+5. **Wire Discount Approvals** into Stage 3 (already exists, needs connection)
 
 ### Build next (Phase 1B — 2-4 weeks):
 6. Accounting tool integration (Tally first, then Zoho Books)
@@ -383,9 +384,9 @@ These can be added in future phases. **Don't dilute Phase 1 scope.**
 
 ## 10. LOCKED DESIGN DECISIONS (from Abid, 07 May 2026)
 
-1. **Stage 0:** Master Developer Agreements module — defaults editable per deal ✅
-2. **Stage 3:** Manual entry + document upload (with API as future possibility) ✅
-3. **Stage 5:** Generate invoice data + integrate with accounting tool, with edit option ✅
+1. **Stage 1:** Master Developer Agreements module — defaults editable per deal ✅
+2. **Stage 4:** Manual entry + document upload (with API as future possibility) ✅
+3. **Stage 6:** Generate invoice data + integrate with accounting tool, with edit option ✅
 
 These are LOCKED and form the basis of the build plan.
 
