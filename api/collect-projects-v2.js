@@ -240,6 +240,11 @@ Return the JSON array as specified in the system prompt. Empty array [] is a val
 
 async function logJob(developer, results, status) {
   try {
+    // Build error_log from results.errors (only when failures occurred)
+    const errorLogText = results.errors && results.errors.length > 0
+      ? results.errors.join("\n").slice(0, 2000)  // cap at 2000 chars
+      : null;
+
     await supabaseAdmin.from("pp_agent_jobs").insert({
       job_type: "project_scrape",
       target_name: developer.name,
@@ -248,6 +253,7 @@ async function logJob(developer, results, status) {
       records_added: results.added,
       records_updated: results.updated,
       records_skipped: results.skipped,
+      error_log: errorLogText,
       started_at: new Date().toISOString(),
       completed_at: new Date().toISOString(),
     });
