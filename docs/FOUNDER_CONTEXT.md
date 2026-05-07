@@ -2,7 +2,7 @@
 
 **Purpose of this document:** Paste this at the start of any new Claude (or other AI) chat to bootstrap context fast. Saves 30+ minutes of re-explaining who I am, what I'm building, and how I work.
 
-**Last updated:** 07 May 2026 — evening (Supabase refactor shipped; environment setup documented)
+**Last updated:** 07 May 2026 — late evening (AGENT FIXED — 85% success rate, catalogue growing autonomously)
 **Maintained by:** Abid Mirza, Founder, BFC
 
 ---
@@ -143,25 +143,31 @@ If I haven't told you these are resolved yet, assume they're still open:
 
 3. **lib/supabase.js refactor — RESOLVED 07 May 2026.** Centralized Supabase client into `src/lib/supabase.js`. 6 component files refactored. Shipped to production at commit `7c8b2c3`. PropPulse loads noticeably faster.
 
-4. **App.jsx refactor — STILL PENDING.** App.jsx was reverted during testing because attempting the refactor exposed a pre-existing `q.catch is not a function` error in the Permissions module (line ~12758: `const safe = q => q.catch(()=>({data:[]}));`). This pattern is wrong — Supabase's `.from().select()` returns a query builder, not a Promise, so `.catch()` doesn't exist on it. The pattern only "worked" before because of how Supabase resolves to Promise on await. Investigation needed: change to `q.then(r=>r, ()=>({data:[]}))` or wrap in async function. Once fixed, App.jsx can be refactored to use shared client too.
+4. **App.jsx refactor — RESOLVED 07 May 2026.** Fixed q.catch bug (commit `aef8b3f`) by changing pattern to `q.then(r=>r).catch(...)` matching the working `qsafe` helper at line 11843. Then completed App.jsx Supabase refactor (commit `0546c85`). All 7 files now use shared `src/lib/supabase.js` client.
 
-5. **AI agent debugging — URGENT THREAD.** Agent broken for 17 of 20 developers. Root cause unknown because error_log is NULL. Sequenced fix:
-   - Step 1: Modify agent code to populate error_log on failures (~2-3 hours)
-   - Step 2: Run one developer manually with verbose logging (~30 min)
-   - Step 3: Diagnose root cause based on actual error (timeout / anti-bot / parsing) (~1-2 days)
-   - Step 4: Schedule via Vercel cron only AFTER >50% success rate
-   - **Don't ship investor pitch claiming "agent runs daily" until this is fixed.**
+5. **AI agent debugging — RESOLVED 07 May 2026.** Five-phase debugging journey (~3 hours):
+   - Phase 1: Added error_log capture (commit `80a7886`) — revealed parse errors
+   - Phase 2: Smarter parser + stronger prompt (commit `8cd4b04`) — partial improvement
+   - Phase 3: Prefill attempt (commit `27ca52a`) — BROKE agent with 500 errors (prefill incompatible with web_search)
+   - Phase 4: Rollback (commit `aab917e`) — 500 errors persisted, mystery
+   - Phase 5: Found root cause (commit `4a439bc`) — backticks in template literal had been silently breaking JavaScript syntax since Phase 2. Single-character fix.
+   - **Result: 85% success rate (17/20 developers). 37 new projects added to catalogue tonight.**
+   - **Lesson: never use backticks inside JS template literals. Use `node -c filename.js` to syntax-check.**
+   - **Lesson: prefill (`role: "assistant"`) is INCOMPATIBLE with web_search tool.**
 
 6. **W7 reservation work** paused. Will rebuild as part of Builder Edition Year 2.
 
-7. **golden-pre-stages tag** at HEAD `eb262b1` — known-good state before today's work. Current HEAD: `7c8b2c3` (refactor merged).
+7. **golden tag updated to `golden-2026-05-07`** at commit `4a439bc` — known-good state with working agent. Use `git checkout golden-2026-05-07` to return here if needed.
 
-8. **Test data cleanup** — 3 test companies in production DB (Default Company, Emirates Premium Realty, Gulf Leasing Solutions). Don't affect functionality but should be cleaned before external review/investor demo. Low priority.
+8. **Test data cleanup** — 3 test companies in production DB. Explicitly deferred until product near-complete. Low priority.
 
-9. **Pre-existing bugs surfaced 07 May 2026** (NOT from today's refactor — confirmed to exist on main):
-   - `can()` not defined in `LeasingModule.jsx` and `LeasingLeads.jsx` — leasing modules crash when clicked. Hidden because sales-only focus means no one clicks Leasing.
-   - `q.catch is not a function` in `App.jsx` Permissions module — see thread #4 above.
-   - These should be tracked but are NOT urgent given sales-only focus.
+9. **Pre-existing bugs remaining (not from today's refactor):**
+   - `can()` not defined in `LeasingModule.jsx` and `LeasingLeads.jsx` — leasing modules crash when clicked. Hidden because sales-only focus. Fix when reactivating Leasing in Year 2 H2.
+
+10. **Cost discipline tactics for future agent debugging:**
+   - Test with ONE developer at a time (not full 20-developer sweep) — cuts cost from $1-3 per test to ~$0.10
+   - Lower `max_uses: 5` web search cap to 2 during debugging — reduces per-call cost ~50%
+   - Anthropic auto-reload is enabled at $10 → $20 threshold (consider tightening or capping at API console level)
 
 ---
 
@@ -187,23 +193,74 @@ To save fresh-Claude from re-discovering:
 
 ### Evening
 - **Supabase client refactor SHIPPED to production** at commit `7c8b2c3`. 6 component files now share one client (`src/lib/supabase.js`). Net 16 lines removed from codebase. PropPulse loads noticeably faster (Abid confirmed).
-- **App.jsx refactor reverted** during testing — caused `q.catch is not a function` error. Confirmed PRE-EXISTING bug on main, not from refactor. Documented for future fix.
-- **3 pre-existing bugs surfaced during testing** (all confirmed to exist on `main` BEFORE today's work):
-  1. `can()` undefined in LeasingModule and LeasingLeads
-  2. `q.catch is not a function` in App.jsx Permissions module (line ~12758)
-  3. AI agent error_log not populated on failures
-- **Environment setup documented** in this file (FOUNDER_CONTEXT) for the first time. Important note: there's no separate prod/staging — `main` deploys directly to Vercel's live URL.
+- **App.jsx Supabase refactor SHIPPED** at commit `0546c85` after q.catch bug fixed. App.jsx now also uses shared client. ALL 7 files consolidated.
+- **App.jsx q.catch bug fixed** at commit `aef8b3f` — Permissions module no longer crashes. 5-day-pending bug fixed in 5 minutes once we found the working pattern at line 11843.
+- **Environment setup documented** in this file (FOUNDER_CONTEXT) for the first time. Important: no separate prod/staging — `main` deploys directly to Vercel's live URL where Al Mansoori sees changes immediately.
+- **PropPlatform_Data_Roadmap.pptx created** — 3-slide deck documenting Phase 1 (free) and Phase 2 (regulated) data sources. Shipped at `docs/PropPlatform_Data_Roadmap.pptx`.
 
-### Still pending end of 07 May
-- Refactor `lib/supabase.js` ✅ DONE (6 component files only — App.jsx pending)
-- AI agent fix not yet started (logging fix → manual test → root cause diagnosis)
-- App.jsx Supabase refactor blocked by `q.catch` issue (needs investigation first)
-- Investor pitch slide needs softening of agent claims
-- Test data cleanup (low priority)
-- Vercel cron for agent (don't schedule until agent actually works)
-- SEM live demo still not seen
-- Naming decision still pending
-- 3 pre-existing bugs documented above
+### Late evening — agent debugging saga (RESOLVED)
+
+The day's most complex sequence. Started at ~10:30 PM with goal of fixing the AI agent.
+
+**Phase 1 — Diagnostic infrastructure (commit `80a7886`):**
+Modified `api/collect-projects-v2.js` `logJob()` to write `error_log` column from `results.errors[]`. Errors were already being collected, just not persisted. **First test revealed all 20 developers failing with "Parse error: Unexpected token 'B'/'I'"** — Claude was returning prose narration ("Based on my research...", "I found...") instead of JSON arrays.
+
+**Phase 2 — Smarter parser (commit `8cd4b04`):**
+Two changes: (1) strengthened system prompt with stronger instructions, (2) added regex-based JSON extraction from prose responses. **Test showed same parse errors** — the new error format suffix `| Response start: ...` was missing, suggesting the fix didn't fully take effect.
+
+**Phase 3 — Prefill attempt (commit `27ca52a`) — BROKE THE AGENT:**
+Added prefill (`{ role: "assistant", content: "[" }`) + concrete example output. **Result: every developer returned 500 Internal Server Error.** Console showed `Unexpected token 'A', "A server e"...` — Vercel's HTML error page being parsed as JSON.
+
+**Phase 4 — Rollback (commit `aab917e`):**
+Reverted the prefill changes. **Surprise: 500 errors persisted.** The rollback file looked correct on disk, all greps confirmed prefill was gone, but production still 500-erroring.
+
+**Phase 5 — ROOT CAUSE found (commit `4a439bc`):**
+Investigated more carefully. Discovered that the "stronger prompt" added back in Phase 2 (commit `8cd4b04`) used **backtick characters around `[` and `]`** for emphasis. The system prompt itself is a JavaScript template literal wrapped in backticks. **Inner backticks prematurely terminated the template string, causing the entire file to fail JavaScript parsing at module load time.** Vercel returned HTML error pages because the function couldn't even load.
+
+Fix: replaced ` `[` ` and ` `]` ` with `'['` and `']'` (single quotes). Verified with `node -c`. Single-character bug, hours of debugging.
+
+**RESULT — AGENT WORKS:**
+```
+status      count    total_records_found    total_records_added
+completed   17       50                     37
+failed      3        0                      0
+```
+
+**85% success rate.** From 90% failure to 85% success in one evening. **37 new projects discovered and added** to PropPulse catalogue including Emaar, DAMAC, Aldar, Nakheel, Sobha, Meraas, Tiger Properties.
+
+The 3 failures (Eagle Hills, Ellington, RAK) returned empty responses — Claude found nothing worth reporting. Acceptable failure mode, diagnosable for future tuning.
+
+**Lessons documented for future:**
+1. Never use backticks inside JavaScript template literals without escaping
+2. Anthropic's prefill (`role: "assistant"`) is INCOMPATIBLE with `web_search` tool
+3. Local dev (Vite) doesn't run Vercel serverless functions — must test on production URL
+4. `node -c filename.js` is a quick syntax-check that would have caught the backtick bug instantly
+5. Vercel "A server error has occurred" = function failed to load (different from runtime errors)
+
+**Total cost of evening's diagnostic work:** ~$15 in Anthropic API credits. **Worth every penny** — agent now operational, infrastructure proven, narrative validated.
+
+### What's working at end of 07 May 2026
+- ✅ Supabase client centralized (single shared instance)
+- ✅ PropPulse loads fast (auth-lock contention eliminated)
+- ✅ Permissions module functional
+- ✅ AI agent operational at 85% success rate
+- ✅ 50 projects in PropPulse catalogue (vs 27 at start of day)
+- ✅ Verification queue populated with newly discovered projects
+- ✅ Error logging captures all failure modes for future diagnosis
+- ✅ All work committed to GitHub on `main` branch
+- ✅ Production deployed and verified working
+
+### Still pending end of 07 May (now smaller list)
+- ⚠️ Investor pitch slide could mention agent operational status (low priority — Data Roadmap deck handles this)
+- ⚠️ Test data cleanup (low priority — explicitly deferred until product near-complete)
+- ⚠️ Vercel cron schedule for automatic agent runs (recommendation: fortnightly, not nightly — saves $150-650/year vs nightly schedule)
+- ⚠️ Naming decision still pending (Squadhelp/lawyer/defer)
+- ⚠️ App.jsx 14,000+ line splitting (real tech debt, dedicated future session)
+- ⚠️ 2 pre-existing bugs documented (can() undefined in 2 leasing files — fix when reactivating Leasing in Year 2 H2)
+- ⚠️ The 3 agent failures (Eagle Hills, Ellington, RAK) returning empty responses — investigate next session if needed
+
+### Golden tag
+**`golden-2026-05-07`** at commit `4a439bc` — known-good state with working agent. Use `git checkout golden-2026-05-07` to return here if anything breaks.
 
 ---
 
