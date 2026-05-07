@@ -7,21 +7,37 @@
 
 ---
 
+## ⚠️ REVISION NOTE — 07 May 2026 afternoon
+
+After running database diagnostic queries (see `PropPulse_Diagnostic_07May2026.md`), discovered that **existing schema is richer than this plan assumed.** Specifically:
+
+- **`pp_commissions` table already exists** with 16 columns supporting per-developer + per-project commission rates, validity periods, registered broker authority, and source URLs. **Module 1 (Developer Agreements) should EXTEND this table, not create a new `developer_agreements` table.** Saves ~1 week of build work.
+
+- **`pp_launch_events` table already exists** with location, registration, invite-only fields. Useful for future launch tracking features.
+
+- **`project_units` has 54 columns** including premium features (private_pool, private_garden, maid_room, etc.), pricing tiers, document URLs, and multi-tenancy flags. Genuinely thorough schema.
+
+**Revised total effort: 7-11 weeks (was 8-12).** Module 1 details below should be read with this revision in mind. Other modules unchanged.
+
+**Action item:** Module 1 design needs to be redone to map onto `pp_commissions` rather than creating new tables. This is a 30-60 min revision task before Phase 1 development begins.
+
+---
+
 ## ONE-PAGE SUMMARY
 
-To complete the sales cycle, PropPlatform needs **5 new/modified modules** built over **8-12 weeks**:
+To complete the sales cycle, PropPlatform needs **5 new/modified modules** built over **7-11 weeks** (revised from 8-12 after schema discovery):
 
-| # | Module | Status | New/Modify | Effort |
-|---|---|---|---|---|
-| 1 | Developer Agreements | NEW | New module | 1.5-2 weeks |
-| 2 | Opportunity Detail (extended) | MODIFY | Extend existing | 1 week |
-| 3 | Payment Milestones | NEW | New module + UI | 2-3 weeks |
-| 4 | SPA / Sale Deed tracking | NEW | New module | 1 week |
-| 5 | Commission Invoicing | NEW | New module | 2-3 weeks |
+| # | Module | Status | New/Modify | Effort | Notes |
+|---|---|---|---|---|---|
+| 1 | Developer Agreements | EXTEND | Extend `pp_commissions` | 3-5 days | Was 1.5-2 weeks before schema discovery |
+| 2 | Opportunity Detail (extended) | MODIFY | Extend existing | 1 week | |
+| 3 | Payment Milestones | NEW | New module + UI | 2-3 weeks | |
+| 4 | SPA / Sale Deed tracking | NEW | New module | 1 week | |
+| 5 | Commission Invoicing | NEW | New module | 2-3 weeks | Separate from `pp_commissions` (different purpose) |
 | 6 | Discount Approvals integration | MODIFY | Wire into Stage 2 | 0.5 weeks |
 | 7 | Reports & Dashboards | NEW | Outstanding/Aging | 1-1.5 weeks |
 
-**Total: 9-12 weeks of focused dev work**
+**Total: 7-11 weeks of focused dev work** (revised from 9-12 after schema reuse identified)
 
 This plan covers Phase 1A (must-have) only. Phase 1B (accounting integration, advanced reports) and Phase 2 (DLD APIs, developer integrations) are scoped separately.
 

@@ -2,9 +2,9 @@
 
 This folder contains strategic, product, and technical documentation for PropPlatform (working name; renaming TBD — see `Naming_Brief_v3_Final.md`).
 
-**Last updated:** 07 May 2026 — morning (sales cycle workflow locked + 3-pillar strategy + free data sources roadmap)
+**Last updated:** 07 May 2026 — afternoon (production database diagnostic; AI agent issue identified; docs pushed to GitHub)
 **Maintainer:** Abid Mirza, Founder, BFC
-**Total documents:** 24
+**Total documents:** 25
 
 ---
 
@@ -80,13 +80,14 @@ If you only read 4 documents, read these:
 
 ---
 
-## ⚡ PropPulse — Technical Reference (3 docs)
+## ⚡ PropPulse — Technical Reference (4 docs)
 
 | Document | Purpose |
 |---|---|
 | `PropPulse_Complete_Documentation.md` | **Source of truth.** Architecture, AI agent (Claude + web_search), database schema, data flow, reliability assessment, SQL queries. **663 lines.** |
 | `PropPulse_Improvement_Backlog.md` | **Prioritized 6-12 month roadmap.** 4 tiers (high impact/low effort → vision-level). Each item has effort estimate, dependencies, acceptance criteria. **639 lines.** |
 | `PropPulse_Demo_Script.md` | Demo walkthrough for broker presentations. |
+| `PropPulse_Diagnostic_07May2026.md` ⭐ | **Production database state diagnostic.** 5 SQL queries, real data findings. **CRITICAL: AI agent has 90% failure rate. Action items prioritized.** Read before any agent work. |
 
 ---
 
@@ -109,16 +110,25 @@ If you only read 4 documents, read these:
 
 ---
 
-## 🚦 Pending Work (as of 07 May 2026)
+## 🚦 Pending Work (as of 07 May 2026 afternoon)
 
-### Technical execution
+### 🔴 Critical — surfaced by 07 May diagnostic
 
-In suggested order:
+1. **Fix AI agent error_log capture** (~2-3 hours) — agent code marks jobs failed without logging WHY. Must fix before any debugging. See `PropPulse_Diagnostic_07May2026.md` for full picture.
+2. **Diagnose root cause of 90% agent failure rate** (~1-2 days) — once logging works, run Emaar manually to see actual error. Likely timeout, anti-bot, or parsing.
+3. **Update investor pitch deck** (~30 min) — soften "AI agent runs daily" claim until agent is fixed. Architecture is real; daily operation is currently broken.
 
-1. **`lib/supabase.js` refactor** (~30-45 min) — fixes demo loading hiccup observed in 06 May broker meeting. Highest leverage. See `Refactor_Supabase_Client.md`.
-2. **Run 5 PropPulse SQL queries** (~20-30 min) — answers 6 pending data questions. See `Afternoon_Work_Playbook.md`.
-3. **Vercel cron for AI agent** (~1-2 hours) — agent runs daily without manual trigger.
-4. **Push docs folder to GitHub** (~5 min) — back up this entire folder.
+### 🟡 Technical execution (when ready)
+
+4. **`lib/supabase.js` refactor** (~30-45 min) — fixes demo loading hiccup observed in 06 May broker meeting. See `Refactor_Supabase_Client.md`.
+5. **Revise Phase_1_Build_Plan.md** (~30 min) — reuse existing `pp_commissions` table for Master Agreements module instead of creating new `developer_agreements` table. Saves ~1 week of build work.
+6. **Vercel cron for AI agent** (~1-2 hours) — but only AFTER agent achieves >50% success rate. Don't schedule a broken agent.
+
+### 🟢 Cleanup & enhancement (low priority)
+
+7. **Clean test data** (~15 min) — Default Company, Emirates Premium Realty, Gulf Leasing Solutions in production DB. Don't affect functionality.
+8. **Populate `rera_developer_no`** (~1 hour) — manual research, useful for "Verified by RERA" badges.
+9. **Add Sharjah developers** (~30 min) — Arada, Saraya, Tilal Properties. Currently 0 Sharjah coverage.
 
 ### Strategic decisions pending
 
@@ -128,7 +138,7 @@ In suggested order:
 
 ### Phase 1 development (when committed)
 
-1. Developer Agreements module (1.5-2 weeks) — must build first
+1. Developer Agreements module (~3-5 days, EXTEND `pp_commissions`) — was 1.5-2 weeks, revised after schema discovery
 2. Opportunity Detail extension (1 week) — parallel
 3. Payment Milestones module (2-3 weeks) — the killer feature
 4. SPA Tracking (1 week)
@@ -136,7 +146,7 @@ In suggested order:
 6. Discount Approvals integration (0.5 weeks)
 7. Reports & Dashboards (1-1.5 weeks)
 
-**Total Phase 1: 8-12 weeks of focused dev work.** See `Phase_1_Build_Plan.md`.
+**Total Phase 1: 7-11 weeks of focused dev work** (revised down from 8-12 after schema reuse identified). See `Phase_1_Build_Plan.md`.
 
 ---
 

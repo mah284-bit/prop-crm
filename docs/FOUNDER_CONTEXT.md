@@ -2,7 +2,7 @@
 
 **Purpose of this document:** Paste this at the start of any new Claude (or other AI) chat to bootstrap context fast. Saves 30+ minutes of re-explaining who I am, what I'm building, and how I work.
 
-**Last updated:** 07 May 2026 — morning (locked sales cycle process flow + 3-pillar strategy + free data sources roadmap)
+**Last updated:** 07 May 2026 — afternoon (production database diagnostic complete; agent failure rate identified; schema discoveries documented)
 **Maintained by:** Abid Mirza, Founder, BFC
 
 ---
@@ -91,33 +91,60 @@ If I haven't told you these are resolved yet, assume they're still open:
 
 1. **SEM meeting** — competitor product I haven't yet seen live. Broker willing to demo. Will reshape competitive positioning. Need to ask: data source? refresh cadence? customisation depth? pricing? brokers' biggest pain SEM doesn't solve?
 
-2. **6 PropPulse questions** I cannot answer from code alone:
-   - Actual project count in catalogue today (need SQL query against Supabase)
-   - Which 20 developers are configured (need to view `pp_developers`)
-   - Whether agent has ever broken in production
-   - Whether brokers actively use Import or it's dormant
-   - Per-unit data fields in `project_units` (schema unclear)
-   - Population of `pp_commissions` and `pp_launch_events` tables
+2. **6 PropPulse questions — RESOLVED 07 May 2026.** Answered via SQL diagnostic. See `PropPulse_Diagnostic_07May2026.md` for full findings. Key takeaways:
+   - 16 catalogue projects + 37 tenant-side (53 total). Real customer = 1 (Al Mansoori, 9 projects). Other 3 companies are test data.
+   - 20 developers configured, all manual, all `is_active = true`. No Sharjah developers.
+   - **AI agent has 90% failure rate.** Only Nakheel and Object 1 successfully scrape. 17 of 20 developers (including Emaar, DAMAC, Sobha) have failed every recent run.
+   - `error_log` is NULL across all failures — diagnostic logging is broken. Must fix before debugging.
+   - `pp_commissions` and `pp_launch_events` tables exist with rich schemas. Phase 1 build plan needs revision to reuse `pp_commissions` for Master Agreements module.
 
 3. **lib/supabase.js refactor** — 30-45 minute mechanical fix that kills "Multiple GoTrueClient" warnings + auth lock errors. Six files affected (PropPulse, InventoryModule, LeaseOpportunityDetail, LeasingLeads, LeasingModule, ReportsModule). Hasn't been done yet. **Full guide in `Refactor_Supabase_Client.md`.**
 
-4. **W7 reservation work** paused. Will rebuild as part of Builder Edition Year 2.
+4. **AI agent debugging — NEW URGENT THREAD (07 May 2026).** Agent broken for 17 of 20 developers. Root cause unknown because error_log is NULL. Sequenced fix:
+   - Step 1: Modify agent code to populate error_log on failures (~2-3 hours)
+   - Step 2: Run one developer manually with verbose logging (~30 min)
+   - Step 3: Diagnose root cause based on actual error (timeout / anti-bot / parsing) (~1-2 days)
+   - Step 4: Schedule via Vercel cron only AFTER >50% success rate
+   - **Don't ship investor pitch claiming "agent runs daily" until this is fixed.**
 
-5. **golden-pre-stages tag** at HEAD `da7fdf3` — known-good state before configurable workflow rebuild.
+5. **W7 reservation work** paused. Will rebuild as part of Builder Edition Year 2.
+
+6. **golden-pre-stages tag** at HEAD `eb262b1` — known-good state. (Note: was previously `da7fdf3`; new HEAD as of 07 May after docs commit `576bc9f`.)
+
+7. **Test data cleanup** — 3 test companies in production DB (Default Company, Emirates Premium Realty, Gulf Leasing Solutions). Don't affect functionality but should be cleaned before external review/investor demo. Low priority.
 
 ---
 
-## What happened in the most recent session (07 May 2026 morning)
+## What happened in the most recent session (07 May 2026 — full day)
 
 To save fresh-Claude from re-discovering:
 
+### Morning
 - **Broker meeting on 06 May went well** despite PropPulse loading hiccup during demo. 3-of-4 brokers favorable. Broker 1 said "if we had PropPulse a couple months back, would've chosen over SEM". Broker 2 said "finish everything, come back when ready, may switch from SEM". MD (3rd person) was distracted by competitor "BrokerPro" pitch from prior week — claims "DLD direct data" + "100s of leads" — likely real (DLD APIs accessible) + lead reselling.
 - **Strategic doc shipped** — `PropPlatform_3_Pillars_Strategic_Doc.md` mapping the complete UAE broker SaaS ecosystem (Pillar 1: Inbound Data, Pillar 2: Listings Syndication, Pillar 3: Lead Capture).
 - **Investment sheet shipped** — `PropPlatform_Data_Sources_Investment.xlsx` for partner discussion. 5 paths compared. TO VERIFY column for team.
 - **Sales cycle process LOCKED** (07 May morning). Abid articulated the complete 6-stage UAE off-plan workflow. Foundation document: `Sales_Cycle_Process_Flow.md`. Build plan: `Phase_1_Build_Plan.md`.
 - **Free data sources roadmap shipped** — `Free_Data_Sources_Roadmap.md`. Dubai Pulse + AI agent scaling + Bayut/PF public listings + RERA Sharjah + RSS feeds. Total ~6-9 weeks dev, AED 0 in licensing.
 - **Investor showcase deck shipped** — `PropPlatform_Sales_Cycle_Showcase.pptx` (4 slides, design-quality QA passed). Insertable into existing investor deck.
-- **STILL pending:** Refactor not yet executed. SQL queries on Supabase not yet run. Vercel cron for PropPulse agent not yet configured. SEM live demo not seen. Naming decision still pending.
+
+### Afternoon
+- **24 documentation files pushed to GitHub** at commit `576bc9f`. All strategic, technical, and execution docs now backed up in `mah284-bit/prop-crm/tree/main/docs`.
+- **Database diagnostic completed** via 5 SQL queries against production Supabase. See `PropPulse_Diagnostic_07May2026.md` for full findings.
+- **Critical finding: AI agent has 90% failure rate.** Only Nakheel and Object 1 succeed. 17 of 20 developers have never been successfully scraped, including all major ones (Emaar, DAMAC, Sobha, Aldar, Nakheel...). Error logging is broken — `error_log` is NULL across all failures.
+- **Schema discovery: existing tables are richer than expected.** `project_units` has 54 columns, `pp_commissions` already supports master agreements (Phase 1 plan needs revision to reuse), `pp_launch_events` exists. Phase 1 effort revised from 8-12 weeks to 7-11 weeks.
+- **Honest narrative adjustment needed:** "AI agent runs daily and grows the catalogue" claim in pitch deck is currently false. Architecture is sound, but operational state needs fixing before scaling claims.
+
+### Still pending end of 07 May
+- Refactor `lib/supabase.js` not yet executed
+- AI agent fix not yet started (logging fix → manual test → root cause diagnosis)
+- FOUNDER_CONTEXT updated with diagnostic findings (this update)
+- README needs update to reflect 25 docs (added diagnostic file)
+- Phase_1_Build_Plan.md needs minor revision for `pp_commissions` reuse
+- Investor pitch slide needs softening of agent claims
+- Test data cleanup (low priority)
+- Vercel cron for agent (don't schedule until agent actually works)
+- SEM live demo still not seen
+- Naming decision still pending
 
 ---
 
@@ -178,6 +205,7 @@ All in `D:\prop-crm\docs\`:
 - `PropPulse_Complete_Documentation.md` — 663 lines, source of truth
 - `PropPulse_Improvement_Backlog.md` — 639 lines, prioritized 4-tier roadmap
 - `PropPulse_Demo_Script.md` — earlier demo walkthrough
+- `PropPulse_Diagnostic_07May2026.md` ⭐ NEW — production database state, agent failure analysis, action items
 
 **Codebase:**
 - `Component_Inventory.md` — map of 16 components
