@@ -2,7 +2,7 @@
 
 **Purpose of this document:** Paste this at the start of any new Claude (or other AI) chat to bootstrap context fast. Saves 30+ minutes of re-explaining who I am, what I'm building, and how I work.
 
-**Last updated:** 07 May 2026 — afternoon (production database diagnostic complete; agent failure rate identified; schema discoveries documented)
+**Last updated:** 07 May 2026 — evening (Supabase refactor shipped; environment setup documented)
 **Maintained by:** Abid Mirza, Founder, BFC
 
 ---
@@ -28,6 +28,49 @@
 - AI features integrated deep into workflow (not surface chatbots)
 
 **The strategic moat:** **PropPulse** — a multi-tenant project catalogue with import-and-own mechanics. NOT a Reelly competitor — a different category (data-as-bootstrap vs data-as-a-service). See `PropPulse_Complete_Documentation.md` for full architecture.
+
+---
+
+## Environment & infrastructure (honest state)
+
+**Important:** This section captures what's KNOWN and FLAGS uncertainties. Don't make assumptions beyond what's documented here. Verify with Abid before acting on environment details.
+
+### What's confirmed
+
+- **Codebase:** Local at `D:\prop-crm` on Abid's laptop
+- **Repo:** `github.com/mah284-bit/prop-crm` (single repo, `main` branch is the live source)
+- **Stack:** Vite + React 19 + Supabase + Vercel serverless functions
+- **Local dev:** `npm run dev` → `http://localhost:5173`
+- **Vercel auto-deploy:** Pushes to `main` deploy automatically
+- **Supabase project:** ONE database for the CRM, named `propcrm-dev` (project ID `ysceukgpimzfqixtnbnp`, AWS ap-south-1, micro tier)
+- **Supabase URL hardcoded in code:** `https://ysceukgpimzfqixtnbnp.supabase.co`
+- **Other Supabase projects in dashboard (NOT for PropCRM):** BuildCore, edustack — leave alone
+
+### Important context about "production"
+
+Abid is at UAT/MVP/testing phase, not formally launched. Earlier the Supabase project was named "prod" but was renamed to `propcrm-dev` to reflect reality — there is **no separate production environment** at present. **Whatever Vercel deploys from `main`** is what Al Mansoori (anchor customer) and demo brokers see.
+
+This means:
+- ⚠️ **Any push to `main` immediately affects the live demo.** Be careful.
+- ⚠️ **No separate staging environment** to test changes safely outside localhost.
+- 🟡 **Future state:** When 5+ paying customers exist, real prod/staging separation will be needed. Not urgent today.
+
+### Known uncertainties
+
+- ❓ Exact Vercel URL where `main` deploys — assumed `prop-crm-two.vercel.app` based on past references but not formally verified
+- ❓ Whether brokers/Al Mansoori actively use the deployed version or only see localhost demos when Abid is present
+- ❓ Whether `src/AppOld.jsx` (visible in git status) is still relevant or just legacy file to delete
+
+### Safety practices used today (07 May 2026 refactor)
+
+- Created a feature branch (`refactor/supabase-client`) before edits
+- Backed up every modified file as `.backup` before editing
+- Verified with `head -3` after each edit
+- Tested locally before merging to `main`
+- Rolled back files when an unexpected error appeared (App.jsx `q.catch` issue)
+- Only merged + pushed once Sales side was confirmed working
+
+These practices are good defaults — re-use them for any future code changes.
 
 ---
 
@@ -98,20 +141,27 @@ If I haven't told you these are resolved yet, assume they're still open:
    - `error_log` is NULL across all failures — diagnostic logging is broken. Must fix before debugging.
    - `pp_commissions` and `pp_launch_events` tables exist with rich schemas. Phase 1 build plan needs revision to reuse `pp_commissions` for Master Agreements module.
 
-3. **lib/supabase.js refactor** — 30-45 minute mechanical fix that kills "Multiple GoTrueClient" warnings + auth lock errors. Six files affected (PropPulse, InventoryModule, LeaseOpportunityDetail, LeasingLeads, LeasingModule, ReportsModule). Hasn't been done yet. **Full guide in `Refactor_Supabase_Client.md`.**
+3. **lib/supabase.js refactor — RESOLVED 07 May 2026.** Centralized Supabase client into `src/lib/supabase.js`. 6 component files refactored. Shipped to production at commit `7c8b2c3`. PropPulse loads noticeably faster.
 
-4. **AI agent debugging — NEW URGENT THREAD (07 May 2026).** Agent broken for 17 of 20 developers. Root cause unknown because error_log is NULL. Sequenced fix:
+4. **App.jsx refactor — STILL PENDING.** App.jsx was reverted during testing because attempting the refactor exposed a pre-existing `q.catch is not a function` error in the Permissions module (line ~12758: `const safe = q => q.catch(()=>({data:[]}));`). This pattern is wrong — Supabase's `.from().select()` returns a query builder, not a Promise, so `.catch()` doesn't exist on it. The pattern only "worked" before because of how Supabase resolves to Promise on await. Investigation needed: change to `q.then(r=>r, ()=>({data:[]}))` or wrap in async function. Once fixed, App.jsx can be refactored to use shared client too.
+
+5. **AI agent debugging — URGENT THREAD.** Agent broken for 17 of 20 developers. Root cause unknown because error_log is NULL. Sequenced fix:
    - Step 1: Modify agent code to populate error_log on failures (~2-3 hours)
    - Step 2: Run one developer manually with verbose logging (~30 min)
    - Step 3: Diagnose root cause based on actual error (timeout / anti-bot / parsing) (~1-2 days)
    - Step 4: Schedule via Vercel cron only AFTER >50% success rate
    - **Don't ship investor pitch claiming "agent runs daily" until this is fixed.**
 
-5. **W7 reservation work** paused. Will rebuild as part of Builder Edition Year 2.
+6. **W7 reservation work** paused. Will rebuild as part of Builder Edition Year 2.
 
-6. **golden-pre-stages tag** at HEAD `eb262b1` — known-good state. (Note: was previously `da7fdf3`; new HEAD as of 07 May after docs commit `576bc9f`.)
+7. **golden-pre-stages tag** at HEAD `eb262b1` — known-good state before today's work. Current HEAD: `7c8b2c3` (refactor merged).
 
-7. **Test data cleanup** — 3 test companies in production DB (Default Company, Emirates Premium Realty, Gulf Leasing Solutions). Don't affect functionality but should be cleaned before external review/investor demo. Low priority.
+8. **Test data cleanup** — 3 test companies in production DB (Default Company, Emirates Premium Realty, Gulf Leasing Solutions). Don't affect functionality but should be cleaned before external review/investor demo. Low priority.
+
+9. **Pre-existing bugs surfaced 07 May 2026** (NOT from today's refactor — confirmed to exist on main):
+   - `can()` not defined in `LeasingModule.jsx` and `LeasingLeads.jsx` — leasing modules crash when clicked. Hidden because sales-only focus means no one clicks Leasing.
+   - `q.catch is not a function` in `App.jsx` Permissions module — see thread #4 above.
+   - These should be tracked but are NOT urgent given sales-only focus.
 
 ---
 
@@ -133,18 +183,27 @@ To save fresh-Claude from re-discovering:
 - **Critical finding: AI agent has 90% failure rate.** Only Nakheel and Object 1 succeed. 17 of 20 developers have never been successfully scraped, including all major ones (Emaar, DAMAC, Sobha, Aldar, Nakheel...). Error logging is broken — `error_log` is NULL across all failures.
 - **Schema discovery: existing tables are richer than expected.** `project_units` has 54 columns, `pp_commissions` already supports master agreements (Phase 1 plan needs revision to reuse), `pp_launch_events` exists. Phase 1 effort revised from 8-12 weeks to 7-11 weeks.
 - **Honest narrative adjustment needed:** "AI agent runs daily and grows the catalogue" claim in pitch deck is currently false. Architecture is sound, but operational state needs fixing before scaling claims.
+- **Diagnostic + doc updates pushed to GitHub** at commit `d664adc`.
+
+### Evening
+- **Supabase client refactor SHIPPED to production** at commit `7c8b2c3`. 6 component files now share one client (`src/lib/supabase.js`). Net 16 lines removed from codebase. PropPulse loads noticeably faster (Abid confirmed).
+- **App.jsx refactor reverted** during testing — caused `q.catch is not a function` error. Confirmed PRE-EXISTING bug on main, not from refactor. Documented for future fix.
+- **3 pre-existing bugs surfaced during testing** (all confirmed to exist on `main` BEFORE today's work):
+  1. `can()` undefined in LeasingModule and LeasingLeads
+  2. `q.catch is not a function` in App.jsx Permissions module (line ~12758)
+  3. AI agent error_log not populated on failures
+- **Environment setup documented** in this file (FOUNDER_CONTEXT) for the first time. Important note: there's no separate prod/staging — `main` deploys directly to Vercel's live URL.
 
 ### Still pending end of 07 May
-- Refactor `lib/supabase.js` not yet executed
+- Refactor `lib/supabase.js` ✅ DONE (6 component files only — App.jsx pending)
 - AI agent fix not yet started (logging fix → manual test → root cause diagnosis)
-- FOUNDER_CONTEXT updated with diagnostic findings (this update)
-- README needs update to reflect 25 docs (added diagnostic file)
-- Phase_1_Build_Plan.md needs minor revision for `pp_commissions` reuse
+- App.jsx Supabase refactor blocked by `q.catch` issue (needs investigation first)
 - Investor pitch slide needs softening of agent claims
 - Test data cleanup (low priority)
 - Vercel cron for agent (don't schedule until agent actually works)
 - SEM live demo still not seen
 - Naming decision still pending
+- 3 pre-existing bugs documented above
 
 ---
 
