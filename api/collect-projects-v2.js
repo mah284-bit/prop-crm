@@ -45,6 +45,12 @@ STRICT OUTPUT FORMAT — Your VERY FIRST character of output MUST be `[`. Your V
   "confidence": "integer 0-100 — how confident you are this is real, recent, and accurate"
 }
 
+EXAMPLE OUTPUT (this is exactly the format expected - note it starts with [ and ends with ]):
+[{"name":"Creek Beach Vista","developer":"Emaar Properties","community":"Dubai Creek Harbour","emirate":"Dubai","project_type":"Residential","project_status":"Under Construction","announcement_date":"2026-04-15","handover_date":"2028-12-31","starting_price":1200000,"total_units":500,"description":"Waterfront residential tower with views of Dubai Creek.","google_maps_url":null,"service_charge_psf":18,"confidence":85}]
+
+EXAMPLE OF EMPTY RESULT (use this exact format if no qualifying projects):
+[]
+
 RULES:
 • Return [] (empty array) if nothing qualifies — that's a valid, expected result.
 • Never invent data. If a field is unknown, use null.
@@ -124,7 +130,10 @@ Return the JSON array as specified in the system prompt. Empty array [] is a val
           max_uses: 5, // hard cap — key cost control
         },
       ],
-      messages: [{ role: "user", content: userPrompt }],
+      messages: [
+        { role: "user", content: userPrompt },
+        { role: "assistant", content: "[" }
+      ],
     });
   } catch (err) {
     console.error("Claude API error:", err);
@@ -140,7 +149,9 @@ Return the JSON array as specified in the system prompt. Empty array [] is a val
   // Parse — defensive, tolerate prose narration AND markdown fences
   let projects = [];
   try {
-    let cleaned = rawText
+    // Prepend "[" because we prefilled the assistant message with it
+    // (prefill is not echoed back in the response content)
+    let cleaned = ("[" + rawText)
       .replace(/^```json\s*/i, "")
       .replace(/^```\s*/i, "")
       .replace(/```\s*$/i, "")
