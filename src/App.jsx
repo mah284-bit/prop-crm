@@ -12755,7 +12755,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const safe = q => q.catch(()=>({data:[]}));
+    const safe = q => q.then(r=>r).catch(()=>({data:[]}));
     const [s, t, u] = await Promise.all([
       safe(supabase.from("permission_sets").select("*").eq("company_id", currentUser.company_id||"").order("name")),
       safe(supabase.from("permission_sets").select("*").is("company_id", null).order("name")),
