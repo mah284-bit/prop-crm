@@ -144,9 +144,9 @@ const saveAppConfig = (cfg) => {
 };
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","opportunities","discounts","activity","ai","reports","proppulse","pay_plans","companies","users","permissions","permsets","group_view"],
+  sales:   ["dashboard","projects","builder","leads","opportunities","discounts","activity","ai","reports","proppulse","pay_plans","companies","users","permissions","permsets","master_agreements","group_view"],
   leasing: ["l_dashboard","l_leads","l_opportunities","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_proppulse","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
-  both:    ["dashboard","projects","builder","leads","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","pay_plans","l_reports","companies","users","permissions"],
+  both:    ["dashboard","projects","builder","leads","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","group_view"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -9719,6 +9719,7 @@ const TABS=[
   {id:"users",      label:"Users",        icon:"👥", app:"sales",   roles:["admin","super_admin"]},
   {id:"permissions",label:"Permissions",  icon:"🔒", app:"sales",   roles:["super_admin"]},
   {id:"permsets",   label:"Permissions",  icon:"🔐", app:"sales",   roles:["super_admin","admin"]},
+  {id:"master_agreements",label:"Master Agreements", icon:"📄", app:"sales", roles:["super_admin","admin"]},
   {id:"group_view", label:"Group View",    icon:"🏛", app:"sales",   roles:["super_admin"]},
   // ── Leasing CRM ────────────────────────────────────────────────
   {id:"l_dashboard",label:"Dashboard",    icon:"⊞",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
@@ -10555,6 +10556,7 @@ const UNIT_STATUS_COLORS = {
 import InventoryModule from "./components/InventoryModule.jsx";
 import LeasingModule from "./components/LeasingModule.jsx";
 import ReportsModule from "./components/ReportsModule.jsx";
+import MasterAgreements from "./components/MasterAgreements.jsx";
 import LeaseOpportunityDetail from "./components/LeaseOpportunityDetail.jsx";
 import LeasingLeads from "./components/LeasingLeads.jsx";
 import PropPulse from "./components/PropPulse.jsx";
@@ -13524,6 +13526,7 @@ export default function App(){
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast} initialFilter={navFilter}/>}
           {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leads={leads} activities={activities} initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
+          {tab==="master_agreements" && <MasterAgreements currentUser={currentUser} showToast={showToast}/>}
           {(tab==="proppulse"||tab==="l_proppulse")&&<PropPulse currentUser={currentUser} showToast={showToast}/>}
           {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
           {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
