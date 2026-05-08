@@ -488,9 +488,9 @@ export default function MasterAgreements({ currentUser, showToast }) {
             fontSize:10,
             fontWeight:700,
             letterSpacing:0.5
-          }}>DAY 4 OF 10</span>
+          }}>DAY 5 OF 10</span>
           <span style={{color:"#6B7280"}}>
-            Create/Edit form shipped. Day 5: Document upload. Day 6: Detail view. Day 7: Auto-populate commission on new Opportunities.
+            Document upload shipped. Day 6: Detail view. Day 7: Auto-populate commission on new Opportunities.
           </span>
         </div>
       )}
@@ -536,8 +536,90 @@ function AgreementFormModal({ agreement, developers, currentUser, onClose, onSav
     signed_date: agreement?.signed_date || "",
     signed_on_behalf_of: agreement?.signed_on_behalf_of || "",
     status: agreement?.status || "draft",
-    notes: agreement?.notes || ""
+    notes: agreement?.notes || "",
+    agreement_document_path: agreement?.agreement_document_path || null,
+    agreement_document_filename: agreement?.agreement_document_filename || null
   });
+
+  // Upload state
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+
+  // Upload handler
+  async function handleFileUpload(file) {
+    if (!file) return;
+
+    setUploadError(null);
+
+    // Validate file type
+    const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError("Only PDF, JPG, or PNG files allowed");
+      return;
+    }
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError("File too large (max 10MB)");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+      // Use existing agreement ID if editing, or 'new' placeholder for create
+      const folder = agreement?.id || "new";
+      const path = `master-agreements/${currentUser.company_id}/${folder}/${Date.now()}_${safeName}`;
+
+      // Upload to private 'documents' bucket
+      const { error: uploadErr } = await supabase.storage
+        .from("documents")
+        .upload(path, file, { upsert: false });
+      if (uploadErr) throw uploadErr;
+
+      // Store the storage PATH (not a URL).
+      // Signed URLs are generated on-demand when user clicks View.
+      setForm(prev => ({
+        ...prev,
+        agreement_document_path: path,
+        agreement_document_filename: file.name
+      }));
+      showToast?.(`Uploaded: ${file.name}`, "success");
+    } catch (err) {
+      console.error("Upload failed:", err);
+      setUploadError(err.message || "Upload failed");
+      showToast?.(`Upload failed: ${err.message || "unknown"}`, "error");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function handleRemoveDocument() {
+    setForm(prev => ({
+      ...prev,
+      agreement_document_path: null,
+      agreement_document_filename: null
+    }));
+    setUploadError(null);
+    showToast?.("Document removed - save to confirm", "info");
+  }
+
+  // Generate a fresh signed URL and open the document
+  async function handleViewDocument() {
+    if (!form.agreement_document_path) return;
+    try {
+      const { data, error: signErr } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(form.agreement_document_path, 3600);
+      if (signErr) throw signErr;
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch (err) {
+      console.error("Failed to generate signed URL:", err);
+      showToast?.(`Could not open document: ${err.message || "unknown"}`, "error");
+    }
+  }
 
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -657,6 +739,8 @@ function AgreementFormModal({ agreement, developers, currentUser, onClose, onSav
         signed_on_behalf_of: form.signed_on_behalf_of?.trim() || null,
         status: form.status,
         notes: form.notes?.trim() || null,
+        agreement_document_path: form.agreement_document_path || null,
+        agreement_document_filename: form.agreement_document_filename || null,
         updated_by: currentUser.id,
         updated_at: new Date().toISOString()
       };
@@ -952,16 +1036,148 @@ function AgreementFormModal({ agreement, developers, currentUser, onClose, onSav
                 />
               </Field>
             </Row>
-            <div style={{
-              padding:"12px 14px",
-              background:"#FEF6E0",
-              border:"1px dashed #E5C870",
-              borderRadius:6,
-              fontSize:12,
-              color:"#7A5C0E",
-              marginTop:8
-            }}>
-              📎 <strong>Document upload coming Day 5.</strong> For now, you can save the agreement record without the signed PDF. Upload will be added in the next iteration.
+            {/* Document upload zone */}
+            <div style={{marginTop:12}}>
+              <label style={{
+                fontSize:11,
+                fontWeight:600,
+                color:"#374151",
+                letterSpacing:0.2,
+                display:"block",
+                marginBottom:6
+              }}>
+                📎 Signed Agreement Document
+              </label>
+
+              {/* If document already uploaded, show it */}
+              {form.agreement_document_path && form.agreement_document_filename && (
+                <div style={{
+                  padding:"12px 14px",
+                  background:"#F0FDF4",
+                  border:"1px solid #86EFAC",
+                  borderRadius:6,
+                  display:"flex",
+                  alignItems:"center",
+                  gap:10
+                }}>
+                  <span style={{fontSize:24}}>📄</span>
+                  <div style={{flex:1, minWidth:0}}>
+                    <div style={{fontSize:13, fontWeight:600, color:"#166534", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
+                      {form.agreement_document_filename}
+                    </div>
+                    <div style={{fontSize:11, color:"#16A34A", marginTop:2}}>✓ Uploaded</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleViewDocument}
+                    style={{
+                      padding:"5px 12px",
+                      background:"#fff",
+                      border:"1px solid #86EFAC",
+                      borderRadius:6,
+                      fontSize:11,
+                      fontWeight:600,
+                      color:"#166534",
+                      cursor:"pointer"
+                    }}
+                  >View</button>
+                  <label style={{
+                    padding:"5px 12px",
+                    background:"#fff",
+                    border:"1px solid #86EFAC",
+                    borderRadius:6,
+                    fontSize:11,
+                    fontWeight:600,
+                    color:"#166534",
+                    cursor:"pointer"
+                  }}>
+                    Replace
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                      onChange={(e) => { if (e.target.files?.[0]) handleFileUpload(e.target.files[0]); e.target.value = ""; }}
+                      disabled={uploading}
+                      style={{display:"none"}}
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleRemoveDocument}
+                    style={{
+                      padding:"5px 10px",
+                      background:"#fff",
+                      border:"1px solid #FCA5A5",
+                      borderRadius:6,
+                      fontSize:11,
+                      fontWeight:600,
+                      color:"#991B1B",
+                      cursor:"pointer"
+                    }}
+                  >Remove</button>
+                </div>
+              )}
+
+              {/* If no document, show drop zone */}
+              {!form.agreement_document_path && (
+                <label
+                  style={{
+                    display:"block",
+                    padding:"24px 16px",
+                    background:uploading ? "#FEF6E0" : "#FAFBFC",
+                    border:`2px dashed ${uploading ? "#E5C870" : "#D1D5DB"}`,
+                    borderRadius:8,
+                    textAlign:"center",
+                    cursor: uploading ? "wait" : "pointer",
+                    transition:"all 0.15s"
+                  }}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (uploading) return;
+                    const file = e.dataTransfer.files?.[0];
+                    if (file) handleFileUpload(file);
+                  }}
+                >
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                    onChange={(e) => { if (e.target.files?.[0]) handleFileUpload(e.target.files[0]); e.target.value = ""; }}
+                    disabled={uploading}
+                    style={{display:"none"}}
+                  />
+                  {uploading ? (
+                    <>
+                      <div style={{fontSize:32, marginBottom:8}}>⏳</div>
+                      <div style={{fontSize:13, fontWeight:600, color:"#7A5C0E"}}>Uploading...</div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{fontSize:32, marginBottom:8, opacity:0.6}}>📤</div>
+                      <div style={{fontSize:13, fontWeight:600, color:"#1E2D3F"}}>
+                        Drop signed PDF here or click to browse
+                      </div>
+                      <div style={{fontSize:11, color:"#9CA3AF", marginTop:4}}>
+                        Max 10MB · PDF, JPG, or PNG accepted
+                      </div>
+                    </>
+                  )}
+                </label>
+              )}
+
+              {uploadError && (
+                <div style={{
+                  marginTop:8,
+                  padding:"8px 12px",
+                  background:"#FEE2E2",
+                  border:"1px solid #FCA5A5",
+                  borderRadius:6,
+                  fontSize:12,
+                  color:"#991B1B"
+                }}>
+                  ⚠️ {uploadError}
+                </div>
+              )}
             </div>
           </Section>
 
