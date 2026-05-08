@@ -6060,7 +6060,7 @@ You will become the assigned agent.`);
                 )}
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
-                {[["Budget",opp.budget],["Offer Price",opp.offer_price],["Final Price",opp.final_price],["Discount %",opp.discount_pct?opp.discount_pct+"%":null]].filter(([,v])=>v).map(([l,v])=>(
+                {[["Budget",opp.budget],["Offer Price",opp.offer_price],["Final Price",opp.final_price],["Discount %",opp.discount_pct?opp.discount_pct+"%":null],["Commission %",opp.commission_pct?Number(opp.commission_pct).toFixed(2)+"%":null]].filter(([,v])=>v).map(([l,v])=>(
                   <div key={l} style={{background:"#FAFBFC",borderRadius:8,padding:"10px 12px"}}>
                     <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
                     <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{typeof v==="number"?`AED ${Number(v).toLocaleString()}`:v}</div>

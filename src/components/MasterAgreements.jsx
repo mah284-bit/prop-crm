@@ -20,6 +20,7 @@ export default function MasterAgreements({ currentUser, showToast }) {
   // Data state
   const [agreements, setAgreements] = useState([]);
   const [developers, setDevelopers] = useState([]);
+  const [usageCounts, setUsageCounts] = useState({}); // { agreement_id: count }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -36,6 +37,7 @@ export default function MasterAgreements({ currentUser, showToast }) {
     if (!isAdmin) return;
     loadAgreements();
     loadDevelopers();
+    loadUsageCounts();
   }, [isAdmin, currentUser?.company_id]);
 
   async function loadAgreements() {
@@ -67,6 +69,27 @@ export default function MasterAgreements({ currentUser, showToast }) {
       setDevelopers(data || []);
     } catch (err) {
       console.error("Failed to load developers:", err);
+    }
+  }
+
+  // Count how many opportunities reference each master agreement
+  async function loadUsageCounts() {
+    try {
+      const { data, error: dbError } = await supabase
+        .from("opportunities")
+        .select("master_agreement_id")
+        .eq("company_id", currentUser.company_id)
+        .not("master_agreement_id", "is", null);
+      if (dbError) throw dbError;
+      const counts = {};
+      (data || []).forEach(row => {
+        if (row.master_agreement_id) {
+          counts[row.master_agreement_id] = (counts[row.master_agreement_id] || 0) + 1;
+        }
+      });
+      setUsageCounts(counts);
+    } catch (err) {
+      console.error("Failed to load usage counts:", err);
     }
   }
 
@@ -402,6 +425,7 @@ export default function MasterAgreements({ currentUser, showToast }) {
                 <th style={{...thStyle, textAlign:"right"}}>Default %</th>
                 <th style={thStyle}>Validity</th>
                 <th style={thStyle}>Status</th>
+                <th style={{...thStyle, textAlign:"center", width:80}}>Used In</th>
                 <th style={{...thStyle, textAlign:"center", width:80}}>Action</th>
               </tr>
             </thead>
@@ -440,6 +464,22 @@ export default function MasterAgreements({ currentUser, showToast }) {
                   </td>
                   <td style={tdStyle}>
                     {statusBadge(a.status)}
+                  </td>
+                  <td style={{...tdStyle, textAlign:"center"}}>
+                    {(usageCounts[a.id] || 0) > 0 ? (
+                      <span style={{
+                        display:"inline-block",
+                        padding:"3px 10px",
+                        background:"#DBEAFE",
+                        color:"#0369A1",
+                        border:"1px solid #BAE6FD",
+                        borderRadius:12,
+                        fontSize:11,
+                        fontWeight:700
+                      }}>{usageCounts[a.id]}</span>
+                    ) : (
+                      <span style={{color:"#9CA3AF", fontSize:11}}>—</span>
+                    )}
                   </td>
                   <td style={{...tdStyle, textAlign:"center"}}>
                     <button
@@ -488,9 +528,9 @@ export default function MasterAgreements({ currentUser, showToast }) {
             fontSize:10,
             fontWeight:700,
             letterSpacing:0.5
-          }}>DAY 6 OF 10</span>
+          }}>DAY 7 OF 10</span>
           <span style={{color:"#6B7280"}}>
-            Audit trail visible in form. Day 7: Auto-populate commission on new Opportunities (Stage 2 integration).
+            Stage 2 integration LIVE. Master Agreements auto-populate commission on new Opportunities.
           </span>
         </div>
       )}
@@ -501,6 +541,7 @@ export default function MasterAgreements({ currentUser, showToast }) {
           agreement={editingAgreement}
           developers={developers}
           currentUser={currentUser}
+          agreementUsageCount={editingAgreement ? (usageCounts[editingAgreement.id] || 0) : 0}
           onClose={closeForm}
           onSaved={handleSaved}
           showToast={showToast}
@@ -514,7 +555,7 @@ export default function MasterAgreements({ currentUser, showToast }) {
 // FORM MODAL
 // =============================================================================
 
-function AgreementFormModal({ agreement, developers, currentUser, onClose, onSaved, showToast }) {
+function AgreementFormModal({ agreement, developers, currentUser, agreementUsageCount = 0, onClose, onSaved, showToast }) {
   const isEdit = !!agreement;
 
   // Helper: format date with relative time hint (e.g. "15 Jan 2026 (3 days ago)")
@@ -877,7 +918,7 @@ function AgreementFormModal({ agreement, developers, currentUser, onClose, onSav
               fontWeight:600,
               color:"#1E2D3F"
             }}>
-              📊 Used in <span style={{color:"#6B7280"}}>0 projects</span> <span style={{color:"#9CA3AF", fontSize:10}}>· Stage 2 integration ships Day 7</span>
+              📊 Used in <span style={{color:"#0369A1", fontWeight:700}}>{agreementUsageCount} {agreementUsageCount === 1 ? "opportunity" : "opportunities"}</span>
             </div>
           </div>
         )}
