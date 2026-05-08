@@ -528,9 +528,9 @@ export default function MasterAgreements({ currentUser, showToast }) {
             fontSize:10,
             fontWeight:700,
             letterSpacing:0.5
-          }}>DAY 7 OF 10</span>
+          }}>DAY 8 OF 10</span>
           <span style={{color:"#6B7280"}}>
-            Stage 2 integration LIVE. Master Agreements auto-populate commission on new Opportunities.
+            AI document validation LIVE. Click "Validate with AI" on any uploaded agreement.
           </span>
         </div>
       )}
@@ -597,8 +597,13 @@ function AgreementFormModal({ agreement, developers, currentUser, agreementUsage
     status: agreement?.status || "draft",
     notes: agreement?.notes || "",
     agreement_document_path: agreement?.agreement_document_path || null,
-    agreement_document_filename: agreement?.agreement_document_filename || null
+    agreement_document_filename: agreement?.agreement_document_filename || null,
+    validation_result: agreement?.validation_result || null
   });
+
+  // AI validation state
+  const [validating, setValidating] = useState(false);
+  const [validationError, setValidationError] = useState(null);
 
   // Upload state
   const [uploading, setUploading] = useState(false);
@@ -677,6 +682,64 @@ function AgreementFormModal({ agreement, developers, currentUser, agreementUsage
     } catch (err) {
       console.error("Failed to generate signed URL:", err);
       showToast?.(`Could not open document: ${err.message || "unknown"}`, "error");
+    }
+  }
+
+  // AI validation: send document to Claude, get severity-graded analysis
+  async function handleValidateWithAI() {
+    if (!form.agreement_document_path) {
+      showToast?.("Please upload a document first", "error");
+      return;
+    }
+    setValidating(true);
+    setValidationError(null);
+    try {
+      // Get fresh signed URL for the document
+      const { data: urlData, error: urlErr } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(form.agreement_document_path, 600);
+      if (urlErr) throw urlErr;
+      if (!urlData?.signedUrl) throw new Error("Could not generate document URL");
+
+      // Call our Vercel API
+      const response = await fetch("/api/validate-agreement", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          documentUrl: urlData.signedUrl,
+          formData: form
+        })
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || `Validation failed (${response.status})`);
+      }
+
+      // Save the result into form state
+      setForm(prev => ({ ...prev, validation_result: result }));
+
+      // Save to DB immediately (cache the result)
+      if (isEdit) {
+        await supabase
+          .from("pp_master_agreements")
+          .update({ validation_result: result })
+          .eq("id", agreement.id);
+      }
+
+      // Show severity-appropriate toast
+      const severityMsg = {
+        info: "✅ Document verified",
+        warning: "⚠️ Mismatches detected - please review",
+        critical: "🛑 Critical mismatches - please review"
+      }[result.severity] || "Validation complete";
+      showToast?.(severityMsg, result.severity === "info" ? "success" : "warning");
+    } catch (err) {
+      console.error("Validation failed:", err);
+      setValidationError(err.message || "Validation failed");
+      showToast?.(`Validation failed: ${err.message || "unknown"}`, "error");
+    } finally {
+      setValidating(false);
     }
   }
 
@@ -1178,6 +1241,21 @@ function AgreementFormModal({ agreement, developers, currentUser, agreementUsage
                       cursor:"pointer"
                     }}
                   >View</button>
+                  <button
+                    type="button"
+                    onClick={handleValidateWithAI}
+                    disabled={validating}
+                    style={{
+                      padding:"5px 12px",
+                      background: validating ? "#FEF6E0" : "#FFF7ED",
+                      border:"1px solid #FB923C",
+                      borderRadius:6,
+                      fontSize:11,
+                      fontWeight:600,
+                      color:"#9A3412",
+                      cursor:validating ? "wait" : "pointer"
+                    }}
+                  >{validating ? "🤖 Validating..." : (form.validation_result ? "🔄 Re-validate" : "🤖 Validate with AI")}</button>
                   <label style={{
                     padding:"5px 12px",
                     background:"#fff",
@@ -1275,6 +1353,25 @@ function AgreementFormModal({ agreement, developers, currentUser, agreementUsage
                   ⚠️ {uploadError}
                 </div>
               )}
+
+              {/* AI Validation result display */}
+              {form.validation_result && (
+                <ValidationResultPanel result={form.validation_result} />
+              )}
+
+              {validationError && (
+                <div style={{
+                  marginTop:8,
+                  padding:"8px 12px",
+                  background:"#FEE2E2",
+                  border:"1px solid #FCA5A5",
+                  borderRadius:6,
+                  fontSize:12,
+                  color:"#991B1B"
+                }}>
+                  ⚠️ AI Validation error: {validationError}
+                </div>
+              )}
             </div>
           </Section>
 
@@ -1343,6 +1440,120 @@ function AgreementFormModal({ agreement, developers, currentUser, agreementUsage
       </div>
     </div>
   );
+}
+
+// =============================================================================
+// AI VALIDATION RESULT PANEL
+// =============================================================================
+
+function ValidationResultPanel({ result }) {
+  const severityConfig = {
+    info: {
+      bg: "#F0FDF4",
+      border: "#86EFAC",
+      iconBg: "#16A34A",
+      label: "✅ Verified",
+      labelColor: "#166534"
+    },
+    warning: {
+      bg: "#FEF6E0",
+      border: "#FBBF24",
+      iconBg: "#D97706",
+      label: "⚠️ Mismatches Detected",
+      labelColor: "#92400E"
+    },
+    critical: {
+      bg: "#FEE2E2",
+      border: "#FCA5A5",
+      iconBg: "#DC2626",
+      label: "🛑 Critical Issues",
+      labelColor: "#991B1B"
+    }
+  };
+
+  const cfg = severityConfig[result.severity] || severityConfig.warning;
+  const validatedAt = result.validated_at
+    ? new Date(result.validated_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })
+    : "";
+
+  return (
+    <div style={{
+      marginTop: 12,
+      padding: "12px 14px",
+      background: cfg.bg,
+      border: `1px solid ${cfg.border}`,
+      borderRadius: 8,
+      fontSize: 12
+    }}>
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        marginBottom: 8
+      }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: cfg.labelColor }}>
+            {cfg.label}
+          </div>
+          {result.summary && (
+            <div style={{ fontSize: 11, color: "#4B5563", marginTop: 4, fontStyle: "italic" }}>
+              {result.summary}
+            </div>
+          )}
+        </div>
+        {validatedAt && (
+          <div style={{ fontSize: 10, color: "#9CA3AF" }}>
+            🤖 {validatedAt}
+          </div>
+        )}
+      </div>
+
+      {/* Field-level matches */}
+      {result.matches && result.matches.length > 0 && (
+        <div style={{ marginTop: 10 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#374151", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 }}>
+            Field Comparison
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {result.matches.map((m, idx) => (
+              <div
+                key={idx}
+                style={{
+                  padding: "6px 10px",
+                  background: m.match ? "#fff" : "#FFF7ED",
+                  border: `1px solid ${m.match ? "#E5E7EB" : "#FED7AA"}`,
+                  borderRadius: 6,
+                  fontSize: 11
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontWeight: 600, color: "#0F2540" }}>
+                    {m.match ? "✓" : "✗"} {prettifyFieldName(m.field)}
+                  </span>
+                  {!m.match && (
+                    <span style={{ fontSize: 10, color: "#9A3412", fontStyle: "italic" }}>
+                      {m.reason}
+                    </span>
+                  )}
+                </div>
+                {(m.form_value || m.doc_value) && (
+                  <div style={{ marginTop: 3, fontSize: 10, color: "#6B7280", display: "flex", gap: 12 }}>
+                    <span>Form: <strong style={{color:"#374151"}}>{String(m.form_value ?? "—")}</strong></span>
+                    <span>Document: <strong style={{color:"#374151"}}>{String(m.doc_value ?? "—")}</strong></span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function prettifyFieldName(field) {
+  if (!field) return "";
+  return field.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
 // =============================================================================
