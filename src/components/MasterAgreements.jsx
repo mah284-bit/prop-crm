@@ -5,8 +5,8 @@ import { supabase } from "../lib/supabase";
  * Master Developer Agreements Module - Stage 1 of 6-stage broker workflow.
  *
  * v1.0 (Day 2): Skeleton placeholder.
- * v1.1 (Day 3): List view with filters and search.   <-- CURRENT VERSION
- * v1.2 (Day 4): Create/Edit form with all sections.
+ * v1.1 (Day 3): List view with filters and search.
+ * v1.2 (Day 4): Create/Edit form with all 6 sections + validation + save logic.   <-- CURRENT VERSION
  * v1.3 (Day 5): Document upload via Supabase Storage.
  * v1.4 (Day 6): Detail view + audit trail.
  * v1.5 (Day 7): Stage 2 integration - auto-populate commission on Opportunity create.
@@ -19,6 +19,7 @@ export default function MasterAgreements({ currentUser, showToast }) {
 
   // Data state
   const [agreements, setAgreements] = useState([]);
+  const [developers, setDevelopers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -27,10 +28,14 @@ export default function MasterAgreements({ currentUser, showToast }) {
   const [developerFilter, setDeveloperFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  // Load agreements on mount
+  // Form modal state
+  const [showForm, setShowForm] = useState(false);
+  const [editingAgreement, setEditingAgreement] = useState(null);
+
   useEffect(() => {
     if (!isAdmin) return;
     loadAgreements();
+    loadDevelopers();
   }, [isAdmin, currentUser?.company_id]);
 
   async function loadAgreements() {
@@ -42,7 +47,6 @@ export default function MasterAgreements({ currentUser, showToast }) {
         .select("*")
         .eq("company_id", currentUser.company_id)
         .order("created_at", { ascending: false });
-
       if (dbError) throw dbError;
       setAgreements(data || []);
     } catch (err) {
@@ -53,16 +57,46 @@ export default function MasterAgreements({ currentUser, showToast }) {
     }
   }
 
-  // Get unique developers for filter dropdown
+  async function loadDevelopers() {
+    try {
+      const { data, error: dbError } = await supabase
+        .from("pp_developers")
+        .select("id, name")
+        .order("name", { ascending: true });
+      if (dbError) throw dbError;
+      setDevelopers(data || []);
+    } catch (err) {
+      console.error("Failed to load developers:", err);
+    }
+  }
+
+  function openCreateForm() {
+    setEditingAgreement(null);
+    setShowForm(true);
+  }
+
+  function openEditForm(agreement) {
+    setEditingAgreement(agreement);
+    setShowForm(true);
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setEditingAgreement(null);
+  }
+
+  function handleSaved() {
+    closeForm();
+    loadAgreements();
+  }
+
   const uniqueDevelopers = useMemo(() => {
     const set = new Set(agreements.map(a => a.developer_name).filter(Boolean));
     return Array.from(set).sort();
   }, [agreements]);
 
-  // Apply all filters
   const filteredAgreements = useMemo(() => {
     return agreements.filter(a => {
-      // Search filter
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const matchTitle = (a.agreement_title || "").toLowerCase().includes(q);
@@ -70,22 +104,12 @@ export default function MasterAgreements({ currentUser, showToast }) {
         const matchRef = (a.agreement_reference || "").toLowerCase().includes(q);
         if (!matchTitle && !matchDev && !matchRef) return false;
       }
-
-      // Developer filter
-      if (developerFilter !== "all" && a.developer_name !== developerFilter) {
-        return false;
-      }
-
-      // Status filter
-      if (statusFilter !== "all" && a.status !== statusFilter) {
-        return false;
-      }
-
+      if (developerFilter !== "all" && a.developer_name !== developerFilter) return false;
+      if (statusFilter !== "all" && a.status !== statusFilter) return false;
       return true;
     });
   }, [agreements, searchQuery, developerFilter, statusFilter]);
 
-  // Helpers
   const fmtDate = (dateStr) => {
     if (!dateStr) return "-";
     try {
@@ -123,7 +147,6 @@ export default function MasterAgreements({ currentUser, showToast }) {
     );
   };
 
-  // Permission gate UI
   if (!isAdmin) {
     return (
       <div style={{padding:"40px 24px", textAlign:"center"}}>
@@ -159,6 +182,7 @@ export default function MasterAgreements({ currentUser, showToast }) {
           </p>
         </div>
         <button
+          onClick={openCreateForm}
           style={{
             padding:"10px 20px",
             borderRadius:8,
@@ -170,7 +194,6 @@ export default function MasterAgreements({ currentUser, showToast }) {
             cursor:"pointer",
             letterSpacing:0.2
           }}
-          onClick={() => showToast?.("New Agreement form ships Day 4 — coming next!", "info")}
         >
           + New Agreement
         </button>
@@ -186,7 +209,6 @@ export default function MasterAgreements({ currentUser, showToast }) {
         border:"1px solid #E5E7EB",
         borderRadius:8
       }}>
-        {/* Search */}
         <div style={{flex:1, minWidth:200}}>
           <input
             type="text"
@@ -205,8 +227,6 @@ export default function MasterAgreements({ currentUser, showToast }) {
             }}
           />
         </div>
-
-        {/* Developer filter */}
         <select
           value={developerFilter}
           onChange={(e) => setDeveloperFilter(e.target.value)}
@@ -227,8 +247,6 @@ export default function MasterAgreements({ currentUser, showToast }) {
             <option key={dev} value={dev}>{dev}</option>
           ))}
         </select>
-
-        {/* Status filter */}
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -250,8 +268,6 @@ export default function MasterAgreements({ currentUser, showToast }) {
           <option value="expired">Expired</option>
           <option value="terminated">Terminated</option>
         </select>
-
-        {/* Filter result count */}
         {!loading && (searchQuery || developerFilter !== "all" || statusFilter !== "all") && (
           <div style={{
             display:"flex",
@@ -325,6 +341,7 @@ export default function MasterAgreements({ currentUser, showToast }) {
             This becomes the default reference for every deal you handle with that developer.
           </p>
           <button
+            onClick={openCreateForm}
             style={{
               padding:"10px 24px",
               borderRadius:8,
@@ -335,7 +352,6 @@ export default function MasterAgreements({ currentUser, showToast }) {
               fontWeight:600,
               cursor:"pointer"
             }}
-            onClick={() => showToast?.("New Agreement form ships Day 4 — coming next!", "info")}
           >
             + Add Your First Agreement
           </button>
@@ -400,7 +416,7 @@ export default function MasterAgreements({ currentUser, showToast }) {
                   }}
                   onMouseEnter={(e) => e.currentTarget.style.background = "#FAFBFC"}
                   onMouseLeave={(e) => e.currentTarget.style.background = "#fff"}
-                  onClick={() => showToast?.("Detail view ships Day 6 — coming next!", "info")}
+                  onClick={() => openEditForm(a)}
                 >
                   <td style={tdStyle}>
                     <div style={{fontWeight:600, color:"#0F2540"}}>{a.developer_name || "-"}</div>
@@ -439,9 +455,9 @@ export default function MasterAgreements({ currentUser, showToast }) {
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        showToast?.("Edit form ships Day 4 — coming next!", "info");
+                        openEditForm(a);
                       }}
-                    >View</button>
+                    >Edit</button>
                   </td>
                 </tr>
               ))}
@@ -472,11 +488,600 @@ export default function MasterAgreements({ currentUser, showToast }) {
             fontSize:10,
             fontWeight:700,
             letterSpacing:0.5
-          }}>DAY 3 OF 10</span>
+          }}>DAY 4 OF 10</span>
           <span style={{color:"#6B7280"}}>
-            List view shipped. Day 4: Create/Edit form. Day 5: Document upload. Day 7: Auto-populate commission on new Opportunities.
+            Create/Edit form shipped. Day 5: Document upload. Day 6: Detail view. Day 7: Auto-populate commission on new Opportunities.
           </span>
         </div>
+      )}
+
+      {/* Form modal */}
+      {showForm && (
+        <AgreementFormModal
+          agreement={editingAgreement}
+          developers={developers}
+          currentUser={currentUser}
+          onClose={closeForm}
+          onSaved={handleSaved}
+          showToast={showToast}
+        />
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// FORM MODAL
+// =============================================================================
+
+function AgreementFormModal({ agreement, developers, currentUser, onClose, onSaved, showToast }) {
+  const isEdit = !!agreement;
+
+  const [form, setForm] = useState({
+    developer_id: agreement?.developer_id || "",
+    developer_name: agreement?.developer_name || "",
+    agreement_title: agreement?.agreement_title || "",
+    agreement_reference: agreement?.agreement_reference || "",
+    default_commission_pct: agreement?.default_commission_pct != null ? String(agreement.default_commission_pct) : "",
+    bonus_commission_pct: agreement?.bonus_commission_pct != null ? String(agreement.bonus_commission_pct) : "",
+    bonus_threshold: agreement?.bonus_threshold || "",
+    payment_terms: agreement?.payment_terms || "",
+    payment_trigger: agreement?.payment_trigger || "",
+    payment_days: agreement?.payment_days != null ? String(agreement.payment_days) : "",
+    discount_authority_pct: agreement?.discount_authority_pct != null ? String(agreement.discount_authority_pct) : "",
+    discount_requires_approval_above: agreement?.discount_requires_approval_above != null ? String(agreement.discount_requires_approval_above) : "",
+    valid_from: agreement?.valid_from || "",
+    valid_until: agreement?.valid_until || "",
+    signed_by: agreement?.signed_by || "",
+    signed_date: agreement?.signed_date || "",
+    signed_on_behalf_of: agreement?.signed_on_behalf_of || "",
+    status: agreement?.status || "draft",
+    notes: agreement?.notes || ""
+  });
+
+  const [errors, setErrors] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  function updateField(field, value) {
+    setForm(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  }
+
+  function handleDeveloperChange(devId) {
+    const dev = developers.find(d => d.id === devId);
+    setForm(prev => ({
+      ...prev,
+      developer_id: devId,
+      developer_name: dev ? dev.name : ""
+    }));
+    if (errors.developer_id) {
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next.developer_id;
+        return next;
+      });
+    }
+  }
+
+  function validate() {
+    const e = {};
+    if (!form.developer_id) e.developer_id = "Developer is required";
+    if (!form.agreement_title?.trim()) e.agreement_title = "Agreement title is required";
+    if (form.agreement_title && form.agreement_title.length > 200) e.agreement_title = "Title too long (max 200 chars)";
+
+    // Numeric validation - trim string, then test as Number
+    const defaultPctStr = String(form.default_commission_pct ?? "").trim();
+    if (defaultPctStr === "") {
+      e.default_commission_pct = "Default commission % is required";
+    } else {
+      const pct = Number(defaultPctStr);
+      if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+        e.default_commission_pct = "Must be 0-100";
+      }
+    }
+
+    const bonusPctStr = String(form.bonus_commission_pct ?? "").trim();
+    if (bonusPctStr !== "") {
+      const bp = Number(bonusPctStr);
+      if (!Number.isFinite(bp) || bp < 0 || bp > 100) {
+        e.bonus_commission_pct = "Must be 0-100";
+      }
+    }
+
+    const discAuthStr = String(form.discount_authority_pct ?? "").trim();
+    if (discAuthStr !== "") {
+      const dp = Number(discAuthStr);
+      if (!Number.isFinite(dp) || dp < 0 || dp > 100) {
+        e.discount_authority_pct = "Must be 0-100";
+      }
+    }
+
+    const discApprStr = String(form.discount_requires_approval_above ?? "").trim();
+    if (discApprStr !== "") {
+      const dp = Number(discApprStr);
+      if (!Number.isFinite(dp) || dp < 0 || dp > 100) {
+        e.discount_requires_approval_above = "Must be 0-100";
+      }
+    }
+
+    const payDaysStr = String(form.payment_days ?? "").trim();
+    if (payDaysStr !== "") {
+      const pd = Number(payDaysStr);
+      if (!Number.isFinite(pd) || pd < 0) {
+        e.payment_days = "Must be 0 or greater";
+      }
+    }
+    if (form.valid_from && form.valid_until) {
+      if (new Date(form.valid_until) < new Date(form.valid_from)) {
+        e.valid_until = "Must be on or after Valid From";
+      }
+    }
+
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  async function handleSave() {
+    if (!validate()) {
+      showToast?.("Please fix the errors before saving", "error");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const data = {
+        company_id: currentUser.company_id,
+        developer_id: form.developer_id,
+        developer_name: form.developer_name,
+        agreement_title: form.agreement_title.trim(),
+        agreement_reference: form.agreement_reference?.trim() || null,
+        default_commission_pct: Number(form.default_commission_pct),
+        bonus_commission_pct: form.bonus_commission_pct === "" ? null : Number(form.bonus_commission_pct),
+        bonus_threshold: form.bonus_threshold?.trim() || null,
+        payment_terms: form.payment_terms?.trim() || null,
+        payment_trigger: form.payment_trigger || null,
+        payment_days: form.payment_days === "" ? null : Number(form.payment_days),
+        discount_authority_pct: form.discount_authority_pct === "" ? null : Number(form.discount_authority_pct),
+        discount_requires_approval_above: form.discount_requires_approval_above === "" ? null : Number(form.discount_requires_approval_above),
+        valid_from: form.valid_from || null,
+        valid_until: form.valid_until || null,
+        signed_by: form.signed_by?.trim() || null,
+        signed_date: form.signed_date || null,
+        signed_on_behalf_of: form.signed_on_behalf_of?.trim() || null,
+        status: form.status,
+        notes: form.notes?.trim() || null,
+        updated_by: currentUser.id,
+        updated_at: new Date().toISOString()
+      };
+
+      if (isEdit) {
+        const { error: updateError } = await supabase
+          .from("pp_master_agreements")
+          .update(data)
+          .eq("id", agreement.id);
+        if (updateError) throw updateError;
+        showToast?.(`Agreement updated: ${form.agreement_title}`, "success");
+      } else {
+        data.created_by = currentUser.id;
+        const { error: insertError } = await supabase
+          .from("pp_master_agreements")
+          .insert(data);
+        if (insertError) throw insertError;
+        showToast?.(`Agreement created: ${form.agreement_title}`, "success");
+      }
+
+      onSaved();
+    } catch (err) {
+      console.error("Save failed:", err);
+      showToast?.(`Save failed: ${err.message || "Unknown error"}`, "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      style={{
+        position:"fixed",
+        inset:0,
+        background:"rgba(11,31,58,0.6)",
+        display:"flex",
+        alignItems:"flex-start",
+        justifyContent:"center",
+        zIndex:1000,
+        padding:"40px 16px",
+        overflowY:"auto",
+        fontFamily:"'Inter', sans-serif"
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{
+        background:"#fff",
+        borderRadius:12,
+        width:"100%",
+        maxWidth:760,
+        boxShadow:"0 20px 60px rgba(0,0,0,0.25)",
+        overflow:"hidden"
+      }}>
+        {/* Header */}
+        <div style={{
+          display:"flex",
+          justifyContent:"space-between",
+          alignItems:"center",
+          padding:"18px 24px",
+          borderBottom:"1px solid #E5E7EB",
+          background:"#FAFBFC"
+        }}>
+          <div>
+            <h2 style={{margin:0, fontSize:18, fontWeight:700, color:"#0F2540"}}>
+              {isEdit ? "Edit Master Agreement" : "New Master Agreement"}
+            </h2>
+            <p style={{margin:"2px 0 0 0", fontSize:12, color:"#6B7280"}}>
+              {isEdit ? `Reference: ${agreement.agreement_reference || agreement.id.slice(0,8)}` : "Stage 1 - Foundation for the developer relationship"}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background:"transparent",
+              border:"none",
+              fontSize:20,
+              cursor:"pointer",
+              color:"#6B7280",
+              padding:"4px 12px",
+              borderRadius:6
+            }}
+            aria-label="Close"
+          >×</button>
+        </div>
+
+        {/* Body */}
+        <div style={{padding:"20px 24px", maxHeight:"calc(100vh - 240px)", overflowY:"auto"}}>
+
+          <Section title="1. The Relationship" subtitle="Which developer is this agreement with?">
+            <Row>
+              <Field label="Developer" required error={errors.developer_id}>
+                <select
+                  value={form.developer_id}
+                  onChange={(e) => handleDeveloperChange(e.target.value)}
+                  style={selectStyle(errors.developer_id)}
+                >
+                  <option value="">Select a developer...</option>
+                  {developers.map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Status">
+                <select
+                  value={form.status}
+                  onChange={(e) => updateField("status", e.target.value)}
+                  style={selectStyle()}
+                >
+                  <option value="draft">Draft</option>
+                  <option value="active">Active</option>
+                  <option value="expired">Expired</option>
+                  <option value="terminated">Terminated</option>
+                </select>
+              </Field>
+            </Row>
+            <Row>
+              <Field label="Agreement Title" required error={errors.agreement_title}>
+                <input
+                  type="text"
+                  value={form.agreement_title}
+                  onChange={(e) => updateField("agreement_title", e.target.value)}
+                  placeholder="e.g. Emaar 2026 Annual Master Agreement"
+                  style={inputStyle(errors.agreement_title)}
+                />
+              </Field>
+              <Field label="Internal Reference" hint="Your firm's internal reference number">
+                <input
+                  type="text"
+                  value={form.agreement_reference}
+                  onChange={(e) => updateField("agreement_reference", e.target.value)}
+                  placeholder="e.g. EMR-2026-001"
+                  style={inputStyle()}
+                />
+              </Field>
+            </Row>
+          </Section>
+
+          <Section title="2. Commercial Terms" subtitle="Default rates that apply unless overridden by project">
+            <Row>
+              <Field label="Default Commission %" required error={errors.default_commission_pct}>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={form.default_commission_pct}
+                  onChange={(e) => updateField("default_commission_pct", e.target.value)}
+                  placeholder="4.00"
+                  style={inputStyle(errors.default_commission_pct)}
+                />
+              </Field>
+              <Field label="Bonus Commission %" hint="Optional - additional rate for hitting targets" error={errors.bonus_commission_pct}>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={form.bonus_commission_pct}
+                  onChange={(e) => updateField("bonus_commission_pct", e.target.value)}
+                  placeholder="0.50"
+                  style={inputStyle(errors.bonus_commission_pct)}
+                />
+              </Field>
+            </Row>
+            <Row>
+              <Field label="Bonus Threshold" hint="When does the bonus kick in?" full>
+                <input
+                  type="text"
+                  value={form.bonus_threshold}
+                  onChange={(e) => updateField("bonus_threshold", e.target.value)}
+                  placeholder="e.g. 10+ closures per quarter"
+                  style={inputStyle()}
+                />
+              </Field>
+            </Row>
+          </Section>
+
+          <Section title="3. Payment Terms" subtitle="When does the broker get paid?">
+            <Row>
+              <Field label="Payment Trigger">
+                <select
+                  value={form.payment_trigger}
+                  onChange={(e) => updateField("payment_trigger", e.target.value)}
+                  style={selectStyle()}
+                >
+                  <option value="">Select trigger...</option>
+                  <option value="spa_executed">SPA Executed</option>
+                  <option value="first_payment">First Payment Received</option>
+                  <option value="full_payment">Full Payment Received</option>
+                  <option value="custom">Custom (see notes)</option>
+                </select>
+              </Field>
+              <Field label="Payment Days" hint="Days from trigger to payment" error={errors.payment_days}>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.payment_days}
+                  onChange={(e) => updateField("payment_days", e.target.value)}
+                  placeholder="14"
+                  style={inputStyle(errors.payment_days)}
+                />
+              </Field>
+            </Row>
+            <Row>
+              <Field label="Payment Terms (free text)" hint="Override or supplement the trigger/days" full>
+                <input
+                  type="text"
+                  value={form.payment_terms}
+                  onChange={(e) => updateField("payment_terms", e.target.value)}
+                  placeholder="e.g. 14 days post-SPA execution; held in escrow until handover"
+                  style={inputStyle()}
+                />
+              </Field>
+            </Row>
+          </Section>
+
+          <Section title="4. Discount Authority" subtitle="What discounts can the broker offer without escalating?">
+            <Row>
+              <Field label="Discount Authority %" hint="Max discount we can offer without approval" error={errors.discount_authority_pct}>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={form.discount_authority_pct}
+                  onChange={(e) => updateField("discount_authority_pct", e.target.value)}
+                  placeholder="5.00"
+                  style={inputStyle(errors.discount_authority_pct)}
+                />
+              </Field>
+              <Field label="Approval Threshold %" hint="Above this, requires developer sign-off" error={errors.discount_requires_approval_above}>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  value={form.discount_requires_approval_above}
+                  onChange={(e) => updateField("discount_requires_approval_above", e.target.value)}
+                  placeholder="10.00"
+                  style={inputStyle(errors.discount_requires_approval_above)}
+                />
+              </Field>
+            </Row>
+          </Section>
+
+          <Section title="5. Validity & Audit" subtitle="Period covered and signing details">
+            <Row>
+              <Field label="Valid From">
+                <input
+                  type="date"
+                  value={form.valid_from}
+                  onChange={(e) => updateField("valid_from", e.target.value)}
+                  style={inputStyle()}
+                />
+              </Field>
+              <Field label="Valid Until" error={errors.valid_until}>
+                <input
+                  type="date"
+                  value={form.valid_until}
+                  onChange={(e) => updateField("valid_until", e.target.value)}
+                  style={inputStyle(errors.valid_until)}
+                />
+              </Field>
+            </Row>
+            <Row>
+              <Field label="Signed By" hint="Person who signed on developer's side">
+                <input
+                  type="text"
+                  value={form.signed_by}
+                  onChange={(e) => updateField("signed_by", e.target.value)}
+                  placeholder="e.g. Mohammed Al Mansoori"
+                  style={inputStyle()}
+                />
+              </Field>
+              <Field label="Signed Date">
+                <input
+                  type="date"
+                  value={form.signed_date}
+                  onChange={(e) => updateField("signed_date", e.target.value)}
+                  style={inputStyle()}
+                />
+              </Field>
+            </Row>
+            <Row>
+              <Field label="Signed on Behalf of (your side)" full>
+                <input
+                  type="text"
+                  value={form.signed_on_behalf_of}
+                  onChange={(e) => updateField("signed_on_behalf_of", e.target.value)}
+                  placeholder="e.g. Al Mansoori Properties LLC"
+                  style={inputStyle()}
+                />
+              </Field>
+            </Row>
+            <div style={{
+              padding:"12px 14px",
+              background:"#FEF6E0",
+              border:"1px dashed #E5C870",
+              borderRadius:6,
+              fontSize:12,
+              color:"#7A5C0E",
+              marginTop:8
+            }}>
+              📎 <strong>Document upload coming Day 5.</strong> For now, you can save the agreement record without the signed PDF. Upload will be added in the next iteration.
+            </div>
+          </Section>
+
+          <Section title="6. Notes" subtitle="Anything else worth recording about this relationship">
+            <Field label="" full>
+              <textarea
+                value={form.notes}
+                onChange={(e) => updateField("notes", e.target.value)}
+                placeholder="Optional notes, special terms, contacts, escalation paths..."
+                rows={4}
+                style={{
+                  ...inputStyle(),
+                  resize:"vertical",
+                  minHeight:80,
+                  fontFamily:"'Inter', sans-serif"
+                }}
+              />
+            </Field>
+          </Section>
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          display:"flex",
+          justifyContent:"space-between",
+          alignItems:"center",
+          padding:"14px 24px",
+          borderTop:"1px solid #E5E7EB",
+          background:"#FAFBFC"
+        }}>
+          <div style={{fontSize:11, color:"#9CA3AF"}}>
+            {isEdit ? "Updating existing agreement" : "Creating new agreement"} · Required: Developer, Title, Default %
+          </div>
+          <div style={{display:"flex", gap:10}}>
+            <button
+              onClick={onClose}
+              disabled={saving}
+              style={{
+                padding:"9px 18px",
+                background:"#fff",
+                border:"1px solid #D1D5DB",
+                borderRadius:7,
+                fontSize:13,
+                fontWeight:600,
+                cursor:saving ? "not-allowed" : "pointer",
+                color:"#1E2D3F",
+                opacity:saving ? 0.6 : 1
+              }}
+            >Cancel</button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              style={{
+                padding:"9px 22px",
+                background:saving ? "#9CA3AF" : "#0F2540",
+                border:"none",
+                borderRadius:7,
+                fontSize:13,
+                fontWeight:600,
+                cursor:saving ? "not-allowed" : "pointer",
+                color:"#fff"
+              }}
+            >{saving ? "Saving..." : (isEdit ? "Save Changes" : "Create Agreement")}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// SMALL FORM HELPERS
+// =============================================================================
+
+function Section({ title, subtitle, children }) {
+  return (
+    <div style={{marginBottom:20, paddingBottom:18, borderBottom:"1px solid #F3F4F6"}}>
+      <div style={{marginBottom:12}}>
+        <h3 style={{margin:0, fontSize:14, fontWeight:700, color:"#0F2540", letterSpacing:"-0.1px"}}>{title}</h3>
+        {subtitle && (
+          <p style={{margin:"2px 0 0 0", fontSize:11, color:"#6B7280"}}>{subtitle}</p>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Row({ children }) {
+  return (
+    <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:10}}>
+      {children}
+    </div>
+  );
+}
+
+function Field({ label, hint, error, required, full, children }) {
+  return (
+    <div style={{
+      gridColumn: full ? "1 / -1" : undefined,
+      display:"flex",
+      flexDirection:"column",
+      gap:4
+    }}>
+      {label && (
+        <label style={{
+          fontSize:11,
+          fontWeight:600,
+          color:"#374151",
+          letterSpacing:0.2
+        }}>
+          {label}{required && <span style={{color:"#DC2626", marginLeft:3}}>*</span>}
+        </label>
+      )}
+      {children}
+      {error && (
+        <div style={{fontSize:11, color:"#DC2626", marginTop:2}}>{error}</div>
+      )}
+      {hint && !error && (
+        <div style={{fontSize:11, color:"#9CA3AF", marginTop:2}}>{hint}</div>
       )}
     </div>
   );
@@ -499,3 +1104,33 @@ const tdStyle = {
   color:"#1E2D3F",
   verticalAlign:"middle"
 };
+
+// Reusable input styles
+function inputStyle(error) {
+  return {
+    width:"100%",
+    padding:"7px 10px",
+    border:`1px solid ${error ? "#DC2626" : "#D1D5DB"}`,
+    borderRadius:6,
+    fontSize:13,
+    fontFamily:"'Inter', sans-serif",
+    outline:"none",
+    background:"#fff",
+    boxSizing:"border-box"
+  };
+}
+
+function selectStyle(error) {
+  return {
+    width:"100%",
+    padding:"7px 10px",
+    border:`1px solid ${error ? "#DC2626" : "#D1D5DB"}`,
+    borderRadius:6,
+    fontSize:13,
+    fontFamily:"'Inter', sans-serif",
+    outline:"none",
+    background:"#fff",
+    cursor:"pointer",
+    boxSizing:"border-box"
+  };
+}
