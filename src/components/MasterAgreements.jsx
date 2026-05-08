@@ -488,9 +488,9 @@ export default function MasterAgreements({ currentUser, showToast }) {
             fontSize:10,
             fontWeight:700,
             letterSpacing:0.5
-          }}>DAY 5 OF 10</span>
+          }}>DAY 6 OF 10</span>
           <span style={{color:"#6B7280"}}>
-            Document upload shipped. Day 6: Detail view. Day 7: Auto-populate commission on new Opportunities.
+            Audit trail visible in form. Day 7: Auto-populate commission on new Opportunities (Stage 2 integration).
           </span>
         </div>
       )}
@@ -516,6 +516,24 @@ export default function MasterAgreements({ currentUser, showToast }) {
 
 function AgreementFormModal({ agreement, developers, currentUser, onClose, onSaved, showToast }) {
   const isEdit = !!agreement;
+
+  // Helper: format date with relative time hint (e.g. "15 Jan 2026 (3 days ago)")
+  function fmtDateLong(dateStr) {
+    if (!dateStr) return "-";
+    try {
+      const d = new Date(dateStr);
+      const datePart = d.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" });
+      const ms = Date.now() - d.getTime();
+      const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+      let rel;
+      if (days === 0) rel = "today";
+      else if (days === 1) rel = "1 day ago";
+      else if (days < 30) rel = `${days} days ago`;
+      else if (days < 365) rel = `${Math.floor(days / 30)} mo ago`;
+      else rel = `${Math.floor(days / 365)}y ago`;
+      return `${datePart} (${rel})`;
+    } catch { return dateStr; }
+  }
 
   const [form, setForm] = useState({
     developer_id: agreement?.developer_id || "",
@@ -825,6 +843,44 @@ function AgreementFormModal({ agreement, developers, currentUser, onClose, onSav
             aria-label="Close"
           >×</button>
         </div>
+
+        {/* Audit strip - only shown in Edit mode */}
+        {isEdit && (
+          <div style={{
+            padding:"10px 24px",
+            background:"#F0F4FA",
+            borderBottom:"1px solid #DBE4F0",
+            display:"flex",
+            justifyContent:"space-between",
+            alignItems:"center",
+            fontSize:11,
+            color:"#1E2D3F"
+          }}>
+            <div style={{display:"flex", gap:18}}>
+              {agreement?.created_at && (
+                <span>
+                  <strong style={{color:"#6B7280"}}>Created:</strong> {fmtDateLong(agreement.created_at)}
+                </span>
+              )}
+              {agreement?.updated_at && agreement.updated_at !== agreement.created_at && (
+                <span>
+                  <strong style={{color:"#6B7280"}}>Last updated:</strong> {fmtDateLong(agreement.updated_at)}
+                </span>
+              )}
+            </div>
+            <div style={{
+              padding:"3px 10px",
+              background:"#FFF",
+              border:"1px solid #DBE4F0",
+              borderRadius:12,
+              fontSize:11,
+              fontWeight:600,
+              color:"#1E2D3F"
+            }}>
+              📊 Used in <span style={{color:"#6B7280"}}>0 projects</span> <span style={{color:"#9CA3AF", fontSize:10}}>· Stage 2 integration ships Day 7</span>
+            </div>
+          </div>
+        )}
 
         {/* Body */}
         <div style={{padding:"20px 24px", maxHeight:"calc(100vh - 240px)", overflowY:"auto"}}>
