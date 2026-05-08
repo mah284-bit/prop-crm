@@ -2,7 +2,7 @@
 
 **Purpose of this document:** Paste this at the start of any new Claude (or other AI) chat to bootstrap context fast. Saves 30+ minutes of re-explaining who I am, what I'm building, and how I work.
 
-**Last updated:** 07 May 2026 — late evening (AGENT FIXED — 85% success rate, catalogue growing autonomously)
+**Last updated:** 09 May 2026 — afternoon (Stage 1 Days 1-3 SHIPPED — list view live in production)
 **Maintained by:** Abid Mirza, Founder, BFC
 
 ---
@@ -132,6 +132,21 @@ These are open. Engage with them only when I bring them up.
 
 If I haven't told you these are resolved yet, assume they're still open:
 
+0. **STAGE 1 BUILD — IN PROGRESS (started 09 May 2026).** Building Master Developer Agreement module (Stage 1 of 6-stage broker workflow) for investor meeting in next 7-14 days.
+   - **Day 1 (08 May)** — Process Flows Investor Pack deck (5 slides) ✅
+   - **Day 2A (09 May)** — Database migration: pp_master_agreements table (27 cols, multi-tenant RLS) + pp_commissions linked via master_agreement_id ✅ commit `c538210`
+   - **Day 2B (09 May)** — Skeleton component + menu wiring (4 App.jsx edits + new component file) ✅ commit `c10b285`
+   - **Day 3 (09 May)** — List view with search + filters + 4 states (loading/error/empty/populated) ✅ commit `9741246`
+   - **Day 4** — Create/Edit form with all 6 sections (Relationship, Commercial, Payment, Discount, Document, Notes)
+   - **Day 5** — Document upload via Supabase Storage
+   - **Day 6** — Detail view + audit trail
+   - **Day 7** — Stage 2 integration (auto-populate commission on Opportunity creation)
+   - **Day 8-10** — Polish, testing, production deploy + Al Mansoori validation
+   - **Pace:** 3 hours actual vs 11 hours estimated through Day 3. **Significantly ahead.**
+   - **Live in production at `prop-crm-two.vercel.app`** — admin can navigate to "📄 Master Agreements" menu and see 3 sample agreements (Emaar 4%/0.5% bonus, DAMAC 5%, Aldar 4.5%/1% bonus draft).
+   - **Spec:** `docs/Stage_1_Master_Agreement_Build_Spec.md`
+   - **Bonus discovery:** Found pre-existing MODE_TABS.both bug — 3 admin tabs (permsets, master_agreements, group_view) were silently invisible for super_admin accounts in 'both' mode. Fixed in same commit.
+
 1. **SEM meeting** — competitor product I haven't yet seen live. Broker willing to demo. Will reshape competitive positioning. Need to ask: data source? refresh cadence? customisation depth? pricing? brokers' biggest pain SEM doesn't solve?
 
 2. **6 PropPulse questions — RESOLVED 07 May 2026.** Answered via SQL diagnostic. See `PropPulse_Diagnostic_07May2026.md` for full findings. Key takeaways:
@@ -168,6 +183,93 @@ If I haven't told you these are resolved yet, assume they're still open:
    - Test with ONE developer at a time (not full 20-developer sweep) — cuts cost from $1-3 per test to ~$0.10
    - Lower `max_uses: 5` web search cap to 2 during debugging — reduces per-call cost ~50%
    - Anthropic auto-reload is enabled at $10 → $20 threshold (consider tightening or capping at API console level)
+
+---
+
+## What happened in the most recent session (09 May 2026)
+
+Started ~14:00 UAE. Investor pressure window opened: investors want to meet **only** when Stage 1 is shipped + Stage 2 is clearly tagged. Ball is in Abid's court. 7-14 day window.
+
+### Scope confirmation (locked)
+- "Stage 1" = Master Developer Agreement (first stage of 6-stage broker workflow), NOT Phase 1 (which = all 7 broker-workflow modules)
+- Numbering renumbered: stages 0-5 → 1-6 (Master Agreement now Stage 1, was Stage 0)
+- Phase 1 scope reconfirmed: sales-only, no leasing/developer/construction additions
+
+### Day 1 — Process Flows Investor Pack (commit `8b3e908`)
+- **`PropPlatform_Process_Flows_Investor_Pack.pptx`** — 5-slide investor deck. Title (sandwich-dark) → Master Flow (6-stage horizontal flow with status badges) → Stage 1 Deep-Dive (WHAT vs WHY columns) → Pipeline (Stages 2-6 row layout) → Today vs 14 days (sandwich-dark close). Visual QA passed. LAYOUT_WIDE (13.33×7.50) used after initial LAYOUT_16x9 caused content overflow.
+- **`Sales_Cycle_Process_Flow.md`** — renumbered Stage 0-5 → Stage 1-6 throughout.
+- **`Stage_1_Master_Agreement_Build_Spec.md`** — comprehensive 12-section spec doc (database design, UI views, day-by-day plan, deferred items, acceptance criteria, investor demo script, risks). Single source of truth for Stage 1 build.
+
+### Day 2A — Database migration (commit `c538210`)
+- New table `pp_master_agreements` with 27 columns: multi-tenant (company_id with RLS), foreign keys to companies/pp_developers/profiles, full audit trail (signed_by, signed_date), document storage fields (agreement_document_url), validity period, status lifecycle (draft/active/expired/terminated).
+- 3 indexes including partial index on active status.
+- 4 RLS policies (SELECT, INSERT, UPDATE, DELETE) all scoped via profiles.company_id.
+- ALTER TABLE pp_commissions ADD master_agreement_id (links project-level overrides to master).
+- Migration SQL saved to `supabase/migrations/20260509_master_agreements.sql` for version control.
+- Run successfully in production Supabase. Verified: 27 columns, RLS enabled, FK column added.
+
+### Day 2B — Skeleton component + menu wiring (commit `c10b285`)
+- New file: `src/components/MasterAgreements.jsx` (~107 lines). Placeholder UI with "DAY 2 OF 10" badge + "DATABASE FOUNDATION DEPLOYED" green pill + investor-readable info box.
+- 5 surgical edits to App.jsx via downloadable Python script `apply_edits.py`:
+  1. tabs.sales array — added `master_agreements`
+  2. **MODE_TABS.both array** — added `permsets`, `master_agreements`, `group_view` (this fix uncovered pre-existing bug — these 3 admin tabs were silently invisible for super_admin accounts in 'both' mode)
+  3. TABS array — added menu item with 📄 icon, admin/super_admin only
+  4. Component import after ReportsModule
+  5. Conditional render after reports block
+- **Pattern locked for App.jsx surgical edits going forward:** deliver Python script as downloadable file (not bash heredoc — fragile in Git Bash on Windows due to Unicode/quote escaping issues).
+- **Pre-existing duplicate "Permissions" label flagged** (🔒 vs 🔐 both labeled "Permissions") — cosmetic tech debt deferred.
+
+### Day 3 — List view with filters (commit `9741246`)
+- Replaced skeleton with full `MasterAgreements.jsx` (~450 net new lines).
+- Real Supabase query on mount, scoped by company_id via RLS.
+- 4 states handled: loading (spinner), error (with retry button), empty-no-data (CTA), empty-no-filter-match (clear filters button).
+- Search box (filters across developer_name, agreement_title, agreement_reference).
+- Developer dropdown (auto-populated from query results).
+- Status dropdown (Active/Draft/Expired/Terminated).
+- Filter result counter ("X of Y") visible when filters active.
+- Polished table: hover effect, status badges with color-coding (green active, amber draft, red expired, gray terminated), bonus % rendering in green under main rate, agreement_reference shown as small gray text under title.
+- Inter font throughout matches existing app style (consistent with ReportsModule pattern).
+- Click row → toast "Detail view ships Day 6". View button → toast "Edit form ships Day 4".
+- Footer banner shows "DAY 3 OF 10" green badge + what's coming.
+
+### Sample data tested
+- **`sample_agreements.sql`** delivered. 3 test agreements inserted for Al Mansoori: Emaar 4%/0.5% bonus active, DAMAC 5% active, Aldar Q3 4.5%/1% bonus draft. Self-validating PL/pgSQL with foreign-key lookups. Cleanup: `DELETE FROM pp_master_agreements WHERE agreement_reference LIKE 'TEST-%';`
+- Production verified at `prop-crm-two.vercel.app` — 3 rows render, filters work, status badges colored, no console errors.
+
+### Pace check
+**Days 1-3 actual time: ~3 hours. Estimated: 11 hours. Significantly ahead of schedule.** Buffer banked for Days 4-7 (the meatier pieces — form, document upload, detail view, Stage 2 integration).
+
+### Communication mistake (worth noting)
+Mid-day, Claude included a `DELETE FROM pp_master_agreements...` command in a casual recommendation. User reasonably interpreted code block as instruction and ran it, deleting the 3 sample records. Re-inserted via running same SQL again. **Lesson:** never include destructive SQL in conversational text. Use commented-out form with "⚠️ DESTRUCTIVE" prefix going forward.
+
+### What's working at end of 09 May (afternoon)
+- ✅ Stage 1 database foundation deployed
+- ✅ Master Agreements menu item + component live in production
+- ✅ List view with filters fully functional
+- ✅ 3 sample agreements visible to admin users
+- ✅ Multi-tenant isolation working (RLS verified)
+- ✅ All work committed and pushed to GitHub
+- ✅ Significantly ahead of schedule (3 days done in 3 hours)
+- ✅ Production = localhost (no deploy gap)
+
+### Pending for Stage 1
+- ⏳ Day 4: Create/Edit form with 6 sections + validation + save logic
+- ⏳ Day 5: Document upload via Supabase Storage (PDF, 10MB limit, signed URLs)
+- ⏳ Day 6: Detail/read-only view + audit trail + "Used in [N] projects" placeholder
+- ⏳ Day 7: Stage 2 integration — auto-populate commission_pct on Opportunity creation
+- ⏳ Day 8: Polish, edge cases, multi-tenant isolation testing
+- ⏳ Day 9: End-to-end testing
+- ⏳ Day 10: Production deploy + Al Mansoori validation walkthrough
+- ⏳ Days 11-12: Stage 2 spec document
+- ⏳ Days 13-14: Investor demo orchestration + meeting scheduling
+
+### Today's commit timeline (full list)
+| Commit | What |
+|---|---|
+| `8b3e908` | Day 1 docs: Process Flows deck + Stage 1 spec + renumbered Sales_Cycle_Process_Flow |
+| `c538210` | Day 2A: DB migration (pp_master_agreements + pp_commissions FK) |
+| `c10b285` | Day 2B: Skeleton component + 4 App.jsx edits + MODE_TABS.both fix |
+| `9741246` | Day 3: List view with filters (450 insertions, 56 deletions) |
 
 ---
 
