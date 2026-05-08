@@ -4848,6 +4848,16 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [showEmail,  setShowEmail]  = useState(false);
   const [showStageGate, setShowStageGate] = useState(null); // stage name being gated
   const [stageGateForm, setStageGateForm] = useState({});
+  // Stage 5 — SPA upload + pre-SPA payments + edit-price toggle
+  const [spaUploading, setSpaUploading] = useState(false);
+  const [spaUploadError, setSpaUploadError] = useState(null);
+  const [prePaymentsState, setPrePaymentsState] = useState({
+    booking_fee:     { received: false, received_date: "", notes: "" },
+    reservation_fee: { received: false, received_date: "", notes: "" },
+    initial_advance: { received: false, received_date: "", notes: "" },
+    other_fees:      { received: false, received_date: "", notes: "" },
+  });
+  const [closedWonEditPrice, setClosedWonEditPrice] = useState(false);
   const [showDiscReq, setShowDiscReq] = useState(false);
   const [discReqForm, setDiscReqForm] = useState({type:"sale_price",discount_pct:"",reason:"",discount_source:"Developer",developer_auth_ref:""});
   const [logForm,    setLogForm]    = useState({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
@@ -5107,6 +5117,60 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     await commitStageMove(toStage, {});
   };
 
+  // Stage 5 — Upload SPA document to private 'documents' bucket
+  async function uploadSpaDocument(file) {
+    if (!file) return null;
+    const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+    if (!allowedTypes.includes(file.type)) {
+      setSpaUploadError("Only PDF, JPG, or PNG accepted");
+      return null;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setSpaUploadError("File too large (max 10MB)");
+      return null;
+    }
+    try {
+      setSpaUploading(true);
+      setSpaUploadError(null);
+      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+      const path = `sales-closures/${currentUser.company_id}/${opp.id}/${Date.now()}_${safeName}`;
+      const { error: uploadErr } = await supabase.storage
+        .from("documents")
+        .upload(path, file, { upsert: false });
+      if (uploadErr) throw uploadErr;
+      setStageGateForm(f => ({
+        ...f,
+        spa_document_path: path,
+        spa_document_filename: file.name
+      }));
+      showToast(`Uploaded: ${file.name}`, "success");
+      return path;
+    } catch (err) {
+      console.error("SPA upload failed:", err);
+      setSpaUploadError(err.message || "Upload failed");
+      showToast(`Upload failed: ${err.message || "unknown"}`, "error");
+      return null;
+    } finally {
+      setSpaUploading(false);
+    }
+  }
+
+  // Stage 5 — Open uploaded SPA via signed URL
+  async function viewSpaDocument(path) {
+    if (!path) return;
+    try {
+      const { data, error: signErr } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(path, 3600);
+      if (signErr) throw signErr;
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch (err) {
+      showToast(`Could not open SPA: ${err.message || "unknown"}`, "error");
+    }
+  }
+
   const commitStageMove = async(toStage, extraData) => {
     const newStatus = toStage==="Closed Won"?"Won":toStage==="Closed Lost"?"Lost":"Active";
     const extra = {
@@ -5121,12 +5185,50 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     }).eq("id",opp.id);
     if(error){showToast(error.message,"error");return;}
     onUpdated({...opp,stage:toStage,status:newStatus,...extra});
+
+    // Stage 5 — Create sales closure record when SPA is signed
+    if (toStage === "SPA Signed" && stageGateForm.final_price) {
+      try {
+        const { error: closErr } = await supabase
+          .from("pp_sales_closures")
+          .insert({
+            company_id: currentUser.company_id,
+            opportunity_id: opp.id,
+            spa_signed_date: stageGateForm.spa_date || new Date().toISOString().slice(0,10),
+            spa_reference_number: stageGateForm.spa_ref || null,
+            final_sale_price: Number(stageGateForm.final_price),
+            spa_document_path: stageGateForm.spa_document_path || null,
+            spa_document_filename: stageGateForm.spa_document_filename || null,
+            pre_spa_payments: prePaymentsState,
+            notes: stageGateForm.notes || null,
+            created_by: currentUser.id,
+            updated_by: currentUser.id,
+          });
+        if (closErr) {
+          if (!String(closErr.message).toLowerCase().includes("duplicate")) {
+            console.error("Sales closure insert failed:", closErr);
+            showToast("SPA recorded but closure log failed - check console", "warning");
+          }
+        }
+      } catch (e) {
+        console.error("Sales closure insert exception:", e);
+      }
+    }
+
     if(toStage==="Closed Won"&&opp.unit_id)
       await supabase.from("project_units").update({status:"Sold"}).eq("id",opp.unit_id);
     if(toStage==="Reserved"&&opp.unit_id)
       await supabase.from("project_units").update({status:"Reserved"}).eq("id",opp.unit_id);
     showToast(`Moved to ${toStage}`,"success");
     setShowStageGate(null);
+    // Stage 5 — reset transient stage-gate UI state
+    setPrePaymentsState({
+      booking_fee:     { received: false, received_date: "", notes: "" },
+      reservation_fee: { received: false, received_date: "", notes: "" },
+      initial_advance: { received: false, received_date: "", notes: "" },
+      other_fees:      { received: false, received_date: "", notes: "" },
+    });
+    setClosedWonEditPrice(false);
   };
 
   const saveLog = async()=>{
@@ -6698,16 +6800,81 @@ You will become the assigned agent.`);
                     <input type="date" value={stageGateForm.spa_date||new Date().toISOString().slice(0,10)} onChange={e=>setStageGateForm(f=>({...f,spa_date:e.target.value}))}/>
                   </div>
                   <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>SPA / Oqood Reference</label>
+                    <input type="text" placeholder="e.g. DLD-2026-12345" value={stageGateForm.spa_ref||""} onChange={e=>setStageGateForm(f=>({...f,spa_ref:e.target.value}))}/>
+                  </div>
+                  <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Down Payment (AED)</label>
                     <input type="number" placeholder="e.g. 245000" value={stageGateForm.down_payment||""} onChange={e=>setStageGateForm(f=>({...f,down_payment:e.target.value}))}/>
                   </div>
-                  <div>
-                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Down Payment Method</label>
-                    <select value={stageGateForm.down_payment_method||"Cheque"} onChange={e=>setStageGateForm(f=>({...f,down_payment_method:e.target.value}))}>
-                      {["Cheque","Bank Transfer","Cash","Credit Card"].map(m=><option key={m}>{m}</option>)}
-                    </select>
-                  </div>
                 </div>
+
+                {/* SPA Document upload */}
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>SPA Document (PDF/JPG/PNG)</label>
+                  {stageGateForm.spa_document_path ? (
+                    <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:8}}>
+                      <span style={{fontSize:18}}>📄</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:12,fontWeight:600,color:"#166534",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{stageGateForm.spa_document_filename}</div>
+                        <div style={{fontSize:10,color:"#16A34A"}}>✓ Uploaded</div>
+                      </div>
+                      <button type="button" onClick={()=>viewSpaDocument(stageGateForm.spa_document_path)} style={{padding:"4px 10px",background:"#fff",border:"1px solid #86EFAC",borderRadius:5,fontSize:11,fontWeight:600,color:"#166534",cursor:"pointer"}}>View</button>
+                      <button type="button" onClick={()=>setStageGateForm(f=>({...f,spa_document_path:null,spa_document_filename:null}))} style={{padding:"4px 10px",background:"#fff",border:"1px solid #FCA5A5",borderRadius:5,fontSize:11,fontWeight:600,color:"#991B1B",cursor:"pointer"}}>Remove</button>
+                    </div>
+                  ) : (
+                    <label style={{display:"block",padding:"14px",background:spaUploading?"#FEF6E0":"#FAFBFC",border:`1.5px dashed ${spaUploading?"#E5C870":"#CBD5E0"}`,borderRadius:8,textAlign:"center",cursor:spaUploading?"wait":"pointer"}}>
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" onChange={e=>{if(e.target.files?.[0])uploadSpaDocument(e.target.files[0]);e.target.value="";}} disabled={spaUploading} style={{display:"none"}}/>
+                      {spaUploading ? (
+                        <span style={{fontSize:12,color:"#7A5C0E",fontWeight:600}}>⏳ Uploading...</span>
+                      ) : (
+                        <span style={{fontSize:12,color:"#0F2540",fontWeight:600}}>📤 Click to upload SPA · Max 10MB</span>
+                      )}
+                    </label>
+                  )}
+                  {spaUploadError && (
+                    <div style={{marginTop:6,fontSize:11,color:"#991B1B"}}>⚠️ {spaUploadError}</div>
+                  )}
+                </div>
+
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Down Payment Method</label>
+                  <select value={stageGateForm.down_payment_method||"Cheque"} onChange={e=>setStageGateForm(f=>({...f,down_payment_method:e.target.value}))}>
+                    {["Cheque","Bank Transfer","Cash","Credit Card"].map(m=><option key={m}>{m}</option>)}
+                  </select>
+                </div>
+
+                {/* Pre-SPA payment confirmations */}
+                <div style={{padding:"12px 14px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>
+                    ✅ Pre-SPA Payments Received
+                  </div>
+                  <div style={{fontSize:10,color:"#64748B",marginBottom:10}}>
+                    Confirm which payments the buyer made to the developer before SPA signing
+                  </div>
+                  {[
+                    ["booking_fee", "Booking fee paid"],
+                    ["reservation_fee", "Reservation fee paid"],
+                    ["initial_advance", "Initial advance paid"],
+                    ["other_fees", "Other developer fees paid"]
+                  ].map(([key, label]) => (
+                    <div key={key} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px dashed #E2E8F0"}}>
+                      <input type="checkbox" id={`pre_${key}`}
+                        checked={prePaymentsState[key]?.received || false}
+                        onChange={e=>setPrePaymentsState(p=>({...p, [key]:{...p[key], received:e.target.checked}}))}
+                        style={{width:16,height:16,cursor:"pointer"}}/>
+                      <label htmlFor={`pre_${key}`} style={{fontSize:12,color:"#0F2540",cursor:"pointer",flex:1,fontWeight:prePaymentsState[key]?.received?600:400}}>
+                        {label}
+                      </label>
+                      {prePaymentsState[key]?.received && (
+                        <input type="date" value={prePaymentsState[key]?.received_date || ""}
+                          onChange={e=>setPrePaymentsState(p=>({...p, [key]:{...p[key], received_date:e.target.value}}))}
+                          style={{padding:"4px 8px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:11}}/>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label>
                   <textarea rows={2} placeholder="Any conditions or notes on the SPA…" value={stageGateForm.notes||""} onChange={e=>setStageGateForm(f=>({...f,notes:e.target.value}))}/>
@@ -6722,7 +6889,29 @@ You will become the assigned agent.`);
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Final Sale Price (AED) *</label>
-                    <input type="number" value={stageGateForm.final_price||opp.final_price||opp.offer_price||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
+                    {!closedWonEditPrice ? (
+                      <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:8}}>
+                        <span style={{fontSize:13,fontWeight:700,color:"#166534"}}>
+                          AED {Number(stageGateForm.final_price||opp.final_price||opp.offer_price||0).toLocaleString()}
+                        </span>
+                        <span style={{fontSize:10,color:"#16A34A",flex:1}}>
+                          {opp.final_price ? "from SPA Signed" : "from offer"}
+                        </span>
+                        <button type="button" onClick={()=>setClosedWonEditPrice(true)}
+                          style={{padding:"4px 10px",background:"#fff",border:"1px solid #86EFAC",borderRadius:5,fontSize:11,fontWeight:600,color:"#166534",cursor:"pointer"}}>
+                          Edit if changed
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <input type="number" value={stageGateForm.final_price||opp.final_price||opp.offer_price||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
+                        {Number(stageGateForm.final_price)!==Number(opp.final_price||opp.offer_price) && stageGateForm.final_price && (
+                          <div style={{fontSize:11,color:"#92400E",marginTop:4,fontWeight:600}}>
+                            ⚠️ Price changed from AED {Number(opp.final_price||opp.offer_price||0).toLocaleString()}
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Expected Handover Date</label>
