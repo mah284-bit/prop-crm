@@ -7164,7 +7164,74 @@ function CreateOpportunityDialog({ leads, setLeads, units, projects, users, curr
   const [oppForm, setOppForm] = useState({
     title: "", unit_id: "", budget: "", assigned_to: currentUser?.id || "",
     notes: "", property_category: "Off-Plan",
+    commission_pct: "", master_agreement_id: null,
   });
+
+  // Stage 2 integration: auto-populate commission from master agreement
+  const [masterAgreement, setMasterAgreement] = useState(null);
+  const [agreementLoading, setAgreementLoading] = useState(false);
+  const [commissionUserOverride, setCommissionUserOverride] = useState(false);
+
+  // When unit changes, look up master agreement for that project's developer
+  useEffect(() => {
+    let cancelled = false;
+    async function loadAgreement() {
+      if (!oppForm.unit_id) {
+        setMasterAgreement(null);
+        if (!commissionUserOverride) {
+          setOppForm(f => ({ ...f, commission_pct: "", master_agreement_id: null }));
+        }
+        return;
+      }
+
+      const unit = (units || []).find(u => u.id === oppForm.unit_id);
+      if (!unit?.project_id) return;
+      const project = (projects || []).find(p => p.id === unit.project_id);
+      if (!project?.pp_developer_id) {
+        setMasterAgreement(null);
+        return;
+      }
+
+      try {
+        setAgreementLoading(true);
+        const { data, error } = await supabase
+          .from("pp_master_agreements")
+          .select("id, agreement_title, default_commission_pct, developer_name")
+          .eq("company_id", currentUser.company_id)
+          .eq("developer_id", project.pp_developer_id)
+          .eq("status", "active")
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (cancelled) return;
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          const ag = data[0];
+          setMasterAgreement(ag);
+          if (!commissionUserOverride) {
+            setOppForm(f => ({
+              ...f,
+              commission_pct: String(ag.default_commission_pct ?? ""),
+              master_agreement_id: ag.id
+            }));
+          }
+        } else {
+          setMasterAgreement(null);
+          if (!commissionUserOverride) {
+            setOppForm(f => ({ ...f, commission_pct: "", master_agreement_id: null }));
+          }
+        }
+      } catch (err) {
+        console.error("Master agreement lookup failed:", err);
+        if (!cancelled) setMasterAgreement(null);
+      } finally {
+        if (!cancelled) setAgreementLoading(false);
+      }
+    }
+    loadAgreement();
+    return () => { cancelled = true; };
+  }, [oppForm.unit_id, currentUser?.company_id]);
 
   // Step 2: unit picker state (Phase F W6.2 — searchable)
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);
@@ -7495,6 +7562,8 @@ What should the second agent know?`;
         assigned_to: oppForm.assigned_to || currentUser.id,
         notes: oppForm.notes || null,
         property_category: oppForm.property_category || "Off-Plan",
+        commission_pct: oppForm.commission_pct ? Number(oppForm.commission_pct) : null,
+        master_agreement_id: oppForm.master_agreement_id || null,
         stage: "New",
         status: "Active",
         created_by: currentUser.id,
@@ -7962,6 +8031,58 @@ What should the second agent know?`;
                   💡 Don't worry if you don't have a unit yet. AI Match in the proposal builder will help you pick one later.
                 </div>
               </div>
+              {/* Commission auto-populate from master agreement */}
+              <div style={{gridColumn:"1 / -1", padding:"12px 14px", background: masterAgreement ? "#F0F9FF" : "#F9FAFB", border:`1px solid ${masterAgreement ? "#BAE6FD" : "#E5E7EB"}`, borderRadius:8, marginBottom:8}}>
+                <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8}}>
+                  <div style={{fontSize:12, fontWeight:600, color:"#0F2540", display:"flex", alignItems:"center", gap:6}}>
+                    💼 Commission
+                    {agreementLoading && <span style={{fontSize:10, color:"#6B7280", fontWeight:500}}>· checking master agreement...</span>}
+                  </div>
+                  {masterAgreement && (
+                    <div style={{fontSize:10, color:"#0369A1", background:"#DBEAFE", padding:"3px 8px", borderRadius:10, fontWeight:600}}>
+                      💡 Auto-populated from {masterAgreement.developer_name} master agreement
+                    </div>
+                  )}
+                </div>
+                <div style={{display:"flex", alignItems:"center", gap:10}}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={oppForm.commission_pct}
+                    onChange={e => {
+                      setCommissionUserOverride(true);
+                      setOppForm(f => ({...f, commission_pct: e.target.value}));
+                    }}
+                    placeholder={masterAgreement ? "Auto-populated" : oppForm.unit_id ? "No active master agreement found" : "Select a unit first"}
+                    disabled={!oppForm.unit_id}
+                    style={{width:140, padding:"7px 10px", border:"1px solid #D1D5DB", borderRadius:6, fontSize:13, fontFamily:"'Inter', sans-serif", background:"#fff"}}
+                  />
+                  <span style={{fontSize:13, color:"#374151"}}>%</span>
+                  {oppForm.commission_pct && (oppForm.budget || (units||[]).find(u=>u.id===oppForm.unit_id)?.base_price) && (
+                    <span style={{fontSize:11, color:"#6B7280", marginLeft:8}}>
+                      ≈ AED {Math.round(((Number(oppForm.budget) || (units||[]).find(u=>u.id===oppForm.unit_id)?.base_price || 0) * Number(oppForm.commission_pct) / 100)).toLocaleString()}
+                    </span>
+                  )}
+                  {commissionUserOverride && masterAgreement && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCommissionUserOverride(false);
+                        setOppForm(f => ({...f, commission_pct: String(masterAgreement.default_commission_pct ?? "")}));
+                      }}
+                      style={{padding:"5px 10px", background:"#fff", border:"1px solid #BAE6FD", borderRadius:6, fontSize:11, fontWeight:600, color:"#0369A1", cursor:"pointer"}}
+                    >Reset to master</button>
+                  )}
+                </div>
+                {oppForm.unit_id && !masterAgreement && !agreementLoading && (
+                  <div style={{fontSize:11, color:"#92400E", marginTop:6}}>
+                    ⚠️ No active master agreement found for this developer. Add one in Master Agreements menu, or enter rate manually.
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Owner</label>
                 <select value={oppForm.assigned_to} onChange={e=>setOppForm(f=>({...f,assigned_to:e.target.value}))}
