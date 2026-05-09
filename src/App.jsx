@@ -4855,6 +4855,9 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
     booking_fee:     { received: false, received_date: "", notes: "" },
     reservation_fee: { received: false, received_date: "", notes: "" },
     initial_advance: { received: false, received_date: "", notes: "" },
+    spa_fee:         { received: false, received_date: "", notes: "" },
+    dld_fee:         { received: false, received_date: "", notes: "" },
+    oqood_fee:       { received: false, received_date: "", notes: "" },
     other_fees:      { received: false, received_date: "", notes: "" },
   });
   const [closedWonEditPrice, setClosedWonEditPrice] = useState(false);
@@ -5226,6 +5229,9 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       booking_fee:     { received: false, received_date: "", notes: "" },
       reservation_fee: { received: false, received_date: "", notes: "" },
       initial_advance: { received: false, received_date: "", notes: "" },
+      spa_fee:         { received: false, received_date: "", notes: "" },
+      dld_fee:         { received: false, received_date: "", notes: "" },
+      oqood_fee:       { received: false, received_date: "", notes: "" },
       other_fees:      { received: false, received_date: "", notes: "" },
     });
     setClosedWonEditPrice(false);
@@ -6793,7 +6799,7 @@ You will become the assigned agent.`);
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Final Agreed Price (AED) *</label>
-                    <input type="number" placeholder="e.g. 2450000" value={stageGateForm.final_price||opp.offer_price||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
+                    <input type="number" placeholder="e.g. 2450000" value={stageGateForm.final_price||opp.final_price||opp.offer_price||opp.budget||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
                   </div>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>SPA Signing Date *</label>
@@ -6856,6 +6862,9 @@ You will become the assigned agent.`);
                     ["booking_fee", "Booking fee paid"],
                     ["reservation_fee", "Reservation fee paid"],
                     ["initial_advance", "Initial advance paid"],
+                    ["spa_fee", "SPA fee paid"],
+                    ["dld_fee", "DLD fee paid (4%)"],
+                    ["oqood_fee", "Oqood fee paid"],
                     ["other_fees", "Other developer fees paid"]
                   ].map(([key, label]) => (
                     <div key={key} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px dashed #E2E8F0"}}>
@@ -6953,7 +6962,7 @@ You will become the assigned agent.`);
                   // Offer Accepted - no required fields, price comes from inventory
                   if(showStageGate==="Reserved"&&!stageGateForm.reservation_fee){showToast("Reservation fee is required","error");return;}
                   if(showStageGate==="SPA Signed"&&!stageGateForm.final_price){showToast("Final price is required","error");return;}
-                  if(showStageGate==="Closed Won"&&!stageGateForm.final_price){showToast("Final sale price is required","error");return;}
+                  if(showStageGate==="Closed Won"&&!(stageGateForm.final_price||opp.final_price||opp.offer_price)){showToast("Final sale price is required","error");return;}
                   if(showStageGate==="Closed Lost"&&!stageGateForm.lost_reason){showToast("Please select a lost reason","error");return;}
                   // Build extra data for DB
                   const extraData = {
