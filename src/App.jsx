@@ -4851,18 +4851,18 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   // Stage 5 — SPA upload + pre-SPA payments + edit-price toggle
   const [spaUploading, setSpaUploading] = useState(false);
   const [spaUploadError, setSpaUploadError] = useState(null);
+  // Stage 5 v2 — 3-state model: pending | received | waived
   const [prePaymentsState, setPrePaymentsState] = useState({
-    booking_fee:     { received: false, received_date: "", notes: "" },
-    reservation_fee: { received: false, received_date: "", notes: "" },
-    initial_advance: { received: false, received_date: "", notes: "" },
-    spa_fee:         { received: false, received_date: "", notes: "" },
-    dld_fee:         { received: false, received_date: "", notes: "" },
-    oqood_fee:       { received: false, received_date: "", notes: "" },
-    other_fees:      { received: false, received_date: "", notes: "" },
+    booking_fee:     { status: "pending", date: "", notes: "" },
+    reservation_fee: { status: "pending", date: "", notes: "" },
+    initial_advance: { status: "pending", date: "", notes: "" },
+    spa_fee:         { status: "pending", date: "", notes: "" },
+    dld_fee:         { status: "pending", date: "", notes: "" },
+    oqood_fee:       { status: "pending", date: "", notes: "" },
+    other_fees:      { status: "pending", date: "", notes: "" },
   });
   const [closedWonEditPrice, setClosedWonEditPrice] = useState(false);
-  // Stage 5 UX — "apply same date to all checked items" toggle
-  const [useSingleDate, setUseSingleDate] = useState(false);
+  // Stage 5 UX — "quick-fill date for all received" helper
   const [singleDateValue, setSingleDateValue] = useState("");
   const [showDiscReq, setShowDiscReq] = useState(false);
   const [discReqForm, setDiscReqForm] = useState({type:"sale_price",discount_pct:"",reason:"",discount_source:"Developer",developer_auth_ref:""});
@@ -5123,6 +5123,17 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     await commitStageMove(toStage, {});
   };
 
+  // Stage 5 fix — sync stageGateForm.final_price with displayed value when SPA dialog opens
+  // Without this, validation sees empty state even though input shows a number from fallbacks
+  useEffect(() => {
+    if (showStageGate === "SPA Signed" || showStageGate === "Closed Won") {
+      const fallbackPrice = opp.final_price || opp.offer_price || opp.budget;
+      if (fallbackPrice && !stageGateForm.final_price) {
+        setStageGateForm(f => ({...f, final_price: String(fallbackPrice)}));
+      }
+    }
+  }, [showStageGate]);
+
   // Stage 5 — Upload SPA document to private 'documents' bucket
   async function uploadSpaDocument(file) {
     if (!file) return null;
@@ -5248,16 +5259,15 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     setShowStageGate(null);
     // Stage 5 — reset transient stage-gate UI state
     setPrePaymentsState({
-      booking_fee:     { received: false, received_date: "", notes: "" },
-      reservation_fee: { received: false, received_date: "", notes: "" },
-      initial_advance: { received: false, received_date: "", notes: "" },
-      spa_fee:         { received: false, received_date: "", notes: "" },
-      dld_fee:         { received: false, received_date: "", notes: "" },
-      oqood_fee:       { received: false, received_date: "", notes: "" },
-      other_fees:      { received: false, received_date: "", notes: "" },
+      booking_fee:     { status: "pending", date: "", notes: "" },
+      reservation_fee: { status: "pending", date: "", notes: "" },
+      initial_advance: { status: "pending", date: "", notes: "" },
+      spa_fee:         { status: "pending", date: "", notes: "" },
+      dld_fee:         { status: "pending", date: "", notes: "" },
+      oqood_fee:       { status: "pending", date: "", notes: "" },
+      other_fees:      { status: "pending", date: "", notes: "" },
     });
     setClosedWonEditPrice(false);
-    setUseSingleDate(false);
     setSingleDateValue("");
   };
 
@@ -6874,109 +6884,111 @@ You will become the assigned agent.`);
                   </select>
                 </div>
 
-                {/* Pre-SPA payment confirmations */}
+                {/* Pre-SPA payment confirmations - 3-state model (pending / received / waived) */}
                 <div style={{padding:"12px 14px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8}}>
-                  <div style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>
-                    ✅ Pre-SPA Payments Received
+                  <div style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>
+                    ✅ Pre-SPA Payments Status
                   </div>
-                  <div style={{fontSize:10,color:"#64748B",marginBottom:10}}>
-                    Confirm which payments the buyer made to the developer before SPA signing
+                  <div style={{fontSize:10,color:"#64748B",marginBottom:8,display:"flex",gap:14,flexWrap:"wrap"}}>
+                    <span><span style={{color:"#16A34A",fontWeight:700}}>● Received</span> = paid by buyer</span>
+                    <span><span style={{color:"#A0AEC0",fontWeight:700}}>● Pending</span> = not yet paid</span>
+                    <span><span style={{color:"#7C3AED",fontWeight:700}}>● Waived</span> = not required</span>
                   </div>
-
-                  {/* Apply-to-all date toggle (cleaner UX for the common case) */}
-                  <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:"#FFFAEB",border:"1px solid #FCD34D",borderRadius:6,marginBottom:10}}>
-                    <input type="checkbox" id="useSingleDate"
-                      checked={useSingleDate}
+                  {/* Quick-fill: apply same date to all "received" items */}
+                  <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",background:"#FFFAEB",border:"1px solid #FCD34D",borderRadius:6,marginBottom:8}}>
+                    <span style={{fontSize:10,fontWeight:600,color:"#92400E"}}>⚡ Quick-fill date for all received items:</span>
+                    <input type="date"
+                      value={singleDateValue}
+                      max={new Date().toISOString().slice(0,10)}
                       onChange={e=>{
-                        const checked = e.target.checked;
-                        setUseSingleDate(checked);
-                        if (checked && singleDateValue) {
-                          // Apply the single date to all currently-checked items
-                          setPrePaymentsState(p => {
-                            const updated = {...p};
-                            Object.keys(updated).forEach(k => {
-                              if (updated[k].received) {
-                                updated[k] = {...updated[k], received_date: singleDateValue};
-                              }
-                            });
-                            return updated;
-                          });
+                        const v = e.target.value;
+                        if (v && v > new Date().toISOString().slice(0,10)) {
+                          showToast("Payment date cannot be in the future", "error");
+                          return;
                         }
+                        setSingleDateValue(v);
                       }}
-                      style={{width:14,height:14,cursor:"pointer"}}/>
-                    <label htmlFor="useSingleDate" style={{fontSize:11,color:"#92400E",cursor:"pointer",flex:1,fontWeight:600}}>
-                      Use same date for all checked items
-                    </label>
-                    {useSingleDate && (
-                      <input type="date"
-                        value={singleDateValue}
-                        max={new Date().toISOString().slice(0,10)}
-                        onChange={e=>{
-                          const v = e.target.value;
-                          if (v && v > new Date().toISOString().slice(0,10)) {
-                            showToast("Payment date cannot be in the future", "error");
-                            return;
-                          }
-                          setSingleDateValue(v);
-                          // Apply this date to all currently-checked items
-                          setPrePaymentsState(p => {
-                            const updated = {...p};
-                            Object.keys(updated).forEach(k => {
-                              if (updated[k].received) {
-                                updated[k] = {...updated[k], received_date: v};
-                              }
-                            });
-                            return updated;
+                      style={{padding:"3px 6px",border:"1px solid #FCD34D",borderRadius:4,fontSize:11,background:"#fff"}}/>
+                    <button type="button"
+                      disabled={!singleDateValue}
+                      onClick={()=>{
+                        setPrePaymentsState(p => {
+                          const updated = {...p};
+                          Object.keys(updated).forEach(k => {
+                            if (updated[k].status === "received") {
+                              updated[k] = {...updated[k], date: singleDateValue};
+                            }
                           });
-                        }}
-                        style={{padding:"4px 8px",border:"1px solid #FCD34D",borderRadius:5,fontSize:11,background:"#fff"}}/>
-                    )}
+                          return updated;
+                        });
+                        showToast("Date applied to all received items - dates remain editable","success");
+                      }}
+                      style={{padding:"3px 10px",background:singleDateValue?"#92400E":"#D1D5DB",color:"#fff",border:"none",borderRadius:4,fontSize:10,fontWeight:700,cursor:singleDateValue?"pointer":"not-allowed"}}>
+                      Apply
+                    </button>
                   </div>
 
                   {[
-                    ["booking_fee", "Booking fee paid"],
-                    ["reservation_fee", "Reservation fee paid"],
-                    ["initial_advance", "Initial advance paid"],
-                    ["spa_fee", "SPA fee paid"],
-                    ["dld_fee", "DLD fee paid (4%)"],
-                    ["oqood_fee", "Oqood fee paid"],
-                    ["other_fees", "Other developer fees paid"]
-                  ].map(([key, label]) => (
-                    <div key={key} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px dashed #E2E8F0"}}>
-                      <input type="checkbox" id={`pre_${key}`}
-                        checked={prePaymentsState[key]?.received || false}
-                        onChange={e=>{
-                          const checked = e.target.checked;
-                          // If single-date mode + user just checked this item, copy the single date
-                          const newDate = (checked && useSingleDate && singleDateValue)
-                            ? singleDateValue
-                            : prePaymentsState[key]?.received_date || "";
-                          setPrePaymentsState(p=>({...p, [key]:{...p[key], received:checked, received_date:newDate}}));
-                        }}
-                        style={{width:16,height:16,cursor:"pointer"}}/>
-                      <label htmlFor={`pre_${key}`} style={{fontSize:12,color:"#0F2540",cursor:"pointer",flex:1,fontWeight:prePaymentsState[key]?.received?600:400}}>
-                        {label}
-                      </label>
-                      {prePaymentsState[key]?.received && !useSingleDate && (
-                        <input type="date" value={prePaymentsState[key]?.received_date || ""}
-                          max={new Date().toISOString().slice(0,10)}
-                          onChange={e=>{
-                            const v = e.target.value;
-                            if (v && v > new Date().toISOString().slice(0,10)) {
-                              showToast("Payment date cannot be in the future", "error");
-                              return;
-                            }
-                            setPrePaymentsState(p=>({...p, [key]:{...p[key], received_date:v}}));
-                          }}
-                          style={{padding:"4px 8px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:11}}/>
-                      )}
-                      {prePaymentsState[key]?.received && useSingleDate && singleDateValue && (
-                        <span style={{fontSize:10,color:"#92400E",fontWeight:500,fontStyle:"italic"}}>
-                          {new Date(singleDateValue).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                    ["booking_fee", "Booking fee"],
+                    ["reservation_fee", "Reservation fee"],
+                    ["initial_advance", "Initial advance"],
+                    ["spa_fee", "SPA fee"],
+                    ["dld_fee", "DLD fee (4%)"],
+                    ["oqood_fee", "Oqood fee"],
+                    ["other_fees", "Other developer fees"]
+                  ].map(([key, label]) => {
+                    const item = prePaymentsState[key] || { status:"pending", date:"", notes:"" };
+                    const status = item.status || "pending";
+                    return (
+                      <div key={key} style={{display:"grid",gridTemplateColumns:"1fr 200px 130px",gap:8,alignItems:"center",padding:"7px 4px",borderBottom:"1px dashed #E2E8F0"}}>
+                        <div style={{fontSize:12,color:"#0F2540",fontWeight:status==="received"?600:status==="waived"?500:400}}>
+                          {label}
+                        </div>
+                        {/* 3-state pill selector */}
+                        <div style={{display:"flex",gap:4,background:"#fff",border:"1px solid #E2E8F0",borderRadius:6,padding:2}}>
+                          {[
+                            ["pending", "Pending", "#A0AEC0", "#F1F5F9"],
+                            ["received", "Received", "#16A34A", "#DCFCE7"],
+                            ["waived", "Waived", "#7C3AED", "#EDE9FE"]
+                          ].map(([s, lbl, fg, bg]) => (
+                            <button key={s} type="button"
+                              onClick={()=>setPrePaymentsState(p=>({...p, [key]:{...p[key], status:s, date: s==="received"?(p[key]?.date||""):p[key]?.date||""}}))}
+                              style={{
+                                flex:1,padding:"3px 6px",border:"none",borderRadius:4,fontSize:9,fontWeight:700,cursor:"pointer",
+                                background: status===s ? bg : "transparent",
+                                color: status===s ? fg : "#94A3B8",
+                                textTransform: "uppercase",
+                                letterSpacing: 0.4,
+                              }}>
+                              {lbl}
+                            </button>
+                          ))}
+                        </div>
+                        {/* Date input - shown for received and waived (waived = optional/informational) */}
+                        {(status === "received" || status === "waived") ? (
+                          <input type="date" value={item.date || ""}
+                            max={new Date().toISOString().slice(0,10)}
+                            onChange={e=>{
+                              const v = e.target.value;
+                              if (v && v > new Date().toISOString().slice(0,10)) {
+                                showToast("Payment date cannot be in the future", "error");
+                                return;
+                              }
+                              setPrePaymentsState(p=>({...p, [key]:{...p[key], date:v}}));
+                            }}
+                            placeholder={status==="waived"?"optional":""}
+                            style={{
+                              padding:"4px 6px",
+                              border:`1px solid ${status==="received" && !item.date ? "#FCA5A5" : "#D1D5DB"}`,
+                              borderRadius:5,fontSize:11,
+                              background: status==="waived" ? "#FAFBFC" : "#fff"
+                            }}/>
+                        ) : (
+                          <span style={{fontSize:10,color:"#CBD5E0",fontStyle:"italic",textAlign:"center"}}>—</span>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div>
@@ -7057,6 +7069,14 @@ You will become the assigned agent.`);
                   // Offer Accepted - no required fields, price comes from inventory
                   if(showStageGate==="Reserved"&&!stageGateForm.reservation_fee){showToast("Reservation fee is required","error");return;}
                   if(showStageGate==="SPA Signed"&&!stageGateForm.final_price){showToast("Final price is required","error");return;}
+                  // Stage 5 v2 — validate all "received" pre-SPA items have dates
+                  if(showStageGate==="SPA Signed"){
+                    const missing = Object.entries(prePaymentsState||{}).filter(([k,v])=>v.status==="received" && !v.date).map(([k])=>k);
+                    if(missing.length>0){
+                      showToast(`Date required for received items: ${missing.join(", ")}`,"error");
+                      return;
+                    }
+                  }
                   if(showStageGate==="Closed Won"&&!(stageGateForm.final_price||opp.final_price||opp.offer_price)){showToast("Final sale price is required","error");return;}
                   if(showStageGate==="Closed Lost"&&!stageGateForm.lost_reason){showToast("Please select a lost reason","error");return;}
                   // Build extra data for DB
