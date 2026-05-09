@@ -124,7 +124,7 @@ const STAGE_RULES = {
   "Site Visit":    ["meeting_scheduled"],
   "Proposal Sent": ["unit_id","budget_confirmed"],
   "Negotiation":   ["proposal_notes"],
-  "Closed Won":    ["final_price","payment_plan_agreed"],
+  "Closed Won":    ["final_price"],  // payment_plan_agreed removed per broker MOM (broker doesn't track installments)
 };
 const DISC_TYPES = [
   { key:"sale_price",   label:"Sale Price Reduction", icon:"🏷" },
@@ -4861,6 +4861,9 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
     other_fees:      { received: false, received_date: "", notes: "" },
   });
   const [closedWonEditPrice, setClosedWonEditPrice] = useState(false);
+  // Stage 5 UX — "apply same date to all checked items" toggle
+  const [useSingleDate, setUseSingleDate] = useState(false);
+  const [singleDateValue, setSingleDateValue] = useState("");
   const [showDiscReq, setShowDiscReq] = useState(false);
   const [discReqForm, setDiscReqForm] = useState({type:"sale_price",discount_pct:"",reason:"",discount_source:"Developer",developer_auth_ref:""});
   const [logForm,    setLogForm]    = useState({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
@@ -5232,6 +5235,11 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       }
     }
 
+    // TODO QA SPRINT: Unit double-booking guard
+    // Currently multiple opportunities for the same unit_id can advance to
+    // Reserved/SPA Signed/Closed Won. Need a pre-flight check that fails
+    // gracefully if another opp on the same unit is already past Reserved stage.
+    // (Flagged 10 May 2026 by Abid during Sprint 1.5 testing.)
     if(toStage==="Closed Won"&&opp.unit_id)
       await supabase.from("project_units").update({status:"Sold"}).eq("id",opp.unit_id);
     if(toStage==="Reserved"&&opp.unit_id)
@@ -5249,6 +5257,8 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       other_fees:      { received: false, received_date: "", notes: "" },
     });
     setClosedWonEditPrice(false);
+    setUseSingleDate(false);
+    setSingleDateValue("");
   };
 
   const saveLog = async()=>{
@@ -6872,6 +6882,57 @@ You will become the assigned agent.`);
                   <div style={{fontSize:10,color:"#64748B",marginBottom:10}}>
                     Confirm which payments the buyer made to the developer before SPA signing
                   </div>
+
+                  {/* Apply-to-all date toggle (cleaner UX for the common case) */}
+                  <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:"#FFFAEB",border:"1px solid #FCD34D",borderRadius:6,marginBottom:10}}>
+                    <input type="checkbox" id="useSingleDate"
+                      checked={useSingleDate}
+                      onChange={e=>{
+                        const checked = e.target.checked;
+                        setUseSingleDate(checked);
+                        if (checked && singleDateValue) {
+                          // Apply the single date to all currently-checked items
+                          setPrePaymentsState(p => {
+                            const updated = {...p};
+                            Object.keys(updated).forEach(k => {
+                              if (updated[k].received) {
+                                updated[k] = {...updated[k], received_date: singleDateValue};
+                              }
+                            });
+                            return updated;
+                          });
+                        }
+                      }}
+                      style={{width:14,height:14,cursor:"pointer"}}/>
+                    <label htmlFor="useSingleDate" style={{fontSize:11,color:"#92400E",cursor:"pointer",flex:1,fontWeight:600}}>
+                      Use same date for all checked items
+                    </label>
+                    {useSingleDate && (
+                      <input type="date"
+                        value={singleDateValue}
+                        max={new Date().toISOString().slice(0,10)}
+                        onChange={e=>{
+                          const v = e.target.value;
+                          if (v && v > new Date().toISOString().slice(0,10)) {
+                            showToast("Payment date cannot be in the future", "error");
+                            return;
+                          }
+                          setSingleDateValue(v);
+                          // Apply this date to all currently-checked items
+                          setPrePaymentsState(p => {
+                            const updated = {...p};
+                            Object.keys(updated).forEach(k => {
+                              if (updated[k].received) {
+                                updated[k] = {...updated[k], received_date: v};
+                              }
+                            });
+                            return updated;
+                          });
+                        }}
+                        style={{padding:"4px 8px",border:"1px solid #FCD34D",borderRadius:5,fontSize:11,background:"#fff"}}/>
+                    )}
+                  </div>
+
                   {[
                     ["booking_fee", "Booking fee paid"],
                     ["reservation_fee", "Reservation fee paid"],
@@ -6884,17 +6945,23 @@ You will become the assigned agent.`);
                     <div key={key} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",borderBottom:"1px dashed #E2E8F0"}}>
                       <input type="checkbox" id={`pre_${key}`}
                         checked={prePaymentsState[key]?.received || false}
-                        onChange={e=>setPrePaymentsState(p=>({...p, [key]:{...p[key], received:e.target.checked}}))}
+                        onChange={e=>{
+                          const checked = e.target.checked;
+                          // If single-date mode + user just checked this item, copy the single date
+                          const newDate = (checked && useSingleDate && singleDateValue)
+                            ? singleDateValue
+                            : prePaymentsState[key]?.received_date || "";
+                          setPrePaymentsState(p=>({...p, [key]:{...p[key], received:checked, received_date:newDate}}));
+                        }}
                         style={{width:16,height:16,cursor:"pointer"}}/>
                       <label htmlFor={`pre_${key}`} style={{fontSize:12,color:"#0F2540",cursor:"pointer",flex:1,fontWeight:prePaymentsState[key]?.received?600:400}}>
                         {label}
                       </label>
-                      {prePaymentsState[key]?.received && (
+                      {prePaymentsState[key]?.received && !useSingleDate && (
                         <input type="date" value={prePaymentsState[key]?.received_date || ""}
                           max={new Date().toISOString().slice(0,10)}
                           onChange={e=>{
                             const v = e.target.value;
-                            // Reject future dates
                             if (v && v > new Date().toISOString().slice(0,10)) {
                               showToast("Payment date cannot be in the future", "error");
                               return;
@@ -6902,6 +6969,11 @@ You will become the assigned agent.`);
                             setPrePaymentsState(p=>({...p, [key]:{...p[key], received_date:v}}));
                           }}
                           style={{padding:"4px 8px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:11}}/>
+                      )}
+                      {prePaymentsState[key]?.received && useSingleDate && singleDateValue && (
+                        <span style={{fontSize:10,color:"#92400E",fontWeight:500,fontStyle:"italic"}}>
+                          {new Date(singleDateValue).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}
+                        </span>
                       )}
                     </div>
                   ))}
