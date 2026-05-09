@@ -195,7 +195,7 @@ const STAGE_GATES = {
   "Site Visit":    { required: ["meeting_scheduled"],                label: "A meeting must be scheduled first", fields: ["meeting_scheduled"] },
   "Proposal Sent": { required: ["unit_id","budget"],                 label: "Link a unit and confirm budget",    fields: ["unit_id","budget"] },
   "Negotiation":   { required: ["proposal_notes"],                   label: "Proposal notes required",           fields: ["proposal_notes"] },
-  "Closed Won":    { required: ["final_price","payment_plan"],       label: "Final price and payment plan required", fields: ["final_price","payment_plan"] },
+  "Closed Won":    { required: ["final_price"],                      label: "Final price required",                  fields: ["final_price"] },
   "Closed Lost":   { required: ["notes"],                            label: "Reason for loss required (notes)",  fields: ["notes"] },
 };
 
@@ -5189,6 +5189,20 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     if(error){showToast(error.message,"error");return;}
     onUpdated({...opp,stage:toStage,status:newStatus,...extra});
 
+    // Stage 5 — Sync final_price onto opportunity record when SPA is signed
+    // (so subsequent stage validations like Closed Won find it)
+    if (toStage === "SPA Signed" && stageGateForm.final_price) {
+      try {
+        await supabase.from("opportunities")
+          .update({ final_price: Number(stageGateForm.final_price) })
+          .eq("id", opp.id);
+        // Also reflect in local opp object for immediate validation
+        opp.final_price = Number(stageGateForm.final_price);
+      } catch (e) {
+        console.error("Failed to sync final_price onto opportunity:", e);
+      }
+    }
+
     // Stage 5 — Create sales closure record when SPA is signed
     if (toStage === "SPA Signed" && stageGateForm.final_price) {
       try {
@@ -6877,7 +6891,16 @@ You will become the assigned agent.`);
                       </label>
                       {prePaymentsState[key]?.received && (
                         <input type="date" value={prePaymentsState[key]?.received_date || ""}
-                          onChange={e=>setPrePaymentsState(p=>({...p, [key]:{...p[key], received_date:e.target.value}}))}
+                          max={new Date().toISOString().slice(0,10)}
+                          onChange={e=>{
+                            const v = e.target.value;
+                            // Reject future dates
+                            if (v && v > new Date().toISOString().slice(0,10)) {
+                              showToast("Payment date cannot be in the future", "error");
+                              return;
+                            }
+                            setPrePaymentsState(p=>({...p, [key]:{...p[key], received_date:v}}));
+                          }}
                           style={{padding:"4px 8px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:11}}/>
                       )}
                     </div>
