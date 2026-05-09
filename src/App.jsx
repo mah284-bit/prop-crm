@@ -5246,6 +5246,51 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       }
     }
 
+    // Stage 6 — Auto-create draft commission invoice when SPA is signed
+    if (toStage === "SPA Signed" && stageGateForm.final_price) {
+      try {
+        const salePrice = Number(stageGateForm.final_price);
+        const commissionPct = Number(opp.commission_pct || 0);
+        const commissionGross = Math.round(salePrice * commissionPct / 100 * 100) / 100;
+        const vatPct = 5.00;
+        const vatAmount = Math.round(commissionGross * vatPct / 100 * 100) / 100;
+        const commissionNet = Math.round((commissionGross + vatAmount) * 100) / 100;
+
+        const { data: closure } = await supabase
+          .from("pp_sales_closures")
+          .select("id")
+          .eq("opportunity_id", opp.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const { error: invErr } = await supabase
+          .from("pp_commission_invoices")
+          .insert({
+            company_id: currentUser.company_id,
+            opportunity_id: opp.id,
+            sales_closure_id: closure?.id || null,
+            developer_id: opp.developer_id || null,
+            master_agreement_id: opp.master_agreement_id || null,
+            sale_price: salePrice,
+            commission_pct: commissionPct,
+            commission_gross: commissionGross,
+            vat_pct: vatPct,
+            vat_amount: vatAmount,
+            commission_net: commissionNet,
+            invoice_status: "draft",
+            created_by: currentUser.id,
+            updated_by: currentUser.id,
+          });
+        if (invErr) {
+          console.error("Commission invoice insert failed:", invErr);
+          showToast("SPA recorded but commission invoice creation failed - check console", "warning");
+        }
+      } catch (e) {
+        console.error("Commission invoice insert exception:", e);
+      }
+    }
+
     // TODO QA SPRINT: Unit double-booking guard
     // Currently multiple opportunities for the same unit_id can advance to
     // Reserved/SPA Signed/Closed Won. Need a pre-flight check that fails
