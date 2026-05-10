@@ -5264,13 +5264,24 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           .limit(1)
           .maybeSingle();
 
+        // Look up developer_id via master agreement (opportunities table doesn't have developer_id)
+        let lookedUpDeveloperId = null;
+        if (opp.master_agreement_id) {
+          const { data: ma } = await supabase
+            .from("pp_master_agreements")
+            .select("developer_id")
+            .eq("id", opp.master_agreement_id)
+            .maybeSingle();
+          lookedUpDeveloperId = ma?.developer_id || null;
+        }
+
         const { error: invErr } = await supabase
           .from("pp_commission_invoices")
           .insert({
             company_id: currentUser.company_id,
             opportunity_id: opp.id,
             sales_closure_id: closure?.id || null,
-            developer_id: opp.developer_id || null,
+            developer_id: lookedUpDeveloperId,
             master_agreement_id: opp.master_agreement_id || null,
             sale_price: salePrice,
             commission_pct: commissionPct,
