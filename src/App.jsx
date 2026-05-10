@@ -10199,6 +10199,7 @@ const TABS=[
   {id:"permissions",label:"Permissions",  icon:"🔒", app:"sales",   roles:["super_admin"]},
   {id:"permsets",   label:"Permissions",  icon:"🔐", app:"sales",   roles:["super_admin","admin"]},
   {id:"master_agreements",label:"Master Agreements", icon:"📄", app:"sales", roles:["super_admin","admin"]},
+  {id:"commission_outstanding",label:"Commission Outstanding", icon:"💰", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"group_view", label:"Group View",    icon:"🏛", app:"sales",   roles:["super_admin"]},
   // ── Leasing CRM ────────────────────────────────────────────────
   {id:"l_dashboard",label:"Dashboard",    icon:"⊞",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
@@ -11036,6 +11037,7 @@ import InventoryModule from "./components/InventoryModule.jsx";
 import LeasingModule from "./components/LeasingModule.jsx";
 import ReportsModule from "./components/ReportsModule.jsx";
 import MasterAgreements from "./components/MasterAgreements.jsx";
+import CommissionOutstanding from "./components/CommissionOutstanding.jsx";
 import LeaseOpportunityDetail from "./components/LeaseOpportunityDetail.jsx";
 import LeasingLeads from "./components/LeasingLeads.jsx";
 import PropPulse from "./components/PropPulse.jsx";
@@ -14006,6 +14008,7 @@ export default function App(){
           {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leads={leads} activities={activities} initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
           {tab==="master_agreements" && <MasterAgreements currentUser={currentUser} showToast={showToast}/>}
+          {tab==="commission_outstanding" && <CommissionOutstanding currentUser={currentUser} showToast={showToast} developers={developers}/>}
           {(tab==="proppulse"||tab==="l_proppulse")&&<PropPulse currentUser={currentUser} showToast={showToast}/>}
           {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
           {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
