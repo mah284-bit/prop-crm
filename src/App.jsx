@@ -144,9 +144,9 @@ const saveAppConfig = (cfg) => {
 };
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","opportunities","discounts","activity","ai","reports","proppulse","pay_plans","companies","users","permissions","permsets","master_agreements","group_view"],
+  sales:   ["dashboard","projects","builder","leads","opportunities","discounts","activity","ai","reports","proppulse","pay_plans","companies","users","permissions","permsets","master_agreements","commission_outstanding","group_view"],
   leasing: ["l_dashboard","l_leads","l_opportunities","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_proppulse","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
-  both:    ["dashboard","projects","builder","leads","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","group_view"],
+  both:    ["dashboard","projects","builder","leads","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","commission_outstanding","group_view"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -14008,7 +14008,7 @@ export default function App(){
           {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leads={leads} activities={activities} initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
           {tab==="master_agreements" && <MasterAgreements currentUser={currentUser} showToast={showToast}/>}
-          {tab==="commission_outstanding" && <CommissionOutstanding currentUser={currentUser} showToast={showToast} developers={developers}/>}
+          {tab==="commission_outstanding" && <CommissionOutstanding currentUser={currentUser} showToast={showToast} developers={[]}/>}
           {(tab==="proppulse"||tab==="l_proppulse")&&<PropPulse currentUser={currentUser} showToast={showToast}/>}
           {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
           {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
