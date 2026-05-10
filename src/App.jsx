@@ -4831,6 +4831,35 @@ function VisitOutcomeDialog({ visitActivity, opp, lead, units, projects, current
 }
 
 function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated }) {
+  // ISSUE D Phase 2 — Detect if THIS opp's unit has been taken by another deal
+  const [unitConflict, setUnitConflict] = useState(null);
+  useEffect(() => {
+    if (!opp?.unit_id) { setUnitConflict(null); return; }
+    if (["Reserved","SPA Signed","Closed Won"].includes(opp.stage)) { setUnitConflict(null); return; }
+    let alive = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from("opportunities")
+        .select("id, title, stage, stage_updated_at")
+        .eq("unit_id", opp.unit_id)
+        .neq("id", opp.id)
+        .in("stage", ["Reserved", "SPA Signed", "Closed Won"])
+        .order("stage_updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!alive || error) return;
+      if (data) {
+        const daysAgo = data.stage_updated_at
+          ? Math.floor((Date.now() - new Date(data.stage_updated_at).getTime()) / 86400000)
+          : null;
+        setUnitConflict({ title: data.title, stage: data.stage, daysAgo });
+      } else {
+        setUnitConflict(null);
+      }
+    })();
+    return () => { alive = false; };
+  }, [opp?.id, opp?.unit_id, opp?.stage]);
+
   // Phase F W4 — AI Coach state (panel that analyses the deal and suggests next moves)
   const [coachLoading, setCoachLoading] = useState(false);
   const [coachResult, setCoachResult] = useState(null); // {summary, suggestions:[{title,reasoning,confidence,action_type,action_params}], analysed_at}
@@ -5104,6 +5133,34 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   };
 
   const moveStage = async(toStage) => {
+    // ISSUE D guard duplication — block at moveStage entry too
+    // (Dialogs like Capture Contact bypass commitStageMove, so guard
+    //  has to be here before any dialog opens)
+    if (toStage !== "Closed Lost" && toStage !== "On Hold" && opp.unit_id) {
+      try {
+        const { data: conflictOpps } = await supabase
+          .from("opportunities")
+          .select("id, title, stage, stage_updated_at")
+          .eq("unit_id", opp.unit_id)
+          .neq("id", opp.id)
+          .in("stage", ["Reserved", "SPA Signed", "Closed Won"]);
+        if (conflictOpps && conflictOpps.length > 0) {
+          const c = conflictOpps[0];
+          const days = c.stage_updated_at
+            ? Math.floor((Date.now() - new Date(c.stage_updated_at).getTime()) / 86400000)
+            : null;
+          const ageStr = days !== null ? ` (${days} day${days === 1 ? "" : "s"} ago)` : "";
+          showToast(
+            `⛔ Unit reserved by "${c.title}" at ${c.stage}${ageStr}. Pick a different unit or wait.`,
+            "error"
+          );
+          return;
+        }
+      } catch (e) {
+        console.error("moveStage guard exception:", e);
+      }
+    }
+
     // Phase E W3: advancing to "Proposal Sent" should open the proposal builder,
     // not just bump the stage. The dialog handles stage advance + activity + reminders.
     if (toStage === "Proposal Sent") {
@@ -5189,6 +5246,36 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   }
 
   const commitStageMove = async(toStage, extraData) => {
+    // ISSUE D Phase 1+2 — Pre-flight guard: prevent unit double-booking
+    // Block ANY forward stage advance if another opp on same unit_id is at Reserved+
+    // Phase 3 TODO: per-master-agreement configurable timeout for auto-release
+    if (toStage !== "Closed Lost" && toStage !== "On Hold" && opp.unit_id) {
+      try {
+        const { data: conflictOpps, error: conflictErr } = await supabase
+          .from("opportunities")
+          .select("id, title, stage, stage_updated_at")
+          .eq("unit_id", opp.unit_id)
+          .neq("id", opp.id)
+          .in("stage", ["Reserved", "SPA Signed", "Closed Won"]);
+
+        if (!conflictErr && conflictOpps && conflictOpps.length > 0) {
+          const conflict = conflictOpps[0];
+          const daysAgo = conflict.stage_updated_at
+            ? Math.floor((Date.now() - new Date(conflict.stage_updated_at).getTime()) / 86400000)
+            : null;
+          const ageStr = daysAgo !== null ? ` (${daysAgo} day${daysAgo === 1 ? "" : "s"} ago)` : "";
+          showToast(
+            `⛔ Unit reserved by "${conflict.title}" at ${conflict.stage}${ageStr}. Pick a different unit or wait.`,
+            "error"
+          );
+          return; // Block transition - no DB writes
+        }
+      } catch (e) {
+        console.error("Unit double-booking guard exception:", e);
+        // Fail-open on exception
+      }
+    }
+
     const newStatus = toStage==="Closed Won"?"Won":toStage==="Closed Lost"?"Lost":"Active";
     const extra = {
       ...(toStage==="Closed Won"?{won_at:new Date().toISOString()}:{}),
@@ -5302,11 +5389,9 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       }
     }
 
-    // TODO QA SPRINT: Unit double-booking guard
-    // Currently multiple opportunities for the same unit_id can advance to
-    // Reserved/SPA Signed/Closed Won. Need a pre-flight check that fails
-    // gracefully if another opp on the same unit is already past Reserved stage.
-    // (Flagged 10 May 2026 by Abid during Sprint 1.5 testing.)
+    // ISSUE D Phase 1 SHIPPED 10 May 2026 — pre-flight guard at top of this function
+    // Phase 2 TODO: visual warnings on opp detail when other opps lose their unit
+    // Phase 3 TODO: auto-release with per-master-agreement timeout (mix of auto + manual)
     if(toStage==="Closed Won"&&opp.unit_id)
       await supabase.from("project_units").update({status:"Sold"}).eq("id",opp.unit_id);
     if(toStage==="Reserved"&&opp.unit_id)
@@ -5504,6 +5589,54 @@ You will become the assigned agent.`);
                     </button>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* ISSUE D Phase 2 — Unit conflict banner */}
+            {unitConflict && (
+              <div style={{
+                background:"linear-gradient(135deg,#FEF3C7,#FDE68A)",
+                border:"1.5px solid #F59E0B",
+                borderRadius:12,
+                padding:"14px 18px",
+                display:"flex",
+                alignItems:"center",
+                gap:14,
+                boxShadow:"0 1px 3px rgba(245,158,11,.15)"
+              }}>
+                <div style={{fontSize:24}}>⚠️</div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#78350F",marginBottom:3}}>
+                    Unit is reserved by another deal
+                  </div>
+                  <div style={{fontSize:12,color:"#92400E",lineHeight:1.4}}>
+                    "<strong>{unitConflict.title}</strong>" is at <strong>{unitConflict.stage}</strong>
+                    {unitConflict.daysAgo !== null && ` (${unitConflict.daysAgo} day${unitConflict.daysAgo === 1 ? "" : "s"} ago)`}.
+                    {" "}Pick a different unit, mark this opportunity as Lost, or wait if reservation expires.
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    showToast(
+                      "📞 Contact buyer first to discuss alternative options or mark Lost. " +
+                      "Smart change-unit dialog with consent flow coming soon.",
+                      "info"
+                    );
+                  }}
+                  style={{
+                    padding:"7px 14px",
+                    background:"#92400E",
+                    color:"#fff",
+                    border:"none",
+                    borderRadius:7,
+                    fontSize:11,
+                    fontWeight:700,
+                    cursor:"pointer",
+                    whiteSpace:"nowrap"
+                  }}
+                  title="Stage 7: Will open buyer consent dialog with alternatives + Lost option">
+                  Discuss with Buyer
+                </button>
               </div>
             )}
 
@@ -9825,6 +9958,33 @@ function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activiti
 
   const moveStage = async(opp, toStage) => {
     if(!canEdit){showToast("No permission","error");return;}
+
+    // ISSUE D guard duplication — block from list-view advance too
+    if (toStage !== "Closed Lost" && toStage !== "On Hold" && opp.unit_id) {
+      try {
+        const { data: conflictOpps } = await supabase
+          .from("opportunities")
+          .select("id, title, stage, stage_updated_at")
+          .eq("unit_id", opp.unit_id)
+          .neq("id", opp.id)
+          .in("stage", ["Reserved", "SPA Signed", "Closed Won"]);
+        if (conflictOpps && conflictOpps.length > 0) {
+          const c = conflictOpps[0];
+          const days = c.stage_updated_at
+            ? Math.floor((Date.now() - new Date(c.stage_updated_at).getTime()) / 86400000)
+            : null;
+          const ageStr = days !== null ? ` (${days} day${days === 1 ? "" : "s"} ago)` : "";
+          showToast(
+            `⛔ Unit reserved by "${c.title}" at ${c.stage}${ageStr}. Pick a different unit or wait.`,
+            "error"
+          );
+          return;
+        }
+      } catch (e) {
+        console.error("list-view moveStage guard exception:", e);
+      }
+    }
+
     setMoving(opp.id);
     const updates = {stage:toStage, stage_updated_at:new Date().toISOString(),
       ...(toStage==="Closed Won"?{won_at:new Date().toISOString(),status:"Active"}:{}),
