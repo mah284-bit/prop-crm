@@ -10,8 +10,9 @@ import { supabase } from "../lib/supabase";
  *
  * Spec: docs/Stage_4_5_6_REVISED_Spec.md (Stage 6 section)
  */
-export default function CommissionOutstanding({ currentUser, showToast, developers = [] }) {
+export default function CommissionOutstanding({ currentUser, showToast, developers: developersProp = [] }) {
   const [invoices, setInvoices] = useState([]);
+  const [developers, setDevelopers] = useState(developersProp || []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
@@ -23,7 +24,23 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
 
   useEffect(() => {
     loadInvoices();
+    loadDevelopers();
   }, []);
+
+  // Load developers list for display + filter
+  async function loadDevelopers() {
+    try {
+      const { data, error: dErr } = await supabase
+        .from("pp_developers")
+        .select("id, name")
+        .order("name");
+      if (dErr) throw dErr;
+      if (data && data.length > 0) setDevelopers(data);
+    } catch (err) {
+      console.warn("Could not load developers list:", err);
+      // Fall back to whatever was passed via props (or empty)
+    }
+  }
 
   async function loadInvoices() {
     try {
