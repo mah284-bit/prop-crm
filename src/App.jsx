@@ -3688,7 +3688,22 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       const tryInsert = async (payload) => {
         return await supabase.from("proposals").insert(payload).select().single();
       };
-      let { data: propData, error: propErr } = await tryInsert(fullPayload);
+
+      // Issue 3 polish 11 May 2026: preemptively route fields not in proposals schema
+      // into structured_data, eliminating 3 failed HTTP calls per save attempt.
+      // Schema drift refactor (proper column alignment) deferred to post-demo.
+      const KNOWN_JSONB_FIELDS = ['discounted_price', 'lead_id', 'payment_plan'];
+      const _preRoutedPayload = {...fullPayload};
+      const _preRoutedSd = {...(fullPayload.structured_data || {})};
+      KNOWN_JSONB_FIELDS.forEach(f => {
+        if (_preRoutedPayload[f] !== undefined) {
+          _preRoutedSd[f] = _preRoutedPayload[f];
+          delete _preRoutedPayload[f];
+        }
+      });
+      _preRoutedPayload.structured_data = _preRoutedSd;
+
+      let { data: propData, error: propErr } = await tryInsert(_preRoutedPayload);
       if (propErr && /Could not find the '(.+?)' column/.test(propErr.message||"")) {
         // Strip every missing column the error mentions, retry repeatedly until success
         // (Supabase only reports one column at a time)
@@ -3696,7 +3711,10 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         let attempts = 0;
         while (propErr && /Could not find the '(.+?)' column/.test(propErr.message||"") && attempts < 12) {
           const missing = propErr.message.match(/Could not find the '(.+?)' column/)[1];
-          console.warn(`Proposals table is missing column '${missing}' — moving to structured_data and retrying`);
+          // Issue 3 fix 11 May 2026: structured_data column created in proposals table
+          // Retry-and-recover still happens for fields not yet promoted to direct columns
+          // (no console.warn - recovery is silent and successful)
+          // TODO post-demo: schema drift refactor to eliminate trial-and-error retries
           // Move it into structured_data so we don't lose the value
           if (payload[missing] !== undefined) {
             payload.structured_data = {...(payload.structured_data||{}), [missing]: payload[missing]};
