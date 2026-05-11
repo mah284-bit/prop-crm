@@ -7399,6 +7399,75 @@ You will become the assigned agent.`);
                       </div>
                     );
                   })}
+
+                  {/* Phase 3c: Payment Summary Card */}
+                  {(() => {
+                    const items = Object.values(prePaymentsState || {});
+                    const totalReceived = items.filter(i => i.status === "received").reduce((s, i) => s + (Number(i.amount) || 0), 0);
+                    const totalWaived = items.filter(i => i.status === "waived").reduce((s, i) => s + (Number(i.amount) || 0), 0);
+                    const totalPending = items.filter(i => i.status === "pending").length;
+                    const price = Number(stageGateForm.final_price || 0);
+                    const outstanding = price - totalReceived;
+                    const receivedPct = price > 0 ? Math.round((totalReceived / price) * 1000) / 10 : 0;
+                    return (
+                      <div style={{marginTop:14,padding:"12px 14px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10}}>
+                        <div style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",marginBottom:8}}>📊 Payment Summary</div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:12}}>
+                          <div style={{display:"flex",justifyContent:"space-between",color:"#16A34A"}}>
+                            <span>Total Received:</span>
+                            <span style={{fontWeight:700}}>AED {totalReceived.toLocaleString()}</span>
+                          </div>
+                          <div style={{display:"flex",justifyContent:"space-between",color:"#7C3AED"}}>
+                            <span>Total Waived:</span>
+                            <span style={{fontWeight:700}}>AED {totalWaived.toLocaleString()}</span>
+                          </div>
+                          <div style={{display:"flex",justifyContent:"space-between",color:"#A0AEC0"}}>
+                            <span>Pending items:</span>
+                            <span style={{fontWeight:700}}>{totalPending}</span>
+                          </div>
+                          <div style={{display:"flex",justifyContent:"space-between",color:"#94A3B8"}}>
+                            <span>Buyer paid %:</span>
+                            <span style={{fontWeight:700}}>{receivedPct}%</span>
+                          </div>
+                        </div>
+                        {price > 0 && (
+                          <div style={{marginTop:8,paddingTop:8,borderTop:"1px dashed #CBD5E0",display:"flex",justifyContent:"space-between",fontSize:13,fontWeight:700,color:outstanding > 0 ? "#B83232" : "#16A34A"}}>
+                            <span>{outstanding > 0 ? "Outstanding to developer:" : "Fully paid ✓"}</span>
+                            {outstanding > 0 && <span>AED {outstanding.toLocaleString()}</span>}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Phase 3c: Commission Preview Card */}
+                  {(() => {
+                    const price = Number(stageGateForm.final_price || 0);
+                    const commPct = Number(opp.commission_pct || 0);
+                    if (!price || !commPct) return null;
+                    const gross = Math.round(price * commPct / 100 * 100) / 100;
+                    const vat = Math.round(gross * 0.05 * 100) / 100;
+                    const net = gross + vat;
+                    return (
+                      <div style={{marginTop:10,padding:"12px 14px",background:"linear-gradient(135deg,#FEF3C7,#FDE68A)",border:"1px solid #F59E0B",borderRadius:10}}>
+                        <div style={{fontSize:11,fontWeight:700,color:"#78350F",textTransform:"uppercase",letterSpacing:".4px",marginBottom:8}}>💰 Your Commission Preview</div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr",gap:5,fontSize:12,color:"#92400E"}}>
+                          <div style={{display:"flex",justifyContent:"space-between"}}>
+                            <span>Sale price × {commPct}%:</span>
+                            <span style={{fontWeight:700}}>AED {gross.toLocaleString()}</span>
+                          </div>
+                          <div style={{display:"flex",justifyContent:"space-between"}}>
+                            <span>VAT 5%:</span>
+                            <span style={{fontWeight:700}}>AED {vat.toLocaleString()}</span>
+                          </div>
+                          <div style={{display:"flex",justifyContent:"space-between",paddingTop:6,borderTop:"1px dashed #D97706",fontWeight:800,fontSize:13}}>
+                            <span>Net commission:</span>
+                            <span>AED {net.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div>
@@ -7480,10 +7549,22 @@ You will become the assigned agent.`);
                   if(showStageGate==="Reserved"&&!stageGateForm.reservation_fee){showToast("Reservation fee is required","error");return;}
                   if(showStageGate==="SPA Signed"&&!stageGateForm.final_price){showToast("Final price is required","error");return;}
                   // Stage 5 v2 — validate all "received" pre-SPA items have dates
+                  // Stage 5 v3 Phase 3c — also validate amounts + sanity check totals
                   if(showStageGate==="SPA Signed"){
-                    const missing = Object.entries(prePaymentsState||{}).filter(([k,v])=>v.status==="received" && !v.date).map(([k])=>k);
-                    if(missing.length>0){
-                      showToast(`Date required for received items: ${missing.join(", ")}`,"error");
+                    const missingDate = Object.entries(prePaymentsState||{}).filter(([k,v])=>v.status==="received" && !v.date).map(([k])=>k.replace(/_/g," "));
+                    if(missingDate.length>0){
+                      showToast(`Date required for received items: ${missingDate.join(", ")}`,"error");
+                      return;
+                    }
+                    const missingAmount = Object.entries(prePaymentsState||{}).filter(([k,v])=>v.status==="received" && (!v.amount || Number(v.amount) <= 0)).map(([k])=>k.replace(/_/g," "));
+                    if(missingAmount.length>0){
+                      showToast(`Amount required for received items: ${missingAmount.join(", ")}`,"error");
+                      return;
+                    }
+                    const totalReceivedCheck = Object.values(prePaymentsState||{}).filter(v=>v.status==="received").reduce((s,v)=>s+(Number(v.amount)||0),0);
+                    const fpCheck = Number(stageGateForm.final_price||0);
+                    if(fpCheck > 0 && totalReceivedCheck > fpCheck * 1.5){
+                      showToast(`Warning: Total received (AED ${totalReceivedCheck.toLocaleString()}) exceeds 150% of sale price. Please verify amounts.`,"error");
                       return;
                     }
                   }
