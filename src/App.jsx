@@ -4900,13 +4900,13 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [spaUploadError, setSpaUploadError] = useState(null);
   // Stage 5 v2 — 3-state model: pending | received | waived
   const [prePaymentsState, setPrePaymentsState] = useState({
-    booking_fee:     { status: "pending", date: "", notes: "" },
-    reservation_fee: { status: "pending", date: "", notes: "" },
-    initial_advance: { status: "pending", date: "", notes: "" },
-    spa_fee:         { status: "pending", date: "", notes: "" },
-    dld_fee:         { status: "pending", date: "", notes: "" },
-    oqood_fee:       { status: "pending", date: "", notes: "" },
-    other_fees:      { status: "pending", date: "", notes: "" },
+    booking_fee:     { status: "pending", amount: "", date: "", notes: "" },
+    reservation_fee: { status: "pending", amount: "", date: "", notes: "" },
+    initial_advance: { status: "pending", amount: "", date: "", notes: "" },
+    spa_fee:         { status: "pending", amount: "", date: "", notes: "" },
+    dld_fee:         { status: "pending", amount: "", date: "", notes: "" },
+    oqood_fee:       { status: "pending", amount: "", date: "", notes: "" },
+    other_fees:      { status: "pending", amount: "", date: "", notes: "" },
   });
   const [closedWonEditPrice, setClosedWonEditPrice] = useState(false);
   // Stage 5 UX — "quick-fill date for all received" helper
@@ -5199,13 +5199,49 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   };
 
   // Stage 5 fix — sync stageGateForm.final_price with displayed value when SPA dialog opens
-  // Without this, validation sees empty state even though input shows a number from fallbacks
+  // Issue 1 fix 11 May 2026 — also pre-fill reservation_fee from opp.reservation_amount
   useEffect(() => {
     if (showStageGate === "SPA Signed" || showStageGate === "Closed Won") {
       const fallbackPrice = opp.final_price || opp.offer_price || opp.budget;
       if (fallbackPrice && !stageGateForm.final_price) {
         setStageGateForm(f => ({...f, final_price: String(fallbackPrice)}));
       }
+    }
+    // Issue 1: pre-fill reservation_fee in 3-state pre-SPA payments when SPA dialog opens
+    // Stage 5 v3 extension: also pre-fill the amount from opp.reservation_amount
+    if (showStageGate === "SPA Signed" && opp.reservation_amount) {
+      setPrePaymentsState(p => {
+        // Only pre-fill if user hasn't already set this row (don't override their choice)
+        if (p.reservation_fee?.status === "pending" && !p.reservation_fee?.date) {
+          return {
+            ...p,
+            reservation_fee: {
+              status: "received",
+              amount: String(opp.reservation_amount),
+              date: opp.reservation_date || new Date().toISOString().slice(0,10),
+              notes: "Pre-filled from Reserved stage entry"
+            }
+          };
+        }
+        return p;
+      });
+    }
+    // Stage 5 v3: pre-fill booking_fee.amount when SPA dialog opens (if captured upstream)
+    if (showStageGate === "SPA Signed" && opp.booking_amount) {
+      setPrePaymentsState(p => {
+        if (p.booking_fee?.status === "pending" && !p.booking_fee?.amount) {
+          return {
+            ...p,
+            booking_fee: {
+              status: "received",
+              amount: String(opp.booking_amount),
+              date: opp.booking_date || new Date().toISOString().slice(0,10),
+              notes: "Pre-filled from earlier flow"
+            }
+          };
+        }
+        return p;
+      });
     }
   }, [showStageGate]);
 
@@ -5410,6 +5446,19 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     // ISSUE D Phase 1 SHIPPED 10 May 2026 — pre-flight guard at top of this function
     // Phase 2 TODO: visual warnings on opp detail when other opps lose their unit
     // Phase 3 TODO: auto-release with per-master-agreement timeout (mix of auto + manual)
+    // Issue 1 fix 11 May 2026: capture reservation amount + date when advancing to Reserved
+    // (will be pre-filled into SPA Signed dialog's pre-SPA payments later)
+    if (toStage === "Reserved" && stageGateForm.reservation_fee) {
+      try {
+        await supabase.from("opportunities").update({
+          reservation_amount: Number(stageGateForm.reservation_fee),
+          reservation_date: new Date().toISOString().slice(0,10),
+        }).eq("id", opp.id);
+      } catch (e) {
+        console.error("Reservation capture exception:", e);
+      }
+    }
+
     if(toStage==="Closed Won"&&opp.unit_id)
       await supabase.from("project_units").update({status:"Sold"}).eq("id",opp.unit_id);
     if(toStage==="Reserved"&&opp.unit_id)
@@ -5418,13 +5467,13 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     setShowStageGate(null);
     // Stage 5 — reset transient stage-gate UI state
     setPrePaymentsState({
-      booking_fee:     { status: "pending", date: "", notes: "" },
-      reservation_fee: { status: "pending", date: "", notes: "" },
-      initial_advance: { status: "pending", date: "", notes: "" },
-      spa_fee:         { status: "pending", date: "", notes: "" },
-      dld_fee:         { status: "pending", date: "", notes: "" },
-      oqood_fee:       { status: "pending", date: "", notes: "" },
-      other_fees:      { status: "pending", date: "", notes: "" },
+      booking_fee:     { status: "pending", amount: "", date: "", notes: "" },
+      reservation_fee: { status: "pending", amount: "", date: "", notes: "" },
+      initial_advance: { status: "pending", amount: "", date: "", notes: "" },
+      spa_fee:         { status: "pending", amount: "", date: "", notes: "" },
+      dld_fee:         { status: "pending", amount: "", date: "", notes: "" },
+      oqood_fee:       { status: "pending", amount: "", date: "", notes: "" },
+      other_fees:      { status: "pending", amount: "", date: "", notes: "" },
     });
     setClosedWonEditPrice(false);
     setSingleDateValue("");
@@ -6948,7 +6997,7 @@ You will become the assigned agent.`);
       {/* Stage Gate Modal */}
       {showStageGate&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1200,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"90vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.25)"}}>
+          <div style={{background:"#fff",borderRadius:16,width:880,maxWidth:"96vw",maxHeight:"90vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.25)"}}>
             <div style={{padding:"1.25rem 1.5rem",borderBottom:"1px solid #E8EDF4",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
                 <div style={{fontSize:15,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>
@@ -7144,10 +7193,10 @@ You will become the assigned agent.`);
                     ["oqood_fee", "Oqood fee"],
                     ["other_fees", "Other developer fees"]
                   ].map(([key, label]) => {
-                    const item = prePaymentsState[key] || { status:"pending", date:"", notes:"" };
+                    const item = prePaymentsState[key] || { status:"pending", amount:"", date:"", notes:"" };
                     const status = item.status || "pending";
                     return (
-                      <div key={key} style={{display:"grid",gridTemplateColumns:"1fr 200px 130px",gap:8,alignItems:"center",padding:"7px 4px",borderBottom:"1px dashed #E2E8F0"}}>
+                      <div key={key} style={{display:"grid",gridTemplateColumns:"1fr 170px 100px 115px",gap:6,alignItems:"center",padding:"7px 4px",borderBottom:"1px dashed #E2E8F0"}}>
                         <div style={{fontSize:12,color:"#0F2540",fontWeight:status==="received"?600:status==="waived"?500:400}}>
                           {label}
                         </div>
@@ -7159,7 +7208,7 @@ You will become the assigned agent.`);
                             ["waived", "Waived", "#7C3AED", "#EDE9FE"]
                           ].map(([s, lbl, fg, bg]) => (
                             <button key={s} type="button"
-                              onClick={()=>setPrePaymentsState(p=>({...p, [key]:{...p[key], status:s, date: s==="received"?(p[key]?.date||""):p[key]?.date||""}}))}
+                              onClick={()=>setPrePaymentsState(p=>({...p, [key]:{...p[key], status:s, date: s==="received"?(p[key]?.date||""):p[key]?.date||"", amount: p[key]?.amount||""}}))}
                               style={{
                                 flex:1,padding:"3px 6px",border:"none",borderRadius:4,fontSize:9,fontWeight:700,cursor:"pointer",
                                 background: status===s ? bg : "transparent",
@@ -7171,7 +7220,26 @@ You will become the assigned agent.`);
                             </button>
                           ))}
                         </div>
-                        {/* Date input - shown for received and waived (waived = optional/informational) */}
+                        {/* Stage 5 v3: Amount input column */}
+                        {(status === "received" || status === "waived") ? (
+                          <input type="number" inputMode="numeric" min="0" step="100"
+                            value={item.amount || ""}
+                            onChange={e=>{
+                              const v = e.target.value;
+                              setPrePaymentsState(p=>({...p, [key]:{...p[key], amount:v}}));
+                            }}
+                            placeholder={status==="received"?"AED *":"optional"}
+                            style={{
+                              padding:"4px 6px",
+                              border:`1px solid ${status==="received" && !item.amount ? "#FCA5A5" : "#D1D5DB"}`,
+                              borderRadius:5,fontSize:11,
+                              background: status==="waived" ? "#FAFBFC" : "#fff",
+                              textAlign:"right"
+                            }}/>
+                        ) : (
+                          <span style={{fontSize:10,color:"#CBD5E0",fontStyle:"italic",textAlign:"center"}}>—</span>
+                        )}
+                        {/* Date input column */}
                         {(status === "received" || status === "waived") ? (
                           <input type="date" value={item.date || ""}
                             max={new Date().toISOString().slice(0,10)}
