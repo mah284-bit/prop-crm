@@ -3684,6 +3684,19 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         },
       };
 
+      // STAGE GATE 2 (11 May 2026): Proposal value must be > 0
+      // Per founder spec: "Proposal of 0 value not be sent"
+      const askingPriceCheck = Number(fullPayload.asking_price || 0);
+      const finalPriceCheck = Number(fullPayload.final_price || fullPayload.asking_price || 0);
+      if (askingPriceCheck <= 0 || finalPriceCheck <= 0) {
+        showToast(
+          "⛔ Cannot send proposal at AED 0. Enter valid asking price first.",
+          "error"
+        );
+        setSaving(false);
+        return;
+      }
+
       // 1. Insert proposal — defensive against missing schema columns
       const tryInsert = async (payload) => {
         return await supabase.from("proposals").insert(payload).select().single();
@@ -5393,6 +5406,31 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         }
       } catch (e) {
         console.error("Unit double-booking guard exception:", e);
+        // Fail-open on exception
+      }
+    }
+
+    // STAGE GATE 1 (11 May 2026): Unit must have asking_price before Site Visit / Proposal Sent
+    // Per founder spec: "Unit selected and there is no price for some reason should not even move forward"
+    if (["Site Visit", "Proposal Sent"].includes(toStage) && opp.unit_id) {
+      try {
+        const { data: unitData, error: unitErr } = await supabase
+          .from("project_units")
+          .select("id, unit_ref, original_price, current_price")
+          .eq("id", opp.unit_id)
+          .maybeSingle();
+        if (!unitErr && unitData) {
+          const askingPrice = Number(unitData.current_price || unitData.original_price || 0);
+          if (askingPrice <= 0) {
+            showToast(
+              `⛔ Unit ${unitData.unit_ref || ""} has no asking price set. Contact your manager to set unit pricing before advancing.`,
+              "error"
+            );
+            return; // Block transition
+          }
+        }
+      } catch (e) {
+        console.error("Stage Gate 1 (unit asking_price) exception:", e);
         // Fail-open on exception
       }
     }
@@ -7548,6 +7586,24 @@ You will become the assigned agent.`);
                   // Offer Accepted - no required fields, price comes from inventory
                   if(showStageGate==="Reserved"&&!stageGateForm.reservation_fee){showToast("Reservation fee is required","error");return;}
                   if(showStageGate==="SPA Signed"&&!stageGateForm.final_price){showToast("Final price is required","error");return;}
+                  // STAGE GATE 5 (11 May 2026): Reserved -> SPA Signed requires booking + reservation
+                  // Per founder spec: "If not collected together 1&2, cannot proceed further"
+                  if(showStageGate==="SPA Signed"){
+                    const bookingFee = prePaymentsState?.booking_fee || {};
+                    const reservationFee = prePaymentsState?.reservation_fee || {};
+                    const bookingOK = bookingFee.status === "received" && Number(bookingFee.amount) > 0;
+                    const reservationOK = reservationFee.status === "received" && Number(reservationFee.amount) > 0;
+                    if (!bookingOK || !reservationOK) {
+                      const missing = [];
+                      if (!bookingOK) missing.push("Booking fee");
+                      if (!reservationOK) missing.push("Reservation fee");
+                      showToast(
+                        `⛔ ${missing.join(" + ")} must be Received with amount before SPA Signed. These are mandatory commitment payments.`,
+                        "error"
+                      );
+                      return;
+                    }
+                  }
                   // Stage 5 v2 — validate all "received" pre-SPA items have dates
                   // Stage 5 v3 Phase 3c — also validate amounts + sanity check totals
                   if(showStageGate==="SPA Signed"){
@@ -7569,6 +7625,28 @@ You will become the assigned agent.`);
                     }
                   }
                   if(showStageGate==="Closed Won"&&!(stageGateForm.final_price||opp.final_price||opp.offer_price)){showToast("Final sale price is required","error");return;}
+                  // STAGE GATE 6 (11 May 2026): SPA Signed -> Closed Won = signature event
+                  // Per founder spec: "No signature till all the money collected"
+                  // Required: all 7 fees Received/Waived (no Pending) + SPA document uploaded
+                  if(showStageGate==="Closed Won"){
+                    const pendingItems = Object.entries(prePaymentsState||{}).filter(([k,v])=>v.status==="pending" || !v.status).map(([k])=>k.replace(/_/g," "));
+                    if(pendingItems.length>0){
+                      showToast(
+                        `⛔ Cannot close as Won with pending payments: ${pendingItems.join(", ")}. Mark each as Received or Waived first.`,
+                        "error"
+                      );
+                      return;
+                    }
+                    // SPA document required (uploaded path or filename)
+                    const hasSpaDoc = stageGateForm.spa_document_path || stageGateForm.spa_document_filename || opp.spa_document_path;
+                    if (!hasSpaDoc) {
+                      showToast(
+                        "⛔ SPA document (signed) must be uploaded before closing as Won.",
+                        "error"
+                      );
+                      return;
+                    }
+                  }
                   if(showStageGate==="Closed Lost"&&!stageGateForm.lost_reason){showToast("Please select a lost reason","error");return;}
                   // Build extra data for DB
                   const extraData = {
