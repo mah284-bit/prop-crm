@@ -4911,6 +4911,10 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [closedWonEditPrice, setClosedWonEditPrice] = useState(false);
   // Stage 5 UX — "quick-fill date for all received" helper
   const [singleDateValue, setSingleDateValue] = useState("");
+  // Phase 3b - DLD payer config (defaults to buyer; loaded from master agreement on open)
+  const [dldPayer, setDldPayer] = useState(opp?.dld_payer || "buyer");
+  // Phase 3b Split - buyer's percentage when dld_payer === 'split' (default 50)
+  const [dldSplitPct, setDldSplitPct] = useState(opp?.dld_split_pct ?? 50);
   const [showDiscReq, setShowDiscReq] = useState(false);
   const [discReqForm, setDiscReqForm] = useState({type:"sale_price",discount_pct:"",reason:"",discount_source:"Developer",developer_auth_ref:""});
   const [logForm,    setLogForm]    = useState({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
@@ -5243,7 +5247,70 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         return p;
       });
     }
+    // Phase 3b: load default_dld_payer from master agreement if opp doesn't have one set
+    if (showStageGate === "SPA Signed" && !opp.dld_payer && opp.master_agreement_id) {
+      (async () => {
+        const { data: ma } = await supabase
+          .from("pp_master_agreements")
+          .select("default_dld_payer")
+          .eq("id", opp.master_agreement_id)
+          .maybeSingle();
+        if (ma?.default_dld_payer) setDldPayer(ma.default_dld_payer);
+      })();
+    }
   }, [showStageGate]);
+
+  // Phase 3b: auto-calc DLD fee row when final_price OR dldPayer changes
+  useEffect(() => {
+    if (showStageGate !== "SPA Signed") return;
+    const price = Number(stageGateForm.final_price || 0);
+    if (!price) return;
+    const dldAmount = Math.round(price * 0.04 * 100) / 100;
+    setPrePaymentsState(p => {
+      const next = {...p};
+      // Don't override if broker already manually set this row (no override of explicit user action)
+      const existingNotes = next.dld_fee?.notes || "";
+      const wasAutoFilled = existingNotes.includes("Auto from DLD payer");
+      const isPristine = next.dld_fee?.status === "pending" || wasAutoFilled;
+      if (!isPristine) return p; // user touched it, leave alone
+
+      if (dldPayer === "buyer") {
+        next.dld_fee = {
+          status: "received",
+          amount: String(dldAmount),
+          date: next.dld_fee?.date || new Date().toISOString().slice(0,10),
+          notes: "Auto from DLD payer: Buyer (4% of final price)"
+        };
+      } else if (dldPayer === "developer") {
+        next.dld_fee = {
+          status: "waived",
+          amount: "",
+          date: "",
+          notes: "Auto from DLD payer: Developer absorbs"
+        };
+      } else if (dldPayer === "split") {
+        // Split: buyer pays X%, developer pays (100-X)%
+        const buyerPct = Number(dldSplitPct) || 50;
+        const buyerPortion = Math.round(dldAmount * (buyerPct/100) * 100) / 100;
+        const devPortion = Math.round((dldAmount - buyerPortion) * 100) / 100;
+        next.dld_fee = {
+          status: "received",
+          amount: String(buyerPortion),
+          date: next.dld_fee?.date || new Date().toISOString().slice(0,10),
+          notes: `Auto from DLD payer: Split — Buyer ${buyerPct}% (AED ${buyerPortion.toLocaleString()}), Developer ${100-buyerPct}% (AED ${devPortion.toLocaleString()})`
+        };
+      } else {
+        // negotiated - clear so broker enters manually
+        next.dld_fee = {
+          status: "pending",
+          amount: "",
+          date: "",
+          notes: "Auto from DLD payer: Negotiated (manual entry required)"
+        };
+      }
+      return next;
+    });
+  }, [stageGateForm.final_price, dldPayer, dldSplitPct, showStageGate]);
 
   // Stage 5 — Upload SPA document to private 'documents' bucket
   async function uploadSpaDocument(file) {
@@ -7150,6 +7217,74 @@ You will become the assigned agent.`);
                     <span><span style={{color:"#A0AEC0",fontWeight:700}}>● Pending</span> = not yet paid</span>
                     <span><span style={{color:"#7C3AED",fontWeight:700}}>● Waived</span> = not required</span>
                   </div>
+
+                  {/* Phase 3b: DLD payer selector */}
+                  <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:8,marginBottom:10}}>
+                    <span style={{fontSize:11,fontWeight:700,color:"#0C4A6E",whiteSpace:"nowrap"}}>🏛️ DLD Fee (4%):</span>
+                    <div style={{display:"flex",gap:4,flex:1}}>
+                      {[
+                        ["buyer", "Buyer pays", "#16A34A"],
+                        ["developer", "Developer absorbs", "#7C3AED"],
+                        ["negotiated", "Negotiated", "#F59E0B"],
+                        ["split", "Split", "#3B82F6"]
+                      ].map(([val, lbl, color]) => (
+                        <button key={val} type="button"
+                          onClick={async ()=>{
+                            setDldPayer(val);
+                            // Persist to opp
+                            if (opp.id) {
+                              await supabase.from("opportunities").update({dld_payer: val}).eq("id", opp.id);
+                              onUpdated?.({...opp, dld_payer: val});
+                            }
+                          }}
+                          style={{
+                            flex:1,padding:"5px 10px",border:"none",borderRadius:5,fontSize:10,fontWeight:700,cursor:"pointer",
+                            background: dldPayer===val ? color : "#fff",
+                            color: dldPayer===val ? "#fff" : "#64748B",
+                            textTransform: "uppercase",
+                            letterSpacing: 0.4,
+                            transition:"all .15s"
+                          }}>
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Phase 3b Split: percentage input when Split is selected */}
+                  {dldPayer === "split" && (() => {
+                    const price = Number(stageGateForm.final_price || 0);
+                    const dldTotal = price * 0.04;
+                    const buyerPct = Number(dldSplitPct) || 50;
+                    const buyerAmt = Math.round(dldTotal * (buyerPct/100) * 100) / 100;
+                    const devAmt = Math.round((dldTotal - buyerAmt) * 100) / 100;
+                    return (
+                      <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#EFF6FF",border:"1px solid #93C5FD",borderRadius:8,marginBottom:10}}>
+                        <span style={{fontSize:11,fontWeight:700,color:"#1E40AF",whiteSpace:"nowrap"}}>📊 Split %:</span>
+                        <input type="number" min="0" max="100" step="5"
+                          value={dldSplitPct}
+                          onChange={async (e)=>{
+                            const v = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                            setDldSplitPct(v);
+                            // Persist to opp
+                            if (opp.id) {
+                              await supabase.from("opportunities").update({dld_split_pct: v}).eq("id", opp.id);
+                              onUpdated?.({...opp, dld_split_pct: v});
+                            }
+                          }}
+                          style={{
+                            padding:"4px 8px",borderRadius:5,border:"1px solid #93C5FD",
+                            fontSize:12,fontWeight:700,color:"#1E40AF",width:60,textAlign:"center"
+                          }}/>
+                        <span style={{fontSize:11,color:"#1E40AF",fontWeight:600}}>%</span>
+                        <div style={{flex:1,fontSize:11,color:"#1E40AF",textAlign:"right"}}>
+                          <span style={{fontWeight:700}}>Buyer pays:</span> AED {buyerAmt.toLocaleString()}
+                          <span style={{margin:"0 8px",opacity:0.5}}>|</span>
+                          <span style={{fontWeight:700}}>Developer pays:</span> AED {devAmt.toLocaleString()}
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {/* Quick-fill: apply same date to all "received" items */}
                   <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",background:"#FFFAEB",border:"1px solid #FCD34D",borderRadius:6,marginBottom:8}}>
                     <span style={{fontSize:10,fontWeight:600,color:"#92400E"}}>⚡ Quick-fill date for all received items:</span>
