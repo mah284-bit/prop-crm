@@ -5710,6 +5710,22 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
             {opp.status==="On Hold"&&<span style={{padding:"3px 10px",borderRadius:20,background:"#F7F9FC",color:"#718096",fontSize:11,fontWeight:600}}>On Hold</span>}
             {stageAgeDays!==null&&<span style={{fontSize:11,color:"#94A3B8"}}>· {stageAgeDays===0?"today":stageAgeDays===1?"1 day":`${stageAgeDays} days`} in stage</span>}
           </div>
+          {/* Finding 2 fix (11 May 2026): show linked unit prominently on opp header */}
+          {opp.unit_id && (() => {
+            const linkedUnit = (units || []).find(u => u.id === opp.unit_id);
+            if (!linkedUnit) return null;
+            const linkedProj = (projects || []).find(p => p.id === linkedUnit.project_id);
+            const bedLabel = linkedUnit.bedrooms === 0 ? "Studio" : (linkedUnit.bedrooms ? `${linkedUnit.bedrooms}BR` : "");
+            const details = [bedLabel, linkedProj?.name, linkedUnit.size_sqft && `${linkedUnit.size_sqft} sqft`, linkedUnit.view].filter(Boolean).join(" · ");
+            return (
+              <div style={{fontSize:12,marginTop:5,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",padding:"4px 10px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:6,width:"fit-content"}}>
+                <span style={{fontSize:14}}>🏠</span>
+                <strong style={{color:"#0C4A6E",fontWeight:700}}>{linkedUnit.unit_ref}</strong>
+                <span style={{color:"#0369A1",fontSize:11}}>· {details}</span>
+              </div>
+            );
+          })()}
+
           <div style={{fontSize:12,color:"#718096",marginTop:3,display:"flex",gap:10,flexWrap:"wrap"}}>
             <span>{lead.name}</span>
             {lead.phone&&<span>· {lead.phone}</span>}
@@ -8879,7 +8895,21 @@ What should the second agent know?`;
                                 const isReserved = u.status === "Reserved" || u.status === "Sold";
                                 return (
                                   <div key={u.id}
-                                    onClick={()=>{setOppForm(f=>({...f,unit_id:u.id}));setUnitPickerOpen(false);setUnitSearch("");}}
+                                    onClick={()=>{
+                                      // Finding 1 fix (11 May 2026): confirm before selecting Reserved/Sold unit
+                                      if (isReserved) {
+                                        const ok = window.confirm(
+                                          `⚠️ Unit ${u.unit_ref} is currently ${u.status}.\n\n` +
+                                          `This unit may conflict with another active deal. ` +
+                                          `Selecting it could cause double-booking issues.\n\n` +
+                                          `Click OK to proceed anyway, or Cancel to pick a different unit.`
+                                        );
+                                        if (!ok) return;
+                                      }
+                                      setOppForm(f=>({...f,unit_id:u.id}));
+                                      setUnitPickerOpen(false);
+                                      setUnitSearch("");
+                                    }}
                                     onMouseOver={e=>e.currentTarget.style.background="#F8FAFC"}
                                     onMouseOut={e=>e.currentTarget.style.background="#fff"}
                                     style={{padding:"8px 12px",borderBottom:"1px solid #F1F5F9",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,opacity:isReserved?0.6:1}}>
