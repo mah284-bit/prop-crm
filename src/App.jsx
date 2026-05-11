@@ -7157,6 +7157,63 @@ You will become the assigned agent.`);
                     </div>
                   </div>
                   {opp.discount_pct&&<div style={{marginTop:8,fontSize:11,color:"#64748B"}}>Discount source: <strong>{opp.discount_source||"Not specified"}</strong></div>}
+
+                  {/* STAGE GATE 4 (11 May 2026): Price override toggle + warning */}
+                  {(() => {
+                    const calculatedPrice = opp.budget ? Number(opp.discount_pct ? opp.budget*(1-opp.discount_pct/100) : opp.budget) : 0;
+                    const overridePrice = Number(stageGateForm.offer_price_override || 0);
+                    const showOverride = stageGateForm.show_price_override;
+                    const isChanged = showOverride && overridePrice > 0 && overridePrice !== calculatedPrice;
+                    const commPct = Number(opp.commission_pct || 0);
+                    const originalCommission = Math.round(calculatedPrice * commPct / 100);
+                    const newCommission = Math.round(overridePrice * commPct / 100);
+                    const commissionDiff = newCommission - originalCommission;
+                    return (
+                      <div style={{marginTop:12,paddingTop:12,borderTop:"1px dashed #E2E8F0"}}>
+                        {!showOverride ? (
+                          <button type="button"
+                            onClick={()=>setStageGateForm(f=>({...f, show_price_override:true, offer_price_override:String(calculatedPrice)}))}
+                            style={{padding:"5px 10px",borderRadius:5,border:"1px solid #F59E0B",background:"#FFFBEB",color:"#92400E",fontSize:10,fontWeight:700,cursor:"pointer",textTransform:"uppercase",letterSpacing:".4px"}}>
+                            ⚠️ Override Price (negotiated separately)
+                          </button>
+                        ) : (
+                          <div>
+                            <div style={{fontSize:10,fontWeight:700,color:"#92400E",textTransform:"uppercase",letterSpacing:".4px",marginBottom:6}}>⚠️ Price Override Mode</div>
+                            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                              <label style={{fontSize:11,color:"#64748B",whiteSpace:"nowrap"}}>Override AED:</label>
+                              <input type="number" min="0" step="1000"
+                                value={stageGateForm.offer_price_override||""}
+                                onChange={e=>setStageGateForm(f=>({...f, offer_price_override:e.target.value}))}
+                                style={{padding:"4px 8px",borderRadius:5,border:"1.5px solid #F59E0B",fontSize:12,fontWeight:700,color:"#92400E",width:140}}/>
+                              <button type="button"
+                                onClick={()=>setStageGateForm(f=>({...f, show_price_override:false, offer_price_override:""}))}
+                                style={{padding:"4px 10px",borderRadius:5,border:"1px solid #E2E8F0",background:"#fff",color:"#64748B",fontSize:10,fontWeight:600,cursor:"pointer"}}>
+                                Cancel
+                              </button>
+                            </div>
+                            {isChanged && (
+                              <div style={{padding:"10px 12px",background:"linear-gradient(135deg,#FEF3C7,#FDE68A)",border:"1px solid #F59E0B",borderRadius:8,fontSize:11,color:"#78350F"}}>
+                                <div style={{fontWeight:700,marginBottom:4,fontSize:12}}>⚠️ Commission Impact Warning</div>
+                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,fontSize:11}}>
+                                  <div>Calculated: AED {calculatedPrice.toLocaleString()}</div>
+                                  <div>Override: AED {overridePrice.toLocaleString()}</div>
+                                  {commPct > 0 && (<>
+                                    <div>Original comm @ {commPct}%: AED {originalCommission.toLocaleString()}</div>
+                                    <div style={{fontWeight:700,color:commissionDiff<0?"#B83232":"#1A7F5A"}}>
+                                      New comm: AED {newCommission.toLocaleString()} ({commissionDiff>=0?"+":""}{commissionDiff.toLocaleString()})
+                                    </div>
+                                  </>)}
+                                </div>
+                                <div style={{marginTop:6,fontWeight:600}}>
+                                  Confirm this price matches developer's authorization. Your broker license depends on accurate price tracking.
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#92400E"}}>
                   ℹ Price is based on approved inventory pricing. To request a discount, use the <strong>💰 Request Discount</strong> button in the Financials section first.
@@ -7665,12 +7722,32 @@ You will become the assigned agent.`);
                   }
                   if(showStageGate==="Closed Lost"&&!stageGateForm.lost_reason){showToast("Please select a lost reason","error");return;}
                   // Build extra data for DB
+                  // STAGE GATE 4 (11 May 2026): if override active and changed, use override price + log
+                  const _calculatedOfferPrice = opp.discount_pct ? opp.budget*(1-opp.discount_pct/100) : opp.budget;
+                  const _overrideActive = stageGateForm.show_price_override && Number(stageGateForm.offer_price_override||0) > 0;
+                  const _finalOfferPrice = _overrideActive ? Number(stageGateForm.offer_price_override) : _calculatedOfferPrice;
                   const extraData = {
-                    ...(opp.discount_pct?{offer_price:Number(opp.budget*(1-opp.discount_pct/100))}:{offer_price:opp.budget||null}),
+                    offer_price: _finalOfferPrice || opp.budget || null,
                     ...(stageGateForm.final_price?{final_price:Number(stageGateForm.final_price)}:{}),
                     ...(stageGateForm.lost_reason?{lost_reason:stageGateForm.lost_reason}:{}),
                     ...(stageGateForm.notes?{notes:stageGateForm.notes}:{}),
                   };
+                  // Log price override to activities for audit trail
+                  if (_overrideActive && Number(stageGateForm.offer_price_override) !== Number(_calculatedOfferPrice)) {
+                    try {
+                      await supabase.from("activities").insert({
+                        lead_id: opp.lead_id,
+                        opportunity_id: opp.id,
+                        company_id: currentUser.company_id || null,
+                        type: "Note",
+                        note: `Price override at ${showStageGate}: Calculated AED ${Number(_calculatedOfferPrice).toLocaleString()} → Override AED ${Number(stageGateForm.offer_price_override).toLocaleString()}. Broker accepted commission impact.`,
+                        status: "completed",
+                        created_by: currentUser.id
+                      });
+                    } catch (e) {
+                      console.error("Price override audit log exception:", e);
+                    }
+                  }
                   await commitStageMove(showStageGate, extraData);
                 }}
                   style={{padding:"8px 20px",borderRadius:8,border:"none",
