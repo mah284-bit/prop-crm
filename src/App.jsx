@@ -5216,6 +5216,38 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   };
 
   // Stage 5 fix — sync stageGateForm.final_price with displayed value when SPA dialog opens
+  // Bug A fix (12 May 2026): Load saved pp_sales_closures state when reopening SPA Signed/Closed Won dialog
+  // Real broker workflow: save partial state, return next day to complete
+  // Must load BEFORE pre-fill useEffects to prevent overwriting saved data
+  // 12 May extension: Also fires for Closed Won so Gate 6 validation sees saved data
+  useEffect(() => {
+    if ((showStageGate !== "SPA Signed" && showStageGate !== "Closed Won") || !opp.id) return;
+    (async () => {
+      try {
+        const { data: closure } = await supabase
+          .from("pp_sales_closures")
+          .select("pre_spa_payments, final_sale_price, spa_signed_date, spa_reference_number, notes, spa_document_path, spa_document_filename")
+          .eq("opportunity_id", opp.id)
+          .maybeSingle();
+        if (closure?.pre_spa_payments) {
+          setPrePaymentsState(closure.pre_spa_payments);
+          setStageGateForm(f => ({
+            ...f,
+            final_price: closure.final_sale_price ? String(closure.final_sale_price) : f.final_price,
+            spa_date: closure.spa_signed_date || f.spa_date,
+            spa_reference_number: closure.spa_reference_number || f.spa_reference_number,
+            notes: closure.notes || f.notes,
+            spa_document_path: closure.spa_document_path || f.spa_document_path,
+            spa_document_filename: closure.spa_document_filename || f.spa_document_filename,
+          }));
+        }
+      } catch (e) {
+        console.error("Bug A: load saved closure state exception:", e);
+        // Fail-open - dialog still works with defaults
+      }
+    })();
+  }, [showStageGate, opp.id]);
+
   // Issue 1 fix 11 May 2026 — also pre-fill reservation_fee from opp.reservation_amount
   useEffect(() => {
     if (showStageGate === "SPA Signed" || showStageGate === "Closed Won") {
@@ -5463,12 +5495,13 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       }
     }
 
-    // Stage 5 — Create sales closure record when SPA is signed
+    // Stage 5 — Create or UPDATE sales closure record when SPA is signed
+    // Bug C fix (12 May 2026): use upsert so re-edits work (was silently failing on duplicate)
     if (toStage === "SPA Signed" && stageGateForm.final_price) {
       try {
         const { error: closErr } = await supabase
           .from("pp_sales_closures")
-          .insert({
+          .upsert({
             company_id: currentUser.company_id,
             opportunity_id: opp.id,
             spa_signed_date: stageGateForm.spa_date || new Date().toISOString().slice(0,10),
@@ -5478,17 +5511,15 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
             spa_document_filename: stageGateForm.spa_document_filename || null,
             pre_spa_payments: prePaymentsState,
             notes: stageGateForm.notes || null,
-            created_by: currentUser.id,
             updated_by: currentUser.id,
-          });
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'opportunity_id' });
         if (closErr) {
-          if (!String(closErr.message).toLowerCase().includes("duplicate")) {
-            console.error("Sales closure insert failed:", closErr);
-            showToast("SPA recorded but closure log failed - check console", "warning");
-          }
+          console.error("Sales closure upsert failed:", closErr);
+          showToast("SPA recorded but closure log failed - check console", "warning");
         }
       } catch (e) {
-        console.error("Sales closure insert exception:", e);
+        console.error("Sales closure upsert exception:", e);
       }
     }
 
@@ -7646,29 +7677,15 @@ You will become the assigned agent.`);
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Final Sale Price (AED) *</label>
-                    {!closedWonEditPrice ? (
-                      <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:8}}>
-                        <span style={{fontSize:13,fontWeight:700,color:"#166534"}}>
-                          AED {Number(stageGateForm.final_price||opp.final_price||opp.offer_price||0).toLocaleString()}
-                        </span>
-                        <span style={{fontSize:10,color:"#16A34A",flex:1}}>
-                          {opp.final_price ? "from SPA Signed" : "from offer"}
-                        </span>
-                        <button type="button" onClick={()=>setClosedWonEditPrice(true)}
-                          style={{padding:"4px 10px",background:"#fff",border:"1px solid #86EFAC",borderRadius:5,fontSize:11,fontWeight:600,color:"#166534",cursor:"pointer"}}>
-                          Edit if changed
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <input type="number" value={stageGateForm.final_price||opp.final_price||opp.offer_price||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
-                        {Number(stageGateForm.final_price)!==Number(opp.final_price||opp.offer_price) && stageGateForm.final_price && (
-                          <div style={{fontSize:11,color:"#92400E",marginTop:4,fontWeight:600}}>
-                            ⚠️ Price changed from AED {Number(opp.final_price||opp.offer_price||0).toLocaleString()}
-                          </div>
-                        )}
-                      </>
-                    )}
+                    {/* Fix 2 (12 May 2026): Read-only price at Closed Won - SPA signed = legally locked */}
+                    <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:8}}>
+                      <span style={{fontSize:13,fontWeight:700,color:"#166534"}}>
+                        AED {Number(stageGateForm.final_price||opp.final_price||opp.offer_price||0).toLocaleString()}
+                      </span>
+                      <span style={{fontSize:10,color:"#16A34A",flex:1}}>
+                        🔒 Locked from SPA Signed
+                      </span>
+                    </div>
                   </div>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Expected Handover Date</label>
