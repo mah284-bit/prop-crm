@@ -5271,7 +5271,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         if (ma?.default_dld_payer) setDldPayer(ma.default_dld_payer);
       })();
     }
-  }, [showStageGate]);
+  }, [showStageGate, opp.reservation_amount, opp.booking_amount, opp.reservation_date, opp.booking_date]);
 
   // Phase 3b: auto-calc DLD fee row when final_price OR dldPayer changes
   useEffect(() => {
@@ -7128,7 +7128,17 @@ You will become the assigned agent.`);
                   {showStageGate==="Closed Won"&&"🏆 Close as Won"}
                   {showStageGate==="Closed Lost"&&"❌ Close as Lost"}
                 </div>
-                <div style={{fontSize:12,color:"#94A3B8",marginTop:2}}>{opp.title||lead?.name}</div>
+                {/* Bug 2 fix (12 May 2026): show buyer + unit context for stage dialogs */}
+                <div style={{fontSize:12,color:"#475569",marginTop:2,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                  {lead?.name && <strong style={{color:"#0F2540"}}>{lead.name}</strong>}
+                  {(() => {
+                    const linkedUnit = (units||[]).find(u => u.id === opp.unit_id);
+                    return linkedUnit?.unit_ref ? (
+                      <span style={{padding:"2px 8px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:5,color:"#0C4A6E",fontSize:11,fontWeight:700}}>🏠 {linkedUnit.unit_ref}</span>
+                    ) : null;
+                  })()}
+                  {opp.title && <span style={{fontSize:11,color:"#94A3B8"}}>· {opp.title}</span>}
+                </div>
               </div>
               <button onClick={()=>setShowStageGate(null)} style={{background:"none",border:"none",fontSize:22,color:"#94A3B8",cursor:"pointer"}}>×</button>
             </div>
@@ -7431,20 +7441,25 @@ You will become the assigned agent.`);
                   </div>
 
                   {[
-                    ["booking_fee", "Booking fee"],
-                    ["reservation_fee", "Reservation fee"],
-                    ["initial_advance", "Initial advance"],
-                    ["spa_fee", "SPA fee"],
-                    ["dld_fee", "DLD fee (4%)"],
-                    ["oqood_fee", "Oqood fee"],
-                    ["other_fees", "Other developer fees"]
-                  ].map(([key, label]) => {
+                    ["booking_fee", "Booking fee 💳", true],
+                    ["reservation_fee", "Reservation fee 💳", true],
+                    ["initial_advance", "Initial advance", false],
+                    ["spa_fee", "SPA fee", false],
+                    ["dld_fee", "DLD fee (4%)", false],
+                    ["oqood_fee", "Oqood fee", false],
+                    ["other_fees", "Other developer fees", false]
+                  ].map(([key, label, isCreditFee]) => {
                     const item = prePaymentsState[key] || { status:"pending", amount:"", date:"", notes:"" };
                     const status = item.status || "pending";
                     return (
                       <div key={key} style={{display:"grid",gridTemplateColumns:"1fr 170px 100px 115px",gap:6,alignItems:"center",padding:"7px 4px",borderBottom:"1px dashed #E2E8F0"}}>
                         <div style={{fontSize:12,color:"#0F2540",fontWeight:status==="received"?600:status==="waived"?500:400}}>
                           {label}
+                          {isCreditFee && (
+                            <div style={{fontSize:9,color:"#0369A1",fontWeight:500,marginTop:1,letterSpacing:".2px"}}>
+                              credits toward initial advance
+                            </div>
+                          )}
                         </div>
                         {/* 3-state pill selector */}
                         <div style={{display:"flex",gap:4,background:"#fff",border:"1px solid #E2E8F0",borderRadius:6,padding:2}}>
@@ -7510,6 +7525,42 @@ You will become the assigned agent.`);
                       </div>
                     );
                   })}
+
+                  {/* Phase C / Gate 7 (11 May 2026): Initial advance credit calculation note */}
+                  {(() => {
+                    const ia = prePaymentsState?.initial_advance || {};
+                    const bf = prePaymentsState?.booking_fee || {};
+                    const rf = prePaymentsState?.reservation_fee || {};
+                    const iaReceived = ia.status === "received" && Number(ia.amount) > 0;
+                    const bfAmt = bf.status === "received" ? Number(bf.amount) || 0 : 0;
+                    const rfAmt = rf.status === "received" ? Number(rf.amount) || 0 : 0;
+                    const totalCredits = bfAmt + rfAmt;
+                    if (!iaReceived || totalCredits <= 0) return null;
+                    const iaAmt = Number(ia.amount) || 0;
+                    const netDueAfterCredits = Math.max(0, iaAmt - totalCredits);
+                    return (
+                      <div style={{marginTop:8,padding:"10px 12px",background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:8,fontSize:11,color:"#1E3A8A"}}>
+                        <div style={{fontWeight:700,marginBottom:4,fontSize:11}}>💳 Initial Advance Credit Note</div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+                          <div>Recorded as Received:</div>
+                          <div style={{fontWeight:700,textAlign:"right"}}>AED {iaAmt.toLocaleString()}</div>
+                          {bfAmt > 0 && (<>
+                            <div>Less Booking fee credit:</div>
+                            <div style={{textAlign:"right",color:"#7C2D12"}}>(AED {bfAmt.toLocaleString()})</div>
+                          </>)}
+                          {rfAmt > 0 && (<>
+                            <div>Less Reservation fee credit:</div>
+                            <div style={{textAlign:"right",color:"#7C2D12"}}>(AED {rfAmt.toLocaleString()})</div>
+                          </>)}
+                          <div style={{fontWeight:700,paddingTop:4,borderTop:"1px dashed #93C5FD"}}>Actual buyer paid this stage:</div>
+                          <div style={{fontWeight:700,textAlign:"right",paddingTop:4,borderTop:"1px dashed #93C5FD"}}>AED {netDueAfterCredits.toLocaleString()}</div>
+                        </div>
+                        <div style={{marginTop:5,fontSize:10,color:"#1E3A8A",fontStyle:"italic"}}>
+                          Booking + Reservation paid at earlier stage credit toward Initial advance.
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* Phase 3c: Payment Summary Card */}
                   {(() => {
