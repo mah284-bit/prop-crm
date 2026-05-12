@@ -3957,65 +3957,16 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
               </div>
             )}
 
-            {/* Add-unit picker */}
+            {/* Add-unit picker - now uses reusable UnitSearchPicker component (12 May 2026 refactor) */}
             {showAddUnit && (
               <div style={{marginBottom:10,background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8,padding:8}}>
-                {/* Search input — filter by unit_ref, project name, bedrooms, view, sub_type */}
-                <div style={{position:"relative",marginBottom:8}}>
-                  <input type="text" autoFocus
-                    value={unitPickerQuery}
-                    onChange={e=>setUnitPickerQuery(e.target.value)}
-                    placeholder="🔍 Search units — e.g. AGR, Sobha, 2BR, sea view, villa…"
-                    style={{width:"100%",padding:"7px 10px 7px 10px",borderRadius:6,border:"1.5px solid #E2E8F0",fontSize:12,boxSizing:"border-box",outline:"none"}}/>
-                  {unitPickerQuery && (
-                    <button onClick={()=>setUnitPickerQuery("")}
-                      title="Clear"
-                      style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",padding:"2px 7px",borderRadius:5,border:"none",background:"#E2E8F0",color:"#64748B",fontSize:10,fontWeight:700,cursor:"pointer"}}>
-                      ✕
-                    </button>
-                  )}
-                </div>
-                {(() => {
-                  const q = unitPickerQuery.trim().toLowerCase();
-                  const filtered = !q ? availableUnits : availableUnits.filter(u => {
-                    const proj = projects.find(p=>p.id===u.project_id);
-                    const bedLabel = u.bedrooms === 0 ? "studio" : (u.bedrooms ? `${u.bedrooms}br ${u.bedrooms} bed ${u.bedrooms} bedroom` : "");
-                    const haystack = [
-                      u.unit_ref, proj?.name, u.sub_type, u.view,
-                      bedLabel, u.size_sqft?String(u.size_sqft):null,
-                      u.floor_number?`floor ${u.floor_number}`:null,
-                    ].filter(Boolean).join(" ").toLowerCase();
-                    return haystack.includes(q);
-                  });
-                  if (availableUnits.length === 0) {
-                    return <div style={{fontSize:11,color:"#94A3B8",fontStyle:"italic",padding:"10px"}}>No more units available to add</div>;
-                  }
-                  if (filtered.length === 0) {
-                    return <div style={{fontSize:11,color:"#94A3B8",fontStyle:"italic",padding:"10px"}}>No units match "{unitPickerQuery}"</div>;
-                  }
-                  return (
-                    <div style={{maxHeight:180,overflowY:"auto"}}>
-                      {filtered.map(u => {
-                        const proj = projects.find(p=>p.id===u.project_id);
-                        const sp = (salePricing||[]).find(s => s.unit_id === u.id);
-                        const bedLabel = u.bedrooms === 0 ? "Studio" : (u.bedrooms ? `${u.bedrooms}BR` : "");
-                        return (
-                          <button key={u.id} onClick={()=>{addUnit(u.id); setUnitPickerQuery("");}}
-                            style={{display:"block",width:"100%",textAlign:"left",padding:"7px 10px",border:"none",background:"transparent",borderRadius:6,cursor:"pointer"}}
-                            onMouseOver={e=>e.currentTarget.style.background="#fff"}
-                            onMouseOut={e=>e.currentTarget.style.background="transparent"}>
-                            <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>
-                              {u.unit_ref} · {bedLabel}{u.size_sqft?` · ${u.size_sqft} sqft`:""}{u.view?` · ${u.view}`:""}
-                            </div>
-                            <div style={{fontSize:11,color:"#64748B",marginTop:1}}>
-                              {[proj?.name, u.floor_number?`Floor ${u.floor_number}`:null, sp?.asking_price?fmtAed(sp.asking_price):null].filter(Boolean).join(" · ")}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
+                <UnitSearchPicker
+                  units={availableUnits}
+                  projects={projects}
+                  salePricing={salePricing}
+                  onSelect={(unitId) => addUnit(unitId)}
+                  emptyMessage="No more units available to add"
+                />
               </div>
             )}
 
@@ -9226,12 +9177,40 @@ function Opportunities({ leads, setLeads, opps, setOpps, units, projects, salePr
   const [fOwner, setFOwner] = useState("All"); // "All" | "Mine" | userId
 
   // Deep-link: if initialFilter says open a specific opp, do it
+  // Fix 12 May 2026: resilient to stale state - fetch from DB if not in local array
+  // (handles race condition where new opp navigation fires before global state updates)
   useEffect(()=>{
     if (!initialFilter || initialFilter.type !== "opp" || !initialFilter.oppId) return;
     const opp = (opps||[]).find(o => o.id === initialFilter.oppId);
-    if (!opp) return;
-    setSelOpp(opp);
-    setView("opportunity");
+    if (opp) {
+      setSelOpp(opp);
+      setView("opportunity");
+      return;
+    }
+    // Not in local state yet - fetch directly from DB
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("opportunities")
+          .select("*")
+          .eq("id", initialFilter.oppId)
+          .maybeSingle();
+        if (error) {
+          console.error("Deep-link DB fallback failed:", error);
+          return;
+        }
+        if (data) {
+          setSelOpp(data);
+          setView("opportunity");
+          // Also push to local state so subsequent operations see it
+          if (setOpps) {
+            setOpps(prev => prev.some(o => o.id === data.id) ? prev : [data, ...prev]);
+          }
+        }
+      } catch (e) {
+        console.error("Deep-link DB fallback exception:", e);
+      }
+    })();
   }, [initialFilter?.type, initialFilter?.oppId, opps?.length]);
 
   const STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
@@ -9591,7 +9570,12 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
 
   // Load data
   useEffect(()=>{
-    supabase.from("opportunities").select("*").order("created_at",{ascending:false}).then(({data})=>setOpps(data||[]));
+    // Fix 12 May 2026: also propagate fetched opps to global state so Opportunities tab sees same data
+    supabase.from("opportunities").select("*").order("created_at",{ascending:false}).then(({data})=>{
+      const arr = data || [];
+      setOpps(arr);
+      setGlobalOpps(arr);
+    });
     supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms").then(({data})=>setUnits(data||[]));
     supabase.from("projects").select("id,name").then(({data})=>setProjects(data||[]));
     supabase.from("unit_sale_pricing").select("unit_id,asking_price").then(({data})=>setSalePricing(data||[]));
@@ -11766,6 +11750,7 @@ import MasterAgreements from "./components/MasterAgreements.jsx";
 import CommissionOutstanding from "./components/CommissionOutstanding.jsx";
 import LeaseOpportunityDetail from "./components/LeaseOpportunityDetail.jsx";
 import LeasingLeads from "./components/LeasingLeads.jsx";
+import UnitSearchPicker from "./components/UnitSearchPicker.jsx";
 import PropPulse from "./components/PropPulse.jsx";
 import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";  // Phase A.3 — new buyer-type-aware form (side-by-side with old form)
 // ──────────────────────────────────────────────────────────────
