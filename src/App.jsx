@@ -4857,6 +4857,10 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [showLog,    setShowLog]    = useState(false);
   const [showPayment,setShowPayment]= useState(false);
   const [showEmail,  setShowEmail]  = useState(false);
+  // Edit Opportunity v3 (12 May 2026): allow correcting opp details after creation
+  // Includes: title, budget, unit_id, commission_pct, assigned_to, property_category, notes
+  const [showEditOpp, setShowEditOpp] = useState(false);
+  const [editOppForm, setEditOppForm] = useState({});
   const [showStageGate, setShowStageGate] = useState(null); // stage name being gated
   const [stageGateForm, setStageGateForm] = useState({});
   // Stage 5 — SPA upload + pre-SPA payments + edit-price toggle
@@ -5685,6 +5689,18 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       {/* Compact header — name + stage + meta in one row */}
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12,flexWrap:"wrap",paddingBottom:10,borderBottom:"1px solid #EEF2F7"}}>
         <button onClick={onBack} style={{padding:"6px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back</button>
+        {canEdit&&!isWon&&<button onClick={()=>{
+          setEditOppForm({
+            title: opp.title || "",
+            budget: opp.budget ? String(opp.budget) : "",
+            unit_id: opp.unit_id || "",
+            commission_pct: opp.commission_pct != null ? String(opp.commission_pct) : "",
+            notes: opp.notes || "",
+            assigned_to: opp.assigned_to || "",
+            property_category: opp.property_category || "Off-Plan",
+          });
+          setShowEditOpp(true);
+        }} style={{padding:"6px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
             <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>{opp.title||`Opportunity — ${lead.name}`}</span>
@@ -6682,6 +6698,121 @@ You will become the assigned agent.`);
         {/* ── (Activity Timeline moved up — dense layout) ── */}
 
       </div>
+
+      {/* Edit Opportunity modal v3 (12 May 2026): includes unit + commission */}
+      {showEditOpp && (
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:16,width:560,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4"}}>
+              <span style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540"}}>✏ Edit Opportunity</span>
+              <button onClick={()=>setShowEditOpp(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
+            </div>
+            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Title</label>
+                  <input value={editOppForm.title} onChange={e=>setEditOppForm(f=>({...f,title:e.target.value}))} placeholder="Opportunity title"/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Property Category</label>
+                  <select value={editOppForm.property_category} onChange={e=>setEditOppForm(f=>({...f,property_category:e.target.value}))}>
+                    <option value="Off-Plan">Off-Plan</option>
+                    <option value="Ready / Resale">Ready / Resale</option>
+                    <option value="Commercial">Commercial</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Budget (AED)</label>
+                  <input type="number" value={editOppForm.budget} onChange={e=>setEditOppForm(f=>({...f,budget:e.target.value}))} placeholder="e.g. 2500000"/>
+                </div>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Linked Unit</label>
+                  {/* Show current selection */}
+                  {editOppForm.unit_id && (() => {
+                    const sel = (units||[]).find(u => u.id === editOppForm.unit_id);
+                    if (!sel) return null;
+                    const selProj = (projects||[]).find(p => p.id === sel.project_id);
+                    const bedLabel = sel.bedrooms === 0 ? "Studio" : (sel.bedrooms ? `${sel.bedrooms}BR` : "");
+                    return (
+                      <div style={{padding:"8px 12px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:7,marginBottom:8,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                        <div>
+                          <strong style={{color:"#0C4A6E",fontSize:12}}>{sel.unit_ref}</strong>
+                          <span style={{color:"#0369A1",fontSize:11,marginLeft:6}}>· {[bedLabel, selProj?.name, sel.view].filter(Boolean).join(" · ")}</span>
+                        </div>
+                        <button type="button" onClick={()=>setEditOppForm(f=>({...f,unit_id:""}))} style={{padding:"2px 8px",borderRadius:5,border:"none",background:"#E2E8F0",color:"#64748B",fontSize:10,fontWeight:700,cursor:"pointer"}}>✕ Clear</button>
+                      </div>
+                    );
+                  })()}
+                  {/* Search picker (UnitSearchPicker for consistency with proposal builder) */}
+                  <UnitSearchPicker
+                    units={units || []}
+                    projects={projects || []}
+                    salePricing={salePricing || []}
+                    onSelect={(unitId) => setEditOppForm(f => ({...f, unit_id: unitId}))}
+                    placeholder="🔍 Search to change unit — e.g. AGR, Sobha, 2BR, sea view…"
+                    emptyMessage="No units available"
+                    autoFocus={false}
+                    maxHeight={160}
+                  />
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Commission %</label>
+                  <input type="number" step="0.01" value={editOppForm.commission_pct} onChange={e=>setEditOppForm(f=>({...f,commission_pct:e.target.value}))} placeholder="e.g. 4"/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Assigned Agent</label>
+                  <select value={editOppForm.assigned_to} onChange={e=>setEditOppForm(f=>({...f,assigned_to:e.target.value}))}>
+                    <option value="">— Unassigned —</option>
+                    {(users||[]).map(u => <option key={u.id} value={u.id}>{u.full_name || u.email}</option>)}
+                  </select>
+                </div>
+                <div style={{gridColumn:"1/-1"}}>
+                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label>
+                  <textarea value={editOppForm.notes} onChange={e=>setEditOppForm(f=>({...f,notes:e.target.value}))} rows={3} placeholder="Any additional notes about this opportunity"/>
+                </div>
+              </div>
+              <div style={{marginTop:10,padding:"8px 12px",background:"#F1F5F9",border:"1px solid #E2E8F0",borderRadius:8,fontSize:11,color:"#64748B"}}>
+                💡 To change stage, use the Deal Journey workflow. Master agreement is auto-detected from the unit.
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
+              <button onClick={()=>setShowEditOpp(false)} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>Cancel</button>
+              <button onClick={async()=>{
+                setSaving(true);
+                try {
+                  const updates = {
+                    title: editOppForm.title || null,
+                    budget: editOppForm.budget ? Number(editOppForm.budget) : null,
+                    unit_id: editOppForm.unit_id || null,
+                    commission_pct: editOppForm.commission_pct ? Number(editOppForm.commission_pct) : null,
+                    notes: editOppForm.notes || null,
+                    assigned_to: editOppForm.assigned_to || null,
+                    property_category: editOppForm.property_category,
+                    updated_at: new Date().toISOString(),
+                  };
+                  const { data, error } = await supabase
+                    .from("opportunities")
+                    .update(updates)
+                    .eq("id", opp.id)
+                    .select()
+                    .single();
+                  if (error) throw error;
+                  if (onUpdated) onUpdated(data);
+                  showToast("Opportunity updated", "success");
+                  setShowEditOpp(false);
+                } catch (e) {
+                  console.error("Edit opp save failed:", e);
+                  showToast(e.message || "Update failed", "error");
+                } finally {
+                  setSaving(false);
+                }
+              }} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>
+                {saving ? "Saving…" : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Log Activity Modal */}
       {showLog&&(
