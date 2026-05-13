@@ -10220,18 +10220,22 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
                 </div>
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Linked Unit *</label>
-                  <select value={oppForm.unit_id} onChange={e=>{
-                    const u=units.find(x=>x.id===e.target.value);
-                    const p=u?projects.find(x=>x.id===u.project_id):null;
-                    setOppForm(f=>({...f,unit_id:e.target.value,title:u&&!f.title?`${u.unit_ref} — ${selLead?.name||""}`:f.title}));
-                  }}>
-                    <option value="">— Select a unit —</option>
-                    {units.filter(u=>u.status==="Available"&&(u.purpose==="Sale"||u.purpose==="Both")).map(u=>{
-                      const sp2=salePricing.find(s=>s.unit_id===u.id);
-                      const pr=projects.find(p=>p.id===u.project_id);
-                      return <option key={u.id} value={u.id}>{u.unit_ref} · {u.sub_type} · {pr?.name||"—"}{sp2?` · AED ${Math.round(sp2.asking_price/1000)}K`:""}</option>;
-                    })}
-                  </select>
+                  {/* 13 May 2026: Replaced plain <select> with rich UnitPickerRich for demo consistency */}
+                  {/* Preserves: title auto-fill on selection. Filters: Available + Sale/Both purpose. */}
+                  <UnitPickerRich
+                    value={oppForm.unit_id}
+                    onSelect={(unitId) => {
+                      const u = units.find(x => x.id === unitId);
+                      setOppForm(f => ({
+                        ...f,
+                        unit_id: unitId,
+                        title: u && !f.title ? `${u.unit_ref} — ${selLead?.name || ""}` : f.title
+                      }));
+                    }}
+                    units={units.filter(u => u.status === "Available" && (u.purpose === "Sale" || u.purpose === "Both"))}
+                    projects={projects}
+                    salePricing={salePricing}
+                  />
                 </div>
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Budget (AED)</label>
@@ -11916,6 +11920,7 @@ import CommissionOutstanding from "./components/CommissionOutstanding.jsx";
 import LeaseOpportunityDetail from "./components/LeaseOpportunityDetail.jsx";
 import LeasingLeads from "./components/LeasingLeads.jsx";
 import UnitSearchPicker from "./components/UnitSearchPicker.jsx";
+import UnitPickerRich from "./components/UnitPickerRich.jsx";
 import PropPulse from "./components/PropPulse.jsx";
 import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";  // Phase A.3 — new buyer-type-aware form (side-by-side with old form)
 // ──────────────────────────────────────────────────────────────
