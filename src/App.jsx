@@ -5204,9 +5204,12 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   }, [showStageGate, opp.id]);
 
   // Issue 1 fix 11 May 2026 — also pre-fill reservation_fee from opp.reservation_amount
+  // 13 May 2026: Added salePricing to fallback chain so unit's asking price
+  // pre-fills when other sources are empty (was leaving SPA price blank)
   useEffect(() => {
     if (showStageGate === "SPA Signed" || showStageGate === "Closed Won") {
-      const fallbackPrice = opp.final_price || opp.offer_price || opp.budget;
+      const unitAskingPrice = (salePricing || []).find(s => s.unit_id === opp.unit_id)?.asking_price;
+      const fallbackPrice = opp.final_price || opp.offer_price || unitAskingPrice || opp.budget;
       if (fallbackPrice && !stageGateForm.final_price) {
         setStageGateForm(f => ({...f, final_price: String(fallbackPrice)}));
       }
@@ -7400,7 +7403,7 @@ You will become the assigned agent.`);
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Final Agreed Price (AED) *</label>
-                    <input type="number" placeholder="e.g. 2450000" value={stageGateForm.final_price||opp.final_price||opp.offer_price||opp.budget||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
+                    <input type="number" placeholder="e.g. 2450000" value={stageGateForm.final_price||opp.final_price||opp.offer_price||(salePricing||[]).find(s=>s.unit_id===opp.unit_id)?.asking_price||opp.budget||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
                   </div>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>SPA Signing Date *</label>
