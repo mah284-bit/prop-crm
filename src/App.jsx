@@ -7261,12 +7261,19 @@ You will become the assigned agent.`);
               {/* OFFER ACCEPTED fields */}
               {showStageGate==="Offer Accepted"&&(<>
                 {/* Pricing breakdown - read only */}
+                {/* 13 May 2026: Unit Asking Price now sources from salePricing (the unit's actual price), */}
+                {/* not opp.budget (the buyer's budget - different concept). */}
+                {(() => {
+                  const unitPrice = (salePricing || []).find(s => s.unit_id === opp.unit_id)?.asking_price;
+                  const basePrice = Number(unitPrice || opp.budget || 0);
+                  return null;
+                })()}
                 <div style={{background:"#F7F9FC",border:"1px solid #E8EDF4",borderRadius:10,padding:"14px 16px"}}>
                   <div style={{fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>Agreed Pricing</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
                     <div>
                       <div style={{fontSize:10,color:"#94A3B8",marginBottom:3}}>Unit Asking Price</div>
-                      <div style={{fontSize:14,fontWeight:700,color:"#0F2540"}}>AED {opp.budget?Number(opp.budget).toLocaleString():"—"}</div>
+                      <div style={{fontSize:14,fontWeight:700,color:"#0F2540"}}>AED {(() => { const up=(salePricing||[]).find(s=>s.unit_id===opp.unit_id)?.asking_price; const bp=Number(up||opp.budget||0); return bp > 0 ? bp.toLocaleString() : "—"; })()}</div>
                     </div>
                     <div>
                       <div style={{fontSize:10,color:"#94A3B8",marginBottom:3}}>Approved Discount</div>
@@ -7275,15 +7282,18 @@ You will become the assigned agent.`);
                     <div>
                       <div style={{fontSize:10,color:"#94A3B8",marginBottom:3}}>Net Offer Price</div>
                       <div style={{fontSize:14,fontWeight:700,color:"#1A7F5A"}}>
-                        AED {opp.budget?Number(opp.discount_pct?opp.budget*(1-opp.discount_pct/100):opp.budget).toLocaleString():"—"}
+                        AED {(() => { const up=(salePricing||[]).find(s=>s.unit_id===opp.unit_id)?.asking_price; const bp=Number(up||opp.budget||0); if(bp<=0) return "—"; const netP=opp.discount_pct?bp*(1-opp.discount_pct/100):bp; return Number(netP).toLocaleString(); })()}
                       </div>
                     </div>
                   </div>
                   {opp.discount_pct&&<div style={{marginTop:8,fontSize:11,color:"#64748B"}}>Discount source: <strong>{opp.discount_source||"Not specified"}</strong></div>}
 
                   {/* STAGE GATE 4 (11 May 2026): Price override toggle + warning */}
+                  {/* 13 May 2026: Base price now sources from salePricing (unit price) instead of opp.budget */}
                   {(() => {
-                    const calculatedPrice = opp.budget ? Number(opp.discount_pct ? opp.budget*(1-opp.discount_pct/100) : opp.budget) : 0;
+                    const unitAskingPrice = (salePricing || []).find(s => s.unit_id === opp.unit_id)?.asking_price;
+                    const basePrice = Number(unitAskingPrice || opp.budget || 0);
+                    const calculatedPrice = basePrice > 0 ? Number(opp.discount_pct ? basePrice*(1-opp.discount_pct/100) : basePrice) : 0;
                     const overridePrice = Number(stageGateForm.offer_price_override || 0);
                     const showOverride = stageGateForm.show_price_override;
                     const isChanged = showOverride && overridePrice > 0 && overridePrice !== calculatedPrice;
