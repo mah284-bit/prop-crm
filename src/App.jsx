@@ -3750,11 +3750,45 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       // 2. Stamp proposal_sent_at on opportunity (do NOT auto-advance stage —
       //    agent owns stage progression. Sending a proposal is just an event
       //    in the timeline; stage moves are deliberate, separate decisions.)
+      // 14 May 2026 Day 2 Math Flow: ALSO sync current_* fields from proposal
+      // so downstream stages (Negotiation, Acceptance, SPA) read the proposal terms.
+      let _dldPayer = null, _dldSplitPct = null, _dldAmount = null;
+      if (dldHandling === 'buyer_pays') {
+        _dldPayer = 'buyer';
+      } else if (dldHandling === 'split_5050') {
+        _dldPayer = 'split';
+        _dldSplitPct = 50;
+      } else if (dldHandling === 'developer_absorbs') {
+        _dldPayer = 'developer';
+      } else if (dldHandling === 'specific_amount_waived' || dldHandling === 'specific_amount') {
+        _dldPayer = 'negotiated';
+      }
+      const _agreedPrice = Number(primaryUnit.discounted_price || primaryUnit.asking_price || 0);
+      if (_dldPayer === 'buyer') {
+        _dldAmount = Math.round(_agreedPrice * 0.04 * 100) / 100;
+      } else if (_dldPayer === 'split') {
+        _dldAmount = Math.round(_agreedPrice * 0.04 * 0.5 * 100) / 100;
+      } else if (_dldPayer === 'developer') {
+        _dldAmount = 0;
+      } else if (_dldPayer === 'negotiated' && dldCustomAmount) {
+        _dldAmount = Number(dldCustomAmount);
+      }
+      const _discountPct = Number(primaryUnit.discount_pct || 0);
       const { error: oppErr } = await supabase.from("opportunities").update({
         proposal_sent_at: new Date().toISOString(),
+        // Math flow current_* sync from proposal
+        current_agreed_price: _agreedPrice,
+        current_discount_type: _discountPct > 0 ? 'percent' : null,
+        current_discount_value: _discountPct > 0 ? _discountPct : null,
+        current_discount_source: `proposal_v${propData?.version || 1}`,
+        current_dld_payer: _dldPayer,
+        current_dld_split_pct: _dldSplitPct,
+        current_dld_amount: _dldAmount,
+        current_values_updated_at: new Date().toISOString(),
+        current_values_updated_by: currentUser.id,
       }).eq("id", opp.id);
       if (oppErr) {
-        console.warn("proposal_sent_at stamp failed (non-fatal):", oppErr);
+        console.warn("proposal_sent_at + current_* sync failed (non-fatal):", oppErr);
       }
 
       // 3. Insert activity — stage_at_event reflects current stage, not "Proposal Sent"
