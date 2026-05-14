@@ -5204,12 +5204,18 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   }, [showStageGate, opp.id]);
 
   // Issue 1 fix 11 May 2026 — also pre-fill reservation_fee from opp.reservation_amount
-  // 13 May 2026: Added salePricing to fallback chain so unit's asking price
-  // pre-fills when other sources are empty (was leaving SPA price blank)
+  // 14 May 2026 (Day 2 of Math Flow Sprint): current_agreed_price is PRIMARY source
+  // current_agreed_price is the single source of truth, populated by stage cascade.
+  // Legacy columns kept as fallbacks for edge cases.
   useEffect(() => {
     if (showStageGate === "SPA Signed" || showStageGate === "Closed Won") {
       const unitAskingPrice = (salePricing || []).find(s => s.unit_id === opp.unit_id)?.asking_price;
-      const fallbackPrice = opp.final_price || opp.offer_price || unitAskingPrice || opp.budget;
+      const fallbackPrice = 
+        opp.current_agreed_price ||  // PRIMARY: single source of truth from cascade
+        opp.final_price ||            // legacy fallback
+        opp.offer_price ||            // legacy fallback
+        unitAskingPrice ||            // legacy fallback (unit list price)
+        opp.budget;                   // last resort (buyer budget)
       if (fallbackPrice && !stageGateForm.final_price) {
         setStageGateForm(f => ({...f, final_price: String(fallbackPrice)}));
       }
@@ -7403,7 +7409,7 @@ You will become the assigned agent.`);
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Final Agreed Price (AED) *</label>
-                    <input type="number" placeholder="e.g. 2450000" value={stageGateForm.final_price||opp.final_price||opp.offer_price||(salePricing||[]).find(s=>s.unit_id===opp.unit_id)?.asking_price||opp.budget||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
+                    <input type="number" placeholder="e.g. 2450000" value={stageGateForm.final_price||opp.current_agreed_price||opp.final_price||opp.offer_price||(salePricing||[]).find(s=>s.unit_id===opp.unit_id)?.asking_price||opp.budget||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
                   </div>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>SPA Signing Date *</label>
@@ -8268,7 +8274,7 @@ const NATIONALITIES = [
   "Other",
 ];
 
-function CreateOpportunityDialog({ leads, setLeads, units, projects, users, currentUser, showToast, onClose, onCreated }) {
+function CreateOpportunityDialog({ leads, setLeads, units, projects, salePricing, users, currentUser, showToast, onClose, onCreated }) {
   // Step state
   const [step, setStep] = useState(1); // 1 = find/create lead, 2 = opp details
   const [saving, setSaving] = useState(false);
@@ -8691,6 +8697,10 @@ What should the second agent know?`;
     setSaving(true);
     try {
       const unit = units.find(u => u.id === oppForm.unit_id);
+      // 14 May 2026 Day 2 Math Flow: set current_* from salePricing at creation
+      // (single source of truth, unit price is reality - broker adjusts later stages)
+      const unitPrice = (salePricing || []).find(s => s.unit_id === oppForm.unit_id)?.asking_price;
+      const isOffPlan = (oppForm.property_category || "Off-Plan") === "Off-Plan";
       const payload = {
         lead_id: selectedLead.id,
         company_id: currentUser.company_id || null,
@@ -8705,6 +8715,12 @@ What should the second agent know?`;
         stage: "New",
         status: "Active",
         created_by: currentUser.id,
+        // Math flow current_* fields (set at creation)
+        current_agreed_price: unitPrice || null,
+        current_admin_fee: 580,
+        current_trustee_fee: isOffPlan ? 4200 : null,
+        current_values_updated_at: new Date().toISOString(),
+        current_values_updated_by: currentUser.id,
       };
       const { data, error } = await supabase.from("opportunities").insert(payload).select().single();
       if (error) throw error;
@@ -9477,6 +9493,7 @@ function Opportunities({ leads, setLeads, opps, setOpps, units, projects, salePr
           setLeads={setLeads}
           units={units}
           projects={projects}
+          salePricing={salePricing}
           users={users}
           currentUser={currentUser}
           showToast={showToast}
@@ -9801,6 +9818,9 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
     setSaving(true);
     try{
       const unit=units.find(u=>u.id===oppForm.unit_id);
+      // 14 May 2026 Day 2 Math Flow: set current_* from salePricing at creation
+      const unitPriceShowAddOpp = (salePricing || []).find(s => s.unit_id === oppForm.unit_id)?.asking_price;
+      const isOffPlanShowAddOpp = (oppForm.property_category || "Off-Plan") === "Off-Plan";
       const payload={
         lead_id:selLeadId,
         company_id:currentUser.company_id||null,
@@ -9812,6 +9832,12 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         property_category:oppForm.property_category||"Off-Plan",
         stage:"New",status:"Active",
         created_by:currentUser.id,
+        // Math flow current_* fields (set at creation)
+        current_agreed_price: unitPriceShowAddOpp || null,
+        current_admin_fee: 580,
+        current_trustee_fee: isOffPlanShowAddOpp ? 4200 : null,
+        current_values_updated_at: new Date().toISOString(),
+        current_values_updated_by: currentUser.id,
       };
       const{data,error}=await supabase.from("opportunities").insert(payload).select().single();
       if(error)throw error;
