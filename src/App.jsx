@@ -3648,6 +3648,18 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       // Sum total proposal value (sum of discounted prices)
       const totalValue = cleanProposalUnits.reduce((sum, pu) => sum + pu.discounted_price, 0);
 
+      // 15 May 2026 fix: Compute next version number from existing proposals
+      // (Bug: all proposals were saving with version=1 because DB default fired)
+      const { data: existingProps } = await supabase
+        .from("proposals")
+        .select("version")
+        .eq("opportunity_id", opp.id)
+        .order("version", { ascending: false })
+        .limit(1);
+      const nextVersion = existingProps && existingProps.length > 0
+        ? (existingProps[0].version || 0) + 1
+        : 1;
+
       // Build the FULL desired payload. We then attempt the insert and, if Supabase
       // complains about missing columns, retry with a minimal payload that puts
       // everything into structured_data. This lets the dialog work whether or not
@@ -3656,6 +3668,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         opportunity_id: opp.id,
         lead_id: lead.id,
         company_id,
+        version: nextVersion,  // 15 May 2026: explicit version (was relying on DB default which always returned 1)
         unit_id: primaryUnit.unit_id,
         asking_price: primaryUnit.asking_price,
         discount_pct: primaryUnit.discount_pct,
@@ -5301,7 +5314,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         if (ma?.default_dld_payer) setDldPayer(ma.default_dld_payer);
       })();
     }
-  }, [showStageGate, opp.reservation_amount, opp.booking_amount, opp.reservation_date, opp.booking_date]);
+  }, [showStageGate, opp.id, opp.current_agreed_price, opp.reservation_amount, opp.booking_amount, opp.reservation_date, opp.booking_date]);
 
   // Phase 3b: auto-calc DLD fee row when final_price OR dldPayer changes
   useEffect(() => {
@@ -7320,23 +7333,45 @@ You will become the assigned agent.`);
                     </div>
                     <div>
                       <div style={{fontSize:10,color:"#94A3B8",marginBottom:3}}>Approved Discount</div>
-                      <div style={{fontSize:14,fontWeight:700,color:"#B83232"}}>{opp.discount_pct?`${opp.discount_pct}%`:"None"}</div>
+                      <div style={{fontSize:14,fontWeight:700,color:"#B83232"}}>{(() => {
+                        // 15 May 2026: Read from current_* fields (single source of truth from proposal V3+)
+                        const discType = opp.current_discount_type || (opp.discount_pct ? 'percent' : null);
+                        const discValue = opp.current_discount_value || opp.discount_pct;
+                        if (!discValue || discValue <= 0) return "None";
+                        if (discType === 'percent') return `${discValue}%`;
+                        if (discType === 'amount') return `AED ${Number(discValue).toLocaleString()}`;
+                        return `${discValue}%`; // fallback
+                      })()}</div>
                     </div>
                     <div>
                       <div style={{fontSize:10,color:"#94A3B8",marginBottom:3}}>Net Offer Price</div>
                       <div style={{fontSize:14,fontWeight:700,color:"#1A7F5A"}}>
-                        AED {(() => { const up=(salePricing||[]).find(s=>s.unit_id===opp.unit_id)?.asking_price; const bp=Number(up||opp.budget||0); if(bp<=0) return "—"; const netP=opp.discount_pct?bp*(1-opp.discount_pct/100):bp; return Number(netP).toLocaleString(); })()}
+                        AED {(() => {
+                          // 15 May 2026: current_agreed_price is PRIMARY (already includes discount math)
+                          // Fallback to old computation only if current_agreed_price not set
+                          if (opp.current_agreed_price && Number(opp.current_agreed_price) > 0) {
+                            return Number(opp.current_agreed_price).toLocaleString();
+                          }
+                          const up=(salePricing||[]).find(s=>s.unit_id===opp.unit_id)?.asking_price;
+                          const bp=Number(up||opp.budget||0);
+                          if(bp<=0) return "—";
+                          const netP=opp.discount_pct?bp*(1-opp.discount_pct/100):bp;
+                          return Number(netP).toLocaleString();
+                        })()}
                       </div>
                     </div>
                   </div>
-                  {opp.discount_pct&&<div style={{marginTop:8,fontSize:11,color:"#64748B"}}>Discount source: <strong>{opp.discount_source||"Not specified"}</strong></div>}
+                  {(opp.current_discount_value||opp.discount_pct)&&<div style={{marginTop:8,fontSize:11,color:"#64748B"}}>Discount source: <strong>{opp.current_discount_source||opp.discount_source||"Not specified"}</strong></div>}
 
                   {/* STAGE GATE 4 (11 May 2026): Price override toggle + warning */}
                   {/* 13 May 2026: Base price now sources from salePricing (unit price) instead of opp.budget */}
                   {(() => {
+                    // 15 May 2026: Use current_agreed_price as PRIMARY (already discounted)
                     const unitAskingPrice = (salePricing || []).find(s => s.unit_id === opp.unit_id)?.asking_price;
                     const basePrice = Number(unitAskingPrice || opp.budget || 0);
-                    const calculatedPrice = basePrice > 0 ? Number(opp.discount_pct ? basePrice*(1-opp.discount_pct/100) : basePrice) : 0;
+                    const calculatedPrice = Number(opp.current_agreed_price) > 0
+                      ? Number(opp.current_agreed_price)
+                      : (basePrice > 0 ? Number(opp.discount_pct ? basePrice*(1-opp.discount_pct/100) : basePrice) : 0);
                     const overridePrice = Number(stageGateForm.offer_price_override || 0);
                     const showOverride = stageGateForm.show_price_override;
                     const isChanged = showOverride && overridePrice > 0 && overridePrice !== calculatedPrice;
@@ -7443,7 +7478,7 @@ You will become the assigned agent.`);
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Final Agreed Price (AED) *</label>
-                    <input type="number" placeholder="e.g. 2450000" value={stageGateForm.final_price||opp.current_agreed_price||opp.final_price||opp.offer_price||(salePricing||[]).find(s=>s.unit_id===opp.unit_id)?.asking_price||opp.budget||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
+                    <input type="number" placeholder="e.g. 2450000" value={stageGateForm.final_price||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
                   </div>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>SPA Signing Date *</label>
@@ -7926,11 +7961,15 @@ You will become the assigned agent.`);
                   if(showStageGate==="Closed Lost"&&!stageGateForm.lost_reason){showToast("Please select a lost reason","error");return;}
                   // Build extra data for DB
                   // STAGE GATE 4 (11 May 2026): if override active and changed, use override price + log
-                  const _calculatedOfferPrice = opp.discount_pct ? opp.budget*(1-opp.discount_pct/100) : opp.budget;
+                  // 15 May 2026 Day 3: Use current_agreed_price as PRIMARY (single source of truth from proposals)
+                  // Legacy: opp.discount_pct + opp.budget fallback only if current_agreed_price not set
+                  const _calculatedOfferPrice = Number(opp.current_agreed_price) > 0
+                    ? Number(opp.current_agreed_price)
+                    : (opp.discount_pct ? opp.budget*(1-opp.discount_pct/100) : opp.budget);
                   const _overrideActive = stageGateForm.show_price_override && Number(stageGateForm.offer_price_override||0) > 0;
                   const _finalOfferPrice = _overrideActive ? Number(stageGateForm.offer_price_override) : _calculatedOfferPrice;
                   const extraData = {
-                    offer_price: _finalOfferPrice || opp.budget || null,
+                    offer_price: _finalOfferPrice || opp.current_agreed_price || opp.budget || null,
                     ...(stageGateForm.final_price?{final_price:Number(stageGateForm.final_price)}:{}),
                     ...(stageGateForm.lost_reason?{lost_reason:stageGateForm.lost_reason}:{}),
                     ...(stageGateForm.notes?{notes:stageGateForm.notes}:{}),
