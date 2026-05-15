@@ -5904,7 +5904,7 @@ You will become the assigned agent.`);
                           border:`1.5px solid ${isCur?m.c:isDone?"#A8D5BE":"#E2E8F0"}`,
                           fontSize:11,fontWeight:isCur||isDone?700:400,
                           cursor:canEdit?"pointer":"default",whiteSpace:"nowrap",transition:"all .15s"}}>
-                        {isDone?"✓ ":isCur?"▶ ":""}{s}
+                        {isDone?"✓ ":isCur?"▶ ":""}{s==="Proposal Sent" ? `Quoted${proposals.length>0?` (${proposals.length})`:""}` : s}
                       </div>
                       {i<arr.length-1&&(
                         <div style={{width:20,height:1,background:isDone?"#A8D5BE":"#E2E8F0",flexShrink:0,position:"relative"}}>
@@ -5925,7 +5925,7 @@ You will become the assigned agent.`);
                 const NEXT_ACTION_BY_STAGE = {
                   "New":            "Make first contact",
                   "Contacted":      "Schedule a site visit",
-                  "Site Visit":     "Send proposal & follow up",
+                  "Site Visit":     "Follow up and send proposal when ready",
                   "Proposal Sent":  "Capture customer response",
                   "Negotiation":    "Lock in the offer",
                   "Offer Accepted": "Collect reservation fee",
@@ -10822,7 +10822,7 @@ function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activiti
   const stageActions = {
     "New":            [{label:"📞 Call",           act:"call"  },{label:"💬 WhatsApp",      act:"wa"      },{label:"📝 Log note",      act:"log"     }],
     "Contacted":      [{label:"📅 Schedule visit", act:"schedule"},{label:"📄 Send brochure",act:"brochure"},{label:"📝 Log note",      act:"log"     }],
-    "Site Visit":     [{label:"📋 Log outcome",    act:"log"   },{label:"📄 Send proposal", act:"proposal"},{label:"📞 Follow up",     act:"call"    }],
+    "Site Visit":     [{label:"📋 Log outcome",    act:"log"   },{label:"📞 Follow up",     act:"call"   },{label:"📝 Log note",      act:"log"     }],
     "Proposal Sent":  [{label:"📞 Follow up",      act:"call"  },{label:"💰 Negotiate",     act:"negotiate"},{label:"📝 Log note",     act:"log"     }],
     "Negotiation":    [{label:"📄 Send offer",     act:"offer" },{label:"✅ Get approval",  act:"approve" },{label:"📝 Log note",      act:"log"     }],
     "Offer Accepted": [{label:"📋 Reservation form",act:"log"  },{label:"💰 Collect res. fee",act:"log"  },{label:"📝 Log note",      act:"log"     }],
