@@ -1680,6 +1680,34 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
       showToast("Please complete the required fields","error");
       return;
     }
+    // 16 May 2026: Idempotency check - prevent duplicate stage advances
+    // (Bug: 2 identical activities created when user clicks Save twice
+    //  after first save succeeded but UI didn't refresh fast enough)
+    if (opp.stage === toStage) {
+      showToast(`Already at ${toStage} stage`, "info");
+      return;
+    }
+    // Also check for recent identical activity (within 60 seconds)
+    // - protects against split-second double submits
+    try {
+      const sixtySecondsAgo = new Date(Date.now() - 60000).toISOString();
+      const { data: recentActs } = await supabase
+        .from("activities")
+        .select("id")
+        .eq("opportunity_id", opp.id)
+        .eq("activity_subtype", "stage_advance")
+        .eq("from_stage", fromStage)
+        .eq("to_stage", toStage)
+        .gte("created_at", sixtySecondsAgo)
+        .limit(1);
+      if (recentActs && recentActs.length > 0) {
+        showToast(`Already saved ${toStage} just now`, "info");
+        return;
+      }
+    } catch (e) {
+      // Fail-open: if check fails, proceed (don't block user)
+      console.warn("Idempotency check failed (non-blocking):", e);
+    }
 
     // Edge case: if "Lost interest" selected, ask user to confirm — they may want Closed Lost instead
     if (config.onLostInterestSuggest && data.next_step === "Lost interest") {
