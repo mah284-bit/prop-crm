@@ -9203,6 +9203,14 @@ What should the second agent know?`;
                         {selectedUnit ? (
                           <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:8}}>
                             <span style={{fontWeight:700,color:"#0F2540"}}>{selectedUnit.unit_ref}</span>
+                            {(() => {
+                              // 16 May 2026: Show price for broker's quick budget match
+                              const sp = (salePricing||[]).find(s => s.unit_id === selectedUnit.id);
+                              const price = sp?.asking_price;
+                              return price ? (
+                                <span style={{fontWeight:700,color:"#1A5FA8",fontSize:12}}>AED {Number(price).toLocaleString()}</span>
+                              ) : null;
+                            })()}
                             <span style={{fontSize:11,color:"#64748B",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
                               {[
                                 selectedUnit.bedrooms===0?"Studio":selectedUnit.bedrooms?`${selectedUnit.bedrooms}BR`:null,
@@ -9307,6 +9315,18 @@ What should the second agent know?`;
                                         {[bedLabel, u.sub_type, proj?.name, u.size_sqft && `${u.size_sqft} sqft`, u.view].filter(Boolean).join(" · ")}
                                       </div>
                                     </div>
+                                    {(() => {
+                                      // 16 May 2026: Show price on each unit row for budget match
+                                      const sp = (salePricing||[]).find(s => s.unit_id === u.id);
+                                      const price = sp?.asking_price;
+                                      return price ? (
+                                        <div style={{textAlign:"right",whiteSpace:"nowrap"}}>
+                                          <div style={{fontSize:12,fontWeight:700,color:"#1A5FA8"}}>AED {Number(price).toLocaleString()}</div>
+                                        </div>
+                                      ) : (
+                                        <div style={{fontSize:10,color:"#94A3B8",fontStyle:"italic"}}>No price</div>
+                                      );
+                                    })()}
                                   </div>
                                 );
                               })
