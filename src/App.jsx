@@ -5821,16 +5821,22 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
             {stageAgeDays!==null&&<span style={{fontSize:11,color:"#94A3B8"}}>· {stageAgeDays===0?"today":stageAgeDays===1?"1 day":`${stageAgeDays} days`} in stage</span>}
           </div>
           {/* Finding 2 fix (11 May 2026): show linked unit prominently on opp header */}
+          {/* 16 May 2026: Added price for broker's at-a-glance budget context */}
           {opp.unit_id && (() => {
             const linkedUnit = (units || []).find(u => u.id === opp.unit_id);
             if (!linkedUnit) return null;
             const linkedProj = (projects || []).find(p => p.id === linkedUnit.project_id);
+            const linkedSp = (salePricing || []).find(s => s.unit_id === linkedUnit.id);
+            const linkedPrice = linkedSp?.asking_price;
             const bedLabel = linkedUnit.bedrooms === 0 ? "Studio" : (linkedUnit.bedrooms ? `${linkedUnit.bedrooms}BR` : "");
             const details = [bedLabel, linkedProj?.name, linkedUnit.size_sqft && `${linkedUnit.size_sqft} sqft`, linkedUnit.view].filter(Boolean).join(" · ");
             return (
               <div style={{fontSize:12,marginTop:5,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",padding:"4px 10px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:6,width:"fit-content"}}>
                 <span style={{fontSize:14}}>🏠</span>
                 <strong style={{color:"#0C4A6E",fontWeight:700}}>{linkedUnit.unit_ref}</strong>
+                {linkedPrice && (
+                  <strong style={{color:"#1A5FA8",fontSize:12,fontWeight:700}}>AED {Number(linkedPrice).toLocaleString()}</strong>
+                )}
                 <span style={{color:"#0369A1",fontSize:11}}>· {details}</span>
               </div>
             );
@@ -8403,16 +8409,16 @@ const NATIONALITIES = [
   "Other",
 ];
 
-function CreateOpportunityDialog({ leads, setLeads, units, projects, salePricing, users, currentUser, showToast, onClose, onCreated }) {
-  // Step state
-  const [step, setStep] = useState(1); // 1 = find/create lead, 2 = opp details
+function CreateOpportunityDialog({ leads, setLeads, units, projects, salePricing, users, currentUser, showToast, onClose, onCreated, prefilledLead = null }) {
+  // Step state - if lead is pre-selected (from Leads tab), skip Step 1
+  const [step, setStep] = useState(prefilledLead ? 2 : 1);
   const [saving, setSaving] = useState(false);
 
   // Step 1: lead lookup
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [matches, setMatches] = useState([]);
-  const [selectedLead, setSelectedLead] = useState(null);
+  const [selectedLead, setSelectedLead] = useState(prefilledLead);
   const [showCreateLeadForm, setShowCreateLeadForm] = useState(false);
 
   // Phase F W6 ext — AI conflict context for the chosen match (Layer 1)
@@ -9792,6 +9798,8 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const [salePricing,setSalePricing]=useState([]);
   const [showAddOpp, setShowAddOpp]=useState(false);
   const [oppForm,  setOppForm]  = useState({title:"",unit_id:"",budget:"",assigned_to:"",notes:"",property_category:"Off-Plan"});
+  // 16 May 2026: Consolidation - canonical opportunity dialog from Leads tab
+  const [showCanonicalOppDialog, setShowCanonicalOppDialog] = useState(false);
   // Phase E dense layout: activities for ALL of this lead's opportunities (used to enrich opp rows)
   const [leadActivities, setLeadActivities] = useState([]);
   const canEdit = can(currentUser.role,"write");
@@ -9886,8 +9894,20 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       setOpps(arr);
       setGlobalOpps(arr);
     });
-    supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms").then(({data})=>setUnits(data||[]));
-    supabase.from("projects").select("id,name").then(({data})=>setProjects(data||[]));
+    // 16 May 2026: Multi-tenant data isolation - filter by company_id
+    // Prevents brokers from seeing/selecting units belonging to other companies
+    // (Without this filter, opp creation could save cross-company unit_id refs)
+    const _coId = currentUser?.company_id || null;
+    if (_coId) {
+      supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms").eq("company_id", _coId).then(({data})=>setUnits(data||[]));
+      supabase.from("projects").select("id,name").eq("company_id", _coId).then(({data})=>setProjects(data||[]));
+    } else {
+      // No company context - load all (fallback for legacy/admin scenarios)
+      supabase.from("project_units").select("id,unit_ref,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms").then(({data})=>setUnits(data||[]));
+      supabase.from("projects").select("id,name").then(({data})=>setProjects(data||[]));
+    }
+    // salePricing doesn't have company_id column directly - left as-is
+    // (it joins via unit_id which is already filtered above)
     supabase.from("unit_sale_pricing").select("unit_id,asking_price").then(({data})=>setSalePricing(data||[]));
   },[]);
 
@@ -10163,7 +10183,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         </div>
         <div style={{display:"flex",gap:6}}>
           {canEdit&&<button onClick={()=>{setForm({...blank,...selLead});setEditLead(selLead);setShowAdd(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
-          {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Opportunity</button>}
+          {canEdit&&<button onClick={()=>setShowCanonicalOppDialog(true)} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Opportunity</button>}
         </div>
       </div>
 
@@ -10228,7 +10248,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
             <div style={{fontSize:36,marginBottom:10}}>🎯</div>
             <div style={{fontSize:14,fontWeight:600,color:"#0F2540",marginBottom:6}}>No opportunities yet</div>
             <div style={{fontSize:12,marginBottom:16}}>Add an opportunity for each property this contact is interested in</div>
-            {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Opportunity</button>}
+            {canEdit&&<button onClick={()=>setShowCanonicalOppDialog(true)} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Opportunity</button>}
           </div>
         )}
 
@@ -10379,6 +10399,27 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       </div>
 
       {/* Add Opportunity Modal */}
+      {/* 16 May 2026: Canonical opportunity dialog (consolidation) */}
+      {showCanonicalOppDialog && (
+        <CreateOpportunityDialog
+          leads={leads}
+          setLeads={setLeads}
+          units={units}
+          projects={projects}
+          salePricing={salePricing}
+          users={users}
+          currentUser={currentUser}
+          showToast={showToast}
+          prefilledLead={selLead}
+          onClose={() => setShowCanonicalOppDialog(false)}
+          onCreated={(newOpp, newLead) => {
+            // Add to opps list (uses globalOppsFromParent setter)
+            if (setGlobalOpps) setGlobalOpps(prev => [newOpp, ...prev]);
+            setShowCanonicalOppDialog(false);
+            // Stay on lead detail to see the new opp in list
+          }}
+        />
+      )}
       {showAddOpp&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
