@@ -5835,7 +5835,10 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
                 <span style={{fontSize:14}}>🏠</span>
                 <strong style={{color:"#0C4A6E",fontWeight:700}}>{linkedUnit.unit_ref}</strong>
                 {linkedPrice && (
-                  <strong style={{color:"#1A5FA8",fontSize:12,fontWeight:700}}>AED {Number(linkedPrice).toLocaleString()}</strong>
+                  <span style={{display:"inline-flex",alignItems:"baseline",gap:4}}>
+                    <span style={{color:"#64748B",fontSize:11,fontWeight:600}}>Price:</span>
+                    <strong style={{color:"#1A5FA8",fontSize:12,fontWeight:700}}>AED {Number(linkedPrice).toLocaleString()}</strong>
+                  </span>
                 )}
                 <span style={{color:"#0369A1",fontSize:11}}>· {details}</span>
               </div>
