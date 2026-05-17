@@ -6043,11 +6043,20 @@ You will become the assigned agent.`);
                       <div style={{flex:"1 1 280px",minWidth:260,background:`${m.bg}`,border:`1px solid ${m.c}33`,borderRadius:10,padding:"10px 12px"}}>
                         <div style={{fontSize:9,fontWeight:700,color:m.c,textTransform:"uppercase",letterSpacing:".6px",marginBottom:8}}>Move stage</div>
                         <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-                          {nextStageName&&nextStageName!=="Closed Won"&&(
+                          {/* 17 May 2026 ARCH-SIMPLIFY-002: hide Move Stage button when next is Proposal Sent.
+                              Path to Proposal Sent must be through "Send Proposal" in Log Activity zone,
+                              which auto-advances stage. Prevents orphan "Quoted (0)" state where stage
+                              advances without an actual proposal being created. */}
+                          {nextStageName&&nextStageName!=="Closed Won"&&nextStageName!=="Proposal Sent"&&(
                             <button onClick={()=>moveStage(nextStageName)}
                               style={{padding:"7px 14px",borderRadius:7,border:"none",background:m.c,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 6px rgba(0,0,0,.08)"}}>
                               ✓ Advance to {nextStageName}
                             </button>
+                          )}
+                          {nextStageName==="Proposal Sent"&&(
+                            <div style={{fontSize:11,color:"#64748B",fontStyle:"italic",padding:"7px 0"}}>
+                              💡 To advance to Quoted, use <strong style={{color:"#0F2540",fontStyle:"normal"}}>📤 Send Proposal</strong> in Log Activity
+                            </div>
                           )}
                           {(opp.stage==="Offer Accepted"||opp.stage==="Negotiation"||opp.stage==="Reserved")&&nextStageName!=="Reserved"&&(
                             <button onClick={()=>moveStage("Reserved")}
