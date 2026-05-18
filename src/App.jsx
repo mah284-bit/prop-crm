@@ -5322,6 +5322,15 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       if (fallbackPrice && !stageGateForm.final_price) {
         setStageGateForm(f => ({...f, final_price: String(fallbackPrice)}));
       }
+      // 18 May 2026 SPA Refactor: pre-fill DLD payer + split from current_dld_*
+      // These are populated when proposal is saved (line 3853 area).
+      // Pre-fill the SPA dialog so broker sees agreed proposal terms.
+      if (opp.current_dld_payer && !dldPayer) {
+        setDldPayer(opp.current_dld_payer);
+      }
+      if (opp.current_dld_split_pct && (!dldSplitPct || dldSplitPct === 50)) {
+        setDldSplitPct(opp.current_dld_split_pct);
+      }
     }
     // Issue 1: pre-fill reservation_fee in 3-state pre-SPA payments when SPA dialog opens
     // Stage 5 v3 extension: also pre-fill the amount from opp.reservation_amount
@@ -7563,8 +7572,8 @@ You will become the assigned agent.`);
                     <input type="text" placeholder="e.g. DLD-2026-12345" value={stageGateForm.spa_ref||""} onChange={e=>setStageGateForm(f=>({...f,spa_ref:e.target.value}))}/>
                   </div>
                   <div>
-                    <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Down Payment (AED)</label>
-                    <input type="number" placeholder="e.g. 245000" value={stageGateForm.down_payment||""} onChange={e=>setStageGateForm(f=>({...f,down_payment:e.target.value}))}/>
+                    {/* 18 May 2026: Removed Down Payment input - same as Initial Advance.
+                        Enter amount in initial_advance row of Pre-SPA Payments below. */}
                   </div>
                 </div>
 
@@ -7597,10 +7606,13 @@ You will become the assigned agent.`);
                 </div>
 
                 <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Down Payment Method</label>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Initial Advance Method</label>
                   <select value={stageGateForm.down_payment_method||"Cheque"} onChange={e=>setStageGateForm(f=>({...f,down_payment_method:e.target.value}))}>
                     {["Cheque","Bank Transfer","Cash","Credit Card"].map(m=><option key={m}>{m}</option>)}
                   </select>
+                  <div style={{fontSize:10,color:"#94A3B8",marginTop:3,fontStyle:"italic"}}>
+                    💡 Enter the amount + date in "Initial advance" row of Pre-SPA Payments below
+                  </div>
                 </div>
 
                 {/* Pre-SPA payment confirmations - 3-state model (pending / received / waived) */}
@@ -7615,6 +7627,12 @@ You will become the assigned agent.`);
                   </div>
 
                   {/* Phase 3b: DLD payer selector */}
+                  {/* 18 May 2026 SPA Refactor: badge showing pre-fill from proposal */}
+                  {opp.current_dld_payer && (
+                    <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"3px 9px",background:"#ECFDF5",border:"1px solid #6EE7B7",borderRadius:12,fontSize:10,color:"#065F46",fontWeight:600,marginBottom:6}}>
+                      ✅ DLD terms pre-filled from Final Proposal
+                    </div>
+                  )}
                   <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:8,marginBottom:10}}>
                     <span style={{fontSize:11,fontWeight:700,color:"#0C4A6E",whiteSpace:"nowrap"}}>🏛️ DLD Fee (4%):</span>
                     <div style={{display:"flex",gap:4,flex:1}}>
