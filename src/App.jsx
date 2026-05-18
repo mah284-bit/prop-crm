@@ -9823,12 +9823,14 @@ function Opportunities({ leads, setLeads, opps, setOpps, units, projects, salePr
         </div>
       ) : (
         <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,overflow:"hidden"}}>
-          {/* Table header */}
-          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1.2fr 30px",gap:10,padding:"10px 14px",background:"#F8FAFC",borderBottom:"1px solid #E2E8F0",fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".5px"}}>
+          {/* Table header — 18 May 2026: Added Price + Final columns per founder request */}
+          <div style={{display:"grid",gridTemplateColumns:"2fr 0.9fr 1fr 1fr 1fr 0.8fr 0.9fr 1fr 30px",gap:8,padding:"10px 14px",background:"#F8FAFC",borderBottom:"1px solid #E2E8F0",fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".5px"}}>
             <div>Lead / Unit</div>
             <div>Stage</div>
             <div>Budget</div>
-            <div>Days in stage</div>
+            <div>Price</div>
+            <div>Final</div>
+            <div>Days</div>
             <div>Last activity</div>
             <div>Owner</div>
             <div></div>
@@ -9841,10 +9843,12 @@ function Opportunities({ leads, setLeads, opps, setOpps, units, projects, salePr
             const owner = userById[o.assigned_to];
             const stageMeta = STAGE_COLORS[o.stage] || {c:"#475569", bg:"#F1F5F9"};
             const daysInStage = o.stage_updated_at ? Math.floor((new Date() - new Date(o.stage_updated_at)) / (1000*60*60*24)) : null;
+            // 18 May 2026: Get unit price for Price column
+            const unitPrice = unit ? (salePricing||[]).find(s => s.unit_id === unit.id)?.asking_price : null;
             return (
               <div key={o.id}
                 onClick={()=>{ setSelOpp(o); setView("opportunity"); }}
-                style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1.2fr 30px",gap:10,padding:"11px 14px",borderBottom:"1px solid #F1F5F9",cursor:"pointer",alignItems:"center",transition:"background .12s"}}
+                style={{display:"grid",gridTemplateColumns:"2fr 0.9fr 1fr 1fr 1fr 0.8fr 0.9fr 1fr 30px",gap:8,padding:"11px 14px",borderBottom:"1px solid #F1F5F9",cursor:"pointer",alignItems:"center",transition:"background .12s"}}
                 onMouseOver={e=>e.currentTarget.style.background="#F8FAFC"}
                 onMouseOut={e=>e.currentTarget.style.background="transparent"}>
                 <div style={{minWidth:0}}>
@@ -9860,8 +9864,14 @@ function Opportunities({ leads, setLeads, opps, setOpps, units, projects, salePr
                     {o.stage}
                   </span>
                 </div>
-                <div style={{fontSize:12,color:"#0F2540",fontWeight:600}}>
+                <div style={{fontSize:11,color:"#64748B"}}>
                   {fmtAed(o.budget)}
+                </div>
+                <div style={{fontSize:11,color:"#64748B"}}>
+                  {fmtAed(unitPrice)}
+                </div>
+                <div style={{fontSize:12,color:o.current_agreed_price?"#0F2540":"#94A3B8",fontWeight:o.current_agreed_price?700:400}}>
+                  {fmtAed(o.current_agreed_price)}
                 </div>
                 <div style={{fontSize:11,color:daysInStage > 7 ? "#C2410C" : "#475569"}}>
                   {daysInStage === null ? "—" : daysInStage === 0 ? "today" : `${daysInStage}d`}
