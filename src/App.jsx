@@ -3853,6 +3853,8 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         current_dld_payer: _dldPayer,
         current_dld_split_pct: _dldSplitPct,
         current_dld_amount: _dldAmount,
+        // 18 May 2026: Persist payment plan preset for SPA initial advance calculation
+        current_payment_plan_preset: paymentPlanPreset || null,
         current_values_updated_at: new Date().toISOString(),
         current_values_updated_by: currentUser.id,
       }).eq("id", opp.id);
@@ -5330,6 +5332,43 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       }
       if (opp.current_dld_split_pct && (!dldSplitPct || dldSplitPct === 50)) {
         setDldSplitPct(opp.current_dld_split_pct);
+      }
+      // 18 May 2026: Calculate initial_advance from payment plan preset
+      // Founder principle: "calculated and shown, not entered"
+      // Maps preset label to initial percentage (first number in label)
+      const PLAN_INITIAL_PCT = {
+        "10/90": 10,
+        "20/80": 20,
+        "50/50 PHP": 50,
+        "40/60": 40,
+        // "Custom" = null, broker enters manually
+      };
+      const planPct = PLAN_INITIAL_PCT[opp.current_payment_plan_preset] ?? null;
+      if (planPct && fallbackPrice) {
+        const expectedInitial = Math.round(fallbackPrice * planPct / 100);
+        setPrePaymentsState(p => {
+          // Only pre-fill if user hasn't already set this row
+          if (p.initial_advance?.status === "pending" || (!p.initial_advance?.amount && !p.initial_advance?.expected_amount)) {
+            return {
+              ...p,
+              initial_advance: {
+                ...p.initial_advance,
+                expected_amount: expectedInitial,
+                expected_percent: planPct,
+                amount: p.initial_advance?.amount || String(expectedInitial),
+              }
+            };
+          }
+          // Already set - just record the expected for display purposes
+          return {
+            ...p,
+            initial_advance: {
+              ...p.initial_advance,
+              expected_amount: expectedInitial,
+              expected_percent: planPct,
+            }
+          };
+        });
       }
     }
     // Issue 1: pre-fill reservation_fee in 3-state pre-SPA payments when SPA dialog opens
@@ -7742,6 +7781,14 @@ You will become the assigned agent.`);
                     ["oqood_fee", "Oqood fee", false],
                     ["other_fees", "Other developer fees", false]
                   ].map(([key, label, isCreditFee]) => {
+                    // 18 May 2026: For initial_advance, show "Expected" hint from payment plan
+                    const showExpected = key === "initial_advance" && prePaymentsState[key]?.expected_amount;
+                    const expectedAmt = prePaymentsState[key]?.expected_amount;
+                    const expectedPct = prePaymentsState[key]?.expected_percent;
+                    const actualAmt = Number(prePaymentsState[key]?.amount || 0);
+                    const deviation = showExpected && actualAmt && actualAmt !== expectedAmt 
+                      ? actualAmt - expectedAmt 
+                      : null;
                     const item = prePaymentsState[key] || { status:"pending", amount:"", date:"", notes:"" };
                     const status = item.status || "pending";
                     return (
@@ -7751,6 +7798,18 @@ You will become the assigned agent.`);
                           {isCreditFee && (
                             <div style={{fontSize:9,color:"#0369A1",fontWeight:500,marginTop:1,letterSpacing:".2px"}}>
                               credits toward initial advance
+                            </div>
+                          )}
+                          {showExpected && (
+                            <div style={{fontSize:9,marginTop:2,letterSpacing:".2px"}}>
+                              <span style={{color:"#065F46",fontWeight:600}}>
+                                Expected: AED {expectedAmt.toLocaleString()} · {expectedPct}% per plan
+                              </span>
+                              {deviation !== null && (
+                                <span style={{color:deviation > 0 ? "#92400E" : "#991B1B",fontWeight:700,marginLeft:6}}>
+                                  · Override: {deviation > 0 ? "+" : ""}{deviation.toLocaleString()}
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
