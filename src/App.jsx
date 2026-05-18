@@ -6009,8 +6009,22 @@ You will become the assigned agent.`);
                   const m=OPP_STAGE_META[s]||{c:"#718096",bg:"#F7F9FC"};
                   return (
                     <div key={s} style={{display:"flex",alignItems:"center",flexShrink:0}}>
-                      <div onClick={()=>canAction&&moveStage(s)}
-                        title={canAction?"Click to move to this stage":isOwner?"":"You are not the assigned agent — reassign first"}
+                      <div onClick={()=>{
+                          // 18 May 2026 UX-COMPLETED-STAGE-001:
+                          // Completed stages can be REOPENED for view/edit (audit trail).
+                          // GATED_STAGES have dialogs that load saved closure data automatically.
+                          // Non-gated stages: show toast (details in activity log).
+                          if (isDone) {
+                            if (GATED_STAGES.includes(s)) {
+                              setShowStageGate(s);
+                            } else {
+                              showToast(`${s} details are captured in the activity log below`, "info");
+                            }
+                          } else if (canAction) {
+                            moveStage(s);
+                          }
+                        }}
+                        title={isDone ? (GATED_STAGES.includes(s) ? `Click to view/edit ${s} details` : "Details in activity log") : (canAction?"Click to move to this stage":isOwner?"":"You are not the assigned agent — reassign first")}
                         style={{padding:"5px 14px",borderRadius:20,
                           background:isCur?m.c:isDone?"#E6F4EE":"#F7F9FC",
                           color:isCur?"#fff":isDone?"#1A7F5A":"#94A3B8",
