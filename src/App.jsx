@@ -6773,12 +6773,32 @@ You will become the assigned agent.`);
                 )}
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10}}>
-                {[["Budget",opp.budget],["Offer Price",opp.offer_price],["Final Price",opp.final_price],["Discount %",opp.discount_pct?opp.discount_pct+"%":null],["Commission %",opp.commission_pct?Number(opp.commission_pct).toFixed(2)+"%":null]].filter(([,v])=>v).map(([l,v])=>(
-                  <div key={l} style={{background:"#FAFBFC",borderRadius:8,padding:"10px 12px"}}>
-                    <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
-                    <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{typeof v==="number"?`AED ${Number(v).toLocaleString()}`:v}</div>
-                  </div>
-                ))}
+                {/* 19 May 2026 Issue C: Read from current_* columns (Math Flow Sprint) instead of legacy fields */}
+                {(() => {
+                  const unitAskingPrice = (salePricing||[]).find(s => s.unit_id === opp.unit_id)?.asking_price;
+                  const discValue = opp.current_discount_value || opp.discount_pct;
+                  const discType = opp.current_discount_type || (opp.discount_pct ? "percent" : null);
+                  const discSource = opp.current_discount_source || opp.discount_source;
+                  const dldLabel = opp.current_dld_payer === "buyer" ? "Buyer pays" :
+                                   opp.current_dld_payer === "developer" ? "Developer absorbs" :
+                                   opp.current_dld_payer === "negotiated" ? "Negotiated" :
+                                   opp.current_dld_payer === "split" ? `Split ${opp.current_dld_split_pct||50}/${100-(opp.current_dld_split_pct||50)}` :
+                                   null;
+                  return [
+                    ["Budget", opp.budget],
+                    ["Asking Price", unitAskingPrice],
+                    ["Final Price", opp.current_agreed_price],
+                    ["Discount", discValue && discType ? (discType === "percent" ? `${discValue}%` : `AED ${Number(discValue).toLocaleString()}`) + (discSource ? ` (${discSource})` : "") : null],
+                    ["DLD Arrangement", dldLabel],
+                    ["Payment Plan", opp.current_payment_plan_preset],
+                    ["Commission %", opp.commission_pct ? Number(opp.commission_pct).toFixed(2)+"%" : null],
+                  ].filter(([,v]) => v).map(([l,v]) => (
+                    <div key={l} style={{background:"#FAFBFC",borderRadius:8,padding:"10px 12px"}}>
+                      <div style={{fontSize:9,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".5px",marginBottom:2}}>{l}</div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{typeof v==="number" ? `AED ${Number(v).toLocaleString()}` : v}</div>
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
 
