@@ -8161,6 +8161,16 @@ You will become the assigned agent.`);
                 </button>
                 <button onClick={async()=>{
                   // Validation
+                  // Offer Accepted - validate confirmation checkbox before advancing
+                  // 19 May 2026 Issue 4: Gate advance on "all amounts collected" checkbox
+                  if (showStageGate === "Offer Accepted") {
+                    // Only enforce when the new section is visible (proposal data exists)
+                    const hasProposalData = !!(opp.current_dld_payer || opp.current_payment_plan_preset);
+                    if (hasProposalData && !stageGateForm.offer_payments_confirmed) {
+                      showToast("Please confirm all expected amounts are collected before advancing", "error");
+                      return;
+                    }
+                  }
                   // Offer Accepted - no required fields, price comes from inventory
                   if(showStageGate==="Reserved"&&!stageGateForm.reservation_fee){showToast("Reservation fee is required","error");return;}
                   if(showStageGate==="SPA Signed"&&!stageGateForm.final_price){showToast("Final price is required","error");return;}
