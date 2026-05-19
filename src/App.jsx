@@ -4918,6 +4918,10 @@ function VisitOutcomeDialog({ visitActivity, opp, lead, units, projects, current
 }
 
 function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated }) {
+  // 19 May 2026: Internal approval features (broker -> manager -> admin) hidden
+  // Hide until full workflow is implemented end-to-end.
+  // To re-enable: change to true. Code is preserved.
+  const INTERNAL_APPROVAL_FEATURES_ENABLED = false;
   // ISSUE D Phase 2 — Detect if THIS opp's unit has been taken by another deal
   const [unitConflict, setUnitConflict] = useState(null);
   useEffect(() => {
@@ -6761,7 +6765,7 @@ You will become the assigned agent.`);
             <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                 <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Financials</div>
-                {canAction&&can(currentUser.role,"request_discount")&&!isWon&&(
+                {INTERNAL_APPROVAL_FEATURES_ENABLED && canAction&&can(currentUser.role,"request_discount")&&!isWon&&(
                   <button onClick={()=>{setDiscReqForm({type:"sale_price",discount_pct:"",reason:"",discount_source:"Developer",developer_auth_ref:""});setShowDiscReq(true);}}
                     style={{padding:"5px 12px",borderRadius:7,border:"1.5px solid #C9A84C",background:"#FDF3DC",color:"#8A6200",fontSize:11,fontWeight:600,cursor:"pointer"}}>
                     💰 Request Discount
@@ -7562,9 +7566,11 @@ You will become the assigned agent.`);
                     );
                   })()}
                 </div>
-                <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#92400E"}}>
-                  ℹ Price is based on approved inventory pricing. To request a discount, use the <strong>💰 Request Discount</strong> button in the Financials section first.
-                </div>
+                {INTERNAL_APPROVAL_FEATURES_ENABLED && (
+                  <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#92400E"}}>
+                    ℹ Price is based on approved inventory pricing. To request a discount, use the <strong>💰 Request Discount</strong> button in the Financials section first.
+                  </div>
+                )}
                 {/* 19 May 2026 Issue 4: Show DLD + Payment Plan + Total Expected + Confirmation checkbox */}
                 {/* Per founder: "very simple - 1 checkbox - all collected = ready to advance" */}
                 {(opp.current_dld_payer || opp.current_payment_plan_preset) && (() => {
@@ -8280,8 +8286,8 @@ You will become the assigned agent.`);
         </div>
       )}
 
-      {/* Discount Request Modal */}
-      {showDiscReq&&(
+      {/* Discount Request Modal - HIDDEN per founder decision 19 May 2026 */}
+      {INTERNAL_APPROVAL_FEATURES_ENABLED && showDiscReq&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1200,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:520,maxWidth:"100%",maxHeight:"90vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.25)"}}>
             <div style={{padding:"1.25rem 1.5rem",borderBottom:"1px solid #E8EDF4",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
