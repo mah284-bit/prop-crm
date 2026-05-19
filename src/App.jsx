@@ -7565,6 +7565,108 @@ You will become the assigned agent.`);
                 <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#92400E"}}>
                   ℹ Price is based on approved inventory pricing. To request a discount, use the <strong>💰 Request Discount</strong> button in the Financials section first.
                 </div>
+                {/* 19 May 2026 Issue 4: Show DLD + Payment Plan + Total Expected + Confirmation checkbox */}
+                {/* Per founder: "very simple - 1 checkbox - all collected = ready to advance" */}
+                {(opp.current_dld_payer || opp.current_payment_plan_preset) && (() => {
+                  // Math reused from SPA dialog calculation logic
+                  const PLAN_INITIAL_PCT = {
+                    "10/90": 10, "20/80": 20, "50/50 PHP": 50, "40/60": 40,
+                  };
+                  const price = Number(opp.current_agreed_price || 0);
+                  const planPct = PLAN_INITIAL_PCT[opp.current_payment_plan_preset] || null;
+                  const initialAdvance = planPct ? Math.round(price * planPct / 100) : 0;
+                  // DLD calculation - buyer's share
+                  const dldTotal = Math.round(price * 0.04);
+                  let buyerDldShare = 0;
+                  if (opp.current_dld_payer === "buyer") {
+                    buyerDldShare = dldTotal;
+                  } else if (opp.current_dld_payer === "split" && opp.current_dld_split_pct) {
+                    buyerDldShare = Math.round(dldTotal * Number(opp.current_dld_split_pct) / 100);
+                  } else if (opp.current_dld_payer === "negotiated") {
+                    buyerDldShare = 0; // Treated as TBD, shown for awareness
+                  }
+                  const totalExpected = initialAdvance + buyerDldShare;
+                  return (
+                    <div style={{background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:10,padding:"14px 16px"}}>
+                      <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"3px 9px",background:"#ECFDF5",border:"1px solid #6EE7B7",borderRadius:12,fontSize:10,color:"#065F46",fontWeight:600,marginBottom:10}}>
+                        ✅ Pre-filled from Final Proposal
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+                        {opp.current_dld_payer && (
+                          <div>
+                            <div style={{fontSize:10,color:"#64748B",marginBottom:3,textTransform:"uppercase",letterSpacing:".5px",fontWeight:700}}>DLD Fee Arrangement</div>
+                            <div style={{fontSize:13,fontWeight:700,color:"#0C4A6E"}}>
+                              {opp.current_dld_payer === "buyer" && "🟢 Buyer pays"}
+                              {opp.current_dld_payer === "developer" && "🟣 Developer absorbs"}
+                              {opp.current_dld_payer === "negotiated" && "🟡 Negotiated"}
+                              {opp.current_dld_payer === "split" && (
+                                <span>🔵 Split{opp.current_dld_split_pct ? ` ${opp.current_dld_split_pct}/${100-opp.current_dld_split_pct}` : ""}</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {opp.current_payment_plan_preset && (
+                          <div>
+                            <div style={{fontSize:10,color:"#64748B",marginBottom:3,textTransform:"uppercase",letterSpacing:".5px",fontWeight:700}}>Payment Plan</div>
+                            <div style={{fontSize:13,fontWeight:700,color:"#0C4A6E"}}>
+                              📅 {opp.current_payment_plan_preset}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {/* Total Expected calculation - the SPA math but BEFORE SPA */}
+                      <div style={{background:"#fff",border:"1px solid #BAE6FD",borderRadius:8,padding:"10px 12px",marginBottom:10}}>
+                        <div style={{fontSize:10,color:"#64748B",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px",fontWeight:700}}>
+                          📊 Total Expected to be Collected (Pre-SPA)
+                        </div>
+                        <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#475569",marginBottom:3}}>
+                          <span>Initial Advance ({planPct || "—"}% per plan)</span>
+                          <span style={{fontWeight:600}}>AED {initialAdvance.toLocaleString()}</span>
+                        </div>
+                        {opp.current_dld_payer === "buyer" && (
+                          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#475569",marginBottom:3}}>
+                            <span>Buyer DLD share (4% full)</span>
+                            <span style={{fontWeight:600}}>AED {buyerDldShare.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {opp.current_dld_payer === "split" && (
+                          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#475569",marginBottom:3}}>
+                            <span>Buyer DLD share ({opp.current_dld_split_pct}% of 4%)</span>
+                            <span style={{fontWeight:600}}>AED {buyerDldShare.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {opp.current_dld_payer === "developer" && (
+                          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#7C3AED",marginBottom:3}}>
+                            <span>Buyer DLD share</span>
+                            <span style={{fontWeight:600}}>Developer absorbs (AED 0)</span>
+                          </div>
+                        )}
+                        <div style={{borderTop:"1px solid #E2E8F0",marginTop:6,paddingTop:6,display:"flex",justifyContent:"space-between",fontSize:13,color:"#0F2540",fontWeight:700}}>
+                          <span>Total Expected:</span>
+                          <span>AED {totalExpected.toLocaleString()}</span>
+                        </div>
+                        <div style={{fontSize:9,color:"#94A3B8",marginTop:4,fontStyle:"italic"}}>
+                          Note: Developer service charges, admin fees, and registration are collected separately by the developer
+                        </div>
+                      </div>
+                      {/* The single confirmation checkbox - gates advance */}
+                      <label style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:stageGateForm.offer_payments_confirmed ? "#ECFDF5" : "#FEFCE8",border:`1px solid ${stageGateForm.offer_payments_confirmed ? "#6EE7B7" : "#FDE68A"}`,borderRadius:8,cursor:"pointer"}}>
+                        <input type="checkbox"
+                          checked={!!stageGateForm.offer_payments_confirmed}
+                          onChange={e=>setStageGateForm(f=>({...f, offer_payments_confirmed:e.target.checked}))}
+                          style={{marginTop:2,flexShrink:0,width:16,height:16,cursor:"pointer"}}/>
+                        <div>
+                          <div style={{fontSize:12,fontWeight:700,color:stageGateForm.offer_payments_confirmed ? "#065F46" : "#92400E"}}>
+                            ✓ All expected amounts collected — ready to advance
+                          </div>
+                          <div style={{fontSize:10,color:"#64748B",marginTop:2}}>
+                            Confirms buyer has paid the initial advance + their DLD share. Without this, deal stays at "Offer Accepted" for follow-up.
+                          </div>
+                        </div>
+                      </label>
+                    </div>
+                  );
+                })()}
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Offer Valid Until</label>
                   <input type="date" value={stageGateForm.offer_valid_until||""} onChange={e=>setStageGateForm(f=>({...f,offer_valid_until:e.target.value}))}/>
