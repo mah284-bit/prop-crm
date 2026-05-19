@@ -5871,10 +5871,10 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         }} style={{padding:"6px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-            <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>{opp.title||`Opportunity — ${lead.name}`}</span>
-            <span style={{padding:"3px 10px",borderRadius:20,background:sm.bg,color:sm.c,fontSize:11,fontWeight:700}}>▶ {opp.stage}</span>
-            {opp.status==="On Hold"&&<span style={{padding:"3px 10px",borderRadius:20,background:"#F7F9FC",color:"#718096",fontSize:11,fontWeight:600}}>On Hold</span>}
-            {stageAgeDays!==null&&<span style={{fontSize:11,color:"#94A3B8"}}>· {stageAgeDays===0?"today":stageAgeDays===1?"1 day":`${stageAgeDays} days`} in stage</span>}
+            <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>{opp.title||`Opportunity — ${lead.name}`}</span>
+            <span style={{padding:"2px 9px",borderRadius:14,background:sm.bg,color:sm.c,fontSize:10,fontWeight:700}}>▶ {opp.stage}</span>
+            {opp.status==="On Hold"&&<span style={{padding:"2px 9px",borderRadius:14,background:"#F7F9FC",color:"#718096",fontSize:10,fontWeight:600}}>On Hold</span>}
+            {stageAgeDays!==null&&<span style={{fontSize:10,color:"#94A3B8"}}>· {stageAgeDays===0?"today":stageAgeDays===1?"1d":`${stageAgeDays}d`} in stage</span>}
           </div>
           {/* Finding 2 fix (11 May 2026): show linked unit prominently on opp header */}
           {/* 16 May 2026: Added price for broker's at-a-glance budget context */}
@@ -5887,25 +5887,20 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
             const bedLabel = linkedUnit.bedrooms === 0 ? "Studio" : (linkedUnit.bedrooms ? `${linkedUnit.bedrooms}BR` : "");
             const details = [bedLabel, linkedProj?.name, linkedUnit.size_sqft && `${linkedUnit.size_sqft} sqft`, linkedUnit.view].filter(Boolean).join(" · ");
             return (
-              <div style={{fontSize:12,marginTop:5,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",padding:"4px 10px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:6,width:"fit-content"}}>
-                <span style={{fontSize:14}}>🏠</span>
+              <div style={{fontSize:11,marginTop:3,display:"inline-flex",alignItems:"center",gap:6,padding:"2px 9px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:12,width:"fit-content"}}>
+                <span>🏠</span>
                 <strong style={{color:"#0C4A6E",fontWeight:700}}>{linkedUnit.unit_ref}</strong>
-                {linkedPrice && (
-                  <span style={{display:"inline-flex",alignItems:"baseline",gap:4}}>
-                    <span style={{color:"#64748B",fontSize:11,fontWeight:600}}>Price:</span>
-                    <strong style={{color:"#1A5FA8",fontSize:12,fontWeight:700}}>AED {Number(linkedPrice).toLocaleString()}</strong>
-                  </span>
-                )}
-                <span style={{color:"#0369A1",fontSize:11}}>· {details}</span>
+                {linkedPrice && <strong style={{color:"#1A5FA8",fontWeight:700,marginLeft:2}}>AED {Number(linkedPrice).toLocaleString()}</strong>}
+                <span style={{color:"#0369A1"}}>· {details}</span>
               </div>
             );
           })()}
 
-          <div style={{fontSize:12,color:"#718096",marginTop:3,display:"flex",gap:10,flexWrap:"wrap"}}>
+          <div style={{fontSize:11,color:"#718096",marginTop:3,display:"flex",gap:8,flexWrap:"wrap"}}>
             <span>{lead.name}</span>
             {lead.phone&&<span>· {lead.phone}</span>}
-            {agent&&<span>· Owner: <strong style={{color:"#0F2540"}}>{agent.full_name}</strong></span>}
-            {opp.budget&&<span>· Budget: <strong style={{color:"#0F2540"}}>AED {Number(opp.budget).toLocaleString()}</strong></span>}
+            {agent&&<span>· Owner: <strong style={{color:"#0F2540",fontWeight:600}}>{agent.full_name}</strong></span>}
+            {opp.budget&&<span>· Budget: <strong style={{color:"#0F2540",fontWeight:600}}>AED {Number(opp.budget).toLocaleString()}</strong></span>}
           </div>
         </div>
       </div>
