@@ -9279,7 +9279,16 @@ What should the second agent know?`;
                     .map(pid => (projects||[]).find(p => p.id === pid))
                     .filter(Boolean);
 
-                  let pool = (units||[]);
+                  // 19 May 2026 Issue 1: Filter out zero-value inventory
+                  // (Matches UnitPickerRich v2 data integrity behavior)
+                  // Prevents creating opportunities for unpriced units
+                  const _priceById = {};
+                  (salePricing||[]).forEach(sp => {
+                    if (sp.unit_id && Number(sp.asking_price) > 0) {
+                      _priceById[sp.unit_id] = Number(sp.asking_price);
+                    }
+                  });
+                  let pool = (units||[]).filter(u => _priceById[u.id] > 0);
                   if (!unitShowReserved) pool = pool.filter(u => u.status !== "Reserved" && u.status !== "Sold");
                   if (unitProjFilter !== "All") pool = pool.filter(u => u.project_id === unitProjFilter);
                   if (unitBedFilter !== "All") {
