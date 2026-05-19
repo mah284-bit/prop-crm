@@ -4971,6 +4971,10 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [showEditOpp, setShowEditOpp] = useState(false);
   const [editOppForm, setEditOppForm] = useState({});
   const [showStageGate, setShowStageGate] = useState(null); // stage name being gated
+  // 19 May 2026 Dashboard Redesign Phase 2a: dashboardTab controls which panel shows
+  // null = welcome state, otherwise: 'proposals'|'coach'|'next-steps'|'financials'|'negotiations'|'upfront'|'plan'
+  // Note: renamed from 'activeTab' to avoid collision with existing Activity Log filter state
+  const [dashboardTab, setDashboardTab] = useState(null);
   const [stageGateForm, setStageGateForm] = useState({});
   // Stage 5 — SPA upload + pre-SPA payments + edit-price toggle
   const [spaUploading, setSpaUploading] = useState(false);
@@ -6150,6 +6154,90 @@ You will become the assigned agent.`);
               {isWon&&<div style={{padding:"8px 12px",background:"#E6F4EE",borderRadius:8,fontSize:12,color:"#1A7F5A",fontWeight:600,border:"1px solid #A8D5BE"}}>🎉 Deal Won — Payments and Contract are unlocked</div>}
             </div>
 
+            {/* ═══════════════════════════════════════════════════ */}
+            {/* 19 May 2026 Phase 2a: DASHBOARD TAB STRIP                */}
+            {/* Adds horizontal tab navigation + main panel above sections */}
+            {/* Existing sections (Coach, Proposals, etc) still visible below */}
+            {/* In Phase 2b+, sections will move INTO their respective tabs */}
+            {/* ═══════════════════════════════════════════════════ */}
+            <div style={{marginBottom:14}}>
+              {/* Tab Strip - horizontal tabs like browser */}
+              <div style={{display:"flex",gap:2,background:"#fff",border:"1px solid #E2E8F0",borderRadius:"10px 10px 0 0",padding:"6px 6px 0 6px",overflowX:"auto",whiteSpace:"nowrap"}}>
+                {[
+                  ["proposals", "📤 Proposals", proposals.length],
+                  ["coach", "🤖 Coach", null],
+                  ["next-steps", "⏰ Next Steps", reminders.filter(r=>r.status==="pending").length],
+                  ["financials", "💰 Financials", null],
+                  ["negotiations", "🤝 Negotiations", null],
+                  ["upfront", "📊 Upfront", null],
+                  ["plan", "🏗️ Plan", null],
+                ].map(([tabId, label, count]) => {
+                  const isActive = dashboardTab === tabId;
+                  return (
+                    <div key={tabId}
+                      onClick={() => setDashboardTab(isActive ? null : tabId)}
+                      style={{
+                        padding:"7px 14px",
+                        borderRadius:"7px 7px 0 0",
+                        border: isActive ? "1px solid #E2E8F0" : "1px solid transparent",
+                        borderBottom: isActive ? "1px solid #fff" : "none",
+                        background: isActive ? "#fff" : "#F8FAFC",
+                        color: isActive ? "#1D4ED8" : "#64748B",
+                        cursor:"pointer",
+                        fontSize:11,
+                        fontWeight:600,
+                        display:"flex",
+                        alignItems:"center",
+                        gap:5,
+                        flexShrink:0,
+                        marginBottom: isActive ? -1 : 0,
+                        position: isActive ? "relative" : "static",
+                        zIndex: isActive ? 2 : 1,
+                        transition:"all .15s"
+                      }}>
+                      {label}
+                      {count != null && count > 0 && (
+                        <span style={{
+                          fontSize:9,
+                          padding:"1px 5px",
+                          borderRadius:6,
+                          background: isActive ? "#1D4ED8" : "#DBEAFE",
+                          color: isActive ? "#fff" : "#1D4ED8",
+                          fontWeight:700
+                        }}>{count}</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Main Panel - shows welcome state or selected tab content */}
+              <div style={{background:"#fff",border:"1px solid #E2E8F0",borderTop:"none",borderRadius:"0 0 10px 10px",minHeight:200,padding:"20px 22px"}}>
+                {!dashboardTab ? (
+                  <div style={{textAlign:"center",padding:"50px 30px",color:"#94A3B8"}}>
+                    <div style={{fontSize:36,marginBottom:8}}>👋</div>
+                    <div style={{fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:4}}>Pick a section to explore</div>
+                    <div style={{fontSize:12,color:"#64748B",maxWidth:380,margin:"0 auto 14px auto",lineHeight:1.5}}>
+                      Each tab opens a full-width view with breathing room. Sections also remain visible below as we transition.
+                    </div>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"center"}}>
+                      <span onClick={()=>setDashboardTab("proposals")} style={{padding:"5px 11px",borderRadius:14,background:"#F1F5F9",color:"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>📤 Proposals</span>
+                      <span onClick={()=>setDashboardTab("financials")} style={{padding:"5px 11px",borderRadius:14,background:"#F1F5F9",color:"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>💰 Financials</span>
+                      <span onClick={()=>setDashboardTab("negotiations")} style={{padding:"5px 11px",borderRadius:14,background:"#F1F5F9",color:"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>🤝 Negotiations</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{padding:"20px 4px"}}>
+                    <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:8}}>
+                      📋 Tab active: <span style={{color:"#1D4ED8"}}>{dashboardTab}</span>
+                    </div>
+                    <div style={{fontSize:12,color:"#64748B",lineHeight:1.6}}>
+                      <strong>Phase 2a:</strong> Tab strip is wired. In Phase 2b+ this area will show the actual {dashboardTab} content. For now, scroll down to see the section in its current location.
+                    </div>
+                    <button onClick={()=>setDashboardTab(null)} style={{marginTop:12,padding:"5px 12px",borderRadius:6,border:"1px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#475569"}}>← Back to dashboard</button>
+                  </div>
+                )}
+              </div>
+            </div>
             {/* ── 🤖 AI COACH — analyses deal data and recommends next moves (Phase F W4) ──
                  Pattern: visible always (so users know AI is here + demo punch),
                  runs on click (so users stay in control + token spend is opt-in),
