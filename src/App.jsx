@@ -6634,6 +6634,12 @@ You will become the assigned agent.`);
                  (so the empty-state "+ Build proposal" call-to-action shows from any stage).
                  Hidden only for terminal closed stages where deal is done. ── */}
             {(()=>{
+              // 20 May 2026 Phase 3: Hide old Proposals section
+              // Content moved to dashboard Proposals tab (see line ~6260 area).
+              // Set HIDE_OLD_PROPOSALS_SECTION=false to re-enable for emergency revert.
+              const HIDE_OLD_PROPOSALS_SECTION = true;
+              if (HIDE_OLD_PROPOSALS_SECTION) return null;
+
               const isTerminal = ["Closed Won","Closed Lost"].includes(opp.stage);
               if (isTerminal && proposals.length === 0) return null;
               if (!canEdit && proposals.length === 0) return null;
