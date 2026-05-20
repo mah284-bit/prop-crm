@@ -2844,6 +2844,17 @@ const PAYMENT_PLAN_PRESETS = [
   { label: "Custom", value: "" },
 ];
 
+// 20 May 2026 Phase 2b: Hoist PROPOSAL_STATUS_META to module level
+// so both ProposalBuilderDialog AND OpportunityDetail (Proposals section + dashboard panel) can use it.
+// Originally duplicated in 2 places, now single source of truth.
+const PROPOSAL_STATUS_META = {
+  sent:     {label:"SENT",       c:"#1A5FA8", bg:"#E6EFF8"},
+  viewed:   {label:"VIEWED",     c:"#A06810", bg:"#FDF3DC"},
+  accepted: {label:"ACCEPTED",   c:"#1A7F5A", bg:"#E6F4EE"},
+  rejected: {label:"REJECTED",   c:"#C53030", bg:"#FEE2E2"},
+  expired:  {label:"EXPIRED",    c:"#6B7280", bg:"#F3F4F6"},
+  superseded:{label:"SUPERSEDED",c:"#6B7280", bg:"#F3F4F6"},
+};
 const DLD_OPTIONS = [
   { value: "buyer_pays",       label: "Buyer pays (4% standard)",          color:"#64748B", bg:"#F1F5F9" },
   { value: "split_5050",       label: "50/50 split with developer",         color:"#1A5FA8", bg:"#E6EFF8" },
@@ -3072,14 +3083,8 @@ function ProposalViewerDialog({ proposal, opp, lead, units, projects, currentUse
 
   const fmtAed = (n) => `AED ${Number(n||0).toLocaleString()}`;
 
-  const STATUS_META = {
-    sent:     {label:"SENT",     c:"#1A5FA8", bg:"#E6EFF8"},
-    viewed:   {label:"VIEWED",   c:"#A06810", bg:"#FDF3DC"},
-    accepted: {label:"ACCEPTED", c:"#1A7F5A", bg:"#E6F4EE"},
-    rejected: {label:"REJECTED", c:"#C53030", bg:"#FEE2E2"},
-    expired:  {label:"EXPIRED",  c:"#6B7280", bg:"#F3F4F6"},
-    superseded:{label:"SUPERSEDED",c:"#6B7280",bg:"#F3F4F6"},
-  };
+  // 20 May 2026 Phase 2b: Use module-level PROPOSAL_STATUS_META (was duplicated here)
+  const STATUS_META = PROPOSAL_STATUS_META;
   const sm = STATUS_META[proposal.status] || STATUS_META.sent;
 
   // Build the email body (matches what was sent originally)
@@ -6220,13 +6225,178 @@ You will become the assigned agent.`);
                       <span onClick={()=>setDashboardTab("negotiations")} style={{padding:"5px 11px",borderRadius:14,background:"#F1F5F9",color:"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>🤝 Negotiations</span>
                     </div>
                   </div>
+                ) : dashboardTab === "proposals" ? (
+                  /* 20 May 2026 Phase 2b: PROPOSALS PANEL - Excel table + buyer outflow */
+                  <div style={{padding:"4px 2px"}}>
+                    {/* Header with action buttons */}
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,paddingBottom:10,borderBottom:"2px solid #F1F5F9"}}>
+                      <div style={{fontSize:16,fontWeight:700,color:"#0F2540",display:"flex",alignItems:"center",gap:8}}>
+                        📤 Proposals
+                        <span style={{fontSize:10,padding:"2px 7px",borderRadius:8,background:"#DBEAFE",color:"#1D4ED8",fontWeight:700}}>{proposals.length} total</span>
+                      </div>
+                      <div style={{display:"flex",gap:6}}>
+                        {canEdit && !["Closed Won","Closed Lost"].includes(opp.stage) && (
+                          <button onClick={()=>requestProposalDialog()} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #1D4ED8",background:"#1D4ED8",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                            {proposals.length===0 ? "+ Build proposal" : "+ Send Revised"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {proposals.length === 0 ? (
+                      <div style={{textAlign:"center",padding:"40px 20px",color:"#94A3B8",fontSize:12}}>
+                        No proposals sent yet. Click "Build proposal" to create the first one.
+                      </div>
+                    ) : (
+                      <>
+                        {/* Excel-style version table */}
+                        <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,marginBottom:18}}>
+                          <thead>
+                            <tr style={{background:"#F8FAFC",borderBottom:"2px solid #E2E8F0"}}>
+                              <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}>V#</th>
+                              <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}>Sent</th>
+                              <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}>Discount</th>
+                              <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}>Net Price</th>
+                              <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}>Plan</th>
+                              <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}>DLD</th>
+                              <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}>Status</th>
+                              <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {proposals.map((p, idx) => {
+                              const sm2 = PROPOSAL_STATUS_META[p.status] || PROPOSAL_STATUS_META.sent;
+                              const sd = p.structured_data || {};
+                              const isLatest = idx === 0;
+                              const proposalNumber = proposals.length - idx;
+                              const proposalUnits = (sd.proposal_units && sd.proposal_units.length>0) ? sd.proposal_units : [];
+                              const firstUnit = proposalUnits[0] || {};
+                              const discountPct = Number(firstUnit.discount_pct || sd.discount_pct || 0);
+                              const netPrice = Number(sd.total_value || firstUnit.discounted_price || 0);
+                              const dPlan = p.payment_plan || sd.payment_plan || "—";
+                              const dldLabel2 = DLD_OPTIONS.find(o=>o.value===sd.dld_handling)?.label || "—";
+                              const dldShort = dldLabel2.includes("Buyer") ? "Buyer" : dldLabel2.includes("Developer") ? "Dev" : dldLabel2.includes("Split") ? "Split" : dldLabel2.includes("Neg") ? "Neg" : dldLabel2;
+                              return (
+                                <tr key={p.id} style={{background:isLatest?"#F0F9FF":"#fff",borderBottom:"1px solid #F1F5F9"}}>
+                                  <td style={{padding:"9px 10px",fontWeight:700,color:"#0F2540"}}>
+                                    V{proposalNumber}
+                                    {isLatest && <span style={{fontSize:8,padding:"1px 5px",background:"#ECFDF5",color:"#065F46",borderRadius:3,fontWeight:700,marginLeft:5}}>LATEST</span>}
+                                  </td>
+                                  <td style={{padding:"9px 10px",color:"#64748B"}}>{p.sent_at ? new Date(p.sent_at).toLocaleDateString("en-AE",{day:"numeric",month:"short"}) : "—"}</td>
+                                  <td style={{padding:"9px 10px",color:discountPct>0?"#A06810":"#94A3B8",fontWeight:600}}>{discountPct>0 ? `-${discountPct}%` : "0%"}</td>
+                                  <td style={{padding:"9px 10px",fontWeight:700,color:"#1A5FA8"}}>{netPrice>0 ? `AED ${Number(netPrice).toLocaleString()}` : "—"}</td>
+                                  <td style={{padding:"9px 10px",color:"#475569"}}>{dPlan}</td>
+                                  <td style={{padding:"9px 10px",color:"#475569"}}>{dldShort}</td>
+                                  <td style={{padding:"9px 10px"}}>
+                                    <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:sm2.bg,color:sm2.c,fontWeight:700}}>{sm2.label}</span>
+                                  </td>
+                                  <td style={{padding:"9px 10px",textAlign:"right"}}>
+                                    {isLatest && canEdit && !["Closed Won","Closed Lost"].includes(opp.stage) && (
+                                      <button onClick={()=>requestProposalDialog()} title="Edit latest as revision (saves as new version)"
+                                        style={{padding:"3px 9px",borderRadius:5,border:"none",background:"#1D4ED8",color:"#fff",fontSize:10,fontWeight:700,cursor:"pointer"}}>
+                                        ✏️ Edit
+                                      </button>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+
+                        {/* Buyer Outflow + Broker Commission - LATEST proposal */}
+                        {(() => {
+                          const latest = proposals[0];
+                          if (!latest) return null;
+                          const sd = latest.structured_data || {};
+                          const proposalUnits = (sd.proposal_units && sd.proposal_units.length>0) ? sd.proposal_units : [];
+                          const firstUnit = proposalUnits[0] || {};
+                          const netPrice = Number(sd.total_value || firstUnit.discounted_price || 0);
+                          const dldPct = 4;
+                          const dldFee = Math.round(netPrice * dldPct/100);
+                          const dldPayer = sd.dld_handling;
+                          const buyerDldShare = dldPayer === "buyer_pays" ? dldFee : dldPayer === "developer_pays" ? 0 : dldFee/2;
+                          const oqoodFee = 4020;
+                          const bookingFee = Math.round(netPrice * 0.10);
+                          const linkedUnit2 = (units||[]).find(u => u.id === opp.unit_id);
+                          const sqft = linkedUnit2?.size_sqft || 0;
+                          const scPerSqft = linkedUnit2?.service_charge_per_sqft || 0;
+                          const annualMaintenance = Math.round(sqft * scPerSqft);
+                          const oneTimeTotal = netPrice + buyerDldShare + oqoodFee;
+                          const commissionPct = Number(opp.commission_pct || 0);
+                          const commission = Math.round(netPrice * commissionPct/100);
+                          return (
+                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                              <div style={{padding:"14px 16px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:10}}>
+                                <div style={{fontSize:11,fontWeight:700,color:"#0C4A6E",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>
+                                  💰 Buyer Outflow (Latest V{proposals.length})
+                                </div>
+                                <div style={{fontSize:10,color:"#0369A1",marginBottom:6,fontWeight:600,textTransform:"uppercase",letterSpacing:".4px"}}>One-time (at SPA / handover)</div>
+                                <div style={{fontSize:12,lineHeight:1.8,color:"#0F2540"}}>
+                                  <div style={{display:"flex",justifyContent:"space-between"}}><span>Net Price:</span><strong>AED {Number(netPrice).toLocaleString()}</strong></div>
+                                  <div style={{display:"flex",justifyContent:"space-between",color:"#475569",fontSize:11}}><span>· Booking 10% (within net):</span><span>AED {Number(bookingFee).toLocaleString()}</span></div>
+                                  <div style={{display:"flex",justifyContent:"space-between"}}><span>DLD Fee 4% ({dldPayer==="buyer_pays"?"buyer":dldPayer==="developer_pays"?"developer":"shared"}):</span><strong>AED {Number(buyerDldShare).toLocaleString()}</strong></div>
+                                  <div style={{display:"flex",justifyContent:"space-between"}}><span>Oqood Fee:</span><strong>AED {Number(oqoodFee).toLocaleString()}</strong></div>
+                                  <div style={{display:"flex",justifyContent:"space-between",borderTop:"1px solid #BAE6FD",paddingTop:6,marginTop:6,fontWeight:700,color:"#0C4A6E"}}><span>Total one-time:</span><span>AED {Number(oneTimeTotal).toLocaleString()}</span></div>
+                                </div>
+                                {annualMaintenance > 0 && (
+                                  <>
+                                    <div style={{fontSize:10,color:"#0369A1",margin:"12px 0 6px 0",fontWeight:600,textTransform:"uppercase",letterSpacing:".4px"}}>Recurring (annual, post-handover)</div>
+                                    <div style={{fontSize:12,lineHeight:1.8,color:"#0F2540"}}>
+                                      <div style={{display:"flex",justifyContent:"space-between"}}>
+                                        <span>Maintenance ({sqft} sqft × AED {scPerSqft}/sqft):</span>
+                                        <strong>AED {Number(annualMaintenance).toLocaleString()}/yr</strong>
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
+                                {annualMaintenance === 0 && (
+                                  <div style={{marginTop:10,padding:"7px 10px",background:"#FEF9C3",borderRadius:6,fontSize:10,color:"#854D0E"}}>
+                                    ⚠ Unit's service_charge_per_sqft not set. Annual maintenance can't be calculated.
+                                  </div>
+                                )}
+                              </div>
+
+                              <div style={{padding:"14px 16px",background:"#FAFBFE",border:"1px solid #D1D9E6",borderRadius:10}}>
+                                <div style={{fontSize:11,fontWeight:700,color:"#475569",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>
+                                  💼 Broker Commission (Revenue)
+                                </div>
+                                <div style={{fontSize:10,color:"#64748B",marginBottom:8,lineHeight:1.5}}>
+                                  This is your earnings on the deal. Paid by developer to brokerage, not by buyer.
+                                </div>
+                                {commission > 0 ? (
+                                  <div style={{fontSize:12,lineHeight:1.8,color:"#0F2540"}}>
+                                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Commission Rate:</span><strong>{commissionPct.toFixed(2)}%</strong></div>
+                                    <div style={{display:"flex",justifyContent:"space-between"}}><span>Based on Net Price:</span><span>AED {Number(netPrice).toLocaleString()}</span></div>
+                                    <div style={{display:"flex",justifyContent:"space-between",borderTop:"1px solid #E2E8F0",paddingTop:6,marginTop:6,fontWeight:700,fontSize:14,color:"#1A7F5A"}}>
+                                      <span>Your Commission:</span><span>AED {Number(commission).toLocaleString()}</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div style={{padding:"10px 12px",background:"#FEF9C3",borderRadius:6,fontSize:11,color:"#854D0E"}}>
+                                    ⚠ commission_pct not set on this opportunity.
+                                  </div>
+                                )}
+                                <div style={{marginTop:12,padding:"7px 10px",background:"#fff",borderRadius:6,fontSize:10,color:"#64748B",borderLeft:"3px solid #1D4ED8"}}>
+                                  📋 Note: Buyer agency services + property management tracked separately (Phase 2 module).
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        <div style={{marginTop:14,padding:"9px 12px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:7,fontSize:11,color:"#0C4A6E"}}>
+                          💡 <strong>Tip:</strong> Click ✏️ Edit on the latest proposal to send a revised version. Older versions are kept as audit history (superseded).
+                        </div>
+                      </>
+                    )}
+                  </div>
                 ) : (
                   <div style={{padding:"20px 4px"}}>
                     <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:8}}>
                       📋 Tab active: <span style={{color:"#1D4ED8"}}>{dashboardTab}</span>
                     </div>
                     <div style={{fontSize:12,color:"#64748B",lineHeight:1.6}}>
-                      <strong>Phase 2a:</strong> Tab strip is wired. In Phase 2b+ this area will show the actual {dashboardTab} content. For now, scroll down to see the section in its current location.
+                      <strong>Phase 2b:</strong> Proposals tab is wired. Other tabs coming in Phase 2c-g. For now, scroll down to see the section in its current location.
                     </div>
                     <button onClick={()=>setDashboardTab(null)} style={{marginTop:12,padding:"5px 12px",borderRadius:6,border:"1px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#475569"}}>← Back to dashboard</button>
                   </div>
@@ -6469,14 +6639,8 @@ You will become the assigned agent.`);
               if (!canEdit && proposals.length === 0) return null;
 
               const fmtAed = (n) => `AED ${Number(n||0).toLocaleString()}`;
-              const STATUS_META = {
-                sent:     {label:"SENT",     c:"#1A5FA8", bg:"#E6EFF8"},
-                viewed:   {label:"VIEWED",   c:"#A06810", bg:"#FDF3DC"},
-                accepted: {label:"ACCEPTED", c:"#1A7F5A", bg:"#E6F4EE"},
-                rejected: {label:"REJECTED", c:"#C53030", bg:"#FEE2E2"},
-                expired:  {label:"EXPIRED",  c:"#6B7280", bg:"#F3F4F6"},
-                superseded:{label:"SUPERSEDED",c:"#6B7280",bg:"#F3F4F6"},
-              };
+              // 20 May 2026 Phase 2b: Use module-level PROPOSAL_STATUS_META (was duplicated here)
+              const STATUS_META = PROPOSAL_STATUS_META;
 
               const updateProposalStatus = async (propId, newStatus) => {
                 const{error}=await supabase.from("proposals").update({status:newStatus}).eq("id",propId);
