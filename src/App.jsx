@@ -6997,6 +6997,12 @@ You will become the assigned agent.`);
                  caches in component state (so re-mounts don't re-bill).
             ── */}
             {!["Closed Won","Closed Lost"].includes(opp.stage) && (()=>{
+              // 20 May 2026 Phase 2h-hide: Hide old Coach section
+              // Content will be re-rendered inside dashboard Coach tab panel (Step 2)
+              // Set HIDE_OLD_COACH_SECTION=false to re-enable for emergency revert
+              const HIDE_OLD_COACH_SECTION = true;
+              if (HIDE_OLD_COACH_SECTION) return null;
+
               const dataPoints = activities.length + proposals.length + reminders.filter(r=>r.status==="pending").length;
               const analysedAgo = coachResult?.analysed_at ? Math.round((new Date() - new Date(coachResult.analysed_at)) / 60000) : null;
               return (
