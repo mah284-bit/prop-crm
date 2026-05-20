@@ -6878,13 +6878,101 @@ You will become the assigned agent.`);
                       </div>
                     );
                   })()
+                ) : dashboardTab === "plan" ? (
+                  /* 20 May 2026 Phase 2f: PAYMENT PLAN PANEL - schedule breakdown from proposal */
+                  (() => {
+                    const latest = proposals[0];
+                    const sd = latest?.structured_data || {};
+                    const proposalUnits = (sd.proposal_units && sd.proposal_units.length>0) ? sd.proposal_units : [];
+                    const firstUnit = proposalUnits[0] || {};
+                    const netPrice = Number(sd.total_value || firstUnit.discounted_price || opp.current_agreed_price || 0);
+                    const planPreset = opp.current_payment_plan_preset || sd.payment_plan_preset;
+                    // Parse preset label (e.g. "20/80") to extract initial/handover percentages
+                    let initialPct = 0;
+                    let constructionPct = 0;
+                    let handoverPct = 0;
+                    let isPHP = false;
+                    if (planPreset) {
+                      if (planPreset === "10/90") { initialPct = 10; handoverPct = 90; }
+                      else if (planPreset === "20/80") { initialPct = 20; handoverPct = 80; }
+                      else if (planPreset === "40/60") { initialPct = 40; handoverPct = 60; }
+                      else if (planPreset === "50/50 PHP") { initialPct = 50; handoverPct = 50; isPHP = true; }
+                    }
+                    const initialAmt = Math.round(netPrice * initialPct / 100);
+                    const constructionAmt = Math.round(netPrice * constructionPct / 100);
+                    const handoverAmt = Math.round(netPrice * handoverPct / 100);
+                    const totalAmt = initialAmt + constructionAmt + handoverAmt;
+                    return (
+                      <div style={{padding:"4px 2px"}}>
+                        {/* Header */}
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,paddingBottom:10,borderBottom:"2px solid #F1F5F9"}}>
+                          <div style={{fontSize:16,fontWeight:700,color:"#0F2540",display:"flex",alignItems:"center",gap:8}}>
+                            🏗️ Payment Plan
+                            {planPreset && <span style={{fontSize:10,padding:"2px 7px",borderRadius:8,background:"#ECFDF5",color:"#065F46",fontWeight:700}}>{planPreset} AGREED</span>}
+                          </div>
+                          <span style={{fontSize:10,color:"#94A3B8"}}>{latest ? `Locked in V${proposals.length}` : "No proposal yet"}</span>
+                        </div>
+                        {!latest || !planPreset ? (
+                          <div style={{textAlign:"center",padding:"40px 20px",color:"#94A3B8",fontSize:12,border:"1px dashed #E2E8F0",borderRadius:10}}>
+                            {!latest ? "No proposal sent yet. Payment plan will show after first proposal." : "Custom payment plan (no preset). Refer to proposal details."}
+                          </div>
+                        ) : (
+                          <>
+                            {/* Schedule breakdown */}
+                            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                              {/* Initial Advance - highlighted */}
+                              <div style={{padding:"14px 18px",background:"#EFF6FF",border:"2px solid #BFDBFE",borderRadius:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                <div>
+                                  <div style={{fontSize:11,fontWeight:700,color:"#1D4ED8",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>Initial Advance ({initialPct}%)</div>
+                                  <div style={{fontSize:11,color:"#64748B"}}>Due at SPA signing</div>
+                                </div>
+                                <div style={{fontSize:20,fontWeight:700,color:"#1D4ED8"}}>AED {Number(initialAmt).toLocaleString()}</div>
+                              </div>
+                              {/* During Construction */}
+                              <div style={{padding:"12px 18px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                <div>
+                                  <div style={{fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>During Construction ({constructionPct}%)</div>
+                                  <div style={{fontSize:11,color:"#64748B"}}>{constructionPct === 0 ? "No mid-payments for this plan" : "Spread across construction phases"}</div>
+                                </div>
+                                <div style={{fontSize:16,fontWeight:700,color:constructionPct === 0 ? "#94A3B8" : "#0F2540"}}>
+                                  {constructionPct === 0 ? "—" : `AED ${Number(constructionAmt).toLocaleString()}`}
+                                </div>
+                              </div>
+                              {/* On Handover - highlighted */}
+                              <div style={{padding:"14px 18px",background:"#EFF6FF",border:"2px solid #BFDBFE",borderRadius:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                <div>
+                                  <div style={{fontSize:11,fontWeight:700,color:"#1D4ED8",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>On Handover ({handoverPct}%)</div>
+                                  <div style={{fontSize:11,color:"#64748B"}}>Due at unit handover</div>
+                                </div>
+                                <div style={{fontSize:20,fontWeight:700,color:"#1D4ED8"}}>AED {Number(handoverAmt).toLocaleString()}</div>
+                              </div>
+                              {/* Total */}
+                              <div style={{padding:"12px 18px",background:"#ECFDF5",border:"2px solid #A8D5BE",borderRadius:10,display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
+                                <div style={{fontSize:12,fontWeight:700,color:"#065F46",textTransform:"uppercase",letterSpacing:".5px"}}>Total Agreed</div>
+                                <div style={{fontSize:20,fontWeight:700,color:"#1A7F5A"}}>AED {Number(totalAmt).toLocaleString()}</div>
+                              </div>
+                            </div>
+                            {/* PHP note */}
+                            {isPHP && (
+                              <div style={{marginTop:14,padding:"10px 14px",background:"#FDF3DC",border:"1px solid #F0D795",borderRadius:8,fontSize:11,color:"#854D0E"}}>
+                                ℹ <strong>PHP Plan:</strong> Includes 30% post-handover spread over 2 years (not shown in handover total above).
+                              </div>
+                            )}
+                            <div style={{marginTop:14,padding:"10px 14px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:8,fontSize:11,color:"#0C4A6E"}}>
+                              ℹ Plan locked in Proposal V{proposals.length}. To change, send a revised proposal with new terms.
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()
                 ) : (
                   <div style={{padding:"20px 4px"}}>
                     <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:8}}>
                       📋 Tab active: <span style={{color:"#1D4ED8"}}>{dashboardTab}</span>
                     </div>
                     <div style={{fontSize:12,color:"#64748B",lineHeight:1.6}}>
-                      <strong>Phase 2g:</strong> Proposals + Negotiations + Next Steps + Financials + Upfront tabs wired. Coach + Plan coming next.
+                      <strong>Phase 2f:</strong> 6 of 7 tabs wired. Coach coming next as the final tab.
                     </div>
                     <button onClick={()=>setDashboardTab(null)} style={{marginTop:12,padding:"5px 12px",borderRadius:6,border:"1px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#475569"}}>← Back to dashboard</button>
                   </div>
