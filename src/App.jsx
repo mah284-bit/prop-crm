@@ -5914,7 +5914,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       <div style={{flex:1,overflowY:"auto"}}>
 
         {/* ── DEAL OVERVIEW: workflow band + property card + notes ── */}
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
             {/* Ownership Notice */}
             {!isOwner&&canEdit&&(
               <div style={{background:canAction?"#E6F4EE":"#FFFBEB",border:`1px solid ${canAction?"#A8D5BE":"#FDE68A"}`,borderRadius:10,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
@@ -6004,11 +6004,11 @@ You will become the assigned agent.`);
             )}
 
             {/* Workflow bar */}
-            <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"12px 16px"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:8}}>Deal Journey</div>
+            <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"8px 14px"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:4}}>Deal Journey</div>
               
               {/* Stage pills */}
-              <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0,marginBottom:12,paddingBottom:4}}>
+              <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0,marginBottom:6,paddingBottom:2}}>
                 {OPP_STAGES.filter(s=>s!=="Closed Lost").map((s,i,arr)=>{
                   const curIdx=OPP_STAGES.indexOf(opp.stage);
                   const thisIdx=OPP_STAGES.indexOf(s);
@@ -6073,20 +6073,20 @@ You will become the assigned agent.`);
                 // Excluded only from terminal stages (Closed Won/Lost) where deal is done.
                 const showSendProposal = canEdit && !["Closed Won","Closed Lost"].includes(opp.stage) && unit;
                 return(
-                  <div style={{paddingTop:12,borderTop:"1px solid #F1F5F9"}}>
+                  <div style={{paddingTop:6,borderTop:"1px solid #F1F5F9"}}>
                     {/* Next-action hint */}
                     {nextActionLabel&&(
-                      <div style={{fontSize:11,color:"#475569",marginBottom:10,fontStyle:"italic"}}>
+                      <div style={{fontSize:11,color:"#475569",marginBottom:5,fontStyle:"italic"}}>
                         💡 What's next: <strong style={{color:"#0F2540",fontStyle:"normal"}}>{nextActionLabel}</strong>
                       </div>
                     )}
 
                     {/* Two clearly separated zones: ACTIVITY (left) and STAGE (right) */}
-                    <div style={{display:"flex",gap:14,flexWrap:"wrap",alignItems:"flex-start"}}>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-start"}}>
 
                       {/* Activity zone — logging, doesn't change stage */}
-                      <div style={{flex:"1 1 280px",minWidth:260,background:"#F8FAFC",border:"1px solid #E8EDF4",borderRadius:10,padding:"10px 12px"}}>
-                        <div style={{fontSize:9,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:8}}>Log activity</div>
+                      <div style={{flex:"1 1 280px",minWidth:260,background:"#F8FAFC",border:"1px solid #E8EDF4",borderRadius:10,padding:"6px 10px"}}>
+                        <div style={{fontSize:9,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:4}}>Log activity</div>
                         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                           <button onClick={()=>{setLogForm({type:"Call",note:""});setShowLog(true);}}
                             style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
@@ -6110,8 +6110,8 @@ You will become the assigned agent.`);
                       </div>
 
                       {/* Stage advancement zone — changes stage */}
-                      <div style={{flex:"1 1 280px",minWidth:260,background:`${m.bg}`,border:`1px solid ${m.c}33`,borderRadius:10,padding:"10px 12px"}}>
-                        <div style={{fontSize:9,fontWeight:700,color:m.c,textTransform:"uppercase",letterSpacing:".6px",marginBottom:8}}>Move stage</div>
+                      <div style={{flex:"1 1 280px",minWidth:260,background:`${m.bg}`,border:`1px solid ${m.c}33`,borderRadius:10,padding:"6px 10px"}}>
+                        <div style={{fontSize:9,fontWeight:700,color:m.c,textTransform:"uppercase",letterSpacing:".6px",marginBottom:4}}>Move stage</div>
                         <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
                           {/* 17 May 2026 ARCH-SIMPLIFY-002: hide Move Stage button when next is Proposal Sent.
                               Path to Proposal Sent must be through "Send Proposal" in Log Activity zone,
