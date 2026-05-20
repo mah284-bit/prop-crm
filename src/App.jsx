@@ -7430,7 +7430,11 @@ You will become the assigned agent.`);
             )}
 
             {/* Payment Plan Card */}
-            {unit&&sp&&(
+            {/* 20 May 2026: Hide old Payment Plan + Upfront card */}
+            {/* Reason: Card mixes Agency Fee into buyer outflow (Tuesday architectural law violation) */}
+            {/* Plan + Upfront content will be wired into dashboard tabs from proposal data (no Agency Fee) */}
+            {/* To re-enable: change 'false&&' to just '' or remove it */}
+            {false&&unit&&sp&&(
               <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                   <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>
