@@ -6517,13 +6517,116 @@ You will become the assigned agent.`);
                       </div>
                     );
                   })()
+                ) : dashboardTab === "next-steps" ? (
+                  /* 20 May 2026 Phase 2d: NEXT STEPS PANEL - reminders with action buttons */
+                  (() => {
+                    const nowNS = new Date();
+                    const reminderIconsNS = {Call:"📞",WhatsApp:"💬",Email:"✉️",Meeting:"🤝","Site Visit":"🏠","Send proposal":"📄","Send brochure":"📋","Note to self":"📝",Other:"📌"};
+                    const sortedNS = [...reminders].sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at));
+                    const fmtDueNS = (iso)=>{
+                      const d = new Date(iso);
+                      const diffMs = d - nowNS;
+                      const diffDays = Math.floor(diffMs / 86400000);
+                      const dateStr = d.toLocaleDateString("en-AE",{day:"numeric",month:"short"});
+                      if(diffMs < 0){
+                        const overdueDays = Math.abs(Math.ceil(diffMs / 86400000));
+                        return {label: overdueDays===0?"due today":overdueDays===1?"1 day overdue":`${overdueDays} days overdue`, color:"#C53030", bg:"#FEE2E2", date:dateStr};
+                      }
+                      if(diffDays===0) return {label:"due today", color:"#A06810", bg:"#FDF3DC", date:dateStr};
+                      if(diffDays===1) return {label:"due tomorrow", color:"#1A5FA8", bg:"#E6EFF8", date:dateStr};
+                      if(diffDays<=7) return {label:`in ${diffDays} days`, color:"#1A5FA8", bg:"#E6EFF8", date:dateStr};
+                      return {label:dateStr, color:"#64748B", bg:"#F1F5F9", date:dateStr};
+                    };
+                    const markDoneNS = (rem)=>setRemAction({mode:"done", reminder:rem, note:"", date:""});
+                    const snooze1DayNS = async(rem)=>{
+                      const newDate = new Date(rem.trigger_at);
+                      newDate.setDate(newDate.getDate()+1);
+                      const ok = await updateReminderStatus(rem.id,"pending",{trigger_at:newDate.toISOString()});
+                      if(ok) showToast("Snoozed 1 day","success");
+                    };
+                    const rescheduleNS = (rem)=>{
+                      const currentDate = new Date(rem.trigger_at).toISOString().split("T")[0];
+                      setRemAction({mode:"reschedule", reminder:rem, note:"", date:currentDate});
+                    };
+                    const cancelNS = (rem)=>setRemAction({mode:"cancel", reminder:rem, note:"", date:""});
+                    // Categorize: overdue, today, future
+                    const overdueCount = sortedNS.filter(r => new Date(r.trigger_at) < nowNS).length;
+                    const todayCount = sortedNS.filter(r => {
+                      const d = new Date(r.trigger_at);
+                      return d >= nowNS && d.toDateString() === nowNS.toDateString();
+                    }).length;
+                    const futureCount = sortedNS.length - overdueCount - todayCount;
+                    return (
+                      <div style={{padding:"4px 2px"}}>
+                        {/* Header with summary */}
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,paddingBottom:10,borderBottom:"2px solid #F1F5F9"}}>
+                          <div style={{fontSize:16,fontWeight:700,color:"#0F2540",display:"flex",alignItems:"center",gap:8}}>
+                            ⏰ Next Steps
+                            <span style={{fontSize:10,padding:"2px 7px",borderRadius:8,background:"#FEF3C7",color:"#92400E",fontWeight:700}}>{sortedNS.length} pending</span>
+                          </div>
+                          <div style={{display:"flex",gap:8,fontSize:11,color:"#64748B"}}>
+                            {overdueCount > 0 && <span><strong style={{color:"#C53030"}}>{overdueCount}</strong> overdue</span>}
+                            {todayCount > 0 && <span><strong style={{color:"#A06810"}}>{todayCount}</strong> today</span>}
+                            {futureCount > 0 && <span><strong style={{color:"#1A5FA8"}}>{futureCount}</strong> upcoming</span>}
+                          </div>
+                        </div>
+                        {sortedNS.length === 0 ? (
+                          <div style={{textAlign:"center",padding:"40px 20px",color:"#94A3B8",fontSize:12,border:"1px dashed #E2E8F0",borderRadius:10}}>
+                            No pending reminders. You're all caught up! 🎉
+                          </div>
+                        ) : (
+                          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                            {sortedNS.map(rem=>{
+                              const due = fmtDueNS(rem.trigger_at);
+                              const actionFromTitle = (rem.title||"").split("—")[0].trim();
+                              const icon = reminderIconsNS[actionFromTitle] || "📌";
+                              const isAuto = rem.reason && rem.reason.startsWith("auto_");
+                              return (
+                                <div key={rem.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#F8FAFC",borderRadius:8,border:`1px solid ${due.color==="#C53030"?"#FECACA":"#E2E8F0"}`,flexWrap:"wrap"}}>
+                                  <span style={{fontSize:20,flexShrink:0}}>{icon}</span>
+                                  <div style={{flex:1,minWidth:200}}>
+                                    <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                                      <span style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{rem.title}</span>
+                                      <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:due.bg,color:due.color}}>{due.label}</span>
+                                      {isAuto && <span style={{fontSize:9,fontWeight:600,padding:"1px 6px",borderRadius:8,background:"#F1F5F9",color:"#64748B"}}>auto</span>}
+                                      <span style={{fontSize:10,color:"#94A3B8"}}>{due.date}</span>
+                                    </div>
+                                    {rem.body && <div style={{fontSize:11,color:"#64748B",marginTop:3,fontStyle:"italic"}}>{rem.body}</div>}
+                                  </div>
+                                  {canEdit && (
+                                    <div style={{display:"flex",gap:5,flexShrink:0,flexWrap:"wrap"}}>
+                                      <button onClick={()=>markDoneNS(rem)} style={{padding:"5px 11px",borderRadius:6,border:"1px solid #1A7F5A",background:"#fff",color:"#1A7F5A",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                        ✓ Done
+                                      </button>
+                                      <button onClick={()=>snooze1DayNS(rem)} title="Snooze 1 day" style={{padding:"5px 11px",borderRadius:6,border:"1px solid #D1D9E6",background:"#fff",color:"#64748B",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                        💤 +1d
+                                      </button>
+                                      <button onClick={()=>rescheduleNS(rem)} style={{padding:"5px 11px",borderRadius:6,border:"1px solid #D1D9E6",background:"#fff",color:"#64748B",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                        📅
+                                      </button>
+                                      <button onClick={()=>cancelNS(rem)} style={{padding:"5px 11px",borderRadius:6,border:"1px solid #FECACA",background:"#fff",color:"#C53030",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                        ✕
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <div style={{marginTop:14,padding:"9px 12px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:7,fontSize:11,color:"#0C4A6E"}}>
+                          💡 <strong>Tip:</strong> Reminders are auto-created when you send proposals or advance stages. Mark done, snooze, or reschedule to keep your follow-ups on track.
+                        </div>
+                      </div>
+                    );
+                  })()
                 ) : (
                   <div style={{padding:"20px 4px"}}>
                     <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:8}}>
                       📋 Tab active: <span style={{color:"#1D4ED8"}}>{dashboardTab}</span>
                     </div>
                     <div style={{fontSize:12,color:"#64748B",lineHeight:1.6}}>
-                      <strong>Phase 2c:</strong> Proposals + Negotiations tabs wired. Other tabs coming in Phase 2d-g. For now, scroll down to see the section in its current location.
+                      <strong>Phase 2d:</strong> Proposals + Negotiations + Next Steps tabs wired. Other tabs coming next. For now, scroll down to see the section in its current location.
                     </div>
                     <button onClick={()=>setDashboardTab(null)} style={{marginTop:12,padding:"5px 12px",borderRadius:6,border:"1px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#475569"}}>← Back to dashboard</button>
                   </div>
