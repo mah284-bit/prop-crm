@@ -7357,6 +7357,9 @@ You will become the assigned agent.`);
             </div>
 
             {/* Unit details */}
+            {/* 20 May 2026: Hide Property card - founder requested Tuesday (duplicate of header info) */}
+            {/* To re-enable: change 'false &&' below to 'true &&' or remove wrapper */}
+            {false && (
             <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
               <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:12}}>Property</div>
               {unit?(
@@ -7379,6 +7382,7 @@ You will become the assigned agent.`);
                 <div style={{color:"#A0AEC0",fontSize:12,textAlign:"center",padding:"1rem"}}>No unit linked to this opportunity yet</div>
               )}
             </div>
+            )}
 
             {/* Financials */}
             {/* 20 May 2026 Phase 2e-hide: Hide old Financials section (content lives in dashboard Financials tab) */}
