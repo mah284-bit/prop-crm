@@ -6978,13 +6978,143 @@ You will become the assigned agent.`);
                       </div>
                     );
                   })()
+                ) : dashboardTab === "coach" ? (
+                  /* 20 May 2026 Phase 2h-wire: COACH PANEL - full AI Coach UI */
+                  (() => {
+                    if (["Closed Won","Closed Lost"].includes(opp.stage)) {
+                      return (
+                        <div style={{padding:"40px 20px",textAlign:"center",color:"#94A3B8",fontSize:12}}>
+                          Coach is not available for closed deals.
+                        </div>
+                      );
+                    }
+                    const dataPointsC = activities.length + proposals.length + reminders.filter(r=>r.status==="pending").length;
+                    const analysedAgoC = coachResult?.analysed_at ? Math.round((new Date() - new Date(coachResult.analysed_at)) / 60000) : null;
+                    return (
+                      <div style={{padding:"4px 2px"}}>
+                        {/* Header */}
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,paddingBottom:10,borderBottom:"2px solid #F1F5F9",flexWrap:"wrap",gap:8}}>
+                          <div style={{fontSize:16,fontWeight:700,color:"#0F766E",display:"flex",alignItems:"center",gap:8}}>
+                            ✨ 🤖 PropPulse Coach
+                            <span style={{fontSize:9,padding:"2px 7px",borderRadius:8,background:"#ECFEFF",color:"#0E7490",fontWeight:700,border:"1px solid #CCFBF1"}}>BETA</span>
+                            <button onClick={()=>setCoachInfoOpen(o=>!o)} title="How does this work?" style={{padding:"2px 7px",borderRadius:6,border:"1px solid #CCFBF1",background:"#fff",color:"#0E7490",fontSize:10,fontWeight:600,cursor:"pointer"}}>ⓘ</button>
+                          </div>
+                          {analysedAgoC !== null && (
+                            <span style={{fontSize:11,color:"#64748B"}}>Analysed {analysedAgoC===0?"just now":`${analysedAgoC} min ago`}</span>
+                          )}
+                        </div>
+                        {/* Info tooltip */}
+                        {coachInfoOpen && (
+                          <div style={{marginBottom:14,padding:"10px 14px",background:"#F0FDFA",border:"1px solid #CCFBF1",borderRadius:8,fontSize:12,color:"#475569",lineHeight:1.6}}>
+                            <strong style={{color:"#0F766E"}}>How it works:</strong> When you click <em>Analyse</em>, PropPulse Coach reads this deal's history (activities, proposals, visits, reminders, lead profile) and recommends 1-3 next moves. We don't run it automatically — you stay in control of when AI is consulted, and it keeps your token usage predictable. Results stay until you click Refresh.
+                          </div>
+                        )}
+                        {/* Initial state */}
+                        {!coachResult && !coachLoading && !coachError && (
+                          <div style={{padding:"24px 20px",background:"#F0FDFA",border:"1px solid #CCFBF1",borderRadius:10,textAlign:"center"}}>
+                            <div style={{fontSize:36,marginBottom:10}}>✨</div>
+                            <div style={{fontSize:14,fontWeight:700,color:"#0F766E",marginBottom:6}}>Ready to analyse this deal</div>
+                            <div style={{fontSize:12,color:"#475569",marginBottom:14,lineHeight:1.5}}>
+                              I can review this deal's history and recommend your next move.
+                            </div>
+                            <div style={{fontSize:11,color:"#64748B",marginBottom:14}}>
+                              Based on: <strong>{activities.length}</strong> activit{activities.length===1?"y":"ies"} · <strong>{proposals.length}</strong> proposal{proposals.length===1?"":"s"} · <strong>{reminders.filter(r=>r.status==="pending").length}</strong> pending reminder{reminders.filter(r=>r.status==="pending").length===1?"":"s"}
+                            </div>
+                            <button onClick={runCoach} disabled={dataPointsC===0}
+                              title={dataPointsC===0?"Add some activity first — there's nothing to analyse":"Analyse this deal with AI"}
+                              style={{padding:"10px 22px",borderRadius:8,border:"none",background:dataPointsC===0?"#CBD5E1":"linear-gradient(135deg, #6D28D9 0%, #0E7490 100%)",color:"#fff",fontSize:13,fontWeight:700,cursor:dataPointsC===0?"not-allowed":"pointer",boxShadow:dataPointsC===0?"none":"0 4px 12px rgba(13, 116, 144, 0.3)"}}>
+                              ✨ Analyse this deal →
+                            </button>
+                            {dataPointsC===0 && (
+                              <div style={{marginTop:10,fontSize:11,color:"#A06810"}}>
+                                ⚠ Add activity, send a proposal, or schedule a reminder first.
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {/* Loading state */}
+                        {coachLoading && (
+                          <div style={{padding:"40px 20px",textAlign:"center",background:"#F0FDFA",border:"1px solid #CCFBF1",borderRadius:10}}>
+                            <div style={{fontSize:36,marginBottom:10,display:"inline-block",animation:"spin 1.2s linear infinite"}}>⚙️</div>
+                            <div style={{fontSize:13,fontWeight:700,color:"#0F766E",marginBottom:4}}>Analysing...</div>
+                            <div style={{fontSize:11,color:"#64748B"}}>Reading the deal history and forming recommendations</div>
+                          </div>
+                        )}
+                        {/* Error state */}
+                        {coachError && !coachLoading && (
+                          <div style={{padding:"12px 14px",background:"#FEE2E2",border:"1px solid #FCA5A5",borderRadius:8,fontSize:12,color:"#C53030",marginBottom:12,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                            <span style={{fontSize:18}}>⚠</span>
+                            <span style={{flex:1,minWidth:200}}>{coachError}</span>
+                            <button onClick={runCoach} style={{padding:"5px 12px",borderRadius:6,border:"1px solid #C53030",background:"#fff",color:"#C53030",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                              Retry
+                            </button>
+                          </div>
+                        )}
+                        {/* Results state */}
+                        {coachResult && !coachLoading && (
+                          <div>
+                            {coachResult.summary && (
+                              <div style={{fontSize:13,color:"#0F766E",marginBottom:14,padding:"12px 14px",background:"#F0FDFA",border:"1px solid #CCFBF1",borderRadius:8,fontStyle:"italic",lineHeight:1.5}}>
+                                📊 {coachResult.summary}
+                              </div>
+                            )}
+                            <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
+                              {coachResult.suggestions.map((s, idx) => {
+                                const conf = s.confidence || "medium";
+                                const confColor = conf==="high"?"#0F766E":conf==="medium"?"#A06810":"#64748B";
+                                const confBg = conf==="high"?"#CCFBF1":conf==="medium"?"#FEF3C7":"#F1F5F9";
+                                const actionLabel = ({
+                                  build_proposal:"📤 Build proposal",
+                                  schedule_followup:"📅 Schedule follow-up",
+                                  mark_lost:"✗ Mark as lost",
+                                  advance_stage: s.action_params?.suggested_stage ? `→ Move to ${s.action_params.suggested_stage}` : "→ Advance stage",
+                                  note_only:null,
+                                })[s.action_type] || null;
+                                return (
+                                  <div key={idx} style={{background:"#fff",border:"1px solid #CCFBF1",borderRadius:10,padding:"12px 14px"}}>
+                                    <div style={{display:"flex",alignItems:"flex-start",gap:10,marginBottom:8,flexWrap:"wrap"}}>
+                                      <span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:10,background:confBg,color:confColor,letterSpacing:".4px",textTransform:"uppercase"}}>
+                                        {conf}
+                                      </span>
+                                      <span style={{fontSize:14,fontWeight:700,color:"#0F2540",flex:1,minWidth:200}}>{s.title}</span>
+                                    </div>
+                                    {s.reasoning && (
+                                      <div style={{fontSize:12,color:"#475569",lineHeight:1.6,marginBottom:10,paddingLeft:4}}>
+                                        💭 {s.reasoning}
+                                      </div>
+                                    )}
+                                    {actionLabel && (
+                                      <button onClick={()=>applyCoachAction(s)}
+                                        style={{padding:"6px 14px",borderRadius:6,border:"1px solid #5EEAD4",background:"#ECFEFF",color:"#0F766E",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                                        {actionLabel}
+                                      </button>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                            <div style={{display:"flex",gap:6,paddingTop:10,borderTop:"1px solid #F1F5F9"}}>
+                              <button onClick={runCoach} disabled={coachLoading}
+                                style={{padding:"6px 14px",borderRadius:6,border:"1px solid #CCFBF1",background:"#fff",color:"#0E7490",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                                🔄 Refresh analysis
+                              </button>
+                              <button onClick={()=>{setCoachResult(null); setCoachError("");}}
+                                style={{padding:"6px 14px",borderRadius:6,border:"1px solid #E2E8F0",background:"#fff",color:"#64748B",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                                Dismiss
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()
                 ) : (
                   <div style={{padding:"20px 4px"}}>
                     <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:8}}>
                       📋 Tab active: <span style={{color:"#1D4ED8"}}>{dashboardTab}</span>
                     </div>
                     <div style={{fontSize:12,color:"#64748B",lineHeight:1.6}}>
-                      <strong>Phase 2f:</strong> 6 of 7 tabs wired. Coach coming next as the final tab.
+                      All 7 tabs wired! Dashboard refactor complete.
                     </div>
                     <button onClick={()=>setDashboardTab(null)} style={{marginTop:12,padding:"5px 12px",borderRadius:6,border:"1px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#475569"}}>← Back to dashboard</button>
                   </div>
