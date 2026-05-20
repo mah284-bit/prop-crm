@@ -14,13 +14,26 @@ PropCRM Phase 1 tracks **TWO distinct financial flows** that must NEVER be mixed
 **This is what PropCRM Phase 1 manages end-to-end.**
 
 What buyer pays to developer + government:
+
+### One-time payments (at SPA / handover)
 - Net property price (after discount)
+- Booking Fee (10% of price, typical)
 - DLD Fee (4% of price, paid to Dubai Land Department)
 - Oqood Fee (off-plan registration fee, AED 4,020 standard)
-- Service charges (developer's charges, if applicable)
+- Initial Advance (per payment plan, e.g. 20% for 20/80)
 - Admin / handover fees (at SPA stage, developer-specific)
 
-**Goes into:** SPA contract, payment schedule, deal closure tracking.
+### Recurring payments (annual, post-handover)
+- **Annual Maintenance / Service Charge** — AED X per sqft per year, paid to developer or Owners Association
+- Varies by building, project, and amenities (typical UAE range: AED 12-30/sqft/year)
+- Data field: `units.service_charge_per_sqft` (already exists in PropCRM schema)
+- For unit AGR-09-05 at 1800 sqft × AED 15/sqft = AED 27,000/year (example calculation)
+
+**Goes into:** SPA contract, payment schedule, ongoing cost-of-ownership tracking.
+
+**Important distinction:** Maintenance FEE (buyer → developer) is Phase 1.
+Maintenance COORDINATION services (broker helps buyer manage their property) is Phase 2.
+These are different things — same word "maintenance" but different flows.
 
 ### Flow 2 — Developer → Broker (the commission)
 **This is broker revenue — tracked separately for commission payouts.**
@@ -41,12 +54,16 @@ The following are **deliberately OUT OF SCOPE for Phase 1**:
 
 ### Buyer → Broking Company services (Phase 2)
 These represent a SEPARATE agreement between buyer and brokerage:
-- Agency liaison fees (2% buyer pays brokerage for help)
-- Property management retainer
-- Tenant-finding services
-- Maintenance coordination
+- Agency liaison fees (2% buyer pays brokerage for help, optional)
+- Property management retainer (broker manages buyer's property)
+- Tenant-finding services (broker finds tenants for buyer's rental)
+- **Maintenance coordination services** (broker arranges repairs/upkeep — NOT the maintenance fee itself, which is Phase 1)
 - Resale brokerage services
 - Periodic consultation fees
+
+**Clear separation:**
+- Annual maintenance FEE paid to developer = Phase 1 (mandatory cost of ownership)
+- Broker SERVICE to manage maintenance on buyer's behalf = Phase 2 (optional add-on)
 
 **Why deferred to Phase 2:**
 1. Phase 1 must validate core deal pipeline first
@@ -74,9 +91,11 @@ When Phase 2 is built later, it will connect to Phase 1 via:
 
 ### Rule 1 — Buyer outflow displays
 Anywhere PropCRM shows "what buyer pays":
-- Show only: Price + DLD + Oqood + developer-collected fees
-- NEVER mix in: commission, agency fees, service retainers
+- One-time: Price + Booking + DLD + Oqood + Admin + Initial Advance
+- Recurring: **Annual maintenance/service charge (AED × sqft)**
+- NEVER mix in: commission, agency fees, broker service retainers
 - Label clearly: "Buyer outflow to developer + government"
+- Distinguish: one-time vs recurring (recurring shown as "AED X/year")
 
 ### Rule 2 — Broker commission displays
 Anywhere PropCRM shows broker earnings:
@@ -92,9 +111,11 @@ Anywhere PropCRM shows broker earnings:
 
 ### Rule 4 — Phase 2b dashboard (current work)
 The new Proposals tab cost summary MUST:
-- Show only: Net Price + DLD + Oqood as "Buyer outflow"
-- Show separately: Broker commission as separate line
+- One-time outflow: Net Price + Booking + DLD + Oqood + Initial Advance
+- Recurring outflow: Annual maintenance (AED × sqft)
+- Show separately: Broker commission as separate line (developer pays this)
 - Educational text: "Buyer agency services tracked separately (future module)"
+- Pull annual maintenance from: `units.service_charge_per_sqft × units.size_sqft`
 
 ---
 
@@ -163,3 +184,12 @@ When designing ANY new UI element involving money, ask:
 *Captured: Tuesday 19 May 2026, evening session*  
 *Context: Discovered during dashboard refactor when designing buyer-outflow summary*  
 *Founder caught the conflation in early design before code shipped*
+
+**Correction (20 May 2026, Wednesday morning):**
+Original draft incorrectly assigned annual maintenance fee to Phase 2.
+Founder corrected: maintenance is paid to developer (Phase 1, recurring annual cost).
+Property management SERVICES (broker helping buyer coordinate maintenance) is the
+Phase 2 item — different concept, same word.
+
+Data already exists in schema: `units.service_charge_per_sqft` column.
+Just needs UI surfacing in buyer outflow displays (planned for Phase 2b).
