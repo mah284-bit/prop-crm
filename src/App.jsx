@@ -6744,13 +6744,147 @@ You will become the assigned agent.`);
                       </div>
                     );
                   })()
+                ) : dashboardTab === "upfront" ? (
+                  /* 20 May 2026 Phase 2g: UPFRONT COSTS PANEL - pure buyer outflow (NO Agency Fee per architecture) */
+                  (() => {
+                    const latest = proposals[0];
+                    const sd = latest?.structured_data || {};
+                    const proposalUnits = (sd.proposal_units && sd.proposal_units.length>0) ? sd.proposal_units : [];
+                    const firstUnit = proposalUnits[0] || {};
+                    const netPrice = Number(sd.total_value || firstUnit.discounted_price || opp.current_agreed_price || 0);
+                    const dldPct = 4;
+                    const dldFee = Math.round(netPrice * dldPct/100);
+                    const dldPayer = sd.dld_handling || (opp.current_dld_payer === "buyer" ? "buyer_pays" : opp.current_dld_payer === "developer" ? "developer_pays" : opp.current_dld_payer === "split" ? "split" : null);
+                    const buyerDldShare = dldPayer === "buyer_pays" ? dldFee : dldPayer === "developer_pays" ? 0 : Math.round(dldFee/2);
+                    const dldLabelUpf = dldPayer === "buyer_pays" ? "Buyer pays full" :
+                                       dldPayer === "developer_pays" ? "Developer absorbs" :
+                                       dldPayer === "split" ? "Split 50/50" :
+                                       "Negotiated";
+                    const oqoodFee = 4020;
+                    // Booking 10% of net (typical for off-plan)
+                    const bookingFee = Math.round(netPrice * 0.10);
+                    // Initial advance from payment plan preset
+                    const planPreset = opp.current_payment_plan_preset || sd.payment_plan_preset;
+                    let initialPct = 0;
+                    if (planPreset === "10/90") initialPct = 10;
+                    else if (planPreset === "20/80") initialPct = 20;
+                    else if (planPreset === "40/60") initialPct = 40;
+                    else if (planPreset === "50/50 PHP") initialPct = 50;
+                    const initialAdvance = Math.round(netPrice * initialPct / 100);
+                    // Annual maintenance: unit.service_charge_per_sqft × unit.size_sqft
+                    const linkedUnit3 = (units||[]).find(u => u.id === opp.unit_id);
+                    const sqft = linkedUnit3?.size_sqft || 0;
+                    const scPerSqft = linkedUnit3?.service_charge_per_sqft || 0;
+                    const annualMaintenance = Math.round(sqft * scPerSqft);
+                    // Total one-time
+                    const oneTimeTotal = netPrice + buyerDldShare + oqoodFee;
+                    // Broker commission (SEPARATE - shown as note, not in totals)
+                    const commissionPctUpf = Number(opp.commission_pct || 0);
+                    const commissionAmtUpf = Math.round(netPrice * commissionPctUpf / 100);
+                    return (
+                      <div style={{padding:"4px 2px"}}>
+                        {/* Header */}
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,paddingBottom:10,borderBottom:"2px solid #F1F5F9"}}>
+                          <div style={{fontSize:16,fontWeight:700,color:"#0F2540",display:"flex",alignItems:"center",gap:8}}>
+                            📊 Upfront Costs
+                            <span style={{fontSize:10,padding:"2px 7px",borderRadius:8,background:"#DBEAFE",color:"#1D4ED8",fontWeight:700}}>Buyer outflow</span>
+                          </div>
+                          <span style={{fontSize:10,color:"#94A3B8"}}>{latest ? `Sourced from V${proposals.length} + unit data` : "No proposal yet"}</span>
+                        </div>
+                        {!latest ? (
+                          <div style={{textAlign:"center",padding:"40px 20px",color:"#94A3B8",fontSize:12,border:"1px dashed #E2E8F0",borderRadius:10}}>
+                            No proposal sent yet. Upfront costs will calculate from the latest proposal.
+                          </div>
+                        ) : (
+                          <>
+                            {/* One-time payments */}
+                            <div style={{padding:"16px 18px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:10,marginBottom:14}}>
+                              <div style={{fontSize:11,fontWeight:700,color:"#0C4A6E",textTransform:"uppercase",letterSpacing:".5px",marginBottom:12}}>
+                                💸 One-time payments (at SPA / handover)
+                              </div>
+                              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                  <div>
+                                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Net Price (from V{proposals.length})</div>
+                                    <div style={{fontSize:11,color:"#64748B"}}>Total deal value after discount</div>
+                                  </div>
+                                  <div style={{fontSize:15,fontWeight:700,color:"#0F2540"}}>AED {Number(netPrice).toLocaleString()}</div>
+                                </div>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0",marginLeft:20}}>
+                                  <div>
+                                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>· Booking 10% (within net)</div>
+                                    <div style={{fontSize:11,color:"#64748B"}}>Standard off-plan booking</div>
+                                  </div>
+                                  <div style={{fontSize:13,fontWeight:600,color:"#475569"}}>AED {Number(bookingFee).toLocaleString()}</div>
+                                </div>
+                                {initialAdvance > 0 && (
+                                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0",marginLeft:20}}>
+                                    <div>
+                                      <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>· Initial Advance ({initialPct}%, within net)</div>
+                                      <div style={{fontSize:11,color:"#64748B"}}>Per payment plan {planPreset}</div>
+                                    </div>
+                                    <div style={{fontSize:13,fontWeight:600,color:"#475569"}}>AED {Number(initialAdvance).toLocaleString()}</div>
+                                  </div>
+                                )}
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                  <div>
+                                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>DLD Fee (4% of price)</div>
+                                    <div style={{fontSize:11,color:"#64748B"}}>{dldLabelUpf}</div>
+                                  </div>
+                                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>AED {Number(buyerDldShare).toLocaleString()}</div>
+                                </div>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                  <div>
+                                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Oqood Fee</div>
+                                    <div style={{fontSize:11,color:"#64748B"}}>Government registration</div>
+                                  </div>
+                                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>AED {Number(oqoodFee).toLocaleString()}</div>
+                                </div>
+                                {/* Total */}
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:"#EFF6FF",borderRadius:7,border:"2px solid #BFDBFE",marginTop:4}}>
+                                  <div style={{fontSize:11,fontWeight:700,color:"#1D4ED8",textTransform:"uppercase",letterSpacing:".5px"}}>Total one-time outflow</div>
+                                  <div style={{fontSize:18,fontWeight:700,color:"#1D4ED8"}}>AED {Number(oneTimeTotal).toLocaleString()}</div>
+                                </div>
+                              </div>
+                            </div>
+                            {/* Recurring annual */}
+                            {annualMaintenance > 0 ? (
+                              <div style={{padding:"16px 18px",background:"#FDF3DC",border:"1px solid #F0D795",borderRadius:10,marginBottom:14}}>
+                                <div style={{fontSize:11,fontWeight:700,color:"#854D0E",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>
+                                  🔁 Recurring (annual, post-handover)
+                                </div>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                  <div>
+                                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Annual Maintenance</div>
+                                    <div style={{fontSize:11,color:"#64748B"}}>{sqft.toLocaleString()} sqft × AED {scPerSqft}/sqft</div>
+                                  </div>
+                                  <div style={{fontSize:16,fontWeight:700,color:"#A06810"}}>AED {Number(annualMaintenance).toLocaleString()}/yr</div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{padding:"10px 14px",background:"#FEF9C3",border:"1px solid #FDE68A",borderRadius:8,marginBottom:14,fontSize:11,color:"#854D0E"}}>
+                                ⚠ Unit's <code>service_charge_per_sqft</code> not set. Annual maintenance cannot be calculated.
+                              </div>
+                            )}
+                            {/* Architectural notes */}
+                            <div style={{padding:"10px 14px",background:"#FAFBFE",border:"1px solid #D1D9E6",borderRadius:8,marginBottom:8,fontSize:11,color:"#475569",borderLeft:"3px solid #1D4ED8"}}>
+                              💼 <strong>Broker commission</strong> (AED {Number(commissionAmtUpf).toLocaleString()} at {commissionPctUpf.toFixed(2)}%) tracked separately as revenue - paid by developer, not buyer.
+                            </div>
+                            <div style={{padding:"10px 14px",background:"#FAFBFE",border:"1px solid #D1D9E6",borderRadius:8,fontSize:11,color:"#475569",borderLeft:"3px solid #7C3AED"}}>
+                              📋 <strong>Phase 2 module:</strong> Buyer agency services (if any) + property management retainer tracked separately in future module.
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()
                 ) : (
                   <div style={{padding:"20px 4px"}}>
                     <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:8}}>
                       📋 Tab active: <span style={{color:"#1D4ED8"}}>{dashboardTab}</span>
                     </div>
                     <div style={{fontSize:12,color:"#64748B",lineHeight:1.6}}>
-                      <strong>Phase 2e:</strong> Proposals + Negotiations + Next Steps + Financials tabs wired. Coach/Upfront/Plan coming next.
+                      <strong>Phase 2g:</strong> Proposals + Negotiations + Next Steps + Financials + Upfront tabs wired. Coach + Plan coming next.
                     </div>
                     <button onClick={()=>setDashboardTab(null)} style={{marginTop:12,padding:"5px 12px",borderRadius:6,border:"1px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#475569"}}>← Back to dashboard</button>
                   </div>
