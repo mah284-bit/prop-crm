@@ -6982,6 +6982,12 @@ You will become the assigned agent.`);
 
             {/* ── NEGOTIATION ROUNDS — broker/buyer/developer thread (Phase E W2) ── */}
             {(()=>{
+              // 20 May 2026 Phase 2c-hide: Hide old Negotiations section
+              // Content moved to dashboard Negotiations tab.
+              // Set HIDE_OLD_NEGOTIATIONS_SECTION=false to re-enable for emergency revert.
+              const HIDE_OLD_NEGOTIATIONS_SECTION = true;
+              if (HIDE_OLD_NEGOTIATIONS_SECTION) return null;
+
               // Show the rounds panel whenever we have negotiation activities OR the opp is in Negotiation+ stages
               const negStages = ["Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won"];
               const stageAllows = negStages.includes(opp.stage);
