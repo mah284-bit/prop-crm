@@ -6763,6 +6763,12 @@ You will become the assigned agent.`);
 
             {/* ── NEXT STEPS — pending follow-ups for this opportunity (Phase E W3) ── */}
             {(()=>{
+              // 20 May 2026 Phase 2d-hide: Hide old Next Steps section
+              // Content moved to dashboard Next Steps tab.
+              // Set HIDE_OLD_NEXT_STEPS_SECTION=false to re-enable for emergency revert.
+              const HIDE_OLD_NEXT_STEPS_SECTION = true;
+              if (HIDE_OLD_NEXT_STEPS_SECTION) return null;
+
               const now = new Date();
               const reminderTypeIcons = {Call:"📞",WhatsApp:"💬",Email:"✉️",Meeting:"🤝","Site Visit":"🏠","Send proposal":"📄","Send brochure":"📋","Note to self":"📝",Other:"📌"};
               // Sort: overdue first, then upcoming chronologically
