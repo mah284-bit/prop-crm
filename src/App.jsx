@@ -6620,13 +6620,137 @@ You will become the assigned agent.`);
                       </div>
                     );
                   })()
+                ) : dashboardTab === "financials" ? (
+                  /* 20 May 2026 Phase 2e: FINANCIALS PANEL - buyer details + commission (SEPARATE) */
+                  (() => {
+                    const unitAskingPriceFin = (salePricing||[]).find(s => s.unit_id === opp.unit_id)?.asking_price;
+                    const discValueFin = opp.current_discount_value || opp.discount_pct;
+                    const discTypeFin = opp.current_discount_type || (opp.discount_pct ? "percent" : null);
+                    const discSourceFin = opp.current_discount_source || opp.discount_source;
+                    const dldLabelFin = opp.current_dld_payer === "buyer" ? "Buyer pays" :
+                                       opp.current_dld_payer === "developer" ? "Developer absorbs" :
+                                       opp.current_dld_payer === "negotiated" ? "Negotiated" :
+                                       opp.current_dld_payer === "split" ? `Split ${opp.current_dld_split_pct||50}/${100-(opp.current_dld_split_pct||50)}` :
+                                       null;
+                    const finalPrice = Number(opp.current_agreed_price || 0);
+                    const planPreset = opp.current_payment_plan_preset;
+                    // Initial advance calculation (20% standard for 20/80, etc.)
+                    let initialPct = 0;
+                    if (planPreset === "10/90") initialPct = 10;
+                    else if (planPreset === "20/80") initialPct = 20;
+                    else if (planPreset === "40/60") initialPct = 40;
+                    else if (planPreset === "50/50 PHP") initialPct = 50;
+                    const initialAdvance = Math.round(finalPrice * initialPct / 100);
+                    const commissionPctFin = Number(opp.commission_pct || 0);
+                    const commissionAmt = Math.round(finalPrice * commissionPctFin / 100);
+                    return (
+                      <div style={{padding:"4px 2px"}}>
+                        {/* Header */}
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,paddingBottom:10,borderBottom:"2px solid #F1F5F9"}}>
+                          <div style={{fontSize:16,fontWeight:700,color:"#0F2540",display:"flex",alignItems:"center",gap:8}}>
+                            💰 Financials
+                          </div>
+                          <span style={{fontSize:10,color:"#94A3B8"}}>Sourced from latest proposal + unit pricing</span>
+                        </div>
+                        {/* Two-column layout: Buyer details + Broker commission */}
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+                          {/* LEFT: Buyer-side details */}
+                          <div style={{padding:"14px 16px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:10}}>
+                            <div style={{fontSize:11,fontWeight:700,color:"#0C4A6E",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>
+                              📋 Deal Financials (Buyer side)
+                            </div>
+                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                              {opp.budget && (
+                                <div style={{padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                  <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Buyer Budget</div>
+                                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>AED {Number(opp.budget).toLocaleString()}</div>
+                                </div>
+                              )}
+                              {unitAskingPriceFin && (
+                                <div style={{padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                  <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Asking Price</div>
+                                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>AED {Number(unitAskingPriceFin).toLocaleString()}</div>
+                                </div>
+                              )}
+                              {finalPrice > 0 && (
+                                <div style={{padding:"8px 10px",background:"#EFF6FF",borderRadius:7,border:"1px solid #BFDBFE",gridColumn:"span 2"}}>
+                                  <div style={{fontSize:9,color:"#1D4ED8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Final Agreed Price</div>
+                                  <div style={{fontSize:16,fontWeight:700,color:"#1D4ED8"}}>AED {Number(finalPrice).toLocaleString()}</div>
+                                  {discValueFin && discTypeFin && (
+                                    <div style={{fontSize:10,color:"#64748B",marginTop:3}}>
+                                      Discount: <strong style={{color:"#A06810"}}>{discTypeFin === "percent" ? `${discValueFin}%` : `AED ${Number(discValueFin).toLocaleString()}`}</strong>
+                                      {discSourceFin && <span style={{color:"#94A3B8"}}> (from {discSourceFin})</span>}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              {dldLabelFin && (
+                                <div style={{padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                  <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>DLD Arrangement</div>
+                                  <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{dldLabelFin}</div>
+                                </div>
+                              )}
+                              {planPreset && (
+                                <div style={{padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                  <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Payment Plan</div>
+                                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{planPreset}</div>
+                                </div>
+                              )}
+                              {initialAdvance > 0 && (
+                                <div style={{padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0",gridColumn:"span 2"}}>
+                                  <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Initial Advance ({initialPct}%)</div>
+                                  <div style={{fontSize:14,fontWeight:700,color:"#0F2540"}}>AED {Number(initialAdvance).toLocaleString()}</div>
+                                  <div style={{fontSize:10,color:"#64748B",marginTop:2}}>Due at SPA signing</div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          {/* RIGHT: Broker commission (SEPARATE per architectural law) */}
+                          <div style={{padding:"14px 16px",background:"#FAFBFE",border:"1px solid #D1D9E6",borderRadius:10}}>
+                            <div style={{fontSize:11,fontWeight:700,color:"#475569",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>
+                              💼 Broker Commission (Revenue)
+                            </div>
+                            <div style={{fontSize:10,color:"#64748B",marginBottom:10,lineHeight:1.5}}>
+                              Your earnings on this deal. Paid by developer to brokerage, separate from buyer's outflow.
+                            </div>
+                            {commissionAmt > 0 ? (
+                              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                                <div style={{padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                  <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Commission Rate</div>
+                                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{commissionPctFin.toFixed(2)}%</div>
+                                </div>
+                                <div style={{padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                  <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Based on Final Price</div>
+                                  <div style={{fontSize:12,fontWeight:600,color:"#475569"}}>AED {Number(finalPrice).toLocaleString()}</div>
+                                </div>
+                                <div style={{padding:"10px 12px",background:"#ECFDF5",borderRadius:7,border:"1px solid #A8D5BE"}}>
+                                  <div style={{fontSize:9,color:"#065F46",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Your Commission</div>
+                                  <div style={{fontSize:16,fontWeight:700,color:"#1A7F5A"}}>AED {Number(commissionAmt).toLocaleString()}</div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{padding:"10px 12px",background:"#FEF9C3",borderRadius:7,fontSize:11,color:"#854D0E"}}>
+                                ⚠ commission_pct not set on this opportunity.
+                              </div>
+                            )}
+                            <div style={{marginTop:12,padding:"8px 10px",background:"#fff",borderRadius:6,fontSize:10,color:"#64748B",borderLeft:"3px solid #1D4ED8"}}>
+                              📋 Buyer agency services + property management tracked separately (Phase 2 module).
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{marginTop:14,padding:"9px 12px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:7,fontSize:11,color:"#0C4A6E"}}>
+                          💡 <strong>Tip:</strong> All financial data sourced from latest proposal (V{proposals.length||"—"}). To change, send a revised proposal.
+                        </div>
+                      </div>
+                    );
+                  })()
                 ) : (
                   <div style={{padding:"20px 4px"}}>
                     <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:8}}>
                       📋 Tab active: <span style={{color:"#1D4ED8"}}>{dashboardTab}</span>
                     </div>
                     <div style={{fontSize:12,color:"#64748B",lineHeight:1.6}}>
-                      <strong>Phase 2d:</strong> Proposals + Negotiations + Next Steps tabs wired. Other tabs coming next. For now, scroll down to see the section in its current location.
+                      <strong>Phase 2e:</strong> Proposals + Negotiations + Next Steps + Financials tabs wired. Coach/Upfront/Plan coming next.
                     </div>
                     <button onClick={()=>setDashboardTab(null)} style={{marginTop:12,padding:"5px 12px",borderRadius:6,border:"1px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#475569"}}>← Back to dashboard</button>
                   </div>
