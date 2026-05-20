@@ -7381,6 +7381,9 @@ You will become the assigned agent.`);
             </div>
 
             {/* Financials */}
+            {/* 20 May 2026 Phase 2e-hide: Hide old Financials section (content lives in dashboard Financials tab) */}
+            {/* To re-enable: change 'false &&' below to 'true &&' or remove the wrapper */}
+            {false && (
             <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                 <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Financials</div>
@@ -7420,6 +7423,7 @@ You will become the assigned agent.`);
                 })()}
               </div>
             </div>
+            )}
 
             {/* Payment Plan Card */}
             {unit&&sp&&(
