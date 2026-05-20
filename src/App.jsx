@@ -6165,7 +6165,8 @@ You will become the assigned agent.`);
               <div style={{display:"flex",gap:2,background:"#fff",border:"1px solid #E2E8F0",borderRadius:"10px 10px 0 0",padding:"6px 6px 0 6px",overflowX:"auto",whiteSpace:"nowrap"}}>
                 {[
                   ["proposals", "📤 Proposals", proposals.length],
-                  ["coach", "🤖 Coach", null],
+                  /* 20 May 2026: Coach tab gets AI visual emphasis (sparkle + gradient + glow) */
+                  ["coach", "✨ 🤖 Coach", null],
                   ["next-steps", "⏰ Next Steps", reminders.filter(r=>r.status==="pending").length],
                   ["financials", "💰 Financials", null],
                   ["negotiations", "🤝 Negotiations", null],
@@ -6173,19 +6174,30 @@ You will become the assigned agent.`);
                   ["plan", "🏗️ Plan", null],
                 ].map(([tabId, label, count]) => {
                   const isActive = dashboardTab === tabId;
+                  // 20 May 2026: AI visual emphasis for Coach tab (gradient + glow)
+                  const isCoach = tabId === "coach";
+                  const coachActiveBg = "linear-gradient(135deg, #6D28D9 0%, #0E7490 100%)";
+                  const coachInactiveBg = "linear-gradient(135deg, #EDE9FE 0%, #CCFBF1 100%)";
                   return (
                     <div key={tabId}
                       onClick={() => setDashboardTab(isActive ? null : tabId)}
                       style={{
                         padding:"7px 14px",
                         borderRadius:"7px 7px 0 0",
-                        border: isActive ? "1px solid #E2E8F0" : "1px solid transparent",
+                        border: isCoach
+                          ? (isActive ? "1px solid #6D28D9" : "1px solid #A5F3FC")
+                          : (isActive ? "1px solid #E2E8F0" : "1px solid transparent"),
                         borderBottom: isActive ? "1px solid #fff" : "none",
-                        background: isActive ? "#fff" : "#F8FAFC",
-                        color: isActive ? "#1D4ED8" : "#64748B",
+                        background: isCoach
+                          ? (isActive ? coachActiveBg : coachInactiveBg)
+                          : (isActive ? "#fff" : "#F8FAFC"),
+                        color: isCoach
+                          ? (isActive ? "#fff" : "#0E7490")
+                          : (isActive ? "#1D4ED8" : "#64748B"),
+                        boxShadow: isCoach ? (isActive ? "0 0 8px rgba(109, 40, 217, 0.3)" : "0 0 4px rgba(13, 116, 144, 0.15)") : "none",
                         cursor:"pointer",
                         fontSize:11,
-                        fontWeight:600,
+                        fontWeight: isCoach ? 700 : 600,
                         display:"flex",
                         alignItems:"center",
                         gap:5,
