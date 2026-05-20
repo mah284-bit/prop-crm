@@ -6390,13 +6390,140 @@ You will become the assigned agent.`);
                       </>
                     )}
                   </div>
+                ) : dashboardTab === "negotiations" ? (
+                  /* 20 May 2026 Phase 2c: NEGOTIATIONS PANEL - Excel table + proposal reference */
+                  (() => {
+                    // Compute negotiation rounds locally (rounds variable is local to old section's IIFE)
+                    const negotiationRounds = activities.filter(a =>
+                      (a.activity_subtype === "stage_advance" && a.to_stage === "Negotiation")
+                      || a.activity_subtype === "negotiation_round"
+                      || a.activity_subtype === "handover_meeting"
+                    ).slice().sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+                    const actorMetaLocal = {
+                      buyer:     {label:"BUYER",     icon:"🟦", c:"#1A5FA8", bg:"#E6EFF8"},
+                      developer: {label:"DEVELOPER", icon:"🟩", c:"#1A7F5A", bg:"#E6F4EE"},
+                      broker:    {label:"BROKER",    icon:"🟧", c:"#A06810", bg:"#FDF3DC"},
+                    };
+                    const statusColorsLocal = {"Open":{c:"#1A5FA8",bg:"#E6EFF8"},"Accepted":{c:"#1A7F5A",bg:"#E6F4EE"},"Rejected":{c:"#C53030",bg:"#FEE2E2"},"Counter-pending":{c:"#D97706",bg:"#FEF3C7"}};
+                    // Latest proposal for reference line
+                    const latestProposal = proposals[0];
+                    const lpSd = latestProposal?.structured_data || {};
+                    const lpUnits = (lpSd.proposal_units && lpSd.proposal_units.length>0) ? lpSd.proposal_units : [];
+                    const lpFirstUnit = lpUnits[0] || {};
+                    const lpDiscount = Number(lpFirstUnit.discount_pct || lpSd.discount_pct || 0);
+                    const lpNetPrice = Number(lpSd.total_value || lpFirstUnit.discounted_price || 0);
+                    const lpPlan = latestProposal?.payment_plan || lpSd.payment_plan || "—";
+                    const lpDldLabel = DLD_OPTIONS.find(o=>o.value===lpSd.dld_handling)?.label || "—";
+                    return (
+                      <div style={{padding:"4px 2px"}}>
+                        {/* Header with actions */}
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,paddingBottom:10,borderBottom:"2px solid #F1F5F9"}}>
+                          <div style={{fontSize:16,fontWeight:700,color:"#0F2540",display:"flex",alignItems:"center",gap:8}}>
+                            🤝 Negotiation Rounds
+                            <span style={{fontSize:10,padding:"2px 7px",borderRadius:8,background:"#FEE2E2",color:"#B83232",fontWeight:700}}>{negotiationRounds.length} round{negotiationRounds.length===1?"":"s"}</span>
+                          </div>
+                          {canEdit && (
+                            <div style={{display:"flex",gap:6}}>
+                              <button onClick={()=>setShowLogRound(true)} style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #B83232",background:"#fff",color:"#B83232",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                                + Log Round
+                              </button>
+                              <button onClick={()=>setShowHandover(true)} style={{padding:"6px 12px",borderRadius:7,border:"none",background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+                                📅 Schedule Handover
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        {/* Reference line - latest proposal */}
+                        {latestProposal && (
+                          <div style={{padding:"10px 14px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:8,marginBottom:14,fontSize:12,color:"#0C4A6E"}}>
+                            📋 <strong>Reference V{proposals.length} (latest proposal):</strong>{" "}
+                            {lpDiscount > 0 && <><strong style={{color:"#A06810"}}>-{lpDiscount}%</strong> · </>}
+                            <strong>{lpPlan}</strong> · {lpDldLabel} ·{" "}
+                            <strong style={{color:"#1A5FA8"}}>AED {Number(lpNetPrice).toLocaleString()}</strong>
+                          </div>
+                        )}
+                        {negotiationRounds.length === 0 ? (
+                          <div style={{textAlign:"center",padding:"40px 20px",color:"#94A3B8",fontSize:12,border:"1px dashed #E2E8F0",borderRadius:10}}>
+                            No rounds yet. Click "+ Log Round" when the buyer or developer responds.
+                          </div>
+                        ) : (
+                          <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,marginBottom:14}}>
+                            <thead>
+                              <tr style={{background:"#F8FAFC",borderBottom:"2px solid #E2E8F0"}}>
+                                <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}>R#</th>
+                                <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}>Date</th>
+                                <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}>Party</th>
+                                <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}>Topic / Asks</th>
+                                <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}>Status</th>
+                                <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}>Notes</th>
+                                <th style={{padding:"7px 10px",textAlign:"left",fontSize:10,textTransform:"uppercase",letterSpacing:".4px",color:"#475569",fontWeight:700}}></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {negotiationRounds.map((r, idx) => {
+                                const sd = r.structured_data || {};
+                                const isHandover = r.activity_subtype === "handover_meeting";
+                                const isOpening = r.activity_subtype === "stage_advance";
+                                const actorKey = sd.actor || (isOpening ? "buyer" : "broker");
+                                const am = actorMetaLocal[actorKey] || actorMetaLocal.broker;
+                                const dateLabel = sd.round_at ? new Date(sd.round_at).toLocaleDateString("en-AE",{day:"numeric",month:"short"}) : new Date(r.created_at).toLocaleDateString("en-AE",{day:"numeric",month:"short"});
+                                const status = sd.status || (isOpening ? "Open" : null);
+                                const sc = status ? statusColorsLocal[status] || {} : {};
+                                const isLatest = idx === 0;
+                                const roundNumber = negotiationRounds.length - idx;
+                                // Asks summary
+                                const enabledAsks = sd.asks ? Object.keys(sd.asks).filter(k=>sd.asks[k]?.enabled) : [];
+                                const asksSummary = isHandover ? "📅 Handover Meeting" :
+                                                    enabledAsks.length > 0 ? enabledAsks.map(k => {
+                                                      const def = ASKS_GRID_OPTIONS.find(o=>o.key===k);
+                                                      if(!def) return null;
+                                                      const val = sd.asks[k]?.value;
+                                                      return def.label + (val ? `: ${val}` : "");
+                                                    }).filter(Boolean).join(", ") : "—";
+                                const notesShort = (sd.broker_notes || sd.notes || "").substring(0, 60);
+                                return (
+                                  <tr key={r.id} style={{background:isLatest?"#FAFBFE":"#fff",borderBottom:"1px solid #F1F5F9"}}>
+                                    <td style={{padding:"9px 10px",fontWeight:700,color:"#0F2540"}}>
+                                      R{roundNumber}
+                                      {isLatest && <span style={{fontSize:8,padding:"1px 5px",background:"#ECFDF5",color:"#065F46",borderRadius:3,fontWeight:700,marginLeft:5}}>LATEST</span>}
+                                    </td>
+                                    <td style={{padding:"9px 10px",color:"#64748B"}}>{dateLabel}</td>
+                                    <td style={{padding:"9px 10px"}}>
+                                      <span style={{fontSize:10,padding:"2px 6px",borderRadius:8,background:am.bg,color:am.c,fontWeight:700}}>{am.icon} {am.label}</span>
+                                    </td>
+                                    <td style={{padding:"9px 10px",color:"#0F2540",fontSize:11}}>{asksSummary}</td>
+                                    <td style={{padding:"9px 10px"}}>
+                                      {status && <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:sc.bg,color:sc.c,fontWeight:700}}>{status.toUpperCase()}</span>}
+                                    </td>
+                                    <td style={{padding:"9px 10px",color:"#64748B",fontSize:11,fontStyle:"italic",maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={sd.broker_notes||sd.notes||""}>
+                                      {notesShort}{notesShort.length === 60 ? "..." : ""}
+                                    </td>
+                                    <td style={{padding:"9px 10px",textAlign:"right"}}>
+                                      {isLatest && canEdit && !isHandover && (
+                                        <button onClick={()=>setShowLogRound(true)} title="Log next round" style={{padding:"3px 9px",borderRadius:5,border:"none",background:"#1D4ED8",color:"#fff",fontSize:10,fontWeight:700,cursor:"pointer"}}>
+                                          + Round
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        )}
+                        <div style={{padding:"9px 12px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:7,fontSize:11,color:"#0C4A6E"}}>
+                          💡 <strong>Tip:</strong> Log each round when buyer/developer responds. Reference line above shows latest proposal terms for context.
+                        </div>
+                      </div>
+                    );
+                  })()
                 ) : (
                   <div style={{padding:"20px 4px"}}>
                     <div style={{fontSize:14,fontWeight:700,color:"#0F2540",marginBottom:8}}>
                       📋 Tab active: <span style={{color:"#1D4ED8"}}>{dashboardTab}</span>
                     </div>
                     <div style={{fontSize:12,color:"#64748B",lineHeight:1.6}}>
-                      <strong>Phase 2b:</strong> Proposals tab is wired. Other tabs coming in Phase 2c-g. For now, scroll down to see the section in its current location.
+                      <strong>Phase 2c:</strong> Proposals + Negotiations tabs wired. Other tabs coming in Phase 2d-g. For now, scroll down to see the section in its current location.
                     </div>
                     <button onClick={()=>setDashboardTab(null)} style={{marginTop:12,padding:"5px 12px",borderRadius:6,border:"1px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#475569"}}>← Back to dashboard</button>
                   </div>
