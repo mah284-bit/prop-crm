@@ -3263,7 +3263,12 @@ function ProposalViewerDialog({ proposal, opp, lead, units, projects, currentUse
   );
 }
 
-function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, currentUser, onClose, onSaved, showToast }) {
+function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, currentUser, lastProposal, onClose, onSaved, showToast }) {
+  // 21 May 2026 Phase B: Pre-fill from V_latest when broker clicks Edit
+  // Pre-fill: discount, plan, DLD, service charge, proposal units
+  // Keep fresh: validity days (new expiry), cover notes (fresh story)
+  const lastSd = lastProposal?.structured_data || {};
+  const isRevision = !!lastProposal;
   // Multi-unit proposal: each unit has its own pricing block
   // Pre-seed with the opp's linked unit if available
   const linkedUnit = units.find(x => x.id === opp.unit_id);
@@ -3282,16 +3287,25 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
   // Toggle: should the opp's linked unit pre-load as the starting point?
   // Default: true (most common — broker is proposing the unit they qualified the buyer for)
   // Flip OFF: agent wants a totally different proposal (e.g. buyer changed their mind on size)
-  const [useLinkedUnit, setUseLinkedUnit] = useState(true);
+  const [useLinkedUnit, setUseLinkedUnit] = useState(true); // 21 May 2026 Phase B fix: keep ON for revisions too (useEffect adds linked unit idempotently)
   const [proposalUnits, setProposalUnits] = useState(() => {
+    // 21 May 2026 Phase B: For revisions, pre-fill from V_latest's units (preserves discounts)
+    if (isRevision && lastSd.proposal_units && lastSd.proposal_units.length > 0) {
+      return lastSd.proposal_units.map(pu => ({
+        unit_id: pu.unit_id,
+        asking_price: Number(pu.asking_price || 0),
+        discount_pct: Number(pu.discount_pct || 0),
+        discounted_price: Number(pu.discounted_price || 0),
+      }));
+    }
     const row = buildLinkedUnitRow();
     return row ? [row] : [];
   });
-  const [paymentPlanPreset, setPaymentPlanPreset] = useState("10/90");
-  const [paymentPlan, setPaymentPlan] = useState("10% on booking · 90% on handover");
-  const [dldHandling, setDldHandling] = useState("buyer_pays");
+  const [paymentPlanPreset, setPaymentPlanPreset] = useState(isRevision && lastSd.payment_plan_preset ? lastSd.payment_plan_preset : "10/90");
+  const [paymentPlan, setPaymentPlan] = useState(isRevision && (lastProposal?.payment_plan || lastSd.payment_plan) ? (lastProposal?.payment_plan || lastSd.payment_plan) : "10% on booking · 90% on handover");
+  const [dldHandling, setDldHandling] = useState(isRevision && lastSd.dld_handling ? lastSd.dld_handling : "buyer_pays");
   const [dldCustomAmount, setDldCustomAmount] = useState("");
-  const [serviceChargePreset, setServiceChargePreset] = useState("none");
+  const [serviceChargePreset, setServiceChargePreset] = useState(isRevision && lastSd.service_charge_preset ? lastSd.service_charge_preset : "none");
   const [serviceChargeCustom, setServiceChargeCustom] = useState("");
   const [validityDays, setValidityDays] = useState(10);
   const [coverNotes, setCoverNotes] = useState("");
@@ -8268,6 +8282,7 @@ You will become the assigned agent.`);
           opp={opp} lead={lead}
           units={units} projects={projects} salePricing={salePricing}
           currentUser={currentUser}
+          lastProposal={proposals[0]}
           onClose={()=>setShowProposalDialog(false)}
           onSaved={(propRow, actRow)=>{
             // Mark previous "sent" proposals as "superseded" since this is a revision
