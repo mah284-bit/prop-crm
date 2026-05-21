@@ -12584,7 +12584,10 @@ const TABS=[
   // 21 May 2026: Hide Discounts menu for Phase 1 (broker-only) demo
   // Re-enable in Phase 2 when developer persona ships (approval workflow for developer-side users)
   // {id:"discounts",  label:"Discounts",    icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager"]},
-  {id:"activity",   label:"Activity Log", icon:"📝", app:"sales",   roles:["super_admin","admin","sales_manager"]},
+  // 21 May 2026: Hide Activity Log menu for Phase 1 demo
+  // Will be replaced by role-aware Dashboard in Phase 2 (Manager view)
+  // See: docs/Phase_2_Role_Based_Dashboard_Vision.md
+  // {id:"activity",   label:"Activity Log", icon:"📝", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"reports",    label:"Reports",      icon:"📊", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   //{id:"ai",       label:"AI Assistant", icon:"✦",  app:"sales" -- removed, using AI bubble insteadles_manager","sales_agent"]},
   {id:"proppulse",  label:"PropPulse",   icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
