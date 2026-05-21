@@ -15220,12 +15220,14 @@ function UsersTab({currentUser, showToast}) {
   );
 }
 
-function SettingsTab({appConfig={}, onConfigChange, currentUser, showToast}) {
+function SettingsTab({appConfig, onConfigChange, currentUser, showToast}) {
+  // 21 May 2026: Handle null appConfig (destructure default {} only applies when undefined, not null)
+  const cfg = appConfig || {};
   const [form, setForm] = useState({
-    mode:     appConfig.mode||"both",
-    company:  appConfig.company||"PropCRM",
-    currency: appConfig.currency||"AED",
-    country:  appConfig.country||"UAE",
+    mode:     cfg.mode||"both",
+    company:  cfg.company||"PropCRM",
+    currency: cfg.currency||"AED",
+    country:  cfg.country||"UAE",
   });
   const save=()=>{
     const cfg={...appConfig,...form,updatedAt:new Date().toISOString()};
