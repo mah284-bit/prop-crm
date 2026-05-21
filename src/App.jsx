@@ -4356,13 +4356,17 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   );
 }
 
-function NegotiationRoundDialog({ opp, lead, currentUser, onClose, onSaved, showToast }) {
-  const [actor, setActor] = useState("developer"); // who is speaking this round (most common: developer responding)
+function NegotiationRoundDialog({ opp, lead, currentUser, lastRound, onClose, onSaved, showToast }) {
+  // 21 May 2026 Phase A: Pre-fill from last round for continuity
+  // Pre-fill: actor (often same party continues), asks (terms typically build incrementally)
+  // Keep fresh: date (NOW), status ("Open" for new round), notes (blank for new content)
+  const lastSd = lastRound?.structured_data || {};
+  const [actor, setActor] = useState(lastSd.actor || "developer"); // who is speaking this round (default: developer responding)
   const [roundAt, setRoundAt] = useState(()=>{
     const d = new Date(); const pad = n=>String(n).padStart(2,"0");
     return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   });
-  const [asks, setAsks] = useState({});
+  const [asks, setAsks] = useState(lastSd.asks || {});
   const [status, setStatus] = useState("Open");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -8282,9 +8286,13 @@ You will become the assigned agent.`);
       {/* Phase E W2 — Log Negotiation Round Dialog */}
       {showLogRound && (()=>{
         const close = ()=>setShowLogRound(false);
+        // 21 May 2026 Phase A: Find last negotiation round for pre-fill
+        // Activities are sorted newest-first, so .find() returns the most recent.
+        const lastRound = activities.find(a => a.activity_subtype === "negotiation_round");
         return (
           <NegotiationRoundDialog
             opp={opp} lead={lead} currentUser={currentUser}
+            lastRound={lastRound}
             onClose={close}
             onSaved={(actRow)=>{
               setActivities(p=>[actRow, ...p]);
