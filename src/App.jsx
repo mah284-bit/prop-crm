@@ -12581,7 +12581,9 @@ const TABS=[
   {id:"opportunities",label:"Opportunities",icon:"🎯", app:"sales",  roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"projects",   label:"Projects",     icon:"🏗️", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"builder",    label:"Inventory",    icon:"🏠", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
-  {id:"discounts",  label:"Discounts",    icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager"]},
+  // 21 May 2026: Hide Discounts menu for Phase 1 (broker-only) demo
+  // Re-enable in Phase 2 when developer persona ships (approval workflow for developer-side users)
+  // {id:"discounts",  label:"Discounts",    icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"activity",   label:"Activity Log", icon:"📝", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"reports",    label:"Reports",      icon:"📊", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   //{id:"ai",       label:"AI Assistant", icon:"✦",  app:"sales" -- removed, using AI bubble insteadles_manager","sales_agent"]},
@@ -12600,7 +12602,8 @@ const TABS=[
   {id:"l_projects",  label:"Projects",     icon:"🏗️", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_inventory",label:"Inventory",    icon:"📋", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
   {id:"leasing",    label:"Prop. Mgmt",  icon:"🏘️", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
-  {id:"l_discounts",label:"Discounts",    icon:"⚡", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
+  // 21 May 2026: Hide Leasing Discounts menu for Phase 1 demo (same reason as sales)
+  // {id:"l_discounts",label:"Discounts",    icon:"⚡", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_activity", label:"Activity Log", icon:"📝", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_reports",  label:"Reports",      icon:"📊", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_proppulse",label:"PropPulse",   icon:"⚡", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
