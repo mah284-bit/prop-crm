@@ -139,6 +139,15 @@ Return the JSON array as specified in the system prompt. Empty array [] is a val
 
   // Parse — defensive, tolerate prose narration AND markdown fences
   let projects = [];
+  // 21 May 2026: Handle empty Claude response as valid empty array.
+  // Some developers (RAK Properties, others) have minimal recent public info,
+  // and Claude may return whitespace-only or empty response instead of "[]".
+  // Per system prompt this is valid ("Return [] if nothing qualifies").
+  if (!rawText || rawText.trim().length === 0) {
+    projects = [];
+    await logJob(developer, results, "completed");
+    return res.status(200).json(results);
+  }
   try {
     let cleaned = rawText
       .replace(/^```json\s*/i, "")
