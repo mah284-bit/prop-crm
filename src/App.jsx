@@ -12593,11 +12593,16 @@ const TABS=[
   {id:"proppulse",  label:"PropPulse",   icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"companies",  label:"Companies",    icon:"🏢", app:"sales",   roles:["super_admin"]},
   {id:"users",      label:"Users",        icon:"👥", app:"sales",   roles:["admin","super_admin"]},
-  {id:"permissions",label:"Permissions",  icon:"🔒", app:"sales",   roles:["super_admin"]},
-  {id:"permsets",   label:"Permissions",  icon:"🔐", app:"sales",   roles:["super_admin","admin"]},
+  // 21 May 2026: Hide Permissions menu for Phase 1 demo (admin config, not broker workflow)
+  // Re-enable in Phase 2 with unified Settings module
+  // {id:"permissions",label:"Permissions",  icon:"🔒", app:"sales",   roles:["super_admin"]},
+  // 21 May 2026: Hide duplicate empty Permissions screen
+  // {id:"permsets",   label:"Permissions",  icon:"🔐", app:"sales",   roles:["super_admin","admin"]},
   {id:"master_agreements",label:"Master Agreements", icon:"📄", app:"sales", roles:["super_admin","admin"]},
   {id:"commission_outstanding",label:"Commission Outstanding", icon:"💰", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
-  {id:"group_view", label:"Group View",    icon:"🏛", app:"sales",   roles:["super_admin"]},
+  // 21 May 2026: Hide Group View for Phase 1 demo (placeholder "Planned for MVP Phase")
+  // Re-enable in Phase 2 when parent-subsidiary aggregation is built
+  // {id:"group_view", label:"Group View",    icon:"🏛", app:"sales",   roles:["super_admin"]},
   // ── Leasing CRM ────────────────────────────────────────────────
   {id:"l_dashboard",label:"Dashboard",    icon:"⊞",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
   {id:"l_leads",    label:"Leads",        icon:"👤", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
