@@ -11902,7 +11902,7 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
       )}
 
       {/* ── Hero banner ─────────────────────────────────────── */}
-      <div style={{background:"#fff",borderRadius:14,padding:"1.25rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+      <div style={{background:"linear-gradient(135deg, #0F2540 0%, #1A5FA8 100%)",borderRadius:14,padding:"1.25rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,boxShadow:"0 4px 12px rgba(15, 37, 64, 0.15)"}}>
         <div>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, {currentUser.full_name?.split(" ")[0]} ☀️</div>
           <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{new Date().toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
