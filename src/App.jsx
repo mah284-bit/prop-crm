@@ -7854,7 +7854,7 @@ You will become the assigned agent.`);
                     </div>
                     {sp.asking_price&&(
                       <div style={{background:"#fff",borderRadius:10,padding:"12px 14px"}}>
-                        <div style={{fontSize:10,color:"rgba(255,255,255,.5)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Client Upfront Costs</div>
+                        <div style={{fontSize:10,color:"#64748B",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Client Upfront Costs</div>
                         <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
                           {[
                             ["Booking Deposit",`AED ${Math.round(sp.asking_price*(sp.booking_pct||10)/100).toLocaleString()}`],
@@ -7893,7 +7893,7 @@ You will become the assigned agent.`);
                     </div>
                     {sp.asking_price&&(
                       <div style={{background:"#fff",borderRadius:10,padding:"12px 14px"}}>
-                        <div style={{fontSize:10,color:"rgba(255,255,255,.5)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Client Transfer Costs</div>
+                        <div style={{fontSize:10,color:"#64748B",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>Client Transfer Costs</div>
                         <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
                           {[
                             ["Sale Price",`AED ${Number(sp.asking_price).toLocaleString()}`],
@@ -9456,7 +9456,7 @@ You will become the assigned agent.`);
             <div style={{background:"#fff",padding:"1rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>📤 Send Proposal</div>
-                <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>Stage moves to Proposal Sent after sending</div>
+                <div style={{fontSize:11,color:"#64748B",marginTop:2}}>Stage moves to Proposal Sent after sending</div>
               </div>
               <button onClick={()=>setShowEmail(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
@@ -11710,7 +11710,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
               <div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>🎯 New Opportunity</div>
-                <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>for {selLead.name}</div>
+                <div style={{fontSize:11,color:"#64748B",marginTop:2}}>for {selLead.name}</div>
               </div>
               <button onClick={()=>setShowAddOpp(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
@@ -11902,15 +11902,15 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
       )}
 
       {/* ── Hero banner ─────────────────────────────────────── */}
-      <div style={{background:"linear-gradient(135deg, #0F2540 0%, #1A5FA8 100%)",borderRadius:14,padding:"1.25rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,boxShadow:"0 4px 12px rgba(15, 37, 64, 0.15)"}}>
+      <div style={{background:"linear-gradient(135deg, #F8FAFC 0%, #E6EFF9 100%)",borderRadius:14,padding:"1.25rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,boxShadow:"0 4px 12px rgba(15, 37, 64, 0.15)"}}>
         <div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, {currentUser.full_name?.split(" ")[0]} ☀️</div>
-          <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{new Date().toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#0F2540",fontWeight:700}}>Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, {currentUser.full_name?.split(" ")[0]} ☀️</div>
+          <div style={{color:"#64748B",fontSize:12,marginTop:2}}>{new Date().toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
           <RoleBadge role={currentUser.role}/>
         </div>
         <div style={{textAlign:"right"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:30,color:"#C9A84C",fontWeight:700}}>{fmtAED(pipeVal)}</div>
-          <div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>Pipeline Value</div>
+          <div style={{fontSize:11,color:"#64748B"}}>Pipeline Value</div>
         </div>
       </div>
 
@@ -12021,7 +12021,7 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
             ].map(([l,v,t])=>(
               <div key={l} onClick={()=>onNavigate(t)} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,.07)",cursor:"pointer"}}
                 onMouseOver={e=>e.currentTarget.style.opacity=".7"} onMouseOut={e=>e.currentTarget.style.opacity="1"}>
-                <span style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>{l}</span>
+                <span style={{fontSize:12,color:"#64748B"}}>{l}</span>
                 <span style={{fontSize:13,fontWeight:700,color:"#fff"}}>{v}</span>
               </div>
             ))}
@@ -13180,12 +13180,12 @@ function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[]
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>
               {isNew ? "🔒 Reserve Unit" : "📋 Reservation Details"}
             </div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>{unit?.unit_ref} · {unit?.sub_type}</div>
+            <div style={{fontSize:11,color:"#64748B",marginTop:2}}>{unit?.unit_ref} · {unit?.sub_type}</div>
           </div>
           {!isNew && reservation.status === "Active" && (
             <div style={{textAlign:"right"}}>
               <div style={{fontSize:22,fontWeight:700,color:urg==="ok"?"#4ADE80":urg==="warning"?"#FBBF24":"#F87171"}}>{hrs}h</div>
-              <div style={{fontSize:10,color:"rgba(255,255,255,.5)"}}>remaining</div>
+              <div style={{fontSize:10,color:"#64748B"}}>remaining</div>
             </div>
           )}
           <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer",marginLeft:12}}>×</button>
@@ -14064,7 +14064,7 @@ function PaymentPlanTemplates({ currentUser, showToast, projects=[], onSelectPla
             <div style={{background:"#fff",padding:"1rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>{editTpl?"Edit":"New"} Payment Plan Template</div>
-                <div style={{fontSize:11,color:"rgba(255,255,255,.5)",marginTop:2}}>Define milestone installments — must total 100%</div>
+                <div style={{fontSize:11,color:"#64748B",marginTop:2}}>Define milestone installments — must total 100%</div>
               </div>
               <button onClick={()=>{setShowAdd(false);setEditTpl(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
@@ -14285,7 +14285,7 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
               </div>
               <div style={{display:"flex",gap:6,marginTop:6,alignItems:"center"}}>
                 <div style={{width:6,height:6,borderRadius:"50%",background:"#1A7F5A",boxShadow:"0 0 6px #1A7F5A"}}/>
-                <span style={{fontSize:10,color:"rgba(255,255,255,.5)"}}>
+                <span style={{fontSize:10,color:"#64748B"}}>
                   {leads.length} contacts · {units.filter(u=>u.status==="Available").length} available units · {projects.length} projects
                 </span>
               </div>
@@ -14797,7 +14797,7 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
       {/* Hero */}
       <div style={{background:"linear-gradient(135deg,#1A0B3A 0%,#2D1558 100%)",borderRadius:14,padding:"1.5rem 2rem",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, {currentUser.full_name?.split(" ")[0]} {new Date().getHours()<12?"☀️":new Date().getHours()<17?"🌤️":"🌙"}</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#0F2540",fontWeight:700}}>Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, {currentUser.full_name?.split(" ")[0]} {new Date().getHours()<12?"☀️":new Date().getHours()<17?"🌤️":"🌙"}</div>
           <div style={{color:"#C9A84C",fontSize:13,marginTop:4}}>{new Date().toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
           <div style={{display:"flex",gap:8,marginTop:6,alignItems:"center"}}>
             <RoleBadge role={currentUser.role}/>
@@ -14805,7 +14805,7 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
           </div>
         </div>
         <div style={{textAlign:"right"}}>
-          <div style={{color:"rgba(255,255,255,.5)",fontSize:11,textTransform:"uppercase",letterSpacing:".6px"}}>Annual Rent Roll</div>
+          <div style={{color:"#64748B",fontSize:11,textTransform:"uppercase",letterSpacing:".6px"}}>Annual Rent Roll</div>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:30,color:"#C9A84C",fontWeight:700,marginTop:2}}>{fmtM(totalRent)}</div>
         </div>
       </div>
@@ -14943,7 +14943,7 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
             ["Open Maintenance", openMaint.length, "leasing"],
           ].map(([l,v,t])=>(
             <div key={l} onClick={()=>onNavigate(t)} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,.07)",cursor:"pointer"}}>
-              <span style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>{l}</span>
+              <span style={{fontSize:12,color:"#64748B"}}>{l}</span>
               <span style={{fontSize:13,fontWeight:700,color:v>0?"#F87171":"#fff"}}>{v}</span>
             </div>
           ))}
@@ -14977,7 +14977,7 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
             ["Available Units",  availUnits.length,   "l_inventory"],
           ].map(([l,v,t])=>(
             <div key={l} onClick={()=>onNavigate(t)} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.07)",cursor:"pointer"}}>
-              <span style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>{l}</span>
+              <span style={{fontSize:12,color:"#64748B"}}>{l}</span>
               <span style={{fontSize:13,fontWeight:700,color:v>0?"#F87171":"#fff"}}>{v}</span>
             </div>
           ))}

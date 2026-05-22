@@ -67,15 +67,15 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
       )}
 
       {/* ── Hero banner ─────────────────────────────────────── */}
-      <div style={{background:"linear-gradient(135deg, #0F2540 0%, #1A5FA8 100%)",borderRadius:14,padding:"1.25rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,boxShadow:"0 4px 12px rgba(15, 37, 64, 0.15)"}}>
+      <div style={{background:"linear-gradient(135deg, #F8FAFC 0%, #E6EFF9 100%)",borderRadius:14,padding:"1.25rem 1.5rem",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,boxShadow:"0 4px 12px rgba(15, 37, 64, 0.15)"}}>
         <div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, {currentUser.full_name?.split(" ")[0]} ☀️</div>
-          <div style={{color:"rgba(255,255,255,.5)",fontSize:12,marginTop:2}}>{new Date().toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#0F2540",fontWeight:700}}>Good {new Date().getHours()<12?"morning":new Date().getHours()<17?"afternoon":"evening"}, {currentUser.full_name?.split(" ")[0]} ☀️</div>
+          <div style={{color:"#64748B",fontSize:12,marginTop:2}}>{new Date().toLocaleDateString("en-AE",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>
           <RoleBadge role={currentUser.role}/>
         </div>
         <div style={{textAlign:"right"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:30,color:"#C9A84C",fontWeight:700}}>{fmtAED(pipeVal)}</div>
-          <div style={{fontSize:11,color:"rgba(255,255,255,.5)"}}>Pipeline Value</div>
+          <div style={{fontSize:11,color:"#64748B"}}>Pipeline Value</div>
         </div>
       </div>
 
@@ -186,7 +186,7 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
             ].map(([l,v,t])=>(
               <div key={l} onClick={()=>onNavigate(t)} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid rgba(255,255,255,.07)",cursor:"pointer"}}
                 onMouseOver={e=>e.currentTarget.style.opacity=".7"} onMouseOut={e=>e.currentTarget.style.opacity="1"}>
-                <span style={{fontSize:12,color:"rgba(255,255,255,.5)"}}>{l}</span>
+                <span style={{fontSize:12,color:"#64748B"}}>{l}</span>
                 <span style={{fontSize:13,fontWeight:700,color:"#fff"}}>{v}</span>
               </div>
             ))}
