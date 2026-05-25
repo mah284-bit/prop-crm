@@ -10877,6 +10877,7 @@ function Opportunities({ leads, setLeads, opps, setOpps, units, projects, salePr
     const lead = leadById[selOpp.lead_id];
     return (
       <OpportunityDetail
+        key={selOpp.id}
         opp={selOpp}
         lead={lead}
         units={units}
@@ -11996,6 +11997,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   // ── OPPORTUNITY DETAIL VIEW ────────────────────────────────────
   if(view==="opportunity"&&selOpp) return (
     <OpportunityDetail
+      key={selOpp.id}
       opp={selOpp}
       lead={selLead||leads.find(l=>l.id===selOpp.lead_id)||{}}
       units={units}
