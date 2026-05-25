@@ -36,3 +36,6 @@ dist-ssr
 
 # Local env (never commit)
 .env.local
+
+# Local test artifacts (PDFs, fixtures, etc.)
+test-data/
