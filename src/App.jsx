@@ -12031,6 +12031,33 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           </div>
         </div>
       )}
+      {/* Phase 2.1 — Floating Action Button for activity logging */}
+      <button
+        onClick={()=>{
+          setLeadLogForm({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
+          setShowLeadLog(true);
+        }}
+        title="Log activity"
+        style={{
+          position:"fixed",
+          bottom:24,
+          right:24,
+          width:56,
+          height:56,
+          borderRadius:"50%",
+          border:"none",
+          background:"#0F2540",
+          color:"#fff",
+          fontSize:24,
+          fontWeight:700,
+          cursor:"pointer",
+          boxShadow:"0 6px 20px rgba(11,31,58,.35)",
+          zIndex:900,
+          display:"flex",
+          alignItems:"center",
+          justifyContent:"center"
+        }}
+      >+</button>
     </div>
   );
 
