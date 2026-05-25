@@ -5035,6 +5035,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [showOpenItemsGuard, setShowOpenItemsGuard] = useState(false);
   const [proposals, setProposals] = useState([]);
+  // Phase 2.1 — FAB activity logging
+  const [showFabLog, setShowFabLog] = useState(false);
   const [viewingProposal, setViewingProposal] = useState(null); // proposal row to show in viewer
 
   // Phase E W3 — open-items guard: a proposal is the first official document.
@@ -9559,6 +9561,44 @@ You will become the assigned agent.`);
             </div>
           </div>
         </div>
+      )}
+      {/* Phase 2.1 — Floating Action Button for activity logging */}
+      <button
+        onClick={()=>setShowFabLog(true)}
+        title="Log activity"
+        style={{
+          position:"fixed",
+          bottom:96,
+          right:24,
+          width:56,
+          height:56,
+          borderRadius:"50%",
+          border:"none",
+          background:"#0F2540",
+          color:"#fff",
+          fontSize:24,
+          fontWeight:700,
+          cursor:"pointer",
+          boxShadow:"0 6px 20px rgba(11,31,58,.35)",
+          zIndex:900,
+          display:"flex",
+          alignItems:"center",
+          justifyContent:"center"
+        }}
+      >+</button>
+      {showFabLog && (
+        <LogActivityModal
+          lead={lead}
+          opp={opp}
+          currentUser={currentUser}
+          showToast={showToast}
+          onClose={()=>setShowFabLog(false)}
+          onSaved={(saved)=>{
+            setActivities(a=>[saved,...a]);
+            setShowFabLog(false);
+            showToast("Activity logged","success");
+          }}
+        />
       )}
     </div>
   );
