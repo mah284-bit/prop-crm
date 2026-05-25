@@ -68,6 +68,27 @@
 **Document:** `Phase_2_State_Management_RealTime_Sync.md`  
 **Client deployment blocker:** Yes — no client onboards until this ships
 
+
+---
+
+**✅ DAY 13 RESOLUTION (25 May 2026):**
+
+**Root cause:** Not stale state needing Realtime — the `OpportunityDetail` component was being reused across navigation without remounting, so `useEffect([opp.id])` never re-fired. Saturday's symptom (Mayya's proposals missing) was a missing React `key` prop on the render sites, not a database sync issue.
+
+**Fix shipped:** Single 2-line change — `key={selOpp.id}` added at both render sites (Opportunities page line 10880, Leads page line 12000). React now treats every navigation as a fresh mount; all 5 fetches re-execute reliably.
+
+**Commits:**
+- `e60e8ab` — `useRealtimeSubscription` hook preserved for future multi-user cross-tab sync
+- `bfb1050` — `key={selOpp.id}` fix (production blocker resolved)
+- `9da9994` — Repo cleanup (removed 50 obsolete fix scripts)
+
+**Status:**
+- ✅ Saturday's Mayya bug — RESOLVED
+- ✅ Demo blocker — REMOVED (no hard refresh needed)
+- ✅ Client deployment blocker — REMOVED for single-user single-tab scenarios
+- 📋 Multi-user/multi-tab Realtime sync — DEFERRED until pilot client runs 2+ devices simultaneously
+
+**Lesson:** Day 12 Realtime INSERT approach hit StrictMode duplicate-key race. Founder rightly questioned "does Realtime even solve Saturday's symptom?" — it didn't. The actual symptom was simpler than the architecture we were building.
 ### 2.1 PropOS Vision
 **Founder vision:** Property Operating System for all real estate personas (broker → developer → construction → facilities)
 
@@ -147,9 +168,15 @@
 ### 2.13 ⭐ NEW: Activity Logging Everywhere (FAB)
 **Date captured:** 22 May 2026  
 **Founder direction:** *"calling logging is a floating button we may have to think logically and fit wherever necessary"*
+**Stage 1 SHIPPED Day 11:** Lead Detail logging restored (commit `91f46c2`)
 
-**Stage 1 SHIPPED Day 11:** Lead Detail logging restored (commit `91f46c2`)  
-**Stage 2 Phase 2:** Universal FAB across all screens  
+
+**✅ Stage 2 SHIPPED Day 14 (25 May 2026):** FAB on detail screens (Option X scope)
+- `3bed195` — FAB on Opportunity Detail (stacked above AI Coach button at `bottom:96`)
+- `a7395e7` — FAB on Lead Detail (`bottom:24`, wires into richer 23 May logging modal with next-step reminders)
+- Reuses existing modals — no duplication. Material Design FAB convention.
+
+**📋 Stage 3 DEFERRED (Option Y):** Dashboard / Leads list / Opps list FAB — needs lead picker (4-6 hrs UX work). Revisit post-demo if broker workflow demands it. Detail-screen FAB ships the 80% value.
 **Effort:** 1-2 days for FAB | **Timing:** Q3 2026  
 **Document:** `Phase_2_Activity_Logging_Everywhere.md`
 
@@ -201,8 +228,8 @@
 ## SECTION 4 — Phase 2 Build Schedule
 
 ```
-PHASE 2.0 (Days 1-3 post-pilot): State Management & Real-Time Sync 🔴 PRIORITY 0
-PHASE 2.1 (Week 2): Activity Logging Everywhere (FAB)
+PHASE 2.0 ✅ DONE Day 13: State Management (key={selOpp.id} fix, bfb1050)
+PHASE 2.1 ✅ DONE Day 14: FAB on detail screens (3bed195 + a7395e7) — Stage 3 lists deferred
 PHASE 2.2 (Week 3-4): Lead Lifecycle & Buyer Segmentation
 PHASE 2.3 (Weeks 5-8): Communications Overhaul
   - 2.3A PDF foundation
@@ -337,6 +364,47 @@ A: Show Section 4. "We've planned through Q4 2026 with specific deliverables, no
 - Mock investor sessions
 
 ---
+
+
+## SECTION 8.5 — Day 12-14 Summary (Phase 2.0 + 2.1 SHIPPED)
+
+**Day 12 (24 May 2026, Sunday):**
+- Built `useRealtimeSubscription` hook (`e60e8ab`) — DRY pattern for Supabase Realtime subscriptions
+- Wired Realtime INSERT subscription to proposals table
+- Hit StrictMode duplicate-key issue — Realtime fired twice in dev, caused React warnings
+- Founder questioned whether Realtime even solved Saturday's symptom (Mayya proposals missing)
+- Decision: abandon Realtime INSERT approach, keep hook for future multi-user use, find simpler fix
+
+**Day 13 (25 May 2026 morning):**
+- Root-caused Saturday's bug — not stale state, but `OpportunityDetail` component instance being reused across navigation without remount, so `useEffect([opp.id])` never re-fired
+- Fixed with 2-line `key={selOpp.id}` change at both render sites (`bfb1050`)
+- Audited all other detail components — Lead detail uses parent state (immune), all dialogs unmount cleanly (immune). No other instances of the bug.
+- Cleanup: deleted 50 obsolete fix scripts, gitignored `test-data/` (`9da9994`)
+
+**Day 14 (25 May 2026 afternoon):**
+- Built FAB on Opportunity Detail (`3bed195`) — stacks above AI Coach at `bottom:96`, reuses `LogActivityModal`
+- Built FAB on Lead Detail (`a7395e7`) — `bottom:24`, reuses richer 23 May `showLeadLog` modal with next-step reminders
+- Caught one bad `sed` insertion (FAB outside root `<div>`), reverted with `git checkout`, redid at correct line — zero damage
+- Material Design FAB convention: primary action highest in thumb zone
+
+**Key learnings (Days 12-14):**
+- **Match solution to actual symptom.** Day 12 reached for Realtime architecture when the actual bug was a missing `key` prop. Trust founder's pattern-recognition pushback.
+- **Smaller fix = lower risk.** Day 13's 2-line change beat Day 12's 100+ line hook wiring for the same problem.
+- **Reuse existing modals, don't duplicate.** Lead Detail FAB reuses the 23 May logging system rather than introducing `LogActivityModal` — preserves richer feature set, avoids regression.
+- **Revertable checkpoints work.** Bad sed → `git checkout src/App.jsx` → clean re-do. One commit per logical change makes recovery trivial.
+
+**Commits (Days 12-14):**
+1. `e60e8ab` — Realtime hook (Day 12, preserved for future)
+2. `bfb1050` — Mayya bug fixed (Day 13)
+3. `9da9994` — Cleanup (Day 13)
+4. `3bed195` — FAB on Opp Detail (Day 14)
+5. `a7395e7` — FAB on Lead Detail (Day 14)
+
+**Status:**
+- ✅ Phase 2.0 (State Management) — Saturday's symptom resolved
+- ✅ Phase 2.1 Stage 2 (FAB on detail screens) — Option X scope shipped
+- 📋 Phase 2.1 Stage 3 (FAB on Dashboard/lists) — deferred to Option Y if needed post-demo
+- ⏭️ Next: Phase 2.2 — Lead Lifecycle & Buyer Segmentation
 
 ## SECTION 9 — Update Discipline
 
