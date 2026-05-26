@@ -121,3 +121,30 @@ Then paste this to Claude:
 ---
 
 *"PropCRM = the rigor of Salesforce, the simplicity of WhatsApp, with AI doing the heavy lifting that a sales ops team would do in a traditional CRM."* — Founder, Day 16 evening
+
+---
+
+## DEMO DATA REALISM — Critical workstream (added Day 16 evening)
+
+**Founder insight:** Bad demo numbers tell the wrong story. Even a great app loses credibility when investors see "9% realization rate" or 11 identical AED 2M entries. Founder (35 years IT, watches eyebrows in meetings) called this trap before any data scrub started.
+
+**Audit needed across:**
+- Commission Outstanding (realization rate must be 70-85%, 13 unlinked deals need real developers)
+- Dashboard headline numbers
+- PropPulse ("abc" test project must go)
+- Leads (corrupted Anoop, generic test names → realistic UAE+international personas)
+- Opportunities (coherent deal stories, not test stages)
+- Proposals V1→V3 chains on demo opps
+- Activities (look "active broker" not "demo seed")
+
+**Personas to design (founder writes narratives, architect writes SQL):**
+- Local national: Mohammed Al Mansoori (Sharjah villa, family of 5)
+- International investor: India-based, Dubai investment, multi-visit
+- Corporate buyer: company + CFO + secretary contacts, office floor
+- GCC expat owner-occupier: Saudi family relocating, 3BR apartment
+
+Each persona = coherent journey: lead → opp → proposal V1→V3 → SPA signed → commission invoiced → partially paid.
+
+**Timing:** Week 2 (Days 24-30) — after Phase 2.2B Contacts ships (personas use full schema with multiple persons per lead). Before Week 3 demo practice so practice runs use realistic data.
+
+**Founder rule:** "1st demo win, else you may not get another chance."
