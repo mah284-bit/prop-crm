@@ -14,7 +14,7 @@
 // Dependencies: React 19. Phone validation is plain E.164 regex.
 // No direct Supabase client — parent provides onSubmit(payload) callback
 // to perform the actual database write. Keeps this component portable.
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import CountryPicker from "./CountryPicker.jsx";
 
 // IMPORTANT: This component does NOT import supabase directly. The parent
@@ -129,6 +129,7 @@ const styles = {
 export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCreated, currentUserId, countries = [], rules = {}, editLead = null }) {
   // Reference data (fetched once on mount)
   const [refLoading, setRefLoading] = useState(true);
+  const phoneStrippedRef = useRef(false); // Phase 2.2A — guard so phone strip runs only once per mount
   const [refError, setRefError] = useState("");
 
   // Form state
@@ -166,6 +167,22 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
       setRefError("Reference data not loaded yet");
     }
   }, [countries, rules]);
+  // Phase 2.2A — Strip leading +<callingCode> from phone_local in Edit mode.
+  // Runs ONCE per V2 mount (phoneStrippedRef guards re-execution).
+  // Waits for countries to load before stripping — otherwise we don't know
+  // the calling-code length and could mangle the number.
+  useEffect(() => {
+    if (!editLead) return;                          // create mode → nothing to strip
+    if (phoneStrippedRef.current) return;           // already stripped this mount
+    if (countries.length === 0) return;             // wait for countries to load
+    const cc = countries.find((c) => c.iso2 === form.phone_country_code);
+    if (!cc) { phoneStrippedRef.current = true; return; }  // unknown country → skip but mark done
+    const prefix = "+" + cc.calling_code;
+    if (form.phone_local && form.phone_local.startsWith(prefix)) {
+      setForm((f) => ({ ...f, phone_local: f.phone_local.slice(prefix.length) }));
+    }
+    phoneStrippedRef.current = true;                // mark done — never run again this mount
+  }, [countries, editLead]);
   // ----- Active rules for the chosen buyer type -----
   const activeRules = buyerType ? (rules[buyerType] || {}) : {};
 
