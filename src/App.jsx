@@ -11121,6 +11121,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   // Phase A.3 — Sprint 1 form (side-by-side feature flag)
   const [showAddV2, setShowAddV2] = useState(false);
   const [editLeadForV2, setEditLeadForV2] = useState(null); // Phase 2.2A — V2 dual-mode: null = Add, row = Edit
+  const [editFormVersion, setEditFormVersion] = useState(0); // Phase 2.2A — bump on every Edit click to force V2 remount
   const [opps,     setOpps]     = useState(globalOppsFromParent); // sync with global
   const [units,    setUnits]    = useState([]);
   const [projects, setProjects] = useState([]);
@@ -11340,7 +11341,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         </select>
         <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
         {canEdit&&(
-          <button onClick={()=>setShowAddV2(true)} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Lead</button>
+          <button onClick={()=>{setEditFormVersion(v=>v+1);setShowAddV2(true);}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Lead</button>
         )}
       </div>
 
@@ -11398,7 +11399,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       {/* Phase A.3 — new buyer-type-aware lead form (side-by-side with existing modal) */}
       {showAddV2&&(
         <LeadCreationFormV2
-          key={editLeadForV2?.id || "new"}
+          key={`${editLeadForV2?.id || "new"}-${editFormVersion}`}
           companyId={currentUser?.company_id}
           countries={refCountries}
           rules={refRules}
@@ -11460,11 +11461,36 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
               const m = KYC_META[k]||KYC_META.not_started;
               return <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:m.bg,color:m.c}}>{m.l}</span>;
             })()}
+            {(()=>{
+              // Phase 2.2A — Lifecycle stage badge
+              const LC_META = {
+                raw:                {c:"#475569", bg:"#F1F5F9", l:"Raw"},
+                qualified:          {c:"#1A5FA8", bg:"#E6EFF8", l:"Qualified"},
+                active_prospect:    {c:"#8A6200", bg:"#FDF3DC", l:"Active Prospect"},
+                customer:           {c:"#1A7F5A", bg:"#E6F4EE", l:"Customer"},
+                portfolio_customer: {c:"#5B21B6", bg:"#EDE9FE", l:"Portfolio Customer"},
+              };
+              const ls = selLead.lifecycle_stage || "raw";
+              const m = LC_META[ls] || LC_META.raw;
+              return <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:m.bg,color:m.c}}>{m.l}</span>;
+            })()}
+            {(()=>{
+              // Phase 2.2A — Buyer intent badge (only shown if set)
+              const BI_LABEL = {
+                investor: "Investor",
+                owner_occupier: "Owner-Occupier",
+                hybrid: "Hybrid",
+                corporate: "Corporate buyer",
+                reseller: "Reseller",
+              };
+              const bi = selLead.buyer_intent;
+              return bi ? <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#FFF7E6",color:"#9C6500",border:"1px solid #F5D78F"}}>{BI_LABEL[bi]||bi}</span> : null;
+            })()}
             {selLead.pep_flag&&<span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#FDF3DC",color:"#8A6200"}}>⚠ PEP</span>}
           </div>
         </div>
         <div style={{display:"flex",gap:6}}>
-          {canEdit&&<button onClick={()=>{setEditLeadForV2(selLead);setShowAddV2(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
+          {canEdit&&<button onClick={()=>{setEditLeadForV2(selLead);setEditFormVersion(v=>v+1);setShowAddV2(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
           {canEdit&&<button onClick={()=>setShowCanonicalOppDialog(true)} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Opportunity</button>}
         </div>
       </div>
@@ -11978,7 +12004,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       {/* Phase 2.2A — V2 dual-mode form for Edit Contact from Lead Detail */}
       {showAddV2&&(
         <LeadCreationFormV2
-          key={editLeadForV2?.id || "new"}
+          key={`${editLeadForV2?.id || "new"}-${editFormVersion}`}
           companyId={currentUser?.company_id}
           countries={refCountries}
           rules={refRules}

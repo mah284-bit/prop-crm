@@ -166,7 +166,6 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
       setRefError("Reference data not loaded yet");
     }
   }, [countries, rules]);
-
   // ----- Active rules for the chosen buyer type -----
   const activeRules = buyerType ? (rules[buyerType] || {}) : {};
 
