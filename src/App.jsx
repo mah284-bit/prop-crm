@@ -11505,10 +11505,10 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           items.push({icon:"📞", label:"Phone", val:<a href={`tel:${ph}`} style={{color:"#1A5FA8",textDecoration:"none",fontWeight:600}}>{ph}</a>});
         }
         if(selLead.email) items.push({icon:"✉️", label:"Email", val:<a href={`mailto:${selLead.email}`} style={{color:"#1A5FA8",textDecoration:"none",fontWeight:600}}>{selLead.email}</a>});
-        if(selLead.nationality_iso2) items.push({icon:"🌍", label:"Nationality", val:`${iso2ToFlag(selLead.nationality_iso2)} ${selLead.nationality_iso2}`});
+        if(selLead.nationality_iso2) items.push({icon:"🌍", label:"Nationality", val:`${iso2ToFlag(selLead.nationality_iso2)} ${refCountries.find(c=>c.iso2===selLead.nationality_iso2)?.name_en || selLead.nationality_iso2}`});
         else if(selLead.nationality) items.push({icon:"🌍", label:"Nationality", val:selLead.nationality});
-        if(selLead.residence_iso2) items.push({icon:"🏠", label:"Residence", val:`${iso2ToFlag(selLead.residence_iso2)} ${selLead.residence_iso2}`});
-        if(selLead.tax_residency_iso2 && selLead.tax_residency_iso2!==selLead.residence_iso2) items.push({icon:"💼", label:"Tax residency", val:`${iso2ToFlag(selLead.tax_residency_iso2)} ${selLead.tax_residency_iso2}`});
+        if(selLead.residence_iso2) items.push({icon:"🏠", label:"Residence", val:`${iso2ToFlag(selLead.residence_iso2)} ${refCountries.find(c=>c.iso2===selLead.residence_iso2)?.name_en || selLead.residence_iso2}`});
+        if(selLead.tax_residency_iso2 && selLead.tax_residency_iso2!==selLead.residence_iso2) items.push({icon:"💼", label:"Tax residency", val:`${iso2ToFlag(selLead.tax_residency_iso2)} ${refCountries.find(c=>c.iso2===selLead.tax_residency_iso2)?.name_en || selLead.tax_residency_iso2}`});
         if(selLead.source_of_funds) items.push({icon:"💰", label:"Source of funds", val:SOF_LABEL[selLead.source_of_funds]||selLead.source_of_funds});
         if(selLead.source) items.push({icon:"📍", label:"Lead source", val:selLead.source});
         if(selLead.property_type) items.push({icon:"🔍", label:"Looking for", val:selLead.property_type});
