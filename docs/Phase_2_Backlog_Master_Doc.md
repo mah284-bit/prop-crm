@@ -1,7 +1,7 @@
 # Phase 2 Backlog — Master Document
 
 **Date captured:** 21 May 2026 (Thursday, Day 9) — initial
-**Last updated:** 23 May 2026 (Saturday, Day 11) — added 5 strategic captures from today's work
+**Last updated:** 26 May 2026 (Tuesday, Day 16) — Phase 2.2A SHIPPED, 8 commits Day 15-16 (Section 10)
 **Purpose:** Single source of truth for all Phase 2 backlog items + Phase 1 hidden features
 **Audience:** Founder reference + investor Q&A backing + team onboarding
 **Status:** Live document — updated as new items emerge
@@ -406,6 +406,121 @@ A: Show Section 4. "We've planned through Q4 2026 with specific deliverables, no
 - 📋 Phase 2.1 Stage 3 (FAB on Dashboard/lists) — deferred to Option Y if needed post-demo
 - ⏭️ Next: Phase 2.2 — Lead Lifecycle & Buyer Segmentation
 
+
+## SECTION 10 — Day 15-16 Phase 2.2A SHIPPED ⭐
+
+**Sprint dates:** 25-26 May 2026 (Days 15-16)
+**Commits banked:** 8 (from `53f1a2b` to `35c0ede`)
+**Strategic outcome:** Lead Lifecycle & Buyer Segmentation foundation complete. V2 form is canonical (V1 deleted). Backend lifecycle automation live. Visible segmentation on Lead Detail.
+
+### Backend (Supabase, no Git diff)
+
+**Schema migrations:**
+- Added 6 columns to `leads`: `lifecycle_stage`, `buyer_intent`, `became_customer_at`, `portfolio_size`, `total_purchases_aed`, `marketing_opt_in`
+- Both lifecycle_stage and buyer_intent use CHECK constraints with strict enum values
+- Backfilled 12 existing leads (9 active_prospect with opps, 2 raw, 1 customer)
+
+**Reference data tables (replacing broken `/api/reference/*` Vercel routes):**
+- `reference_countries` — 70 rows, includes 15 priority (GCC + UK/DE/US/IN/PK/EG/JO/LB)
+- `reference_buyer_type_rules` — 48 rows (4 buyer types × 12 fields × required/optional/hidden)
+- RLS enabled on both, authenticated SELECT-only policy
+
+**Auto-conversion trigger:**
+- `convert_lead_to_customer()` PL/pgSQL function + `opp_closed_won_converts_lead` AFTER UPDATE trigger on `opportunities`
+- On stage→'Closed Won': promotes lead to 'customer' or 'portfolio_customer', stamps `became_customer_at`, increments `portfolio_size`, accumulates `total_purchases_aed` from `current_agreed_price`
+
+**varchar(2) migration (Day 16 fix):**
+- Converted `leads.{nationality_iso2, residence_iso2, tax_residency_iso2, phone_country_code}` from `character(2)` to `varchar(2)`
+- Root cause of "cc= I" truncation bug: Supabase JS client mangles fixed-length CHAR values in JSON serialization, returns 1 char instead of 2
+- `varchar(2)` is variable-length and serializes cleanly — standard PostgreSQL pattern for short codes
+
+### Frontend architecture
+
+**New library module:**
+- `src/lib/contactValidation.js` (142 lines) — extracted validation logic from broken Vercel route, exports `GCC_COUNTRIES`, `isGccCountry`, `BUYER_TYPES`, `rulesFromRows`, `validateContactPayload`, `getRequiredIdentityDocuments`, `getCallingCode`, `sortCountriesForDropdown`
+
+**New component:**
+- `src/components/CountryPicker.jsx` (193 lines) — reusable searchable country picker modeled on `UnitSearchPicker.jsx`. Two variants: "full" (Nationality/Residence) and "phone" (compact code+flag). Type-to-filter, priority sort, click-outside close.
+
+**V2 form (LeadCreationFormV2) major refactor:**
+- Removed direct fetch of `/api/reference/*` (was broken anyway)
+- Now receives `countries` + `rules` as props from App.jsx
+- Replaced 3 native `<select>` country dropdowns with `<CountryPicker>` (Nationality, Residence, Phone code)
+- Residence onChange auto-cascades phone_country_code
+- **Dual-mode:** Same component handles both Create AND Edit. `editLead` prop toggles mode.
+  - Headers, button labels, payload INSERT vs UPDATE all branch on `editLead` presence
+- New `buyer_intent` dropdown (5 options)
+- New `useRef`-guarded phone-strip useEffect for Edit mode
+
+**App.jsx changes:**
+- Reference data loader in main useEffect (after inventory): fetches `reference_countries` + `reference_buyer_type_rules`, flattens via `rulesFromRows()`
+- V2 mounted at TWO sites (list view ~11402, lead detail view ~11979) because Leads component uses early-return pattern
+- Both V2 mounts have `key={\`${editLeadForV2?.id || "new"}-${editFormVersion}\`}` — forces remount on every Edit/Add click
+- `editFormVersion` counter bumped on every button click → guarantees fresh component instance
+- **DELETED** ~108 lines of V1 form code: `showAdd`, `editLead`, `useNewForm`, `blank`, `form`, `sf`, `saveLead`, both V1 modals
+- Lifecycle stage badge (5 colors) + Buyer Intent badge (amber, conditional) added to Lead Detail header
+
+**API files deleted (no longer used):**
+- `api/reference/countries.js`
+- `api/reference/buyer-type-rules.js`
+- `api/_data/reference.js`
+
+### Strategic captures (from founder, Day 15)
+
+**Buyer Intent is a seed for Property Management Services workflow (Phase 2, post Sales+Leasing live):**
+> "this will the 2nd Phase of this project when we complete and go live with sales and leasing which we have stalled so sales completes fully"
+
+When `buyer_intent='investor'`, the broker becomes the natural service provider for:
+- Rent collection on owner's behalf
+- Property maintenance coordination
+- Tenant issue resolution
+- Recurring service contracts (annual PM agreements + % of rent collected)
+
+For now, `buyer_intent` is captured but not wired to a workflow. Data is there when needed. **Property Management Services workflow → Phase 2 (Q4 2026 or 2027)** after Sales + Leasing complete.
+
+### Cluster of React/Postgres bugs solved (4 stacked fixes)
+
+This sprint surfaced four overlapping bugs that all manifested as "stale form data" but had different root causes. All four fixes are now in place:
+
+1. **Component-reuse bug (`bfb1050` Day 13 + `ac65721` Day 15)** — React reuses component instances when `type+location+key` are identical. Same lead opened twice = same key = stale state. Fix: `key={\`${id}-${editFormVersion}\`}` forces remount on every click.
+2. **Async-load race (`5c5e0b3` Day 16)** — Phone strip needed `countries` data which loads async. Fix: `useRef`-guarded useEffect waits for `countries.length > 0` before stripping.
+3. **Greedy regex (deferred from Day 15, fixed in `5c5e0b3`)** — `\d{1,4}` matched too many digits for short calling codes (+1 US, +91 IN). Fix: lookup exact calling code from countries array, strip only that prefix.
+4. **PostgreSQL CHAR serialization (Day 16, SQL migration)** — `character(2)` fixed-length type returned 1 char in JSON. Fix: `ALTER COLUMN TYPE varchar(2)`.
+
+### Key learnings (Days 15-16)
+
+- **Founder's product intuition holds.** When founder said "this will be needed for Property Management later" while I was treating buyer_intent as a marketing label, they were right. The data field has dual-purpose design.
+- **CHAR vs varchar matters.** `character(2)` looks identical to `varchar(2)` in PostgreSQL queries, but Supabase JS client treats them differently. Default to `varchar` for short codes.
+- **Component-reuse pattern needs 3 stacked guards:** (1) `key` prop, (2) something that changes the key on every interaction, (3) component-internal `useRef` guards for one-time effects.
+- **Diagnostic-driven debugging.** Day 16's "cc= I" log was the breakthrough — without it, we would have kept "fixing" the wrong layer (component vs data).
+
+### Commits (Days 15-16)
+
+| Commit | What |
+|---|---|
+| `53f1a2b` | contactValidation library module |
+| `787016d` | V2 normalization (countries + pickers + auto-cascade) |
+| `3107f5a` | V2 dual-mode (Create + Edit) |
+| `ac65721` | Delete V1 form + add key prop to V2 |
+| `7a1cf7f` | Add buyer_intent dropdown to V2 |
+| `52eb92f` | Lifecycle + buyer_intent badges on Lead Detail |
+| `5c5e0b3` | Day 16: Fix V2 phone strip in Edit mode |
+| `35c0ede` | Day 16: Delete obsolete /api/reference/* files |
+
+### Status
+
+- ✅ Phase 2.2A (Lead Lifecycle + Buyer Segmentation) — **SHIPPED**
+- 📋 Phase 2.2B (Multi-phone/email per contact) — deferred, needs schema + UI design
+- 📋 Phase 2.2C (Property Management Services workflow) — Phase 2, post Sales+Leasing live
+- ⏭️ Next sprint: **Phase 2.3 Communications Overhaul** OR demo prep depending on date proximity
+
+### Backlog items still open
+
+- App.jsx normalization (16K lines, components split inconsistently) — explicit founder concern → **Phase 3**
+- Lead Detail header flag-emoji rendering shows single letter (pre-existing display quirk, unrelated to Phase 2.2A) — polish later
+- Nationality dropdown on Lead Detail header (currently shows "Nationality: IN" with raw iso2 — should map to flag emoji)
+
+---
 ## SECTION 9 — Update Discipline
 
 **This document gets updated when:**
@@ -421,5 +536,5 @@ Exception: Big design specs get own doc, but referenced here.
 ---
 
 *Document created: 21 May 2026 (Thursday afternoon, Day 9)*
-*Last major update: 23 May 2026 (Saturday afternoon, Day 11)*
+*Last major update: 26 May 2026 (Tuesday, Day 16) — Phase 2.2A shipped*
 *Status: Live document, will update through Phase 1 + Phase 2 build*
