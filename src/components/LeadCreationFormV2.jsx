@@ -145,6 +145,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
     phone_local: editLead?.phone || "",
     source_of_funds: editLead?.source_of_funds || "",
     pep_flag: editLead?.pep_flag || false,
+    buyer_intent: editLead?.buyer_intent || "",
     notes: editLead?.notes || "",
   });
 
@@ -286,6 +287,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
         company_id: companyId,
         name: form.display_name.trim(), // sales-facing display name (existing column)
         buyer_type: buyerType,
+        buyer_intent: form.buyer_intent || null,
         legal_name_en: form.legal_name_en.trim() || null,
         legal_name_ar: form.legal_name_ar.trim() || null,
         nationality_iso2: form.nationality_iso2 || null,
@@ -404,6 +406,25 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
           </select>
           {fieldErrors.buyer_type && <div style={{ ...styles.hint, color: "#D14343" }}>{fieldErrors.buyer_type}</div>}
           <div style={styles.hint}>Drives which fields and documents will be needed.</div>
+        </div>
+        {/* Phase 2.2A — Buyer Intent (marketing classification, optional) */}
+        <div style={styles.fieldGroup}>
+          <label style={styles.label}>
+            Buyer intent
+          </label>
+          <select
+            style={styles.select}
+            value={form.buyer_intent}
+            onChange={(e) => setField("buyer_intent", e.target.value)}
+          >
+            <option value="">— Select —</option>
+            <option value="investor">Investor</option>
+            <option value="owner_occupier">Owner-Occupier</option>
+            <option value="hybrid">Hybrid (live then rent)</option>
+            <option value="corporate">Corporate purchase</option>
+            <option value="reseller">Reseller / flipper</option>
+          </select>
+          <div style={styles.hint}>Why are they buying? Used for marketing segmentation.</div>
         </div>
 
         {/* Required-documents hint */}
