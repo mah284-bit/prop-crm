@@ -9,7 +9,7 @@
 // and humanization — no fetching, no API calls. Reference data is passed
 // in by the caller, which loads it from Supabase once on form mount.
 //
-// Source: api/_data/reference.js (Master Spec §2.3). Moved here to break
+// Moved here from api/_data/reference.js (Master Spec §2.3) to break
 // the dependency on broken Vercel serverless routes in dev mode.
 
 // ─── GCC classification (static constant — never changes) ──────────

@@ -6,7 +6,7 @@
 // untouched). Renders buyer-type-aware fields: as the user picks a buyer
 // type, fields show/hide/become required dynamically.
 //
-// On mount: fetches /api/reference/countries and /api/reference/buyer-type-rules
+// Receives countries and rules via props from parent (App.jsx loads from Supabase)
 //   once, populates dropdowns and validation rules.
 // On submit: POSTs to /api/leads with the user's Supabase JWT.
 //   Returns the created lead via onCreated().
