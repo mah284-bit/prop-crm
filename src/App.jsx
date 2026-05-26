@@ -11123,6 +11123,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   // Phase A.3 — Sprint 1 form (side-by-side feature flag)
   const [useNewForm, setUseNewForm] = useState(false);
   const [showAddV2, setShowAddV2] = useState(false);
+  const [editLeadForV2, setEditLeadForV2] = useState(null); // Phase 2.2A — V2 dual-mode: null = Add, row = Edit
   const [opps,     setOpps]     = useState(globalOppsFromParent); // sync with global
   const [units,    setUnits]    = useState([]);
   const [projects, setProjects] = useState([]);
@@ -11440,16 +11441,33 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           countries={refCountries}
           rules={refRules}
           currentUserId={currentUser?.id}
+          editLead={editLeadForV2}
           onSubmit={async(payload)=>{
-            const {data,error}=await supabase.from("leads").insert(payload).select().single();
-            if(error) throw new Error(error.message||"Failed to create lead");
-            return data;
+            if(editLeadForV2){
+              // EDIT mode: UPDATE the existing lead
+              const {data,error}=await supabase.from("leads").update(payload).eq("id",editLeadForV2.id).select().single();
+              if(error) throw new Error(error.message||"Failed to update contact");
+              return data;
+            } else {
+              // CREATE mode: INSERT new lead
+              const {data,error}=await supabase.from("leads").insert(payload).select().single();
+              if(error) throw new Error(error.message||"Failed to create contact");
+              return data;
+            }
           }}
-          onCancel={()=>setShowAddV2(false)}
-          onCreated={(newLead)=>{
+          onCancel={()=>{setShowAddV2(false);setEditLeadForV2(null);}}
+          onCreated={(savedLead)=>{
             setShowAddV2(false);
-            setLeads(p=>[newLead,...p]);
-            showToast("Contact added (new form)","success");
+            if(editLeadForV2){
+              // Update existing in state
+              setLeads(p=>p.map(l=>l.id===savedLead.id?savedLead:l));
+              showToast("Contact updated","success");
+            } else {
+              // Prepend new to state
+              setLeads(p=>[savedLead,...p]);
+              showToast("Contact added","success");
+            }
+            setEditLeadForV2(null);
           }}
         />
       )}
@@ -11515,7 +11533,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           </div>
         </div>
         <div style={{display:"flex",gap:6}}>
-          {canEdit&&<button onClick={()=>{setForm({...blank,...selLead});setEditLead(selLead);setShowAdd(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
+          {canEdit&&<button onClick={()=>{setEditLeadForV2(selLead);setShowAddV2(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
           {canEdit&&<button onClick={()=>setShowCanonicalOppDialog(true)} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Opportunity</button>}
         </div>
       </div>
@@ -12060,6 +12078,39 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           justifyContent:"center"
         }}
       >+</button>
+      {/* Phase 2.2A — V2 dual-mode form for Edit Contact from Lead Detail */}
+      {showAddV2&&(
+        <LeadCreationFormV2
+          companyId={currentUser?.company_id}
+          countries={refCountries}
+          rules={refRules}
+          currentUserId={currentUser?.id}
+          editLead={editLeadForV2}
+          onSubmit={async(payload)=>{
+            if(editLeadForV2){
+              const {data,error}=await supabase.from("leads").update(payload).eq("id",editLeadForV2.id).select().single();
+              if(error) throw new Error(error.message||"Failed to update contact");
+              return data;
+            } else {
+              const {data,error}=await supabase.from("leads").insert(payload).select().single();
+              if(error) throw new Error(error.message||"Failed to create contact");
+              return data;
+            }
+          }}
+          onCancel={()=>{setShowAddV2(false);setEditLeadForV2(null);}}
+          onCreated={(savedLead)=>{
+            setShowAddV2(false);
+            if(editLeadForV2){
+              setLeads(p=>p.map(l=>l.id===savedLead.id?savedLead:l));
+              showToast("Contact updated","success");
+            } else {
+              setLeads(p=>[savedLead,...p]);
+              showToast("Contact added","success");
+            }
+            setEditLeadForV2(null);
+          }}
+        />
+      )}
     </div>
   );
 

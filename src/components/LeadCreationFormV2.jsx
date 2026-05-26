@@ -126,26 +126,26 @@ const styles = {
  *   - onCreated  (required): called with the created lead object on success
  *   - currentUserId (optional): for created_by / assigned_to
  */
-export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCreated, currentUserId, countries = [], rules = {} }) {
+export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCreated, currentUserId, countries = [], rules = {}, editLead = null }) {
   // Reference data (fetched once on mount)
   const [refLoading, setRefLoading] = useState(true);
   const [refError, setRefError] = useState("");
 
   // Form state
-  const [buyerType, setBuyerType] = useState(""); // empty = no selection yet
+  const [buyerType, setBuyerType] = useState(editLead?.buyer_type || ""); // empty = no selection yet
   const [form, setForm] = useState({
-    display_name: "",
-    legal_name_en: "",
-    legal_name_ar: "",
-    nationality_iso2: "",
-    residence_iso2: "",
-    tax_residency_iso2: "",
-    email: "",
-    phone_country_code: "AE", // default to UAE
-    phone_local: "",
-    source_of_funds: "",
-    pep_flag: false,
-    notes: "",
+    display_name: editLead?.legal_name_en || editLead?.name || "",
+    legal_name_en: editLead?.legal_name_en || "",
+    legal_name_ar: editLead?.legal_name_ar || "",
+    nationality_iso2: editLead?.nationality_iso2 || "",
+    residence_iso2: editLead?.residence_iso2 || "",
+    tax_residency_iso2: editLead?.tax_residency_iso2 || "",
+    email: editLead?.email || "",
+    phone_country_code: editLead?.phone_country_code || editLead?.residence_iso2 || "AE",
+    phone_local: editLead?.phone || "",
+    source_of_funds: editLead?.source_of_funds || "",
+    pep_flag: editLead?.pep_flag || false,
+    notes: editLead?.notes || "",
   });
 
   const [saving, setSaving] = useState(false);
@@ -338,7 +338,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
       <div style={styles.modal}>
         <div style={styles.panel}>
           <div style={styles.header}>
-            <h2 style={styles.h2}>Add Contact (V2)</h2>
+            <h2 style={styles.h2}>{editLead ? "Edit Contact" : "Add Contact"}</h2>
             <button onClick={onCancel} style={styles.closeBtn}>×</button>
           </div>
           <p>Loading form…</p>
@@ -352,7 +352,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
       <div style={styles.modal}>
         <div style={styles.panel}>
           <div style={styles.header}>
-            <h2 style={styles.h2}>Add Contact (V2)</h2>
+            <h2 style={styles.h2}>{editLead ? "Edit Contact" : "Add Contact"}</h2>
             <button onClick={onCancel} style={styles.closeBtn}>×</button>
           </div>
           <div style={styles.errorBox}>{refError}</div>
@@ -365,7 +365,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
     <div style={styles.modal}>
       <div style={styles.panel}>
         <div style={styles.header}>
-          <h2 style={styles.h2}>Add Contact (V2)</h2>
+          <h2 style={styles.h2}>{editLead ? "Edit Contact" : "Add Contact"}</h2>
           <button onClick={onCancel} style={styles.closeBtn}>×</button>
         </div>
 
@@ -607,7 +607,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
         <div style={styles.footer}>
           <button onClick={onCancel} style={styles.btnSecondary} disabled={saving}>Cancel</button>
           <button onClick={handleSubmit} style={styles.btnPrimary(saving)} disabled={saving}>
-            {saving ? "Saving…" : "Add Contact"}
+            {saving ? "Saving…" : editLead ? "Save Changes" : "Add Contact"}
           </button>
         </div>
       </div>
