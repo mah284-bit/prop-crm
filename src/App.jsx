@@ -11104,7 +11104,7 @@ function Opportunities({ leads, setLeads, opps, setOpps, units, projects, salePr
   );
 }
 
-function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpps=()=>{},properties,activities,setActivities,discounts,setDiscounts,currentUser,users,showToast,initialFilter=null,onNavigateToOpp=null}){
+function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpps=()=>{},properties,activities,setActivities,discounts,setDiscounts,currentUser,users,showToast,initialFilter=null,onNavigateToOpp=null,refCountries=[],refRules={}}){
   const [search,   setSearch]   = useState("");
   const [fStage,   setFStage]   = useState("All");
   const [fType,    setFType]    = useState("All");
@@ -11437,6 +11437,8 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       {showAddV2&&(
         <LeadCreationFormV2
           companyId={currentUser?.company_id}
+          countries={refCountries}
+          rules={refRules}
           currentUserId={currentUser?.id}
           onSubmit={async(payload)=>{
             const {data,error}=await supabase.from("leads").insert(payload).select().single();
@@ -13699,6 +13701,7 @@ import UnitSearchPicker from "./components/UnitSearchPicker.jsx";
 import UnitPickerRich from "./components/UnitPickerRich.jsx";
 import PropPulse from "./components/PropPulse.jsx";
 import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";  // Phase A.3 — new buyer-type-aware form (side-by-side with old form)
+import { rulesFromRows } from "./lib/contactValidation.js";  // Phase 2.2A — convert ref_buyer_type_rules rows to {type: {field: req}}
 // ──────────────────────────────────────────────────────────────
 
 
@@ -16327,6 +16330,8 @@ export default function App(){
   };
   const[leasingData,setLeasingData]=useState({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
   const[followupAlerts,setFollowupAlerts]=useState({staleLeads:[],overduePayments:[],expiringLeases:[]});
+  const[refCountries,setRefCountries]=useState([]);
+  const[refRules,setRefRules]=useState({});
   const[opps,setOpps]=useState([]);
   const[toast,setToast]=useState(null);
   const[pwRecovery,setPwRecovery]=useState(false);
@@ -16436,6 +16441,16 @@ export default function App(){
           maintenance:(lm.data||[]).filter(m=>!m.company_id||m.company_id===cid),
           loaded:true
         });
+
+        // ── Phase 2.2A — Load reference data (countries + buyer-type rules) ──
+        // Public reference data; no company_id filter. Loaded once per session
+        // and passed to LeadCreationFormV2 + future Edit form via props.
+        const [refC, refB] = await Promise.all([
+          safe(supabase.from("reference_countries").select("*").order("priority", {ascending:false}).order("name_en")),
+          safe(supabase.from("reference_buyer_type_rules").select("*")),
+        ]);
+        setRefCountries(refC.data || []);
+        setRefRules(rulesFromRows(refB.data || []));
         const today2=new Date();
         const stale=(l.data||[]).filter(lead=>!["Closed Won","Closed Lost"].includes(lead.stage)&&lead.stage_updated_at&&Math.floor((today2-new Date(lead.stage_updated_at))/(864e5))>=7);
         const overdueRent=(lp_.data||[]).filter(p=>p.status==="Pending"&&p.due_date&&new Date(p.due_date)<today2);
@@ -16658,7 +16673,7 @@ export default function App(){
 
           {/* ── Sales CRM ─────────────────────────────────────── */}
           {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={(t,filter)=>navigateToTab(t,filter)}/>}
-          {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})}/>}
+          {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})} refCountries={refCountries} refRules={refRules}/>}
           {tab==="opportunities" &&<Opportunities leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} activities={activities} setActivities={setActivities} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}

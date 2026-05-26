@@ -14,8 +14,8 @@
 // Dependencies: React 19. Phone validation is plain E.164 regex.
 // No direct Supabase client — parent provides onSubmit(payload) callback
 // to perform the actual database write. Keeps this component portable.
-
 import React, { useEffect, useMemo, useState } from "react";
+import CountryPicker from "./CountryPicker.jsx";
 
 // IMPORTANT: This component does NOT import supabase directly. The parent
 // (App.jsx) handles all data persistence via the `onSubmit` prop. This
@@ -126,10 +126,8 @@ const styles = {
  *   - onCreated  (required): called with the created lead object on success
  *   - currentUserId (optional): for created_by / assigned_to
  */
-export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCreated, currentUserId }) {
+export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCreated, currentUserId, countries = [], rules = {} }) {
   // Reference data (fetched once on mount)
-  const [countries, setCountries] = useState([]);
-  const [rules, setRules] = useState({});
   const [refLoading, setRefLoading] = useState(true);
   const [refError, setRefError] = useState("");
 
@@ -154,33 +152,19 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
   const [submitError, setSubmitError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
 
-  // ----- Fetch reference data on mount -----
+  // ----- Reference data now flows in via props (countries + rules) -----
+  // Parent (App.jsx) loads from reference_countries + reference_buyer_type_rules
+  // Supabase tables once on app mount and passes them down.
+  // We mark refLoading false immediately since data is already available.
   useEffect(() => {
-    let cancelled = false;
-    async function loadRef() {
-      setRefLoading(true);
+    if (countries.length > 0 && Object.keys(rules).length > 0) {
+      setRefLoading(false);
       setRefError("");
-      try {
-        const [cRes, bRes] = await Promise.all([
-          fetch("/api/reference/countries"),
-          fetch("/api/reference/buyer-type-rules"),
-        ]);
-        if (!cRes.ok) throw new Error("Failed to load countries");
-        if (!bRes.ok) throw new Error("Failed to load buyer-type rules");
-        const cJson = await cRes.json();
-        const bJson = await bRes.json();
-        if (cancelled) return;
-        setCountries(cJson.countries || []);
-        setRules(bJson.rules || {});
-      } catch (err) {
-        if (!cancelled) setRefError(err.message || "Failed to load form data");
-      } finally {
-        if (!cancelled) setRefLoading(false);
-      }
+    } else {
+      setRefLoading(true);
+      setRefError("Reference data not loaded yet");
     }
-    loadRef();
-    return () => { cancelled = true; };
-  }, []);
+  }, [countries, rules]);
 
   // ----- Active rules for the chosen buyer type -----
   const activeRules = buyerType ? (rules[buyerType] || {}) : {};
@@ -481,18 +465,12 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
                   Nationality
                   {isRequired("nationality_country_code") && <span style={styles.required}>*</span>}
                 </label>
-                <select
-                  style={{ ...styles.select, borderColor: fieldErrors.nationality_iso2 ? "#D14343" : "#D1D9E6" }}
+                <CountryPicker
+                  countries={countries}
                   value={form.nationality_iso2}
-                  onChange={(e) => setField("nationality_iso2", e.target.value)}
-                >
-                  <option value="">—</option>
-                  {countries.map((c) => (
-                    <option key={c.iso2} value={c.iso2}>
-                      {c.flag_emoji} {c.name_en}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(iso2) => setField("nationality_iso2", iso2)}
+                  placeholder="Select nationality…"
+                />
                 {fieldErrors.nationality_iso2 && <div style={{ ...styles.hint, color: "#D14343" }}>{fieldErrors.nationality_iso2}</div>}
               </div>
             )}
@@ -502,18 +480,16 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
                   Residence
                   {isRequired("residence_country_code") && <span style={styles.required}>*</span>}
                 </label>
-                <select
-                  style={{ ...styles.select, borderColor: fieldErrors.residence_iso2 ? "#D14343" : "#D1D9E6" }}
+                <CountryPicker
+                  countries={countries}
                   value={form.residence_iso2}
-                  onChange={(e) => setField("residence_iso2", e.target.value)}
-                >
-                  <option value="">—</option>
-                  {countries.map((c) => (
-                    <option key={c.iso2} value={c.iso2}>
-                      {c.flag_emoji} {c.name_en}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(iso2) => {
+                    setField("residence_iso2", iso2);
+                    // Auto-cascade: phone country code defaults to residence country
+                    if (iso2) setField("phone_country_code", iso2);
+                  }}
+                  placeholder="Select residence…"
+                />
                 {fieldErrors.residence_iso2 && <div style={{ ...styles.hint, color: "#D14343" }}>{fieldErrors.residence_iso2}</div>}
               </div>
             )}
@@ -528,17 +504,15 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
               {isRequired("phone_e164") && <span style={styles.required}>*</span>}
             </label>
             <div style={styles.phoneRow}>
-              <select
-                style={{ ...styles.select, width: "auto", minWidth: 110 }}
-                value={form.phone_country_code}
-                onChange={(e) => setField("phone_country_code", e.target.value)}
-              >
-                {countries.map((c) => (
-                  <option key={c.iso2} value={c.iso2}>
-                    {c.flag_emoji} +{c.calling_code}
-                  </option>
-                ))}
-              </select>
+              <div style={{ width: 130 }}>
+                <CountryPicker
+                  countries={countries}
+                  value={form.phone_country_code}
+                  onChange={(iso2) => setField("phone_country_code", iso2)}
+                  variant="phone"
+                  placeholder="+code"
+                />
+              </div>
               <input
                 style={{ ...styles.input, borderColor: fieldErrors.phone_local ? "#D14343" : "#D1D9E6" }}
                 value={form.phone_local}
