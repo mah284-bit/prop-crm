@@ -11111,8 +11111,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const [view,     setView]     = useState("list");   // list | lead | opportunity
   const [selLeadId,setSelLeadId]= useState(null);
   const [selOpp,   setSelOpp]   = useState(null);
-  const [showAdd,  setShowAdd]  = useState(false);
-  const [editLead, setEditLead] = useState(null);
   const [saving,   setSaving]   = useState(false);
   // 23 May 2026: Restore Lead Detail activity logging (lost during April Lead/Opp split rewrite)
   // Full feature parity with Opp Detail saveLog - scheduling, duration, next-step reminders
@@ -11121,7 +11119,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const [leadLogForm,   setLeadLogForm]   = useState({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
   const [savingLeadLog, setSavingLeadLog] = useState(false);
   // Phase A.3 — Sprint 1 form (side-by-side feature flag)
-  const [useNewForm, setUseNewForm] = useState(false);
   const [showAddV2, setShowAddV2] = useState(false);
   const [editLeadForV2, setEditLeadForV2] = useState(null); // Phase 2.2A — V2 dual-mode: null = Add, row = Edit
   const [opps,     setOpps]     = useState(globalOppsFromParent); // sync with global
@@ -11137,9 +11134,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const canEdit = can(currentUser.role,"write");
   const canDel  = can(currentUser.role,"delete_leads");
 
-  const blank = {name:"",phone:"",email:"",nationality:"",source:"Walk-In",property_type:"Sale",notes:"",assigned_to:currentUser.id,budget:""};
-  const [form, setForm] = useState(blank);
-  const sf = k => e => setForm(f=>({...f,[k]:e.target?.value??e}));
 
   // ── Browser history sync ────────────────────────────────────────
   // Push state changes into browser history so the browser back button
@@ -11280,39 +11274,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       &&(fStage==="All"||stage===fStage);
   });
 
-  const saveLead = async()=>{
-    if(!form.name.trim()){showToast("Name required","error");return;}
-    setSaving(true);
-    try{
-      // Duplicate detection (skip when editing)
-      if(!editLead){
-        const dupCheck = leads.filter(l=>
-          (form.email&&l.email&&l.email.toLowerCase()===form.email.toLowerCase()) ||
-          (form.phone&&l.phone&&l.phone.replace(/\s/g,"")===form.phone.replace(/\s/g,""))
-        );
-        if(dupCheck.length>0){
-          setSaving(false);
-          const dup=dupCheck[0];
-          const go=window.confirm(`A contact with this ${form.email&&dup.email?.toLowerCase()===form.email.toLowerCase()?"email":"phone"} already exists:\n\n${dup.name} (${dup.email||dup.phone})\n\nClick OK to open their profile, or Cancel to continue creating.`);
-          if(go){setShowAdd(false);setSelLeadId(dup.id);setView("lead");}
-          return;
-        }
-      }
-      const payload={...form,budget:form.budget?Number(form.budget):null,final_price:form.final_price?Number(form.final_price):null,no_response_count:form.no_response_count?Number(form.no_response_count):0,phone:form.phone||null,assigned_to:form.assigned_to||currentUser.id,company_id:currentUser.company_id||null,created_by:currentUser.id};
-      let data,error;
-      if(editLead){
-        ({data,error}=await supabase.from("leads").update(form).eq("id",editLead.id).select().single());
-        setLeads(p=>p.map(l=>l.id===editLead.id?data:l));
-      }else{
-        ({data,error}=await supabase.from("leads").insert(payload).select().single());
-        setLeads(p=>[data,...p]);
-      }
-      if(error)throw error;
-      showToast(editLead?"Contact updated":"Contact added","success");
-      setShowAdd(false);setEditLead(null);setForm(blank);
-    }catch(e){showToast(e.message,"error");}
-    setSaving(false);
-  };
 
   const saveOpp = async()=>{
     if(!selLeadId){return;}
@@ -11437,6 +11398,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       {/* Phase A.3 — new buyer-type-aware lead form (side-by-side with existing modal) */}
       {showAddV2&&(
         <LeadCreationFormV2
+          key={editLeadForV2?.id || "new"}
           companyId={currentUser?.company_id}
           countries={refCountries}
           rules={refRules}
@@ -11471,39 +11433,8 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           }}
         />
       )}
-
-      {showAdd&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
-              <span style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>{editLead?"Edit":"New"} Contact</span>
-              <button onClick={()=>{setShowAdd(false);setEditLead(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
-            </div>
-            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Full Name *</label><input value={form.name} onChange={sf("name")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Phone</label><input value={form.phone} onChange={sf("phone")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Email</label><input type="email" value={form.email} onChange={sf("email")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Nationality</label><input value={form.nationality} onChange={sf("nationality")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Source</label>
-                  <select value={form.source} onChange={sf("source")}>
-                    {MASTER.lead_source.map(s=><option key={s}>{s}</option>)}
-                  </select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Property Type</label>
-                  <select value={form.property_type} onChange={sf("property_type")}>
-                    <option value="Sale">Sale</option><option value="Both">Both</option>
-                  </select></div>
-                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label><textarea value={form.notes} onChange={sf("notes")} rows={3}/></div>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
-              <button onClick={()=>{setShowAdd(false);setEditLead(null);}} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={saveLead} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editLead?"Save":"Add Contact"}</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
+
   );
 
   // ── LEAD DETAIL VIEW (contact + opportunities) ─────────────────
@@ -12017,40 +11948,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           </div>
         </div>
       )}
-      {/* Fix 12 May 2026: Edit Lead modal - same as list view modal */}
-      {/* Both views share showAdd/editLead/form state; rendering modal here */}
-      {/* so Edit button on lead detail can show it */}
-      {showAdd&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
-              <span style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>{editLead?"Edit":"New"} Contact</span>
-              <button onClick={()=>{setShowAdd(false);setEditLead(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
-            </div>
-            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Full Name *</label><input value={form.name} onChange={sf("name")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Phone</label><input value={form.phone} onChange={sf("phone")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Email</label><input type="email" value={form.email} onChange={sf("email")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Nationality</label><input value={form.nationality} onChange={sf("nationality")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Source</label>
-                  <select value={form.source} onChange={sf("source")}>
-                    {MASTER.lead_source.map(s=><option key={s}>{s}</option>)}
-                  </select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Property Type</label>
-                  <select value={form.property_type} onChange={sf("property_type")}>
-                    <option value="Sale">Sale</option><option value="Both">Both</option>
-                  </select></div>
-                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label><textarea value={form.notes} onChange={sf("notes")} rows={3}/></div>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
-              <button onClick={()=>{setShowAdd(false);setEditLead(null);}} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={saveLead} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editLead?"Save":"Add Contact"}</button>
-            </div>
-          </div>
-        </div>
-      )}
       {/* Phase 2.1 — Floating Action Button for activity logging */}
       <button
         onClick={()=>{
@@ -12081,6 +11978,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       {/* Phase 2.2A — V2 dual-mode form for Edit Contact from Lead Detail */}
       {showAddV2&&(
         <LeadCreationFormV2
+          key={editLeadForV2?.id || "new"}
           companyId={currentUser?.company_id}
           countries={refCountries}
           rules={refRules}
