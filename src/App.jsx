@@ -11539,7 +11539,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         );
       })()}
       {/* Phase 2.2B — People section (Contacts Subsystem, read-only) */}
-      <LeadPeopleSection leadId={selLead.id} />
+      <LeadPeopleSection leadId={selLead.id} companyId={currentUser?.company_id} currentUserId={currentUser?.id} countries={refCountries} />
 
       {/* 23 May 2026: Lead-stage Activities section (restored from April original design) */}
       {(()=>{
