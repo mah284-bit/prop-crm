@@ -588,3 +588,43 @@ Workflow gaps (broker can't see something they need where they need it) ship BEF
 When deciding "demo vs Phase 2" for any new capture:
 - **Pre-demo:** Workflow break? Visibility gap? Broker stuck navigating? → ship before demo
 - **Phase 2:** New capability? Polish? Sharpening narrative? → after demo
+
+---
+
+## Day 17 night capture (original) — In-Opp Commission Invoice Visibility
+
+**Date captured:** 27 May 2026 (Wednesday, ~midnight)
+**Source:** Founder observation while reviewing Anoop K's deep journey
+**Founder quote:** *"where is the commission invoice itself under every opportunity, the broker moves around app before going to opps cant find where will is revenue come from"*
+
+**Note:** This was originally logged as a Phase 2.6 capture, then promoted to pre-demo work per the founder principle (see commit `082568c`). Kept here for traceability of the original observation.
+
+### Current state
+Inside an Opportunity Detail's Financials tab, the "Broker Commission (Revenue)" block shows a CALCULATION:
+- Commission Rate: 4.50%
+- Based on Net Price: AED X
+- Your Commission: AED Y
+
+But it does NOT show:
+- Whether an invoice has been issued (and its number/date)
+- Whether any payments have been received
+- The outstanding amount and aging
+- A link/button to manage the invoice from within the opp
+
+### Founder's observation (architect's framing)
+Broker works inside an opp 80% of the time. The commission GETS GENERATED FROM that opp. But to see/manage the revenue, broker has to LEAVE the opp and navigate to a separate Commission Outstanding module. That's a workflow break — the most valuable view (broker's own revenue) is hidden from where the broker actually lives.
+
+### Target state (Day 18 lightweight version)
+Each Opportunity Detail's Financials tab should additionally show:
+- Linked invoice number + status (Draft/Issued/Partial/Paid)
+- Invoice date + aging
+- Received vs Outstanding breakdown
+- A "Manage in Commission Outstanding →" link for full actions
+
+Full embedded action UX (Record Payment / Issue Invoice / Mark Disputed from inside the opp) deferred to Phase 2.6 polish.
+
+### Effort estimate
+~2-3 hours (lightweight read+display+link version)
+
+### Day 18 work order
+**PRIORITY 1.** Closes broker workflow gap. Demo critical.
