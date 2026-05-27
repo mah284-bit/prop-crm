@@ -538,3 +538,34 @@ Exception: Big design specs get own doc, but referenced here.
 *Document created: 21 May 2026 (Thursday afternoon, Day 9)*
 *Last major update: 26 May 2026 (Tuesday, Day 16) — Phase 2.2A shipped*
 *Status: Live document, will update through Phase 1 + Phase 2 build*
+
+---
+
+## Day 17 evening capture — AI Coach prominence
+
+**Date captured:** 27 May 2026 (Wednesday evening)
+**Source:** Founder observation during Anoop K deep-journey verification
+**Founder quote:** *"the idea was to show prominently in the first page itself not hiding out of the screen so shows the prominence of the AI feature"*
+
+### Current state
+- AI Coach exists as a tab (`✨🤖 Coach`) within the opportunity dashboard's 7-tab strip
+- User must click into the tab to see analysis
+- Visually equivalent to Proposals, Negotiations, Financials — tabs of equal hierarchy
+
+### Founder's vision
+AI Coach is THE differentiator (Demo Script v3 calls it ⭐⭐⭐⭐⭐⭐). It should NOT be peer-ranked with Proposals/Negotiations. It should sit ABOVE the tab strip — prominent, hard to miss.
+
+### Possible designs (Phase 2 spike)
+1. **AI Insight Banner** — single-line banner above the deal journey: *"💡 AI Coach: Buyer V2 reviewing 3 days — consider follow-up call to Anoop's spouse Priyanka"*. One-click expand to full Coach panel.
+2. **AI Coach Side Panel** — collapsible drawer on the right side of opportunity detail (always-visible toggle).
+3. **AI Coach Pin** — floating element with the AI avatar, click anywhere in the opp to see latest insight.
+
+### Effort
+Spike: 1 day  
+Implementation: 2-3 days (likely option 1 — least disruption to existing 7-tab UI)
+
+### Timing
+Phase 2.5 (after Day 19 activity logging integration). Should ship before client deployment — investor demo would benefit hugely.
+
+### Why this matters
+The "AI as colleague, not chatbot" narrative loses force if the user has to actively look for the AI. Prominent placement signals "AI is always working on your behalf" rather than "click here for AI analysis."
