@@ -114,3 +114,36 @@ created_at defaulted to NOW() for both proposals at insert time -> identical tim
 
 ### Lesson for future demo data work
 When seeding proposals: always populate structured_data JSON as the source of truth, NOT the discrete columns alone. The discrete columns appear to be legacy. Likewise, set created_at explicitly when seeding historical data, do not let NOW() default to a tie.
+
+---
+
+## Day 17 evening — Mohammed Al Mansoori deep journey + Anoop invoice status
+
+### Mohammed Al Mansoori — Persona #4 deep journey
+- **Opp ID:** cf7de404-da6e-4308-bb9b-c9b7815333aa
+- **Unit:** EPR-010 One Za'abeel (4BR Sea View, Floor 10)
+- **AED 9M asking, AED 8.5M budget** — Site Visit stage
+- **6 activities** across 8-day timeline (lawyer-mediated discovery → father involvement → SPA pre-review request)
+- **No proposals yet** (correct for Site Visit stage)
+- **No commission invoice** (correct for early stage)
+
+Demo arc: Lawyer-mediated Emirati family acquisition. Father Khalifa is critical decision-influencer. Multi-generational household. Story showcases cultural-fit considerations (majlis, mosque proximity, prayer direction) that no generic CRM models.
+
+### Anoop K invoice → Issued
+- INV-2026-0042 raised to Aldar (5 days ago)
+- AED 48,994.56 net due within 60 days of SPA signing
+- Tracks as "money raised but not received" — perfect mid-stage receivable example
+
+### Demo dashboard final state (post Mohammed + Anoop invoice)
+- 3 demo opportunities across 3 different stages: Site Visit (Mohammed), Proposal Sent (Anoop), Negotiation (Al Khaleej)
+- 4 demo personas all with rich contact graphs
+- Commission Outstanding now showing 18 invoices, 43% realization, 4 developers
+- 3 distinct invoice states represented (Draft, Issued, Paid, Partial)
+
+### Demo readiness — final score
+Every screen in the v3 Demo Script narrative now backed by real-looking data with multi-stakeholder, multi-stage variety.
+
+Tomorrow's Day 18 priorities:
+1. Link Al Khaleej draft invoice to a real developer (currently "Unlinked")
+2. Day 19 activity logging integration (person_id wiring)
+3. Optionally: Abdullah Al-Ghamdi deep journey (Persona #3, GCC family)
