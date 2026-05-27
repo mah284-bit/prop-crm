@@ -569,3 +569,22 @@ Phase 2.5 (after Day 19 activity logging integration). Should ship before client
 
 ### Why this matters
 The "AI as colleague, not chatbot" narrative loses force if the user has to actively look for the AI. Prominent placement signals "AI is always working on your behalf" rather than "click here for AI analysis."
+
+---
+
+## Day 17 night decision — In-Opp Commission Visibility MOVES TO PRE-DEMO
+
+**Date:** 27 May 2026 (late night)
+**Founder principle:** *"features something why the broker is working cannot move after demo is clear"*
+
+### What changes
+- In-Opp Commission Visibility (originally logged as Phase 2.6) is **PROMOTED to Day 18 pre-demo work**
+- AI Coach prominence (also originally Phase 2.5) **stays in Phase 2** — it's a polish/sharpening item, not a workflow break
+
+### Founder's principle (architect's framing)
+Workflow gaps (broker can't see something they need where they need it) ship BEFORE demo, not after. Phase 2 is for new capabilities and polish, not for filling holes in the broker's daily workflow. Anything that would make a broker say "wait, where do I do X?" must be answered in v1.
+
+### Application going forward
+When deciding "demo vs Phase 2" for any new capture:
+- **Pre-demo:** Workflow break? Visibility gap? Broker stuck navigating? → ship before demo
+- **Phase 2:** New capability? Polish? Sharpening narrative? → after demo
