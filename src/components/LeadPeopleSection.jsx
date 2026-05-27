@@ -160,7 +160,7 @@ export default function LeadPeopleSection({
                         cursor: "pointer",
                       }}
                     >
-                      ✏
+                      Edit
                     </button>
                   )}
                 </div>
