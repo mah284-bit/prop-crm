@@ -16,6 +16,7 @@
 // to perform the actual database write. Keeps this component portable.
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import CountryPicker from "./CountryPicker.jsx";
+import { useLeadPersons, getPrimaryContact, ROLE_LABELS } from "../lib/useLeadPersons";
 
 // IMPORTANT: This component does NOT import supabase directly. The parent
 // (App.jsx) handles all data persistence via the `onSubmit` prop. This
@@ -126,6 +127,76 @@ const styles = {
  *   - onCreated  (required): called with the created lead object on success
  *   - currentUserId (optional): for created_by / assigned_to
  */
+// Phase 2.2B — Display non-buyer persons attached to a lead, read-only.
+// Used inside V2 form in Edit mode only. The primary buyer is already
+// represented by the main V2 form fields (Display name / Phone / Email);
+// this section surfaces the OTHER stakeholders (spouse, representative,
+// secretary, accounts, etc.) so the broker knows they're tracked.
+// Day 18B will add Add/Edit/Remove UI here.
+function V2AdditionalPersonsRO({ leadId }) {
+  const { persons, loading, error } = useLeadPersons(leadId);
+  if (loading || error) return null;
+  const additional = (persons || []).filter((p) => !p.is_primary_buyer);
+  if (additional.length === 0) return null;
+  return (
+    <div style={{
+      margin: "8px 0 16px",
+      padding: 12,
+      background: "#F8FAFC",
+      border: "1px solid #E8EDF4",
+      borderRadius: 10,
+    }}>
+      <div style={{
+        fontSize: 10,
+        fontWeight: 700,
+        color: "#94A3B8",
+        textTransform: "uppercase",
+        letterSpacing: ".6px",
+        marginBottom: 8,
+      }}>
+        Additional Persons ({additional.length})
+      </div>
+      {additional.map((p) => {
+        const phone = getPrimaryContact(p, "phone");
+        const email = getPrimaryContact(p, "email");
+        return (
+          <div key={p.id} style={{
+            padding: "6px 0",
+            borderTop: "1px solid #E8EDF4",
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            fontSize: 12,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontWeight: 600, color: "#0F2540" }}>{p.name}</span>
+              <span style={{
+                fontSize: 10,
+                fontWeight: 600,
+                padding: "1px 6px",
+                borderRadius: 10,
+                background: "#E8EDF4",
+                color: "#475569",
+              }}>
+                {ROLE_LABELS[p.role] || p.role}
+              </span>
+            </div>
+            {(phone || email) && (
+              <div style={{ fontSize: 11, color: "#64748B", display: "flex", gap: 12, flexWrap: "wrap" }}>
+                {phone && <span>📞 {phone}</span>}
+                {email && <span>✉️ {email}</span>}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 8, fontStyle: "italic" }}>
+        Add / edit additional persons from Lead Detail (coming Day 18B).
+      </div>
+    </div>
+  );
+}
+
 export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCreated, currentUserId, countries = [], rules = {}, editLead = null }) {
   // Reference data (fetched once on mount)
   const [refLoading, setRefLoading] = useState(true);
@@ -628,6 +699,8 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
             </div>
           </>
         )}
+        {/* Phase 2.2B — Additional persons (Edit mode only, read-only for now) */}
+        {editLead && <V2AdditionalPersonsRO leadId={editLead.id} />}
 
         {/* Notes */}
         <div style={styles.fieldGroup}>
