@@ -88,3 +88,29 @@
 - 9 units cascade-removed (mix of Sale + Lease, Residential + Commercial)
 - 1 opportunity (`08478ea7-e74a-4aaf-8770-a7a99d259fc1` Satish Sabnis, Contacted, AED 800K) preserved by setting unit_id = NULL with audit note
 - Verified: Satish opp still functional with full 7-tab dashboard, no broken references
+
+---
+
+## Day 17 evening — Proposal display bug & fix
+
+### Symptom
+Anoop K + Al Khaleej proposal tables showed "—" for Net Price, Plan, DLD on every row despite SQL inserting real values.
+
+### Root cause
+Proposals table UI (src/App.jsx ~6307) reads almost exclusively from structured_data JSONB, not from the discrete columns (final_price, payment_plan_template, etc.). Our INSERT statements populated the discrete columns but left structured_data only partially set.
+
+UI contract (required JSON shape):
+- proposal_units: array with unit_id, asking_price, discount_pct, discounted_price
+- total_value: number (net price)
+- payment_plan: string e.g. '20/80' or '30/70'
+- dld_handling: 'buyer_pays' | 'split_5050' | 'developer_pays' | 'specific_amount'
+
+### Secondary bug
+created_at defaulted to NOW() for both proposals at insert time -> identical timestamps -> UI sort ORDER BY created_at DESC returned non-deterministic order -> V1/V2 labels swapped against actual content. Fix: backdate created_at to match sent_at.
+
+### Resolution SQL (kept here for future demo data work)
+- 5 proposals (Anoop V1+V2, Al Khaleej V1+V2+V3) - structured_data UPDATE
+- Both opps - created_at = sent_at UPDATE
+
+### Lesson for future demo data work
+When seeding proposals: always populate structured_data JSON as the source of truth, NOT the discrete columns alone. The discrete columns appear to be legacy. Likewise, set created_at explicitly when seeding historical data, do not let NOW() default to a tie.
