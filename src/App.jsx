@@ -11538,6 +11538,8 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           </div>
         );
       })()}
+      {/* Phase 2.2B — People section (Contacts Subsystem, read-only) */}
+      <LeadPeopleSection leadId={selLead.id} />
 
       {/* 23 May 2026: Lead-stage Activities section (restored from April original design) */}
       {(()=>{
@@ -13676,6 +13678,7 @@ import UnitSearchPicker from "./components/UnitSearchPicker.jsx";
 import UnitPickerRich from "./components/UnitPickerRich.jsx";
 import PropPulse from "./components/PropPulse.jsx";
 import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";  // Phase A.3 — new buyer-type-aware form (side-by-side with old form)
+import LeadPeopleSection from "./components/LeadPeopleSection.jsx";  // Phase 2.2B — Contacts Subsystem read-only display
 import { rulesFromRows } from "./lib/contactValidation.js";  // Phase 2.2A — convert ref_buyer_type_rules rows to {type: {field: req}}
 // ──────────────────────────────────────────────────────────────
 
