@@ -78,3 +78,13 @@
 - Walk through demo script v3 with current state
 - Update v3 to v4 with new persona names + 36.2M pipeline + 44% Commission
 - Practice the conversation hooks
+
+---
+
+## Day 17 evening polish — additional SQL work
+
+### "abc" test project cleanup
+- Project `e9b51e48-1704-427a-9e04-48ba5dd33379` (abc, 0 units → 9 units actually attached, created 7 April) DELETED
+- 9 units cascade-removed (mix of Sale + Lease, Residential + Commercial)
+- 1 opportunity (`08478ea7-e74a-4aaf-8770-a7a99d259fc1` Satish Sabnis, Contacted, AED 800K) preserved by setting unit_id = NULL with audit note
+- Verified: Satish opp still functional with full 7-tab dashboard, no broken references
