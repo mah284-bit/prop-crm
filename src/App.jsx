@@ -8107,78 +8107,44 @@ You will become the assigned agent.`);
 
       {/* Log Activity Modal */}
       {showLog&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"92vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>Log Task</span>
-              <button onClick={()=>setShowLog(false)} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
-            </div>
-            <div style={{padding:"1.25rem 1.5rem"}}>
-              <div style={{marginBottom:14}}>
-                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Activity Type</label>
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {[["Call","📞"],["Email","✉️"],["Meeting","🤝"],["Visit","🏠"],["WhatsApp","💬"],["Note","📝"]].map(([t,icon])=>(
-                    <button key={t} onClick={()=>setLogForm(f=>({...f,type:t}))}
-                      style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${logForm.type===t?"#0F2540":"#E2E8F0"}`,background:logForm.type===t?"#0F2540":"#fff",color:logForm.type===t?"#fff":"#4A5568",fontSize:12,cursor:"pointer",fontWeight:logForm.type===t?600:400,display:"flex",alignItems:"center",gap:4}}>
-                      <span>{icon}</span>{t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {["Call","Meeting","Visit"].includes(logForm.type)&&(
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
-                  <div>
-                    <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>📅 Date & Time</label>
-                    <input type="datetime-local" value={logForm.scheduled_at} onChange={e=>setLogForm(f=>({...f,scheduled_at:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
-                  </div>
-                  <div>
-                    <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>⏱ Duration</label>
-                    <select value={logForm.duration_mins} onChange={e=>setLogForm(f=>({...f,duration_mins:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}>
-                      <option value="">Select…</option>
-                      {["15","30","45","60","90","120"].map(m=><option key={m} value={m}>{m} mins</option>)}
-                    </select>
-                  </div>
-                </div>
-              )}
-              <div style={{marginBottom:12}}>
-                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>💬 Discussion / Key Details</label>
-                <textarea value={logForm.note} onChange={e=>setLogForm(f=>({...f,note:e.target.value}))} rows={3} placeholder="What was discussed? Key points, client feedback, objections…" style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,resize:"vertical",outline:"none",boxSizing:"border-box"}}/>
-              </div>
-              <div style={{marginBottom:12,background:logForm.ns_enabled?"#FFFEF7":"#F8FAFC",border:`1px solid ${logForm.ns_enabled?"#F0E5C8":"#E2E8F0"}`,borderRadius:8,padding:"10px 12px",transition:"all .15s"}}>
-                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,fontWeight:600,color:"#0F2540"}}>
-                  <input type="checkbox" checked={logForm.ns_enabled} onChange={e=>setLogForm(f=>({...f,ns_enabled:e.target.checked, ns_due: e.target.checked && !f.ns_due ? (()=>{const d=new Date();d.setDate(d.getDate()+2);return d.toISOString().split("T")[0];})() : f.ns_due }))} style={{width:14,height:14,cursor:"pointer",accentColor:"#0F2540"}}/>
-                  📅 Schedule a next step
-                  {logForm.ns_enabled && <span style={{fontSize:10,fontWeight:500,color:"#94A3B8",marginLeft:"auto"}}>creates a reminder</span>}
-                </label>
-                {logForm.ns_enabled && (
-                  <div style={{marginTop:10,display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                    <div>
-                      <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Action</label>
-                      <select value={logForm.ns_type} onChange={e=>setLogForm(f=>({...f,ns_type:e.target.value}))}
-                        style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,outline:"none",background:"#fff",cursor:"pointer",boxSizing:"border-box"}}>
-                        {["Call","WhatsApp","Email","Meeting","Site Visit","Send proposal","Send brochure","Note to self","Other"].map(t=><option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Due Date</label>
-                      <input type="date" value={logForm.ns_due} onChange={e=>setLogForm(f=>({...f,ns_due:e.target.value}))}
-                        style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,outline:"none",background:"#fff",boxSizing:"border-box"}}/>
-                    </div>
-                    <div style={{gridColumn:"1/-1"}}>
-                      <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Note (optional)</label>
-                      <input type="text" value={logForm.ns_note} onChange={e=>setLogForm(f=>({...f,ns_note:e.target.value}))} placeholder="e.g. Confirm payment plan options"
-                        style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,outline:"none",boxSizing:"border-box"}}/>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-                <button onClick={()=>setShowLog(false)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                <button onClick={saveLog} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save"}</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <LogActivityModal
+          lead={lead}
+          opp={opp}
+          currentUser={currentUser}
+          showToast={showToast}
+          defaultType={logForm.type||"Call"}
+          onClose={()=>setShowLog(false)}
+          onSaved={async(data, nextStepIntent)=>{
+            setActivities(p=>[data,...p]);
+            if(nextStepIntent && nextStepIntent.due){
+              const triggerAt = new Date(nextStepIntent.due);
+              triggerAt.setHours(9,0,0,0);
+              const{data:remRow,error:remErr}=await supabase.from("reminders").insert({
+                company_id: opp.company_id || currentUser.company_id || null,
+                user_id: currentUser.id,
+                related_opportunity_id: opp.id,
+                related_lead_id: lead.id,
+                related_activity_id: data.id,
+                trigger_at: triggerAt.toISOString(),
+                title: `${nextStepIntent.type} — ${lead.name}`,
+                body: nextStepIntent.note || "",
+                reason: "manual_next_step",
+                status: "pending",
+                created_by: currentUser.id,
+              }).select().single();
+              if(remErr){
+                console.warn("Reminder creation failed (non-fatal):", remErr);
+                showToast("Activity saved, but reminder failed to schedule","error");
+              }else{
+                setReminders(p=>[...p,remRow].sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
+                showToast("Activity logged & next step scheduled","success");
+              }
+            }else{
+              showToast("Activity logged","success");
+            }
+            setShowLog(false);
+          }}
+        />
       )}
 
       {/* Reassign Modal */}
@@ -12371,7 +12337,6 @@ function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, 
         status: isScheduled?"upcoming":"completed",
         user_id: currentUser.id,
         user_name: currentUser.full_name,
-        created_by: currentUser.id,
         opportunity_id: opp?.id||null,
         person_id: form.person_id||null,
         stage_at_event: opp?.stage || null,
