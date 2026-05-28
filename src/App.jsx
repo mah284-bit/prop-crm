@@ -5765,67 +5765,6 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     setSingleDateValue("");
   };
 
-  const saveLog = async()=>{
-    const hasNextStep = logForm.ns_enabled && logForm.ns_due;
-    if(!(logForm.note||"").trim() && !hasNextStep){showToast("Please add discussion notes or set a next step","error");return;}
-    setSaving(true);
-    const isScheduled = logForm.scheduled_at && new Date(logForm.scheduled_at) > new Date();
-    // Build the human-readable note (we still embed next steps text so the timeline reads well)
-    const nsLine = hasNextStep ? `\n\n✅ Next: ${logForm.ns_type} on ${new Date(logForm.ns_due).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}${logForm.ns_note?(" — "+logForm.ns_note):""}` : "";
-    const noteText = [
-      logForm.note,
-      nsLine,
-      logForm.scheduled_at?("\n📅 Scheduled: "+new Date(logForm.scheduled_at).toLocaleString("en-AE",{dateStyle:"medium",timeStyle:"short"})):"",
-      logForm.duration_mins?("\n⏱ Duration: "+logForm.duration_mins+" mins"):"",
-    ].filter(Boolean).join("");
-    const{data,error}=await supabase.from("activities").insert({
-      opportunity_id:opp.id, lead_id:lead.id,
-      type:logForm.type, note:noteText,
-      scheduled_at:logForm.scheduled_at||null,
-      status:isScheduled?"upcoming":"completed",
-      user_id:currentUser.id, user_name:currentUser.full_name,
-      lead_name:lead.name, company_id:currentUser.company_id||null,
-      // Phase E: tag the activity with the current stage so the timeline
-      // can show "this call happened during Contacted" context
-      stage_at_event: opp.stage,
-      activity_subtype: "free_note",
-    }).select().single();
-    if(error){showToast("Failed to log activity","error");setSaving(false);return;}
-    setActivities(p=>[data,...p]);
-
-    // Phase E W3 — write the structured next step to the reminders table
-    if(hasNextStep){
-      const triggerAt = new Date(logForm.ns_due);
-      triggerAt.setHours(9,0,0,0); // 9am on the due date
-      const{data:remRow,error:remErr}=await supabase.from("reminders").insert({
-        company_id: opp.company_id || currentUser.company_id || null,
-        user_id: currentUser.id,
-        related_opportunity_id: opp.id,
-        related_lead_id: lead.id,
-        related_activity_id: data.id,
-        trigger_at: triggerAt.toISOString(),
-        title: `${logForm.ns_type} — ${lead.name}`,
-        body: logForm.ns_note || "",
-        reason: "manual_next_step",
-        status: "pending",
-        created_by: currentUser.id,
-      }).select().single();
-      if(remErr){
-        console.warn("Reminder creation failed (non-fatal):", remErr);
-        showToast("Activity saved, but reminder failed to schedule","error");
-      }else{
-        setReminders(p=>[...p,remRow].sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
-        showToast("Activity logged & next step scheduled","success");
-      }
-    }else{
-      showToast("Activity logged","success");
-    }
-
-    setShowLog(false);
-    setLogForm({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
-    setSaving(false);
-  };
-
   const savePayment=async()=>{
     if(!payForm.amount){showToast("Amount required","error");return;}
     setSaving(true);
@@ -11137,7 +11076,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   // Separate state from opp-side to avoid coupling risk.
   const [showLeadLog,   setShowLeadLog]   = useState(false);
   const [leadLogForm,   setLeadLogForm]   = useState({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
-  const [savingLeadLog, setSavingLeadLog] = useState(false);
   // Phase A.3 — Sprint 1 form (side-by-side feature flag)
   const [showAddV2, setShowAddV2] = useState(false);
   const [editLeadForV2, setEditLeadForV2] = useState(null); // Phase 2.2A — V2 dual-mode: null = Add, row = Edit
