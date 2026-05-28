@@ -12329,8 +12329,9 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
 
 // ── Standalone Log Activity Modal (used in Pipeline + anywhere else) ──
 function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, defaultType="Call"}) {
-  const [form, setForm] = useState({type:defaultType,note:"",scheduled_at:"",next_steps:"",duration_mins:"",status:"completed"});
+  const [form, setForm] = useState({type:defaultType,note:"",scheduled_at:"",next_steps:"",duration_mins:"",status:"completed",person_id:""});
   const [saving, setSaving] = useState(false);
+  const { persons: actPersons } = useLeadPersons(lead?.id);  // Day 18 — for person-tagging
   const sf = k => e => setForm(f=>({...f,[k]:e.target.value}));
 
   const save = async() => {
@@ -12349,6 +12350,7 @@ function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, 
         status: form.status||"completed",
         created_by: currentUser.id,
         opportunity_id: opp?.id||null,
+        person_id: form.person_id||null,
       };
       const{data,error}=await supabase.from("activities").insert(payload).select().single();
       if(error)throw error;
@@ -12392,6 +12394,19 @@ function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, 
             </div>
           </div>
 
+          {actPersons && actPersons.length > 0 && (
+            <div style={{marginBottom:12}}>
+              <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Who did you talk to?</label>
+              <select value={form.person_id} onChange={sf("person_id")} style={{width:"100%"}}>
+                <option value="">— Not specified —</option>
+                {actPersons.map(p=>(
+                  <option key={p.id} value={p.id}>
+                    {p.name}{p.is_primary_buyer?" 👑":""} · {ROLE_LABELS[p.role]||p.role}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           {["Call","Meeting","Site Visit"].includes(form.type)&&(
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
               <div>
@@ -13733,6 +13748,7 @@ import UnitPickerRich from "./components/UnitPickerRich.jsx";
 import PropPulse from "./components/PropPulse.jsx";
 import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";  // Phase A.3 — new buyer-type-aware form (side-by-side with old form)
 import LeadPeopleSection from "./components/LeadPeopleSection.jsx";  // Phase 2.2B — Contacts Subsystem read-only display
+import { useLeadPersons, ROLE_LABELS } from "./lib/useLeadPersons.js";  // Day 18 — person-tagged activity logging
 import { rulesFromRows } from "./lib/contactValidation.js";  // Phase 2.2A — convert ref_buyer_type_rules rows to {type: {field: req}}
 // ──────────────────────────────────────────────────────────────
 
