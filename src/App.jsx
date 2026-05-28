@@ -12329,34 +12329,59 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
 
 // ── Standalone Log Activity Modal (used in Pipeline + anywhere else) ──
 function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, defaultType="Call"}) {
-  const [form, setForm] = useState({type:defaultType,note:"",scheduled_at:"",next_steps:"",duration_mins:"",status:"completed",person_id:""});
+  // Canonical activity-logging modal (Day 18 consolidation).
+  // Used by BOTH Opportunity Detail and Lead Detail. Handles the universal
+  // parts: type, status, duration, person-tagging, notes, next-step inputs,
+  // note-text composition, and the activities INSERT (with person_id +
+  // stage_at_event when an opp is present).
+  //
+  // Reminder creation is NOT done here — the modal returns the next-step
+  // intent to the parent via onSaved(activity, nextStepIntent). Each parent
+  // owns its reminders state, so it creates the reminder + updates its panel.
+  const [form, setForm] = useState({
+    type: defaultType, note:"", scheduled_at:"", duration_mins:"", status:"completed",
+    person_id:"", ns_enabled:false, ns_type:"Call", ns_due:"", ns_note:"",
+  });
   const [saving, setSaving] = useState(false);
-  const { persons: actPersons } = useLeadPersons(lead?.id);  // Day 18 — for person-tagging
+  const { persons: actPersons } = useLeadPersons(lead?.id);
   const sf = k => e => setForm(f=>({...f,[k]:e.target.value}));
 
   const save = async() => {
     if(!lead){showToast("No lead found","error");return;}
+    const hasNextStep = form.ns_enabled && form.ns_due;
+    if(!(form.note||"").trim() && !hasNextStep){showToast("Please add discussion notes or set a next step","error");return;}
     setSaving(true);
     try{
+      const isScheduled = form.scheduled_at && new Date(form.scheduled_at) > new Date();
+      const nsLine = hasNextStep ? `\n\n✅ Next: ${form.ns_type} on ${new Date(form.ns_due).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}${form.ns_note?(" — "+form.ns_note):""}` : "";
+      const noteText = [
+        form.note,
+        nsLine,
+        form.scheduled_at?("\n📅 Scheduled: "+new Date(form.scheduled_at).toLocaleString("en-AE",{dateStyle:"medium",timeStyle:"short"})):"",
+        form.duration_mins?("\n⏱ Duration: "+form.duration_mins+" mins"):"",
+      ].filter(Boolean).join("");
       const payload = {
         lead_id: lead.id,
         lead_name: lead.name,
-        company_id: currentUser.company_id||null,
+        company_id: (opp?.company_id) || currentUser.company_id || null,
         type: form.type,
-        note: form.note||null,
-        next_steps: form.next_steps||null,
-        scheduled_at: form.scheduled_at||new Date().toISOString(),
+        note: noteText || null,
+        scheduled_at: form.scheduled_at || new Date().toISOString(),
         duration_mins: form.duration_mins?Number(form.duration_mins):null,
-        status: form.status||"completed",
+        status: isScheduled?"upcoming":"completed",
+        user_id: currentUser.id,
+        user_name: currentUser.full_name,
         created_by: currentUser.id,
         opportunity_id: opp?.id||null,
         person_id: form.person_id||null,
+        stage_at_event: opp?.stage || null,
+        activity_subtype: "free_note",
       };
       const{data,error}=await supabase.from("activities").insert(payload).select().single();
       if(error)throw error;
-      onSaved(data);
-    }catch(e){showToast(e.message,"error");}
-    setSaving(false);
+      const nextStepIntent = hasNextStep ? {type:form.ns_type, due:form.ns_due, note:form.ns_note} : null;
+      onSaved(data, nextStepIntent);
+    }catch(e){showToast(e.message,"error"); setSaving(false);}
   };
 
   return(
@@ -12407,6 +12432,7 @@ function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, 
               </select>
             </div>
           )}
+
           {["Call","Meeting","Site Visit"].includes(form.type)&&(
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
               <div>
@@ -12427,10 +12453,32 @@ function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, 
             <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Discussion / Notes</label>
             <textarea value={form.note} onChange={sf("note")} rows={3} placeholder="What was discussed? Key points, client feedback, objections…"/>
           </div>
-          <div style={{marginBottom:16}}>
-            <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Next Steps</label>
-            <textarea value={form.next_steps} onChange={sf("next_steps")} rows={2} placeholder="Follow-up action, who's responsible, by when?"/>
+
+          <div style={{padding:"10px 12px",background:"#F8FAFC",border:"1px solid #E8EDF4",borderRadius:8,marginBottom:16}}>
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,fontWeight:600,color:"#0F2540"}}>
+              <input type="checkbox" checked={form.ns_enabled} onChange={e=>setForm(f=>({...f,ns_enabled:e.target.checked}))}/>
+              📅 Schedule a next step
+            </label>
+            {form.ns_enabled&&(
+              <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #E2E8F0",display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                <div>
+                  <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Type</label>
+                  <select value={form.ns_type} onChange={sf("ns_type")} style={{width:"100%"}}>
+                    {["Call","Email","Meeting","Visit","WhatsApp","Task"].map(t=><option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Due Date</label>
+                  <input type="date" value={form.ns_due} onChange={sf("ns_due")} style={{width:"100%"}}/>
+                </div>
+                <div style={{gridColumn:"span 2"}}>
+                  <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Note (optional)</label>
+                  <input type="text" value={form.ns_note} onChange={sf("ns_note")} placeholder="e.g. Follow up on budget question" style={{width:"100%"}}/>
+                </div>
+              </div>
+            )}
           </div>
+
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
             <button onClick={onClose} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",color:"#475569"}}>Cancel</button>
             <button onClick={save} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save Activity"}</button>
