@@ -1134,6 +1134,8 @@ function OutcomeModal({activity, onClose, onSave}){
 
 function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isLeasing=false, currentStage=null, units=[], onCaptureVisitOutcome=null}){
   const [outcomeModal, setOutcomeModal] = useState(null); // {activity, pendingOutcome}
+  const { persons: actCardPersons } = useLeadPersons(opp?.lead_id);
+  const personsById = (actCardPersons||[]).reduce((m,p)=>{m[p.id]=p;return m;},{});
   const [scope, setScope] = useState("stage"); // "stage" | "all"
   // Filter activities based on scope
   const filtered = (currentStage && scope === "stage")
@@ -1300,6 +1302,12 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
               {!isStageAdvance && a.stage_at_event && (
                 <span style={{fontSize:10,fontWeight:600,color:"#64748B",background:"#F1F5F9",padding:"2px 8px",borderRadius:10,border:"1px solid #E2E8F0"}}>
                   during {a.stage_at_event}
+                </span>
+              )}
+              {/* Day 18 — person tag: who this activity was with */}
+              {a.person_id && personsById[a.person_id] && (
+                <span style={{fontSize:10,fontWeight:600,color:"#3730A3",background:"#E0E7FF",padding:"2px 8px",borderRadius:10,border:"1px solid #A5B4FC"}}>
+                  👤 {personsById[a.person_id].name}{personsById[a.person_id].is_primary_buyer?" 👑":""} · {ROLE_LABELS[personsById[a.person_id].role]||personsById[a.person_id].role}
                 </span>
               )}
               {/* Phase E: interest level badge */}
