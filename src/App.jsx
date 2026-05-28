@@ -12226,6 +12226,83 @@ function CoachPage({ opps, leads, activities, users, currentUser, showToast, onN
   const dealCount = enrichedDeals.length;
   const totalValue = enrichedDeals.reduce((s, d) => s + (d.value || 0), 0);
 
+  // ── Phase 3: AI analysis of the selected cross-section ──
+  const scopeLabel = SCOPES.find(s => s.id === scope)?.label || scope;
+  const scopeDescription = (() => {
+    if (scope === "stage") return `deals in the "${stageFilter}" stage`;
+    if (scope === "segment") return `${SEGMENTS.find(s => s.id === segmentFilter)?.label || segmentFilter} buyers`;
+    if (scope === "attention") return "deals that are stalling (no recent activity or stuck in stage)";
+    if (scope === "portfolio") return "the entire company's active pipeline";
+    if (scope === "all_opps") return "all active opportunities";
+    return "your active pipeline";
+  })();
+
+  const runBroadCoach = async () => {
+    if (dealCount === 0) return;
+    setLoading(true);
+    setError("");
+    setResult(null);
+    try {
+      // Keep payload lean — cap at 40 deals to control tokens
+      const dealsForAI = enrichedDeals.slice(0, 40).map(d => ({
+        id: d.id,
+        deal: d.title,
+        buyer: d.lead_name,
+        intent: d.buyer_intent,
+        stage: d.stage,
+        value_aed: d.value,
+        days_in_stage: d.days_in_stage,
+        days_since_activity: d.days_since_activity,
+        activities_logged: d.activity_count,
+        agent: d.agent_name,
+      }));
+      const system = `You are PropPulse Coach, an expert UAE real-estate sales advisor reviewing a CROSS-SECTION of a brokerage's pipeline (not a single deal). Your job: read the set of deals and surface the MOST IMPORTANT things the user should act on now. Be specific — name actual deals, cite their stage/value/staleness. Respect UAE norms (DLD 4%, off-plan vs ready, payment plans 10/90, 20/80, 50/50, 40/60). Prioritise deals at risk (stale, stuck) and high-value opportunities. Always respond with valid JSON only — no prose, no markdown fences. Confidence is one of "high", "medium", "low".`;
+      const userPrompt = `Analyse this cross-section of the pipeline: ${scopeDescription}.
+SCOPE: ${scopeLabel}
+DEAL COUNT: ${dealCount}
+TOTAL VALUE: AED ${(totalValue/1e6).toFixed(2)}M
+
+DEALS (sorted by staleness, most stale first):
+${JSON.stringify(dealsForAI, null, 2)}
+
+TASK: Give a portfolio-level read, then rank the specific deals that need attention most. Reference actual deals by name.
+RESPOND WITH VALID JSON ONLY in this exact shape:
+{
+  "summary": "<2-3 sentence read of this cross-section — health, risks, where to focus>",
+  "deals": [
+    {
+      "deal_id": "<the id field from the deal>",
+      "deal_name": "<deal name>",
+      "priority": "high" | "medium" | "low",
+      "issue": "<what's wrong or the opportunity — cite specifics>",
+      "recommended_move": "<the single next action for this deal>"
+    }
+  ]
+}
+Rank up to 6 deals, highest priority first. If a deal is healthy, you may omit it.`;
+      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const cleaned = reply.replace(/```json\s*/g, "").replace(/```\s*$/g, "").trim();
+      let parsed;
+      try { parsed = JSON.parse(cleaned); }
+      catch (e) {
+        const m = cleaned.match(/\{[\s\S]*\}/);
+        if (!m) throw new Error("AI response was not valid JSON");
+        parsed = JSON.parse(m[0]);
+      }
+      setResult({
+        summary: parsed.summary || "",
+        deals: Array.isArray(parsed.deals) ? parsed.deals.slice(0, 6) : [],
+        scope: scopeLabel,
+        analysed_at: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.error("Broad Coach failed:", e);
+      setError(`Couldn't analyse: ${e.message || "unknown error"}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto" }}>
       <div style={{ marginBottom: 18 }}>
@@ -12300,13 +12377,60 @@ function CoachPage({ opps, leads, activities, users, currentUser, showToast, onN
             <span style={{ color: "#94A3B8" }}>No active deals match this scope.</span>
           )}
         </div>
-        <button disabled={dealCount === 0}
+        <button onClick={runBroadCoach} disabled={dealCount === 0 || loading}
           style={{ padding: "11px 28px", borderRadius: 10, border: "none",
-            background: dealCount === 0 ? "#CBD5E1" : "linear-gradient(135deg, #6D28D9 0%, #0E7490 100%)",
-            color: "#fff", fontSize: 14, fontWeight: 700, cursor: dealCount === 0 ? "not-allowed" : "pointer",
-            boxShadow: dealCount === 0 ? "none" : "0 2px 10px rgba(109,40,217,.25)" }}>
-          ✨ Analyse {dealCount > 0 ? `${dealCount} ${dealCount === 1 ? "deal" : "deals"}` : ""} (AI next)
+            background: (dealCount === 0 || loading) ? "#CBD5E1" : "linear-gradient(135deg, #6D28D9 0%, #0E7490 100%)",
+            color: "#fff", fontSize: 14, fontWeight: 700, cursor: (dealCount === 0 || loading) ? "not-allowed" : "pointer",
+            boxShadow: (dealCount === 0 || loading) ? "none" : "0 2px 10px rgba(109,40,217,.25)" }}>
+          {loading ? "✨ Analysing…" : `✨ Analyse ${dealCount > 0 ? `${dealCount} ${dealCount === 1 ? "deal" : "deals"}` : ""}`}
         </button>
+
+        {error && (
+          <div style={{ marginTop: 16, padding: "12px 16px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, color: "#B91C1C", fontSize: 13 }}>
+            {error}
+          </div>
+        )}
+
+        {result && !loading && (
+          <div style={{ marginTop: 22, textAlign: "left" }}>
+            {/* Summary */}
+            <div style={{ padding: "16px 18px", borderRadius: 12, background: "linear-gradient(135deg, #F5F3FF 0%, #ECFEFF 100%)", border: "1px solid #DDD6FE", marginBottom: 16 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#6D28D9", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: 6 }}>
+                ✨ Coach read · {result.scope}
+              </div>
+              <div style={{ fontSize: 14, color: "#0F2540", lineHeight: 1.6, fontWeight: 500 }}>{result.summary}</div>
+            </div>
+            {/* Ranked deals */}
+            {result.deals.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {result.deals.map((d, i) => {
+                  const pc = d.priority === "high" ? { c: "#DC2626", bg: "#FEE2E2", l: "HIGH" }
+                    : d.priority === "medium" ? { c: "#D97706", bg: "#FEF3C7", l: "MEDIUM" }
+                    : { c: "#0891B2", bg: "#CFFAFE", l: "LOW" };
+                  return (
+                    <div key={i} onClick={() => d.deal_id && onNavigateToOpp && onNavigateToOpp(d.deal_id)}
+                      style={{ padding: "14px 16px", borderRadius: 12, background: "#fff", border: "1px solid #E8EDF4", cursor: d.deal_id ? "pointer" : "default", transition: "all .15s" }}
+                      onMouseEnter={e => { if (d.deal_id) { e.currentTarget.style.borderColor = "#A5B4FC"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(109,40,217,.08)"; } }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "#E8EDF4"; e.currentTarget.style.boxShadow = "none"; }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: pc.c, background: pc.bg, padding: "2px 8px", borderRadius: 20 }}>{pc.l}</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "#0F2540" }}>{d.deal_name}</span>
+                        {d.deal_id && onNavigateToOpp && <span style={{ fontSize: 11, color: "#94A3B8", marginLeft: "auto" }}>Open →</span>}
+                      </div>
+                      <div style={{ fontSize: 12.5, color: "#64748B", lineHeight: 1.55, marginBottom: 6 }}>{d.issue}</div>
+                      <div style={{ fontSize: 12.5, color: "#0F2540", lineHeight: 1.55 }}>
+                        <strong style={{ color: "#6D28D9" }}>Next:</strong> {d.recommended_move}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div style={{ marginTop: 14, textAlign: "center" }}>
+              <button onClick={runBroadCoach} style={{ background: "none", border: "none", color: "#6D28D9", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>↻ Re-analyse</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
