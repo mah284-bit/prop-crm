@@ -144,9 +144,9 @@ const saveAppConfig = (cfg) => {
 };
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","opportunities","discounts","activity","ai","reports","proppulse","pay_plans","companies","users","permissions","permsets","master_agreements","commission_outstanding","group_view"],
+  sales:   ["dashboard","projects","builder","leads","opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","commission_outstanding","group_view"],
   leasing: ["l_dashboard","l_leads","l_opportunities","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_proppulse","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
-  both:    ["dashboard","projects","builder","leads","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","commission_outstanding","group_view"],
+  both:    ["dashboard","projects","builder","leads","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","commission_outstanding","group_view"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -12140,6 +12140,107 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
 
 
 // ── Standalone Log Activity Modal (used in Pipeline + anywhere else) ──
+function CoachPage({ opps, leads, activities, users, currentUser, showToast, onNavigateToOpp }) {
+  const role = currentUser?.role || "sales_agent";
+  const isManager = ["super_admin", "admin", "sales_manager"].includes(role);
+  const SCOPES = [
+    { id: "mine",      label: "My Pipeline",  icon: "👤", managerOnly: false },
+    { id: "stage",     label: "By Stage",     icon: "📊", managerOnly: false },
+    { id: "segment",   label: "By Segment",   icon: "🎯", managerOnly: false },
+    { id: "portfolio", label: "Portfolio",    icon: "🏛", managerOnly: true  },
+  ].filter(s => isManager || !s.managerOnly);
+  const [scope, setScope] = useState("mine");
+  const [stageFilter, setStageFilter] = useState("Negotiation");
+  const [segmentFilter, setSegmentFilter] = useState("investor");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+  const STAGES = ["New", "Contacted", "Site Visit", "Proposal Sent", "Negotiation", "Reserved", "SPA Signed"];
+  const SEGMENTS = [
+    { id: "investor", label: "Investor" },
+    { id: "owner_occupier", label: "Owner-Occupier" },
+    { id: "hybrid", label: "Hybrid" },
+    { id: "corporate", label: "Corporate" },
+    { id: "reseller", label: "Reseller" },
+  ];
+  const AI_PURPLE = "#6D28D9";
+  const AI_TEAL = "#0E7490";
+  const gradient = `linear-gradient(135deg, ${AI_PURPLE} 0%, ${AI_TEAL} 100%)`;
+  return (
+    <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+          <span style={{ fontSize: 26 }}>✨</span>
+          <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 24, fontWeight: 800, color: "#0F2540", margin: 0, letterSpacing: "-.5px" }}>AI Coach</h1>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: gradient, padding: "3px 9px", borderRadius: 20, letterSpacing: ".5px" }}>BETA</span>
+        </div>
+        <p style={{ fontSize: 13, color: "#64748B", margin: 0, lineHeight: 1.5 }}>
+          Honest, AI-powered review of your deals. Point it at any slice of your book — your pipeline, a stage, a buyer segment{isManager ? ", or the whole portfolio" : ""} — and get the moves that matter most.
+        </p>
+      </div>
+      <div style={{ background: "#fff", border: "1px solid #E8EDF4", borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: 10 }}>What should I analyse?</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+          {SCOPES.map(s => {
+            const active = scope === s.id;
+            return (
+              <button key={s.id} onClick={() => { setScope(s.id); setResult(null); setError(""); }}
+                style={{ padding: "9px 16px", borderRadius: 10, cursor: "pointer",
+                  border: active ? `1.5px solid ${AI_PURPLE}` : "1.5px solid #E2E8F0",
+                  background: active ? "linear-gradient(135deg, #EDE9FE 0%, #CCFBF1 100%)" : "#F8FAFC",
+                  color: active ? "#0F2540" : "#64748B", fontWeight: active ? 700 : 600, fontSize: 13,
+                  display: "flex", alignItems: "center", gap: 7,
+                  boxShadow: active ? "0 0 0 3px rgba(109,40,217,.08)" : "none", transition: "all .15s" }}>
+                <span style={{ fontSize: 15 }}>{s.icon}</span><span>{s.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        {scope === "stage" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>Stage:</span>
+            {STAGES.map(st => (
+              <button key={st} onClick={() => setStageFilter(st)}
+                style={{ padding: "5px 11px", borderRadius: 8, fontSize: 11, cursor: "pointer", fontWeight: stageFilter === st ? 700 : 500,
+                  border: stageFilter === st ? `1.5px solid ${AI_TEAL}` : "1.5px solid #E2E8F0",
+                  background: stageFilter === st ? "#CCFBF1" : "#fff", color: stageFilter === st ? "#0F2540" : "#64748B" }}>{st}</button>
+            ))}
+          </div>
+        )}
+        {scope === "segment" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>Segment:</span>
+            {SEGMENTS.map(sg => (
+              <button key={sg.id} onClick={() => setSegmentFilter(sg.id)}
+                style={{ padding: "5px 11px", borderRadius: 8, fontSize: 11, cursor: "pointer", fontWeight: segmentFilter === sg.id ? 700 : 500,
+                  border: segmentFilter === sg.id ? `1.5px solid ${AI_TEAL}` : "1.5px solid #E2E8F0",
+                  background: segmentFilter === sg.id ? "#CCFBF1" : "#fff", color: segmentFilter === sg.id ? "#0F2540" : "#64748B" }}>{sg.label}</button>
+            ))}
+          </div>
+        )}
+        {scope === "portfolio" && isManager && (
+          <div style={{ fontSize: 12, color: "#64748B", fontStyle: "italic" }}>Analysing every active deal across the company.</div>
+        )}
+        {scope === "mine" && (
+          <div style={{ fontSize: 12, color: "#64748B", fontStyle: "italic" }}>Analysing all of your active deals.</div>
+        )}
+      </div>
+      <div style={{ background: "#fff", border: "1px dashed #CBD5E1", borderRadius: 14, padding: "40px 20px", textAlign: "center" }}>
+        <div style={{ fontSize: 40, marginBottom: 12 }}>✨</div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: "#0F2540", marginBottom: 6 }}>Ready to analyse</div>
+        <div style={{ fontSize: 13, color: "#94A3B8", marginBottom: 18 }}>
+          Scope: <strong style={{ color: "#0F2540" }}>{SCOPES.find(s => s.id === scope)?.label}</strong>
+          {scope === "stage" ? ` · ${stageFilter}` : ""}
+          {scope === "segment" ? ` · ${SEGMENTS.find(s => s.id === segmentFilter)?.label}` : ""}
+        </div>
+        <button disabled
+          style={{ padding: "11px 26px", borderRadius: 10, border: "none", background: "#CBD5E1", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "not-allowed" }}>
+          ✨ Analyse (wiring in progress)
+        </button>
+      </div>
+    </div>
+  );
+}
 function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, defaultType="Call"}) {
   // Canonical activity-logging modal (Day 18 consolidation).
   // Used by BOTH Opportunity Detail and Lead Detail. Handles the universal
@@ -12753,6 +12854,7 @@ const TABS=[
   {id:"reports",    label:"Reports",      icon:"📊", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   //{id:"ai",       label:"AI Assistant", icon:"✦",  app:"sales" -- removed, using AI bubble insteadles_manager","sales_agent"]},
   {id:"proppulse",  label:"PropPulse",   icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"coach_ai",   label:"AI Coach",    icon:"✨", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"companies",  label:"Companies",    icon:"🏢", app:"sales",   roles:["super_admin"]},
   {id:"users",      label:"Users",        icon:"👥", app:"sales",   roles:["admin","super_admin"]},
   // 21 May 2026: Hide Permissions menu for Phase 1 demo (admin config, not broker workflow)
@@ -16594,6 +16696,7 @@ export default function App(){
           {tab==="master_agreements" && <MasterAgreements currentUser={currentUser} showToast={showToast}/>}
           {tab==="commission_outstanding" && <CommissionOutstanding currentUser={currentUser} showToast={showToast} developers={[]}/>}
           {(tab==="proppulse"||tab==="l_proppulse")&&<PropPulse currentUser={currentUser} showToast={showToast}/>}
+          {tab==="coach_ai" && <CoachPage opps={opps} leads={leads} activities={activities} users={users} currentUser={currentUser} showToast={showToast} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})}/>}
           {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
           {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
   const co = coObj || companies.find(c=>c.id===id);
