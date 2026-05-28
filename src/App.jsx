@@ -11629,134 +11629,34 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         )}
         {/* 23 May 2026: Lead-stage Activity Log Dialog - full feature parity with Opp Detail */}
         {showLeadLog && (
-          <div onClick={()=>!savingLeadLog&&setShowLeadLog(false)} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(15,37,64,.4)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
-            <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:14,boxShadow:"0 10px 40px rgba(0,0,0,.2)",maxWidth:560,width:"100%",maxHeight:"90vh",overflow:"auto"}}>
-              <div style={{padding:"14px 20px",borderBottom:"1px solid #E2E8F0",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0F2540"}}>Log Activity — {selLead.name}</div>
-                <button onClick={()=>!savingLeadLog&&setShowLeadLog(false)} style={{background:"none",border:"none",fontSize:20,cursor:savingLeadLog?"not-allowed":"pointer",color:"#94A3B8"}}>×</button>
-              </div>
-              <div style={{padding:"16px 20px"}}>
-                {/* Activity Type */}
-                <div style={{marginBottom:14}}>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Activity Type</label>
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    {[["Call","📞"],["Email","✉️"],["Meeting","🤝"],["Visit","🏠"],["WhatsApp","💬"],["Note","📝"]].map(([t,icon])=>(
-                      <button key={t} onClick={()=>setLeadLogForm(f=>({...f,type:t}))}
-                        style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${leadLogForm.type===t?"#0F2540":"#E2E8F0"}`,background:leadLogForm.type===t?"#0F2540":"#fff",color:leadLogForm.type===t?"#fff":"#4A5568",fontSize:12,cursor:"pointer",fontWeight:leadLogForm.type===t?600:400,display:"flex",alignItems:"center",gap:4}}>
-                        <span>{icon}</span>{t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {/* Date/Time + Duration (only for Call/Meeting/Visit) */}
-                {["Call","Meeting","Visit"].includes(leadLogForm.type)&&(
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
-                    <div>
-                      <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>📅 Date & Time</label>
-                      <input type="datetime-local" value={leadLogForm.scheduled_at} onChange={e=>setLeadLogForm(f=>({...f,scheduled_at:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1.5px solid #E2E8F0",fontSize:12,fontFamily:"'Inter',sans-serif",boxSizing:"border-box"}}/>
-                    </div>
-                    <div>
-                      <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>⏱ Duration</label>
-                      <select value={leadLogForm.duration_mins} onChange={e=>setLeadLogForm(f=>({...f,duration_mins:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1.5px solid #E2E8F0",fontSize:12,fontFamily:"'Inter',sans-serif",boxSizing:"border-box",background:"#fff"}}>
-                        <option value="">Select...</option>
-                        <option value="15">15 mins</option>
-                        <option value="30">30 mins</option>
-                        <option value="45">45 mins</option>
-                        <option value="60">60 mins</option>
-                        <option value="90">90 mins</option>
-                        <option value="120">120 mins</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-                {/* Discussion Notes */}
-                <div style={{marginBottom:14}}>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>💬 Discussion / Key Details</label>
-                  <textarea value={leadLogForm.note} onChange={e=>setLeadLogForm(f=>({...f,note:e.target.value}))} placeholder="What was discussed? Key takeaways, buyer preferences, objections, next steps..." rows={4} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1.5px solid #E2E8F0",fontSize:13,fontFamily:"'Inter',sans-serif",resize:"vertical",boxSizing:"border-box"}}/>
-                </div>
-                {/* Schedule Next Step toggle */}
-                <div style={{padding:"10px 12px",background:"#F8FAFC",border:"1px solid #E8EDF4",borderRadius:8,marginBottom:14}}>
-                  <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,fontWeight:600,color:"#0F2540"}}>
-                    <input type="checkbox" checked={leadLogForm.ns_enabled} onChange={e=>setLeadLogForm(f=>({...f,ns_enabled:e.target.checked}))}/>
-                    📅 Schedule a next step
-                  </label>
-                  {leadLogForm.ns_enabled&&(
-                    <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #E2E8F0",display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                      <div>
-                        <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Type</label>
-                        <select value={leadLogForm.ns_type} onChange={e=>setLeadLogForm(f=>({...f,ns_type:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1.5px solid #E2E8F0",fontSize:11,fontFamily:"'Inter',sans-serif",boxSizing:"border-box",background:"#fff"}}>
-                          {["Call","Email","Meeting","Visit","WhatsApp","Task"].map(t=><option key={t} value={t}>{t}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Due Date</label>
-                        <input type="date" value={leadLogForm.ns_due} onChange={e=>setLeadLogForm(f=>({...f,ns_due:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1.5px solid #E2E8F0",fontSize:11,fontFamily:"'Inter',sans-serif",boxSizing:"border-box"}}/>
-                      </div>
-                      <div style={{gridColumn:"span 2"}}>
-                        <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Note (optional)</label>
-                        <input type="text" value={leadLogForm.ns_note} onChange={e=>setLeadLogForm(f=>({...f,ns_note:e.target.value}))} placeholder="e.g. Follow up on budget question" style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1.5px solid #E2E8F0",fontSize:11,fontFamily:"'Inter',sans-serif",boxSizing:"border-box"}}/>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div style={{padding:"12px 20px",borderTop:"1px solid #E2E8F0",display:"flex",justifyContent:"flex-end",gap:8,background:"#F8FAFC",borderRadius:"0 0 14px 14px"}}>
-                <button onClick={()=>setShowLeadLog(false)} disabled={savingLeadLog} style={{padding:"8px 18px",borderRadius:7,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:savingLeadLog?"not-allowed":"pointer",color:"#4A5568"}}>Cancel</button>
-                <button onClick={async()=>{
-                  const f = leadLogForm;
-                  const hasNextStep = f.ns_enabled && f.ns_due;
-                  if(!(f.note||"").trim() && !hasNextStep){showToast("Please add discussion notes or set a next step","error");return;}
-                  setSavingLeadLog(true);
-                  const isScheduled = f.scheduled_at && new Date(f.scheduled_at) > new Date();
-                  const nsLine = hasNextStep ? `\n\n✅ Next: ${f.ns_type} on ${new Date(f.ns_due).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}${f.ns_note?(" — "+f.ns_note):""}` : "";
-                  const noteText = [
-                    f.note,
-                    nsLine,
-                    f.scheduled_at?("\n📅 Scheduled: "+new Date(f.scheduled_at).toLocaleString("en-AE",{dateStyle:"medium",timeStyle:"short"})):"",
-                    f.duration_mins?("\n⏱ Duration: "+f.duration_mins+" mins"):"",
-                  ].filter(Boolean).join("");
-                  // Save activity (lead-only, no opp coupling)
-                  const{data:actRow,error:actErr}=await supabase.from("activities").insert({
-                    lead_id:selLead.id,
-                    type:f.type,
-                    note:noteText,
-                    scheduled_at:f.scheduled_at||null,
-                    status:isScheduled?"upcoming":"completed",
-                    user_id:currentUser.id,
-                    user_name:currentUser.full_name,
-                    lead_name:selLead.name,
-                    company_id:currentUser.company_id||null,
-                    activity_subtype:"free_note",
-                  }).select().single();
-                  if(actErr){showToast("Failed to log activity","error");setSavingLeadLog(false);return;}
-                  setActivities(p=>[actRow,...p]);
-                  // Create reminder if next step enabled (related_lead_id only, no opp)
-                  if(hasNextStep){
-                    const triggerAt = new Date(f.ns_due);
-                    triggerAt.setHours(9,0,0,0);
-                    const{error:remErr}=await supabase.from("reminders").insert({
-                      company_id: currentUser.company_id || null,
-                      user_id: currentUser.id,
-                      related_lead_id: selLead.id,
-                      related_activity_id: actRow.id,
-                      trigger_at: triggerAt.toISOString(),
-                      title: `${f.ns_type} — ${selLead.name}`,
-                      body: f.ns_note || "",
-                      reason: "lead_followup",
-                      status: "pending",
-                    });
-                    if(remErr) console.warn("Reminder create failed:", remErr.message);
-                  }
-                  showToast(`${f.type} logged${hasNextStep?" + next step scheduled":""}`,"success");
-                  setShowLeadLog(false);
-                  setLeadLogForm({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
-                  setSavingLeadLog(false);
-                }} disabled={savingLeadLog} style={{padding:"8px 22px",borderRadius:7,border:"none",background:savingLeadLog?"#94A3B8":"#0F2540",color:"#fff",fontSize:12,fontWeight:700,cursor:savingLeadLog?"not-allowed":"pointer"}}>
-                  {savingLeadLog?"Saving...":"💾 Save"}
-                </button>
-              </div>
-            </div>
-          </div>
+          <LogActivityModal
+            lead={selLead}
+            opp={null}
+            currentUser={currentUser}
+            showToast={showToast}
+            defaultType={leadLogForm.type||"Call"}
+            onClose={()=>setShowLeadLog(false)}
+            onSaved={async(data, nextStepIntent)=>{
+              setActivities(p=>[data,...p]);
+              if(nextStepIntent && nextStepIntent.due){
+                const triggerAt = new Date(nextStepIntent.due);
+                triggerAt.setHours(9,0,0,0);
+                const{error:remErr}=await supabase.from("reminders").insert({
+                  company_id: currentUser.company_id || null,
+                  user_id: currentUser.id,
+                  related_lead_id: selLead.id,
+                  related_activity_id: data.id,
+                  trigger_at: triggerAt.toISOString(),
+                  title: `${nextStepIntent.type} — ${selLead.name}`,
+                  body: nextStepIntent.note || "",
+                  reason: "lead_followup",
+                  status: "pending",
+                });
+                if(remErr) console.warn("Reminder create failed:", remErr.message);
+              }
+              setShowLeadLog(false);
+            }}
+          />
         )}
 
         {leadOpps.length>0&&(
