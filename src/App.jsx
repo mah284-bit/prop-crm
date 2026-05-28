@@ -4985,6 +4985,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [reminders,  setReminders]  = useState([]); // Phase E W3 — pending follow-ups for this opp
   const [payments,   setPayments]   = useState([]);
   const [contract,   setContract]   = useState(null);
+  const [commissionInvoice, setCommissionInvoice] = useState(null); // Day 18 — in-opp commission invoice visibility
   const [saving,     setSaving]     = useState(false);
   const [showLog,    setShowLog]    = useState(false);
   const [showPayment,setShowPayment]= useState(false);
@@ -5109,6 +5110,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       if(error){console.warn("Proposal load failed:",error);}
       setProposals(data||[]);
     });
+    supabase.from("pp_commission_invoices").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).limit(1).then(({data,error})=>{ if(error){console.warn("Commission invoice load failed:",error);} setCommissionInvoice(data?.[0]||null); });
   },[opp.id]);
 
   const GATED_STAGES = ["Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
@@ -6770,6 +6772,58 @@ You will become the assigned agent.`);
                             </div>
                           </div>
                         </div>
+                        {/* Day 18 — In-Opp Commission Invoice Visibility */}
+                        {(() => {
+                          const ci = commissionInvoice;
+                          const INV_META = {
+                            draft:          { bg:"#F3F4F6", fg:"#4B5563", label:"DRAFT" },
+                            issued:         { bg:"#DBEAFE", fg:"#1E40AF", label:"ISSUED" },
+                            partially_paid: { bg:"#FEF3C7", fg:"#92400E", label:"PARTIALLY PAID" },
+                            paid:           { bg:"#DCFCE7", fg:"#166534", label:"PAID" },
+                            disputed:       { bg:"#FEE2E2", fg:"#991B1B", label:"DISPUTED" },
+                            written_off:    { bg:"#F3F4F6", fg:"#6B7280", label:"WRITTEN OFF" },
+                          };
+                          const fmtAED = (n) => `AED ${Number(n||0).toLocaleString()}`;
+                          return (
+                            <div style={{marginTop:14,padding:"14px 16px",background:"#FFFDF7",border:"1px solid #E8DCC0",borderRadius:10}}>
+                              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                                <div style={{fontSize:11,fontWeight:700,color:"#7A5C16",textTransform:"uppercase",letterSpacing:".5px"}}>
+                                  🧾 Commission Invoice
+                                </div>
+                                <span style={{fontSize:10,fontWeight:600,color:"#94A3B8"}}>
+                                  Manage in 💰 Commission Outstanding
+                                </span>
+                              </div>
+                              {ci ? (
+                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+                                  <div style={{padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Invoice</div>
+                                    <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{ci.invoice_number || "—"}</div>
+                                    <div style={{marginTop:4}}>
+                                      <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:(INV_META[ci.invoice_status]||INV_META.draft).bg,color:(INV_META[ci.invoice_status]||INV_META.draft).fg}}>
+                                        {(INV_META[ci.invoice_status]||INV_META.draft).label}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div style={{padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Net Commission</div>
+                                    <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{fmtAED(ci.commission_net)}</div>
+                                    <div style={{fontSize:10,color:"#16A34A",marginTop:3}}>Received: {fmtAED(ci.amount_received)}</div>
+                                  </div>
+                                  <div style={{padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Outstanding</div>
+                                    <div style={{fontSize:13,fontWeight:700,color:"#B45309"}}>{fmtAED(Number(ci.commission_net||0)-Number(ci.amount_received||0))}</div>
+                                    {ci.invoice_date && <div style={{fontSize:10,color:"#64748B",marginTop:3}}>Raised {new Date(ci.invoice_date).toLocaleDateString("en-AE",{day:"numeric",month:"short"})}</div>}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div style={{padding:"10px 12px",background:"#fff",borderRadius:7,border:"1px dashed #E2E8F0",fontSize:11,color:"#64748B"}}>
+                                  No invoice raised yet. A draft commission invoice is auto-created when this deal reaches <strong>SPA Signed</strong>.
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                         <div style={{marginTop:14,padding:"9px 12px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:7,fontSize:11,color:"#0C4A6E"}}>
                           💡 <strong>Tip:</strong> All financial data sourced from latest proposal (V{proposals.length||"—"}). To change, send a revised proposal.
                         </div>
