@@ -12155,6 +12155,7 @@ function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, 
     person_id:"", ns_enabled:false, ns_type:"Call", ns_due:"", ns_note:"",
   });
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);  // Day 18: synchronous double-click guard (ref flips instantly, before re-render)
   const { persons: actPersons } = useLeadPersons(lead?.id);
   const sf = k => e => setForm(f=>({...f,[k]:e.target.value}));
 
@@ -12162,6 +12163,8 @@ function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, 
     if(!lead){showToast("No lead found","error");return;}
     const hasNextStep = form.ns_enabled && form.ns_due;
     if(!(form.note||"").trim() && !hasNextStep){showToast("Please add discussion notes or set a next step","error");return;}
+    if(savingRef.current) return;  // Day 18: block double-click — a save already in flight
+    savingRef.current = true;
     setSaving(true);
     try{
       const isScheduled = form.scheduled_at && new Date(form.scheduled_at) > new Date();
@@ -12192,7 +12195,7 @@ function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, 
       if(error)throw error;
       const nextStepIntent = hasNextStep ? {type:form.ns_type, due:form.ns_due, note:form.ns_note} : null;
       onSaved(data, nextStepIntent);
-    }catch(e){showToast(e.message,"error"); setSaving(false);}
+    }catch(e){showToast(e.message,"error"); setSaving(false); savingRef.current=false;}
   };
 
   return(
