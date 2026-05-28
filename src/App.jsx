@@ -12145,6 +12145,8 @@ function CoachPage({ opps, leads, activities, users, currentUser, showToast, onN
   const isManager = ["super_admin", "admin", "sales_manager"].includes(role);
   const SCOPES = [
     { id: "mine",      label: "My Pipeline",  icon: "👤", managerOnly: false },
+    { id: "all_opps",  label: "All Opportunities", icon: "🎯", managerOnly: false },
+    { id: "attention", label: "Needs Attention",   icon: "🚨", managerOnly: false },
     { id: "stage",     label: "By Stage",     icon: "📊", managerOnly: false },
     { id: "segment",   label: "By Segment",   icon: "🎯", managerOnly: false },
     { id: "portfolio", label: "Portfolio",    icon: "🏛", managerOnly: true  },
@@ -12155,7 +12157,7 @@ function CoachPage({ opps, leads, activities, users, currentUser, showToast, onN
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
-  const STAGES = ["New", "Contacted", "Site Visit", "Proposal Sent", "Negotiation", "Reserved", "SPA Signed"];
+  const STAGES = ["New", "Contacted", "Site Visit", "Proposal Sent", "Negotiation", "Offer Accepted", "Reserved", "SPA Signed"];
   const SEGMENTS = [
     { id: "investor", label: "Investor" },
     { id: "owner_occupier", label: "Owner-Occupier" },
@@ -12166,6 +12168,64 @@ function CoachPage({ opps, leads, activities, users, currentUser, showToast, onN
   const AI_PURPLE = "#6D28D9";
   const AI_TEAL = "#0E7490";
   const gradient = `linear-gradient(135deg, ${AI_PURPLE} 0%, ${AI_TEAL} 100%)`;
+
+  // ── Gather the deals for the selected scope (Phase 2) ──
+  const activeOpps = (opps || []).filter(o =>
+    o.stage !== "Closed Won" && o.stage !== "Closed Lost" && o.status !== "On Hold" && o.status !== "Cancelled"
+  );
+  const scopedOpps = (() => {
+    if (scope === "mine") return activeOpps.filter(o => o.assigned_to === currentUser?.id);
+    if (scope === "all_opps") return isManager ? activeOpps : activeOpps.filter(o => o.assigned_to === currentUser?.id);
+    if (scope === "attention") {
+      const base = isManager ? activeOpps : activeOpps.filter(o => o.assigned_to === currentUser?.id);
+      return base.filter(o => {
+        const acts = (activities || []).filter(a => a.opportunity_id === o.id).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const lastAt = acts[0]?.created_at || o.stage_updated_at || o.created_at;
+        const daysSince = lastAt ? Math.floor((Date.now() - new Date(lastAt).getTime()) / 86400000) : 999;
+        const daysStage = o.stage_updated_at ? Math.floor((Date.now() - new Date(o.stage_updated_at).getTime()) / 86400000) : 0;
+        return daysSince >= 7 || daysStage >= 14;
+      });
+    }
+    if (scope === "stage") {
+      const base = isManager ? activeOpps : activeOpps.filter(o => o.assigned_to === currentUser?.id);
+      return base.filter(o => o.stage === stageFilter);
+    }
+    if (scope === "segment") {
+      const base = isManager ? activeOpps : activeOpps.filter(o => o.assigned_to === currentUser?.id);
+      return base.filter(o => {
+        const ld = (leads || []).find(l => l.id === o.lead_id);
+        return ld?.buyer_intent === segmentFilter;
+      });
+    }
+    if (scope === "portfolio") return isManager ? activeOpps : [];
+    return [];
+  })();
+  // Enrich each opp with the context the AI needs
+  const enrichedDeals = scopedOpps.map(o => {
+    const ld = (leads || []).find(l => l.id === o.lead_id);
+    const oppActs = (activities || []).filter(a => a.opportunity_id === o.id)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const lastActAt = oppActs[0]?.created_at || o.stage_updated_at || o.created_at;
+    const daysInStage = o.stage_updated_at ? Math.floor((Date.now() - new Date(o.stage_updated_at).getTime()) / 86400000) : null;
+    const daysSinceActivity = lastActAt ? Math.floor((Date.now() - new Date(lastActAt).getTime()) / 86400000) : null;
+    const agent = (users || []).find(u => u.id === o.assigned_to);
+    return {
+      id: o.id,
+      title: o.title || "(untitled)",
+      lead_name: ld?.name || "Unknown",
+      buyer_intent: ld?.buyer_intent || null,
+      stage: o.stage,
+      value: o.budget || null,
+      days_in_stage: daysInStage,
+      days_since_activity: daysSinceActivity,
+      activity_count: oppActs.length,
+      agent_name: agent?.full_name || "Unassigned",
+    };
+  }).sort((a, b) => (b.days_since_activity || 0) - (a.days_since_activity || 0));
+
+  const dealCount = enrichedDeals.length;
+  const totalValue = enrichedDeals.reduce((s, d) => s + (d.value || 0), 0);
+
   return (
     <div style={{ maxWidth: 1000, margin: "0 auto" }}>
       <div style={{ marginBottom: 18 }}>
@@ -12224,18 +12284,28 @@ function CoachPage({ opps, leads, activities, users, currentUser, showToast, onN
         {scope === "mine" && (
           <div style={{ fontSize: 12, color: "#64748B", fontStyle: "italic" }}>Analysing all of your active deals.</div>
         )}
+        {scope === "all_opps" && (
+          <div style={{ fontSize: 12, color: "#64748B", fontStyle: "italic" }}>Analysing {isManager ? "every active deal" : "all your active deals"} as one book.</div>
+        )}
+        {scope === "attention" && (
+          <div style={{ fontSize: 12, color: "#B45309", fontStyle: "italic" }}>🚨 Deals stalling — no activity 7+ days or stuck in stage 14+ days.</div>
+        )}
       </div>
-      <div style={{ background: "#fff", border: "1px dashed #CBD5E1", borderRadius: 14, padding: "40px 20px", textAlign: "center" }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>✨</div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: "#0F2540", marginBottom: 6 }}>Ready to analyse</div>
-        <div style={{ fontSize: 13, color: "#94A3B8", marginBottom: 18 }}>
-          Scope: <strong style={{ color: "#0F2540" }}>{SCOPES.find(s => s.id === scope)?.label}</strong>
-          {scope === "stage" ? ` · ${stageFilter}` : ""}
-          {scope === "segment" ? ` · ${SEGMENTS.find(s => s.id === segmentFilter)?.label}` : ""}
+      <div style={{ background: "#fff", border: "1px solid #E8EDF4", borderRadius: 14, padding: "28px 20px", textAlign: "center" }}>
+        <div style={{ fontSize: 13, color: "#64748B", marginBottom: 14 }}>
+          {dealCount > 0 ? (
+            <>Found <strong style={{ color: "#0F2540", fontSize: 18 }}>{dealCount}</strong> active {dealCount === 1 ? "deal" : "deals"}
+              {totalValue > 0 ? <> · <strong style={{ color: "#0F2540" }}>AED {(totalValue / 1e6).toFixed(2)}M</strong> total value</> : null}</>
+          ) : (
+            <span style={{ color: "#94A3B8" }}>No active deals match this scope.</span>
+          )}
         </div>
-        <button disabled
-          style={{ padding: "11px 26px", borderRadius: 10, border: "none", background: "#CBD5E1", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "not-allowed" }}>
-          ✨ Analyse (wiring in progress)
+        <button disabled={dealCount === 0}
+          style={{ padding: "11px 28px", borderRadius: 10, border: "none",
+            background: dealCount === 0 ? "#CBD5E1" : "linear-gradient(135deg, #6D28D9 0%, #0E7490 100%)",
+            color: "#fff", fontSize: 14, fontWeight: 700, cursor: dealCount === 0 ? "not-allowed" : "pointer",
+            boxShadow: dealCount === 0 ? "none" : "0 2px 10px rgba(109,40,217,.25)" }}>
+          ✨ Analyse {dealCount > 0 ? `${dealCount} ${dealCount === 1 ? "deal" : "deals"}` : ""} (AI next)
         </button>
       </div>
     </div>
