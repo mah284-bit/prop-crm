@@ -868,3 +868,41 @@ This principle drove the modal consolidation (founder steered against my "lean p
 ---
 
 *End of Day 18 capture — 13 commits, two major features (consolidation refactor + broad AI Coach), three polishes, one critical env-injection lesson learned.*
+
+---
+
+## Phase 2 capture — App-wide back-navigation history
+
+**Date captured:** 29 May 2026 (Day 18 evening)
+**Source:** Founder observation while testing AI Coach drill-in
+**Founder quote:** *"this is the problem across the app... keep this as a last step of ensuring the entire app back and browser back will follow back the same track as it traveled instead of taking piece by piece"*
+
+### Problem
+"Back" buttons across the app reset to module defaults (e.g., Opps list) rather than returning to where the user actually came from. Most visible today:
+- AI Coach → click deal card → Opp Detail → "← Back" goes to Opps list (not Coach)
+- Same pattern exists in Leads → Opp navigation, Dashboard → drill-ins, etc.
+- Browser back button also doesn't follow user's actual path
+
+### Architect's call (per founder's steering)
+Do NOT patch this per-surface (Coach-back, Leads-back, Dashboard-back, etc). That would duplicate the same fix in N places — the very duplication disease the Day 18 consolidation refactor cured.
+
+Instead: build ONE app-wide navigation history stack. Every drill-in pushes its origin onto the stack. Every "Back" reads from the stack. Browser back/forward integrates with the same stack via history.pushState.
+
+### Scope
+- A navigation context / hook (e.g., useNavStack)
+- Push on drill-in, pop on back
+- All existing "Back" buttons rewired to use it (single rewire, not per-surface)
+- Browser history sync (popstate listener)
+- Optional: breadcrumb display
+
+### Effort
+Likely 1-2 days. Touches App.jsx top-level navigation + every drill-in surface. Worth doing once, cleanly.
+
+### Timing
+Founder steering: "last step" — after other Phase 2 items, but before scaling beyond pilot. Demo-acceptable as-is (users adapt; not a blocker).
+
+### Status
+- [x] Captured
+- [ ] Designed
+- [ ] Built
+
