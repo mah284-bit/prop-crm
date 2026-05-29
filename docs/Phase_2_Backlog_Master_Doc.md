@@ -628,3 +628,243 @@ Full embedded action UX (Record Payment / Issue Invoice / Mark Disputed from ins
 
 ### Day 18 work order
 **PRIORITY 1.** Closes broker workflow gap. Demo critical.
+
+---
+
+# DAY 18 (Thursday 29 May 2026) — 13 commits, two major features shipped
+
+This section captures Day 18: a major refactor, a flagship AI feature, and several pre-demo polishes.
+
+---
+
+## Day 18 feature 1 — Activity-Logging Modal Consolidation + Person-Tagging
+
+**Date captured:** 29 May 2026
+**Source:** Founder caught architect about to repeat the duplication mistake
+**Founder quote:** *"if we are adding it again, then we are repeating the mistake — is it possible to correct and move it out so it uses same everywhere"*
+**Founder principle:** *"4-6 hours now is better than breaking our head later when we come back to correct"*
+
+### What this fixed
+PropCRM had THREE activity-logging modals in App.jsx:
+1. Opp Detail inline modal (logForm / showLog)
+2. Lead Detail inline modal (leadLogForm / showLeadLog)
+3. A standalone LogActivityModal component (orphan, unused)
+
+Opp and lead modals were copy-paste twins. Dev2_Refactor_Activity_Logging.md flagged this on Day 11 as architectural debt.
+
+### What we did
+Consolidated all three into ONE canonical LogActivityModal component. Phased rollout with golden-mark commits:
+- Phase A — upgraded standalone to canonical with person dropdown (5b65a65)
+- Phase A+ — full feature parity: next-step, reminders, note composition (70f0c6b)
+- Phase B — wired into Opportunity Detail, replaced 74 lines (d086c3f)
+- Phase C — wired into Lead Detail, replaced 130 lines (84e75a3)
+- Phase D — removed dead saveLog handler + orphan state, 62 lines (e3d6cd0)
+- Phase E — person-tag display on activity timeline cards (df3be76)
+
+### Design contract chosen
+Modal does the activity INSERT, returns onSaved(activity, nextStepIntent). Each parent (opp, lead) owns its own reminders state and creates reminders from the returned intent. Clean separation — no threaded state setters.
+
+### Person-tagging — the new feature added on top
+New activities.person_id column (FK to lead_persons, ON DELETE SET NULL). Modal fetches lead persons via useLeadPersons() and shows "Who did you talk to?" dropdown. Timeline cards render purple "👤 Name · Role" badge resolved at render via personsById map — NOT denormalized.
+
+### Architect's call: normalized lookup, NOT denormalized
+A person's name/role can change (typo fix, role transfer). Denormalized copies would go stale. The Contacts Subsystem was built explicitly for single-source-of-truth — baking copies into activities would re-introduce duplication in data form.
+
+### Numbers
+- Net code change: ~200 lines removed while ADDING person-tagging
+- Bundle: 1,069 kB → 1,057 kB
+- Time: under an hour (vs 4-6 hr estimate — founder's instinct was more accurate than mine)
+- Zero rollbacks needed across 6 golden-mark commits
+
+### Status
+- [x] Schema migrated (activities.person_id + index)
+- [x] Canonical modal built + wired into both surfaces
+- [x] Person badges render on activity timeline
+- [x] Demo personas' 13 scripted activities backfilled with person_id
+- [x] Test-noise activities cleaned from demo data
+- [x] Dev2_Refactor_Activity_Logging.md debt closed
+
+
+---
+
+## Day 18 feature 2 — Broad AI Coach (the point-4 vision shipped)
+
+**Date captured:** 29 May 2026
+**Source:** Founder's point-4 framing of the 4 AI surfaces in the app
+**Founder quote:** *"the 4th is the AI Coach giving honest feedback about the Opp, here I had asked a question this cant be singled out like this but go broader and have options to look for what we want to on opps, or any other cross section"*
+
+### Founder's framing of the 4 AI surfaces
+1. PropPulse — market intelligence, planned for paid feeds, ~20 developers. CLEAN. Hide from brokers initially (admin/service-provider only).
+2. AI Bubble — currently ChatGPT-style info-only; should be reactive + actionable. Polish pending.
+3. Customer glimpse — quick customer snapshot. Polish pending.
+4. AI Coach — was buried as a tab inside ONE opp. Should be broader: any cross-section.
+
+### What we shipped
+New top-level "✨ AI Coach" nav item (after PropPulse). Per-opp Coach untouched — this ADDS the broad scopes.
+
+Role-aware scope selector (6 scopes):
+- My Pipeline — agent's own active deals
+- All Opportunities — whole active book as one (founder ask)
+- Needs Attention — auto-surface stalling deals (architect addition, highest-value triage)
+- By Stage — deals in a chosen stage
+- By Segment — by buyer_intent (Investor / Owner-Occupier / Hybrid / Corporate / Reseller)
+- Portfolio — entire company book (manager/admin only)
+
+Roles: agents see own data; managers/admins unlock cross-agent + portfolio.
+
+### How it works
+1. Pick scope → gatherer filters opps + enriches with days_in_stage, days_since_activity, activity_count, agent, buyer_intent
+2. Click Analyse → up to 40 deals to aiInvoke (server-side Anthropic via /api/ai)
+3. AI returns JSON: {summary, deals: [{deal_id, deal_name, priority, issue, recommended_move}]}
+4. UI: gradient summary card + ranked deal cards (HIGH/MEDIUM/LOW pills) — each clickable, navigates to that opp
+
+### Verified output quality (live test)
+Returned analysis like:
+- "Pipeline health: CRITICAL. AED 46.7M across 23 deals, 13 stuck 15+ days..."
+- Cited deals by name (Al Khaleej AED 12M penthouse, Rajesh Villa AED 3.5M)
+- UAE vocabulary (40/60 off-plan, DLD breakdown, SPA registration)
+- Time-bounded moves ("within 48 hours", "today")
+- Distinguished priority intelligently
+
+### Architect's design calls
+- Placement: dedicated top-level page (not Dashboard panel) — cleanest, most demo-able
+- Per-opp Coach kept untouched
+- Modal-pure gatherer: reads props, no side effects until Analyse clicked
+- Role restriction enforced in gatherer code, not just UI
+
+### Phases shipped
+- 2e72c83 Phase 1: nav item, page shell, role-aware selector
+- 3576314 Phase 2: scope gathering, live deal-count + total-value
+- 364e8e4 Phase 3: AI call + ranked results UI + clickable cards
+- d6373d4 Final: env fix + parse hardening (AI works locally)
+
+### Status
+- [x] Nav + page + scope selector live
+- [x] Gatherer accurate (My Pipeline = 23 / AED 46.70M matches dashboard)
+- [x] AI returning rich analysis with real deal names
+- [x] Clickable deal cards navigate to opp
+- [ ] Test on deployed Vercel preview before demo
+
+
+---
+
+## Day 18 polish — Double-click duplicate guard
+
+**Date captured:** 29 May 2026
+**Source:** Founder spotted a duplicate "Suresh confirmed site visit" activity from one double-click during testing
+**Founder framing:** *"without closing we should not allow create another activity, but can have parallel activities also"*
+
+### Problem
+The disabled-while-saving button wasn't enough. setSaving(true) is async — a second click in the gap before re-render re-entered save() and fired a duplicate INSERT.
+
+### Fix
+Synchronous useRef guard (savingRef) inside the canonical LogActivityModal. The ref flips instantly, before any re-render. Second click sees savingRef.current === true and returns immediately.
+
+### Ordering (matters)
+1. Validation runs first (empty-note check) — returns WITHOUT locking ref, so retry works
+2. Guard + lock come AFTER validation passes
+3. Catch resets savingRef.current = false (error path unlocks for retry)
+4. Success path needs no reset (modal unmounts on onSaved)
+
+Implements founder's nuance exactly: block IDENTICAL activity while in flight, allow different parallel activities.
+
+### Commit
+3604414 — verified: rapid double-click → 1 row; empty-note → validation + retry works.
+
+---
+
+## Day 18 polish — In-Opp Commission Invoice Visibility (PRIORITY 1, shipped)
+
+**Date captured:** 27 May 2026 (Day 17 night, original); shipped 29 May 2026
+**Commit:** c5ff3ce
+
+Read-only status mirror inside Opp Detail Financials tab:
+- Invoice number + status (Draft/Issued/Partial/Paid)
+- Net / Received / Outstanding breakdown
+- Aging
+- "Manage in Commission Outstanding →" link for actions
+
+Closes the broker workflow gap (revenue visibility without leaving the opp).
+Full embedded actions deferred to Phase 2.6.
+
+---
+
+## Day 18 LESSON LEARNED — vercel dev env-injection on Windows
+
+**Date captured:** 29 May 2026 (after hours of debugging)
+**Severity:** Lost ~2-3 hours before finding root cause. Worth documenting.
+
+### Symptom
+AI Coach and PropPulse both returned: "ANTHROPIC_API_KEY is not set in Vercel environment variables" — repeatedly, despite the key being:
+- ✅ In Vercel cloud (Development, Preview, Production)
+- ✅ In .env.local (after vercel env pull)
+- ✅ Exported in shell (108 chars confirmed)
+- ✅ Added to .env.development.local as fallback
+
+Function would print "[ai.js DEBUG] ANTHROPIC_API_KEY length: 0".
+
+### Root cause (the actual answer)
+On Windows + Git Bash, vercel dev reads env vars for SERVERLESS FUNCTIONS from .env (NOT .env.local).
+
+Our .env had only VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY. The new ANTHROPIC_API_KEY lived only in .env.local. So:
+- Frontend (Vite) read .env.local correctly → worked
+- Functions read .env → got nothing → "not set" error
+
+### The fix
+Add function-side keys (ANTHROPIC_API_KEY, SUPABASE_SERVICE_ROLE_KEY) to .env (git-ignored, safe). Both files now have the keys.
+
+### Diagnostic that finally found it
+One-line console.log in api/ai.js:
+console.log("[ai.js DEBUG] env keys present:", Object.keys(process.env).filter(k => k.includes("ANTHROPIC") || k.includes("SUPABASE")));
+
+Output showed only what .env contained — instantly pinpointed the right file.
+
+### LESSON FOR NEXT TIME
+When vercel dev functions can't see an env var on Windows: check .env first, not .env.local. Add function-side keys there. Frontend keys can stay in .env.local.
+
+### Secondary observation
+.vercel/ now uses repo.json (multi-project format) instead of project.json — this is current Vercel CLI behavior, NOT a bug. Don't chase it.
+
+
+---
+
+## Day 18 polish — Demo data realism
+
+**Date captured:** 29 May 2026
+- Backfilled person_id on 13 scripted demo activities (Al Khaleej, Anoop, Mohammed)
+- Mapped each activity to the right stakeholder by note content (Mariam/Ahmed/Khalid for Al Khaleej; Suresh/Anoop/Priyanka for Anoop; Hassan/Mohammed/Khalifa for Mohammed)
+- Cleaned 3 test-noise activities (manually-logged duplicates from modal testing)
+- Linked Al Khaleej commission invoice (AED 790K) to Nakheel (was "(Unlinked)")
+
+---
+
+## Day 18 — Pending captures for Phase 2
+
+### AI Coach polish (post-demo, low priority)
+- Caching: Coach re-analyses cost tokens every click. Cache result by (scope, filters, deal_count_hash) for ~5 min window.
+- Multi-scope drill-in: clicking a deal card from "Needs Attention" could trigger the per-opp Coach automatically.
+- Trend over time: store Coach summaries → show "this week vs last week" pipeline-health trend.
+
+### PropPulse on vercel dev (Windows)
+- Firing 20 parallel /api/collect-projects-v2 calls CRASHES vercel dev with Windows assertion errors (UV_HANDLE_CLOSING).
+- Real fix: serialize or batch (e.g., 3 parallel max). Works fine on deployed Vercel where each function gets its own runtime.
+- Not demo-critical (PropPulse is admin-only initially per founder's plan).
+
+### Dev2 → main merge planning
+- All Day 12-18 work is on dev2. main is stuck at the Day 11 Phase 2 docs commit (May 11).
+- Vercel deploys from main, so the demo URL (prop-crm-two.vercel.app) is 18 days behind.
+- Before June 15 demo: plan a clean dev2 → main merge → triggers a Vercel rebuild → verify AI Coach + person-tagging on the live URL.
+
+---
+
+## Day 18 founder principle (reinforced)
+
+> *"4-6 hours now is better than breaking our head later when we come back to correct"*
+
+This principle drove the modal consolidation (founder steered against my "lean patch" recommendation). Outcome: refactor took under an hour (twins were simpler than my risk estimate) and eliminated the very debt that Dev2_Refactor_Activity_Logging.md had flagged on Day 11.
+
+**Founder's instinct on structural debt is reliable. Worth listening to when it surfaces again.**
+
+---
+
+*End of Day 18 capture — 13 commits, two major features (consolidation refactor + broad AI Coach), three polishes, one critical env-injection lesson learned.*
