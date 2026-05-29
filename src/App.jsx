@@ -2537,7 +2537,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   ]
 }`;
 
-      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const reply = await aiInvoke({ system, prompt: userPrompt, max_tokens: 3000 });
       const cleaned = reply.replace(/```json\s*/g,"").replace(/```\s*$/g,"").trim();
       let parsed;
       try { parsed = JSON.parse(cleaned); }
@@ -3477,7 +3477,7 @@ TASK: Pick the TOP 5 best matches (or fewer if fewer good fits). For each, give 
 
 RESPOND WITH VALID JSON ONLY in this exact shape:
 {"matches":[{"unit_id":"<id from list>","score":<0-100>,"reason":"<one-sentence reason>"}]}`;
-      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const reply = await aiInvoke({ system, prompt: userPrompt, max_tokens: 3000 });
       const cleaned = reply.replace(/```json\s*/g,"").replace(/```\s*$/g,"").trim();
       let parsed;
       try { parsed = JSON.parse(cleaned); }
@@ -3558,7 +3558,7 @@ BROKER:
 LANGUAGE: English${arabicLeaning ? " (the buyer is from an Arabic-speaking region — feel free to add a brief Arabic greeting like 'السلام عليكم' if culturally appropriate, but keep the body in English unless instructed otherwise)" : ""}
 
 Write the cover message now. Keep it under 200 words.`;
-      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const reply = await aiInvoke({ system, prompt: userPrompt, max_tokens: 3000 });
       // Strip any accidental markdown fences
       const cleaned = reply.replace(/^```[a-z]*\s*/i,"").replace(/```\s*$/,"").trim();
       setCoverNotes(cleaned);
@@ -3634,7 +3634,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   "validity_days": <one of: 7 | 10 | 14 | 21>,
   "reasoning": "<2-3 short sentences explaining the recommendations>"
 }`;
-      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const reply = await aiInvoke({ system, prompt: userPrompt, max_tokens: 3000 });
       const cleaned = reply.replace(/```json\s*/g,"").replace(/```\s*$/g,"").trim();
       let parsed;
       try { parsed = JSON.parse(cleaned); }
@@ -5212,7 +5212,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   ]
 }`;
 
-      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const reply = await aiInvoke({ system, prompt: userPrompt, max_tokens: 3000 });
       const cleaned = reply.replace(/```json\s*/g,"").replace(/```\s*$/g,"").trim();
       let parsed;
       try { parsed = JSON.parse(cleaned); }
@@ -9580,7 +9580,7 @@ You will become the assigned agent.`);
    Lets any component call Claude via the existing /api/ai endpoint
    (ANTHROPIC_API_KEY lives in Vercel env, never in the browser).
 ═══════════════════════════════════════════════════════════════ */
-async function aiInvoke({ system, prompt, messages }) {
+async function aiInvoke({ system, prompt, messages, max_tokens }) {
   // Either pass a single prompt (becomes one user message) or pass full messages array
   const msgs = messages || [{ role: "user", content: prompt || "" }];
   const cleaned = msgs
@@ -9588,6 +9588,7 @@ async function aiInvoke({ system, prompt, messages }) {
     .map(m => ({ role: m.role, content: m.content }));
   const body = { messages: cleaned };
   if (system) body.system = system;
+  if (max_tokens) body.max_tokens = max_tokens;
   const res = await fetch("/api/ai", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -12280,15 +12281,22 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   ]
 }
 Rank up to 6 deals, highest priority first. If a deal is healthy, you may omit it.`;
-      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const reply = await aiInvoke({ system, prompt: userPrompt, max_tokens: 3000 });
       const cleaned = reply.replace(/```json\s*/g, "").replace(/```\s*$/g, "").trim();
-      let parsed;
-      try { parsed = JSON.parse(cleaned); }
-      catch (e) {
+      // Robust JSON parse — LLMs sometimes emit trailing commas, smart quotes, or partial trailing junk
+      const tryParse = (s) => {
+        try { return JSON.parse(s); } catch { return null; }
+      };
+      const normalize = (s) => s
+        .replace(/[\u201C\u201D]/g, '"')   // smart double quotes → "
+        .replace(/[\u2018\u2019]/g, "'")   // smart single quotes → '
+        .replace(/,(\s*[\}\]])/g, "$1");   // strip trailing commas
+      let parsed = tryParse(cleaned) || tryParse(normalize(cleaned));
+      if (!parsed) {
         const m = cleaned.match(/\{[\s\S]*\}/);
-        if (!m) throw new Error("AI response was not valid JSON");
-        parsed = JSON.parse(m[0]);
+        if (m) parsed = tryParse(m[0]) || tryParse(normalize(m[0]));
       }
+      if (!parsed) throw new Error("AI response was not valid JSON");
       setResult({
         summary: parsed.summary || "",
         deals: Array.isArray(parsed.deals) ? parsed.deals.slice(0, 6) : [],
