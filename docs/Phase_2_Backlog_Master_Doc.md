@@ -906,3 +906,72 @@ Founder steering: "last step" — after other Phase 2 items, but before scaling 
 - [ ] Designed
 - [ ] Built
 
+
+---
+
+# DAY 18 EVENING — COMPREHENSIVE PHASE 2 AUDIT (17-item re-scope)
+
+**Date captured:** 29 May 2026 (Thursday evening, Day 18 continuation)
+**Trigger:** Founder principle *"1 step forward 2 steps back is bothering me"*
+**Outcome:** Full Phase 2 re-audit. Original 7 items expanded to 17. Now structured in 4 tiers.
+
+## What changed
+
+Founder raised **Lead Ingestion & Assignment** as a major missed item. Architect did the audit and added **9 more** he'd missed (Settings module, User & Team Management, Notifications, Dashboard Customization, Document Collection, Legacy Data Import, Master Data, Audit Trail, Data Export).
+
+## Full scope now lives in: `Phase_2_Strategic_Roadmap_v1.md`
+
+That document is the authoritative reference. This backlog points to it.
+
+## The 17 items + tiers (summary)
+
+### Tier 0 — Foundation (2-3 weeks post-demo)
+1. Real-Time State Sync (existing doc)
+2. **Lead Ingestion & Assignment** ⭐ NEW Day 18
+3. **Master Data / Reference Configuration** ⭐ NEW
+4. **Audit Trail / Compliance Log** ⭐ NEW
+
+### Tier 1 — Workflow (2-3 weeks)
+5. Activity Logging FAB (existing doc — Lead-side shipped)
+6. Lead Lifecycle remainder (existing doc — core shipped)
+7. Nav-History App-Wide (captured Day 18 evening, commit `61ec691`)
+8. Communications Overhaul (existing doc — 4 weeks)
+9. Proposal PDFs (existing doc, fits inside #8)
+
+### Tier 2 — Org Operations (3-4 weeks)
+10. **Settings Module** ⭐ NEW
+11. **User & Team Management UX** ⭐ NEW
+12. Role-Based Dashboard (existing doc)
+13. **Notifications & Reminders** ⭐ NEW
+14. **Dashboard Customization (BI-lite)** ⭐ NEW
+15. **Document Collection (KYC + Property assets)** ⭐ NEW
+16. **Legacy Data Import (Excel/CSV)** ⭐ NEW
+
+### Tier 3 — Compliance & Polish (1-2 weeks)
+17. **Data Export / Right-to-Delete / Backup** ⭐ NEW
+
+## Build sequence (10-12 weeks post-demo, 1-2 engineers)
+
+Detailed in `Phase_2_Strategic_Roadmap_v1.md` "THE 10-WEEK SEQUENCED PLAN" section.
+
+## Demo positioning
+
+> *"Phase 1 is the agent's operating power. Phase 2 is the brokerage's operating power. 17 items across 4 tiers. Ten weeks post-funding. Roadmap concrete, sequenced, dependencies-mapped."*
+
+Full Q&A bank in `Phase_2_Strategic_Roadmap_v1.md` "THE INVESTOR DEMO POSITIONING" section.
+
+## Founder principles preserved (Day 18 audit)
+
+- *"4-6 hours now is better than breaking our head later"* — drove modal consolidation, drove "ONE Settings module" call, drove "ONE nav history stack" call
+- *"1 step forward 2 steps back is bothering me"* — surfaced the need for this audit; cure for thrash is clarity of scope
+- *"Configurable but architect to advise market trend and ease of use"* — drove Lead Ingestion's 3-layer pre-shaped design
+
+## Status
+
+- [x] Audit completed Day 18 evening
+- [x] Strategic Roadmap v1 document written (~915 lines)
+- [x] All 17 items captured with problem/scope/effort/demo positioning
+- [x] 10-week sequenced build plan documented
+- [x] Investor demo Q&A bank prepared
+- [ ] Post-demo: split each new item into its own Phase 2 doc when build begins
+
