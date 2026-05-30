@@ -5120,6 +5120,18 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
     });
     supabase.from("pp_commission_invoices").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).limit(1).then(({data,error})=>{ if(error){console.warn("Commission invoice load failed:",error);} setCommissionInvoice(data?.[0]||null); });
   },[opp.id]);
+  // Phase 2.0 Day 1 subtask 2 — per-opp realtime: keep proposals in sync across tabs/users
+  useEffect(()=>{
+    if(!opp?.id)return;
+    const ch=supabase.channel("opp-proposals-"+opp.id)
+      .on("postgres_changes",{event:"*",schema:"public",table:"proposals",filter:`opportunity_id=eq.${opp.id}`},p=>{
+        if(p.eventType==="INSERT")setProposals(x=>[p.new,...x]);
+        if(p.eventType==="UPDATE")setProposals(x=>x.map(r=>r.id===p.new.id?p.new:r));
+        if(p.eventType==="DELETE")setProposals(x=>x.filter(r=>r.id!==p.old.id));
+      })
+      .subscribe();
+    return()=>supabase.removeChannel(ch);
+  },[opp?.id]);
 
   const GATED_STAGES = ["Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
 
