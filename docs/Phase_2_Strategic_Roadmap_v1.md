@@ -87,88 +87,171 @@ These four items are foundational because everything else depends on them. Ship 
 
 ---
 
-## Item 1 — Real-Time State Sync
+## Item 1 — Real-Time State Sync ✅ COMPLETE (Day 19)
 
-**Status:** Already captured in `Phase_2_State_Management_RealTime_Sync.md`
-**Effort:** 2-3 days
+**Status:** SHIPPED to production 30 May 2026 (Day 19 afternoon)
+**Original estimate:** 2-3 days
+**Actual:** ~3 hours (Day 12 work had already built the foundation)
 **Priority:** Tier 0 — Foundational
+**Doc reference:** `Phase_2_State_Management_RealTime_Sync.md`
 
 ### Problem (recap)
 PropCRM caches state in browser memory. Changes don't always propagate. Hard refresh required between major actions. Acceptable for demo, blocker for client deployment.
 
-### Scope
-- Supabase Realtime subscriptions on Priority 1 tables (proposals, activities, opportunities, leads)
-- Smart refresh callbacks on all save operations
-- Cross-tab + multi-user sync verified
-- Connection drop recovery
+### Scope (delivered)
+- ✅ Supabase Realtime subscriptions on Priority 1 tables (proposals, activities, opportunities, leads)
+- ✅ Per-opportunity proposals subscription scoped by `opportunity_id`
+- ✅ Full INSERT / UPDATE / DELETE handling on activities, opportunities, leads
+- ✅ Dedupe pattern locked on all INSERT handlers (handles optimistic-update race against realtime)
+- ✅ Local save handler dedupe (`setProposals` race against realtime arrival)
+- ✅ Cross-tab sync proven on production prop-crm-two.vercel.app
 
-### Why Tier 0
-Every other item compounds badly on stale state. Build the sync layer once, all other features inherit reliability.
+### How it shipped
+Day 12 work (24 May 2026) had built `useRealtimeSubscription.js` hook + enabled Supabase Realtime publication on Priority 1 tables. Day 19 work was:
+1. Upgrade activities subscription from INSERT-only to full I/U/D (commit 776c0d6)
+2. Add per-opp proposals subscription in OpportunityDetail (commit 3fbe96b)
+3. Hotfix: dedupe all realtime INSERTs against optimistic state (commit 98775f6)
+4. Hotfix: dedupe local save handler against realtime race (commit 05fbb51)
+5. Two merges to main, deployed live
 
-### Demo positioning
-*"PropCRM is built for real-time collaboration. Today's beta refreshes manually — Phase 2 adds Supabase Realtime subscriptions for full instant sync."*
+### The pattern (reusable)
+```javascript
+// On every INSERT handler that may race with an optimistic update:
+setX(prev => prev.some(r => r.id === p.new.id) ? prev : [p.new, ...prev])
+// On local save handler that may race with realtime:
+setX(prev => prev.some(r => r.id === newRow.id) 
+  ? prev.map(r => r.id === newRow.id ? newRow : r)
+  : [newRow, ...prev])
+```
+
+### Live verification (Day 19 evening)
+Founder opened two tabs of prop-crm-two.vercel.app. Saved a proposal in Tab A. Tab B updated within ~2 seconds, no refresh. No duplicates in either tab. Phase 2.0 acid test passed.
+
+### Demo positioning (now true, not roadmap)
+*"PropCRM is built for real-time collaboration. Save a proposal in one tab, watch it appear in another tab in seconds, no refresh. Built on Supabase Realtime. Working today."*
 
 ### Cross-reference
-See `Phase_2_State_Management_RealTime_Sync.md` for full design.
+- Implementation log: `Phase_2_State_Management_RealTime_Sync.md`
+- Discipline doc: `Pre_Demo_Phase_2_Sprint.md` (status checklist Phase 2.0 all ✅)
 
 ---
 
-## Item 2 — Lead Ingestion & Assignment ⭐ NEW (Day 18)
+## Item 2 — Lead Ingestion, Assignment & Governance 🟡 IN PROGRESS (Day 19)
 
-**Status:** Captured here (this doc) as new strategic item
-**Effort:** 5-7 days
+**Status:** Schema deployed Day 19 PM. Remaining build Day 20-24.
+**Original estimate:** 5-7 days (Layer 1 + Layer 2 + Layer 3, plus admin UI)
+**Revised estimate (Day 19 PM):** 5-7 days for Layer 1 + GOVERNANCE only; Layers 2 and 3 deferred to post-demo
 **Priority:** Tier 0 — Foundational (alongside Real-Time Sync)
-**Founder quote:** *"when the leads come from various sources the admin will have a job of assigning them or round robin assignment, before that verifying the leads itself if the org is wanting to give verified leads to the brokers/agents"*
+**Doc reference:** `Phase_2_1_Lead_Ingestion_Design.md` (374 lines, full design + open questions resolved + day-by-day plan)
 
 ### Problem
-PropCRM today assumes leads arrive pre-assigned. In any brokerage with hierarchy, this fiction breaks immediately. Leads from multiple sources (website forms, Bayut/PropertyFinder, WhatsApp campaigns, walk-ins, referrals) flood in unassigned. Admins need to verify which leads are real before burning agent time. Distribution must be fair (round-robin) AND smart (territory/skill match) AND auditable (no "manager favorites" complaint).
+PropCRM today assumes leads arrive pre-assigned. In any brokerage with hierarchy, this fiction breaks immediately. Leads from multiple sources (website forms, Bayut/PropertyFinder, WhatsApp campaigns, walk-ins, referrals) flood in unassigned. Admins need to verify which leads are real before burning agent time. Distribution must be fair (round-robin) AND auditable (no "manager favorites" complaint). And there has to be a way to take leads back from brokers who aren't working them — without political infighting.
 
 Without this, PropCRM is a single-broker tool dressed up as multi-tenant.
 
-### Scope — three layers, all configurable
+### Pre-demo scope (revised Day 19 PM after founder no-come-backs principle)
 
-**Layer 1 — Round-Robin Pools (must have)**
-- Agents tagged into one or more pools (e.g., "Downtown Agents," "Investor Specialists")
-- New lead enters a pool → next assignment goes to agent with longest time-since-last-assignment
-- Fair, transparent, auditable — every assignment timestamped + reason logged
-- Default for any brokerage with 2+ agents
+**The two-origin model**
 
-**Layer 2 — Source-Based Routing (high value, modest effort)**
-- Per source, configure: "auto-assign via Layer 1" OR "send to admin queue first"
-- Verified sources (paid portals, own website, referrals) → auto-assign instantly
-- Unverified sources (cold WhatsApp, scraped lists) → admin queue for review
-- Anomaly detection: duplicate phone, incomplete data, fake-looking name → flagged regardless of source
+Every lead has one of two origins. The model handles them differently:
 
-**Layer 3 — Match-Based Assignment (premium, optional)**
-- Pool membership rules — agents tagged by territory, language, segment, certification
-- Lead enters → matching pool selected first, then Layer 1 within that pool
-- Example: Mandarin-speaking investor asking about Downtown → "Downtown Mandarin Investor Specialists" pool → round-robin
+1. **broker_created** — Broker meets walk-in, gets referral, captures WhatsApp inquiry. Lead is owned by that broker from creation. NO pool routing. Stays with broker until formally released or transferred. (How ~all existing PropCRM leads were created.)
 
-**Skip (or explicit opt-in only)**
-- Performance-weighted assignment (top performer gets more leads) — politically toxic, brokerage will lose agents over it. Don't default-enable.
+2. **pool_sourced** — Lead arrives from a configured pool source (website form, paid portal, marketing campaign). Lands in the Lead Queue without an assigned broker. Lead Admin assigns via round-robin within a pool (or manually overrides).
 
-### Schema (sketch)
-- agent_pools (id, company_id, name, rules jsonb)
-- agent_pool_members (pool_id, user_id, last_assigned_at)
-- lead_source_config (id, company_id, source_name, auto_assign, default_pool_id, trust_level)
-- lead_assignment_log (id, lead_id, assigned_to, assigned_by, pool_id, method, reason, assigned_at)
+The trigger between modes is `lead.source` matching `companies.pool_sources` array. Sources configured as pool-sourced go to the queue. All others (including manually-created walk-in/referral leads) follow the broker-created path.
 
-### Admin UX
-- New nav item: "Lead Queue" (admin/manager only)
-- Three tabs: **Pending Review** | **Auto-Assigned (today)** | **Reassign**
-- Pending Review: flagged + unverified-source leads, admin Approves/Rejects/Reassigns
-- Auto-Assigned: today's auto-distribution log for transparency
-- Reassign: pick a lead, pick new agent, log reason
+**Round-robin assignment service**
+- Per-company `agent_pools` (groupings of agents who share lead distribution)
+- Agents can be in multiple pools (e.g., one for Downtown apartments, one for Off-Plan villas)
+- Round-robin orders by `last_assigned_at` ASC (NULLs first → new agents get their first lead quickly)
+- Atomic transaction: update `leads.assigned_to` + update `agent_pool_members.last_assigned_at` + insert audit log row
+- Idempotency: if lead already `assignment_status='assigned'`, fail clearly (use Force Reassign for legitimate reassigns)
 
-### Why Tier 0
-Without this, PropCRM can't onboard a brokerage with even 3 agents. The Lead List today assumes someone magically assigned everything. **This is the foundational org-side workflow.**
+**Governance — release, transfer, stale-detection**
 
-### Demo positioning
-*"PropCRM Phase 1 is the agent's operating power. Phase 2 begins with the brokerage's operating power — admin lead intake, source-based verification, configurable auto-distribution. Round-robin within pools, matched by territory and skill. Fair, transparent, auditable."*
+This is the part that expanded Phase 2.1 beyond pure round-robin:
+
+- **Broker formal release:** broker who wants to drop a lead must choose: release-to-queue (back to Lead Admin) OR transfer-to-specific-broker. Both require a free-text reason. No silent abandonment.
+- **Admin force-reassign:** Lead Admin can reassign ANY lead at any time with a reason. Logged.
+- **Stale-detection:** lead with no broker activity for `companies.stale_lead_threshold_days` (default 7) flags. Org chooses behavior: `'flag_for_admin'` (visibility only) or `'auto_return_to_queue'` (auto-unassign). Pre-demo: client-side check when Lead Admin opens Queue. Post-demo: server cron if any pilot enables auto-return.
+- **Audit log:** every assignment, release, transfer, force-reassign, stale-flag writes a row to `lead_assignment_log`. Append-only. Lead Detail shows the timeline.
+
+### Two-layer assignment model (founder insight, Day 19 PM)
+
+Founder noted: brokers in the same org may legitimately work different opps for the same lead — sectors, developer relationships, language. PropCRM already supports this via TWO independent `assigned_to` columns:
+
+- `leads.assigned_to` — **lead-level owner.** Phase 2.1 governs this. This is what the Lead Queue assigns, what release/transfer operates on, what stale-detection watches.
+- `opportunities.assigned_to` — **per-deal owner.** Untouched by Phase 2.1. A lead with multiple opps may have different brokers per opp.
+
+Example flow: Broker A is the lead-level owner. Broker B works an Aldar villa deal for that same lead. Both are legitimate. If A releases the lead, A's lead-level ownership returns to queue. B's opp stays with B (`opportunities.assigned_to=B` unchanged).
+
+Stale-detection considers activity across the lead AND all its opps. An active opp keeps the lead from being flagged stale.
+
+### Schema (deployed Day 19 PM, commit e3857ae)
+
+**New tables:**
+- `agent_pools` (id, company_id, name, description, is_active, created_at, created_by)
+- `agent_pool_members` (pool_id, user_id, last_assigned_at, added_at) — PK on (pool_id, user_id)
+- `lead_assignment_log` (id, lead_id, company_id, action enum, from_user_id, to_user_id, pool_id, method, reason, triggered_by, created_at)
+
+**New columns on `leads`:**
+- `origin` enum (broker_created / pool_sourced)
+- `assignment_status` enum (unassigned / assigned / released / stale_flagged)
+- `last_assigned_at`
+- `last_broker_activity_at`
+
+**New columns on `companies`:**
+- `lead_admin_user_id` — per-company designated Lead Admin (Q1 resolution: reuse sales_manager role, designate WHO)
+- `pool_sources` text[] — which `lead.source` values route through queue
+- `stale_lead_threshold_days` int (default 7)
+- `stale_action` enum (flag_for_admin / auto_return_to_queue)
+
+**Operational details:**
+- RLS enabled on all 3 new tables (multi-tenant safety)
+- All 3 new tables added to Supabase Realtime publication (cross-tab sync inherited from Phase 2.0)
+- 18 existing leads backfilled to `(origin='broker_created', assignment_status='assigned')`
+- Migration is idempotent (IF NOT EXISTS everywhere, safe to re-run)
+- Rollback SQL at bottom of migration file, commented out, ready if needed
+
+### UI surfaces (Day 20-24)
+
+1. **Settings → Agent Pools** — admin creates pools, adds/removes agents
+2. **Settings → Lead Routing Rules** — designate Lead Admin, configure `pool_sources`, set stale threshold + action
+3. **Lead Queue** (new top-level nav) — 3 tabs: Unassigned (incl. released back) / Stale Flagged / History
+4. **Lead Detail — Assignment section** — current assignee, "Release Lead" button (current assignee only), mini-timeline of last 5 log entries, expand to full history
+
+### Pre-demo deliberate exclusions
+
+The original Strategic Roadmap framing had Layers 1/2/3. The new framing keeps Layer 1 + governance, defers Layers 2 and 3:
+
+- **Source-based smart routing (was Layer 2)** — auto-assign vs admin-queue per source, anomaly detection (duplicate phone, fake names). **DEFERRED post-demo.** The `pool_sources` foundation column lands now, but smart per-source rules are post-demo.
+- **Match-based assignment (was Layer 3)** — territory tags, language tags, segment tags driving pool selection. **DEFERRED post-demo.** Schema design supports adding this later without re-migration.
+- **Performance-weighted assignment** — top-performer-gets-more. **EXPLICITLY REJECTED.** Politically toxic. Brokerages lose agents over this. Don't ship even with opt-in.
+- **Intake API endpoint** — `/api/leads/intake` for website form/portal webhook POSTs. **DEFERRED post-demo (Q3 resolution).** Admin manually enters pool-sourced leads via "Add to Queue" pre-demo. Demo investor doesn't care how the lead arrived.
+
+### Open design questions (all resolved Day 19 PM)
+
+- **Q1 Lead Admin role:** A — reuse `sales_manager` role + per-company `lead_admin_user_id`. No new role needed.
+- **Q2 Stale-detection:** B — client-side check when Lead Admin opens Queue page. Defer pg_cron until any pilot enables auto-return-to-queue.
+- **Q3 Intake API:** B — skip pre-demo. Admin manual entry only.
+- **Q4 Broker-to-broker transfer consent:** A — no recipient consent. Reason + audit log + Lead Admin oversight are enough governance.
+
+### Demo positioning (target Day 14 June)
+
+*"PropCRM Phase 1 is the agent's operating power. Phase 2 begins with the brokerage's operating power. Pool-sourced leads route through admin queue with round-robin distribution within configurable agent pools. Broker-created leads stay with the broker who captured them. Formal release/transfer workflow with mandatory reason — no silent abandonment. Stale-detection surfaces dormant deals to admin. Every assignment auditable. Source-based smart routing and territory matching come post-pilot when brokerages signal demand."*
 
 ### Risks
-- Over-engineering Layer 3 into a rules-engine nightmare. **Mitigation:** ship Layer 1+2 first, add Layer 3 only when a pilot asks.
-- Performance-weighting requests from sales managers. **Mitigation:** explicit toggle with warning text; default off.
+
+- **Schema is wider than the demo path.** Some columns and the audit log enum support post-demo features. **Mitigation:** acceptable — better to land the data model right ONCE than re-migrate later. No premature optimization, but no premature simplification either.
+- **Governance UI complexity.** Release dialog + Transfer dialog + Force-reassign + Stale visibility = 4 admin surfaces. **Mitigation:** they share one dialog component pattern. Architect commits to consolidated dialog before building.
+- **Multi-tab race in Lead Queue.** Two admins viewing queue, both click "Assign" on same lead. **Mitigation:** idempotency check (`if assignment_status != 'unassigned' THEN fail`). Realtime updates the second admin's view immediately so the second click doesn't even fire.
+
+### Cross-references
+- Implementation doc: `Phase_2_1_Lead_Ingestion_Design.md` (full design)
+- Schema migration: `migrations/2026-05-30_phase_2_1_lead_ingestion.sql` (deployed, committed)
+- Discipline doc: `Pre_Demo_Phase_2_Sprint.md` (Phase 2.1 status checklist)
+- Safety: git tag `pre-phase-2.1-schema` at commit 6381fe2
 
 ---
 
