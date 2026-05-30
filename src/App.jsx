@@ -5120,14 +5120,22 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
     });
     supabase.from("pp_commission_invoices").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).limit(1).then(({data,error})=>{ if(error){console.warn("Commission invoice load failed:",error);} setCommissionInvoice(data?.[0]||null); });
   },[opp.id]);
-  // Phase 2.0 Day 1 subtask 2 — per-opp realtime: keep proposals in sync across tabs/users
+  // Phase 2.0 Day 1 subtask 2 — per-opp realtime for proposals (dedupe-safe)
+  // Local save handlers already do optimistic state updates. The realtime
+  // event then arrives a moment later for the same row. We dedupe by id so
+  // the saving tab doesn't see the row twice. Other tabs (no local update
+  // happened) still get the row appended via realtime.
   useEffect(()=>{
     if(!opp?.id)return;
     const ch=supabase.channel("opp-proposals-"+opp.id)
       .on("postgres_changes",{event:"*",schema:"public",table:"proposals",filter:`opportunity_id=eq.${opp.id}`},p=>{
-        if(p.eventType==="INSERT")setProposals(x=>[p.new,...x]);
-        if(p.eventType==="UPDATE")setProposals(x=>x.map(r=>r.id===p.new.id?p.new:r));
-        if(p.eventType==="DELETE")setProposals(x=>x.filter(r=>r.id!==p.old.id));
+        if(p.eventType==="INSERT"){
+          setProposals(x=> x.some(r=>r.id===p.new.id) ? x : [p.new,...x]);
+        } else if(p.eventType==="UPDATE"){
+          setProposals(x=> x.map(r=>r.id===p.new.id?p.new:r));
+        } else if(p.eventType==="DELETE"){
+          setProposals(x=> x.filter(r=>r.id!==p.old.id));
+        }
       })
       .subscribe();
     return()=>supabase.removeChannel(ch);
@@ -16687,9 +16695,9 @@ export default function App(){
     };
     load();
     const ch=supabase.channel("v3-changes-"+cid)
-      .on("postgres_changes",{event:"*",schema:"public",table:"leads"},p=>{if(p.eventType==="INSERT")setLeads(x=>[p.new,...x]);if(p.eventType==="UPDATE")setLeads(x=>x.map(l=>l.id===p.new.id?p.new:l));if(p.eventType==="DELETE")setLeads(x=>x.filter(l=>l.id!==p.old.id));})
-      .on("postgres_changes",{event:"*",schema:"public",table:"activities"},p=>{if(p.eventType==="INSERT")setActivities(x=>[p.new,...x]);if(p.eventType==="UPDATE")setActivities(x=>x.map(a=>a.id===p.new.id?p.new:a));if(p.eventType==="DELETE")setActivities(x=>x.filter(a=>a.id!==p.old.id));})
-      .on("postgres_changes",{event:"*",schema:"public",table:"opportunities"},p=>{if(p.eventType==="INSERT")setOpps(x=>[p.new,...x]);if(p.eventType==="UPDATE")setOpps(x=>x.map(o=>o.id===p.new.id?p.new:o));if(p.eventType==="DELETE")setOpps(x=>x.filter(o=>o.id!==p.old.id));})
+      .on("postgres_changes",{event:"*",schema:"public",table:"leads"},p=>{if(p.eventType==="INSERT")setLeads(x=>x.some(r=>r.id===p.new.id)?x:[p.new,...x]);if(p.eventType==="UPDATE")setLeads(x=>x.map(l=>l.id===p.new.id?p.new:l));if(p.eventType==="DELETE")setLeads(x=>x.filter(l=>l.id!==p.old.id));})
+      .on("postgres_changes",{event:"*",schema:"public",table:"activities"},p=>{if(p.eventType==="INSERT")setActivities(x=>x.some(r=>r.id===p.new.id)?x:[p.new,...x]);if(p.eventType==="UPDATE")setActivities(x=>x.map(a=>a.id===p.new.id?p.new:a));if(p.eventType==="DELETE")setActivities(x=>x.filter(a=>a.id!==p.old.id));})
+      .on("postgres_changes",{event:"*",schema:"public",table:"opportunities"},p=>{if(p.eventType==="INSERT")setOpps(x=>x.some(r=>r.id===p.new.id)?x:[p.new,...x]);if(p.eventType==="UPDATE")setOpps(x=>x.map(o=>o.id===p.new.id?p.new:o));if(p.eventType==="DELETE")setOpps(x=>x.filter(o=>o.id!==p.old.id));})
       .subscribe();
     return()=>supabase.removeChannel(ch);
   },[currentUser, activeCompanyId]);
