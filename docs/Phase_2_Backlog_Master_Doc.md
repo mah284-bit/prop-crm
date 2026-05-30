@@ -1,7 +1,7 @@
 # Phase 2 Backlog — Master Document
 
 **Date captured:** 21 May 2026 (Thursday, Day 9) — initial
-**Last updated:** 23 May 2026 (Saturday, Day 11) — added 5 strategic captures from today's work
+**Last updated:** 26 May 2026 (Tuesday, Day 16) — Phase 2.2A SHIPPED, 8 commits Day 15-16 (Section 10)
 **Purpose:** Single source of truth for all Phase 2 backlog items + Phase 1 hidden features
 **Audience:** Founder reference + investor Q&A backing + team onboarding
 **Status:** Live document — updated as new items emerge
@@ -68,6 +68,27 @@
 **Document:** `Phase_2_State_Management_RealTime_Sync.md`  
 **Client deployment blocker:** Yes — no client onboards until this ships
 
+
+---
+
+**✅ DAY 13 RESOLUTION (25 May 2026):**
+
+**Root cause:** Not stale state needing Realtime — the `OpportunityDetail` component was being reused across navigation without remounting, so `useEffect([opp.id])` never re-fired. Saturday's symptom (Mayya's proposals missing) was a missing React `key` prop on the render sites, not a database sync issue.
+
+**Fix shipped:** Single 2-line change — `key={selOpp.id}` added at both render sites (Opportunities page line 10880, Leads page line 12000). React now treats every navigation as a fresh mount; all 5 fetches re-execute reliably.
+
+**Commits:**
+- `e60e8ab` — `useRealtimeSubscription` hook preserved for future multi-user cross-tab sync
+- `bfb1050` — `key={selOpp.id}` fix (production blocker resolved)
+- `9da9994` — Repo cleanup (removed 50 obsolete fix scripts)
+
+**Status:**
+- ✅ Saturday's Mayya bug — RESOLVED
+- ✅ Demo blocker — REMOVED (no hard refresh needed)
+- ✅ Client deployment blocker — REMOVED for single-user single-tab scenarios
+- 📋 Multi-user/multi-tab Realtime sync — DEFERRED until pilot client runs 2+ devices simultaneously
+
+**Lesson:** Day 12 Realtime INSERT approach hit StrictMode duplicate-key race. Founder rightly questioned "does Realtime even solve Saturday's symptom?" — it didn't. The actual symptom was simpler than the architecture we were building.
 ### 2.1 PropOS Vision
 **Founder vision:** Property Operating System for all real estate personas (broker → developer → construction → facilities)
 
@@ -147,9 +168,15 @@
 ### 2.13 ⭐ NEW: Activity Logging Everywhere (FAB)
 **Date captured:** 22 May 2026  
 **Founder direction:** *"calling logging is a floating button we may have to think logically and fit wherever necessary"*
+**Stage 1 SHIPPED Day 11:** Lead Detail logging restored (commit `91f46c2`)
 
-**Stage 1 SHIPPED Day 11:** Lead Detail logging restored (commit `91f46c2`)  
-**Stage 2 Phase 2:** Universal FAB across all screens  
+
+**✅ Stage 2 SHIPPED Day 14 (25 May 2026):** FAB on detail screens (Option X scope)
+- `3bed195` — FAB on Opportunity Detail (stacked above AI Coach button at `bottom:96`)
+- `a7395e7` — FAB on Lead Detail (`bottom:24`, wires into richer 23 May logging modal with next-step reminders)
+- Reuses existing modals — no duplication. Material Design FAB convention.
+
+**📋 Stage 3 DEFERRED (Option Y):** Dashboard / Leads list / Opps list FAB — needs lead picker (4-6 hrs UX work). Revisit post-demo if broker workflow demands it. Detail-screen FAB ships the 80% value.
 **Effort:** 1-2 days for FAB | **Timing:** Q3 2026  
 **Document:** `Phase_2_Activity_Logging_Everywhere.md`
 
@@ -201,8 +228,8 @@
 ## SECTION 4 — Phase 2 Build Schedule
 
 ```
-PHASE 2.0 (Days 1-3 post-pilot): State Management & Real-Time Sync 🔴 PRIORITY 0
-PHASE 2.1 (Week 2): Activity Logging Everywhere (FAB)
+PHASE 2.0 ✅ DONE Day 13: State Management (key={selOpp.id} fix, bfb1050)
+PHASE 2.1 ✅ DONE Day 14: FAB on detail screens (3bed195 + a7395e7) — Stage 3 lists deferred
 PHASE 2.2 (Week 3-4): Lead Lifecycle & Buyer Segmentation
 PHASE 2.3 (Weeks 5-8): Communications Overhaul
   - 2.3A PDF foundation
@@ -338,6 +365,162 @@ A: Show Section 4. "We've planned through Q4 2026 with specific deliverables, no
 
 ---
 
+
+## SECTION 8.5 — Day 12-14 Summary (Phase 2.0 + 2.1 SHIPPED)
+
+**Day 12 (24 May 2026, Sunday):**
+- Built `useRealtimeSubscription` hook (`e60e8ab`) — DRY pattern for Supabase Realtime subscriptions
+- Wired Realtime INSERT subscription to proposals table
+- Hit StrictMode duplicate-key issue — Realtime fired twice in dev, caused React warnings
+- Founder questioned whether Realtime even solved Saturday's symptom (Mayya proposals missing)
+- Decision: abandon Realtime INSERT approach, keep hook for future multi-user use, find simpler fix
+
+**Day 13 (25 May 2026 morning):**
+- Root-caused Saturday's bug — not stale state, but `OpportunityDetail` component instance being reused across navigation without remount, so `useEffect([opp.id])` never re-fired
+- Fixed with 2-line `key={selOpp.id}` change at both render sites (`bfb1050`)
+- Audited all other detail components — Lead detail uses parent state (immune), all dialogs unmount cleanly (immune). No other instances of the bug.
+- Cleanup: deleted 50 obsolete fix scripts, gitignored `test-data/` (`9da9994`)
+
+**Day 14 (25 May 2026 afternoon):**
+- Built FAB on Opportunity Detail (`3bed195`) — stacks above AI Coach at `bottom:96`, reuses `LogActivityModal`
+- Built FAB on Lead Detail (`a7395e7`) — `bottom:24`, reuses richer 23 May `showLeadLog` modal with next-step reminders
+- Caught one bad `sed` insertion (FAB outside root `<div>`), reverted with `git checkout`, redid at correct line — zero damage
+- Material Design FAB convention: primary action highest in thumb zone
+
+**Key learnings (Days 12-14):**
+- **Match solution to actual symptom.** Day 12 reached for Realtime architecture when the actual bug was a missing `key` prop. Trust founder's pattern-recognition pushback.
+- **Smaller fix = lower risk.** Day 13's 2-line change beat Day 12's 100+ line hook wiring for the same problem.
+- **Reuse existing modals, don't duplicate.** Lead Detail FAB reuses the 23 May logging system rather than introducing `LogActivityModal` — preserves richer feature set, avoids regression.
+- **Revertable checkpoints work.** Bad sed → `git checkout src/App.jsx` → clean re-do. One commit per logical change makes recovery trivial.
+
+**Commits (Days 12-14):**
+1. `e60e8ab` — Realtime hook (Day 12, preserved for future)
+2. `bfb1050` — Mayya bug fixed (Day 13)
+3. `9da9994` — Cleanup (Day 13)
+4. `3bed195` — FAB on Opp Detail (Day 14)
+5. `a7395e7` — FAB on Lead Detail (Day 14)
+
+**Status:**
+- ✅ Phase 2.0 (State Management) — Saturday's symptom resolved
+- ✅ Phase 2.1 Stage 2 (FAB on detail screens) — Option X scope shipped
+- 📋 Phase 2.1 Stage 3 (FAB on Dashboard/lists) — deferred to Option Y if needed post-demo
+- ⏭️ Next: Phase 2.2 — Lead Lifecycle & Buyer Segmentation
+
+
+## SECTION 10 — Day 15-16 Phase 2.2A SHIPPED ⭐
+
+**Sprint dates:** 25-26 May 2026 (Days 15-16)
+**Commits banked:** 8 (from `53f1a2b` to `35c0ede`)
+**Strategic outcome:** Lead Lifecycle & Buyer Segmentation foundation complete. V2 form is canonical (V1 deleted). Backend lifecycle automation live. Visible segmentation on Lead Detail.
+
+### Backend (Supabase, no Git diff)
+
+**Schema migrations:**
+- Added 6 columns to `leads`: `lifecycle_stage`, `buyer_intent`, `became_customer_at`, `portfolio_size`, `total_purchases_aed`, `marketing_opt_in`
+- Both lifecycle_stage and buyer_intent use CHECK constraints with strict enum values
+- Backfilled 12 existing leads (9 active_prospect with opps, 2 raw, 1 customer)
+
+**Reference data tables (replacing broken `/api/reference/*` Vercel routes):**
+- `reference_countries` — 70 rows, includes 15 priority (GCC + UK/DE/US/IN/PK/EG/JO/LB)
+- `reference_buyer_type_rules` — 48 rows (4 buyer types × 12 fields × required/optional/hidden)
+- RLS enabled on both, authenticated SELECT-only policy
+
+**Auto-conversion trigger:**
+- `convert_lead_to_customer()` PL/pgSQL function + `opp_closed_won_converts_lead` AFTER UPDATE trigger on `opportunities`
+- On stage→'Closed Won': promotes lead to 'customer' or 'portfolio_customer', stamps `became_customer_at`, increments `portfolio_size`, accumulates `total_purchases_aed` from `current_agreed_price`
+
+**varchar(2) migration (Day 16 fix):**
+- Converted `leads.{nationality_iso2, residence_iso2, tax_residency_iso2, phone_country_code}` from `character(2)` to `varchar(2)`
+- Root cause of "cc= I" truncation bug: Supabase JS client mangles fixed-length CHAR values in JSON serialization, returns 1 char instead of 2
+- `varchar(2)` is variable-length and serializes cleanly — standard PostgreSQL pattern for short codes
+
+### Frontend architecture
+
+**New library module:**
+- `src/lib/contactValidation.js` (142 lines) — extracted validation logic from broken Vercel route, exports `GCC_COUNTRIES`, `isGccCountry`, `BUYER_TYPES`, `rulesFromRows`, `validateContactPayload`, `getRequiredIdentityDocuments`, `getCallingCode`, `sortCountriesForDropdown`
+
+**New component:**
+- `src/components/CountryPicker.jsx` (193 lines) — reusable searchable country picker modeled on `UnitSearchPicker.jsx`. Two variants: "full" (Nationality/Residence) and "phone" (compact code+flag). Type-to-filter, priority sort, click-outside close.
+
+**V2 form (LeadCreationFormV2) major refactor:**
+- Removed direct fetch of `/api/reference/*` (was broken anyway)
+- Now receives `countries` + `rules` as props from App.jsx
+- Replaced 3 native `<select>` country dropdowns with `<CountryPicker>` (Nationality, Residence, Phone code)
+- Residence onChange auto-cascades phone_country_code
+- **Dual-mode:** Same component handles both Create AND Edit. `editLead` prop toggles mode.
+  - Headers, button labels, payload INSERT vs UPDATE all branch on `editLead` presence
+- New `buyer_intent` dropdown (5 options)
+- New `useRef`-guarded phone-strip useEffect for Edit mode
+
+**App.jsx changes:**
+- Reference data loader in main useEffect (after inventory): fetches `reference_countries` + `reference_buyer_type_rules`, flattens via `rulesFromRows()`
+- V2 mounted at TWO sites (list view ~11402, lead detail view ~11979) because Leads component uses early-return pattern
+- Both V2 mounts have `key={\`${editLeadForV2?.id || "new"}-${editFormVersion}\`}` — forces remount on every Edit/Add click
+- `editFormVersion` counter bumped on every button click → guarantees fresh component instance
+- **DELETED** ~108 lines of V1 form code: `showAdd`, `editLead`, `useNewForm`, `blank`, `form`, `sf`, `saveLead`, both V1 modals
+- Lifecycle stage badge (5 colors) + Buyer Intent badge (amber, conditional) added to Lead Detail header
+
+**API files deleted (no longer used):**
+- `api/reference/countries.js`
+- `api/reference/buyer-type-rules.js`
+- `api/_data/reference.js`
+
+### Strategic captures (from founder, Day 15)
+
+**Buyer Intent is a seed for Property Management Services workflow (Phase 2, post Sales+Leasing live):**
+> "this will the 2nd Phase of this project when we complete and go live with sales and leasing which we have stalled so sales completes fully"
+
+When `buyer_intent='investor'`, the broker becomes the natural service provider for:
+- Rent collection on owner's behalf
+- Property maintenance coordination
+- Tenant issue resolution
+- Recurring service contracts (annual PM agreements + % of rent collected)
+
+For now, `buyer_intent` is captured but not wired to a workflow. Data is there when needed. **Property Management Services workflow → Phase 2 (Q4 2026 or 2027)** after Sales + Leasing complete.
+
+### Cluster of React/Postgres bugs solved (4 stacked fixes)
+
+This sprint surfaced four overlapping bugs that all manifested as "stale form data" but had different root causes. All four fixes are now in place:
+
+1. **Component-reuse bug (`bfb1050` Day 13 + `ac65721` Day 15)** — React reuses component instances when `type+location+key` are identical. Same lead opened twice = same key = stale state. Fix: `key={\`${id}-${editFormVersion}\`}` forces remount on every click.
+2. **Async-load race (`5c5e0b3` Day 16)** — Phone strip needed `countries` data which loads async. Fix: `useRef`-guarded useEffect waits for `countries.length > 0` before stripping.
+3. **Greedy regex (deferred from Day 15, fixed in `5c5e0b3`)** — `\d{1,4}` matched too many digits for short calling codes (+1 US, +91 IN). Fix: lookup exact calling code from countries array, strip only that prefix.
+4. **PostgreSQL CHAR serialization (Day 16, SQL migration)** — `character(2)` fixed-length type returned 1 char in JSON. Fix: `ALTER COLUMN TYPE varchar(2)`.
+
+### Key learnings (Days 15-16)
+
+- **Founder's product intuition holds.** When founder said "this will be needed for Property Management later" while I was treating buyer_intent as a marketing label, they were right. The data field has dual-purpose design.
+- **CHAR vs varchar matters.** `character(2)` looks identical to `varchar(2)` in PostgreSQL queries, but Supabase JS client treats them differently. Default to `varchar` for short codes.
+- **Component-reuse pattern needs 3 stacked guards:** (1) `key` prop, (2) something that changes the key on every interaction, (3) component-internal `useRef` guards for one-time effects.
+- **Diagnostic-driven debugging.** Day 16's "cc= I" log was the breakthrough — without it, we would have kept "fixing" the wrong layer (component vs data).
+
+### Commits (Days 15-16)
+
+| Commit | What |
+|---|---|
+| `53f1a2b` | contactValidation library module |
+| `787016d` | V2 normalization (countries + pickers + auto-cascade) |
+| `3107f5a` | V2 dual-mode (Create + Edit) |
+| `ac65721` | Delete V1 form + add key prop to V2 |
+| `7a1cf7f` | Add buyer_intent dropdown to V2 |
+| `52eb92f` | Lifecycle + buyer_intent badges on Lead Detail |
+| `5c5e0b3` | Day 16: Fix V2 phone strip in Edit mode |
+| `35c0ede` | Day 16: Delete obsolete /api/reference/* files |
+
+### Status
+
+- ✅ Phase 2.2A (Lead Lifecycle + Buyer Segmentation) — **SHIPPED**
+- 📋 Phase 2.2B (Multi-phone/email per contact) — deferred, needs schema + UI design
+- 📋 Phase 2.2C (Property Management Services workflow) — Phase 2, post Sales+Leasing live
+- ⏭️ Next sprint: **Phase 2.3 Communications Overhaul** OR demo prep depending on date proximity
+
+### Backlog items still open
+
+- App.jsx normalization (16K lines, components split inconsistently) — explicit founder concern → **Phase 3**
+- Lead Detail header flag-emoji rendering shows single letter (pre-existing display quirk, unrelated to Phase 2.2A) — polish later
+- Nationality dropdown on Lead Detail header (currently shows "Nationality: IN" with raw iso2 — should map to flag emoji)
+
+---
 ## SECTION 9 — Update Discipline
 
 **This document gets updated when:**
@@ -353,5 +536,442 @@ Exception: Big design specs get own doc, but referenced here.
 ---
 
 *Document created: 21 May 2026 (Thursday afternoon, Day 9)*
-*Last major update: 23 May 2026 (Saturday afternoon, Day 11)*
+*Last major update: 26 May 2026 (Tuesday, Day 16) — Phase 2.2A shipped*
 *Status: Live document, will update through Phase 1 + Phase 2 build*
+
+---
+
+## Day 17 evening capture — AI Coach prominence
+
+**Date captured:** 27 May 2026 (Wednesday evening)
+**Source:** Founder observation during Anoop K deep-journey verification
+**Founder quote:** *"the idea was to show prominently in the first page itself not hiding out of the screen so shows the prominence of the AI feature"*
+
+### Current state
+- AI Coach exists as a tab (`✨🤖 Coach`) within the opportunity dashboard's 7-tab strip
+- User must click into the tab to see analysis
+- Visually equivalent to Proposals, Negotiations, Financials — tabs of equal hierarchy
+
+### Founder's vision
+AI Coach is THE differentiator (Demo Script v3 calls it ⭐⭐⭐⭐⭐⭐). It should NOT be peer-ranked with Proposals/Negotiations. It should sit ABOVE the tab strip — prominent, hard to miss.
+
+### Possible designs (Phase 2 spike)
+1. **AI Insight Banner** — single-line banner above the deal journey: *"💡 AI Coach: Buyer V2 reviewing 3 days — consider follow-up call to Anoop's spouse Priyanka"*. One-click expand to full Coach panel.
+2. **AI Coach Side Panel** — collapsible drawer on the right side of opportunity detail (always-visible toggle).
+3. **AI Coach Pin** — floating element with the AI avatar, click anywhere in the opp to see latest insight.
+
+### Effort
+Spike: 1 day  
+Implementation: 2-3 days (likely option 1 — least disruption to existing 7-tab UI)
+
+### Timing
+Phase 2.5 (after Day 19 activity logging integration). Should ship before client deployment — investor demo would benefit hugely.
+
+### Why this matters
+The "AI as colleague, not chatbot" narrative loses force if the user has to actively look for the AI. Prominent placement signals "AI is always working on your behalf" rather than "click here for AI analysis."
+
+---
+
+## Day 17 night decision — In-Opp Commission Visibility MOVES TO PRE-DEMO
+
+**Date:** 27 May 2026 (late night)
+**Founder principle:** *"features something why the broker is working cannot move after demo is clear"*
+
+### What changes
+- In-Opp Commission Visibility (originally logged as Phase 2.6) is **PROMOTED to Day 18 pre-demo work**
+- AI Coach prominence (also originally Phase 2.5) **stays in Phase 2** — it's a polish/sharpening item, not a workflow break
+
+### Founder's principle (architect's framing)
+Workflow gaps (broker can't see something they need where they need it) ship BEFORE demo, not after. Phase 2 is for new capabilities and polish, not for filling holes in the broker's daily workflow. Anything that would make a broker say "wait, where do I do X?" must be answered in v1.
+
+### Application going forward
+When deciding "demo vs Phase 2" for any new capture:
+- **Pre-demo:** Workflow break? Visibility gap? Broker stuck navigating? → ship before demo
+- **Phase 2:** New capability? Polish? Sharpening narrative? → after demo
+
+---
+
+## Day 17 night capture (original) — In-Opp Commission Invoice Visibility
+
+**Date captured:** 27 May 2026 (Wednesday, ~midnight)
+**Source:** Founder observation while reviewing Anoop K's deep journey
+**Founder quote:** *"where is the commission invoice itself under every opportunity, the broker moves around app before going to opps cant find where will is revenue come from"*
+
+**Note:** This was originally logged as a Phase 2.6 capture, then promoted to pre-demo work per the founder principle (see commit `082568c`). Kept here for traceability of the original observation.
+
+### Current state
+Inside an Opportunity Detail's Financials tab, the "Broker Commission (Revenue)" block shows a CALCULATION:
+- Commission Rate: 4.50%
+- Based on Net Price: AED X
+- Your Commission: AED Y
+
+But it does NOT show:
+- Whether an invoice has been issued (and its number/date)
+- Whether any payments have been received
+- The outstanding amount and aging
+- A link/button to manage the invoice from within the opp
+
+### Founder's observation (architect's framing)
+Broker works inside an opp 80% of the time. The commission GETS GENERATED FROM that opp. But to see/manage the revenue, broker has to LEAVE the opp and navigate to a separate Commission Outstanding module. That's a workflow break — the most valuable view (broker's own revenue) is hidden from where the broker actually lives.
+
+### Target state (Day 18 lightweight version)
+Each Opportunity Detail's Financials tab should additionally show:
+- Linked invoice number + status (Draft/Issued/Partial/Paid)
+- Invoice date + aging
+- Received vs Outstanding breakdown
+- A "Manage in Commission Outstanding →" link for full actions
+
+Full embedded action UX (Record Payment / Issue Invoice / Mark Disputed from inside the opp) deferred to Phase 2.6 polish.
+
+### Effort estimate
+~2-3 hours (lightweight read+display+link version)
+
+### Day 18 work order
+**PRIORITY 1.** Closes broker workflow gap. Demo critical.
+
+---
+
+# DAY 18 (Thursday 29 May 2026) — 13 commits, two major features shipped
+
+This section captures Day 18: a major refactor, a flagship AI feature, and several pre-demo polishes.
+
+---
+
+## Day 18 feature 1 — Activity-Logging Modal Consolidation + Person-Tagging
+
+**Date captured:** 29 May 2026
+**Source:** Founder caught architect about to repeat the duplication mistake
+**Founder quote:** *"if we are adding it again, then we are repeating the mistake — is it possible to correct and move it out so it uses same everywhere"*
+**Founder principle:** *"4-6 hours now is better than breaking our head later when we come back to correct"*
+
+### What this fixed
+PropCRM had THREE activity-logging modals in App.jsx:
+1. Opp Detail inline modal (logForm / showLog)
+2. Lead Detail inline modal (leadLogForm / showLeadLog)
+3. A standalone LogActivityModal component (orphan, unused)
+
+Opp and lead modals were copy-paste twins. Dev2_Refactor_Activity_Logging.md flagged this on Day 11 as architectural debt.
+
+### What we did
+Consolidated all three into ONE canonical LogActivityModal component. Phased rollout with golden-mark commits:
+- Phase A — upgraded standalone to canonical with person dropdown (5b65a65)
+- Phase A+ — full feature parity: next-step, reminders, note composition (70f0c6b)
+- Phase B — wired into Opportunity Detail, replaced 74 lines (d086c3f)
+- Phase C — wired into Lead Detail, replaced 130 lines (84e75a3)
+- Phase D — removed dead saveLog handler + orphan state, 62 lines (e3d6cd0)
+- Phase E — person-tag display on activity timeline cards (df3be76)
+
+### Design contract chosen
+Modal does the activity INSERT, returns onSaved(activity, nextStepIntent). Each parent (opp, lead) owns its own reminders state and creates reminders from the returned intent. Clean separation — no threaded state setters.
+
+### Person-tagging — the new feature added on top
+New activities.person_id column (FK to lead_persons, ON DELETE SET NULL). Modal fetches lead persons via useLeadPersons() and shows "Who did you talk to?" dropdown. Timeline cards render purple "👤 Name · Role" badge resolved at render via personsById map — NOT denormalized.
+
+### Architect's call: normalized lookup, NOT denormalized
+A person's name/role can change (typo fix, role transfer). Denormalized copies would go stale. The Contacts Subsystem was built explicitly for single-source-of-truth — baking copies into activities would re-introduce duplication in data form.
+
+### Numbers
+- Net code change: ~200 lines removed while ADDING person-tagging
+- Bundle: 1,069 kB → 1,057 kB
+- Time: under an hour (vs 4-6 hr estimate — founder's instinct was more accurate than mine)
+- Zero rollbacks needed across 6 golden-mark commits
+
+### Status
+- [x] Schema migrated (activities.person_id + index)
+- [x] Canonical modal built + wired into both surfaces
+- [x] Person badges render on activity timeline
+- [x] Demo personas' 13 scripted activities backfilled with person_id
+- [x] Test-noise activities cleaned from demo data
+- [x] Dev2_Refactor_Activity_Logging.md debt closed
+
+
+---
+
+## Day 18 feature 2 — Broad AI Coach (the point-4 vision shipped)
+
+**Date captured:** 29 May 2026
+**Source:** Founder's point-4 framing of the 4 AI surfaces in the app
+**Founder quote:** *"the 4th is the AI Coach giving honest feedback about the Opp, here I had asked a question this cant be singled out like this but go broader and have options to look for what we want to on opps, or any other cross section"*
+
+### Founder's framing of the 4 AI surfaces
+1. PropPulse — market intelligence, planned for paid feeds, ~20 developers. CLEAN. Hide from brokers initially (admin/service-provider only).
+2. AI Bubble — currently ChatGPT-style info-only; should be reactive + actionable. Polish pending.
+3. Customer glimpse — quick customer snapshot. Polish pending.
+4. AI Coach — was buried as a tab inside ONE opp. Should be broader: any cross-section.
+
+### What we shipped
+New top-level "✨ AI Coach" nav item (after PropPulse). Per-opp Coach untouched — this ADDS the broad scopes.
+
+Role-aware scope selector (6 scopes):
+- My Pipeline — agent's own active deals
+- All Opportunities — whole active book as one (founder ask)
+- Needs Attention — auto-surface stalling deals (architect addition, highest-value triage)
+- By Stage — deals in a chosen stage
+- By Segment — by buyer_intent (Investor / Owner-Occupier / Hybrid / Corporate / Reseller)
+- Portfolio — entire company book (manager/admin only)
+
+Roles: agents see own data; managers/admins unlock cross-agent + portfolio.
+
+### How it works
+1. Pick scope → gatherer filters opps + enriches with days_in_stage, days_since_activity, activity_count, agent, buyer_intent
+2. Click Analyse → up to 40 deals to aiInvoke (server-side Anthropic via /api/ai)
+3. AI returns JSON: {summary, deals: [{deal_id, deal_name, priority, issue, recommended_move}]}
+4. UI: gradient summary card + ranked deal cards (HIGH/MEDIUM/LOW pills) — each clickable, navigates to that opp
+
+### Verified output quality (live test)
+Returned analysis like:
+- "Pipeline health: CRITICAL. AED 46.7M across 23 deals, 13 stuck 15+ days..."
+- Cited deals by name (Al Khaleej AED 12M penthouse, Rajesh Villa AED 3.5M)
+- UAE vocabulary (40/60 off-plan, DLD breakdown, SPA registration)
+- Time-bounded moves ("within 48 hours", "today")
+- Distinguished priority intelligently
+
+### Architect's design calls
+- Placement: dedicated top-level page (not Dashboard panel) — cleanest, most demo-able
+- Per-opp Coach kept untouched
+- Modal-pure gatherer: reads props, no side effects until Analyse clicked
+- Role restriction enforced in gatherer code, not just UI
+
+### Phases shipped
+- 2e72c83 Phase 1: nav item, page shell, role-aware selector
+- 3576314 Phase 2: scope gathering, live deal-count + total-value
+- 364e8e4 Phase 3: AI call + ranked results UI + clickable cards
+- d6373d4 Final: env fix + parse hardening (AI works locally)
+
+### Status
+- [x] Nav + page + scope selector live
+- [x] Gatherer accurate (My Pipeline = 23 / AED 46.70M matches dashboard)
+- [x] AI returning rich analysis with real deal names
+- [x] Clickable deal cards navigate to opp
+- [ ] Test on deployed Vercel preview before demo
+
+
+---
+
+## Day 18 polish — Double-click duplicate guard
+
+**Date captured:** 29 May 2026
+**Source:** Founder spotted a duplicate "Suresh confirmed site visit" activity from one double-click during testing
+**Founder framing:** *"without closing we should not allow create another activity, but can have parallel activities also"*
+
+### Problem
+The disabled-while-saving button wasn't enough. setSaving(true) is async — a second click in the gap before re-render re-entered save() and fired a duplicate INSERT.
+
+### Fix
+Synchronous useRef guard (savingRef) inside the canonical LogActivityModal. The ref flips instantly, before any re-render. Second click sees savingRef.current === true and returns immediately.
+
+### Ordering (matters)
+1. Validation runs first (empty-note check) — returns WITHOUT locking ref, so retry works
+2. Guard + lock come AFTER validation passes
+3. Catch resets savingRef.current = false (error path unlocks for retry)
+4. Success path needs no reset (modal unmounts on onSaved)
+
+Implements founder's nuance exactly: block IDENTICAL activity while in flight, allow different parallel activities.
+
+### Commit
+3604414 — verified: rapid double-click → 1 row; empty-note → validation + retry works.
+
+---
+
+## Day 18 polish — In-Opp Commission Invoice Visibility (PRIORITY 1, shipped)
+
+**Date captured:** 27 May 2026 (Day 17 night, original); shipped 29 May 2026
+**Commit:** c5ff3ce
+
+Read-only status mirror inside Opp Detail Financials tab:
+- Invoice number + status (Draft/Issued/Partial/Paid)
+- Net / Received / Outstanding breakdown
+- Aging
+- "Manage in Commission Outstanding →" link for actions
+
+Closes the broker workflow gap (revenue visibility without leaving the opp).
+Full embedded actions deferred to Phase 2.6.
+
+---
+
+## Day 18 LESSON LEARNED — vercel dev env-injection on Windows
+
+**Date captured:** 29 May 2026 (after hours of debugging)
+**Severity:** Lost ~2-3 hours before finding root cause. Worth documenting.
+
+### Symptom
+AI Coach and PropPulse both returned: "ANTHROPIC_API_KEY is not set in Vercel environment variables" — repeatedly, despite the key being:
+- ✅ In Vercel cloud (Development, Preview, Production)
+- ✅ In .env.local (after vercel env pull)
+- ✅ Exported in shell (108 chars confirmed)
+- ✅ Added to .env.development.local as fallback
+
+Function would print "[ai.js DEBUG] ANTHROPIC_API_KEY length: 0".
+
+### Root cause (the actual answer)
+On Windows + Git Bash, vercel dev reads env vars for SERVERLESS FUNCTIONS from .env (NOT .env.local).
+
+Our .env had only VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY. The new ANTHROPIC_API_KEY lived only in .env.local. So:
+- Frontend (Vite) read .env.local correctly → worked
+- Functions read .env → got nothing → "not set" error
+
+### The fix
+Add function-side keys (ANTHROPIC_API_KEY, SUPABASE_SERVICE_ROLE_KEY) to .env (git-ignored, safe). Both files now have the keys.
+
+### Diagnostic that finally found it
+One-line console.log in api/ai.js:
+console.log("[ai.js DEBUG] env keys present:", Object.keys(process.env).filter(k => k.includes("ANTHROPIC") || k.includes("SUPABASE")));
+
+Output showed only what .env contained — instantly pinpointed the right file.
+
+### LESSON FOR NEXT TIME
+When vercel dev functions can't see an env var on Windows: check .env first, not .env.local. Add function-side keys there. Frontend keys can stay in .env.local.
+
+### Secondary observation
+.vercel/ now uses repo.json (multi-project format) instead of project.json — this is current Vercel CLI behavior, NOT a bug. Don't chase it.
+
+
+---
+
+## Day 18 polish — Demo data realism
+
+**Date captured:** 29 May 2026
+- Backfilled person_id on 13 scripted demo activities (Al Khaleej, Anoop, Mohammed)
+- Mapped each activity to the right stakeholder by note content (Mariam/Ahmed/Khalid for Al Khaleej; Suresh/Anoop/Priyanka for Anoop; Hassan/Mohammed/Khalifa for Mohammed)
+- Cleaned 3 test-noise activities (manually-logged duplicates from modal testing)
+- Linked Al Khaleej commission invoice (AED 790K) to Nakheel (was "(Unlinked)")
+
+---
+
+## Day 18 — Pending captures for Phase 2
+
+### AI Coach polish (post-demo, low priority)
+- Caching: Coach re-analyses cost tokens every click. Cache result by (scope, filters, deal_count_hash) for ~5 min window.
+- Multi-scope drill-in: clicking a deal card from "Needs Attention" could trigger the per-opp Coach automatically.
+- Trend over time: store Coach summaries → show "this week vs last week" pipeline-health trend.
+
+### PropPulse on vercel dev (Windows)
+- Firing 20 parallel /api/collect-projects-v2 calls CRASHES vercel dev with Windows assertion errors (UV_HANDLE_CLOSING).
+- Real fix: serialize or batch (e.g., 3 parallel max). Works fine on deployed Vercel where each function gets its own runtime.
+- Not demo-critical (PropPulse is admin-only initially per founder's plan).
+
+### Dev2 → main merge planning
+- All Day 12-18 work is on dev2. main is stuck at the Day 11 Phase 2 docs commit (May 11).
+- Vercel deploys from main, so the demo URL (prop-crm-two.vercel.app) is 18 days behind.
+- Before June 15 demo: plan a clean dev2 → main merge → triggers a Vercel rebuild → verify AI Coach + person-tagging on the live URL.
+
+---
+
+## Day 18 founder principle (reinforced)
+
+> *"4-6 hours now is better than breaking our head later when we come back to correct"*
+
+This principle drove the modal consolidation (founder steered against my "lean patch" recommendation). Outcome: refactor took under an hour (twins were simpler than my risk estimate) and eliminated the very debt that Dev2_Refactor_Activity_Logging.md had flagged on Day 11.
+
+**Founder's instinct on structural debt is reliable. Worth listening to when it surfaces again.**
+
+---
+
+*End of Day 18 capture — 13 commits, two major features (consolidation refactor + broad AI Coach), three polishes, one critical env-injection lesson learned.*
+
+---
+
+## Phase 2 capture — App-wide back-navigation history
+
+**Date captured:** 29 May 2026 (Day 18 evening)
+**Source:** Founder observation while testing AI Coach drill-in
+**Founder quote:** *"this is the problem across the app... keep this as a last step of ensuring the entire app back and browser back will follow back the same track as it traveled instead of taking piece by piece"*
+
+### Problem
+"Back" buttons across the app reset to module defaults (e.g., Opps list) rather than returning to where the user actually came from. Most visible today:
+- AI Coach → click deal card → Opp Detail → "← Back" goes to Opps list (not Coach)
+- Same pattern exists in Leads → Opp navigation, Dashboard → drill-ins, etc.
+- Browser back button also doesn't follow user's actual path
+
+### Architect's call (per founder's steering)
+Do NOT patch this per-surface (Coach-back, Leads-back, Dashboard-back, etc). That would duplicate the same fix in N places — the very duplication disease the Day 18 consolidation refactor cured.
+
+Instead: build ONE app-wide navigation history stack. Every drill-in pushes its origin onto the stack. Every "Back" reads from the stack. Browser back/forward integrates with the same stack via history.pushState.
+
+### Scope
+- A navigation context / hook (e.g., useNavStack)
+- Push on drill-in, pop on back
+- All existing "Back" buttons rewired to use it (single rewire, not per-surface)
+- Browser history sync (popstate listener)
+- Optional: breadcrumb display
+
+### Effort
+Likely 1-2 days. Touches App.jsx top-level navigation + every drill-in surface. Worth doing once, cleanly.
+
+### Timing
+Founder steering: "last step" — after other Phase 2 items, but before scaling beyond pilot. Demo-acceptable as-is (users adapt; not a blocker).
+
+### Status
+- [x] Captured
+- [ ] Designed
+- [ ] Built
+
+
+---
+
+# DAY 18 EVENING — COMPREHENSIVE PHASE 2 AUDIT (17-item re-scope)
+
+**Date captured:** 29 May 2026 (Thursday evening, Day 18 continuation)
+**Trigger:** Founder principle *"1 step forward 2 steps back is bothering me"*
+**Outcome:** Full Phase 2 re-audit. Original 7 items expanded to 17. Now structured in 4 tiers.
+
+## What changed
+
+Founder raised **Lead Ingestion & Assignment** as a major missed item. Architect did the audit and added **9 more** he'd missed (Settings module, User & Team Management, Notifications, Dashboard Customization, Document Collection, Legacy Data Import, Master Data, Audit Trail, Data Export).
+
+## Full scope now lives in: `Phase_2_Strategic_Roadmap_v1.md`
+
+That document is the authoritative reference. This backlog points to it.
+
+## The 17 items + tiers (summary)
+
+### Tier 0 — Foundation (2-3 weeks post-demo)
+1. Real-Time State Sync (existing doc)
+2. **Lead Ingestion & Assignment** ⭐ NEW Day 18
+3. **Master Data / Reference Configuration** ⭐ NEW
+4. **Audit Trail / Compliance Log** ⭐ NEW
+
+### Tier 1 — Workflow (2-3 weeks)
+5. Activity Logging FAB (existing doc — Lead-side shipped)
+6. Lead Lifecycle remainder (existing doc — core shipped)
+7. Nav-History App-Wide (captured Day 18 evening, commit `61ec691`)
+8. Communications Overhaul (existing doc — 4 weeks)
+9. Proposal PDFs (existing doc, fits inside #8)
+
+### Tier 2 — Org Operations (3-4 weeks)
+10. **Settings Module** ⭐ NEW
+11. **User & Team Management UX** ⭐ NEW
+12. Role-Based Dashboard (existing doc)
+13. **Notifications & Reminders** ⭐ NEW
+14. **Dashboard Customization (BI-lite)** ⭐ NEW
+15. **Document Collection (KYC + Property assets)** ⭐ NEW
+16. **Legacy Data Import (Excel/CSV)** ⭐ NEW
+
+### Tier 3 — Compliance & Polish (1-2 weeks)
+17. **Data Export / Right-to-Delete / Backup** ⭐ NEW
+
+## Build sequence (10-12 weeks post-demo, 1-2 engineers)
+
+Detailed in `Phase_2_Strategic_Roadmap_v1.md` "THE 10-WEEK SEQUENCED PLAN" section.
+
+## Demo positioning
+
+> *"Phase 1 is the agent's operating power. Phase 2 is the brokerage's operating power. 17 items across 4 tiers. Ten weeks post-funding. Roadmap concrete, sequenced, dependencies-mapped."*
+
+Full Q&A bank in `Phase_2_Strategic_Roadmap_v1.md` "THE INVESTOR DEMO POSITIONING" section.
+
+## Founder principles preserved (Day 18 audit)
+
+- *"4-6 hours now is better than breaking our head later"* — drove modal consolidation, drove "ONE Settings module" call, drove "ONE nav history stack" call
+- *"1 step forward 2 steps back is bothering me"* — surfaced the need for this audit; cure for thrash is clarity of scope
+- *"Configurable but architect to advise market trend and ease of use"* — drove Lead Ingestion's 3-layer pre-shaped design
+
+## Status
+
+- [x] Audit completed Day 18 evening
+- [x] Strategic Roadmap v1 document written (~915 lines)
+- [x] All 17 items captured with problem/scope/effort/demo positioning
+- [x] 10-week sequenced build plan documented
+- [x] Investor demo Q&A bank prepared
+- [ ] Post-demo: split each new item into its own Phase 2 doc when build begins
+

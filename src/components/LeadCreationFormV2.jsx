@@ -6,7 +6,7 @@
 // untouched). Renders buyer-type-aware fields: as the user picks a buyer
 // type, fields show/hide/become required dynamically.
 //
-// On mount: fetches /api/reference/countries and /api/reference/buyer-type-rules
+// Receives countries and rules via props from parent (App.jsx loads from Supabase)
 //   once, populates dropdowns and validation rules.
 // On submit: POSTs to /api/leads with the user's Supabase JWT.
 //   Returns the created lead via onCreated().
@@ -14,8 +14,9 @@
 // Dependencies: React 19. Phone validation is plain E.164 regex.
 // No direct Supabase client — parent provides onSubmit(payload) callback
 // to perform the actual database write. Keeps this component portable.
-
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import CountryPicker from "./CountryPicker.jsx";
+import { useLeadPersons, getPrimaryContact, ROLE_LABELS } from "../lib/useLeadPersons";
 
 // IMPORTANT: This component does NOT import supabase directly. The parent
 // (App.jsx) handles all data persistence via the `onSubmit` prop. This
@@ -126,62 +127,133 @@ const styles = {
  *   - onCreated  (required): called with the created lead object on success
  *   - currentUserId (optional): for created_by / assigned_to
  */
-export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCreated, currentUserId }) {
+// Phase 2.2B — Display non-buyer persons attached to a lead, read-only.
+// Used inside V2 form in Edit mode only. The primary buyer is already
+// represented by the main V2 form fields (Display name / Phone / Email);
+// this section surfaces the OTHER stakeholders (spouse, representative,
+// secretary, accounts, etc.) so the broker knows they're tracked.
+// Day 18B will add Add/Edit/Remove UI here.
+function V2AdditionalPersonsRO({ leadId }) {
+  const { persons, loading, error } = useLeadPersons(leadId);
+  if (loading || error) return null;
+  const additional = (persons || []).filter((p) => !p.is_primary_buyer);
+  if (additional.length === 0) return null;
+  return (
+    <div style={{
+      margin: "8px 0 16px",
+      padding: 12,
+      background: "#F8FAFC",
+      border: "1px solid #E8EDF4",
+      borderRadius: 10,
+    }}>
+      <div style={{
+        fontSize: 10,
+        fontWeight: 700,
+        color: "#94A3B8",
+        textTransform: "uppercase",
+        letterSpacing: ".6px",
+        marginBottom: 8,
+      }}>
+        Additional Persons ({additional.length})
+      </div>
+      {additional.map((p) => {
+        const phone = getPrimaryContact(p, "phone");
+        const email = getPrimaryContact(p, "email");
+        return (
+          <div key={p.id} style={{
+            padding: "6px 0",
+            borderTop: "1px solid #E8EDF4",
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            fontSize: 12,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontWeight: 600, color: "#0F2540" }}>{p.name}</span>
+              <span style={{
+                fontSize: 10,
+                fontWeight: 600,
+                padding: "1px 6px",
+                borderRadius: 10,
+                background: "#E8EDF4",
+                color: "#475569",
+              }}>
+                {ROLE_LABELS[p.role] || p.role}
+              </span>
+            </div>
+            {(phone || email) && (
+              <div style={{ fontSize: 11, color: "#64748B", display: "flex", gap: 12, flexWrap: "wrap" }}>
+                {phone && <span>📞 {phone}</span>}
+                {email && <span>✉️ {email}</span>}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 8, fontStyle: "italic" }}>
+        Add / edit additional persons from Lead Detail (coming Day 18B).
+      </div>
+    </div>
+  );
+}
+
+export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCreated, currentUserId, countries = [], rules = {}, editLead = null }) {
   // Reference data (fetched once on mount)
-  const [countries, setCountries] = useState([]);
-  const [rules, setRules] = useState({});
   const [refLoading, setRefLoading] = useState(true);
+  const phoneStrippedRef = useRef(false); // Phase 2.2A — guard so phone strip runs only once per mount
   const [refError, setRefError] = useState("");
 
   // Form state
-  const [buyerType, setBuyerType] = useState(""); // empty = no selection yet
+  const [buyerType, setBuyerType] = useState(editLead?.buyer_type || ""); // empty = no selection yet
   const [form, setForm] = useState({
-    display_name: "",
-    legal_name_en: "",
-    legal_name_ar: "",
-    nationality_iso2: "",
-    residence_iso2: "",
-    tax_residency_iso2: "",
-    email: "",
-    phone_country_code: "AE", // default to UAE
-    phone_local: "",
-    source_of_funds: "",
-    pep_flag: false,
-    notes: "",
+    display_name: editLead?.legal_name_en || editLead?.name || "",
+    legal_name_en: editLead?.legal_name_en || "",
+    legal_name_ar: editLead?.legal_name_ar || "",
+    nationality_iso2: editLead?.nationality_iso2 || "",
+    residence_iso2: editLead?.residence_iso2 || "",
+    tax_residency_iso2: editLead?.tax_residency_iso2 || "",
+    email: editLead?.email || "",
+    phone_country_code: editLead?.phone_country_code || editLead?.residence_iso2 || "AE",
+    phone_local: editLead?.phone || "",
+    source_of_funds: editLead?.source_of_funds || "",
+    pep_flag: editLead?.pep_flag || false,
+    buyer_intent: editLead?.buyer_intent || "",
+    notes: editLead?.notes || "",
   });
 
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
 
-  // ----- Fetch reference data on mount -----
+  // ----- Reference data now flows in via props (countries + rules) -----
+  // Parent (App.jsx) loads from reference_countries + reference_buyer_type_rules
+  // Supabase tables once on app mount and passes them down.
+  // We mark refLoading false immediately since data is already available.
   useEffect(() => {
-    let cancelled = false;
-    async function loadRef() {
-      setRefLoading(true);
+    if (countries.length > 0 && Object.keys(rules).length > 0) {
+      setRefLoading(false);
       setRefError("");
-      try {
-        const [cRes, bRes] = await Promise.all([
-          fetch("/api/reference/countries"),
-          fetch("/api/reference/buyer-type-rules"),
-        ]);
-        if (!cRes.ok) throw new Error("Failed to load countries");
-        if (!bRes.ok) throw new Error("Failed to load buyer-type rules");
-        const cJson = await cRes.json();
-        const bJson = await bRes.json();
-        if (cancelled) return;
-        setCountries(cJson.countries || []);
-        setRules(bJson.rules || {});
-      } catch (err) {
-        if (!cancelled) setRefError(err.message || "Failed to load form data");
-      } finally {
-        if (!cancelled) setRefLoading(false);
-      }
+    } else {
+      setRefLoading(true);
+      setRefError("Reference data not loaded yet");
     }
-    loadRef();
-    return () => { cancelled = true; };
-  }, []);
-
+  }, [countries, rules]);
+  // Phase 2.2A — Strip leading +<callingCode> from phone_local in Edit mode.
+  // Runs ONCE per V2 mount (phoneStrippedRef guards re-execution).
+  // Waits for countries to load before stripping — otherwise we don't know
+  // the calling-code length and could mangle the number.
+  useEffect(() => {
+    if (!editLead) return;                          // create mode → nothing to strip
+    if (phoneStrippedRef.current) return;           // already stripped this mount
+    if (countries.length === 0) return;             // wait for countries to load
+    const cc = countries.find((c) => c.iso2 === form.phone_country_code);
+    if (!cc) { phoneStrippedRef.current = true; return; }  // unknown country → skip but mark done
+    const prefix = "+" + cc.calling_code;
+    if (form.phone_local && form.phone_local.startsWith(prefix)) {
+      setForm((f) => ({ ...f, phone_local: f.phone_local.slice(prefix.length) }));
+    }
+    phoneStrippedRef.current = true;                // mark done — never run again this mount
+  }, [countries, editLead]);
   // ----- Active rules for the chosen buyer type -----
   const activeRules = buyerType ? (rules[buyerType] || {}) : {};
 
@@ -302,6 +374,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
         company_id: companyId,
         name: form.display_name.trim(), // sales-facing display name (existing column)
         buyer_type: buyerType,
+        buyer_intent: form.buyer_intent || null,
         legal_name_en: form.legal_name_en.trim() || null,
         legal_name_ar: form.legal_name_ar.trim() || null,
         nationality_iso2: form.nationality_iso2 || null,
@@ -354,7 +427,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
       <div style={styles.modal}>
         <div style={styles.panel}>
           <div style={styles.header}>
-            <h2 style={styles.h2}>Add Contact (V2)</h2>
+            <h2 style={styles.h2}>{editLead ? "Edit Contact" : "Add Contact"}</h2>
             <button onClick={onCancel} style={styles.closeBtn}>×</button>
           </div>
           <p>Loading form…</p>
@@ -368,7 +441,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
       <div style={styles.modal}>
         <div style={styles.panel}>
           <div style={styles.header}>
-            <h2 style={styles.h2}>Add Contact (V2)</h2>
+            <h2 style={styles.h2}>{editLead ? "Edit Contact" : "Add Contact"}</h2>
             <button onClick={onCancel} style={styles.closeBtn}>×</button>
           </div>
           <div style={styles.errorBox}>{refError}</div>
@@ -381,7 +454,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
     <div style={styles.modal}>
       <div style={styles.panel}>
         <div style={styles.header}>
-          <h2 style={styles.h2}>Add Contact (V2)</h2>
+          <h2 style={styles.h2}>{editLead ? "Edit Contact" : "Add Contact"}</h2>
           <button onClick={onCancel} style={styles.closeBtn}>×</button>
         </div>
 
@@ -420,6 +493,25 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
           </select>
           {fieldErrors.buyer_type && <div style={{ ...styles.hint, color: "#D14343" }}>{fieldErrors.buyer_type}</div>}
           <div style={styles.hint}>Drives which fields and documents will be needed.</div>
+        </div>
+        {/* Phase 2.2A — Buyer Intent (marketing classification, optional) */}
+        <div style={styles.fieldGroup}>
+          <label style={styles.label}>
+            Buyer intent
+          </label>
+          <select
+            style={styles.select}
+            value={form.buyer_intent}
+            onChange={(e) => setField("buyer_intent", e.target.value)}
+          >
+            <option value="">— Select —</option>
+            <option value="investor">Investor</option>
+            <option value="owner_occupier">Owner-Occupier</option>
+            <option value="hybrid">Hybrid (live then rent)</option>
+            <option value="corporate">Corporate purchase</option>
+            <option value="reseller">Reseller / flipper</option>
+          </select>
+          <div style={styles.hint}>Why are they buying? Used for marketing segmentation.</div>
         </div>
 
         {/* Required-documents hint */}
@@ -481,18 +573,12 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
                   Nationality
                   {isRequired("nationality_country_code") && <span style={styles.required}>*</span>}
                 </label>
-                <select
-                  style={{ ...styles.select, borderColor: fieldErrors.nationality_iso2 ? "#D14343" : "#D1D9E6" }}
+                <CountryPicker
+                  countries={countries}
                   value={form.nationality_iso2}
-                  onChange={(e) => setField("nationality_iso2", e.target.value)}
-                >
-                  <option value="">—</option>
-                  {countries.map((c) => (
-                    <option key={c.iso2} value={c.iso2}>
-                      {c.flag_emoji} {c.name_en}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(iso2) => setField("nationality_iso2", iso2)}
+                  placeholder="Select nationality…"
+                />
                 {fieldErrors.nationality_iso2 && <div style={{ ...styles.hint, color: "#D14343" }}>{fieldErrors.nationality_iso2}</div>}
               </div>
             )}
@@ -502,18 +588,16 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
                   Residence
                   {isRequired("residence_country_code") && <span style={styles.required}>*</span>}
                 </label>
-                <select
-                  style={{ ...styles.select, borderColor: fieldErrors.residence_iso2 ? "#D14343" : "#D1D9E6" }}
+                <CountryPicker
+                  countries={countries}
                   value={form.residence_iso2}
-                  onChange={(e) => setField("residence_iso2", e.target.value)}
-                >
-                  <option value="">—</option>
-                  {countries.map((c) => (
-                    <option key={c.iso2} value={c.iso2}>
-                      {c.flag_emoji} {c.name_en}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(iso2) => {
+                    setField("residence_iso2", iso2);
+                    // Auto-cascade: phone country code defaults to residence country
+                    if (iso2) setField("phone_country_code", iso2);
+                  }}
+                  placeholder="Select residence…"
+                />
                 {fieldErrors.residence_iso2 && <div style={{ ...styles.hint, color: "#D14343" }}>{fieldErrors.residence_iso2}</div>}
               </div>
             )}
@@ -528,17 +612,15 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
               {isRequired("phone_e164") && <span style={styles.required}>*</span>}
             </label>
             <div style={styles.phoneRow}>
-              <select
-                style={{ ...styles.select, width: "auto", minWidth: 110 }}
-                value={form.phone_country_code}
-                onChange={(e) => setField("phone_country_code", e.target.value)}
-              >
-                {countries.map((c) => (
-                  <option key={c.iso2} value={c.iso2}>
-                    {c.flag_emoji} +{c.calling_code}
-                  </option>
-                ))}
-              </select>
+              <div style={{ width: 130 }}>
+                <CountryPicker
+                  countries={countries}
+                  value={form.phone_country_code}
+                  onChange={(iso2) => setField("phone_country_code", iso2)}
+                  variant="phone"
+                  placeholder="+code"
+                />
+              </div>
               <input
                 style={{ ...styles.input, borderColor: fieldErrors.phone_local ? "#D14343" : "#D1D9E6" }}
                 value={form.phone_local}
@@ -617,6 +699,8 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
             </div>
           </>
         )}
+        {/* Phase 2.2B — Additional persons (Edit mode only, read-only for now) */}
+        {editLead && <V2AdditionalPersonsRO leadId={editLead.id} />}
 
         {/* Notes */}
         <div style={styles.fieldGroup}>
@@ -633,7 +717,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
         <div style={styles.footer}>
           <button onClick={onCancel} style={styles.btnSecondary} disabled={saving}>Cancel</button>
           <button onClick={handleSubmit} style={styles.btnPrimary(saving)} disabled={saving}>
-            {saving ? "Saving…" : "Add Contact"}
+            {saving ? "Saving…" : editLead ? "Save Changes" : "Add Contact"}
           </button>
         </div>
       </div>

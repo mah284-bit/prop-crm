@@ -144,9 +144,9 @@ const saveAppConfig = (cfg) => {
 };
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","opportunities","discounts","activity","ai","reports","proppulse","pay_plans","companies","users","permissions","permsets","master_agreements","commission_outstanding","group_view"],
+  sales:   ["dashboard","projects","builder","leads","opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","commission_outstanding","group_view"],
   leasing: ["l_dashboard","l_leads","l_opportunities","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_proppulse","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
-  both:    ["dashboard","projects","builder","leads","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","commission_outstanding","group_view"],
+  both:    ["dashboard","projects","builder","leads","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","commission_outstanding","group_view"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -1134,6 +1134,8 @@ function OutcomeModal({activity, onClose, onSave}){
 
 function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isLeasing=false, currentStage=null, units=[], onCaptureVisitOutcome=null}){
   const [outcomeModal, setOutcomeModal] = useState(null); // {activity, pendingOutcome}
+  const { persons: actCardPersons } = useLeadPersons(opp?.lead_id);
+  const personsById = (actCardPersons||[]).reduce((m,p)=>{m[p.id]=p;return m;},{});
   const [scope, setScope] = useState("stage"); // "stage" | "all"
   // Filter activities based on scope
   const filtered = (currentStage && scope === "stage")
@@ -1300,6 +1302,12 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
               {!isStageAdvance && a.stage_at_event && (
                 <span style={{fontSize:10,fontWeight:600,color:"#64748B",background:"#F1F5F9",padding:"2px 8px",borderRadius:10,border:"1px solid #E2E8F0"}}>
                   during {a.stage_at_event}
+                </span>
+              )}
+              {/* Day 18 — person tag: who this activity was with */}
+              {a.person_id && personsById[a.person_id] && (
+                <span style={{fontSize:10,fontWeight:600,color:"#3730A3",background:"#E0E7FF",padding:"2px 8px",borderRadius:10,border:"1px solid #A5B4FC"}}>
+                  👤 {personsById[a.person_id].name}{personsById[a.person_id].is_primary_buyer?" 👑":""} · {ROLE_LABELS[personsById[a.person_id].role]||personsById[a.person_id].role}
                 </span>
               )}
               {/* Phase E: interest level badge */}
@@ -2529,7 +2537,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   ]
 }`;
 
-      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const reply = await aiInvoke({ system, prompt: userPrompt, max_tokens: 3000 });
       const cleaned = reply.replace(/```json\s*/g,"").replace(/```\s*$/g,"").trim();
       let parsed;
       try { parsed = JSON.parse(cleaned); }
@@ -3469,7 +3477,7 @@ TASK: Pick the TOP 5 best matches (or fewer if fewer good fits). For each, give 
 
 RESPOND WITH VALID JSON ONLY in this exact shape:
 {"matches":[{"unit_id":"<id from list>","score":<0-100>,"reason":"<one-sentence reason>"}]}`;
-      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const reply = await aiInvoke({ system, prompt: userPrompt, max_tokens: 3000 });
       const cleaned = reply.replace(/```json\s*/g,"").replace(/```\s*$/g,"").trim();
       let parsed;
       try { parsed = JSON.parse(cleaned); }
@@ -3550,7 +3558,7 @@ BROKER:
 LANGUAGE: English${arabicLeaning ? " (the buyer is from an Arabic-speaking region — feel free to add a brief Arabic greeting like 'السلام عليكم' if culturally appropriate, but keep the body in English unless instructed otherwise)" : ""}
 
 Write the cover message now. Keep it under 200 words.`;
-      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const reply = await aiInvoke({ system, prompt: userPrompt, max_tokens: 3000 });
       // Strip any accidental markdown fences
       const cleaned = reply.replace(/^```[a-z]*\s*/i,"").replace(/```\s*$/,"").trim();
       setCoverNotes(cleaned);
@@ -3626,7 +3634,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   "validity_days": <one of: 7 | 10 | 14 | 21>,
   "reasoning": "<2-3 short sentences explaining the recommendations>"
 }`;
-      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const reply = await aiInvoke({ system, prompt: userPrompt, max_tokens: 3000 });
       const cleaned = reply.replace(/```json\s*/g,"").replace(/```\s*$/g,"").trim();
       let parsed;
       try { parsed = JSON.parse(cleaned); }
@@ -4985,6 +4993,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [reminders,  setReminders]  = useState([]); // Phase E W3 — pending follow-ups for this opp
   const [payments,   setPayments]   = useState([]);
   const [contract,   setContract]   = useState(null);
+  const [commissionInvoice, setCommissionInvoice] = useState(null); // Day 18 — in-opp commission invoice visibility
   const [saving,     setSaving]     = useState(false);
   const [showLog,    setShowLog]    = useState(false);
   const [showPayment,setShowPayment]= useState(false);
@@ -5035,6 +5044,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [showOpenItemsGuard, setShowOpenItemsGuard] = useState(false);
   const [proposals, setProposals] = useState([]);
+  // Phase 2.1 — FAB activity logging
+  const [showFabLog, setShowFabLog] = useState(false);
   const [viewingProposal, setViewingProposal] = useState(null); // proposal row to show in viewer
 
   // Phase E W3 — open-items guard: a proposal is the first official document.
@@ -5107,6 +5118,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       if(error){console.warn("Proposal load failed:",error);}
       setProposals(data||[]);
     });
+    supabase.from("pp_commission_invoices").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).limit(1).then(({data,error})=>{ if(error){console.warn("Commission invoice load failed:",error);} setCommissionInvoice(data?.[0]||null); });
   },[opp.id]);
 
   const GATED_STAGES = ["Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
@@ -5200,7 +5212,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   ]
 }`;
 
-      const reply = await aiInvoke({ system, prompt: userPrompt });
+      const reply = await aiInvoke({ system, prompt: userPrompt, max_tokens: 3000 });
       const cleaned = reply.replace(/```json\s*/g,"").replace(/```\s*$/g,"").trim();
       let parsed;
       try { parsed = JSON.parse(cleaned); }
@@ -5759,67 +5771,6 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     });
     setClosedWonEditPrice(false);
     setSingleDateValue("");
-  };
-
-  const saveLog = async()=>{
-    const hasNextStep = logForm.ns_enabled && logForm.ns_due;
-    if(!(logForm.note||"").trim() && !hasNextStep){showToast("Please add discussion notes or set a next step","error");return;}
-    setSaving(true);
-    const isScheduled = logForm.scheduled_at && new Date(logForm.scheduled_at) > new Date();
-    // Build the human-readable note (we still embed next steps text so the timeline reads well)
-    const nsLine = hasNextStep ? `\n\n✅ Next: ${logForm.ns_type} on ${new Date(logForm.ns_due).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}${logForm.ns_note?(" — "+logForm.ns_note):""}` : "";
-    const noteText = [
-      logForm.note,
-      nsLine,
-      logForm.scheduled_at?("\n📅 Scheduled: "+new Date(logForm.scheduled_at).toLocaleString("en-AE",{dateStyle:"medium",timeStyle:"short"})):"",
-      logForm.duration_mins?("\n⏱ Duration: "+logForm.duration_mins+" mins"):"",
-    ].filter(Boolean).join("");
-    const{data,error}=await supabase.from("activities").insert({
-      opportunity_id:opp.id, lead_id:lead.id,
-      type:logForm.type, note:noteText,
-      scheduled_at:logForm.scheduled_at||null,
-      status:isScheduled?"upcoming":"completed",
-      user_id:currentUser.id, user_name:currentUser.full_name,
-      lead_name:lead.name, company_id:currentUser.company_id||null,
-      // Phase E: tag the activity with the current stage so the timeline
-      // can show "this call happened during Contacted" context
-      stage_at_event: opp.stage,
-      activity_subtype: "free_note",
-    }).select().single();
-    if(error){showToast("Failed to log activity","error");setSaving(false);return;}
-    setActivities(p=>[data,...p]);
-
-    // Phase E W3 — write the structured next step to the reminders table
-    if(hasNextStep){
-      const triggerAt = new Date(logForm.ns_due);
-      triggerAt.setHours(9,0,0,0); // 9am on the due date
-      const{data:remRow,error:remErr}=await supabase.from("reminders").insert({
-        company_id: opp.company_id || currentUser.company_id || null,
-        user_id: currentUser.id,
-        related_opportunity_id: opp.id,
-        related_lead_id: lead.id,
-        related_activity_id: data.id,
-        trigger_at: triggerAt.toISOString(),
-        title: `${logForm.ns_type} — ${lead.name}`,
-        body: logForm.ns_note || "",
-        reason: "manual_next_step",
-        status: "pending",
-        created_by: currentUser.id,
-      }).select().single();
-      if(remErr){
-        console.warn("Reminder creation failed (non-fatal):", remErr);
-        showToast("Activity saved, but reminder failed to schedule","error");
-      }else{
-        setReminders(p=>[...p,remRow].sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
-        showToast("Activity logged & next step scheduled","success");
-      }
-    }else{
-      showToast("Activity logged","success");
-    }
-
-    setShowLog(false);
-    setLogForm({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
-    setSaving(false);
   };
 
   const savePayment=async()=>{
@@ -6768,6 +6719,58 @@ You will become the assigned agent.`);
                             </div>
                           </div>
                         </div>
+                        {/* Day 18 — In-Opp Commission Invoice Visibility */}
+                        {(() => {
+                          const ci = commissionInvoice;
+                          const INV_META = {
+                            draft:          { bg:"#F3F4F6", fg:"#4B5563", label:"DRAFT" },
+                            issued:         { bg:"#DBEAFE", fg:"#1E40AF", label:"ISSUED" },
+                            partially_paid: { bg:"#FEF3C7", fg:"#92400E", label:"PARTIALLY PAID" },
+                            paid:           { bg:"#DCFCE7", fg:"#166534", label:"PAID" },
+                            disputed:       { bg:"#FEE2E2", fg:"#991B1B", label:"DISPUTED" },
+                            written_off:    { bg:"#F3F4F6", fg:"#6B7280", label:"WRITTEN OFF" },
+                          };
+                          const fmtAED = (n) => `AED ${Number(n||0).toLocaleString()}`;
+                          return (
+                            <div style={{marginTop:14,padding:"14px 16px",background:"#FFFDF7",border:"1px solid #E8DCC0",borderRadius:10}}>
+                              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                                <div style={{fontSize:11,fontWeight:700,color:"#7A5C16",textTransform:"uppercase",letterSpacing:".5px"}}>
+                                  🧾 Commission Invoice
+                                </div>
+                                <span style={{fontSize:10,fontWeight:600,color:"#94A3B8"}}>
+                                  Manage in 💰 Commission Outstanding
+                                </span>
+                              </div>
+                              {ci ? (
+                                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+                                  <div style={{padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Invoice</div>
+                                    <div style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{ci.invoice_number || "—"}</div>
+                                    <div style={{marginTop:4}}>
+                                      <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:(INV_META[ci.invoice_status]||INV_META.draft).bg,color:(INV_META[ci.invoice_status]||INV_META.draft).fg}}>
+                                        {(INV_META[ci.invoice_status]||INV_META.draft).label}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div style={{padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Net Commission</div>
+                                    <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>{fmtAED(ci.commission_net)}</div>
+                                    <div style={{fontSize:10,color:"#16A34A",marginTop:3}}>Received: {fmtAED(ci.amount_received)}</div>
+                                  </div>
+                                  <div style={{padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Outstanding</div>
+                                    <div style={{fontSize:13,fontWeight:700,color:"#B45309"}}>{fmtAED(Number(ci.commission_net||0)-Number(ci.amount_received||0))}</div>
+                                    {ci.invoice_date && <div style={{fontSize:10,color:"#64748B",marginTop:3}}>Raised {new Date(ci.invoice_date).toLocaleDateString("en-AE",{day:"numeric",month:"short"})}</div>}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div style={{padding:"10px 12px",background:"#fff",borderRadius:7,border:"1px dashed #E2E8F0",fontSize:11,color:"#64748B"}}>
+                                  No invoice raised yet. A draft commission invoice is auto-created when this deal reaches <strong>SPA Signed</strong>.
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                         <div style={{marginTop:14,padding:"9px 12px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:7,fontSize:11,color:"#0C4A6E"}}>
                           💡 <strong>Tip:</strong> All financial data sourced from latest proposal (V{proposals.length||"—"}). To change, send a revised proposal.
                         </div>
@@ -8051,78 +8054,44 @@ You will become the assigned agent.`);
 
       {/* Log Activity Modal */}
       {showLog&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"92vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#fff"}}>Log Task</span>
-              <button onClick={()=>setShowLog(false)} style={{background:"none",border:"none",fontSize:20,color:"#C9A84C",cursor:"pointer"}}>×</button>
-            </div>
-            <div style={{padding:"1.25rem 1.5rem"}}>
-              <div style={{marginBottom:14}}>
-                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Activity Type</label>
-                <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                  {[["Call","📞"],["Email","✉️"],["Meeting","🤝"],["Visit","🏠"],["WhatsApp","💬"],["Note","📝"]].map(([t,icon])=>(
-                    <button key={t} onClick={()=>setLogForm(f=>({...f,type:t}))}
-                      style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${logForm.type===t?"#0F2540":"#E2E8F0"}`,background:logForm.type===t?"#0F2540":"#fff",color:logForm.type===t?"#fff":"#4A5568",fontSize:12,cursor:"pointer",fontWeight:logForm.type===t?600:400,display:"flex",alignItems:"center",gap:4}}>
-                      <span>{icon}</span>{t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {["Call","Meeting","Visit"].includes(logForm.type)&&(
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
-                  <div>
-                    <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>📅 Date & Time</label>
-                    <input type="datetime-local" value={logForm.scheduled_at} onChange={e=>setLogForm(f=>({...f,scheduled_at:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
-                  </div>
-                  <div>
-                    <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>⏱ Duration</label>
-                    <select value={logForm.duration_mins} onChange={e=>setLogForm(f=>({...f,duration_mins:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,outline:"none",boxSizing:"border-box"}}>
-                      <option value="">Select…</option>
-                      {["15","30","45","60","90","120"].map(m=><option key={m} value={m}>{m} mins</option>)}
-                    </select>
-                  </div>
-                </div>
-              )}
-              <div style={{marginBottom:12}}>
-                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>💬 Discussion / Key Details</label>
-                <textarea value={logForm.note} onChange={e=>setLogForm(f=>({...f,note:e.target.value}))} rows={3} placeholder="What was discussed? Key points, client feedback, objections…" style={{width:"100%",padding:"8px 10px",border:"1.5px solid #E2E8F0",borderRadius:8,fontSize:13,resize:"vertical",outline:"none",boxSizing:"border-box"}}/>
-              </div>
-              <div style={{marginBottom:12,background:logForm.ns_enabled?"#FFFEF7":"#F8FAFC",border:`1px solid ${logForm.ns_enabled?"#F0E5C8":"#E2E8F0"}`,borderRadius:8,padding:"10px 12px",transition:"all .15s"}}>
-                <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,fontWeight:600,color:"#0F2540"}}>
-                  <input type="checkbox" checked={logForm.ns_enabled} onChange={e=>setLogForm(f=>({...f,ns_enabled:e.target.checked, ns_due: e.target.checked && !f.ns_due ? (()=>{const d=new Date();d.setDate(d.getDate()+2);return d.toISOString().split("T")[0];})() : f.ns_due }))} style={{width:14,height:14,cursor:"pointer",accentColor:"#0F2540"}}/>
-                  📅 Schedule a next step
-                  {logForm.ns_enabled && <span style={{fontSize:10,fontWeight:500,color:"#94A3B8",marginLeft:"auto"}}>creates a reminder</span>}
-                </label>
-                {logForm.ns_enabled && (
-                  <div style={{marginTop:10,display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                    <div>
-                      <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Action</label>
-                      <select value={logForm.ns_type} onChange={e=>setLogForm(f=>({...f,ns_type:e.target.value}))}
-                        style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,outline:"none",background:"#fff",cursor:"pointer",boxSizing:"border-box"}}>
-                        {["Call","WhatsApp","Email","Meeting","Site Visit","Send proposal","Send brochure","Note to self","Other"].map(t=><option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Due Date</label>
-                      <input type="date" value={logForm.ns_due} onChange={e=>setLogForm(f=>({...f,ns_due:e.target.value}))}
-                        style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,outline:"none",background:"#fff",boxSizing:"border-box"}}/>
-                    </div>
-                    <div style={{gridColumn:"1/-1"}}>
-                      <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Note (optional)</label>
-                      <input type="text" value={logForm.ns_note} onChange={e=>setLogForm(f=>({...f,ns_note:e.target.value}))} placeholder="e.g. Confirm payment plan options"
-                        style={{width:"100%",padding:"7px 10px",border:"1.5px solid #E2E8F0",borderRadius:7,fontSize:12,outline:"none",boxSizing:"border-box"}}/>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
-                <button onClick={()=>setShowLog(false)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                <button onClick={saveLog} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save"}</button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <LogActivityModal
+          lead={lead}
+          opp={opp}
+          currentUser={currentUser}
+          showToast={showToast}
+          defaultType={logForm.type||"Call"}
+          onClose={()=>setShowLog(false)}
+          onSaved={async(data, nextStepIntent)=>{
+            setActivities(p=>[data,...p]);
+            if(nextStepIntent && nextStepIntent.due){
+              const triggerAt = new Date(nextStepIntent.due);
+              triggerAt.setHours(9,0,0,0);
+              const{data:remRow,error:remErr}=await supabase.from("reminders").insert({
+                company_id: opp.company_id || currentUser.company_id || null,
+                user_id: currentUser.id,
+                related_opportunity_id: opp.id,
+                related_lead_id: lead.id,
+                related_activity_id: data.id,
+                trigger_at: triggerAt.toISOString(),
+                title: `${nextStepIntent.type} — ${lead.name}`,
+                body: nextStepIntent.note || "",
+                reason: "manual_next_step",
+                status: "pending",
+                created_by: currentUser.id,
+              }).select().single();
+              if(remErr){
+                console.warn("Reminder creation failed (non-fatal):", remErr);
+                showToast("Activity saved, but reminder failed to schedule","error");
+              }else{
+                setReminders(p=>[...p,remRow].sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
+                showToast("Activity logged & next step scheduled","success");
+              }
+            }else{
+              showToast("Activity logged","success");
+            }
+            setShowLog(false);
+          }}
+        />
       )}
 
       {/* Reassign Modal */}
@@ -9560,6 +9529,44 @@ You will become the assigned agent.`);
           </div>
         </div>
       )}
+      {/* Phase 2.1 — Floating Action Button for activity logging */}
+      <button
+        onClick={()=>setShowFabLog(true)}
+        title="Log activity"
+        style={{
+          position:"fixed",
+          bottom:96,
+          right:24,
+          width:56,
+          height:56,
+          borderRadius:"50%",
+          border:"none",
+          background:"#0F2540",
+          color:"#fff",
+          fontSize:24,
+          fontWeight:700,
+          cursor:"pointer",
+          boxShadow:"0 6px 20px rgba(11,31,58,.35)",
+          zIndex:900,
+          display:"flex",
+          alignItems:"center",
+          justifyContent:"center"
+        }}
+      >+</button>
+      {showFabLog && (
+        <LogActivityModal
+          lead={lead}
+          opp={opp}
+          currentUser={currentUser}
+          showToast={showToast}
+          onClose={()=>setShowFabLog(false)}
+          onSaved={(saved)=>{
+            setActivities(a=>[saved,...a]);
+            setShowFabLog(false);
+            showToast("Activity logged","success");
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -9573,7 +9580,7 @@ You will become the assigned agent.`);
    Lets any component call Claude via the existing /api/ai endpoint
    (ANTHROPIC_API_KEY lives in Vercel env, never in the browser).
 ═══════════════════════════════════════════════════════════════ */
-async function aiInvoke({ system, prompt, messages }) {
+async function aiInvoke({ system, prompt, messages, max_tokens }) {
   // Either pass a single prompt (becomes one user message) or pass full messages array
   const msgs = messages || [{ role: "user", content: prompt || "" }];
   const cleaned = msgs
@@ -9581,6 +9588,7 @@ async function aiInvoke({ system, prompt, messages }) {
     .map(m => ({ role: m.role, content: m.content }));
   const body = { messages: cleaned };
   if (system) body.system = system;
+  if (max_tokens) body.max_tokens = max_tokens;
   const res = await fetch("/api/ai", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -10877,6 +10885,7 @@ function Opportunities({ leads, setLeads, opps, setOpps, units, projects, salePr
     const lead = leadById[selOpp.lead_id];
     return (
       <OpportunityDetail
+        key={selOpp.id}
         opp={selOpp}
         lead={lead}
         units={units}
@@ -11063,25 +11072,23 @@ function Opportunities({ leads, setLeads, opps, setOpps, units, projects, salePr
   );
 }
 
-function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpps=()=>{},properties,activities,setActivities,discounts,setDiscounts,currentUser,users,showToast,initialFilter=null,onNavigateToOpp=null}){
+function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpps=()=>{},properties,activities,setActivities,discounts,setDiscounts,currentUser,users,showToast,initialFilter=null,onNavigateToOpp=null,refCountries=[],refRules={}}){
   const [search,   setSearch]   = useState("");
   const [fStage,   setFStage]   = useState("All");
   const [fType,    setFType]    = useState("All");
   const [view,     setView]     = useState("list");   // list | lead | opportunity
   const [selLeadId,setSelLeadId]= useState(null);
   const [selOpp,   setSelOpp]   = useState(null);
-  const [showAdd,  setShowAdd]  = useState(false);
-  const [editLead, setEditLead] = useState(null);
   const [saving,   setSaving]   = useState(false);
   // 23 May 2026: Restore Lead Detail activity logging (lost during April Lead/Opp split rewrite)
   // Full feature parity with Opp Detail saveLog - scheduling, duration, next-step reminders
   // Separate state from opp-side to avoid coupling risk.
   const [showLeadLog,   setShowLeadLog]   = useState(false);
   const [leadLogForm,   setLeadLogForm]   = useState({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
-  const [savingLeadLog, setSavingLeadLog] = useState(false);
   // Phase A.3 — Sprint 1 form (side-by-side feature flag)
-  const [useNewForm, setUseNewForm] = useState(false);
   const [showAddV2, setShowAddV2] = useState(false);
+  const [editLeadForV2, setEditLeadForV2] = useState(null); // Phase 2.2A — V2 dual-mode: null = Add, row = Edit
+  const [editFormVersion, setEditFormVersion] = useState(0); // Phase 2.2A — bump on every Edit click to force V2 remount
   const [opps,     setOpps]     = useState(globalOppsFromParent); // sync with global
   const [units,    setUnits]    = useState([]);
   const [projects, setProjects] = useState([]);
@@ -11095,9 +11102,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const canEdit = can(currentUser.role,"write");
   const canDel  = can(currentUser.role,"delete_leads");
 
-  const blank = {name:"",phone:"",email:"",nationality:"",source:"Walk-In",property_type:"Sale",notes:"",assigned_to:currentUser.id,budget:""};
-  const [form, setForm] = useState(blank);
-  const sf = k => e => setForm(f=>({...f,[k]:e.target?.value??e}));
 
   // ── Browser history sync ────────────────────────────────────────
   // Push state changes into browser history so the browser back button
@@ -11238,39 +11242,6 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       &&(fStage==="All"||stage===fStage);
   });
 
-  const saveLead = async()=>{
-    if(!form.name.trim()){showToast("Name required","error");return;}
-    setSaving(true);
-    try{
-      // Duplicate detection (skip when editing)
-      if(!editLead){
-        const dupCheck = leads.filter(l=>
-          (form.email&&l.email&&l.email.toLowerCase()===form.email.toLowerCase()) ||
-          (form.phone&&l.phone&&l.phone.replace(/\s/g,"")===form.phone.replace(/\s/g,""))
-        );
-        if(dupCheck.length>0){
-          setSaving(false);
-          const dup=dupCheck[0];
-          const go=window.confirm(`A contact with this ${form.email&&dup.email?.toLowerCase()===form.email.toLowerCase()?"email":"phone"} already exists:\n\n${dup.name} (${dup.email||dup.phone})\n\nClick OK to open their profile, or Cancel to continue creating.`);
-          if(go){setShowAdd(false);setSelLeadId(dup.id);setView("lead");}
-          return;
-        }
-      }
-      const payload={...form,budget:form.budget?Number(form.budget):null,final_price:form.final_price?Number(form.final_price):null,no_response_count:form.no_response_count?Number(form.no_response_count):0,phone:form.phone||null,assigned_to:form.assigned_to||currentUser.id,company_id:currentUser.company_id||null,created_by:currentUser.id};
-      let data,error;
-      if(editLead){
-        ({data,error}=await supabase.from("leads").update(form).eq("id",editLead.id).select().single());
-        setLeads(p=>p.map(l=>l.id===editLead.id?data:l));
-      }else{
-        ({data,error}=await supabase.from("leads").insert(payload).select().single());
-        setLeads(p=>[data,...p]);
-      }
-      if(error)throw error;
-      showToast(editLead?"Contact updated":"Contact added","success");
-      setShowAdd(false);setEditLead(null);setForm(blank);
-    }catch(e){showToast(e.message,"error");}
-    setSaving(false);
-  };
 
   const saveOpp = async()=>{
     if(!selLeadId){return;}
@@ -11337,7 +11308,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         </select>
         <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
         {canEdit&&(
-          <button onClick={()=>setShowAddV2(true)} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Lead</button>
+          <button onClick={()=>{setEditFormVersion(v=>v+1);setShowAddV2(true);}} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Add Lead</button>
         )}
       </div>
 
@@ -11395,54 +11366,43 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
       {/* Phase A.3 — new buyer-type-aware lead form (side-by-side with existing modal) */}
       {showAddV2&&(
         <LeadCreationFormV2
+          key={`${editLeadForV2?.id || "new"}-${editFormVersion}`}
           companyId={currentUser?.company_id}
+          countries={refCountries}
+          rules={refRules}
           currentUserId={currentUser?.id}
+          editLead={editLeadForV2}
           onSubmit={async(payload)=>{
-            const {data,error}=await supabase.from("leads").insert(payload).select().single();
-            if(error) throw new Error(error.message||"Failed to create lead");
-            return data;
+            if(editLeadForV2){
+              // EDIT mode: UPDATE the existing lead
+              const {data,error}=await supabase.from("leads").update(payload).eq("id",editLeadForV2.id).select().single();
+              if(error) throw new Error(error.message||"Failed to update contact");
+              return data;
+            } else {
+              // CREATE mode: INSERT new lead
+              const {data,error}=await supabase.from("leads").insert(payload).select().single();
+              if(error) throw new Error(error.message||"Failed to create contact");
+              return data;
+            }
           }}
-          onCancel={()=>setShowAddV2(false)}
-          onCreated={(newLead)=>{
+          onCancel={()=>{setShowAddV2(false);setEditLeadForV2(null);}}
+          onCreated={(savedLead)=>{
             setShowAddV2(false);
-            setLeads(p=>[newLead,...p]);
-            showToast("Contact added (new form)","success");
+            if(editLeadForV2){
+              // Update existing in state
+              setLeads(p=>p.map(l=>l.id===savedLead.id?savedLead:l));
+              showToast("Contact updated","success");
+            } else {
+              // Prepend new to state
+              setLeads(p=>[savedLead,...p]);
+              showToast("Contact added","success");
+            }
+            setEditLeadForV2(null);
           }}
         />
       )}
-
-      {showAdd&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
-              <span style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>{editLead?"Edit":"New"} Contact</span>
-              <button onClick={()=>{setShowAdd(false);setEditLead(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
-            </div>
-            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Full Name *</label><input value={form.name} onChange={sf("name")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Phone</label><input value={form.phone} onChange={sf("phone")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Email</label><input type="email" value={form.email} onChange={sf("email")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Nationality</label><input value={form.nationality} onChange={sf("nationality")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Source</label>
-                  <select value={form.source} onChange={sf("source")}>
-                    {MASTER.lead_source.map(s=><option key={s}>{s}</option>)}
-                  </select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Property Type</label>
-                  <select value={form.property_type} onChange={sf("property_type")}>
-                    <option value="Sale">Sale</option><option value="Both">Both</option>
-                  </select></div>
-                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label><textarea value={form.notes} onChange={sf("notes")} rows={3}/></div>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
-              <button onClick={()=>{setShowAdd(false);setEditLead(null);}} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={saveLead} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editLead?"Save":"Add Contact"}</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
+
   );
 
   // ── LEAD DETAIL VIEW (contact + opportunities) ─────────────────
@@ -11468,11 +11428,36 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
               const m = KYC_META[k]||KYC_META.not_started;
               return <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:m.bg,color:m.c}}>{m.l}</span>;
             })()}
+            {(()=>{
+              // Phase 2.2A — Lifecycle stage badge
+              const LC_META = {
+                raw:                {c:"#475569", bg:"#F1F5F9", l:"Raw"},
+                qualified:          {c:"#1A5FA8", bg:"#E6EFF8", l:"Qualified"},
+                active_prospect:    {c:"#8A6200", bg:"#FDF3DC", l:"Active Prospect"},
+                customer:           {c:"#1A7F5A", bg:"#E6F4EE", l:"Customer"},
+                portfolio_customer: {c:"#5B21B6", bg:"#EDE9FE", l:"Portfolio Customer"},
+              };
+              const ls = selLead.lifecycle_stage || "raw";
+              const m = LC_META[ls] || LC_META.raw;
+              return <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:m.bg,color:m.c}}>{m.l}</span>;
+            })()}
+            {(()=>{
+              // Phase 2.2A — Buyer intent badge (only shown if set)
+              const BI_LABEL = {
+                investor: "Investor",
+                owner_occupier: "Owner-Occupier",
+                hybrid: "Hybrid",
+                corporate: "Corporate buyer",
+                reseller: "Reseller",
+              };
+              const bi = selLead.buyer_intent;
+              return bi ? <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#FFF7E6",color:"#9C6500",border:"1px solid #F5D78F"}}>{BI_LABEL[bi]||bi}</span> : null;
+            })()}
             {selLead.pep_flag&&<span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:"#FDF3DC",color:"#8A6200"}}>⚠ PEP</span>}
           </div>
         </div>
         <div style={{display:"flex",gap:6}}>
-          {canEdit&&<button onClick={()=>{setForm({...blank,...selLead});setEditLead(selLead);setShowAdd(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
+          {canEdit&&<button onClick={()=>{setEditLeadForV2(selLead);setEditFormVersion(v=>v+1);setShowAddV2(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
           {canEdit&&<button onClick={()=>setShowCanonicalOppDialog(true)} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Opportunity</button>}
         </div>
       </div>
@@ -11487,10 +11472,10 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           items.push({icon:"📞", label:"Phone", val:<a href={`tel:${ph}`} style={{color:"#1A5FA8",textDecoration:"none",fontWeight:600}}>{ph}</a>});
         }
         if(selLead.email) items.push({icon:"✉️", label:"Email", val:<a href={`mailto:${selLead.email}`} style={{color:"#1A5FA8",textDecoration:"none",fontWeight:600}}>{selLead.email}</a>});
-        if(selLead.nationality_iso2) items.push({icon:"🌍", label:"Nationality", val:`${iso2ToFlag(selLead.nationality_iso2)} ${selLead.nationality_iso2}`});
+        if(selLead.nationality_iso2) items.push({icon:"🌍", label:"Nationality", val:`${iso2ToFlag(selLead.nationality_iso2)} ${refCountries.find(c=>c.iso2===selLead.nationality_iso2)?.name_en || selLead.nationality_iso2}`});
         else if(selLead.nationality) items.push({icon:"🌍", label:"Nationality", val:selLead.nationality});
-        if(selLead.residence_iso2) items.push({icon:"🏠", label:"Residence", val:`${iso2ToFlag(selLead.residence_iso2)} ${selLead.residence_iso2}`});
-        if(selLead.tax_residency_iso2 && selLead.tax_residency_iso2!==selLead.residence_iso2) items.push({icon:"💼", label:"Tax residency", val:`${iso2ToFlag(selLead.tax_residency_iso2)} ${selLead.tax_residency_iso2}`});
+        if(selLead.residence_iso2) items.push({icon:"🏠", label:"Residence", val:`${iso2ToFlag(selLead.residence_iso2)} ${refCountries.find(c=>c.iso2===selLead.residence_iso2)?.name_en || selLead.residence_iso2}`});
+        if(selLead.tax_residency_iso2 && selLead.tax_residency_iso2!==selLead.residence_iso2) items.push({icon:"💼", label:"Tax residency", val:`${iso2ToFlag(selLead.tax_residency_iso2)} ${refCountries.find(c=>c.iso2===selLead.tax_residency_iso2)?.name_en || selLead.tax_residency_iso2}`});
         if(selLead.source_of_funds) items.push({icon:"💰", label:"Source of funds", val:SOF_LABEL[selLead.source_of_funds]||selLead.source_of_funds});
         if(selLead.source) items.push({icon:"📍", label:"Lead source", val:selLead.source});
         if(selLead.property_type) items.push({icon:"🔍", label:"Looking for", val:selLead.property_type});
@@ -11520,6 +11505,8 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           </div>
         );
       })()}
+      {/* Phase 2.2B — People section (Contacts Subsystem, read-only) */}
+      <LeadPeopleSection leadId={selLead.id} companyId={currentUser?.company_id} currentUserId={currentUser?.id} countries={refCountries} />
 
       {/* 23 May 2026: Lead-stage Activities section (restored from April original design) */}
       {(()=>{
@@ -11589,134 +11576,34 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         )}
         {/* 23 May 2026: Lead-stage Activity Log Dialog - full feature parity with Opp Detail */}
         {showLeadLog && (
-          <div onClick={()=>!savingLeadLog&&setShowLeadLog(false)} style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(15,37,64,.4)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"1rem"}}>
-            <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:14,boxShadow:"0 10px 40px rgba(0,0,0,.2)",maxWidth:560,width:"100%",maxHeight:"90vh",overflow:"auto"}}>
-              <div style={{padding:"14px 20px",borderBottom:"1px solid #E2E8F0",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0F2540"}}>Log Activity — {selLead.name}</div>
-                <button onClick={()=>!savingLeadLog&&setShowLeadLog(false)} style={{background:"none",border:"none",fontSize:20,cursor:savingLeadLog?"not-allowed":"pointer",color:"#94A3B8"}}>×</button>
-              </div>
-              <div style={{padding:"16px 20px"}}>
-                {/* Activity Type */}
-                <div style={{marginBottom:14}}>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Activity Type</label>
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    {[["Call","📞"],["Email","✉️"],["Meeting","🤝"],["Visit","🏠"],["WhatsApp","💬"],["Note","📝"]].map(([t,icon])=>(
-                      <button key={t} onClick={()=>setLeadLogForm(f=>({...f,type:t}))}
-                        style={{padding:"6px 14px",borderRadius:20,border:`1.5px solid ${leadLogForm.type===t?"#0F2540":"#E2E8F0"}`,background:leadLogForm.type===t?"#0F2540":"#fff",color:leadLogForm.type===t?"#fff":"#4A5568",fontSize:12,cursor:"pointer",fontWeight:leadLogForm.type===t?600:400,display:"flex",alignItems:"center",gap:4}}>
-                        <span>{icon}</span>{t}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {/* Date/Time + Duration (only for Call/Meeting/Visit) */}
-                {["Call","Meeting","Visit"].includes(leadLogForm.type)&&(
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
-                    <div>
-                      <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>📅 Date & Time</label>
-                      <input type="datetime-local" value={leadLogForm.scheduled_at} onChange={e=>setLeadLogForm(f=>({...f,scheduled_at:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1.5px solid #E2E8F0",fontSize:12,fontFamily:"'Inter',sans-serif",boxSizing:"border-box"}}/>
-                    </div>
-                    <div>
-                      <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>⏱ Duration</label>
-                      <select value={leadLogForm.duration_mins} onChange={e=>setLeadLogForm(f=>({...f,duration_mins:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:7,border:"1.5px solid #E2E8F0",fontSize:12,fontFamily:"'Inter',sans-serif",boxSizing:"border-box",background:"#fff"}}>
-                        <option value="">Select...</option>
-                        <option value="15">15 mins</option>
-                        <option value="30">30 mins</option>
-                        <option value="45">45 mins</option>
-                        <option value="60">60 mins</option>
-                        <option value="90">90 mins</option>
-                        <option value="120">120 mins</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-                {/* Discussion Notes */}
-                <div style={{marginBottom:14}}>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>💬 Discussion / Key Details</label>
-                  <textarea value={leadLogForm.note} onChange={e=>setLeadLogForm(f=>({...f,note:e.target.value}))} placeholder="What was discussed? Key takeaways, buyer preferences, objections, next steps..." rows={4} style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1.5px solid #E2E8F0",fontSize:13,fontFamily:"'Inter',sans-serif",resize:"vertical",boxSizing:"border-box"}}/>
-                </div>
-                {/* Schedule Next Step toggle */}
-                <div style={{padding:"10px 12px",background:"#F8FAFC",border:"1px solid #E8EDF4",borderRadius:8,marginBottom:14}}>
-                  <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,fontWeight:600,color:"#0F2540"}}>
-                    <input type="checkbox" checked={leadLogForm.ns_enabled} onChange={e=>setLeadLogForm(f=>({...f,ns_enabled:e.target.checked}))}/>
-                    📅 Schedule a next step
-                  </label>
-                  {leadLogForm.ns_enabled&&(
-                    <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #E2E8F0",display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-                      <div>
-                        <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Type</label>
-                        <select value={leadLogForm.ns_type} onChange={e=>setLeadLogForm(f=>({...f,ns_type:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1.5px solid #E2E8F0",fontSize:11,fontFamily:"'Inter',sans-serif",boxSizing:"border-box",background:"#fff"}}>
-                          {["Call","Email","Meeting","Visit","WhatsApp","Task"].map(t=><option key={t} value={t}>{t}</option>)}
-                        </select>
-                      </div>
-                      <div>
-                        <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Due Date</label>
-                        <input type="date" value={leadLogForm.ns_due} onChange={e=>setLeadLogForm(f=>({...f,ns_due:e.target.value}))} style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1.5px solid #E2E8F0",fontSize:11,fontFamily:"'Inter',sans-serif",boxSizing:"border-box"}}/>
-                      </div>
-                      <div style={{gridColumn:"span 2"}}>
-                        <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Note (optional)</label>
-                        <input type="text" value={leadLogForm.ns_note} onChange={e=>setLeadLogForm(f=>({...f,ns_note:e.target.value}))} placeholder="e.g. Follow up on budget question" style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1.5px solid #E2E8F0",fontSize:11,fontFamily:"'Inter',sans-serif",boxSizing:"border-box"}}/>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div style={{padding:"12px 20px",borderTop:"1px solid #E2E8F0",display:"flex",justifyContent:"flex-end",gap:8,background:"#F8FAFC",borderRadius:"0 0 14px 14px"}}>
-                <button onClick={()=>setShowLeadLog(false)} disabled={savingLeadLog} style={{padding:"8px 18px",borderRadius:7,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:savingLeadLog?"not-allowed":"pointer",color:"#4A5568"}}>Cancel</button>
-                <button onClick={async()=>{
-                  const f = leadLogForm;
-                  const hasNextStep = f.ns_enabled && f.ns_due;
-                  if(!(f.note||"").trim() && !hasNextStep){showToast("Please add discussion notes or set a next step","error");return;}
-                  setSavingLeadLog(true);
-                  const isScheduled = f.scheduled_at && new Date(f.scheduled_at) > new Date();
-                  const nsLine = hasNextStep ? `\n\n✅ Next: ${f.ns_type} on ${new Date(f.ns_due).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}${f.ns_note?(" — "+f.ns_note):""}` : "";
-                  const noteText = [
-                    f.note,
-                    nsLine,
-                    f.scheduled_at?("\n📅 Scheduled: "+new Date(f.scheduled_at).toLocaleString("en-AE",{dateStyle:"medium",timeStyle:"short"})):"",
-                    f.duration_mins?("\n⏱ Duration: "+f.duration_mins+" mins"):"",
-                  ].filter(Boolean).join("");
-                  // Save activity (lead-only, no opp coupling)
-                  const{data:actRow,error:actErr}=await supabase.from("activities").insert({
-                    lead_id:selLead.id,
-                    type:f.type,
-                    note:noteText,
-                    scheduled_at:f.scheduled_at||null,
-                    status:isScheduled?"upcoming":"completed",
-                    user_id:currentUser.id,
-                    user_name:currentUser.full_name,
-                    lead_name:selLead.name,
-                    company_id:currentUser.company_id||null,
-                    activity_subtype:"free_note",
-                  }).select().single();
-                  if(actErr){showToast("Failed to log activity","error");setSavingLeadLog(false);return;}
-                  setActivities(p=>[actRow,...p]);
-                  // Create reminder if next step enabled (related_lead_id only, no opp)
-                  if(hasNextStep){
-                    const triggerAt = new Date(f.ns_due);
-                    triggerAt.setHours(9,0,0,0);
-                    const{error:remErr}=await supabase.from("reminders").insert({
-                      company_id: currentUser.company_id || null,
-                      user_id: currentUser.id,
-                      related_lead_id: selLead.id,
-                      related_activity_id: actRow.id,
-                      trigger_at: triggerAt.toISOString(),
-                      title: `${f.ns_type} — ${selLead.name}`,
-                      body: f.ns_note || "",
-                      reason: "lead_followup",
-                      status: "pending",
-                    });
-                    if(remErr) console.warn("Reminder create failed:", remErr.message);
-                  }
-                  showToast(`${f.type} logged${hasNextStep?" + next step scheduled":""}`,"success");
-                  setShowLeadLog(false);
-                  setLeadLogForm({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
-                  setSavingLeadLog(false);
-                }} disabled={savingLeadLog} style={{padding:"8px 22px",borderRadius:7,border:"none",background:savingLeadLog?"#94A3B8":"#0F2540",color:"#fff",fontSize:12,fontWeight:700,cursor:savingLeadLog?"not-allowed":"pointer"}}>
-                  {savingLeadLog?"Saving...":"💾 Save"}
-                </button>
-              </div>
-            </div>
-          </div>
+          <LogActivityModal
+            lead={selLead}
+            opp={null}
+            currentUser={currentUser}
+            showToast={showToast}
+            defaultType={leadLogForm.type||"Call"}
+            onClose={()=>setShowLeadLog(false)}
+            onSaved={async(data, nextStepIntent)=>{
+              setActivities(p=>[data,...p]);
+              if(nextStepIntent && nextStepIntent.due){
+                const triggerAt = new Date(nextStepIntent.due);
+                triggerAt.setHours(9,0,0,0);
+                const{error:remErr}=await supabase.from("reminders").insert({
+                  company_id: currentUser.company_id || null,
+                  user_id: currentUser.id,
+                  related_lead_id: selLead.id,
+                  related_activity_id: data.id,
+                  trigger_at: triggerAt.toISOString(),
+                  title: `${nextStepIntent.type} — ${selLead.name}`,
+                  body: nextStepIntent.note || "",
+                  reason: "lead_followup",
+                  status: "pending",
+                });
+                if(remErr) console.warn("Reminder create failed:", remErr.message);
+              }
+              setShowLeadLog(false);
+            }}
+          />
         )}
 
         {leadOpps.length>0&&(
@@ -11956,39 +11843,66 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           </div>
         </div>
       )}
-      {/* Fix 12 May 2026: Edit Lead modal - same as list view modal */}
-      {/* Both views share showAdd/editLead/form state; rendering modal here */}
-      {/* so Edit button on lead detail can show it */}
-      {showAdd&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:480,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
-              <span style={{fontFamily:"'Inter',sans-serif",fontSize:16,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>{editLead?"Edit":"New"} Contact</span>
-              <button onClick={()=>{setShowAdd(false);setEditLead(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
-            </div>
-            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Full Name *</label><input value={form.name} onChange={sf("name")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Phone</label><input value={form.phone} onChange={sf("phone")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Email</label><input type="email" value={form.email} onChange={sf("email")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Nationality</label><input value={form.nationality} onChange={sf("nationality")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Source</label>
-                  <select value={form.source} onChange={sf("source")}>
-                    {MASTER.lead_source.map(s=><option key={s}>{s}</option>)}
-                  </select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Property Type</label>
-                  <select value={form.property_type} onChange={sf("property_type")}>
-                    <option value="Sale">Sale</option><option value="Both">Both</option>
-                  </select></div>
-                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label><textarea value={form.notes} onChange={sf("notes")} rows={3}/></div>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
-              <button onClick={()=>{setShowAdd(false);setEditLead(null);}} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={saveLead} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editLead?"Save":"Add Contact"}</button>
-            </div>
-          </div>
-        </div>
+      {/* Phase 2.1 — Floating Action Button for activity logging */}
+      <button
+        onClick={()=>{
+          setLeadLogForm({type:"Call",note:"",scheduled_at:"",duration_mins:"",ns_enabled:false,ns_type:"Call",ns_due:"",ns_note:""});
+          setShowLeadLog(true);
+        }}
+        title="Log activity"
+        style={{
+          position:"fixed",
+          bottom:24,
+          right:24,
+          width:56,
+          height:56,
+          borderRadius:"50%",
+          border:"none",
+          background:"#0F2540",
+          color:"#fff",
+          fontSize:24,
+          fontWeight:700,
+          cursor:"pointer",
+          boxShadow:"0 6px 20px rgba(11,31,58,.35)",
+          zIndex:900,
+          display:"flex",
+          alignItems:"center",
+          justifyContent:"center"
+        }}
+      >+</button>
+      {/* Phase 2.2A — V2 dual-mode form for Edit Contact from Lead Detail */}
+      {showAddV2&&(
+        <LeadCreationFormV2
+          key={`${editLeadForV2?.id || "new"}-${editFormVersion}`}
+          companyId={currentUser?.company_id}
+          countries={refCountries}
+          rules={refRules}
+          currentUserId={currentUser?.id}
+          editLead={editLeadForV2}
+          onSubmit={async(payload)=>{
+            if(editLeadForV2){
+              const {data,error}=await supabase.from("leads").update(payload).eq("id",editLeadForV2.id).select().single();
+              if(error) throw new Error(error.message||"Failed to update contact");
+              return data;
+            } else {
+              const {data,error}=await supabase.from("leads").insert(payload).select().single();
+              if(error) throw new Error(error.message||"Failed to create contact");
+              return data;
+            }
+          }}
+          onCancel={()=>{setShowAddV2(false);setEditLeadForV2(null);}}
+          onCreated={(savedLead)=>{
+            setShowAddV2(false);
+            if(editLeadForV2){
+              setLeads(p=>p.map(l=>l.id===savedLead.id?savedLead:l));
+              showToast("Contact updated","success");
+            } else {
+              setLeads(p=>[savedLead,...p]);
+              showToast("Contact added","success");
+            }
+            setEditLeadForV2(null);
+          }}
+        />
       )}
     </div>
   );
@@ -11996,6 +11910,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   // ── OPPORTUNITY DETAIL VIEW ────────────────────────────────────
   if(view==="opportunity"&&selOpp) return (
     <OpportunityDetail
+      key={selOpp.id}
       opp={selOpp}
       lead={selLead||leads.find(l=>l.id===selOpp.lead_id)||{}}
       units={units}
@@ -12226,33 +12141,364 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
 
 
 // ── Standalone Log Activity Modal (used in Pipeline + anywhere else) ──
+function CoachPage({ opps, leads, activities, users, currentUser, showToast, onNavigateToOpp }) {
+  const role = currentUser?.role || "sales_agent";
+  const isManager = ["super_admin", "admin", "sales_manager"].includes(role);
+  const SCOPES = [
+    { id: "mine",      label: "My Pipeline",  icon: "👤", managerOnly: false },
+    { id: "all_opps",  label: "All Opportunities", icon: "🎯", managerOnly: false },
+    { id: "attention", label: "Needs Attention",   icon: "🚨", managerOnly: false },
+    { id: "stage",     label: "By Stage",     icon: "📊", managerOnly: false },
+    { id: "segment",   label: "By Segment",   icon: "🎯", managerOnly: false },
+    { id: "portfolio", label: "Portfolio",    icon: "🏛", managerOnly: true  },
+  ].filter(s => isManager || !s.managerOnly);
+  const [scope, setScope] = useState("mine");
+  const [stageFilter, setStageFilter] = useState("Negotiation");
+  const [segmentFilter, setSegmentFilter] = useState("investor");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
+  const STAGES = ["New", "Contacted", "Site Visit", "Proposal Sent", "Negotiation", "Offer Accepted", "Reserved", "SPA Signed"];
+  const SEGMENTS = [
+    { id: "investor", label: "Investor" },
+    { id: "owner_occupier", label: "Owner-Occupier" },
+    { id: "hybrid", label: "Hybrid" },
+    { id: "corporate", label: "Corporate" },
+    { id: "reseller", label: "Reseller" },
+  ];
+  const AI_PURPLE = "#6D28D9";
+  const AI_TEAL = "#0E7490";
+  const gradient = `linear-gradient(135deg, ${AI_PURPLE} 0%, ${AI_TEAL} 100%)`;
+
+  // ── Gather the deals for the selected scope (Phase 2) ──
+  const activeOpps = (opps || []).filter(o =>
+    o.stage !== "Closed Won" && o.stage !== "Closed Lost" && o.status !== "On Hold" && o.status !== "Cancelled"
+  );
+  const scopedOpps = (() => {
+    if (scope === "mine") return activeOpps.filter(o => o.assigned_to === currentUser?.id);
+    if (scope === "all_opps") return isManager ? activeOpps : activeOpps.filter(o => o.assigned_to === currentUser?.id);
+    if (scope === "attention") {
+      const base = isManager ? activeOpps : activeOpps.filter(o => o.assigned_to === currentUser?.id);
+      return base.filter(o => {
+        const acts = (activities || []).filter(a => a.opportunity_id === o.id).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const lastAt = acts[0]?.created_at || o.stage_updated_at || o.created_at;
+        const daysSince = lastAt ? Math.floor((Date.now() - new Date(lastAt).getTime()) / 86400000) : 999;
+        const daysStage = o.stage_updated_at ? Math.floor((Date.now() - new Date(o.stage_updated_at).getTime()) / 86400000) : 0;
+        return daysSince >= 7 || daysStage >= 14;
+      });
+    }
+    if (scope === "stage") {
+      const base = isManager ? activeOpps : activeOpps.filter(o => o.assigned_to === currentUser?.id);
+      return base.filter(o => o.stage === stageFilter);
+    }
+    if (scope === "segment") {
+      const base = isManager ? activeOpps : activeOpps.filter(o => o.assigned_to === currentUser?.id);
+      return base.filter(o => {
+        const ld = (leads || []).find(l => l.id === o.lead_id);
+        return ld?.buyer_intent === segmentFilter;
+      });
+    }
+    if (scope === "portfolio") return isManager ? activeOpps : [];
+    return [];
+  })();
+  // Enrich each opp with the context the AI needs
+  const enrichedDeals = scopedOpps.map(o => {
+    const ld = (leads || []).find(l => l.id === o.lead_id);
+    const oppActs = (activities || []).filter(a => a.opportunity_id === o.id)
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const lastActAt = oppActs[0]?.created_at || o.stage_updated_at || o.created_at;
+    const daysInStage = o.stage_updated_at ? Math.floor((Date.now() - new Date(o.stage_updated_at).getTime()) / 86400000) : null;
+    const daysSinceActivity = lastActAt ? Math.floor((Date.now() - new Date(lastActAt).getTime()) / 86400000) : null;
+    const agent = (users || []).find(u => u.id === o.assigned_to);
+    return {
+      id: o.id,
+      title: o.title || "(untitled)",
+      lead_name: ld?.name || "Unknown",
+      buyer_intent: ld?.buyer_intent || null,
+      stage: o.stage,
+      value: o.budget || null,
+      days_in_stage: daysInStage,
+      days_since_activity: daysSinceActivity,
+      activity_count: oppActs.length,
+      agent_name: agent?.full_name || "Unassigned",
+    };
+  }).sort((a, b) => (b.days_since_activity || 0) - (a.days_since_activity || 0));
+
+  const dealCount = enrichedDeals.length;
+  const totalValue = enrichedDeals.reduce((s, d) => s + (d.value || 0), 0);
+
+  // ── Phase 3: AI analysis of the selected cross-section ──
+  const scopeLabel = SCOPES.find(s => s.id === scope)?.label || scope;
+  const scopeDescription = (() => {
+    if (scope === "stage") return `deals in the "${stageFilter}" stage`;
+    if (scope === "segment") return `${SEGMENTS.find(s => s.id === segmentFilter)?.label || segmentFilter} buyers`;
+    if (scope === "attention") return "deals that are stalling (no recent activity or stuck in stage)";
+    if (scope === "portfolio") return "the entire company's active pipeline";
+    if (scope === "all_opps") return "all active opportunities";
+    return "your active pipeline";
+  })();
+
+  const runBroadCoach = async () => {
+    if (dealCount === 0) return;
+    setLoading(true);
+    setError("");
+    setResult(null);
+    try {
+      // Keep payload lean — cap at 40 deals to control tokens
+      const dealsForAI = enrichedDeals.slice(0, 40).map(d => ({
+        id: d.id,
+        deal: d.title,
+        buyer: d.lead_name,
+        intent: d.buyer_intent,
+        stage: d.stage,
+        value_aed: d.value,
+        days_in_stage: d.days_in_stage,
+        days_since_activity: d.days_since_activity,
+        activities_logged: d.activity_count,
+        agent: d.agent_name,
+      }));
+      const system = `You are PropPulse Coach, an expert UAE real-estate sales advisor reviewing a CROSS-SECTION of a brokerage's pipeline (not a single deal). Your job: read the set of deals and surface the MOST IMPORTANT things the user should act on now. Be specific — name actual deals, cite their stage/value/staleness. Respect UAE norms (DLD 4%, off-plan vs ready, payment plans 10/90, 20/80, 50/50, 40/60). Prioritise deals at risk (stale, stuck) and high-value opportunities. Always respond with valid JSON only — no prose, no markdown fences. Confidence is one of "high", "medium", "low".`;
+      const userPrompt = `Analyse this cross-section of the pipeline: ${scopeDescription}.
+SCOPE: ${scopeLabel}
+DEAL COUNT: ${dealCount}
+TOTAL VALUE: AED ${(totalValue/1e6).toFixed(2)}M
+
+DEALS (sorted by staleness, most stale first):
+${JSON.stringify(dealsForAI, null, 2)}
+
+TASK: Give a portfolio-level read, then rank the specific deals that need attention most. Reference actual deals by name.
+RESPOND WITH VALID JSON ONLY in this exact shape:
+{
+  "summary": "<2-3 sentence read of this cross-section — health, risks, where to focus>",
+  "deals": [
+    {
+      "deal_id": "<the id field from the deal>",
+      "deal_name": "<deal name>",
+      "priority": "high" | "medium" | "low",
+      "issue": "<what's wrong or the opportunity — cite specifics>",
+      "recommended_move": "<the single next action for this deal>"
+    }
+  ]
+}
+Rank up to 6 deals, highest priority first. If a deal is healthy, you may omit it.`;
+      const reply = await aiInvoke({ system, prompt: userPrompt, max_tokens: 3000 });
+      const cleaned = reply.replace(/```json\s*/g, "").replace(/```\s*$/g, "").trim();
+      // Robust JSON parse — LLMs sometimes emit trailing commas, smart quotes, or partial trailing junk
+      const tryParse = (s) => {
+        try { return JSON.parse(s); } catch { return null; }
+      };
+      const normalize = (s) => s
+        .replace(/[\u201C\u201D]/g, '"')   // smart double quotes → "
+        .replace(/[\u2018\u2019]/g, "'")   // smart single quotes → '
+        .replace(/,(\s*[\}\]])/g, "$1");   // strip trailing commas
+      let parsed = tryParse(cleaned) || tryParse(normalize(cleaned));
+      if (!parsed) {
+        const m = cleaned.match(/\{[\s\S]*\}/);
+        if (m) parsed = tryParse(m[0]) || tryParse(normalize(m[0]));
+      }
+      if (!parsed) throw new Error("AI response was not valid JSON");
+      setResult({
+        summary: parsed.summary || "",
+        deals: Array.isArray(parsed.deals) ? parsed.deals.slice(0, 6) : [],
+        scope: scopeLabel,
+        analysed_at: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.error("Broad Coach failed:", e);
+      setError(`Couldn't analyse: ${e.message || "unknown error"}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+          <span style={{ fontSize: 26 }}>✨</span>
+          <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: 24, fontWeight: 800, color: "#0F2540", margin: 0, letterSpacing: "-.5px" }}>AI Coach</h1>
+          <span style={{ fontSize: 10, fontWeight: 700, color: "#fff", background: gradient, padding: "3px 9px", borderRadius: 20, letterSpacing: ".5px" }}>BETA</span>
+        </div>
+        <p style={{ fontSize: 13, color: "#64748B", margin: 0, lineHeight: 1.5 }}>
+          Honest, AI-powered review of your deals. Point it at any slice of your book — your pipeline, a stage, a buyer segment{isManager ? ", or the whole portfolio" : ""} — and get the moves that matter most.
+        </p>
+      </div>
+      <div style={{ background: "#fff", border: "1px solid #E8EDF4", borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: 10 }}>What should I analyse?</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+          {SCOPES.map(s => {
+            const active = scope === s.id;
+            return (
+              <button key={s.id} onClick={() => { setScope(s.id); setResult(null); setError(""); }}
+                style={{ padding: "9px 16px", borderRadius: 10, cursor: "pointer",
+                  border: active ? `1.5px solid ${AI_PURPLE}` : "1.5px solid #E2E8F0",
+                  background: active ? "linear-gradient(135deg, #EDE9FE 0%, #CCFBF1 100%)" : "#F8FAFC",
+                  color: active ? "#0F2540" : "#64748B", fontWeight: active ? 700 : 600, fontSize: 13,
+                  display: "flex", alignItems: "center", gap: 7,
+                  boxShadow: active ? "0 0 0 3px rgba(109,40,217,.08)" : "none", transition: "all .15s" }}>
+                <span style={{ fontSize: 15 }}>{s.icon}</span><span>{s.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        {scope === "stage" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>Stage:</span>
+            {STAGES.map(st => (
+              <button key={st} onClick={() => setStageFilter(st)}
+                style={{ padding: "5px 11px", borderRadius: 8, fontSize: 11, cursor: "pointer", fontWeight: stageFilter === st ? 700 : 500,
+                  border: stageFilter === st ? `1.5px solid ${AI_TEAL}` : "1.5px solid #E2E8F0",
+                  background: stageFilter === st ? "#CCFBF1" : "#fff", color: stageFilter === st ? "#0F2540" : "#64748B" }}>{st}</button>
+            ))}
+          </div>
+        )}
+        {scope === "segment" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 12, color: "#64748B", fontWeight: 600 }}>Segment:</span>
+            {SEGMENTS.map(sg => (
+              <button key={sg.id} onClick={() => setSegmentFilter(sg.id)}
+                style={{ padding: "5px 11px", borderRadius: 8, fontSize: 11, cursor: "pointer", fontWeight: segmentFilter === sg.id ? 700 : 500,
+                  border: segmentFilter === sg.id ? `1.5px solid ${AI_TEAL}` : "1.5px solid #E2E8F0",
+                  background: segmentFilter === sg.id ? "#CCFBF1" : "#fff", color: segmentFilter === sg.id ? "#0F2540" : "#64748B" }}>{sg.label}</button>
+            ))}
+          </div>
+        )}
+        {scope === "portfolio" && isManager && (
+          <div style={{ fontSize: 12, color: "#64748B", fontStyle: "italic" }}>Analysing every active deal across the company.</div>
+        )}
+        {scope === "mine" && (
+          <div style={{ fontSize: 12, color: "#64748B", fontStyle: "italic" }}>Analysing all of your active deals.</div>
+        )}
+        {scope === "all_opps" && (
+          <div style={{ fontSize: 12, color: "#64748B", fontStyle: "italic" }}>Analysing {isManager ? "every active deal" : "all your active deals"} as one book.</div>
+        )}
+        {scope === "attention" && (
+          <div style={{ fontSize: 12, color: "#B45309", fontStyle: "italic" }}>🚨 Deals stalling — no activity 7+ days or stuck in stage 14+ days.</div>
+        )}
+      </div>
+      <div style={{ background: "#fff", border: "1px solid #E8EDF4", borderRadius: 14, padding: "28px 20px", textAlign: "center" }}>
+        <div style={{ fontSize: 13, color: "#64748B", marginBottom: 14 }}>
+          {dealCount > 0 ? (
+            <>Found <strong style={{ color: "#0F2540", fontSize: 18 }}>{dealCount}</strong> active {dealCount === 1 ? "deal" : "deals"}
+              {totalValue > 0 ? <> · <strong style={{ color: "#0F2540" }}>AED {(totalValue / 1e6).toFixed(2)}M</strong> total value</> : null}</>
+          ) : (
+            <span style={{ color: "#94A3B8" }}>No active deals match this scope.</span>
+          )}
+        </div>
+        <button onClick={runBroadCoach} disabled={dealCount === 0 || loading}
+          style={{ padding: "11px 28px", borderRadius: 10, border: "none",
+            background: (dealCount === 0 || loading) ? "#CBD5E1" : "linear-gradient(135deg, #6D28D9 0%, #0E7490 100%)",
+            color: "#fff", fontSize: 14, fontWeight: 700, cursor: (dealCount === 0 || loading) ? "not-allowed" : "pointer",
+            boxShadow: (dealCount === 0 || loading) ? "none" : "0 2px 10px rgba(109,40,217,.25)" }}>
+          {loading ? "✨ Analysing…" : `✨ Analyse ${dealCount > 0 ? `${dealCount} ${dealCount === 1 ? "deal" : "deals"}` : ""}`}
+        </button>
+
+        {error && (
+          <div style={{ marginTop: 16, padding: "12px 16px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 10, color: "#B91C1C", fontSize: 13 }}>
+            {error}
+          </div>
+        )}
+
+        {result && !loading && (
+          <div style={{ marginTop: 22, textAlign: "left" }}>
+            {/* Summary */}
+            <div style={{ padding: "16px 18px", borderRadius: 12, background: "linear-gradient(135deg, #F5F3FF 0%, #ECFEFF 100%)", border: "1px solid #DDD6FE", marginBottom: 16 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: "#6D28D9", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: 6 }}>
+                ✨ Coach read · {result.scope}
+              </div>
+              <div style={{ fontSize: 14, color: "#0F2540", lineHeight: 1.6, fontWeight: 500 }}>{result.summary}</div>
+            </div>
+            {/* Ranked deals */}
+            {result.deals.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {result.deals.map((d, i) => {
+                  const pc = d.priority === "high" ? { c: "#DC2626", bg: "#FEE2E2", l: "HIGH" }
+                    : d.priority === "medium" ? { c: "#D97706", bg: "#FEF3C7", l: "MEDIUM" }
+                    : { c: "#0891B2", bg: "#CFFAFE", l: "LOW" };
+                  return (
+                    <div key={i} onClick={() => d.deal_id && onNavigateToOpp && onNavigateToOpp(d.deal_id)}
+                      style={{ padding: "14px 16px", borderRadius: 12, background: "#fff", border: "1px solid #E8EDF4", cursor: d.deal_id ? "pointer" : "default", transition: "all .15s" }}
+                      onMouseEnter={e => { if (d.deal_id) { e.currentTarget.style.borderColor = "#A5B4FC"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(109,40,217,.08)"; } }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = "#E8EDF4"; e.currentTarget.style.boxShadow = "none"; }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: pc.c, background: pc.bg, padding: "2px 8px", borderRadius: 20 }}>{pc.l}</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: "#0F2540" }}>{d.deal_name}</span>
+                        {d.deal_id && onNavigateToOpp && <span style={{ fontSize: 11, color: "#94A3B8", marginLeft: "auto" }}>Open →</span>}
+                      </div>
+                      <div style={{ fontSize: 12.5, color: "#64748B", lineHeight: 1.55, marginBottom: 6 }}>{d.issue}</div>
+                      <div style={{ fontSize: 12.5, color: "#0F2540", lineHeight: 1.55 }}>
+                        <strong style={{ color: "#6D28D9" }}>Next:</strong> {d.recommended_move}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div style={{ marginTop: 14, textAlign: "center" }}>
+              <button onClick={runBroadCoach} style={{ background: "none", border: "none", color: "#6D28D9", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>↻ Re-analyse</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, defaultType="Call"}) {
-  const [form, setForm] = useState({type:defaultType,note:"",scheduled_at:"",next_steps:"",duration_mins:"",status:"completed"});
+  // Canonical activity-logging modal (Day 18 consolidation).
+  // Used by BOTH Opportunity Detail and Lead Detail. Handles the universal
+  // parts: type, status, duration, person-tagging, notes, next-step inputs,
+  // note-text composition, and the activities INSERT (with person_id +
+  // stage_at_event when an opp is present).
+  //
+  // Reminder creation is NOT done here — the modal returns the next-step
+  // intent to the parent via onSaved(activity, nextStepIntent). Each parent
+  // owns its reminders state, so it creates the reminder + updates its panel.
+  const [form, setForm] = useState({
+    type: defaultType, note:"", scheduled_at:"", duration_mins:"", status:"completed",
+    person_id:"", ns_enabled:false, ns_type:"Call", ns_due:"", ns_note:"",
+  });
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);  // Day 18: synchronous double-click guard (ref flips instantly, before re-render)
+  const { persons: actPersons } = useLeadPersons(lead?.id);
   const sf = k => e => setForm(f=>({...f,[k]:e.target.value}));
 
   const save = async() => {
     if(!lead){showToast("No lead found","error");return;}
+    const hasNextStep = form.ns_enabled && form.ns_due;
+    if(!(form.note||"").trim() && !hasNextStep){showToast("Please add discussion notes or set a next step","error");return;}
+    if(savingRef.current) return;  // Day 18: block double-click — a save already in flight
+    savingRef.current = true;
     setSaving(true);
     try{
+      const isScheduled = form.scheduled_at && new Date(form.scheduled_at) > new Date();
+      const nsLine = hasNextStep ? `\n\n✅ Next: ${form.ns_type} on ${new Date(form.ns_due).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}${form.ns_note?(" — "+form.ns_note):""}` : "";
+      const noteText = [
+        form.note,
+        nsLine,
+        form.scheduled_at?("\n📅 Scheduled: "+new Date(form.scheduled_at).toLocaleString("en-AE",{dateStyle:"medium",timeStyle:"short"})):"",
+        form.duration_mins?("\n⏱ Duration: "+form.duration_mins+" mins"):"",
+      ].filter(Boolean).join("");
       const payload = {
         lead_id: lead.id,
         lead_name: lead.name,
-        company_id: currentUser.company_id||null,
+        company_id: (opp?.company_id) || currentUser.company_id || null,
         type: form.type,
-        note: form.note||null,
-        next_steps: form.next_steps||null,
-        scheduled_at: form.scheduled_at||new Date().toISOString(),
+        note: noteText || null,
+        scheduled_at: form.scheduled_at || new Date().toISOString(),
         duration_mins: form.duration_mins?Number(form.duration_mins):null,
-        status: form.status||"completed",
-        created_by: currentUser.id,
+        status: isScheduled?"upcoming":"completed",
+        user_id: currentUser.id,
+        user_name: currentUser.full_name,
         opportunity_id: opp?.id||null,
+        person_id: form.person_id||null,
+        stage_at_event: opp?.stage || null,
+        activity_subtype: "free_note",
       };
       const{data,error}=await supabase.from("activities").insert(payload).select().single();
       if(error)throw error;
-      onSaved(data);
-    }catch(e){showToast(e.message,"error");}
-    setSaving(false);
+      const nextStepIntent = hasNextStep ? {type:form.ns_type, due:form.ns_due, note:form.ns_note} : null;
+      onSaved(data, nextStepIntent);
+    }catch(e){showToast(e.message,"error"); setSaving(false); savingRef.current=false;}
   };
 
   return(
@@ -12290,6 +12536,20 @@ function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, 
             </div>
           </div>
 
+          {actPersons && actPersons.length > 0 && (
+            <div style={{marginBottom:12}}>
+              <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Who did you talk to?</label>
+              <select value={form.person_id} onChange={sf("person_id")} style={{width:"100%"}}>
+                <option value="">— Not specified —</option>
+                {actPersons.map(p=>(
+                  <option key={p.id} value={p.id}>
+                    {p.name}{p.is_primary_buyer?" 👑":""} · {ROLE_LABELS[p.role]||p.role}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {["Call","Meeting","Site Visit"].includes(form.type)&&(
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
               <div>
@@ -12310,10 +12570,32 @@ function LogActivityModal({lead, opp, currentUser, showToast, onClose, onSaved, 
             <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Discussion / Notes</label>
             <textarea value={form.note} onChange={sf("note")} rows={3} placeholder="What was discussed? Key points, client feedback, objections…"/>
           </div>
-          <div style={{marginBottom:16}}>
-            <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Next Steps</label>
-            <textarea value={form.next_steps} onChange={sf("next_steps")} rows={2} placeholder="Follow-up action, who's responsible, by when?"/>
+
+          <div style={{padding:"10px 12px",background:"#F8FAFC",border:"1px solid #E8EDF4",borderRadius:8,marginBottom:16}}>
+            <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,fontWeight:600,color:"#0F2540"}}>
+              <input type="checkbox" checked={form.ns_enabled} onChange={e=>setForm(f=>({...f,ns_enabled:e.target.checked}))}/>
+              📅 Schedule a next step
+            </label>
+            {form.ns_enabled&&(
+              <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #E2E8F0",display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                <div>
+                  <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Type</label>
+                  <select value={form.ns_type} onChange={sf("ns_type")} style={{width:"100%"}}>
+                    {["Call","Email","Meeting","Visit","WhatsApp","Task"].map(t=><option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Due Date</label>
+                  <input type="date" value={form.ns_due} onChange={sf("ns_due")} style={{width:"100%"}}/>
+                </div>
+                <div style={{gridColumn:"span 2"}}>
+                  <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Note (optional)</label>
+                  <input type="text" value={form.ns_note} onChange={sf("ns_note")} placeholder="e.g. Follow up on budget question" style={{width:"100%"}}/>
+                </div>
+              </div>
+            )}
           </div>
+
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
             <button onClick={onClose} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",color:"#475569"}}>Cancel</button>
             <button onClick={save} disabled={saving} style={{padding:"8px 20px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Save Activity"}</button>
@@ -12774,6 +13056,7 @@ const TABS=[
   {id:"reports",    label:"Reports",      icon:"📊", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   //{id:"ai",       label:"AI Assistant", icon:"✦",  app:"sales" -- removed, using AI bubble insteadles_manager","sales_agent"]},
   {id:"proppulse",  label:"PropPulse",   icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"coach_ai",   label:"AI Coach",    icon:"✨", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"companies",  label:"Companies",    icon:"🏢", app:"sales",   roles:["super_admin"]},
   {id:"users",      label:"Users",        icon:"👥", app:"sales",   roles:["admin","super_admin"]},
   // 21 May 2026: Hide Permissions menu for Phase 1 demo (admin config, not broker workflow)
@@ -13630,6 +13913,9 @@ import UnitSearchPicker from "./components/UnitSearchPicker.jsx";
 import UnitPickerRich from "./components/UnitPickerRich.jsx";
 import PropPulse from "./components/PropPulse.jsx";
 import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";  // Phase A.3 — new buyer-type-aware form (side-by-side with old form)
+import LeadPeopleSection from "./components/LeadPeopleSection.jsx";  // Phase 2.2B — Contacts Subsystem read-only display
+import { useLeadPersons, ROLE_LABELS } from "./lib/useLeadPersons.js";  // Day 18 — person-tagged activity logging
+import { rulesFromRows } from "./lib/contactValidation.js";  // Phase 2.2A — convert ref_buyer_type_rules rows to {type: {field: req}}
 // ──────────────────────────────────────────────────────────────
 
 
@@ -16258,6 +16544,8 @@ export default function App(){
   };
   const[leasingData,setLeasingData]=useState({tenants:[],leases:[],payments:[],maintenance:[],loaded:false});
   const[followupAlerts,setFollowupAlerts]=useState({staleLeads:[],overduePayments:[],expiringLeases:[]});
+  const[refCountries,setRefCountries]=useState([]);
+  const[refRules,setRefRules]=useState({});
   const[opps,setOpps]=useState([]);
   const[toast,setToast]=useState(null);
   const[pwRecovery,setPwRecovery]=useState(false);
@@ -16367,6 +16655,16 @@ export default function App(){
           maintenance:(lm.data||[]).filter(m=>!m.company_id||m.company_id===cid),
           loaded:true
         });
+
+        // ── Phase 2.2A — Load reference data (countries + buyer-type rules) ──
+        // Public reference data; no company_id filter. Loaded once per session
+        // and passed to LeadCreationFormV2 + future Edit form via props.
+        const [refC, refB] = await Promise.all([
+          safe(supabase.from("reference_countries").select("*").order("priority", {ascending:false}).order("name_en")),
+          safe(supabase.from("reference_buyer_type_rules").select("*")),
+        ]);
+        setRefCountries(refC.data || []);
+        setRefRules(rulesFromRows(refB.data || []));
         const today2=new Date();
         const stale=(l.data||[]).filter(lead=>!["Closed Won","Closed Lost"].includes(lead.stage)&&lead.stage_updated_at&&Math.floor((today2-new Date(lead.stage_updated_at))/(864e5))>=7);
         const overdueRent=(lp_.data||[]).filter(p=>p.status==="Pending"&&p.due_date&&new Date(p.due_date)<today2);
@@ -16589,7 +16887,7 @@ export default function App(){
 
           {/* ── Sales CRM ─────────────────────────────────────── */}
           {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={(t,filter)=>navigateToTab(t,filter)}/>}
-          {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})}/>}
+          {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})} refCountries={refCountries} refRules={refRules}/>}
           {tab==="opportunities" &&<Opportunities leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} activities={activities} setActivities={setActivities} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
@@ -16600,6 +16898,7 @@ export default function App(){
           {tab==="master_agreements" && <MasterAgreements currentUser={currentUser} showToast={showToast}/>}
           {tab==="commission_outstanding" && <CommissionOutstanding currentUser={currentUser} showToast={showToast} developers={[]}/>}
           {(tab==="proppulse"||tab==="l_proppulse")&&<PropPulse currentUser={currentUser} showToast={showToast}/>}
+          {tab==="coach_ai" && <CoachPage opps={opps} leads={leads} activities={activities} users={users} currentUser={currentUser} showToast={showToast} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})}/>}
           {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
           {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
   const co = coObj || companies.find(c=>c.id===id);
