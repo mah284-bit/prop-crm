@@ -16676,7 +16676,7 @@ export default function App(){
     load();
     const ch=supabase.channel("v3-changes-"+cid)
       .on("postgres_changes",{event:"*",schema:"public",table:"leads"},p=>{if(p.eventType==="INSERT")setLeads(x=>[p.new,...x]);if(p.eventType==="UPDATE")setLeads(x=>x.map(l=>l.id===p.new.id?p.new:l));if(p.eventType==="DELETE")setLeads(x=>x.filter(l=>l.id!==p.old.id));})
-      .on("postgres_changes",{event:"INSERT",schema:"public",table:"activities"},p=>setActivities(x=>[p.new,...x]))
+      .on("postgres_changes",{event:"*",schema:"public",table:"activities"},p=>{if(p.eventType==="INSERT")setActivities(x=>[p.new,...x]);if(p.eventType==="UPDATE")setActivities(x=>x.map(a=>a.id===p.new.id?p.new:a));if(p.eventType==="DELETE")setActivities(x=>x.filter(a=>a.id!==p.old.id));})
       .on("postgres_changes",{event:"*",schema:"public",table:"opportunities"},p=>{if(p.eventType==="INSERT")setOpps(x=>[p.new,...x]);if(p.eventType==="UPDATE")setOpps(x=>x.map(o=>o.id===p.new.id?p.new:o));if(p.eventType==="DELETE")setOpps(x=>x.filter(o=>o.id!==p.old.id));})
       .subscribe();
     return()=>supabase.removeChannel(ch);
