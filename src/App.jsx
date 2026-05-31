@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "./lib/supabase";
 import SettingsPage from "./components/settings/SettingsPage.jsx";
+import LeadQueuePage from "./components/leadqueue/LeadQueuePage.jsx";
+import ReleaseDialog from "./components/leadqueue/ReleaseDialog.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
    PROPCCRM v3.0
@@ -145,9 +147,9 @@ const saveAppConfig = (cfg) => {
 };
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","settings","commission_outstanding","group_view"],
+  sales:   ["dashboard","projects","builder","leads","opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","settings","lead_queue","commission_outstanding","group_view"],
   leasing: ["l_dashboard","l_leads","l_opportunities","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_proppulse","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
-  both:    ["dashboard","projects","builder","leads","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","settings","commission_outstanding","group_view"],
+  both:    ["dashboard","projects","builder","leads","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","settings","lead_queue","commission_outstanding","group_view"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -11138,6 +11140,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   const [showAddV2, setShowAddV2] = useState(false);
   const [editLeadForV2, setEditLeadForV2] = useState(null); // Phase 2.2A — V2 dual-mode: null = Add, row = Edit
   const [editFormVersion, setEditFormVersion] = useState(0); // Phase 2.2A — bump on every Edit click to force V2 remount
+  const [showReleaseDialog, setShowReleaseDialog] = useState(false); // Phase 2.1 Day 22 — broker release workflow
   const [opps,     setOpps]     = useState(globalOppsFromParent); // sync with global
   const [units,    setUnits]    = useState([]);
   const [projects, setProjects] = useState([]);
@@ -11511,6 +11514,116 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           {canEdit&&<button onClick={()=>setShowCanonicalOppDialog(true)} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Opportunity</button>}
         </div>
       </div>
+
+      {/* ── Phase 2.1 Day 22: Assignment section ─────────────────── */}
+      {(()=>{
+        const assignedUser = users.find(u => u.id === selLead.assigned_to);
+        const isOwner = selLead.assigned_to === currentUser?.id;
+        const assignedDate = selLead.last_assigned_at ? new Date(selLead.last_assigned_at) : null;
+        const lastActivity = selLead.last_broker_activity_at ? new Date(selLead.last_broker_activity_at) : null;
+        const daysSince = (d) => {
+          if (!d) return null;
+          const days = Math.floor((Date.now() - d.getTime()) / (24 * 60 * 60 * 1000));
+          if (days === 0) return "today";
+          if (days === 1) return "1 day ago";
+          return `${days} days ago`;
+        };
+        const STATUS_META = {
+          assigned:      { c: "#1A7F5A", bg: "#E6F4EE", l: "Assigned" },
+          unassigned:    { c: "#B45309", bg: "#FEF3C7", l: "Unassigned" },
+          released:      { c: "#C53030", bg: "#FED7D7", l: "Released" },
+          stale_flagged: { c: "#8A6200", bg: "#FDF3DC", l: "Stale" },
+        };
+        const sm = STATUS_META[selLead.assignment_status] || STATUS_META.assigned;
+        return (
+          <div style={{
+            marginBottom: 14,
+            padding: "12px 16px",
+            background: "#fff",
+            border: "1px solid #E5E9EF",
+            borderRadius: 12,
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            flexWrap: "wrap",
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: "rgba(15, 37, 64, 0.06)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 16, flexShrink: 0,
+            }}>
+              👤
+            </div>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: "#6B7785", letterSpacing: "0.4px", textTransform: "uppercase" }}>
+                  Assigned to
+                </span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#0F2540" }}>
+                  {assignedUser?.full_name || "Unassigned"}
+                </span>
+                <span style={{
+                  fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 4,
+                  background: sm.bg, color: sm.c, textTransform: "uppercase", letterSpacing: "0.4px",
+                }}>
+                  {sm.l}
+                </span>
+                {selLead.origin === "pool_sourced" && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 4,
+                    background: "#E6EFF8", color: "#1A5FA8", textTransform: "uppercase", letterSpacing: "0.4px",
+                  }}>
+                    Pool-sourced
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 11, color: "#6B7785" }}>
+                {assignedDate && <>Assigned {daysSince(assignedDate)} · </>}
+                {lastActivity ? <>Last activity {daysSince(lastActivity)}</> : <>No activity recorded</>}
+              </div>
+            </div>
+            {isOwner && selLead.assigned_to && (
+              <button
+                onClick={() => setShowReleaseDialog(true)}
+                style={{
+                  padding: "7px 14px",
+                  background: "#fff",
+                  color: "#B42318",
+                  border: "1.5px solid #FECDCA",
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Release Lead
+              </button>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Release Dialog (Phase 2.1 Day 22) */}
+      {showReleaseDialog && (
+        <ReleaseDialog
+          lead={selLead}
+          currentUser={currentUser}
+          users={users}
+          onClose={() => setShowReleaseDialog(false)}
+          onReleased={(result) => {
+            setShowReleaseDialog(false);
+            // Refresh lead state from DB
+            // selLead is derived from leads.find(); updating leads triggers re-derivation
+            supabase.from("leads").select("*").eq("id", selLead.id).single().then(({data}) => {
+              if (data) setLeads(p => p.map(l => l.id === data.id ? data : l));
+            });
+          }}
+          showToast={showToast}
+        />
+      )}
+
 
       {/* Identity + Notes — dense single-card layout */}
       {(()=>{
@@ -13117,6 +13230,7 @@ const TABS=[
   // {id:"permsets",   label:"Permissions",  icon:"🔐", app:"sales",   roles:["super_admin","admin"]},
   {id:"master_agreements",label:"Master Agreements", icon:"📄", app:"sales", roles:["super_admin","admin"]},
   {id:"settings",label:"Settings", icon:"⚙️", app:"sales", roles:["super_admin","admin","sales_manager"]},
+  {id:"lead_queue",label:"Lead Queue", icon:"📋", app:"sales", roles:["super_admin","admin","sales_manager"]},
   {id:"commission_outstanding",label:"Commission Outstanding", icon:"💰", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
   // 21 May 2026: Hide Group View for Phase 1 demo (placeholder "Planned for MVP Phase")
   // Re-enable in Phase 2 when parent-subsidiary aggregation is built
@@ -16950,6 +17064,7 @@ export default function App(){
           {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leads={leads} activities={activities} initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
           {tab==="master_agreements" && <MasterAgreements currentUser={currentUser} showToast={showToast}/>}
           {tab==="settings" && <SettingsPage currentUser={currentUser} users={users} showToast={showToast}/>}
+          {tab==="lead_queue" && <LeadQueuePage currentUser={currentUser} users={users} showToast={showToast} onNavigateToLead={(leadId)=>{const l=leads.find(x=>x.id===leadId); if(l){setSelLead(l);setView("lead");setTab("leads");}}}/>}
           {tab==="commission_outstanding" && <CommissionOutstanding currentUser={currentUser} showToast={showToast} developers={[]}/>}
           {(tab==="proppulse"||tab==="l_proppulse")&&<PropPulse currentUser={currentUser} showToast={showToast}/>}
           {tab==="coach_ai" && <CoachPage opps={opps} leads={leads} activities={activities} users={users} currentUser={currentUser} showToast={showToast} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})}/>}
