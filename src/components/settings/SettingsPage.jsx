@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import AgentPoolsSection from "./AgentPoolsSection.jsx";
+import LeadRoutingRulesSection from "./LeadRoutingRulesSection.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
    SettingsPage — Phase 2.1 Day 21
@@ -15,7 +16,7 @@ import AgentPoolsSection from "./AgentPoolsSection.jsx";
 
 const SECTIONS = [
   { id: "agent_pools", label: "Agent Pools", icon: "👥", description: "Group agents for round-robin lead distribution" },
-  { id: "lead_routing", label: "Lead Routing Rules", icon: "🎯", description: "Configure how pool-sourced leads flow", disabled: true },
+  { id: "lead_routing", label: "Lead Routing Rules", icon: "🎯", description: "Configure how pool-sourced leads flow" },
 ];
 
 export default function SettingsPage({ 
@@ -119,15 +120,11 @@ export default function SettingsPage({
           />
         )}
         {activeSection === "lead_routing" && (
-          <div style={{
-            background: "#fff",
-            borderRadius: 16,
-            padding: 40,
-            textAlign: "center",
-            color: "#6B7785",
-          }}>
-            Lead Routing Rules — coming Day 21 PM
-          </div>
+          <LeadRoutingRulesSection
+            currentUser={currentUser}
+            users={users}
+            showToast={showToast}
+          />
         )}
       </div>
     </div>
