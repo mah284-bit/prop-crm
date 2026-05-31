@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "./lib/supabase";
+import SettingsPage from "./components/settings/SettingsPage.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
    PROPCCRM v3.0
@@ -144,9 +145,9 @@ const saveAppConfig = (cfg) => {
 };
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","commission_outstanding","group_view"],
+  sales:   ["dashboard","projects","builder","leads","opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","settings","commission_outstanding","group_view"],
   leasing: ["l_dashboard","l_leads","l_opportunities","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_proppulse","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
-  both:    ["dashboard","projects","builder","leads","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","commission_outstanding","group_view"],
+  both:    ["dashboard","projects","builder","leads","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","settings","commission_outstanding","group_view"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -9620,6 +9621,32 @@ async function aiInvoke({ system, prompt, messages, max_tokens }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   Phase 2.1 — writeBrokerCreatedLog (audit helper)
+   Writes a lead_assignment_log row when a broker creates a lead.
+   Fail-safe: errors are logged but NOT thrown, so a failed log
+   write never breaks the lead-creation flow itself.
+═══════════════════════════════════════════════════════════════ */
+async function writeBrokerCreatedLog(leadRow, currentUser) {
+  if (!leadRow?.id || !currentUser?.id) return;
+  try {
+    const { error } = await supabase.from("lead_assignment_log").insert({
+      lead_id: leadRow.id,
+      company_id: leadRow.company_id || currentUser.company_id || null,
+      action: "broker_created",
+      from_user_id: null,
+      to_user_id: currentUser.id,
+      pool_id: null,
+      method: "manual",
+      reason: null,
+      triggered_by: currentUser.id,
+    });
+    if (error) console.warn("[writeBrokerCreatedLog] log insert failed:", error.message);
+  } catch (e) {
+    console.warn("[writeBrokerCreatedLog] unexpected error:", e?.message || e);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
    Phase F — Opportunities Tab (information architecture restructure)
    This is Step 1: a placeholder so the tab is wired into nav.
    Subsequent commits will replace this with the full module.
@@ -10091,6 +10118,7 @@ What should the second agent know?`;
           const retry = await supabase.from("leads").insert(payload).select().single();
           if (retry.error) throw retry.error;
           setSelectedLead(retry.data);
+          writeBrokerCreatedLog(retry.data, currentUser);
           setOppForm(prev => ({
             ...prev,
             title: `Inquiry from ${retry.data.name}`,
@@ -10103,6 +10131,7 @@ What should the second agent know?`;
         throw error;
       }
       setSelectedLead(data);
+      writeBrokerCreatedLog(data, currentUser);
       setOppForm(prev => ({
         ...prev,
         title: `Inquiry from ${data.name}`,
@@ -11415,6 +11444,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
             } else {
               // Prepend new to state
               setLeads(p=>[savedLead,...p]);
+              writeBrokerCreatedLog(savedLead, currentUser);
               showToast("Contact added","success");
             }
             setEditLeadForV2(null);
@@ -11918,6 +11948,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
               showToast("Contact updated","success");
             } else {
               setLeads(p=>[savedLead,...p]);
+              writeBrokerCreatedLog(savedLead, currentUser);
               showToast("Contact added","success");
             }
             setEditLeadForV2(null);
@@ -13085,6 +13116,7 @@ const TABS=[
   // 21 May 2026: Hide duplicate empty Permissions screen
   // {id:"permsets",   label:"Permissions",  icon:"🔐", app:"sales",   roles:["super_admin","admin"]},
   {id:"master_agreements",label:"Master Agreements", icon:"📄", app:"sales", roles:["super_admin","admin"]},
+  {id:"settings",label:"Settings", icon:"⚙️", app:"sales", roles:["super_admin","admin","sales_manager"]},
   {id:"commission_outstanding",label:"Commission Outstanding", icon:"💰", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
   // 21 May 2026: Hide Group View for Phase 1 demo (placeholder "Planned for MVP Phase")
   // Re-enable in Phase 2 when parent-subsidiary aggregation is built
@@ -14890,14 +14922,15 @@ function AIAssistant({leads,units,projects,salePricing,leasePricing,activities,c
             <div style={{display:"flex",gap:8}}>
               <button onClick={async()=>{
                 try{
-                  const{error}=await supabase.from("leads").insert({
+                  const{data,error}=await supabase.from("leads").insert({
                     name:suggestion.name,phone:suggestion.phone||null,email:suggestion.email||null,
                     budget:suggestion.budget||0,source:"AI Import",stage:"New Lead",
                     notes:suggestion.notes||null,assigned_to:currentUser.id,
                     company_id:currentUser.company_id||null,
                     stage_updated_at:new Date().toISOString(),created_by:currentUser.id
-                  });
+                  }).select().single();
                   if(error)throw error;
+                  writeBrokerCreatedLog(data, currentUser);
                   showToast(`${suggestion.name} added successfully`,"success");
                   setSuggestion(null);
                 }catch(e){showToast(e.message,"error");}
@@ -16916,6 +16949,7 @@ export default function App(){
           {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leads={leads} activities={activities} initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
           {tab==="master_agreements" && <MasterAgreements currentUser={currentUser} showToast={showToast}/>}
+          {tab==="settings" && <SettingsPage currentUser={currentUser} users={users} showToast={showToast}/>}
           {tab==="commission_outstanding" && <CommissionOutstanding currentUser={currentUser} showToast={showToast} developers={[]}/>}
           {(tab==="proppulse"||tab==="l_proppulse")&&<PropPulse currentUser={currentUser} showToast={showToast}/>}
           {tab==="coach_ai" && <CoachPage opps={opps} leads={leads} activities={activities} users={users} currentUser={currentUser} showToast={showToast} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})}/>}
