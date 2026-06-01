@@ -40,3 +40,4 @@ dist-ssr
 # Local test artifacts (PDFs, fixtures, etc.)
 test-data/
 src/components/*.bak
+*.bak
