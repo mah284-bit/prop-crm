@@ -3197,6 +3197,8 @@ function ProposalViewerDialog({ proposal, opp, lead, units, projects, currentUse
                   <div key={pu.unit_id} style={{background:"#FAFBFE",border:`1px solid ${isLinked?"#FCD34D":"#E2E8F0"}`,borderRadius:10,padding:"11px 13px"}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,flexWrap:"wrap"}}>
                       <span style={{fontSize:9,fontWeight:700,color:"#94A3B8"}}>OPTION {idx+1}</span>
+                      {/* Phase 2.2b — Property Pack trigger */}
+                      <button onClick={e=>{e.stopPropagation();openPropertyPack(pu.unit_id);}} title="View Property Pack" style={{padding:"2px 8px",borderRadius:5,border:"none",background:"#0F2540",color:"#fff",fontSize:9,fontWeight:700,cursor:"pointer"}}>📸 Pack</button>
                       <span style={{fontSize:14,fontWeight:700,color:"#0F2540"}}>{u?.unit_ref||"—"}</span>
                       {isLinked && <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:"#FEF3C7",color:"#7A4F01"}}>📍 LINKED</span>}
                     </div>
@@ -4126,6 +4128,8 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:3}}>
                             <span style={{fontSize:11,fontWeight:700,color:"#94A3B8"}}>OPTION {idx+1}</span>
+                            {/* Phase 2.2b — Property Pack trigger */}
+                            <button onClick={e=>{e.stopPropagation();openPropertyPack(pu.unit_id);}} title="View Property Pack" style={{padding:"2px 8px",borderRadius:5,border:"none",background:"#0F2540",color:"#fff",fontSize:9,fontWeight:700,cursor:"pointer"}}>📸 Pack</button>
                             <span style={{fontSize:14,fontWeight:700,color:"#0F2540"}}>{u?.unit_ref||"—"}</span>
                             {isPrimary && <span style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:10,background:"#FEF3C7",color:"#7A4F01"}}>📍 LINKED UNIT</span>}
                           </div>
@@ -10542,6 +10546,8 @@ What should the second agent know?`;
                         {selectedUnit ? (
                           <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:8}}>
                             <span style={{fontWeight:700,color:"#0F2540"}}>{selectedUnit.unit_ref}</span>
+                            {/* Phase 2.2b — open Property Pack for this unit */}
+                            <button onClick={e=>{e.stopPropagation();openPropertyPack(selectedUnit.id);}} title="View Property Pack" style={{padding:"2px 8px",borderRadius:5,border:"none",background:"#0F2540",color:"#fff",fontSize:10,fontWeight:700,cursor:"pointer"}}>📸 Pack</button>
                             {(() => {
                               // 16 May 2026: Show price for broker's quick budget match
                               const sp = (salePricing||[]).find(s => s.unit_id === selectedUnit.id);
@@ -14078,6 +14084,8 @@ import LeasingLeads from "./components/LeasingLeads.jsx";
 import UnitSearchPicker from "./components/UnitSearchPicker.jsx";
 import UnitPickerRich from "./components/UnitPickerRich.jsx";
 import PropPulse from "./components/PropPulse.jsx";
+import PropertyPackModal from "./components/property/PropertyPackModal.jsx";
+import { openPropertyPack } from "./components/property/propertyPackBus";
 import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";  // Phase A.3 — new buyer-type-aware form (side-by-side with old form)
 import LeadPeopleSection from "./components/LeadPeopleSection.jsx";  // Phase 2.2B — Contacts Subsystem read-only display
 import { useLeadPersons, ROLE_LABELS } from "./lib/useLeadPersons.js";  // Day 18 — person-tagged activity logging
@@ -17106,6 +17114,8 @@ export default function App(){
       </div>
     </div>
     {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+    {/* Phase 2.2b — global Property Pack viewer (opens from anywhere via openPropertyPack) */}
+    <PropertyPackModal />
     </>
   );
 }
