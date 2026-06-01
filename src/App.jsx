@@ -12101,7 +12101,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
 }
 
 
-function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],followups=[],crmContext="sales",units=[],salePricing=[],leasePricing=[],leases=[],onNavigate=()=>{}}){
+function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],followups=[],crmContext="sales",units=[],salePricing=[],leasePricing=[],leases=[],users=[],onNavigate=()=>{}}){
   const visible      = can(currentUser.role,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id);
   // Use opportunities for pipeline stats
   const visibleOpps  = can(currentUser.role,"see_all")?opps:opps.filter(o=>o.assigned_to===currentUser.id);
@@ -12233,6 +12233,40 @@ function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],
         </div>
       </div>
 
+      {/* team-performance-panel — managers/admins only (agents never see this) */}
+      {can(currentUser.role,"see_all") && (()=>{
+        const teamUsers = (users||[]).filter(u=>u && u.id);
+        const rows = teamUsers.map(u=>{
+          const uo = opps.filter(o=>o.assigned_to===u.id);
+          const act = uo.filter(o=>!["Closed Won","Closed Lost","Won","Lost"].includes(o.stage)&&o.status==="Active");
+          const w   = uo.filter(o=>o.stage==="Closed Won"||o.status==="Won");
+          const pv  = act.reduce((s,o)=>s+(o.budget||0),0);
+          const cr  = uo.length>0?Math.round(w.length/uo.length*100):0;
+          return { id:u.id, name:u.full_name||u.name||u.email||"Agent", active:act.length, pipe:pv, won:w.length, conv:cr };
+        }).filter(r=>r.active>0||r.won>0).sort((a,b)=>b.pipe-a.pipe);
+        if (rows.length===0) return null;
+        return (
+          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#0F2540"}}>Team Performance</div>
+              <button onClick={()=>onNavigate("coach_ai")} style={{fontSize:12,color:"#fff",background:"linear-gradient(135deg,#5B3FAA,#0F766E)",border:"none",borderRadius:8,padding:"6px 12px",cursor:"pointer",fontWeight:700}}>✨ Analyse Team →</button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1.6fr 1fr 1fr 1fr 1fr",gap:8,padding:"0 6px 8px",borderBottom:"1px solid #F0F2F5",fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".5px"}}>
+              <div>Agent</div><div style={{textAlign:"right"}}>Active</div><div style={{textAlign:"right"}}>Pipeline</div><div style={{textAlign:"right"}}>Won</div><div style={{textAlign:"right"}}>Conv.</div>
+            </div>
+            {rows.map(r=>(
+              <div key={r.id} onClick={()=>onNavigate("leads")} style={{display:"grid",gridTemplateColumns:"1.6fr 1fr 1fr 1fr 1fr",gap:8,padding:"9px 6px",borderBottom:"1px solid #F7F9FC",cursor:"pointer",alignItems:"center"}}
+                onMouseOver={e=>e.currentTarget.style.background="#F7F9FC"} onMouseOut={e=>e.currentTarget.style.background="transparent"}>
+                <div style={{fontSize:13,fontWeight:700,color:"#0F2540",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</div>
+                <div style={{textAlign:"right",fontSize:13,fontWeight:600,color:"#0F2540"}}>{r.active}</div>
+                <div style={{textAlign:"right",fontSize:13,fontWeight:700,color:"#1A5FA8"}}>{fmtM(r.pipe)}</div>
+                <div style={{textAlign:"right",fontSize:13,fontWeight:600,color:"#1A7F5A"}}>{r.won}</div>
+                <div style={{textAlign:"right",fontSize:13,fontWeight:600,color:"#64748B"}}>{r.conv}%</div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
       {/* ── Two column: Recent Activity + Quick Actions ─────── */}
       <div style={{display:"grid",gridTemplateColumns:"minmax(0,1.5fr) minmax(0,1fr)",gap:12}}>
 
@@ -17061,7 +17095,7 @@ export default function App(){
         {(dataLoading&&leads.length===0&&aiUnits.length===0)?<Spinner msg="Loading your data…"/>:(<>
 
           {/* ── Sales CRM ─────────────────────────────────────── */}
-          {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={(t,filter)=>navigateToTab(t,filter)}/>}
+          {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} users={users} onNavigate={(t,filter)=>navigateToTab(t,filter)}/>}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})} refCountries={refCountries} refRules={refRules}/>}
           {tab==="opportunities" &&<Opportunities leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} activities={activities} setActivities={setActivities} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}

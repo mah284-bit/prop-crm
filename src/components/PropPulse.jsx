@@ -356,14 +356,14 @@ function PropPulse({ currentUser, showToast }) {
     <div style={{display:"flex",flexDirection:"column",height:"100%",gap:0}}>
 
       {/* Header */}
-      <div style={{background:"linear-gradient(135deg,#0F2540 0%,#1A3A5C 100%)",padding:"20px 24px",borderRadius:12,marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
+      <div style={{/* pp-banner-light */background:"linear-gradient(135deg,#F7F9FC 0%,#EEF2F7 100%)",border:"1px solid #E2E8F0",padding:"20px 24px",borderRadius:12,marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
         <div>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <span style={{fontSize:28}}>⚡</span>
-            <span style={{fontSize:22,fontWeight:800,color:"#fff",letterSpacing:"-.5px"}}>PropPulse</span>
+            <span style={{fontSize:22,fontWeight:800,color:"#0F2540",letterSpacing:"-.5px"}}>PropPulse</span>
             <span style={{fontSize:11,fontWeight:600,padding:"3px 10px",borderRadius:20,background:"rgba(201,168,76,.2)",color:"#C9A84C",border:"1px solid rgba(201,168,76,.3)"}}>LIVE</span>
           </div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:4}}>Every UAE project. Every developer. Always live.</div>
+          <div style={{fontSize:12,color:"#64748B",marginTop:4}}>Every UAE project. Every developer. Always live.</div>
         </div>
         <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
           {[
