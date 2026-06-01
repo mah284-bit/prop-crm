@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useDraggable } from "./lib/useDraggable";
 import { supabase } from "./lib/supabase";
 import SettingsPage from "./components/settings/SettingsPage.jsx";
 import LeadQueuePage from "./components/leadqueue/LeadQueuePage.jsx";
@@ -364,17 +365,21 @@ const FR=({label,value})=>(
     <span style={{fontSize:13,color:"#0F2540",fontWeight:500}}>{value||"—"}</span>
   </div>
 );
-const Modal=({title,onClose,children,width=520})=>(
-  <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
-    <div className="fade-in" style={{background:"#fff",borderRadius:16,width,maxWidth:"100%",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,0.3)"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1.25rem 1.5rem",borderBottom:"1px solid #E2E8F0",position:"sticky",top:0,background:"#fff",zIndex:1}}>
+const Modal=({title,onClose,children,width=520})=>{
+  /* draggable-shared-modal */
+  const { ref, posStyle, handleProps } = useDraggable({ open: true });
+  return (
+  <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,0.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
+    <div ref={ref} className="fade-in" style={{background:"#fff",borderRadius:16,width,maxWidth:"100%",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,0.3)",...posStyle}}>
+      <div {...handleProps} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1.25rem 1.5rem",borderBottom:"1px solid #E2E8F0",position:"sticky",top:0,background:"#fff",zIndex:1,cursor:"move",userSelect:"none"}}>
         <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0F2540"}}>{title}</span>
         <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#A0AEC0",cursor:"pointer"}}>×</button>
       </div>
       <div style={{padding:"1.25rem 1.5rem"}}>{children}</div>
     </div>
   </div>
-);
+  );
+};
 const FF=({label,children,required=false,error=""})=>(
   <div style={{marginBottom:14}}>
     <label style={{display:"block",fontSize:11,fontWeight:600,color:error?"#B83232":"#4A5568",marginBottom:5,textTransform:"uppercase",letterSpacing:"0.5px"}}>{label}{required&&<span style={{color:"#B83232"}}> *</span>}</label>
