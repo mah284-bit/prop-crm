@@ -14078,6 +14078,7 @@ import LeasingLeads from "./components/LeasingLeads.jsx";
 import UnitSearchPicker from "./components/UnitSearchPicker.jsx";
 import UnitPickerRich from "./components/UnitPickerRich.jsx";
 import PropPulse from "./components/PropPulse.jsx";
+import PropertyPackModal from "./components/property/PropertyPackModal.jsx";
 import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";  // Phase A.3 — new buyer-type-aware form (side-by-side with old form)
 import LeadPeopleSection from "./components/LeadPeopleSection.jsx";  // Phase 2.2B — Contacts Subsystem read-only display
 import { useLeadPersons, ROLE_LABELS } from "./lib/useLeadPersons.js";  // Day 18 — person-tagged activity logging
@@ -17106,6 +17107,8 @@ export default function App(){
       </div>
     </div>
     {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+    {/* Phase 2.2b — global Property Pack viewer (opens from anywhere via openPropertyPack) */}
+    <PropertyPackModal />
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
+import { openPropertyPack } from "./property/propertyPackBus";
 // Role-based permission check.
 // Mirrors the can() defined in App.jsx — kept in sync here because
 // App.jsx's version is not exported. If you change roles/permissions
@@ -576,6 +577,8 @@ Return ONLY the JSON, no explanation.`}
                       </div>
                     )}
                     {selUnit.notes&&<div style={{fontSize:12,color:"#4A5568",padding:"8px 10px",background:"#F7F9FC",borderRadius:8,lineHeight:1.6}}>{selUnit.notes}</div>}
+                    {/* Phase 2.2b — open global Property Pack viewer for this unit */}
+                    <button onClick={()=>openPropertyPack(selUnit.id)} style={{padding:"8px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>📸 Property Pack</button>
                     {canEdit&&<button onClick={()=>openEdit(selUnit)} style={{padding:"8px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit Unit</button>}
                     {canReserve&&selUnit.status==="Available"&&(()=>{
                       const hp2=!!(salePricing.find(s=>s.unit_id===selUnit.id)||leasePricing.find(l=>l.unit_id===selUnit.id));
