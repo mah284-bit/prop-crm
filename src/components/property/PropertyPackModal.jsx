@@ -13,7 +13,7 @@
 // code here stays untouched when Send is built (the anti-rework contract).
 // =====================================================================
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { PROPERTY_PACK_EVENT } from "./propertyPackBus";
 import { getPropertyPackAssets } from "./getPropertyPackAssets";
 import FullImage from "./FullImage";
@@ -42,6 +42,38 @@ export default function PropertyPackModal() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [pack, setPack] = useState(null);
+  /* draggable-pack — position + drag handlers */
+  const [pos, setPos] = useState(null); // {x,y} top-left; null = default (top-right)
+  const dragRef = useRef(null);
+  const PANEL_W = 680;
+  const onDragStart = useCallback((clientX, clientY) => {
+    const node = dragRef.current;
+    const rect = node ? node.getBoundingClientRect() : { left: clientX, top: clientY };
+    const offX = clientX - rect.left;
+    const offY = clientY - rect.top;
+    const move = (cx, cy) => {
+      const w = node ? node.offsetWidth : PANEL_W;
+      const h = node ? node.offsetHeight : 400;
+      let nx = cx - offX, ny = cy - offY;
+      nx = Math.max(8, Math.min(nx, window.innerWidth - w - 8));
+      ny = Math.max(8, Math.min(ny, window.innerHeight - 48));
+      setPos({ x: nx, y: ny });
+    };
+    const mm = (e) => move(e.clientX, e.clientY);
+    const tm = (e) => { const t = e.touches[0]; if (t) move(t.clientX, t.clientY); };
+    const up = () => {
+      window.removeEventListener("mousemove", mm);
+      window.removeEventListener("mouseup", up);
+      window.removeEventListener("touchmove", tm);
+      window.removeEventListener("touchend", up);
+    };
+    window.addEventListener("mousemove", mm);
+    window.addEventListener("mouseup", up);
+    window.addEventListener("touchmove", tm, { passive: false });
+    window.addEventListener("touchend", up);
+  }, []);
+  // reset to default position each time the modal opens
+  useEffect(() => { if (open) setPos(null); }, [open]);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -88,23 +120,29 @@ export default function PropertyPackModal() {
 
   return (
     <div
-      onClick={close}
       style={{
-        position: "fixed", inset: 0, background: "rgba(15,37,64,.55)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        zIndex: 1400, padding: "1rem",
+        position: "fixed", inset: 0, background: "transparent",
+        zIndex: 1400, pointerEvents: "none",
       }}
-      role="dialog" aria-modal="true"
+      role="dialog" aria-modal="false"
     >
       <div
-        onClick={(e) => e.stopPropagation()}
+        ref={dragRef}
         style={{
-          background: "#fff", borderRadius: 16, width: 680, maxWidth: "100%",
-          maxHeight: "90vh", overflow: "auto", boxShadow: "0 20px 60px rgba(11,31,58,.25)",
+          position: "absolute",
+          top: pos ? pos.y : 24,
+          left: pos ? pos.x : (typeof window !== "undefined" ? Math.max(8, window.innerWidth - 680 - 32) : 40),
+          background: "#fff", borderRadius: 16, width: 680, maxWidth: "calc(100vw - 16px)",
+          maxHeight: "88vh", overflow: "auto", boxShadow: "0 24px 70px rgba(11,31,58,.35)",
+          border: "1px solid #E2E8F0", pointerEvents: "auto",
         }}
       >
         {/* Header */}
-        <div style={{ padding: "1.1rem 1.4rem", borderBottom: "1px solid #E8EDF4", display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "sticky", top: 0, background: "#fff", zIndex: 2 }}>
+        <div
+          onMouseDown={(e) => { if (e.target.closest("button")) return; e.preventDefault(); onDragStart(e.clientX, e.clientY); }}
+          onTouchStart={(e) => { if (e.target.closest("button")) return; const t = e.touches[0]; if (t) onDragStart(t.clientX, t.clientY); }}
+          title="Drag to move"
+          style={{ padding: "1.1rem 1.4rem", borderBottom: "1px solid #E8EDF4", display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "sticky", top: 0, background: "#fff", zIndex: 2, cursor: "move", userSelect: "none" }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: ".5px" }}>Property Pack</div>
             <div style={{ fontSize: 17, fontWeight: 800, color: "#0F2540", marginTop: 2 }}>

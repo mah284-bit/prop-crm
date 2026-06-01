@@ -1,81 +1,91 @@
-# Day 23 End-of-Session Handoff (1 June 2026, Mon)
+# Day 23 End-of-Session Handoff (1 June 2026)
 
-## STATUS: Phase 2.2 PropPulse Property Pack — DISPLAY SHIPPED (PropPulse half)
+## STATUS: Property Pack + Manager Dashboard SHIPPED to production
 
-prop-crm-two.vercel.app (production) unchanged this session — Day 23 work is
-on **dev2**, verified locally, NOT yet merged to main. Merge decision is the
-founder's call (see "Next" below).
+prop-crm-two.vercel.app now serves everything below. main HEAD: e824c38.
+dev2 HEAD: ab3b72b (1 commit ahead of main = the .gitignore chore; harmless).
 
-### What shipped on dev2 today
-- **Schema:** 4 columns added (idempotent migration, verified 4 rows)
-  - `projects.hero_image_url`, `projects.photo_gallery_urls[]`, `projects.amenities[]`
-  - `project_units.photo_urls[]`
-- **5 reusable components** in `src/components/property/` (inline-style,
-  matches PropPulse light theme — NOT Tailwind):
-  - `MediaGallery` (carousel + lightbox), `AmenityGrid` (emoji map),
-    `PdfPreview` (native iframe), `VideoEmbed` (YT/Vimeo/direct), `FullImage`
-    (hero + master plan, click-to-fullscreen)
-- **Wired into the EXISTING PropPulse project detail panel** (the `selProject`
-  modal) via `patch_proppulse.cjs` — 5 imports + one media block after the
-  description line. Every section self-hides when its data is empty.
-- **Greyed "Share Pack — coming Q3 2026"** placeholder button (signals the
-  Phase 2 Communications trajectory).
-- **Verified live:** Creek Harbour seeded with test images — hero, gallery,
-  master plan, amenities all render. Emoji map hit 8/8 amenities correctly.
+## WHAT SHIPPED TODAY (all live on prod)
 
-### Key architectural discovery (changed the plan for the better)
-The design doc assumed "no display surface exists." **Inaccurate** — PropPulse
-already had a working project detail panel (name, dev, stats, badges, Maps,
-Import). So we **ENHANCED that panel** rather than build a parallel one. This
-was less work, zero App.jsx changes, and no risk to the Import flow.
-The Tailwind `ProjectDetailPanel.jsx` slue-out drafted early was **retired**
-(commit e3bbdec) — no dead code left behind.
+### Phase 2.2 — Property Pack (display layer)
+- Schema: projects.hero_image_url, photo_gallery_urls[], amenities[];
+  project_units.photo_urls[] (migration applied, tag pre-phase-2.2-schema)
+- 5 reusable inline-style components in src/components/property/:
+  MediaGallery, AmenityGrid, PdfPreview, VideoEmbed, FullImage
+- Enhanced existing PropPulse selProject modal to show media (no parallel build)
+- 3 projects seeded with real media via Supabase Storage (bucket propcrm-files):
+  Creek Harbour (Emaar), DAMAC Lagoons (DAMAC, +video), Sobha Hartland II (Sobha, +video)
 
-### Import already carries the media (verified, no work needed)
-`importProject` in PropPulse.jsx (line ~276) uses `...cloneable` spread, which
-copies ALL project columns (incl. the new media columns) into the tenant's
-inventory copy. Units use `...rest` (copies `photo_urls`, `floor_plan_url`).
-**So media DATA flows into Inventory on import automatically.** The only gap is
-the Inventory DISPLAY surface (see Parked Items).
+### Phase 2.2b — Global Property Pack Viewer (tap-from-anywhere)
+- propertyPackBus.js (openPropertyPack(unitId) event)
+- getPropertyPackAssets.js (single resolver: unit + parent project -> assets[])
+- PropertyPackModal.jsx (mounted ONCE at App root, listens for event)
+- Greyed "Share/Attach Pack" button = the Send seam (Phase 2.3)
+- Wired to 4 surfaces: Inventory unit panel, Opp detail header,
+  Proposal builder, Proposal review (all 📸 Pack buttons)
+- Verified working on production from all surfaces
+- Tags: phase-2.2-complete, phase-2.2b-complete
 
-## Commits this session (dev2)
-- `de17743` — leaf components first cut (Tailwind — later superseded)
-- `3544b51` — Property Pack media in PropPulse panel (5 components + wiring, light theme)
-- `e3bbdec` — cleanup: remove retired Tailwind ProjectDetailPanel
+### Phase 2.6 (demo slice) — Role-aware Manager Dashboard
+- "Team Performance" panel added to Dashboard(), visible ONLY to
+  can(role,"see_all") = managers/admins. Agents' dashboard byte-for-byte unchanged.
+- Per-agent rows: Active · Pipeline · Won · Conversion, sorted by pipeline
+- "✨ Analyse Team" gradient button -> onNavigate("coach_ai") (existing CoachPage)
+- patch_manager_dashboard.cjs (3 edits: signature + render + panel inject)
+- Tag: manager-dash-complete
 
-Safety tag from this sprint: `pre-phase-2.2-schema` (pushed to origin).
-Local undo for the panel: `src/components/PropPulse.jsx.bak`.
+### Demo data — Team leaderboard seeded
+- seed_team_assignments.sql: spread Abid's deals across Abid/Rajesh/Satish
+- Snapshot-before-mutate (table _opp_assignee_backup) + idempotent
+- Result: Abid 15a/4w/25.6M · Satish 3a/1w/14.3M · Rajesh 5a/2w/6.8M
+- UNDO at bottom of that SQL file (restore from backup + drop table)
+- INVISIBLE to demo: Abid presents as Super Admin (see_all) -> sees all deals;
+  reassignment only changes the assigned_to label powering the team panel
 
-## NEXT (Day 24)
-1. **Real demo content seeding** — 3-4 hero projects (Emaar Creek Harbour,
-   Aldar Grove Residences, DAMAC Lagoons, optional Sobha): curated hero image,
-   3-5 gallery photos, amenities, master plan, a brochure file URL
-   (upload to Supabase Storage → `brochure_file_url` enables inline preview),
-   and a video URL. ~30-45 min per project, founder drives selection.
-2. **Remove the Creek Harbour test seed** (picsum placeholders) before real
-   content goes in, OR overwrite it directly with real Emaar media.
-3. **Merge dev2 → main** when content looks demo-ready (founder go/no-go).
+### Phase 2.2c (partial) — PropPulse banner lightened
+- Dark navy gradient banner -> light gradient (#F7F9FC->#EEF2F7), navy title,
+  gold LIVE pill kept. patch_proppulse_banner_light.cjs. Commit 24ad38e.
+- Remaining dark surfaces (table headers, modal scrims) NOT done — founder
+  will tune full look himself during Demo Hardening rehearsal.
 
-## PARKED ITEMS (in-scope, after current job — do NOT start without go)
-- **Inventory display wiring** — wire the same 5 components into
-  `src/components/InventoryModule.jsx` (has a full unit detail modal,
-  uses `selUnit`/`setSelUnit`; rendered from App.jsx 17060/17088). Components
-  are built + reusable → this is WIRING, not new build. Same safe patch rhythm.
-  This is what makes the pack "render the same in Inventory once imported."
-- **Dark-blue investor feedback** — investor not happy with dark blue. Source
-  is EXISTING PropPulse code: navy table header (`#0F2540`, line ~460) and the
-  modal backdrop (`rgba(11,31,58,.6)`). Separate styling task, deliberate, not
-  mid-build. New Property Pack sections are already light-theme (unaffected).
+### Housekeeping
+- .gitignore now ignores *.bak repo-wide (commit ab3b72b)
 
-## CRITICAL NOTES (unchanged from Day 22, still true)
-1. Repo: /d/prop-crm on Windows MINGW64 (CRLF — Git LF→CRLF warnings are harmless)
-2. Branch: dev2 (working), main (production)
-3. Folder convention: src/components/<feature>/ ALL LOWERCASE (Vercel = Linux = case-sensitive)
-4. File delivery: Claude creates downloadable files via /mnt/user-data/outputs/.
-   For edits to existing files, Claude ships a Node patch script (.cjs) that
-   backs up + patches + is idempotent — founder does NOT hand-edit JSX.
-5. SQL migrations: always IF NOT EXISTS, always safety tag before running.
-6. App.jsx ~17,200 lines. Feature-folder pattern mandatory for new modules.
-   `property/` is the newest example (after settings/, leadqueue/).
+## TAGS (this session)
+phase-2.2-complete, pre-phase-2.2b-merge, phase-2.2b-complete,
+pre-phase-2.2-merge, pre-manager-dash-merge, manager-dash-complete,
+pre-phase-2.2-schema
 
-## DEMO: 15 June 2026 (14 days out). Buffer ~3 days ahead of plan.
+## PARKED (captured, post-demo, in-scope — NOT scope creep)
+1. **Movable/draggable modals (app-wide)** — founder wants ONE reusable
+   draggable-modal wrapper applied to ALL popups (so Pack can sit beside the
+   proposal form while working). Build-once pattern. No modal currently moves.
+   Founder framing: "make all the popup forms around the app moveable as 1 subject."
+2. **Property Pack SHARE layer** (Phase 2.3 Comms) — attach assets to proposals,
+   send floor/master plan via email/WhatsApp, delivery tracking. Additive on the
+   existing resolver: enable greyed button + asset-picker reading assets[].
+3. **2.2c full dark-blue restyle** — founder tunes look at rehearsal.
+   PropPulse table headers (lines ~465/510 background:#0F2540) + modal scrims remain.
+4. **Broker/admin media upload UI** + **AI Agent auto-media-collection**
+   (upgrade /api/collect-projects-v2 to fetch media) — stretch only.
+5. **Manager Dashboard full vision** (docs/Phase_2_Role_Based_Dashboard_Vision.md)
+   — heatmaps, funnels-by-team deferred; today's build is the demo slice.
+6. **Leasing-to-Sales parity** — whole parallel app drifted; large dedicated effort.
+
+## DEMO: 15 June 2026 (14 days out). Buffer: comfortably ahead.
+
+## CRITICAL NOTES FOR NEXT CHAT
+1. Repo: /d/prop-crm on Windows MINGW64. dev2 (working), main (prod).
+2. Supabase ref ysceukgpimzfqixtnbnp; public bucket propcrm-files.
+3. Folder convention: src/components/<feature>/ ALL LOWERCASE (Linux case-sensitive).
+4. File delivery: Claude creates .cjs/.sql/.jsx/.md as downloadable files via
+   /mnt/user-data/outputs/. Heredocs fail on long content. Founder runs everything.
+5. Claude's bash CANNOT reach Supabase DB — all data ops go in Supabase SQL editor.
+6. App.jsx ~17,300 lines. Patch-script pattern (backup->idempotent->abort-if-anchor-missing).
+7. AI Coach "Analyse" only runs where /api functions are served (prod or vercel dev),
+   NOT on plain npm run dev (5173). This is expected, not a bug.
+8. Demo opp: Shrikant AGR-09-05 (Aldar Grove = FAKE/sample, not a real Aldar project).
+
+## STANDING HANDOFF (do at start of each new chat)
+Update Claude Project Files: REPLACE Phase_2_Backlog_Master_Doc.md with latest,
+ADD this Day_23 handoff. Git docs/ is source of truth.
