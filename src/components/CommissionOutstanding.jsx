@@ -17,6 +17,10 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterDeveloper, setFilterDeveloper] = useState("all");
+  /* stage1-filters */ const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [filterAging, setFilterAging] = useState("all");
+  const [overdueOnly, setOverdueOnly] = useState(false);
 
   // Modal states
   const [issueModal, setIssueModal] = useState(null); // {invoice, number, date}
@@ -216,9 +220,25 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
     return invoices.filter(inv => {
       if (filterStatus !== "all" && inv.invoice_status !== filterStatus) return false;
       if (filterDeveloper !== "all" && inv.developer_id !== filterDeveloper) return false;
+      if (filterDateFrom || filterDateTo) {
+        const d = inv.invoice_date;
+        if (!d) return false;
+        if (filterDateFrom && d < filterDateFrom) return false;
+        if (filterDateTo && d > filterDateTo) return false;
+      }
+      if (filterAging !== "all") {
+        const days = daysOutstanding(inv);
+        if (filterAging === "current" && days > 30) return false;
+        if (filterAging === "mid" && (days <= 30 || days > 60)) return false;
+        if (filterAging === "over" && days <= 60) return false;
+      }
+      if (overdueOnly) {
+        const unpaid = inv.invoice_status !== "paid" && inv.invoice_status !== "written_off";
+        if (!(unpaid && daysOutstanding(inv) > 60)) return false;
+      }
       return true;
     });
-  }, [invoices, filterStatus, filterDeveloper]);
+  }, [invoices, filterStatus, filterDeveloper, filterDateFrom, filterDateTo, filterAging, overdueOnly]);
 
   const kpis = useMemo(() => {
     let totalInvoiced = 0, totalReceived = 0, totalOutstanding = 0, countActive = 0;
@@ -391,6 +411,17 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
               <option value="all">All Developers</option>
               {developers.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
+            <input type="date" value={filterDateFrom} onChange={e=>setFilterDateFrom(e.target.value)} title="Invoice date from" style={{padding:"5px 8px", border:"1px solid #E2E8F0", borderRadius:6, fontSize:12, color:"#475569"}} />
+            <span style={{fontSize:11, color:"#A0AEC0"}}>–</span>
+            <input type="date" value={filterDateTo} onChange={e=>setFilterDateTo(e.target.value)} title="Invoice date to" style={{padding:"5px 8px", border:"1px solid #E2E8F0", borderRadius:6, fontSize:12, color:"#475569"}} />
+            <select value={filterAging} onChange={e=>setFilterAging(e.target.value)} title="Aging" style={{padding:"5px 10px", border:"1px solid #E2E8F0", borderRadius:6, fontSize:12}}>
+              <option value="all">All Ages</option>
+              <option value="current">Current (≤30d)</option>
+              <option value="mid">31–60 days</option>
+              <option value="over">60+ days</option>
+            </select>
+            <button onClick={()=>setOverdueOnly(v=>!v)} style={{padding:"5px 12px", borderRadius:6, fontSize:12, fontWeight:600, cursor:"pointer", border: overdueOnly?"1px solid #991B1B":"1px solid #E2E8F0", background: overdueOnly?"#FEF2F2":"#fff", color: overdueOnly?"#991B1B":"#475569"}}>⏰ Overdue only</button>
+            {(filterDateFrom||filterDateTo||filterAging!=="all"||overdueOnly||filterStatus!=="all"||filterDeveloper!=="all") && <button onClick={()=>{setFilterStatus("all");setFilterDeveloper("all");setFilterDateFrom("");setFilterDateTo("");setFilterAging("all");setOverdueOnly(false);}} style={{padding:"5px 10px", borderRadius:6, fontSize:11, cursor:"pointer", border:"1px solid #E2E8F0", background:"#F8FAFC", color:"#718096"}}>Clear</button>}
             <span style={{fontSize:11, color:"#718096", marginLeft:"auto"}}>{filteredInvoices.length} of {invoices.length} invoices</span>
           </div>
 
