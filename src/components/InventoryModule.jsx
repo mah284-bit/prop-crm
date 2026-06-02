@@ -518,8 +518,8 @@ Return ONLY the JSON, no explanation.`}
               {/* Panel header */}
               <div style={{background:"#fff",padding:"14px 16px",position:"relative"}}>
                 <button onClick={()=>setSelUnit(null)} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:"#C9A84C",fontSize:20,cursor:"pointer"}}>×</button>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>{selUnit.unit_ref}</div>
-                <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:2}}>{proj?.name} · {selUnit.sub_type}</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#0F2540",fontWeight:700}}>{selUnit.unit_ref}</div>
+                <div style={{fontSize:12,color:"#64748B",marginTop:2}}>{proj?.name} · {selUnit.sub_type}</div>
                 <span style={{fontSize:10,fontWeight:600,padding:"3px 10px",borderRadius:20,background:sc.bg,color:sc.c,marginTop:6,display:"inline-block"}}>{selUnit.status}</span>
               </div>
               {/* Tabs */}
