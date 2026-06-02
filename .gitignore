@@ -41,3 +41,4 @@ dist-ssr
 test-data/
 src/components/*.bak
 *.bak
+/*.cjs
