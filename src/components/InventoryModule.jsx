@@ -518,8 +518,8 @@ Return ONLY the JSON, no explanation.`}
               {/* Panel header */}
               <div style={{background:"#fff",padding:"14px 16px",position:"relative"}}>
                 <button onClick={()=>setSelUnit(null)} style={{position:"absolute",top:10,right:12,background:"none",border:"none",color:"#C9A84C",fontSize:20,cursor:"pointer"}}>×</button>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#fff",fontWeight:700}}>{selUnit.unit_ref}</div>
-                <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:2}}>{proj?.name} · {selUnit.sub_type}</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:"#0F2540",fontWeight:700}}>{selUnit.unit_ref}</div>
+                <div style={{fontSize:12,color:"#64748B",marginTop:2}}>{proj?.name} · {selUnit.sub_type}</div>
                 <span style={{fontSize:10,fontWeight:600,padding:"3px 10px",borderRadius:20,background:sc.bg,color:sc.c,marginTop:6,display:"inline-block"}}>{selUnit.status}</span>
               </div>
               {/* Tabs */}
@@ -691,7 +691,7 @@ Return ONLY the JSON, no explanation.`}
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:580,maxWidth:"100%",maxHeight:"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>📤 Upload Inventory from Excel</span>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0F2540"}}>📤 Upload Inventory from Excel</span>
               <button onClick={()=>{setShowInvExcel(false);setInvProjId("");}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
             <div style={{padding:"1.5rem"}}>
@@ -799,7 +799,7 @@ Return ONLY the JSON, no explanation.`}
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:16,width:640,maxWidth:"100%",maxHeight:"94vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(11,31,58,.35)"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
-              <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#fff"}}>{editUnit?"Edit Unit":"Add New Unit"}</span>
+              <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0F2540"}}>{editUnit?"Edit Unit":"Add New Unit"}</span>
               <div style={{display:"flex",gap:8}}>
                 {["Details","Pricing","Documents","AI Scanner"].map(t=>(
                   <button key={t} onClick={()=>setActiveTab(t.toLowerCase().replace(" ","_"))}
