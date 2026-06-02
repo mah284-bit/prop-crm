@@ -163,6 +163,7 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
           .from("pp_commission_invoices")
           .update({
             amount_received: newReceived,
+            ...(paymentModal.followNote?.trim() ? { notes: paymentModal.followNote.trim() } : {}),
             last_payment_date: date,
             invoice_status: newStatus,
             updated_by: currentUser.id,
@@ -256,6 +257,16 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
     const realizationRate = totalInvoiced > 0 ? Math.round((totalReceived / totalInvoiced) * 100) : 0;
     return { totalInvoiced, totalReceived, totalOutstanding, countActive, realizationRate };
   }, [filteredInvoices]);
+
+  /* stage2-followup */ const followUp = useMemo(() => {
+    let draftCount = 0, draftAmount = 0, overdueCount = 0, overdueAmount = 0;
+    invoices.forEach(inv => {
+      if (inv.invoice_status === "draft") { draftCount++; draftAmount += Number(inv.commission_net || 0); }
+      const unpaid = inv.invoice_status !== "paid" && inv.invoice_status !== "written_off" && inv.invoice_status !== "draft";
+      if (unpaid && daysOutstanding(inv) > 60) { overdueCount++; overdueAmount += Number(inv.commission_net || 0) - Number(inv.amount_received || 0); }
+    });
+    return { draftCount, draftAmount, overdueCount, overdueAmount };
+  }, [invoices]);
 
   const byDeveloper = useMemo(() => {
     const map = {};
@@ -356,6 +367,24 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
               <div style={{fontSize:10, color:"#718096", marginTop:2}}>received / invoiced</div>
             </div>
           </div>
+
+          {/* stage2-followup action strip */}
+          {(followUp.draftCount > 0 || followUp.overdueCount > 0) && (
+            <div style={{display:"flex", gap:10, marginBottom:18, flexWrap:"wrap"}}>
+              {followUp.draftCount > 0 && (
+                <button onClick={()=>{setFilterStatus("draft");setOverdueOnly(false);}} style={{flex:"1 1 240px", textAlign:"left", cursor:"pointer", background:"#EFF6FF", border:"1px solid #BFDBFE", borderRadius:10, padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                  <div><div style={{fontSize:12, fontWeight:700, color:"#1E40AF"}}>🧾 {followUp.draftCount} draft{followUp.draftCount===1?"":"s"} to invoice</div><div style={{fontSize:10, color:"#3B82F6", marginTop:2}}>Closed deals awaiting invoice · {fmtAED(followUp.draftAmount)}</div></div>
+                  <span style={{fontSize:11, color:"#1E40AF", fontWeight:600}}>Review →</span>
+                </button>
+              )}
+              {followUp.overdueCount > 0 && (
+                <button onClick={()=>{setOverdueOnly(true);setFilterStatus("all");}} style={{flex:"1 1 240px", textAlign:"left", cursor:"pointer", background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:10, padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                  <div><div style={{fontSize:12, fontWeight:700, color:"#991B1B"}}>⏰ {followUp.overdueCount} overdue</div><div style={{fontSize:10, color:"#DC2626", marginTop:2}}>Past 60 days · {fmtAED(followUp.overdueAmount)} to chase</div></div>
+                  <span style={{fontSize:11, color:"#991B1B", fontWeight:600}}>Chase →</span>
+                </button>
+              )}
+            </div>
+          )}
 
           {/* By Developer + By Aging */}
           <div style={{display:"grid", gridTemplateColumns:"1.2fr 1fr", gap:14, marginBottom:18}}>
@@ -608,6 +637,10 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Payment Date *</label>
                   <input type="date" value={paymentModal.date} max={new Date().toISOString().slice(0,10)} onChange={e=>setPaymentModal({...paymentModal,date:e.target.value})} style={{width:"100%",padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:6,fontSize:13,boxSizing:"border-box"}}/>
+                </div>
+                <div>
+                  <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Follow-up Note</label>
+                  <input type="text" value={paymentModal.followNote||""} onChange={e=>setPaymentModal({...paymentModal,followNote:e.target.value})} placeholder="e.g. Called Aldar accounts, payment promised by 15th" style={{width:"100%",padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:6,fontSize:13,boxSizing:"border-box"}}/>
                 </div>
               </div>
             ) : (
