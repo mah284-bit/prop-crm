@@ -374,7 +374,7 @@ function PropPulse({ currentUser, showToast }) {
           ].map(([v,l]) => (
             <div key={l} style={{textAlign:"center"}}>
               <div style={{fontSize:22,fontWeight:800,color:"#C9A84C"}}>{v}</div>
-              <div style={{fontSize:10,color:"rgba(255,255,255,.5)",textTransform:"uppercase",letterSpacing:".5px"}}>{l}</div>
+              <div style={{fontSize:10,color:"#64748B",textTransform:"uppercase",letterSpacing:".5px"}}>{l}</div>
             </div>
           ))}
         </div>
