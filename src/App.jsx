@@ -3282,6 +3282,7 @@ function ProposalViewerDialog({ proposal, opp, lead, units, projects, currentUse
 }
 
 function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, currentUser, lastProposal, onClose, onSaved, showToast }) {
+  /* draggable-sendproposal */ const { ref: dragRef, posStyle, handleProps } = useDraggable({ open: true });
   // 21 May 2026 Phase B: Pre-fill from V_latest when broker clicks Edit
   // Pre-fill: discount, plan, DLD, service charge, proposal units
   // Keep fresh: validity days (new expiry), cover notes (fresh story)
@@ -3982,8 +3983,8 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
-      <div style={{background:"#fff",borderRadius:16,width:680,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
-        <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540"}}>
+      <div ref={dragRef} style={{background:"#fff",borderRadius:16,width:680,maxWidth:"100%",maxHeight:"92vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)",...posStyle}}>
+        <div {...handleProps} style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",background:"#0F2540",cursor:"move",userSelect:"none"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
             <div>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:"#fff"}}>📤 Send Proposal</div>
