@@ -295,6 +295,42 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
     return buckets;
   }, [filteredInvoices]);
 
+  /* stage3-export */ function exportCSV() {
+    const esc = (v) => {
+      const s = String(v ?? "");
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const headers = ["Status","Developer","Invoice #","Sale Price (AED)","Commission %","Gross (AED)","VAT (AED)","Net (AED)","Received (AED)","Outstanding (AED)","Invoice Date","Days Outstanding","Notes"];
+    const rows = filteredInvoices.map(inv => {
+      const net = Number(inv.commission_net || 0);
+      const received = Number(inv.amount_received || 0);
+      const outstanding = (inv.invoice_status === "paid" || inv.invoice_status === "written_off") ? 0 : (net - received);
+      return [
+        inv.invoice_status || "",
+        developerName(inv.developer_id),
+        inv.invoice_number || "",
+        Number(inv.sale_price || 0),
+        Number(inv.commission_pct || 0),
+        Number(inv.commission_gross || 0),
+        Number(inv.vat_amount || 0),
+        net,
+        received,
+        outstanding,
+        inv.invoice_date || "",
+        inv.invoice_status === "paid" ? "" : daysOutstanding(inv),
+        inv.notes || "",
+      ].map(esc).join(",");
+    });
+    const csv = [headers.map(esc).join(","), ...rows].join("\r\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `commission_invoices_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${filteredInvoices.length} invoice${filteredInvoices.length===1?"":"s"} to CSV`, "success");
+  }
   const fmtAED = (n) => `AED ${Number(n || 0).toLocaleString()}`;
   const fmtDate = (d) => {
     if (!d) return "-";
@@ -331,6 +367,7 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
           <div style={{fontSize:12, color:"#718096", marginTop:4}}>Track commission receivables from each developer · No more juggling 5 portals</div>
         </div>
         <button onClick={loadInvoices} style={{padding:"7px 14px", borderRadius:7, border:"1px solid #E2E8F0", background:"#fff", fontSize:12, fontWeight:600, cursor:"pointer", color:"#475569"}}>🔄 Refresh</button>
+        <button onClick={exportCSV} disabled={filteredInvoices.length===0} title="Export the filtered list to CSV" style={{padding:"7px 14px", borderRadius:7, border:"1px solid #0F2540", background: filteredInvoices.length===0?"#F1F5F9":"#0F2540", color: filteredInvoices.length===0?"#94A3B8":"#fff", fontSize:12, fontWeight:600, cursor: filteredInvoices.length===0?"not-allowed":"pointer", marginLeft:8}}>⬇ Export CSV</button>
       </div>
 
       {loading && <div style={{padding:"40px", textAlign:"center", color:"#A0AEC0"}}>⏳ Loading commissions...</div>}
