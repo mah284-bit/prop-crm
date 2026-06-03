@@ -654,10 +654,11 @@ function PropPulse({ currentUser, showToast }) {
 <MediaGallery photos={selProject.photo_gallery_urls} title="Community Photos" />
 <VideoEmbed url={selProject.video_url} />
 <AmenityGrid amenities={selProject.amenities} />
-<button disabled title="Phase 2 - Communications Overhaul, Q3 2026"
+{/* Share Pack hidden for demo (cleaner first impression). Phase 2.3 Send: flip false->true to re-enable. */}
+{false && <button disabled title="Phase 2 - Communications Overhaul, Q3 2026"
   style={{alignSelf:"flex-start",padding:"8px 16px",borderRadius:8,border:"1px dashed #CBD5E1",background:"#F8FAFC",color:"#94A3B8",fontSize:12,fontWeight:600,cursor:"not-allowed"}}>
   📤 Share Pack - coming Q3 2026
-</button>
+</button>}
               {/* Links + IMPORT */}
               <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
                 {selProject.google_maps_url&&<a href={selProject.google_maps_url} target="_blank" rel="noreferrer" style={{padding:"8px 16px",borderRadius:8,background:"#E6EFF9",color:"#1A5FA8",fontSize:12,fontWeight:600,textDecoration:"none"}}>📍 View on Maps</a>}
