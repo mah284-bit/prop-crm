@@ -520,15 +520,7 @@ export default function MasterAgreements({ currentUser, showToast }) {
           alignItems:"center",
           gap:8
         }}>
-          <span style={{
-            background:"#16A34A",
-            color:"#fff",
-            padding:"2px 8px",
-            borderRadius:10,
-            fontSize:10,
-            fontWeight:700,
-            letterSpacing:0.5
-          }}>DAY 8 OF 10</span>
+          {/* DAY 8 OF 10 sprint badge removed for demo (internal scaffolding) */}
           <span style={{color:"#6B7280"}}>
             AI document validation LIVE. Click "Validate with AI" on any uploaded agreement.
           </span>
