@@ -359,7 +359,7 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
   };
 
   return (
-    <div style={{padding:"20px", maxWidth:1400, margin:"0 auto"}}>
+    <div style={{padding:"20px", paddingBottom:"100px", maxWidth:1400, margin:"0 auto"}}>
       {/* Header */}
       <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18}}>
         <div>
