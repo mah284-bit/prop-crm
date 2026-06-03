@@ -60,3 +60,24 @@ still need the download via the preview's down-arrow.
 - Commission cycle LIVE on prod
 - App Normalisation = FIRST post-demo job (App.jsx ~17,300 lines, duplicate form twins)
 - Demo: 15 June 2026
+
+## ADDENDUM — late session (Commission Outstanding UI fixes + open items)
+- COMMITTED dc00ff6: paddingBottom:100px on Commission Outstanding container.
+  (Note: AI bubble was NOT actually overlapping the Clear button — Clear sits in the
+  TOP filter row, bubble is bottom-right. Padding gave the table breathing room; harmless.)
+- COMMITTED 5363f4b: Clear button restyled active (color #475569, white bg, border
+  #CBD5E1, fontWeight 600) — was pale-grey and looked disabled. Now reads as clickable.
+- Both build-verified (vite ✓ built) and visually confirmed by founder on localhost:5173.
+- Safety tag: pre-aibubble-fix.
+
+## OPEN ITEMS (bundle with next delivery on this screen — NOT standalone)
+- Relabel Commission Outstanding "Clear" -> "Clear filters" (founder: clearer to user;
+  do it WHEN we next ship something on this screen, not as a one-off commit).
+
+## BRANCH STATE — IMPORTANT
+- ALL of today's work is on dev2. NOTHING merged to main this session.
+- main (prod prop-crm-two.vercel.app) still = last merge (commission cycle).
+- dev2 ahead of main by: today's UI fixes (dc00ff6, 5363f4b) + all docs/decks.
+- WHEN READY (next session, not rushed): merge dev2->main, watch Vercel deploy, confirm
+  prod healthy. UI changes are safe + build-verified; docs are inert. No urgency — demo 12 days out.
+- dev2 HEAD: 5363f4b.
