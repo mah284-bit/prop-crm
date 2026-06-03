@@ -487,7 +487,7 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
               <option value="over">60+ days</option>
             </select>
             <button onClick={()=>setOverdueOnly(v=>!v)} style={{padding:"5px 12px", borderRadius:6, fontSize:12, fontWeight:600, cursor:"pointer", border: overdueOnly?"1px solid #991B1B":"1px solid #E2E8F0", background: overdueOnly?"#FEF2F2":"#fff", color: overdueOnly?"#991B1B":"#475569"}}>⏰ Overdue only</button>
-            {(filterDateFrom||filterDateTo||filterAging!=="all"||overdueOnly||filterStatus!=="all"||filterDeveloper!=="all") && <button onClick={()=>{setFilterStatus("all");setFilterDeveloper("all");setFilterDateFrom("");setFilterDateTo("");setFilterAging("all");setOverdueOnly(false);}} style={{padding:"5px 10px", borderRadius:6, fontSize:11, cursor:"pointer", border:"1px solid #E2E8F0", background:"#F8FAFC", color:"#718096"}}>Clear</button>}
+            {(filterDateFrom||filterDateTo||filterAging!=="all"||overdueOnly||filterStatus!=="all"||filterDeveloper!=="all") && <button onClick={()=>{setFilterStatus("all");setFilterDeveloper("all");setFilterDateFrom("");setFilterDateTo("");setFilterAging("all");setOverdueOnly(false);}} style={{padding:"5px 10px", borderRadius:6, fontSize:11, cursor:"pointer", border:"1px solid #CBD5E1", background:"#fff", color:"#475569", fontWeight:600}}>Clear</button>}
             <span style={{fontSize:11, color:"#718096", marginLeft:"auto"}}>{filteredInvoices.length} of {invoices.length} invoices</span>
           </div>
 
