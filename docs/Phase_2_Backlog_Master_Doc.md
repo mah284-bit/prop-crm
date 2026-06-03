@@ -483,3 +483,16 @@ analysis was added (Day 18, commits 2e72c83->364e8e4). VERDICT via git history (
 ### Local AI testing note (resolved)
 - AI Coach 404s on `npm run dev` (vite, :5173) because /api/ai is a serverless function
   vite doesn't serve. Use `vercel dev` (:3000) for local AI testing — confirmed working.
+
+## SCHEMA FIX (Day 26 evening) — service charge column + Phase 2 reconciliation
+DONE (Supabase, live on prod immediately — schema/data, not code):
+- Added column: project_units.service_charge_per_sqft (numeric) — the code reads this
+  (App.jsx ~6336/6843, Inventory add-unit form line 1013 writes it) but the column was
+  never migrated, so the Upfront tab ALWAYS showed "service_charge not set" warning.
+- Set demo unit AGR-09-05 = 16 (AED/sqft/yr). Upfront now shows 1800 × 16 = AED 28,800/yr.
+
+### Phase 2 tech-debt: reconcile service charge fields
+- TWO columns now exist for the same concept: service_charge_per_sqft (per-sqft, what code
+  uses) and service_charge_yr (yearly total, older/unused). Reconcile into ONE canonical
+  field + fix any reader. Also: the warning text exposes raw DB column name to users
+  ("service_charge_per_sqft not set") — make user-facing copy graceful. Low priority, post-demo.
