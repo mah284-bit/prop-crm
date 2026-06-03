@@ -81,3 +81,11 @@ still need the download via the preview's down-arrow.
 - WHEN READY (next session, not rushed): merge dev2->main, watch Vercel deploy, confirm
   prod healthy. UI changes are safe + build-verified; docs are inert. No urgency — demo 12 days out.
 - dev2 HEAD: 5363f4b.
+
+## PROCESS NOTE (Day 26 evening) — forms inventory TODO
+During demo-screen walk we confirmed several modal/floating forms are strong + demo-ready
+but did NOT catalogue them. Future task: build a one-page FORMS INVENTORY (which modals
+exist, where triggered, status) so we don't re-discover from scratch each session.
+Confirmed-strong forms seen this session: Open Negotiation modal (rich: datetime, 7 ask-types
+w/ icons, buyer stance, your-read min-15-char, what-happens-next, follow-up). Add Developer
+modal, Add Project modal (PropPulse). All demo-ready, no polish needed.
