@@ -16149,12 +16149,12 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
                     <span style={{fontSize:18}}>✦</span>
                     <label style={{fontSize:11,fontWeight:700,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".5px"}}>AI Assistant Name</label>
                   </div>
-                  <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginBottom:10,lineHeight:1.6}}>
+                  <div style={{fontSize:12,color:"#718096",marginBottom:10,lineHeight:1.6}}>
                     What should the AI assistant be called for this company? This name will appear on the AI tab and in all AI interactions.
                   </div>
                   <input value={form.ai_assistant_name||""} onChange={e=>sf("ai_assistant_name",e.target.value)}
                     placeholder={form.name?(form.name.split(" ")[0]+" AI"):"e.g. Mansoori AI"}
-                    style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(201,168,76,.4)",borderRadius:8,padding:"8px 12px",color:"#fff",fontSize:13,width:"100%",boxSizing:"border-box"}}/>
+                    style={{background:"#fff",border:"1px solid #CBD5E1",borderRadius:8,padding:"8px 12px",color:"#0F2540",fontSize:13,width:"100%",boxSizing:"border-box"}}/>
                   <div style={{fontSize:11,color:"rgba(201,168,76,.6)",marginTop:6}}>
                     💡 Tip: Use your brand name for ownership — e.g. "Mansoori AI", "Atlas AI", "Emaar AI"
                   </div>
