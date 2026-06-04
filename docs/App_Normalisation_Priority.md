@@ -94,3 +94,20 @@ components are expected to lag and should be normalised in the same sweep.
 ## Orphan suspects to verify in the sprint (0 App.jsx imports)
 - CountryPicker, LeadPersonEditModal — confirm dead or used by other components; delete if dead.
 - TWO `<OpportunityDetail/>` render sites (App.jsx L10950 + L12088) — consolidate to one.
+
+## EVIDENCE (Day 27, 4 Jun) — duplicate form cost real time
+The "Add New Company" form exists TWICE:
+- src/components/CompaniesModule.jsx (imported via {tab==="companies" && <CompaniesModule/>})
+- src/App.jsx inline copy (~line 16101-16235)
+DESPITE CompaniesModule being the imported component, the App.jsx INLINE copy is what
+actually renders. Spent ~1hr fixing the AI Assistant Name white-on-white bug in
+CompaniesModule (the wrong/non-rendering twin) before discovering App.jsx renders.
+Proven via: [LIVE-CM] label marker + garish red/lime test colors showed NO change in
+incognito → CompaniesModule edits never reached screen → App.jsx copy is live.
+Fix finally applied to App.jsx (commit dce094d).
+
+LESSON: duplicate forms = fixing phantoms. Normalisation must collapse these twins to
+ONE source of truth. Likely other duplicated forms exist (App.jsx.bak references,
+duplicate "Add Company", and the activity-logging twins noted earlier). This is the
+#1 post-MVP-onboarding cleanup. A real tester would eventually hit a "fixed but still
+broken" bug from editing the wrong copy.
