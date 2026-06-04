@@ -462,3 +462,37 @@ Exception: Big design specs get own doc, but referenced here.
 *Document last updated: 1 June 2026 (Mon, Day 23)*
 *Status: Live document — Phase 2.0 + 2.1 on production; Phase 2.2 PropPulse display on dev2*
 *Next major update: After Day 24 content seeding + dev2→main merge*
+
+## AI COACH COVERAGE — verified 3 Jun 2026 (Day 26 evening)
+Investigated whether line-level (single-item) Coach analysis was lost when group/portfolio
+analysis was added (Day 18, commits 2e72c83->364e8e4). VERDICT via git history (817060b):
+- Single-OPP line-level Coach (the "Coach" tab inside an opportunity) = original feature,
+  STILL LIVE. Reads one deal's history -> 1-3 next moves. NOT lost.
+- Broad/group Coach (My Pipeline / All Opps / By Stage / By Segment / Portfolio) = added
+  Day 18, working (verified on localhost:3000 via vercel dev).
+- Single-LEAD line-level Coach = NEVER existed. The original line-level was always
+  opp/deal-scoped (pulls lead profile as context, but analyses a deal).
+
+### Phase 2 item: Lead-level AI Coach (NEW, not a regression)
+- Single-lead "Analyse this lead" + an all-leads scope in the Coach page.
+- Best bundled with Phase 2.5 Lead Lifecycle (coaching is more valuable once leads carry
+  buyer_intent + lifecycle_stage: "raw 14 days, here's how to qualify").
+- Rationale to defer: new feature work, not demo-critical (opp-level Coach covers the demo
+  story); leads worth coaching usually already have an opp attached.
+
+### Local AI testing note (resolved)
+- AI Coach 404s on `npm run dev` (vite, :5173) because /api/ai is a serverless function
+  vite doesn't serve. Use `vercel dev` (:3000) for local AI testing — confirmed working.
+
+## SCHEMA FIX (Day 26 evening) — service charge column + Phase 2 reconciliation
+DONE (Supabase, live on prod immediately — schema/data, not code):
+- Added column: project_units.service_charge_per_sqft (numeric) — the code reads this
+  (App.jsx ~6336/6843, Inventory add-unit form line 1013 writes it) but the column was
+  never migrated, so the Upfront tab ALWAYS showed "service_charge not set" warning.
+- Set demo unit AGR-09-05 = 16 (AED/sqft/yr). Upfront now shows 1800 × 16 = AED 28,800/yr.
+
+### Phase 2 tech-debt: reconcile service charge fields
+- TWO columns now exist for the same concept: service_charge_per_sqft (per-sqft, what code
+  uses) and service_charge_yr (yearly total, older/unused). Reconcile into ONE canonical
+  field + fix any reader. Also: the warning text exposes raw DB column name to users
+  ("service_charge_per_sqft not set") — make user-facing copy graceful. Low priority, post-demo.
