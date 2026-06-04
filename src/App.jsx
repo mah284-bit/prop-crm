@@ -3,6 +3,7 @@ import { useDraggable } from "./lib/useDraggable";
 import { supabase } from "./lib/supabase";
 import SettingsPage from "./components/settings/SettingsPage.jsx";
 import LeadQueuePage from "./components/leadqueue/LeadQueuePage.jsx";
+import CustomersPage from "./components/customers/CustomersPage.jsx";
 import ReleaseDialog from "./components/leadqueue/ReleaseDialog.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -148,9 +149,9 @@ const saveAppConfig = (cfg) => {
 };
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","settings","lead_queue","commission_outstanding","group_view"],
+  sales:   ["dashboard","projects","builder","leads","customers","opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","settings","lead_queue","commission_outstanding","group_view"],
   leasing: ["l_dashboard","l_leads","l_opportunities","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_proppulse","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
-  both:    ["dashboard","projects","builder","leads","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","settings","lead_queue","commission_outstanding","group_view"],
+  both:    ["dashboard","projects","builder","leads","customers","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","settings","lead_queue","commission_outstanding","group_view"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -13277,6 +13278,7 @@ const TABS=[
   {id:"master_agreements",label:"Master Agreements", icon:"📄", app:"sales", roles:["super_admin","admin"]},
   {id:"settings",label:"Settings", icon:"⚙️", app:"sales", roles:["super_admin","admin","sales_manager"]},
   {id:"lead_queue",label:"Lead Queue", icon:"📋", app:"sales", roles:["super_admin","admin","sales_manager"]},
+  {id:"customers",label:"Customers", icon:"🤝", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"commission_outstanding",label:"Commission Outstanding", icon:"💰", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
   // 21 May 2026: Hide Group View for Phase 1 demo (placeholder "Planned for MVP Phase")
   // Re-enable in Phase 2 when parent-subsidiary aggregation is built
@@ -17113,6 +17115,7 @@ export default function App(){
           {tab==="master_agreements" && <MasterAgreements currentUser={currentUser} showToast={showToast}/>}
           {tab==="settings" && <SettingsPage currentUser={currentUser} users={users} showToast={showToast}/>}
           {tab==="lead_queue" && <LeadQueuePage currentUser={currentUser} users={users} showToast={showToast} onNavigateToLead={(leadId)=>{const l=leads.find(x=>x.id===leadId); if(l){setSelLead(l);setView("lead");setTab("leads");}}}/>}
+          {tab==="customers" && <CustomersPage leads={leads} currentUser={currentUser} showToast={showToast} onNavigateToLead={(leadId)=>{const l=leads.find(x=>x.id===leadId); if(l){setSelLead(l);setView("lead");setTab("leads");}}}/>}
           {tab==="commission_outstanding" && <CommissionOutstanding currentUser={currentUser} showToast={showToast} developers={[]}/>}
           {(tab==="proppulse"||tab==="l_proppulse")&&<PropPulse currentUser={currentUser} showToast={showToast}/>}
           {tab==="coach_ai" && <CoachPage opps={opps} leads={leads} activities={activities} users={users} currentUser={currentUser} showToast={showToast} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})}/>}
