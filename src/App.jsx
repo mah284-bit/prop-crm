@@ -651,7 +651,7 @@ function LoginScreen({onLogin}){
     if(getStrength(pw).score<2){setError("Password too weak. Add numbers and symbols.");return;}
     setLoading(true);reset();
     try{
-      const{error:e}=await supabase.auth.signUp({email,password:pw,options:{data:{full_name:name.trim(),role:"agent"}}});
+      const{error:e}=await supabase.auth.signUp({email,password:pw,options:{data:{full_name:name.trim(),role:"sales_agent"}}});
       if(e)throw e;
       setMode("verify");
     }catch(e){
