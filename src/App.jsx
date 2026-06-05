@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, Fragment } from "react";
 import { useDraggable } from "./lib/useDraggable";
 import { supabase } from "./lib/supabase";
 import SettingsPage from "./components/settings/SettingsPage.jsx";
@@ -6290,8 +6290,25 @@ You will become the assigned agent.`);
                               const dPlan = p.payment_plan || sd.payment_plan || "—";
                               const dldLabel2 = DLD_OPTIONS.find(o=>o.value===sd.dld_handling)?.label || "—";
                               const dldShort = dldLabel2.includes("Buyer") ? "Buyer" : dldLabel2.includes("Developer") ? "Dev" : dldLabel2.includes("Split") ? "Split" : dldLabel2.includes("Neg") ? "Neg" : dldLabel2;
+                              const _prev = proposals[idx+1];
+                              const _psd = _prev?.structured_data || {};
+                              const _pU = (_psd.proposal_units && _psd.proposal_units.length>0) ? _psd.proposal_units : [];
+                              const _pF = _pU[0] || {};
+                              const _pDisc = Number(_pF.discount_pct || _psd.discount_pct || 0);
+                              const _pNet  = Number(_psd.total_value || _pF.discounted_price || 0);
+                              const _pPlan = _prev?.payment_plan || _psd.payment_plan || "—";
+                              const _pDld  = _psd.dld_handling || "";
+                              const _cDld  = sd.dld_handling || "";
+                              const _chips = [];
+                              if (_prev) {
+                                if (_pDisc !== discountPct) _chips.push(`Discount ${_pDisc}% → ${discountPct}%`);
+                                if (_pNet && netPrice && _pNet !== netPrice) _chips.push(`Price AED ${Number(_pNet).toLocaleString()} → AED ${Number(netPrice).toLocaleString()}`);
+                                if (_pPlan !== dPlan && dPlan !== "—") _chips.push(`Plan ${_pPlan} → ${dPlan}`);
+                                if (_pDld !== _cDld && _cDld) { const _l=DLD_OPTIONS.find(o=>o.value===_cDld)?.label||_cDld; const _pl=DLD_OPTIONS.find(o=>o.value===_pDld)?.label||_pDld||"—"; _chips.push(`DLD ${_pl} → ${_l}`); }
+                              }
                               return (
-                                <tr key={p.id} style={{background:isLatest?"#F0F9FF":"#fff",borderBottom:"1px solid #F1F5F9"}}>
+                                <Fragment key={p.id}>
+                                <tr style={{background:isLatest?"#F0F9FF":"#fff",borderBottom:_chips.length?"none":"1px solid #F1F5F9"}}>
                                   <td style={{padding:"9px 10px",fontWeight:700,color:"#0F2540"}}>
                                     V{proposalNumber}
                                     {isLatest && <span style={{fontSize:8,padding:"1px 5px",background:"#ECFDF5",color:"#065F46",borderRadius:3,fontWeight:700,marginLeft:5}}>LATEST</span>}
@@ -6313,6 +6330,16 @@ You will become the assigned agent.`);
                                     )}
                                   </td>
                                 </tr>
+                                {_chips.length>0 && (
+                                  <tr style={{background:isLatest?"#F0F9FF":"#fff",borderBottom:"1px solid #F1F5F9"}}>
+                                    <td></td>
+                                    <td colSpan={7} style={{padding:"0 10px 8px",fontSize:10}}>
+                                      <span style={{color:"#94A3B8",fontWeight:600,marginRight:6}}>↳ changed from V{proposalNumber-1}:</span>
+                                      {_chips.map((c,i)=>(<span key={i} style={{display:"inline-block",background:"#F1F5F9",borderRadius:6,padding:"1px 7px",marginRight:5,marginBottom:2,color:"#475569"}}>{c}</span>))}
+                                    </td>
+                                  </tr>
+                                )}
+                                </Fragment>
                               );
                             })}
                           </tbody>
