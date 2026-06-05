@@ -14565,6 +14565,10 @@ function exportToExcel(rows, headers, filename) {
 }
 
 // ── PDF export helper ─────────────────────────────────────────────
+if (typeof window !== "undefined") {
+  window.exportToExcel = exportToExcel;
+  globalThis.exportToExcel = exportToExcel;
+}
 function exportToPDF(title, subtitle, headers, rows, filename) {
   const colW = Math.floor(90/headers.length);
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
@@ -14600,6 +14604,10 @@ function exportToPDF(title, subtitle, headers, rows, filename) {
   else { const a=document.createElement("a"); a.href=url; a.download=filename+".html"; a.click(); URL.revokeObjectURL(url); }
 }
 
+if (typeof window !== "undefined") {
+  window.exportToPDF = exportToPDF;
+  globalThis.exportToPDF = exportToPDF;
+}
 // ── Main Reports Module ───────────────────────────────────────────
 
 // ══════════════════════════════════════════════════════════════════
