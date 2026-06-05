@@ -43,3 +43,8 @@ dedicated UX polish pass rather than fixing piecemeal mid-walk.
 ### Commission Outstanding — duplicate identical paid invoices
 - ~8 identical Emaar "AED 2,000,000 → AED 84,000 → Paid" rows. Likely demo/test
   duplicates. Looks glitchy to testers. Cleanup candidate. Found Day 28.
+
+### 5. Reports export — Contact column shows "—"
+- Pipeline report (Excel + PDF) Contact column is empty for all rows though opps
+  have linked leads. Buyer name should populate. Minor data-mapping fix in
+  ReportsModule report generators. Found Day 28.
