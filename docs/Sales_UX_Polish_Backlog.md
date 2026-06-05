@@ -64,3 +64,11 @@ dedicated UX polish pass rather than fixing piecemeal mid-walk.
   invoice rows (one paid no-number, one issued INV-2026-0019 unpaid). Founder
   confirmed paid. Merged: kept paid row b71c4d3e, set its invoice_number to
   INV-2026-0019, deleted issued dup f0eb8125. Backup: _backup_sobha_dup_20260605.
+- ✅ pb_projects junk rows cleaned (Day 28): deleted 2 test rows ("project/emar",
+  "asdf"); verified zero references from leads/leases/maintenance first. Table
+  KEPT (FK-wired to leads.pb_project_id, leases.project_id, maintenance.project_id).
+  Backup: _backup_pb_projects_junk_20260605.
+- NOTE: 'properties' table (0 rows) KEPT — empty but FK-referenced by leads.property_id.
+  Dropping would break the FK; not worth it. Leave as-is.
+- DECISION: "Test Brokerage Z" + "Hussain Test" user KEPT as multi-tenant isolation
+  test fixtures (useful, not junk).
