@@ -26,3 +26,9 @@ dedicated UX polish pass rather than fixing piecemeal mid-walk.
   entry point (Lead detail vs Opportunities screen vs Dashboard). Touches every
   opp entry point — do as its own focused, fully-tested change. See workflow
   discussion Day 28.
+
+### 3. Rename opp workspace tab "Plan" → "Payment Plan"
+- The tab labeled "🏗️ Plan" is ambiguous (plan for what?). Content is the
+  payment plan / terms (20/80, advance, handover). Rename to "Payment Plan"
+  (or "Payment Terms"). One-word label tweak in the opp workspace tabs.
+- Found: Day 28.
