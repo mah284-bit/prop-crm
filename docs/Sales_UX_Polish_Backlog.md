@@ -32,3 +32,14 @@ dedicated UX polish pass rather than fixing piecemeal mid-walk.
   payment plan / terms (20/80, advance, handover). Rename to "Payment Plan"
   (or "Payment Terms"). One-word label tweak in the opp workspace tabs.
 - Found: Day 28.
+
+## Data hygiene (verify before testers — not page bugs)
+
+### Commission Outstanding — "Partial" rows with 0 comm / 0 received
+- Several Emaar AED 2,000,000 rows show status=Partial but Net Comm AED 0 and
+  Received AED 0. "Partial" implies some payment received — inconsistent. Check
+  how status is set vs commission calc. Found Day 28.
+
+### Commission Outstanding — duplicate identical paid invoices
+- ~8 identical Emaar "AED 2,000,000 → AED 84,000 → Paid" rows. Likely demo/test
+  duplicates. Looks glitchy to testers. Cleanup candidate. Found Day 28.
