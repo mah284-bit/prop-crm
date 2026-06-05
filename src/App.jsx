@@ -6306,6 +6306,25 @@ You will become the assigned agent.`);
                                 if (_pPlan !== dPlan && dPlan !== "—") _chips.push(`Plan ${_pPlan} → ${dPlan}`);
                                 if (_pDld !== _cDld && _cDld) { const _l=DLD_OPTIONS.find(o=>o.value===_cDld)?.label||_cDld; const _pl=DLD_OPTIONS.find(o=>o.value===_pDld)?.label||_pDld||"—"; _chips.push(`DLD ${_pl} → ${_l}`); }
                               }
+                              let _why = [];
+                              if (_prev) {
+                                const _winEnd = new Date(p.sent_at || p.created_at || 0).getTime();
+                                const _winStart = new Date(_prev.sent_at || _prev.created_at || 0).getTime();
+                                const _negs = (activities||[]).filter(a =>
+                                  a.activity_subtype === "negotiation_round" &&
+                                  a.opportunity_id === opp.id &&
+                                  (() => { const t = new Date(a.created_at).getTime(); return t >= _winStart && t <= _winEnd + 60000; })()
+                                );
+                                const _askSet = new Set();
+                                _negs.forEach(a => {
+                                  const asks = a.structured_data?.asks || {};
+                                  if (asks.discount?.enabled) _askSet.add(`${asks.discount.value}% discount`);
+                                  if (asks.dld_waiver?.enabled) _askSet.add(`DLD ${asks.dld_waiver.value}`);
+                                  if (asks.payment_plan?.enabled && asks.payment_plan.value) _askSet.add(`plan ${asks.payment_plan.value}`);
+                                  if (asks.other?.enabled && asks.other.value) _askSet.add(asks.other.value);
+                                });
+                                _why = Array.from(_askSet);
+                              }
                               return (
                                 <Fragment key={p.id}>
                                 <tr style={{background:isLatest?"#F0F9FF":"#fff",borderBottom:_chips.length?"none":"1px solid #F1F5F9"}}>
@@ -6336,6 +6355,12 @@ You will become the assigned agent.`);
                                     <td colSpan={7} style={{padding:"0 10px 8px",fontSize:10}}>
                                       <span style={{color:"#94A3B8",fontWeight:600,marginRight:6}}>↳ changed from V{proposalNumber-1}:</span>
                                       {_chips.map((c,i)=>(<span key={i} style={{display:"inline-block",background:"#F1F5F9",borderRadius:6,padding:"1px 7px",marginRight:5,marginBottom:2,color:"#475569"}}>{c}</span>))}
+                                      {_why.length>0 && (
+                                        <div style={{marginTop:3,color:"#94A3B8"}}>
+                                          <span style={{fontWeight:600,marginRight:6}}>↳ because buyer asked:</span>
+                                          {_why.map((w,i)=>(<span key={i} style={{display:"inline-block",background:"#FEF3C7",color:"#7A4F01",borderRadius:6,padding:"1px 7px",marginRight:5,marginBottom:2}}>{w}</span>))}
+                                        </div>
+                                      )}
                                     </td>
                                   </tr>
                                 )}
