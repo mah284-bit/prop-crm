@@ -6174,7 +6174,7 @@ You will become the assigned agent.`);
                   ["financials", "💰 Financials", null],
                   ["negotiations", "🤝 Negotiations", null],
                   ["upfront", "📊 Upfront", null],
-                  ["plan", "🏗️ Plan", null],
+                  ["plan", "🏗️ Payment Plan", null],
                 ].map(([tabId, label, count]) => {
                   const isActive = dashboardTab === tabId;
                   // 20 May 2026: AI visual emphasis for Coach tab (gradient + glow)
