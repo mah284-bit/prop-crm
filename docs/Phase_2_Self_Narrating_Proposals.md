@@ -1,3 +1,5 @@
+# ✅ PART A SHIPPED (Day 28) — version diff line live. Part B (link notes/negos by timestamp) = next.
+
 # Phase 2 — Self-Narrating Proposal Versions
 
 **Captured:** Day 28 (Sales completeness walk, Proposals tab)
