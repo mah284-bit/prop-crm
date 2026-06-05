@@ -43,3 +43,19 @@ Do AFTER the completeness walk + after picking from the full gap map.
 - Phase_2_Self_Narrating_Proposals.md (instance 1)
 - AI Coach (the reasoning engine already exists per-deal)
 - Reminders system (overdue reminders already computed)
+
+## Instance 3 — Coach actions that actually ACT (and return)
+**Founder (Day 28):** *"If we allow the broker to click on the actions he can take,
+take him to the exact place, perform the act, and come back — it would be a blast."*
+
+Coach recommendations ALREADY render action buttons (Schedule follow-up, Build
+proposal, Mark as lost). Need to verify which are truly wired end-to-end vs
+display-only, then complete them so each button:
+1. Navigates to the exact place (proposal builder pre-filled, reminder dialog, etc.)
+2. Lets the broker perform the act
+3. Returns to the Coach it launched from (needs context-aware Back — already a
+   deferred item; this is why it matters)
+
+This is the completion of the inline-intelligence theme: not just SHOW the
+reasoning, but make every recommended action one click from done.
+Connects to: AI Coach Clickable Results (backlog 2.10/2.11), context-aware Back.
