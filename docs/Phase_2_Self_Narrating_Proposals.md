@@ -1,4 +1,4 @@
-# ✅ PART A SHIPPED (Day 28) — version diff line live. Part B (link notes/negos by timestamp) = next.
+# ✅ PART A SHIPPED (Day 28) — version diff line live. Part B SHIPPED too (because-buyer-asked line, time-windowed from activities).
 
 # Phase 2 — Self-Narrating Proposal Versions
 
