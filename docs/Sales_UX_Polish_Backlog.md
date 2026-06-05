@@ -48,3 +48,15 @@ dedicated UX polish pass rather than fixing piecemeal mid-walk.
 - Pipeline report (Excel + PDF) Contact column is empty for all rows though opps
   have linked leads. Buyer name should populate. Minor data-mapping fix in
   ReportsModule report generators. Found Day 28.
+
+### 6. Commission Outstanding — active filter not obvious ("1 of 9")
+- When a filter (developer/age/overdue) is active, page shows e.g. "1 of 9
+  invoices" and totals reflect only the filtered subset — easy to misread as
+  "data lost". A "Clear" exists but the active-filter state isn't prominent.
+  Make active filters visually obvious (highlight, chip, or banner). Found Day 28.
+
+## DONE (data hygiene)
+- ✅ Duplicate invoices cleaned (Day 28): opp fcd9e34f (Rajesh EBT-09-05, Closed Won)
+  had 10 invoice rows; kept 1 paid (b9437234), deleted 9 junk. Backup table
+  _backup_dup_invoices_20260605 holds the deleted rows. Verified: 9 invoices
+  remain for Al Mansoori, totals sane (net comm 1.24M).
