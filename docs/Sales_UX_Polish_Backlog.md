@@ -60,3 +60,7 @@ dedicated UX polish pass rather than fixing piecemeal mid-walk.
   had 10 invoice rows; kept 1 paid (b9437234), deleted 9 junk. Backup table
   _backup_dup_invoices_20260605 holds the deleted rows. Verified: 9 invoices
   remain for Al Mansoori, totals sane (net comm 1.24M).
+- ✅ Sobha duplicate resolved (Day 28): opp 76aac3ec (Rajesh, Closed Won) had 2
+  invoice rows (one paid no-number, one issued INV-2026-0019 unpaid). Founder
+  confirmed paid. Merged: kept paid row b71c4d3e, set its invoice_number to
+  INV-2026-0019, deleted issued dup f0eb8125. Backup: _backup_sobha_dup_20260605.
