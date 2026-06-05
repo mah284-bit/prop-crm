@@ -11945,10 +11945,12 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
           prefilledLead={selLead}
           onClose={() => setShowCanonicalOppDialog(false)}
           onCreated={(newOpp, newLead) => {
-            // Add to opps list (uses globalOppsFromParent setter)
-            if (setGlobalOpps) setGlobalOpps(prev => [newOpp, ...prev]);
+            // Update LOCAL opps (what leadOpps filters on) so the new opp appears
+            // on this lead's Opportunities list immediately — broker stays in
+            // context and can add more for the same buyer. Also sync global list.
+            setOpps(prev => prev.find(o=>o.id===newOpp.id) ? prev : [newOpp, ...prev]);
+            if (setGlobalOpps) setGlobalOpps(prev => prev.find(o=>o.id===newOpp.id) ? prev : [newOpp, ...prev]);
             setShowCanonicalOppDialog(false);
-            // Stay on lead detail to see the new opp in list
           }}
         />
       )}
