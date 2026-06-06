@@ -6548,6 +6548,14 @@ You will become the assigned agent.`);
                                                       return def.label + (val ? `: ${val}` : "");
                                                     }).filter(Boolean).join(", ") : "—";
                                 const notesShort = (sd.broker_notes || sd.notes || "").substring(0, 60);
+                                const _isOpen = (status === "Open" || status === "Counter-pending" || (isOpening && !status));
+                                const _roundTs = sd.round_at ? new Date(sd.round_at).getTime() : new Date(r.created_at).getTime();
+                                const _ageDays = Math.floor((Date.now() - _roundTs) / 86400000);
+                                const _nag = _isOpen && _ageDays >= 3
+                                  ? (_ageDays >= 7
+                                      ? {txt:`⚠️ open ${_ageDays}d — chase`, bg:"#FEE2E2", c:"#B83232"}
+                                      : {txt:`open ${_ageDays}d`, bg:"#FEF3C7", c:"#7A4F01"})
+                                  : null;
                                 return (
                                   <tr key={r.id} style={{background:isLatest?"#FAFBFE":"#fff",borderBottom:"1px solid #F1F5F9"}}>
                                     <td style={{padding:"9px 10px",fontWeight:700,color:"#0F2540"}}>
@@ -6561,6 +6569,7 @@ You will become the assigned agent.`);
                                     <td style={{padding:"9px 10px",color:"#0F2540",fontSize:11}}>{asksSummary}</td>
                                     <td style={{padding:"9px 10px"}}>
                                       {status && <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:sc.bg,color:sc.c,fontWeight:700}}>{status.toUpperCase()}</span>}
+                                      {_nag && <div style={{marginTop:3}}><span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:_nag.bg,color:_nag.c,fontWeight:700,whiteSpace:"nowrap"}}>{_nag.txt}</span></div>}
                                     </td>
                                     <td style={{padding:"9px 10px",color:"#64748B",fontSize:11,fontStyle:"italic",maxWidth:200,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={sd.broker_notes||sd.notes||""}>
                                       {notesShort}{notesShort.length === 60 ? "..." : ""}
