@@ -59,3 +59,13 @@ display-only, then complete them so each button:
 This is the completion of the inline-intelligence theme: not just SHOW the
 reasoning, but make every recommended action one click from done.
 Connects to: AI Coach Clickable Results (backlog 2.10/2.11), context-aware Back.
+
+## SHIPPED (Day 29)
+- ✅ Self-narrating proposals (Part A+B) — commits dfbbbe7, 7d69dfa
+- ✅ Negotiation-round nags — open rounds show age-scaled "open Nd — chase" badge.
+
+## Observed workflow gap (Day 29) — open rounds never closed
+The nags revealed R1/R2/R3 all still "Open" though superseded by later rounds/V4.
+Brokers don't formally resolve old rounds when they deliver. Consider: auto-resolve
+prior open rounds when a new proposal version addresses them, OR a one-click
+"resolve round" action. The nag surfacing this is itself valuable. Capture for later.
