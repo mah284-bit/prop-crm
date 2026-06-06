@@ -93,3 +93,13 @@ So logic + data both check out, yet column is blank → suspect leads prop is em
 at the exact render/generate moment, OR an id type mismatch, OR globalOpps vs the
 leads array scoping. Needs live debug (console.log leads.length inside generator).
 Likely a 1-line fix once root cause seen. Revisit only if a tester complains.
+
+## DATA HYGIENE DONE — Al Khaleej duplicate proposals (Day 29)
+Opp 2f206a18 (Al Khaleej Trading — Atlantis Penthouse) had 7 proposals: legit
+arc V1(20M)→V2(19M)→V3(18.5M, 27May), then FOUR identical 18.5M fired within
+37 min on 30 May (V4 06:05, V5 06:25, V6 06:30, V7 06:42) = rapid-fire spam.
+Kept V1-V4 (V4 = first of the batch, legit "latest sent"). Deleted V5,V6,V7
++ their 3 orphaned proposal_sent activities. Coach had flagged the cluster as
+"appearing desperate" — now resolved.
+Backups: _backup_alkhaleej_dup_proposals_20260606 (3 rows),
+_backup_alkhaleej_dup_activities_20260606 (3 rows).
