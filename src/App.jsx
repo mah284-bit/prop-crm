@@ -3945,6 +3945,13 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           created_by: currentUser.id,
         });
       }
+      // Dedup: clear existing PENDING auto reminders for this opp before inserting fresh ones
+      // (prevents stacking near-identical "Follow up on proposal" reminders on each save)
+      await supabase.from("reminders")
+        .delete()
+        .eq("related_opportunity_id", opp.id)
+        .eq("status", "pending")
+        .in("reason", ["auto_proposal_followup","auto_proposal_expiring"]);
       await supabase.from("reminders").insert(reminderRows);
 
       // 5. If sendEmail, generate the .txt + open mailto:
