@@ -103,3 +103,14 @@ Kept V1-V4 (V4 = first of the batch, legit "latest sent"). Deleted V5,V6,V7
 "appearing desperate" — now resolved.
 Backups: _backup_alkhaleej_dup_proposals_20260606 (3 rows),
 _backup_alkhaleej_dup_activities_20260606 (3 rows).
+
+## DONE — Reminder dedup (Day 29)
+CODE FIX (commit 0e54c88): each proposal save now clears existing PENDING
+auto_proposal_followup + auto_proposal_expiring for the opp before inserting
+fresh ones. Verified live: repeated proposal saves keep reminders at 1-each,
+no stacking. Manual reminders untouched.
+DATA CLEANUP: Shrikant opp (7490080c) had 5+5 stacked auto reminders → cleaned
+to 1+1 (kept newest of each). This was the source of Coach's "8 overdue
+reminders" noise. Backup: _backup_shrikant_dup_reminders_20260606 (8 rows).
+NOTE: other deals may still have pre-patch stacks; they self-heal on next
+proposal save now. Bulk cleanup optional if a tester notices.
