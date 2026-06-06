@@ -69,3 +69,10 @@ The nags revealed R1/R2/R3 all still "Open" though superseded by later rounds/V4
 Brokers don't formally resolve old rounds when they deliver. Consider: auto-resolve
 prior open rounds when a new proposal version addresses them, OR a one-click
 "resolve round" action. The nag surfacing this is itself valuable. Capture for later.
+
+## SHIPPED (Day 29, cont.)
+- ✅ Coach actions act-and-return — schedule_followup, build_proposal, advance_stage
+  now return to the Coach tab after save/cancel. mark_lost excluded (Coach
+  unavailable on closed deals). Commits 90be9a4 + Step 3.
+  All 3 inline-intelligence pieces now live: self-narrating proposals, nego nags,
+  Coach act-and-return.
