@@ -72,3 +72,9 @@ dedicated UX polish pass rather than fixing piecemeal mid-walk.
   Dropping would break the FK; not worth it. Leave as-is.
 - DECISION: "Test Brokerage Z" + "Hussain Test" user KEPT as multi-tenant isolation
   test fixtures (useful, not junk).
+
+## AI Concierge panel height (Day 29, low priority)
+Now that the launcher is docked in the header (commit 387faaa), the floating
+panel could stretch taller to show more info when querying. Currently 440x680,
+maxHeight 92vh (already near-full). Revisit ONLY if it feels cramped in real use.
+Founder flagged as "maybe, only if important." Not urgent.
