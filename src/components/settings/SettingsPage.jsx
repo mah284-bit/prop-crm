@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import AgentPoolsSection from "./AgentPoolsSection.jsx";
 import LeadRoutingRulesSection from "./LeadRoutingRulesSection.jsx";
+import GroupBranchesSection from "./GroupBranchesSection.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
    SettingsPage — Phase 2.1 Day 21
@@ -15,6 +16,7 @@ import LeadRoutingRulesSection from "./LeadRoutingRulesSection.jsx";
 ═══════════════════════════════════════════════════════════════ */
 
 const SECTIONS = [
+  { id: "group_branches", label: "Group & Branches", icon: "🏛️", description: "Your organisation structure — group and its branches" },
   { id: "agent_pools", label: "Agent Pools", icon: "👥", description: "Group agents for round-robin lead distribution" },
   { id: "lead_routing", label: "Lead Routing Rules", icon: "🎯", description: "Configure how pool-sourced leads flow" },
 ];
@@ -112,6 +114,12 @@ export default function SettingsPage({
 
       {/* ── RIGHT CONTENT PANEL ──────────────────────────────────── */}
       <div style={{ flex: 1, minWidth: 0 }}>
+        {activeSection === "group_branches" && (
+          <GroupBranchesSection
+            currentUser={currentUser}
+            showToast={showToast}
+          />
+        )}
         {activeSection === "agent_pools" && (
           <AgentPoolsSection
             currentUser={currentUser}

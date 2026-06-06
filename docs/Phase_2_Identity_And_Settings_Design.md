@@ -223,3 +223,22 @@ Schema foundation landed on live DB (additive, idempotent, zero behaviour change
 Safety tag before migration: pre-stage1-identity-schema
 Founder access UNCHANGED (dev continues). Nothing reads group_id yet — pure structure.
 NEXT: Stage 2 — Group & Branches section in Settings (read-only view first).
+
+---
+
+## STAGE 2 — COMPLETE (6 June 2026, Day 29 afternoon)
+New Settings section: "🏛️ Group & Branches" (read-only). First slice of the
+SF/Dynamics-style Settings hub. Surfaces the Stage 1 schema in the UI:
+- GroupBranchesSection.jsx (new, 118 lines) — reads groups + companies, shows
+  group name, branch_visibility (labelled), and branch list with "Current" tag.
+- Registered in SettingsPage.jsx (SECTIONS entry at top + import + render block).
+- Read-only/additive — no scoping changes, no writes. Verified rendering live.
+
+### RLS LESSON (Stage 1 gap caught in Stage 2)
+The new `groups` table was created in Stage 1 WITHOUT an RLS policy → browser
+reads got HTTP 406 → ".single() cannot coerce" error. Fix: enabled RLS +
+read policy `groups_read_authenticated` (using true, authenticated).
+LESSON: every new table needs a read policy or the anon/auth key is 406'd.
+NOTE: `using(true)` is the DEV-stage policy. Proper tenant-scoping of groups RLS
+happens at the LOCKDOWN stage with the full is_super_admin bypass audit — NOT
+piecemeal now (keeps RLS scoping coherent, done all-together).
