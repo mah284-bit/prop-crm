@@ -5010,6 +5010,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [commissionInvoice, setCommissionInvoice] = useState(null); // Day 18 — in-opp commission invoice visibility
   const [saving,     setSaving]     = useState(false);
   const [showLog,    setShowLog]    = useState(false);
+  const [coachReturn, setCoachReturn] = useState(false); // return to Coach tab after a Coach-triggered action
   const [showPayment,setShowPayment]= useState(false);
   const [showEmail,  setShowEmail]  = useState(false);
   // Edit Opportunity v3 (12 May 2026): allow correcting opp details after creation
@@ -5290,6 +5291,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         ns_due: due.toISOString().split("T")[0],
         ns_note: suggestion.title,
       }));
+      setCoachReturn(true);
       setShowLog(true);
     } else if (action_type === "mark_lost") {
       setShowStageGate("Closed Lost");
@@ -8155,7 +8157,7 @@ You will become the assigned agent.`);
           currentUser={currentUser}
           showToast={showToast}
           defaultType={logForm.type||"Call"}
-          onClose={()=>setShowLog(false)}
+          onClose={()=>{setShowLog(false); if(coachReturn){setDashboardTab("coach");setCoachReturn(false);}}}
           onSaved={async(data, nextStepIntent)=>{
             setActivities(p=>[data,...p]);
             if(nextStepIntent && nextStepIntent.due){
@@ -8185,6 +8187,7 @@ You will become the assigned agent.`);
               showToast("Activity logged","success");
             }
             setShowLog(false);
+            if(coachReturn){setDashboardTab("coach");setCoachReturn(false);}
           }}
         />
       )}
