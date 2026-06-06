@@ -209,3 +209,17 @@ No code. Lock the model in git first.
 *Design session: 6 June 2026 (Day 29 afternoon). Model locked across 6 questions:
 branch relationships, schema keystone, role scope, role configurability, identity tier,
 break-glass timing. Build is foundation-up, each stage a revertable checkpoint.*
+
+---
+
+## STAGE 1 — COMPLETE (6 June 2026, Day 29 afternoon)
+Schema foundation landed on live DB (additive, idempotent, zero behaviour change):
+- `groups` table created (id, name, branch_visibility ['isolated'|'group_admin_only'|'shared'], created_at)
+- `companies.group_id` column added (nullable FK → groups)
+- `profiles.is_platform_operator` boolean added (default false)
+- Backfill: all 5 companies linked 1:1 to their own group, all branch_visibility='isolated':
+  - Al Mansoori Properties → Al Mansoori Properties Group (a7328950...)
+  - Default Company, Emirates Premium Realty, Gulf Leasing Solutions, Test Brokerage Z → each own group
+Safety tag before migration: pre-stage1-identity-schema
+Founder access UNCHANGED (dev continues). Nothing reads group_id yet — pure structure.
+NEXT: Stage 2 — Group & Branches section in Settings (read-only view first).
