@@ -5279,6 +5279,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       // Open proposal builder; pre-fill happens via the builder's defaults +
       // we'll rely on the user reading the suggestion. Future: pass action_params
       // through to ProposalBuilderDialog as initial overrides.
+      setCoachReturn(true);
       requestProposalDialog();
     } else if (action_type === "schedule_followup") {
       const days = Number(action_params.suggested_days_out) || 2;
@@ -5299,6 +5300,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     } else if (action_type === "advance_stage" && action_params.suggested_stage) {
       // Don't auto-execute — show the stage capture dialog so agent confirms with details
       const target = action_params.suggested_stage;
+      setCoachReturn(true);
       if (STAGE_CAPTURE_CONFIGS[target]) setShowCaptureDialog(target);
       else if (GATED_STAGES.includes(target)) setShowStageGate(target);
       else moveStage(target);
@@ -8259,13 +8261,14 @@ You will become the assigned agent.`);
         toStage={showCaptureDialog}
         currentUser={currentUser}
         showToast={showToast}
-        onCancel={()=>setShowCaptureDialog(null)}
+        onCancel={()=>{setShowCaptureDialog(null); if(coachReturn){setDashboardTab("coach");setCoachReturn(false);}}}
         onSave={(result)=>{
           setShowCaptureDialog(null);
           // Refresh activities timeline
           supabase.from("activities").select("*").eq("opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
           // Update parent opp state
           onUpdated({...opp, stage: result.stage, stage_updated_at: new Date().toISOString()});
+          if(coachReturn){setDashboardTab("coach");setCoachReturn(false);}
         }}
       />
 
@@ -8350,7 +8353,7 @@ You will become the assigned agent.`);
           units={units} projects={projects} salePricing={salePricing}
           currentUser={currentUser}
           lastProposal={proposals[0]}
-          onClose={()=>setShowProposalDialog(false)}
+          onClose={()=>{setShowProposalDialog(false); if(coachReturn){setDashboardTab("coach");setCoachReturn(false);}}}
           onSaved={(propRow, actRow)=>{
             // Mark previous "sent" proposals as "superseded" since this is a revision
             setProposals(prev => prev.some(r => r.id === propRow.id) ? prev.map(p => p.id === propRow.id ? propRow : (p.status==="sent" ? {...p, status:"superseded"} : p)) : [propRow, ...prev.map(p => p.status==="sent" ? {...p, status:"superseded"} : p)]);
@@ -8360,6 +8363,7 @@ You will become the assigned agent.`);
             // Stamp proposal_sent_at locally (stage stays as-is — agent decides when to move)
             onUpdated({...opp, proposal_sent_at: new Date().toISOString()});
             setShowProposalDialog(false);
+            if(coachReturn){setDashboardTab("coach");setCoachReturn(false);}
           }}
           showToast={showToast}
         />
