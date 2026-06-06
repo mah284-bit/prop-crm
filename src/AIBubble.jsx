@@ -136,8 +136,10 @@ export default function AIBubble() {
     const h = e => {
       if ((e.ctrlKey||e.metaKey)&&e.key==="k") { e.preventDefault(); open&&minimized?setMinimized(false):setOpen(o=>!o); }
     };
+    const openH = () => { setMinimized(false); setOpen(true); };
     window.addEventListener("keydown",h);
-    return ()=>window.removeEventListener("keydown",h);
+    window.addEventListener("propcrm_ai_open", openH);
+    return ()=>{ window.removeEventListener("keydown",h); window.removeEventListener("propcrm_ai_open", openH); };
   }, [open,minimized]);
 
   const onMouseDown = useCallback(e => {
@@ -214,7 +216,8 @@ export default function AIBubble() {
   const posStyle = pos.x!==null ? {left:pos.x,top:pos.y,bottom:"auto",right:"auto"} : {bottom:20,right:20};
 
   const initial = nm.charAt(0).toUpperCase();
-  if (!open) return (
+  if (!open) return null;
+  if (false) return (
     <div style={{position:"fixed",bottom:20,right:20,zIndex:99999}}>
       <style>{`
         @keyframes ai-ring{0%{transform:scale(1);opacity:.6}70%{transform:scale(1.6);opacity:0}100%{transform:scale(1.6);opacity:0}}
