@@ -78,3 +78,18 @@ Now that the launcher is docked in the header (commit 387faaa), the floating
 panel could stretch taller to show more info when querying. Currently 440x680,
 maxHeight 92vh (already near-full). Revisit ONLY if it feels cramped in real use.
 Founder flagged as "maybe, only if important." Not urgent.
+
+## KNOWN ISSUE — Pipeline Report "Contact" column blank (Day 29)
+Status: KNOWN, deferred (founder call — low severity, name already appears in
+the Opportunity column for most rows e.g. "EBT-09-05 — Rajesh Haridas").
+
+Confirmed broken: Contact shows "—" for ALL 35 rows in exported Pipeline PDF.
+Data is FINE — SQL join (opportunities.lead_id → leads.name) resolves every name
+correctly; leads array IS loaded company-scoped on mount (App.jsx ~16918, same
+array the working Leads report uses). Lookup code: ReportsModule.jsx lines 89/116
+`leads.find(l=>l.id===o.lead_id)?.name||"—"`.
+
+So logic + data both check out, yet column is blank → suspect leads prop is empty
+at the exact render/generate moment, OR an id type mismatch, OR globalOpps vs the
+leads array scoping. Needs live debug (console.log leads.length inside generator).
+Likely a 1-line fix once root cause seen. Revisit only if a tester complains.
