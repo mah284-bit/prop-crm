@@ -24,7 +24,7 @@ export default function GroupBranchesSection({ currentUser, showToast }) {
     (async () => {
       try {
         // 1. find the current user's company (branch)
-        const cid = currentUser?.company_id || localStorage.getItem("propccrm_company_id");
+        const cid = localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
         if (!cid) { if (!cancelled) { setErr("No active company found."); setLoading(false); } return; }
 
         // 2. the branch row (its group_id)
@@ -104,7 +104,7 @@ export default function GroupBranchesSection({ currentUser, showToast }) {
                     <div style={{ fontSize: 14, fontWeight: 600, color: "#0F2540" }}>{b.name}</div>
                     {biz && <div style={{ fontSize: 11, color: "#6B7785" }}>{biz}</div>}
                   </div>
-                  {b.id === (currentUser?.company_id || localStorage.getItem("propccrm_company_id")) && (
+                  {b.id === (localStorage.getItem("propccrm_company_id") || currentUser?.company_id) && (
                     <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 8, background: "rgba(201,168,76,.15)", color: "#A06810" }}>Current</span>
                   )}
                 </div>
