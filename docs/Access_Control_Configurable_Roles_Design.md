@@ -102,6 +102,43 @@ This is a SIGNIFICANT build — weeks, not days — and it is WHY the date flexe
 
 ---
 
-## SEQUENCING (proposed — refine next session)
-Stage A — Design the permission model in full detail (schema + policy representation).
-Stage B — Build the isolation/permission TEST HA
+## SEQUENCING (proposed - refine next session)
+Stage A - Design the permission model in full detail (schema + policy representation).
+Stage B - Build the isolation/permission TEST HARNESS first (so every step is verified).
+Stage C - Implement enforcement (RLS) with hard-coded sensible defaults FIRST (provably
+          correct), behind the scenes.
+Stage D - Lockdown (super-admin/platform-operator) using the same enforcement layer.
+Stage E - Group-GM + broker-visibility as policy options.
+Stage F - Config UI (let tenant adjust the policy) - the customer-facing piece.
+Stage G - Full multi-combination security test pass -> sign-off -> go-live.
+
+Build-right ordering: enforcement + defaults + testing BEFORE the config UI. The UI
+that lets customers change policy is useless (and dangerous) until the enforcement
+underneath is proven. Defaults must be safe even if a customer never touches config.
+
+---
+
+## INVESTOR MESSAGE (founder handles; for reference)
+"We stress-tested multi-tenant isolation. Core tenant separation is proven. To support
+real customers with different access structures safely, we are building a proper,
+configurable access-control layer with platform-operator lockdown - and testing every
+permission combination. This needs a couple more weeks beyond 1 July. Shipping access
+control we have not fully hardened would risk customer data and our credibility; we would
+rather launch slightly later on a foundation that holds. Sales first, leasing follows."
+
+Founder note: groundwork already laid with investor ("trying, no guarantees"); will
+officially push dates after this decision. No discomfort - launching from strength.
+
+---
+
+## WHAT WE ARE NOT DOING (gates held)
+- NOT shipping fixed/fragile roles just to hit a date.
+- NOT building the config UI before enforcement + defaults are proven.
+- NOT removing the isolation test discipline - every stage verified.
+
+---
+
+*Decision + design captured 7 June 2026 (Day 30 evening). Direction: build access
+control right (configurable role-permissions + lockdown + group-GM + broker-visibility
+as one layer), flex go-live to fit. Founder owns the investor conversation. Company
+isolation already PROVEN (Day 30 audit); this hardens the full access model on top.*
