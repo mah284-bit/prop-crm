@@ -17074,11 +17074,7 @@ export default function App(){
                 </div>
                 {/* Super admin company switcher */}
                 {isSA&&companies.length>1&&(
-                  <select value={storedId||""} onChange={e=>{
-                    setActiveCompanyId(e.target.value);
-                    localStorage.setItem("propccrm_company_id",e.target.value);
-                    window.location.reload();
-                  }} style={{
+                  <select value={storedId||""} onChange={e=>{ if(e.target.value && e.target.value!==storedId) switchCompany(e.target.value); }} style={{
                     background:"rgba(255,255,255,.1)",border:"1px solid rgba(201,168,76,.35)",
                     borderRadius:6,padding:"3px 6px",color:"#C9A84C",fontSize:11,fontWeight:600,
                     cursor:"pointer",maxWidth:130
