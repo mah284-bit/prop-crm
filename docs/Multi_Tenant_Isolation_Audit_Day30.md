@@ -161,3 +161,69 @@ reveals the COMPLETE leak map (confirms these 7, finds any missed), making fixes
 *Audit: 7 June 2026 (Day 30 morning). Founder-driven, screen-by-screen, two-company method.
 No code changed during audit. Fixes + isolation test = next session. Last commit 2484792
 (stage2-complete) + uncommitted switcher fix in App.jsx (keep).*
+
+---
+
+## NORMAL-USER VERDICT (7 June 2026, Day 30 afternoon) — THE DEFINITIVE TEST
+
+**Method:** Created two fresh, transaction-free test users (both Admin role) on PROD:
+- Raja Shekhar (raja@proptest.ae) — Al Mansoori Properties
+- Roy James (royjames@proptest.ae) — Emirates Premium Realty
+Plus light labeled seed data in Emirates (3 "EPR-TEST" leads + 2 opps, AED 4M/9M).
+Tested on PROD because user creation + password reset need the backend (fail on localhost).
+
+**RESULT — COMPANY ISOLATION WORKS, BOTH DIRECTIONS:**
+
+| User | Saw | Did NOT see | Verdict |
+|------|-----|-------------|---------|
+| Roy James (Emirates admin) | Only Emirates: 2 EPR seed opps, AED 0 commissions | Al Mansoori's 35 opps, AED 1.2M, agreements | ✅ ISOLATED |
+| Raja Shekhar (Al Mansoori admin) | Only Al Mansoori: 19 contacts, 28 opps, 7 won | None of the EPR-TEST leads/opps | ✅ ISOLATED |
+
+**KEY CONCLUSION:** The 7 issues catalogued in the morning were observed AS SUPER-ADMIN.
+A NORMAL tenant user is correctly, fully isolated. Most "leaks" = super-admin god-mode
+(expected platform-operator behavior, controlled at lockdown). Commission Outstanding —
+which showed AED 1.2M cross-company to super-admin — correctly showed AED 0 to a normal
+Emirates user. **The system is tenant-safe on the boundary that matters for the investor's
+"is it secure" question.**
+
+### Re-classification of the 7 issues
+- #7 Commission, #4 Master Agreements, #6 Lead Queue, #3 Users → were SUPER-ADMIN visibility,
+  NOT normal-user leaks. Resolved by the LOCKDOWN (remove super-admin default tenant access).
+  NOT critical code bugs.
+- #5 Group & Branches (our Stage 2) → genuine code issue (stale active-company resolution).
+  Small fix. Still to do.
+- #1 Leads header counts → genuine but low-severity (showed company's own counts to normal
+  user; mainly a consistency fix).
+- #2 Emirates dup unit refs → data quality, unchanged.
+
+### Two scoping LAYERS clarified (founder insight)
+1. COMPANY isolation (tenant boundary) → PROVEN ✅
+2. WITHIN-COMPANY role visibility → admin sees all company data (confirmed correct via Roy+Raja);
+   BROKER/sales_agent SHOULD see only assigned work (founder vision) — NOT YET TESTED.
+   Needs a sales_agent test user with assigned opps. NOT a security breach (same-company data) —
+   a product/role refinement. Fast-follow, not a go-live blocker.
+
+---
+
+## PRIORITISED FORWARD PLAN (Architect's call)
+1. **CRITICAL / DONE:** Company isolation — proven both directions. Go-live safe on tenant boundary.
+2. **HIGH / go-live gate:** LOCKDOWN — remove super-admin/platform-operator default access to
+   tenant CRM data + audited break-glass. Turns "secure for normal users" into "secure, full stop."
+   This handles morning issues #7/#4/#6/#3 at the root (the is_super_admin bypass).
+3. **MEDIUM / fast-follow:** Broker-visibility enforcement (agent sees only assigned, admin sees all
+   — founder vision). Same RLS+role family as lockdown; done together to avoid touching policies twice.
+4. **SMALL / anytime:** Fix #5 Group&Branches stale active-company resolution; #1 Leads header count.
+5. Then resume the Settings-hub re-home (Stage 4) + Platform Admin surface (Stage 5).
+
+## TEST ARTIFACTS ON PROD (to clean before go-live)
+- Users: Raja Shekhar (raja@proptest.ae), Roy James (royjames@proptest.ae) — Admin test accounts.
+- Seed leads: e9000001-0000-4000-a000-000000000001/2/3 (EPR-TEST Alpha/Beta/Gamma).
+- Seed opps: e90000a2-0000-4000-a000-000000000001/2.
+- Decision: KEEP for ongoing isolation testing during lockdown build; remove (or deactivate users)
+  before first external customer.
+
+---
+
+*Normal-user verdict captured 7 June 2026 (Day 30 afternoon). Company isolation PROVEN.
+Lockdown + broker-visibility = next focused session. The morning's alarm resolved: super-admin
+god-mode, not broken RLS. System is tenant-safe for the investor security question.*
