@@ -216,3 +216,49 @@ cannot breach these.
 - Where agent commission rate columns live (companies.default_agent_commission_* +
   profiles.agent_commission_* override?). To be designed with the commission-visibility build.
 - These resolve in the schema-detail step before any code.
+
+### A7. Schema architecture (LOCKED) - per-tenant capability table + defense-in-depth floor
+Decision criteria (founder, paraphrased): must not get stuck now or future; simple/manageable;
+security is paramount; founder is new to the dev environment so architect makes the call.
+
+**Capabilities live in a per-tenant role->capability TABLE (Option 2):**
+```
+role_capabilities (
+  company_id   uuid,      -- which tenant (branch)
+  role         text,      -- sales_agent, sales_manager, admin, group_gm, ...
+  capability   text,      -- see_branch_data, see_brokerage_commission, ...
+  enabled      boolean,
+  primary key (company_id, role, capability)
+)
+```
+Why (vs the alternatives):
+- Fixed-role-in-code (Option 1): rejected - gets stuck the moment a customer wants different
+  access = rebuild. Fails "don't get stuck in future."
+- JSON policy blob (Option 3): rejected - puts JSON parsing INSIDE RLS (the security layer);
+  messier, harder to audit/verify. Security layer must be clean. Fails "security is key."
+- Per-tenant table (Option 2): CHOSEN - configurable (extend = add rows), human-readable +
+  auditable (SELECT reads like a spreadsheet), and RLS does a CLEAN relational lookup
+  (provable, exhaustively testable). Satisfies all three criteria simultaneously.
+- Ships with DEFAULT rows per company-type at onboarding; config UI later toggles `enabled`.
+
+**Defense-in-depth for the crown jewels (the hard-rule floor):**
+Principle: the more catastrophic a leak would be, the DEEPER in the stack we enforce against it.
+- Ordinary visibility (which leads/opps) -> the config table is sufficient.
+- CROWN JEWELS (brokerage commission margin; master agreements) -> enforced in BOTH:
+  (a) config layer never offers/grants them to agents, AND
+  (b) RLS itself structurally refuses them to agents - so even a malformed table row, a config-UI
+      bug, a future developer mistake, or a direct DB edit CANNOT leak them.
+- Two independent locks for the most sensitive data. Vault analogy: front desk never hands the
+  key (config) AND the vault door is welded shut for agents (RLS). For data that "cannot be
+  wrong," two locks is correct.
+
+This keeps the system flexible where it's safe (config table) and immovable where it must be
+(RLS floor on crown jewels).
+
+### A8. END-STATE DELIVERABLE (founder-owned, at project maturity)
+A comprehensive architecture document + ARCHITECTURE DIAGRAM as the mandatory onboarding gate
+for any new developer: they must understand the architecture (two-tier identity, group/branch
+hierarchy, capability model, defense-in-depth security floor, RLS enforcement) BEFORE touching
+code. Founder verifies understanding before hands-on. The design docs being written now are the
+source material for that synthesis. Produced when the access-control layer is built and proven -
+not now (don't document a moving target).
