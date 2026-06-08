@@ -142,3 +142,77 @@ officially push dates after this decision. No discomfort - launching from streng
 control right (configurable role-permissions + lockdown + group-GM + broker-visibility
 as one layer), flex go-live to fit. Founder owns the investor conversation. Company
 isolation already PROVEN (Day 30 audit); this hardens the full access model on top.*
+
+---
+
+## STAGE A - PERMISSION MODEL DESIGN (8 June 2026, Day 31 morning)
+
+### A1. Representation decision: CAPABILITY FLAGS (not fine-grained per-object)
+A role is granted a set of named capability flags. ~12-15 capabilities cover the app.
+- Why: roles are clear archetypes (agent/manager/admin/group-GM) = bundles of powers, not
+  per-field rules. Testable (small matrix = exhaustively security-testable before go-live).
+  Fine-grained per-object permissions have too many combinations to prove safe (untested combo
+  = leak). No brokerage has asked for finer control. Upgradeable later (capabilities can be
+  subdivided; starting coarse and refining is safe, starting fine and simplifying is rework).
+
+### A2. The capability set (refined with founder's brokerage-reality input)
+Data visibility (WHAT can I see):
+- see_own_data        - own assigned leads/opps (everyone)
+- see_branch_data     - all deals/pipeline in my branch (manager+)
+- see_group_data      - all data across all branches in my group (group GM)
+
+Commission visibility (SPLIT - critical brokerage reality):
+- see_brokerage_commission - what the COMPANY earns from developer (the 4%). ADMIN/MANAGER ONLY.
+                             Company-confidential margin. Agents must NOT see this.
+- see_own_commission       - the agent's OWN cut only (his split). Agent sees only his own.
+- (the gap between the two = brokerage retained margin = NEVER shown to agent)
+
+Administrative (WHAT can I manage):
+- manage_users            - add/remove/edit users + roles (admin)
+- manage_settings         - Settings hub / config (admin)
+- manage_inventory        - projects/units (admin; manager partial)
+- assign_leads            - bulk lead assignment (admin/manager)
+- see_master_agreements   - developer agreements. ADMIN/MANAGER ONLY (hard rule, not configurable).
+- manage_master_agreements- create/edit agreements (admin/manager)
+- manage_commissions      - issue/mark brokerage invoices (admin/manager)
+
+Platform tier (lockdown axis, separate):
+- is_platform_operator    - platform-level; NO tenant data by default.
+
+### A3. Commission model - THREE layers with strict visibility (founder's key insight)
+1. Developer -> Brokerage (from master agreement): the brokerage commission (e.g. 4%).
+   Visible to ADMIN/MANAGER only.
+2. Brokerage -> Agent (from COMPANY/USER setup): the agent's split. Agent sees HIS OWN only.
+3. The gap (brokerage retained margin): NEVER shown to the agent.
+
+Agent commission rate placement (architect's call, founder-aligned):
+- COMPANY level: default agent commission rate/split set in company setup (the brokerage standard).
+- PER-USER override (optional): individual agent can have a different rate on their user record.
+- PER-DEAL: agent commission is COMPUTED (brokerage commission x agent split / agent rate),
+  derived not hand-entered - consistent + auditable.
+- Mirrors the existing master-agreement pattern (developer rate flows agreement -> deal); this is
+  one level down (agent split flows company/user setup -> deal). Architecturally consistent.
+
+### A4. COMPANY TYPE drives default capability profiles (founder insight)
+Capability DEFAULTS depend on how the brokerage is structured:
+- SOLO / "broker is everything": one person sees all data + all commission. No separation.
+  (The broker IS the brokerage - brokerage & own commission collapse into one.)
+- MULTI-AGENT BROKERAGE: strict separation - agents see own + own commission only; brokerage
+  commission + master agreements are admin/manager only.
+This is WHY the Settings form must be carefully designed: defaults flex by company type/structure.
+Company type is therefore an input to the default permission profile at tenant onboarding.
+
+### A5. Hard rules (NOT configurable - safety floor)
+- Master agreements: admin/manager only, always. Agents never.
+- Brokerage commission margin: never visible to agents.
+- Platform operator: no tenant data by default (lockdown).
+These are the non-negotiable floor; the configurable layer can grant MORE within safe bounds but
+cannot breach these.
+
+### A6. Open design questions (next: A-continued)
+- Exact schema: where capabilities live (a role_capabilities table? a JSON policy per tenant?
+  per-role defaults + per-tenant overrides?).
+- How company-type maps to a starting capability profile (a template set applied at onboarding).
+- Where agent commission rate columns live (companies.default_agent_commission_* +
+  profiles.agent_commission_* override?). To be designed with the commission-visibility build.
+- These resolve in the schema-detail step before any code.
