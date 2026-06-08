@@ -16990,11 +16990,7 @@ export default function App(){
   const handleLogin=user=>{
     setCurrentUser(user);
     loadUserCapabilities(user);
-    loadUserCapabilities(user);
-    localStorage.removeItem("propccrm_company_id");
-    localStorage.removeItem("propccrm_company_cache");
-    localStorage.setItem("propccrm_role", user.role||"viewer");
-    const app = DEFAULT_APP[user.role]||"sales";
+    const validCid = user.company_id; localStorage.setItem("propccrm_company_id", validCid);
     setActiveApp(app);
     setActiveApp(app); localStorage.setItem("propccrm_last_app", app);
     localStorage.setItem("propccrm_last_app", app);
