@@ -16985,6 +16985,12 @@ export default function App(){
       .on("postgres_changes",{event:"*",schema:"public",table:"opportunities"},p=>{if(p.eventType==="INSERT")setOpps(x=>x.some(r=>r.id===p.new.id)?x:[p.new,...x]);if(p.eventType==="UPDATE")setOpps(x=>x.map(o=>o.id===p.new.id?p.new:o));if(p.eventType==="DELETE")setOpps(x=>x.filter(o=>o.id!==p.old.id));})
       .subscribe();
     return()=>supabase.removeChannel(ch);
+  useEffect(() => {
+    if (companies.length > 0 && currentUser?.company_id) {
+      const activeCo = companies.find(c => c.id === currentUser.company_id);
+      if (activeCo) localStorage.setItem("propccrm_company_cache", JSON.stringify({ id: activeCo.id, name: activeCo.name, logo_url: activeCo.logo_url || "", business_type: activeCo.business_type || "" }));
+    }
+  }, [companies, currentUser?.company_id]);
   },[currentUser, activeCompanyId]);
 
   const handleLogin=user=>{
