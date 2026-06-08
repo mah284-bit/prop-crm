@@ -17058,6 +17058,16 @@ export default function App(){
     if (["admin", "super_admin"].includes(currentUser?.role)) return true;
     return userCapabilities[capability] === true;
   };
+
+  // Cache active company info when companies array loads
+  useEffect(() => {
+    if (companies.length > 0 && currentUser?.company_id) {
+      const activeCo = companies.find(c => c.id === currentUser.company_id);
+      if (activeCo) {
+        localStorage.setItem("propccrm_company_cache", JSON.stringify({ id: activeCo.id, name: activeCo.name, logo_url: activeCo.logo_url || "", business_type: activeCo.business_type || "" }));
+      }
+    }
+  }, [companies, currentUser?.company_id]);
   return (
     <>
     <GlobalStyle/>
