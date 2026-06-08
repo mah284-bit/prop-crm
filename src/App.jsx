@@ -11323,7 +11323,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
   // Load data
   useEffect(()=>{
     // Fix 12 May 2026: also propagate fetched opps to global state so Opportunities tab sees same data
-    supabase.from("opportunities").select("*").order("created_at",{ascending:false}).then(({data})=>{
+    supabase.from("opportunities").select("*").eq("company_id", currentUser.company_id).order("created_at",{ascending:false}).then(({data})=>{
       const arr = data || [];
       setOpps(arr);
       setGlobalOpps(arr);
@@ -11342,7 +11342,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
     }
     // salePricing doesn't have company_id column directly - left as-is
     // (it joins via unit_id which is already filtered above)
-    supabase.from("unit_sale_pricing").select("unit_id,asking_price").then(({data})=>setSalePricing(data||[]));
+    supabase.from("unit_sale_pricing").select("unit_id,asking_price").eq("company_id", currentUser.company_id).then(({data})=>setSalePricing(data||[]));
   },[]);
 
   // Phase E dense layout: when a lead is selected, fetch all activities for all its opportunities
