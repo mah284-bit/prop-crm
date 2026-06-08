@@ -16928,7 +16928,7 @@ export default function App(){
         setUsers(filterByCo(u.data||[]));
         setDiscounts(filterByCo(d.data));
         // Load opportunities globally
-        const oppRes = await safe(supabase.from("opportunities").select("*").order("created_at",{ascending:false}));
+        const oppRes = await safe(supabase.from("opportunities").select("*").eq("company_id", currentUser.company_id).order("created_at",{ascending:false}));
         setOpps(filterByCo(oppRes.data||[]));
         // Load inventory + leasing data eagerly
         const[proj,units2,sp2,lp2,lt,ll,lp_,lm]=await Promise.all([
