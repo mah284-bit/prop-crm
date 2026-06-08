@@ -16988,6 +16988,8 @@ export default function App(){
 
   const handleLogin=user=>{
     setCurrentUser(user);
+    localStorage.removeItem("propccrm_company_id");
+    localStorage.removeItem("propccrm_company_cache");
     localStorage.setItem("propccrm_role", user.role||"viewer");
     const app = DEFAULT_APP[user.role]||"sales";
     setActiveApp(app);
