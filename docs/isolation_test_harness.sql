@@ -74,3 +74,27 @@ select tbl, null_rows from (
 where null_rows > 0
 order by null_rows desc;
 -- (empty result = GOOD: no orphaned rows. Any row here needs a company_id assigned.)
+
+-- ============================================================
+-- PART 3: EXPECTED-GLOBAL confirmation (these SHOULD have NULL company_id by design).
+-- PropPulse catalog projects + role-template permission_sets are intentionally global.
+-- This is a POSITIVE check: confirms they remain global (not accidentally tenant-tagged
+-- in a way that would break the shared layer). Informational, not a failure if nonzero.
+-- ============================================================
+select 'projects (PropPulse global catalog)' as expected_global, count(*) as null_company_rows
+from projects where company_id is null
+union all
+select 'permission_sets (role templates)', count(*)
+from permission_sets where company_id is null;
+-- Expected: projects ~84 (PropPulse catalog), permission_sets 6 (role templates). By design.
+
+-- ============================================================
+-- HARNESS BASELINE (Day 31, 8 Jun 2026) - PROVEN CLEAN:
+--   - All tenant-private tables correctly company-scoped.
+--   - Emirates Premium shows only its seed (3 leads, 2 opps).
+--   - Crown jewels (pp_commission_invoices 8, pp_master_agreements 4) all Al Mansoori.
+--   - Part 2 orphan check: NO rows (no orphaned tenant data).
+--   - NULL-company data limited to expected-global: PropPulse projects + role templates.
+-- Re-run this whole file after every enforcement change; Part 2 must stay empty,
+--   Part 1 must keep each company seeing only its own rows.
+-- ============================================================
