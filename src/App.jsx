@@ -16990,6 +16990,7 @@ export default function App(){
   const handleLogin=user=>{
     setCurrentUser(user);
     loadUserCapabilities(user);
+    loadUserCapabilities(user);
     localStorage.removeItem("propccrm_company_id");
     localStorage.removeItem("propccrm_company_cache");
     localStorage.setItem("propccrm_role", user.role||"viewer");
@@ -17042,6 +17043,25 @@ export default function App(){
   // Always use currentApp to pick allowed tabs — ignore cfg.mode when app is explicitly selected
   const allowedTabs = currentApp==="leasing" ? MODE_TABS.leasing : (MODE_TABS[cfg.mode]||MODE_TABS.both);
   const visibleTabs=TABS.filter(t=>t.app===currentApp&&t.roles.includes(userRole)&&allowedTabs.includes(t.id));
+
+  const loadUserCapabilities = async (user) => {
+    if (!user || !user.company_id) return;
+    try {
+      const { data, error } = await supabase.from("role_capabilities").select("capability, enabled").eq("company_id", user.company_id).eq("role", user.role);
+      if (error) throw error;
+      const capMap = {};
+      (data || []).forEach(row => { capMap[row.capability] = row.enabled; });
+      setUserCapabilities(capMap);
+    } catch (e) {
+      console.warn("Capabilities load error:", e);
+      setUserCapabilities({});
+    }
+  };
+
+  const hasCapability = (capability) => {
+    if (["admin", "super_admin"].includes(currentUser?.role)) return true;
+    return userCapabilities[capability] === true;
+  };
 
 
   // Load user capabilities from role_capabilities table
