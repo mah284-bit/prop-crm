@@ -16070,7 +16070,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("companies").select("*").order("name");
+      const { data: allCos, error } = await supabase.from("companies").select("*").order("name"); const data = isSuperAdmin ? allCos : (allCos || []).filter(c => c.id === currentUser.company_id);
       if(error) throw error;
       setCompanies(data || []);
     } catch(e) {
@@ -16995,7 +16995,7 @@ export default function App(){
     localStorage.setItem("propccrm_last_app", app);
     // Load companies for all admin/manager roles to show in header
     if(["super_admin","admin","sales_manager","leasing_manager"].includes(user.role)){
-      supabase.from("companies").select("*").order("name").then(({data})=>{
+      isSuperAdmin ? supabase.from("companies").select("*").order("name").then : supabase.from("companies").select("*").eq("company_id", currentUser.company_id).order("name").then(({data})=>{
         if(data){
           // Cache the active company for instant display on next load
           const cid = localStorage.getItem("propccrm_company_id") || user.company_id;
