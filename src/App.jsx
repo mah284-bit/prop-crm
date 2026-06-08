@@ -17062,31 +17062,6 @@ export default function App(){
     if (["admin", "super_admin"].includes(currentUser?.role)) return true;
     return userCapabilities[capability] === true;
   };
-
-
-  // Load user capabilities from role_capabilities table
-  const loadUserCapabilities = async (user) => {
-    if (!user || !user.company_id) return;
-    try {
-      const { data, error } = await supabase
-        .from("role_capabilities")
-        .select("capability, enabled")
-        .eq("company_id", user.company_id)
-        .eq("role", user.role);
-      if (error) throw error;
-      const capMap = {};
-      (data || []).forEach(row => { capMap[row.capability] = row.enabled; });
-      setUserCapabilities(capMap);
-    } catch (e) {
-      console.warn("Capabilities load error:", e);
-      setUserCapabilities({});
-    }
-  };
-
-  // Check if user has capability enabled
-  const hasCapability = (capability) => {
-    return userCapabilities[capability] === true;
-  };
   return (
     <>
     <GlobalStyle/>
