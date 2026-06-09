@@ -15834,19 +15834,9 @@ function UsersTab({currentUser, showToast}) {
         // Secure user creation via serverless API route
         const tempPw = form.password || Math.random().toString(36).slice(-8)+"A1!";
         const activeCompanyId = form.company_id || currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
-        const res = await fetch('/api/create-user', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: form.email,
-            password: tempPw,
-            full_name: form.full_name,
-            role: form.role,
-            company_id: activeCompanyId,
-          })
-        });
-        const result = await res.json();
-        if(!res.ok){ showToast(result.error||"Failed to create user","error"); setSaving(false); return; }
+        const{data:authUser,error:authError}=await supabase.auth.signUp({email:form.email,password:tempPw});
+        if(authError){showToast(authError.message,"error");setSaving(false);return;}
+        const result={user:authUser.user};
 
         // Update profile with role, company, active status
         await new Promise(r=>setTimeout(r,1000));
