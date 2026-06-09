@@ -15840,12 +15840,14 @@ function UsersTab({currentUser, showToast}) {
 
         // Update profile with role, company, active status
         await new Promise(r=>setTimeout(r,1000));
-        const{error:pErr}=await supabase.from("profiles").update({
+        const{error:pErr}=await supabase.from("profiles").upsert({
+          id:result.user.id,
+          email:form.email,
           full_name:form.full_name,
           role:form.role,
           is_active:true,
           company_id:activeCompanyId,
-        }).eq("id",result.user.id);
+        });
         if(pErr) showToast("User created but profile update failed: "+pErr.message,"error");
         else {
           showToast(`✓ User created: ${form.email}  |  Temp password: ${tempPw}  |  Share this with them securely`,"success");
