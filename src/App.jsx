@@ -16070,7 +16070,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: allCos, error } = await supabase.from("companies").select("*").order("name"); const data = isSuperAdmin ? allCos : (allCos || []).filter(c => c.id === currentUser.company_id);
+      const { data: allCos, error } = await supabase.from("companies").select("*").order("name"); const data = currentUser?.role === "super_admin" ? allCos : (allCos || []).filter(c => c.id === currentUser.company_id);
       if(error) throw error;
       setCompanies(data || []);
     } catch(e) {
@@ -16896,12 +16896,30 @@ export default function App(){
     };
     restore();
     const{data:{subscription}}=supabase.auth.onAuthStateChange(async(event,session)=>{
-      if(event==="SIGNED_OUT"){setCurrentUser(null);setLeads([]);setProperties([]);setActivities([]);setMeetings([]);setFollowups([]);setOpps([]);}
+      if(event==="SIGNED_OUT"){setCurrentUser(null);setLeads([]);setProperties([]);setActivities([]);setMeetings([]);setFollowups([]);setOpps([]);setCompanies([]);localStorage.removeItem("propccrm_company_cache");}
       if(event==="PASSWORD_RECOVERY"){setPwRecovery(true);}
       if(event==="TOKEN_REFRESHED"&&session?.user){const{data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();if(p)setCurrentUser(u=>({...u,...p}));}
     });
     return()=>subscription.unsubscribe();
   },[]);
+  useEffect(()=>{
+    if(!currentUser)return;
+    const loadCompanies=async()=>{
+      try{
+        const query = supabase.from("companies").select("*").order("name");
+        const{data}=await query;
+        console.log('DEBUG companies fetch:', {role: currentUser.role, dataLength: data?.length, error: 'none'}); if(data){
+          const cid=localStorage.getItem("propccrm_company_id")||currentUser.company_id;
+          const activeCo=data.find(c=>c.id===cid)||data[0];
+          if(activeCo)localStorage.setItem("propccrm_company_cache",JSON.stringify({id:activeCo.id,name:activeCo.name,logo_url:activeCo.logo_url||"",business_type:activeCo.business_type||"",company_category:activeCo.company_category||"Brokerage",ai_assistant_name:activeCo.ai_assistant_name||""}));
+          setCompanies(data);
+          setActiveCompanyId(activeCo.id);
+        }
+      }catch(e){console.warn("Companies fetch error:",e);}
+    };
+    loadCompanies();
+  },[currentUser]);
+
 
   useEffect(()=>{
     if(!currentUser)return;
@@ -16997,7 +17015,7 @@ export default function App(){
     // Load companies for all admin/manager roles to show in header
     if(["super_admin","admin","sales_manager","leasing_manager"].includes(user.role)){
       isSuperAdmin ? supabase.from("companies").select("*").order("name").then : supabase.from("companies").select("*").eq("company_id", currentUser.company_id).order("name").then(({data})=>{
-        if(data){
+        console.log('DEBUG companies fetch:', {role: currentUser.role, dataLength: data?.length, error: 'none'}); if(data){
           // Cache the active company for instant display on next load
           const cid = localStorage.getItem("propccrm_company_id") || user.company_id;
           const activeCo = data.find(c=>c.id===cid) || data[0];
