@@ -26,3 +26,28 @@
 ## DECISION FOR TOMORROW
 **Skip Phase 2.5 dropdown polish. Focus demo.** Lifecycle values ARE showing (read-only). Good enough for MVP.
 
+
+## KNOWN RESIDUE (Captured for Day 33)
+
+### Phase 2.3B Share Modal — Incomplete Items
+1. **Multi-PDF bundling** — Currently generates 1 PDF per send. Design exists for checkbox selector (Project ☐ Unit ☐ Proposal) + bundle all 3 → Email/WhatsApp/Download
+   - Status: Deferred to Phase 2.3B v2
+   - Backlog: docs/Phase_2_3_Backlog_Enhancements.md
+   - Effort: 2-3 hours
+
+2. **Proposal PDF generation** — PropertyPackPDF works. ProposalPDF (from opp.proposal_versions[0]) NOT yet built
+   - Status: Design complete, code pending
+   - Timing: Phase 2.3B v2
+
+3. **Test coverage** — Tested on DAMAC (working). Need to verify edge cases:
+   - No unit selected (should handle gracefully)
+   - PDF generation timeout (large file)
+   - Network failure during upload
+
+### Group Company & Group Access — CRITICAL GAP LOGGED
+- Issue: Multi-company brokerage groups have NO group-level access controls
+- Status: Logged in master status doc
+- Effort: 3-4 days (Phase 2 post-demo)
+- Timing: Pre-production (before pilot client onboard)
+
+---
