@@ -4115,7 +4115,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
                   units={availableUnits}
                   projects={projects}
                   salePricing={salePricing}
-                  onSelect={(unitId) => {addUnit(unitId); openPropertyPack(unitId);}}
+                  onSelect={(unitId) => {addUnit(unitId); setPropertyPackContext({opportunity: opp, lead: lead, currentUser: currentUser, supabase: supabase, showToast: showToast}); openPropertyPack(unitId);}}
                   emptyMessage="No more units available to add"
                 />
               </div>
@@ -5906,7 +5906,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
             const bedLabel = linkedUnit.bedrooms === 0 ? "Studio" : (linkedUnit.bedrooms ? `${linkedUnit.bedrooms}BR` : "");
             const details = [bedLabel, linkedProj?.name, linkedUnit.size_sqft && `${linkedUnit.size_sqft} sqft`, linkedUnit.view].filter(Boolean).join(" · ");
             return (
-              <div onClick={() => openPropertyPack(linkedUnit.id)} style={{fontSize:11,marginTop:3,display:"inline-flex",alignItems:"center",gap:6,padding:"2px 9px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:12,width:"fit-content",cursor:"pointer"}}>
+              <div onClick={() => {setPropertyPackContext({opportunity: opp, lead: lead, currentUser: currentUser, supabase: supabase, showToast: showToast}); openPropertyPack(linkedUnit.id);}} style={{fontSize:11,marginTop:3,display:"inline-flex",alignItems:"center",gap:6,padding:"2px 9px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:12,width:"fit-content",cursor:"pointer"}}>
                 <span>🏠</span>
                 <strong style={{color:"#0C4A6E",fontWeight:700}}>{linkedUnit.unit_ref}</strong>
                 {linkedPrice && <strong style={{color:"#1A5FA8",fontWeight:700,marginLeft:2}}>AED {Number(linkedPrice).toLocaleString()}</strong>}
@@ -8092,7 +8092,7 @@ You will become the assigned agent.`);
                     units={units || []}
                     projects={projects || []}
                     salePricing={salePricing || []}
-                    onSelect={(unitId) => {setEditOppForm(f => ({...f, unit_id: unitId})); openPropertyPack(unitId);}}
+                    onSelect={(unitId) => {setEditOppForm(f => ({...f, unit_id: unitId})); setPropertyPackContext({lead: selectedLead, currentUser: currentUser, supabase: supabase, showToast: showToast}); openPropertyPack(unitId);}}
                     placeholder="🔍 Search to change unit — e.g. AGR, Sobha, 2BR, sea view…"
                     emptyMessage="No units available"
                     autoFocus={false}
@@ -14206,7 +14206,7 @@ import UnitSearchPicker from "./components/UnitSearchPicker.jsx";
 import UnitPickerRich from "./components/UnitPickerRich.jsx";
 import PropPulse from "./components/PropPulse.jsx";
 import PropertyPackModal from "./components/property/PropertyPackModal.jsx";
-import { openPropertyPack } from "./components/property/propertyPackBus";
+import { openPropertyPack, setPropertyPackContext } from "./components/property/propertyPackBus";
 import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";  // Phase A.3 — new buyer-type-aware form (side-by-side with old form)
 import LeadPeopleSection from "./components/LeadPeopleSection.jsx";  // Phase 2.2B — Contacts Subsystem read-only display
 import { useLeadPersons, ROLE_LABELS } from "./lib/useLeadPersons.js";  // Day 18 — person-tagged activity logging
