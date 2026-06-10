@@ -238,3 +238,24 @@ A: Pre-production gates only (RLS audit, password reset, console.log cleanup). N
 **Last Updated:** 10 June 2026 (Day 32, 4:15 PM)  
 **Approval Status:** Ready for founder review + sign-off
 
+
+---
+
+## ⚠️ CRITICAL GAPS IDENTIFIED (Logging Only)
+
+### Group Company & Group Access (NOT BUILT)
+**Issue:** Multi-company brokerage group (e.g., "Al Mansoori Real Estate Group" with 3 sub-companies) have NO group-level access controls or shared visibility.
+
+**Current state:** Each company is siloed. No way for group admin to see across companies.
+
+**What's needed (Phase 2 post-demo):**
+- `company_groups` table (parent company)
+- `company_group_members` (which companies belong to which group)
+- RLS policy: group admin sees all member companies' data
+- Lead/Opp/Commission visibility across group
+
+**Effort:** 3-4 days (schema + RLS audit + UI)
+
+**Timing:** Post-MVP, Phase 2 enhancement
+
+---
