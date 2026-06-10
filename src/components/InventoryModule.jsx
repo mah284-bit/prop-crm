@@ -476,7 +476,7 @@ Return ONLY the JSON, no explanation.`}
                 const hdStr  = hdDate?new Date(hdDate).toLocaleDateString("en-AE",{month:"short",year:"2-digit"}):"";
                 return (
                   <tr key={u.id}
-                    onClick={()=>openUnit(u)}
+                    onClick={()=>{openUnit(u); openPropertyPack(u.id);}}
                     style={{background:isSel?"#EEF2FF":i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5",cursor:"pointer",transition:"background .1s"}}
                     onMouseOver={e=>{if(!isSel)e.currentTarget.style.background="#F0F7FF";}}
                     onMouseOut={e=>{if(!isSel)e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC";}}>

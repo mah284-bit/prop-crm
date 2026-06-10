@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
+import { openPropertyPack } from "./property/propertyPackBus";
 import MediaGallery from "./property/MediaGallery";
 import AmenityGrid from "./property/AmenityGrid";
 import PdfPreview from "./property/PdfPreview";
@@ -472,7 +473,7 @@ function PropPulse({ currentUser, showToast }) {
                   const sc = STATUS_COLORS[proj.project_status]||{bg:"#F7F9FC",c:"#718096"};
                   const alreadyImported = importedSourceIds.has(proj.id);
                   return (
-                    <div key={proj.id} onClick={()=>setSelProject(proj)}
+                    <div key={proj.id} onClick={()=>{setSelProject(proj); openProjectPack(proj.id);}}
                       style={{display:"grid",gridTemplateColumns:"2.5fr 1.5fr 1fr 1fr 1fr 1fr 1fr",gap:0,padding:"10px 14px",alignItems:"center",background:ri%2===0?"#fff":"#F7F9FC",borderBottom:"1px solid #F1F5F9",cursor:"pointer",transition:"background .1s"}}
                       onMouseOver={e=>e.currentTarget.style.background="#EFF6FF"}
                       onMouseOut={e=>e.currentTarget.style.background=ri%2===0?"#fff":"#F7F9FC"}>
@@ -852,5 +853,27 @@ function PropPulse({ currentUser, showToast }) {
     </div>
   );
 }
+
+
+// Helper: open property pack for first unit of a project
+const openProjectPack = async (projectId) => {
+  console.log("openProjectPack called with:", projectId);
+  try {
+    const { data: units, error } = await supabase
+      .from("project_units")
+      .select("id")
+      .eq("project_id", projectId)
+      .limit(1);
+    console.log("Query result:", { units, error });
+    if (units && units.length > 0) {
+      console.log("Found unit:", units[0].id);
+      openPropertyPack(units[0].id);
+    } else {
+      console.log("No units found for project:", projectId);
+    }
+  } catch (err) {
+    console.error("Catch error:", err);
+  }
+};
 
 export default PropPulse;
