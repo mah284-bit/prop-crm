@@ -51,3 +51,21 @@
 - Timing: Pre-production (before pilot client onboard)
 
 ---
+
+## DAY 33 MORNING PLAN
+
+**START EARLY. TWO PARALLEL TRACKS:**
+
+### Track 1: Phase 2.3B Share Modal Residue (1-2 hours)
+- [ ] Test edge cases (no unit, timeout, network fail)
+- [ ] Plan multi-PDF bundling (UI + PDF gen)
+- [ ] Decide: ship now or defer to v2
+
+### Track 2: Group Company/Group Access Gap (3-4 hours)
+- [ ] Design group_companies + group_members schema
+- [ ] Design group-level RLS policies
+- [ ] Estimate scope for pre-production push
+
+**THEN:** Bird's eye view — see if demo readiness emerges.
+
+---
