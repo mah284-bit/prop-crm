@@ -119,6 +119,7 @@ function downloadIcsAndOpenMail({to, subject, body, ics, filename}) {
 
 import { STAGES, OPP_STAGES, ROLE_META } from './modules/constants.js';
 import { fmtM, fmtAED, fmtDate, fmtDT, ini, uid } from './modules/utils.js';
+import { Btn } from './modules/shared/Btn.jsx';
 
 
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
@@ -331,10 +332,6 @@ const TypeBadge = ({type}) => {
 const RoleBadge = ({role}) => {
   const m=ROLE_META[role]||{label:role,color:"#718096",bg:"#F7F9FC"};
   return <span style={{fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:m.bg,color:m.color,textTransform:"capitalize"}}>{m.label}</span>;
-};
-const Btn = ({children,onClick,variant="primary",small=false,full=false,disabled=false,style:st={}}) => {
-  const s={primary:{background:"#0F2540",color:"#fff",border:"none"},gold:{background:"#C9A84C",color:"#0F2540",border:"none"},outline:{background:"#fff",color:"#0F2540",border:"1.5px solid #D1D9E6"},danger:{background:"#FAEAEA",color:"#B83232",border:"1.5px solid #F0BCBC"},green:{background:"#E6F4EE",color:"#1A7F5A",border:"1.5px solid #A8D5BE"},wa:{background:"#25D366",color:"#fff",border:"none"}};
-  return <button onClick={onClick} disabled={disabled} style={{...s[variant],padding:small?"6px 14px":"9px 18px",borderRadius:8,fontSize:small?12:13,fontWeight:600,display:"inline-flex",alignItems:"center",gap:6,transition:"opacity 0.15s",width:full?"100%":"auto",justifyContent:"center",opacity:disabled?0.45:1,...st}} onMouseOver={e=>{if(!disabled)e.currentTarget.style.opacity="0.82"}} onMouseOut={e=>e.currentTarget.style.opacity=disabled?"0.45":"1"}>{children}</button>;
 };
 const Spinner=({msg="Loading…"})=>(
   <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,color:"#A0AEC0"}}>
