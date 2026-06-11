@@ -381,12 +381,6 @@ const AuthWrap=({children})=>(
     <div className="fade-in" style={{background:"#fff",borderRadius:20,padding:"2.5rem",width:440,maxWidth:"100%",boxShadow:"0 30px 80px rgba(0,0,0,0.4)"}}>{children}</div>
   </div>
 );
-const AuthLogo=({sub})=>(
-  <div style={{textAlign:"center",marginBottom:28}}>
-    <div style={{fontFamily:"'Playfair Display',serif",fontSize:32,fontWeight:700,color:"#0F2540"}}><span style={{color:"#C9A84C"}}>◆</span> PropCRM</div>
-    <div style={{fontSize:13,color:"#A0AEC0",marginTop:6}}>{sub}</div>
-  </div>
-);
 const AuthTabs=({mode,setMode})=>(
   <div style={{display:"flex",background:"#F7F9FC",borderRadius:10,padding:4,marginBottom:24}}>
     {[["login","Sign In"]].map(([m,label])=>(
