@@ -120,6 +120,7 @@ function downloadIcsAndOpenMail({to, subject, body, ics, filename}) {
 import { STAGES, OPP_STAGES, ROLE_META } from './modules/constants.js';
 import { fmtM, fmtAED, fmtDate, fmtDT, ini, uid } from './modules/utils.js';
 import { Btn } from './modules/shared/Btn.jsx';
+import { Spinner } from './modules/shared/Spinner.jsx';
 
 
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
@@ -333,12 +334,6 @@ const RoleBadge = ({role}) => {
   const m=ROLE_META[role]||{label:role,color:"#718096",bg:"#F7F9FC"};
   return <span style={{fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:m.bg,color:m.color,textTransform:"capitalize"}}>{m.label}</span>;
 };
-const Spinner=({msg="Loading…"})=>(
-  <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",gap:16,color:"#A0AEC0"}}>
-    <div style={{width:36,height:36,border:"3px solid #E2E8F0",borderTop:"3px solid #C9A84C",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
-    {msg&&<div style={{fontSize:14}}>{msg}</div>}
-  </div>
-);
 const Empty=({icon,msg})=>(
   <div style={{textAlign:"center",padding:"3rem 1rem",color:"#A0AEC0"}}>
     <div style={{fontSize:36,marginBottom:10}}>{icon}</div>
