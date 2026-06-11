@@ -1,4 +1,4 @@
-import { useDraggable } from '../lib/useDraggable';
+import { useDraggable } from '../../lib/useDraggable';
 
 export function Modal({title,onClose,children,width=520}) {
   const { ref, posStyle, handleProps } = useDraggable({ open: true });

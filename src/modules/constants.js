@@ -44,3 +44,23 @@ export const DISC_TYPES = [
   { key:"payment_plan", label:"Payment Plan Change",   icon:"📅" },
   { key:"agency_fee",   label:"Agency Fee Waiver",     icon:"🤝" },
 ];
+export const STAGE_META = {
+  "New Lead":      { c:"#1A5FA8", bg:"#E6EFF9", order:0 },
+  "Contacted":     { c:"#5B3FAA", bg:"#EEE8F9", order:1 },
+  "Site Visit":    { c:"#A06810", bg:"#FDF3DC", order:2 },
+  "Proposal Sent": { c:"#7A3FAA", bg:"#F3E8F9", order:3 },
+  "Negotiation":   { c:"#B85C10", bg:"#FDF0E6", order:4 },
+  "Closed Won":    { c:"#1A7F5A", bg:"#E6F4EE", order:5 },
+  "Closed Lost":   { c:"#B83232", bg:"#FAEAEA", order:6 },
+};
+
+export const TYPE_META = {
+  Residential:{c:"#1A7F5A",bg:"#E6F4EE"}, Commercial:{c:"#1A5FA8",bg:"#E6EFF9"},
+  Luxury:{c:"#B85C10",bg:"#FDF0E6"}, "Off-plan":{c:"#7A3FAA",bg:"#F3E8F9"},
+  Villa:{c:"#1A7F5A",bg:"#E6F4EE"}, Flat:{c:"#1A5FA8",bg:"#E6EFF9"},
+  Building:{c:"#B85C10",bg:"#FDF0E6"},
+};
+
+export const ACT_META = {
+  Call: {icon:"☎️"}, Email: {icon:"📧"}, Meeting: {icon:"🤝"}, Visit: {icon:"📍"}, WhatsApp: {icon:"💬"}, Note: {icon:"📝"},
+};
