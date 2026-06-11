@@ -16,3 +16,14 @@ export const getStrength = pw => {
   if(s<=3)return{score:s,label:"Good",color:"#1A5FA8",pct:70};
   return{score:s,label:"Strong",color:"#1A7F5A",pct:100};
 };
+
+
+export const can = (role, action) => ({
+  super_admin:    ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_companies","manage_inventory","reserve_unit"],
+  admin:          ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_inventory","reserve_unit"],
+  sales_manager:  ["read","write","delete","see_all","delete_leads","approve_manager","view_sales","request_discount","manage_inventory","reserve_unit"],
+  sales_agent:    ["read","write","view_sales","request_discount","reserve_unit"],
+  leasing_manager:["read","write","delete","see_all","delete_leads","approve_manager","view_leasing","request_discount","manage_inventory","reserve_unit"],
+  leasing_agent:  ["read","write","view_leasing","reserve_unit"],
+  viewer:         ["read","view_sales","view_leasing"],
+}[role]||[]).includes(action);

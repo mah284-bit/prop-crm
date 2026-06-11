@@ -64,3 +64,17 @@ export const TYPE_META = {
 export const ACT_META = {
   Call: {icon:"☎️"}, Email: {icon:"📧"}, Meeting: {icon:"🤝"}, Visit: {icon:"📍"}, WhatsApp: {icon:"💬"}, Note: {icon:"📝"},
 };
+
+
+export const OPP_STAGE_META = {
+  "New":            {c:"#718096", bg:"#F7F9FC"},
+  "Contacted":      {c:"#1A5FA8", bg:"#E6EFF9"},
+  "Site Visit":     {c:"#5B3FAA", bg:"#EEE8F9"},
+  "Proposal Sent":  {c:"#A06810", bg:"#FDF3DC"},
+  "Negotiation":    {c:"#B83232", bg:"#FAEAEA"},
+  "Offer Accepted": {c:"#0F766E", bg:"#CCFBF1"},
+  "Reserved":       {c:"#7C3AED", bg:"#EDE9FE"},
+  "SPA Signed":     {c:"#1D4ED8", bg:"#DBEAFE"},
+  "Closed Won":     {c:"#1A7F5A", bg:"#E6F4EE"},
+  "Closed Lost":    {c:"#718096", bg:"#F7F9FC"},
+};
