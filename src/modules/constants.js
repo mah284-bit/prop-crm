@@ -30,3 +30,4 @@ export const COLORS = {
 
 export const PROP_TYPES = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
 export const UNIT_TYPES = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
+export const SOURCES = ["Referral","Website","Portal","Cold Call","Event","Social Media","WhatsApp","Walk-in"];
