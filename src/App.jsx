@@ -124,6 +124,8 @@ import { Spinner } from './modules/shared/Spinner.jsx';
 import { Empty } from './modules/shared/Empty.jsx';
 import { FR } from './modules/shared/FR.jsx';
 import { Toast } from './modules/shared/Toast.jsx';
+import { Av } from './modules/shared/Av.jsx';
+import { G3 } from './modules/shared/G3.jsx';
 
 
 const STAGE_RULES = {
@@ -306,9 +308,6 @@ const checkGate = (targetStage, lead) => {
 };
 
 // ─── ATOMS ────────────────────────────────────────────────────
-const Av = ({name,size=36,bg="#0F2540",tc="#C9A84C"}) => (
-  <div style={{width:size,height:size,borderRadius:"50%",background:bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:size*0.32,fontWeight:600,color:tc,letterSpacing:"0.5px"}}>{ini(name)}</div>
-);
 const RoleBadge = ({role}) => {
   const m=ROLE_META[role]||{label:role,color:"#718096",bg:"#F7F9FC"};
   return <span style={{fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:m.bg,color:m.color,textTransform:"capitalize"}}>{m.label}</span>;
