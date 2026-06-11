@@ -117,7 +117,7 @@ function downloadIcsAndOpenMail({to, subject, body, ics, filename}) {
   setTimeout(()=>{ window.location.href = mailto; }, 300);
 }
 
-import { STAGES, OPP_STAGES, ROLE_META, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, ROLES, VIEWS, MEET_TYPES, FOLLOW_TYPES } from './modules/constants.js';
+import { STAGES, OPP_STAGES, ROLE_META, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, ROLES, VIEWS, MEET_TYPES, FOLLOW_TYPES, CAN_DELETE_LEADS } from './modules/constants.js';
 import { fmtM, fmtAED, fmtDate, fmtDT, ini, uid } from './modules/utils.js';
 import { Btn } from './modules/shared/Btn.jsx';
 import { Spinner } from './modules/shared/Spinner.jsx';
@@ -125,7 +125,6 @@ import { Empty } from './modules/shared/Empty.jsx';
 import { FR } from './modules/shared/FR.jsx';
 
 
-const CAN_DELETE_LEADS = ["admin","manager"];
 const STAGE_RULES = {
   "Contacted":     ["phone","email"],
   "Site Visit":    ["meeting_scheduled"],

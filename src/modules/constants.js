@@ -36,3 +36,4 @@ export const ROLES = ["super_admin","admin","sales_manager","sales_agent","leasi
 export const VIEWS = ["Sea View","Pool View","Garden View","City View","Golf View","Park View","Community View","Burj View","Creek View","No View"];
 export const MEET_TYPES = ["Call","Meeting","Site Visit","Video Call","Presentation"];
 export const FOLLOW_TYPES = ["Call","WhatsApp","Email","Meeting"];
+export const CAN_DELETE_LEADS = ["admin","manager"];
