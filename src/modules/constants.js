@@ -37,3 +37,10 @@ export const VIEWS = ["Sea View","Pool View","Garden View","City View","Golf Vie
 export const MEET_TYPES = ["Call","Meeting","Site Visit","Video Call","Presentation"];
 export const FOLLOW_TYPES = ["Call","WhatsApp","Email","Meeting"];
 export const CAN_DELETE_LEADS = ["admin","manager"];
+
+export const DISC_TYPES = [
+  { key:"sale_price",   label:"Sale Price Reduction", icon:"🏷" },
+  { key:"rent",         label:"Rent Reduction",        icon:"🔑" },
+  { key:"payment_plan", label:"Payment Plan Change",   icon:"📅" },
+  { key:"agency_fee",   label:"Agency Fee Waiver",     icon:"🤝" },
+];
