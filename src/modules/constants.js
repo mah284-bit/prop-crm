@@ -32,3 +32,4 @@ export const PROP_TYPES = ["Residential","Commercial","Luxury","Off-plan","Villa
 export const UNIT_TYPES = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
 export const SOURCES = ["Referral","Website","Portal","Cold Call","Event","Social Media","WhatsApp","Walk-in"];
 export const ACT_TYPES = ["Call","Email","Meeting","Visit","WhatsApp","Note"];
+export const ROLES = ["super_admin","admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"];

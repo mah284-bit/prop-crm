@@ -117,7 +117,7 @@ function downloadIcsAndOpenMail({to, subject, body, ics, filename}) {
   setTimeout(()=>{ window.location.href = mailto; }, 300);
 }
 
-import { STAGES, OPP_STAGES, ROLE_META, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES } from './modules/constants.js';
+import { STAGES, OPP_STAGES, ROLE_META, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, ROLES } from './modules/constants.js';
 import { fmtM, fmtAED, fmtDate, fmtDT, ini, uid } from './modules/utils.js';
 import { Btn } from './modules/shared/Btn.jsx';
 import { Spinner } from './modules/shared/Spinner.jsx';
@@ -125,7 +125,6 @@ import { Empty } from './modules/shared/Empty.jsx';
 import { FR } from './modules/shared/FR.jsx';
 
 
-const MANAGER_DISCOUNT_LIMIT = 5;
 const CAN_DELETE_LEADS = ["admin","manager"];
 const STAGE_RULES = {
   "Contacted":     ["phone","email"],
@@ -140,7 +139,6 @@ const DISC_TYPES = [
   { key:"payment_plan", label:"Payment Plan Change",   icon:"📅" },
   { key:"agency_fee",   label:"Agency Fee Waiver",     icon:"🤝" },
 ];
-const ROLES = ["super_admin","admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"];
 
 // ─── APP CONFIG ────────────────────────────────────────────────────
 // Stored in localStorage. Set once by admin. Controls which modules are visible.
