@@ -121,6 +121,7 @@ import { STAGES, OPP_STAGES, ROLE_META } from './modules/constants.js';
 import { fmtM, fmtAED, fmtDate, fmtDT, ini, uid } from './modules/utils.js';
 import { Btn } from './modules/shared/Btn.jsx';
 import { Spinner } from './modules/shared/Spinner.jsx';
+import { Empty } from './modules/shared/Empty.jsx';
 
 
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
@@ -334,12 +335,6 @@ const RoleBadge = ({role}) => {
   const m=ROLE_META[role]||{label:role,color:"#718096",bg:"#F7F9FC"};
   return <span style={{fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:m.bg,color:m.color,textTransform:"capitalize"}}>{m.label}</span>;
 };
-const Empty=({icon,msg})=>(
-  <div style={{textAlign:"center",padding:"3rem 1rem",color:"#A0AEC0"}}>
-    <div style={{fontSize:36,marginBottom:10}}>{icon}</div>
-    <div style={{fontSize:14}}>{msg}</div>
-  </div>
-);
 const FR=({label,value})=>(
   <div style={{display:"flex",flexDirection:"column",gap:2}}>
     <span style={{fontSize:10,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:"0.6px",fontWeight:600}}>{label}</span>
