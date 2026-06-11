@@ -117,7 +117,7 @@ function downloadIcsAndOpenMail({to, subject, body, ics, filename}) {
   setTimeout(()=>{ window.location.href = mailto; }, 300);
 }
 
-import { STAGES, OPP_STAGES, ROLE_META, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, ROLES, VIEWS, MEET_TYPES } from './modules/constants.js';
+import { STAGES, OPP_STAGES, ROLE_META, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, ROLES, VIEWS, MEET_TYPES, FOLLOW_TYPES } from './modules/constants.js';
 import { fmtM, fmtAED, fmtDate, fmtDT, ini, uid } from './modules/utils.js';
 import { Btn } from './modules/shared/Btn.jsx';
 import { Spinner } from './modules/shared/Spinner.jsx';
@@ -160,7 +160,6 @@ const MODE_ROLES = {
   leasing: ["admin","leasing_manager","leasing_agent","viewer"],
   both:    ["admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"],
 };
-const FOLLOW_TYPES= ["Call","WhatsApp","Email","Meeting"];
 
 
 // ─── MASTER DATA LISTS ─────────────────────────────────────────
