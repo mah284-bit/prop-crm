@@ -123,6 +123,7 @@ import { Btn } from './modules/shared/Btn.jsx';
 import { Spinner } from './modules/shared/Spinner.jsx';
 import { Empty } from './modules/shared/Empty.jsx';
 import { FR } from './modules/shared/FR.jsx';
+import { Toast } from './modules/shared/Toast.jsx';
 
 
 const STAGE_RULES = {
