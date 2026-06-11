@@ -309,10 +309,6 @@ const checkGate = (targetStage, lead) => {
 const Av = ({name,size=36,bg="#0F2540",tc="#C9A84C"}) => (
   <div style={{width:size,height:size,borderRadius:"50%",background:bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:size*0.32,fontWeight:600,color:tc,letterSpacing:"0.5px"}}>{ini(name)}</div>
 );
-const TypeBadge = ({type}) => {
-  const m=TYPE_META[type]||{c:"#718096",bg:"#F7F9FC"};
-  return <span style={{fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:m.bg,color:m.c}}>{type}</span>;
-};
 const RoleBadge = ({role}) => {
   const m=ROLE_META[role]||{label:role,color:"#718096",bg:"#F7F9FC"};
   return <span style={{fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:m.bg,color:m.color,textTransform:"capitalize"}}>{m.label}</span>;
