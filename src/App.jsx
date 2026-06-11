@@ -117,7 +117,7 @@ function downloadIcsAndOpenMail({to, subject, body, ics, filename}) {
   setTimeout(()=>{ window.location.href = mailto; }, 300);
 }
 
-import { STAGES, OPP_STAGES, ROLE_META, PROP_TYPES } from './modules/constants.js';
+import { STAGES, OPP_STAGES, ROLE_META, PROP_TYPES, UNIT_TYPES } from './modules/constants.js';
 import { fmtM, fmtAED, fmtDate, fmtDT, ini, uid } from './modules/utils.js';
 import { Btn } from './modules/shared/Btn.jsx';
 import { Spinner } from './modules/shared/Spinner.jsx';
@@ -125,7 +125,6 @@ import { Empty } from './modules/shared/Empty.jsx';
 import { FR } from './modules/shared/FR.jsx';
 
 
-const UNIT_TYPES  = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
 const SOURCES     = ["Referral","Website","Portal","Cold Call","Event","Social Media","WhatsApp","Walk-in"];
 const ACT_TYPES   = ["Call","Email","Meeting","Visit","WhatsApp","Note"];
 const MANAGER_DISCOUNT_LIMIT = 5;
