@@ -27,3 +27,5 @@ export const COLORS = {
   navy: "#0F2540",
   gold: "#C9A84C",
 };
+
+export const PROP_TYPES = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
