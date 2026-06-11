@@ -33,3 +33,4 @@ export const UNIT_TYPES = ["Villa","Flat","Penthouse","Townhouse","Duplex","Stud
 export const SOURCES = ["Referral","Website","Portal","Cold Call","Event","Social Media","WhatsApp","Walk-in"];
 export const ACT_TYPES = ["Call","Email","Meeting","Visit","WhatsApp","Note"];
 export const ROLES = ["super_admin","admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"];
+export const VIEWS = ["Sea View","Pool View","Garden View","City View","Golf View","Park View","Community View","Burj View","Creek View","No View"];
