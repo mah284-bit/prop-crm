@@ -118,6 +118,7 @@ function downloadIcsAndOpenMail({to, subject, body, ics, filename}) {
 }
 
 import { STAGES, OPP_STAGES, ROLE_META } from './modules/constants.js';
+import { fmtM, fmtAED, fmtDate, fmtDT, ini, uid } from './modules/utils.js';
 
 
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
@@ -228,12 +229,6 @@ const ACT_META = {
 };
 
 // ─── UTILS ────────────────────────────────────────────────────
-const fmtM    = n  => n ? `AED ${(n/1e6).toFixed(2)}M` : "—";
-const fmtAED  = n  => n ? `AED ${Number(n).toLocaleString("en-AE")}` : "—";
-const fmtDate = d  => d ? new Date(d).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"}) : "—";
-const fmtDT   = d  => d ? new Date(d).toLocaleString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
-const ini     = n  => (n||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
-const uid     = () => Date.now()+Math.floor(Math.random()*9999);
 const can = (role, action) => ({
   super_admin:    ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_companies","manage_inventory","reserve_unit"],
   admin:          ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_inventory","reserve_unit"],
