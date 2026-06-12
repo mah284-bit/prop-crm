@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef, Fragment } from "react";
-import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS } from './modules/constants.js';
+import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, PROPOSAL_STATUS_META } from './modules/constants.js';
 import { useDraggable } from "./lib/useDraggable";
 import { supabase } from "./lib/supabase";
 import SettingsPage from "./components/settings/SettingsPage.jsx";

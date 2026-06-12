@@ -228,3 +228,12 @@ export const SERVICE_CHARGE_PRESETS = [
   { label:"Custom",     value:"custom",      months:null },
 ];
 
+export const PROPOSAL_STATUS_META = {
+  sent:     {label:"SENT",       c:"#1A5FA8", bg:"#E6EFF8"},
+  viewed:   {label:"VIEWED",     c:"#A06810", bg:"#FDF3DC"},
+  accepted: {label:"ACCEPTED",   c:"#1A7F5A", bg:"#E6F4EE"},
+  rejected: {label:"REJECTED",   c:"#C53030", bg:"#FEE2E2"},
+  expired:  {label:"EXPIRED",    c:"#6B7280", bg:"#F3F4F6"},
+  superseded:{label:"SUPERSEDED",c:"#6B7280", bg:"#F3F4F6"},
+};
+
