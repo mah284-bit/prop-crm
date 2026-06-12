@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef, Fragment } from "react";
-import { STAGE_CAPTURE_CONFIGS } from './modules/constants.js';
+import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS } from './modules/constants.js';
 import { useDraggable } from "./lib/useDraggable";
 import { supabase } from "./lib/supabase";
 import SettingsPage from "./components/settings/SettingsPage.jsx";
@@ -2736,13 +2736,6 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
    Writes to proposals table + creates auto-reminders for follow-up + expiry.
    "Send" generates a structured email body via mailto: with .txt summary.
 ═══════════════════════════════════════════════════════════════ */
-const PAYMENT_PLAN_PRESETS = [
-  { label: "10/90", value: "10% on booking · 90% on handover" },
-  { label: "20/80", value: "20% during construction · 80% on handover" },
-  { label: "50/50 PHP", value: "50/50 with 30% post-handover over 2 years" },
-  { label: "40/60", value: "40% during construction · 60% on handover" },
-  { label: "Custom", value: "" },
-];
 
 // 20 May 2026 Phase 2b: Hoist PROPOSAL_STATUS_META to module level
 // so both ProposalBuilderDialog AND OpportunityDetail (Proposals section + dashboard panel) can use it.

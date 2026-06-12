@@ -199,3 +199,13 @@ export const STAGE_CAPTURE_CONFIGS = {
   },
 };
 
+
+
+export const PAYMENT_PLAN_PRESETS = [
+  { label: "10/90", value: "10% on booking · 90% on handover" },
+  { label: "20/80", value: "20% during construction · 80% on handover" },
+  { label: "50/50 PHP", value: "50/50 with 30% post-handover over 2 years" },
+  { label: "40/60", value: "40% during construction · 60% on handover" },
+  { label: "Custom", value: "" },
+];
+
