@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef, Fragment } from "react";
-import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS } from './modules/constants.js';
+import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS } from './modules/constants.js';
 import { useDraggable } from "./lib/useDraggable";
 import { supabase } from "./lib/supabase";
 import SettingsPage from "./components/settings/SettingsPage.jsx";
@@ -2749,13 +2749,6 @@ const PROPOSAL_STATUS_META = {
   superseded:{label:"SUPERSEDED",c:"#6B7280", bg:"#F3F4F6"},
 };
 
-const SERVICE_CHARGE_PRESETS = [
-  { label:"None",       value:"none",        months:0 },
-  { label:"6 months",   value:"6_months",    months:6 },
-  { label:"1 year",     value:"1_year",      months:12 },
-  { label:"2 years",    value:"2_years",     months:24 },
-  { label:"Custom",     value:"custom",      months:null },
-];
 
 const VALIDITY_PRESETS = [7, 10, 14, 21]; // days
 

@@ -218,3 +218,13 @@ export const DLD_OPTIONS = [
   { value: "specific_amount",  label: "Specific amount waived (custom)",    color:"#A06810", bg:"#FDF3DC" },
 ];
 
+
+
+export const SERVICE_CHARGE_PRESETS = [
+  { label:"None",       value:"none",        months:0 },
+  { label:"6 months",   value:"6_months",    months:6 },
+  { label:"1 year",     value:"1_year",      months:12 },
+  { label:"2 years",    value:"2_years",     months:24 },
+  { label:"Custom",     value:"custom",      months:null },
+];
+
