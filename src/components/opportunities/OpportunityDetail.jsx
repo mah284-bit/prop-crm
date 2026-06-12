@@ -1,3 +1,4 @@
+import { openPropertyPack } from "../property/propertyPackBus.js";
 import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { supabase } from "../../lib/supabase.js";
 import { Modal } from "../../modules/shared/Modal.jsx";
@@ -936,6 +937,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           });
           setShowEditOpp(true);
         }} style={{padding:"6px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
+        {opp?.unit_id&&<button onClick={()=>openPropertyPack(opp.unit_id)} style={{padding:"6px 12px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>📦 Share Pack</button>}
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
             <span style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>{opp.title||`Opportunity — ${lead.name}`}</span>

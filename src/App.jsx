@@ -9,7 +9,6 @@ import RemindersBell from './components/RemindersBell.jsx';
 import ActivitiesList from './components/opportunities/ActivitiesList.jsx';
 import OpportunityDetail from './components/opportunities/OpportunityDetail.jsx';
 import Opportunities from './components/sales/Opportunities.jsx';
-import Dashboard from './components/sales/Dashboard.jsx';
 import ReleaseDialog from "./components/leadqueue/ReleaseDialog.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -8193,7 +8192,7 @@ export default function App(){
         {(dataLoading&&leads.length===0&&aiUnits.length===0)?<Spinner msg="Loading your data…"/>:(<>
 
           {/* ── Sales CRM ─────────────────────────────────────── */}
-          {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} meetings={meetings} followups={followups} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} users={users} onNavigate={(t,filter)=>navigateToTab(t,filter)}/>}
+          {tab==="dashboard"   &&null /*Dashboard deferred - will extract properly in Phase 2*/}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})} refCountries={refCountries} refRules={refRules}/>}
           {tab==="opportunities" &&<Opportunities leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} activities={activities} setActivities={setActivities} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
