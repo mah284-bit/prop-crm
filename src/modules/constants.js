@@ -237,3 +237,5 @@ export const PROPOSAL_STATUS_META = {
   superseded:{label:"SUPERSEDED",c:"#6B7280", bg:"#F3F4F6"},
 };
 
+export const VALIDITY_PRESETS = [7, 10, 14, 21]; // days
+
