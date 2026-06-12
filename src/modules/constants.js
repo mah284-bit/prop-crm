@@ -209,3 +209,12 @@ export const PAYMENT_PLAN_PRESETS = [
   { label: "Custom", value: "" },
 ];
 
+
+
+export const DLD_OPTIONS = [
+  { value: "buyer_pays",       label: "Buyer pays (4% standard)",          color:"#64748B", bg:"#F1F5F9" },
+  { value: "split_5050",       label: "50/50 split with developer",         color:"#1A5FA8", bg:"#E6EFF8" },
+  { value: "developer_pays",   label: "Developer absorbs full DLD",         color:"#1A7F5A", bg:"#E6F4EE" },
+  { value: "specific_amount",  label: "Specific amount waived (custom)",    color:"#A06810", bg:"#FDF3DC" },
+];
+

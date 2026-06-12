@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef, Fragment } from "react";
-import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS } from './modules/constants.js';
+import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS } from './modules/constants.js';
 import { useDraggable } from "./lib/useDraggable";
 import { supabase } from "./lib/supabase";
 import SettingsPage from "./components/settings/SettingsPage.jsx";
@@ -2748,12 +2748,6 @@ const PROPOSAL_STATUS_META = {
   expired:  {label:"EXPIRED",    c:"#6B7280", bg:"#F3F4F6"},
   superseded:{label:"SUPERSEDED",c:"#6B7280", bg:"#F3F4F6"},
 };
-const DLD_OPTIONS = [
-  { value: "buyer_pays",       label: "Buyer pays (4% standard)",          color:"#64748B", bg:"#F1F5F9" },
-  { value: "split_5050",       label: "50/50 split with developer",         color:"#1A5FA8", bg:"#E6EFF8" },
-  { value: "developer_pays",   label: "Developer absorbs full DLD",         color:"#1A7F5A", bg:"#E6F4EE" },
-  { value: "specific_amount",  label: "Specific amount waived (custom)",    color:"#A06810", bg:"#FDF3DC" },
-];
 
 const SERVICE_CHARGE_PRESETS = [
   { label:"None",       value:"none",        months:0 },
