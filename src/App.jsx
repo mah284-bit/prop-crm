@@ -6,6 +6,7 @@ import SettingsPage from "./components/settings/SettingsPage.jsx";
 import LeadQueuePage from "./components/leadqueue/LeadQueuePage.jsx";
 import CustomersPage from "./components/customers/CustomersPage.jsx";
 import RemindersBell from './components/RemindersBell.jsx';
+import LeadPeopleSection from './components/LeadPeopleSection.jsx';
 import ActivitiesList from './components/opportunities/ActivitiesList.jsx';
 import OpportunityDetail from './components/opportunities/OpportunityDetail.jsx';
 import Opportunities from './components/sales/Opportunities.jsx';
@@ -7653,13 +7654,13 @@ export default function App(){
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast} initialFilter={navFilter}/>}
           {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
-          {tab==="reports"     &&<ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leads={leads} activities={activities} initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
-          {tab==="master_agreements" && <MasterAgreements currentUser={currentUser} showToast={showToast}/>}
+        {/* STUB: ReportsModule - extracted in Phase 2 */}
+        {/* STUB: MasterAgreements - extracted in Phase 2 */}
           {tab==="settings" && <SettingsPage currentUser={currentUser} users={users} showToast={showToast}/>}
           {tab==="lead_queue" && <LeadQueuePage currentUser={currentUser} users={users} showToast={showToast} onNavigateToLead={(leadId)=>{const l=leads.find(x=>x.id===leadId); if(l){setSelLead(l);setView("lead");setTab("leads");}}}/>}
           {tab==="customers" && <CustomersPage leads={leads} currentUser={currentUser} showToast={showToast} onNavigateToLead={(leadId)=>{const l=leads.find(x=>x.id===leadId); if(l){setSelLead(l);setView("lead");setTab("leads");}}}/>}
           {tab==="commission_outstanding" && (hasCapability("see_brokerage_commission") ? <CommissionOutstanding currentUser={currentUser} showToast={showToast} developers={[]}/>: <div style={{padding:"20px"}}><p>⚠️ You do not have permission to view commission data.</p></div>)}
-          {(tab==="proppulse"||tab==="l_proppulse")&&<PropPulse currentUser={currentUser} showToast={showToast}/>}
+          {/* STUB: PropPulse - Phase 2 */}
           {tab==="coach_ai" && <CoachPage opps={opps} leads={leads} activities={activities} users={users} currentUser={currentUser} showToast={showToast} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})}/>}
           {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
           {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
