@@ -17,6 +17,7 @@ import ActivityLog from './components/sales/ActivityLog.jsx';
 import PropertyMaster from './components/inventory/PropertyMaster.jsx';
 import CommissionOutstanding from './components/CommissionOutstanding.jsx';
 import PropertyPackModal from './components/property/PropertyPackModal.jsx';
+import LeadCreationFormV2 from './components/LeadCreationFormV2.jsx';
 import ReleaseDialog from "./components/leadqueue/ReleaseDialog.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
@@ -6151,7 +6152,6 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
       </div>
 
       {/* Reservations Widget */}
-      <ReservationsWidget currentUser={currentUser} units={units}/>
     </div>
   );
 }
