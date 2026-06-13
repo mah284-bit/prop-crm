@@ -348,7 +348,7 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
 //   detail.placeholder: hint shown in the input
 // Designed for UAE off-plan primary-market — items reflect what real buyers actually
 // negotiate (DLD fee, post-handover %, service charge waivers, free parking).
-const ASKS_GRID_OPTIONS = [
+export const ASKS_GRID_OPTIONS = [
   { key:"discount",       label:"Price discount",        icon:"💰", detail:{kind:"percent", placeholder:"e.g. 5"}, hint:"% off the asking price" },
   { key:"payment_plan",   label:"Payment plan flex",     icon:"📅", detail:{kind:"text",    placeholder:"e.g. 50/50 with 30% post-handover over 2 yrs"}, hint:"Stretched, post-handover, more milestones" },
   { key:"dld_waiver",     label:"DLD fee help",          icon:"🏛️", detail:{kind:"text",    placeholder:"e.g. 50/50 split, or full waiver"}, hint:"Dubai Land Department 4% fee" },

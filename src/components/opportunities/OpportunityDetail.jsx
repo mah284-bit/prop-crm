@@ -18,7 +18,7 @@ import ActivitiesList from "./ActivitiesList.jsx";
 import StageCaptureDialog from "./StageCaptureDialog.jsx";
 import ProposalBuilderDialog from "./ProposalBuilderDialog.jsx";
 
-function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated }) {
+function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated, onActivityLog }) {
   // 19 May 2026: Internal approval features (broker -> manager -> admin) hidden
   // Hide until full workflow is implemented end-to-end.
   // To re-enable: change to true. Code is preserved.
@@ -1152,15 +1152,15 @@ You will become the assigned agent.`);
                       <div style={{flex:"1 1 280px",minWidth:260,background:"#F8FAFC",border:"1px solid #E8EDF4",borderRadius:10,padding:"6px 10px"}}>
                         <div style={{fontSize:9,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:4}}>Log activity</div>
                         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                          <button onClick={()=>{setLogForm({type:"Call",note:""});setShowLog(true);}}
+                          <button onClick={()=>onActivityLog("Call")}
                             style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
                             📞 Log Call
                           </button>
-                          <button onClick={()=>{setLogForm({type:"WhatsApp",note:""});setShowLog(true);}}
+                          <button onClick={()=>onActivityLog("WhatsApp")}
                             style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
                             💬 WhatsApp
                           </button>
-                          <button onClick={()=>{setLogForm({type:"Note",note:""});setShowLog(true);}}
+                          <button onClick={()=>onActivityLog("Note")}
                             style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
                             📝 Add Note
                           </button>
@@ -3209,47 +3209,7 @@ You will become the assigned agent.`);
       )}
 
       {/* Log Activity Modal */}
-      {showLog&&(
-        <LogActivityModal
-          lead={lead}
-          opp={opp}
-          currentUser={currentUser}
-          showToast={showToast}
-          defaultType={logForm.type||"Call"}
-          onClose={()=>{setShowLog(false); if(coachReturn){setDashboardTab("coach");setCoachReturn(false);}}}
-          onSaved={async(data, nextStepIntent)=>{
-            setActivities(p=>[data,...p]);
-            if(nextStepIntent && nextStepIntent.due){
-              const triggerAt = new Date(nextStepIntent.due);
-              triggerAt.setHours(9,0,0,0);
-              const{data:remRow,error:remErr}=await supabase.from("reminders").insert({
-                company_id: opp.company_id || currentUser.company_id || null,
-                user_id: currentUser.id,
-                related_opportunity_id: opp.id,
-                related_lead_id: lead.id,
-                related_activity_id: data.id,
-                trigger_at: triggerAt.toISOString(),
-                title: `${nextStepIntent.type} — ${lead.name}`,
-                body: nextStepIntent.note || "",
-                reason: "manual_next_step",
-                status: "pending",
-                created_by: currentUser.id,
-              }).select().single();
-              if(remErr){
-                console.warn("Reminder creation failed (non-fatal):", remErr);
-                showToast("Activity saved, but reminder failed to schedule","error");
-              }else{
-                setReminders(p=>[...p,remRow].sort((a,b)=>new Date(a.trigger_at)-new Date(b.trigger_at)));
-                showToast("Activity logged & next step scheduled","success");
-              }
-            }else{
-              showToast("Activity logged","success");
-            }
-            setShowLog(false);
-            if(coachReturn){setDashboardTab("coach");setCoachReturn(false);}
-          }}
-        />
-      )}
+      
 
       {/* Reassign Modal */}
       {showReassign&&(

@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect, useCallback, useRef, Fragment } from "rea
 import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, PROPOSAL_STATUS_META, VALIDITY_PRESETS, OPP_STAGES, OPP_STAGE_META } from './modules/constants.js';
 import { useDraggable } from "./lib/useDraggable";
 import { supabase } from "./lib/supabase";
+import { normalisePhone, addWorkingDays, downloadIcsAndOpenMail } from './lib/appUtils.js';
+import { useLeadPersons, ROLE_LABELS } from './lib/useLeadPersons.js';
 import SettingsPage from "./components/settings/SettingsPage.jsx";
 import LeadQueuePage from "./components/leadqueue/LeadQueuePage.jsx";
 import CustomersPage from "./components/customers/CustomersPage.jsx";
@@ -110,22 +112,6 @@ function buildIcsEvent({uid, summary, description, location, startISO, endISO, o
   return lines.join("\r\n");
 }
 
-function downloadIcsAndOpenMail({to, subject, body, ics, filename}) {
-  // 1. Trigger .ics download
-  const blob = new Blob([ics], {type:"text/calendar;charset=utf-8"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename || "site-visit.ics";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url), 1000);
-  // 2. Open mailto: with subject + body — user attaches the just-downloaded file
-  const mailto = `mailto:${encodeURIComponent(to||"")}?subject=${encodeURIComponent(subject||"")}&body=${encodeURIComponent(body||"")}`;
-  // Slight delay so the download dialog appears before the mailto handler
-  setTimeout(()=>{ window.location.href = mailto; }, 300);
-}
 
 const STAGES      = ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
@@ -736,16 +722,6 @@ function LoginScreen({onLogin}){
 // ══════════════════════════════════════════════════════
 // PROPERTY MASTER DATABASE
 // ══════════════════════════════════════════════════════
-function addWorkingDays(startDate, days) {
-  const d = new Date(startDate);
-  let added = 0;
-  while (added < days) {
-    d.setDate(d.getDate() + 1);
-    const day = d.getDay(); // 0=Sun, 6=Sat — weekend
-    if (day !== 0 && day !== 6) added++;
-  }
-  return d;
-}
 // Expose globally so external component files (ReportsModule, InventoryModule etc.)
 // that reference OPP_STAGES as a bare identifier can find it. Hot-fix for runtime
 // ReferenceError; long-term these external files should import the constant
@@ -939,13 +915,6 @@ function OpenItemsGuard({ opp, lead, activities, units, projects, currentUser, o
    see exactly what was sent, with a "Copy email body" action for
    re-sharing.
 ═══════════════════════════════════════════════════════════════ */
-function normalisePhone(p) {
-  if (!p) return "";
-  let s = String(p).replace(/\D/g, "");
-  if (s.startsWith("971")) s = s.slice(3);
-  if (s.startsWith("0")) s = s.slice(1);
-  return s;
-}
 
 // Common UAE country code list — used by the inline form
 const COUNTRY_CODES = [
@@ -3051,6 +3020,7 @@ function Leads({leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpp
         setSelOpp(updated);
         setOpps(p=>{const n=p.map(o=>o.id===updated.id?updated:o);setGlobalOpps(n);return n;});
       }}
+      onActivityLog={(type)=>{setShowActivityModal({lead: selLead || leads.find(l=>l.id===selOpp.lead_id) || {}}); }}
     />
   );
 
@@ -3532,7 +3502,6 @@ function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activiti
   const [expandedId, setExpandedId] = useState(null);
   const [moving, setMoving] = useState(null);
   const [localOpps, setLocalOpps] = useState([]);
-  const [showActivityModal, setShowActivityModal] = useState(null); // {lead, type}
   const [showReserveModal, setShowReserveModal] = useState(null);   // {opp, unit}
   const [units, setUnits] = useState([]);
   const [reservations, setReservations] = useState([]);
@@ -7196,6 +7165,7 @@ function PwRecoveryForm({onDone}){
 }
 
 export default function App(){
+  const [showActivityModal, setShowActivityModal] = useState(null); // {lead, type}
   const[checking,  setChecking]  = useState(true);
   const[currentUser,setCurrentUser]=useState(null);
   const[leads,     setLeads]     = useState([]);
@@ -7648,9 +7618,9 @@ export default function App(){
           {/* ── Sales CRM ─────────────────────────────────────── */}
           {tab==="dashboard"   &&null /*Dashboard deferred - will extract properly in Phase 2*/}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})} refCountries={refCountries} refRules={refRules}/>}
-          {tab==="opportunities" &&<Opportunities leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} activities={activities} setActivities={setActivities} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter}/>}
+          {tab==="opportunities" &&<Opportunities leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} activities={activities} setActivities={setActivities} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter} onActivityLog={(type, lead)=>{console.log("onActivityLog called:", type, lead); setShowActivityModal({lead:lead});}}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
-          {tab==="builder"     &&<InventoryModule currentUser={currentUser} showToast={showToast} crmContext="sales" initialFilter={navFilter} preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} activeCompanyId={activeCompanyId} globalOpps={opps}/>}
+          {tab==="builder"     &&null /*STUB: InventoryModule builder - Phase 2*/}
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}
           {tab==="activity"    &&<ActivityLog leads={leads} activities={activities} setActivities={setActivities} currentUser={currentUser} showToast={showToast} initialFilter={navFilter}/>}
           {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
