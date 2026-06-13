@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef, Fragment } from "react";
 import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, PROPOSAL_STATUS_META, VALIDITY_PRESETS, OPP_STAGES, OPP_STAGE_META } from './modules/constants.js';
 import { useDraggable } from "./lib/useDraggable";
+import { rulesFromRows } from './lib/contactValidation.js';
 import { supabase } from "./lib/supabase";
 import { normalisePhone, addWorkingDays, downloadIcsAndOpenMail } from './lib/appUtils.js';
 import { useLeadPersons, ROLE_LABELS } from './lib/useLeadPersons.js';
@@ -7293,7 +7294,7 @@ export default function App(){
       try{
         const query = supabase.from("companies").select("*").order("name");
         const{data}=await query;
-        console.log('DEBUG companies fetch:', {role: currentUser.role, dataLength: data?.length, error: 'none'}); if(data){
+        if(data){
           const cid=localStorage.getItem("propccrm_company_id")||currentUser.company_id;
           const activeCo=data.find(c=>c.id===cid)||data[0];
           if(activeCo)localStorage.setItem("propccrm_company_cache",JSON.stringify({id:activeCo.id,name:activeCo.name,logo_url:activeCo.logo_url||"",business_type:activeCo.business_type||"",company_category:activeCo.company_category||"Brokerage",ai_assistant_name:activeCo.ai_assistant_name||""}));
@@ -7399,17 +7400,15 @@ export default function App(){
     localStorage.setItem("propccrm_last_app", app);
     // Load companies for all admin/manager roles to show in header
     if(["super_admin","admin","sales_manager","leasing_manager"].includes(user.role)){
-      isSuperAdmin ? supabase.from("companies").select("*").order("name").then : supabase.from("companies").select("*").eq("company_id", currentUser.company_id).order("name").then(({data})=>{
-        console.log('DEBUG companies fetch:', {role: currentUser.role, dataLength: data?.length, error: 'none'}); if(data){
-          // Cache the active company for instant display on next load
-          const cid = localStorage.getItem("propccrm_company_id") || user.company_id;
-          const activeCo = data.find(c=>c.id===cid) || data[0];
-          if(activeCo) localStorage.setItem("propccrm_company_cache", JSON.stringify({id:activeCo.id,name:activeCo.name,logo_url:activeCo.logo_url||"",business_type:activeCo.business_type||"",company_category:activeCo.company_category||"Brokerage",ai_assistant_name:activeCo.ai_assistant_name||""}));
-          setCompanies(data);
-          const saved=localStorage.getItem("propccrm_company_id");
-          const co=saved?data.find(c=>c.id===saved):data[0];
-          if(co){setActiveCompanyId(co.id);localStorage.setItem("propccrm_company_id",co.id);}
-        }
+      const query = isSuperAdmin ? supabase.from("companies").select("*").order("name") : supabase.from("companies").select("*").eq("company_id", currentUser.company_id).order("name");
+      query.then(({data})=>{
+        const cid = localStorage.getItem("propccrm_company_id") || user.company_id;
+        const activeCo = data.find(c=>c.id===cid) || data[0];
+        if(activeCo) localStorage.setItem("propccrm_company_cache", JSON.stringify({id:activeCo.id,name:activeCo.name,logo_url:activeCo.logo_url||"",business_type:activeCo.business_type||"",company_category:activeCo.company_category||"Brokerage",ai_assistant_name:activeCo.ai_assistant_name||""}));
+        setCompanies(data);
+        const saved=localStorage.getItem("propccrm_company_id");
+        const co=saved?data.find(c=>c.id===saved):data[0];
+        if(co){setActiveCompanyId(co.id);localStorage.setItem("propccrm_company_id",co.id);}
       });
     }
   };
