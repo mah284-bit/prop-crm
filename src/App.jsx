@@ -7173,8 +7173,6 @@ export default function App(){
   const[userCapabilities,setUserCapabilities]=useState({});
   const[properties,setProperties]= useState([]);
   const[activities,setActivities]= useState([]);
-  const[meetings,  setMeetings]  = useState([]);
-  const[followups, setFollowups] = useState([]);
   const[discounts, setDiscounts] = useState([]);
   const[users,     setUsers]     = useState([]);
   const[aiProjects,setAiProjects]= useState([]);
