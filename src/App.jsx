@@ -4,6 +4,7 @@ import { useDraggable } from "./lib/useDraggable";
 import { rulesFromRows } from './lib/contactValidation.js';
 import { supabase } from "./lib/supabase";
 import { STAGES, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, VIEWS, MEET_TYPES, FOLLOW_TYPES, ROLES, MANAGER_DISCOUNT_LIMIT, CAN_DELETE_LEADS } from './lib/appConstants.js';
+import { hoursLeft, reservationUrgency } from './lib/reservationUtils.js';
 import { TEMPLATES, COLORS } from './lib/rolesConstants.js';
 import { fmtM, fmtAED } from './lib/formatters.js';
 import { fmtDate, fmtDT, ini, uid } from './lib/utils.js';
@@ -3745,19 +3746,7 @@ function ProjectsModule({ currentUser, showToast, crmContext="sales", preloadedP
 
 const MAX_RESERVATION_FEE = 5000;
 
-function hoursLeft(expiresAt, extendedUntil) {
-  const exp = extendedUntil ? new Date(extendedUntil) : new Date(expiresAt);
-  return Math.max(0, Math.round((exp - new Date()) / 36e5));
-}
 
-function reservationUrgency(res) {
-  const hrs = hoursLeft(res.expires_at, res.extended_until);
-  if (res.status !== "Active") return "inactive";
-  if (hrs <= 0)   return "expired";
-  if (hrs <= 12)  return "critical";
-  if (hrs <= 24)  return "warning";
-  return "ok";
-}
 
 const RES_COLORS = {
   ok:       { c:"#1A7F5A", bg:"#E6F4EE", border:"#A8D5BE" },
