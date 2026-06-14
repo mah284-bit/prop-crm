@@ -3,6 +3,7 @@ import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARG
 import { useDraggable } from "./lib/useDraggable";
 import { rulesFromRows } from './lib/contactValidation.js';
 import { supabase } from "./lib/supabase";
+import { STAGES, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, VIEWS, MEET_TYPES, FOLLOW_TYPES, ROLES, MANAGER_DISCOUNT_LIMIT, CAN_DELETE_LEADS } from './lib/appConstants.js';
 import { normalisePhone, addWorkingDays, downloadIcsAndOpenMail } from './lib/appUtils.js';
 import { useLeadPersons, ROLE_LABELS } from './lib/useLeadPersons.js';
 import SettingsPage from "./components/settings/SettingsPage.jsx";
@@ -115,13 +116,6 @@ function buildIcsEvent({uid, summary, description, location, startISO, endISO, o
 }
 
 
-const STAGES      = ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
-const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
-const UNIT_TYPES  = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
-const SOURCES     = ["Referral","Website","Portal","Cold Call","Event","Social Media","WhatsApp","Walk-in"];
-const ACT_TYPES   = ["Call","Email","Meeting","Visit","WhatsApp","Note"];
-const MANAGER_DISCOUNT_LIMIT = 5;
-const CAN_DELETE_LEADS = ["admin","manager"];
 const STAGE_RULES = {
   "Contacted":     ["phone","email"],
   "Site Visit":    ["meeting_scheduled"],
@@ -135,7 +129,6 @@ const DISC_TYPES = [
   { key:"payment_plan", label:"Payment Plan Change",   icon:"📅" },
   { key:"agency_fee",   label:"Agency Fee Waiver",     icon:"🤝" },
 ];
-const ROLES = ["super_admin","admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"];
 
 // ─── APP CONFIG ────────────────────────────────────────────────────
 // Stored in localStorage. Set once by admin. Controls which modules are visible.
@@ -157,9 +150,6 @@ const MODE_ROLES = {
   leasing: ["admin","leasing_manager","leasing_agent","viewer"],
   both:    ["admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"],
 };
-const VIEWS       = ["Sea View","Pool View","Garden View","City View","Golf View","Park View","Community View","Burj View","Creek View","No View"];
-const MEET_TYPES  = ["Call","Meeting","Site Visit","Video Call","Presentation"];
-const FOLLOW_TYPES= ["Call","WhatsApp","Email","Meeting"];
 
 
 // ─── MASTER DATA LISTS ─────────────────────────────────────────
@@ -3047,7 +3037,6 @@ function CoachPage({ opps, leads, activities, users, currentUser, showToast, onN
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
-  const STAGES = ["New", "Contacted", "Site Visit", "Proposal Sent", "Negotiation", "Offer Accepted", "Reserved", "SPA Signed"];
   const SEGMENTS = [
     { id: "investor", label: "Investor" },
     { id: "owner_occupier", label: "Owner-Occupier" },
