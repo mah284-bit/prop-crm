@@ -5,6 +5,7 @@ import { useDraggable } from "./lib/useDraggable";
 import { rulesFromRows } from './lib/contactValidation.js';
 import { supabase } from "./lib/supabase";
 import { STAGES, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, VIEWS, MEET_TYPES, FOLLOW_TYPES, ROLES, MANAGER_DISCOUNT_LIMIT, CAN_DELETE_LEADS } from './lib/appConstants.js';
+import { WA_TEMPLATES } from './lib/salesTemplates.js';
 import { getStrength, validateEmail } from './lib/validationHelpers.js';
 import { hoursLeft, reservationUrgency } from './lib/reservationUtils.js';
 import { TEMPLATES, COLORS } from './lib/rolesConstants.js';
@@ -178,16 +179,6 @@ const MASTER = {
   lead_source:  ["Referral","Website","Property Finder","Bayut","Dubizzle","Cold Call","Event","Social Media","WhatsApp","Walk-in","Agency","Developer","Other"],
   company_type: ["Brokerage","Developer","Real Estate Agent","Property Management","Off-Plan Specialist","Leasing Company","RERA Registered Agency","Investment Company","Other"],
 };
-
-const WA_TEMPLATES= [
-  { id:"intro",    label:"Introduction",      text:"Hello {name}, I'm {agent} from PropCRM. I wanted to reach out regarding your interest in {type} properties in Dubai. Could we schedule a brief call to discuss your requirements?" },
-  { id:"followup", label:"Follow-up",         text:"Hello {name}, I hope you're well. I wanted to follow up on our previous conversation about the properties we discussed. Do you have any questions or would you like to arrange a viewing?" },
-  { id:"sitevisit",label:"Site Visit Invite", text:"Hello {name}, I'd love to invite you for a site visit to {project}. It's a great opportunity to see the development in person. Would {date} work for you?" },
-  { id:"proposal", label:"Proposal Ready",    text:"Hello {name}, your personalised property proposal is ready. I'll be sending the details shortly. Please let me know if you'd like to discuss anything." },
-  { id:"noresponse",label:"No Response",      text:"Hello {name}, I've tried reaching you a couple of times. I understand you may be busy — whenever you're ready to discuss your property needs, I'm here to help." },
-  { id:"closing",  label:"Closing",           text:"Hello {name}, I wanted to touch base regarding {property}. We have a few serious buyers interested. I wouldn't want you to miss out. Shall we finalise the details?" },
-];
-
 // Stage gate requirements — what must exist before moving to next stage
 const STAGE_GATES = {
   "Contacted":     { required: ["phone","email"],                    label: "Phone and email required",          fields: ["phone","email"] },
