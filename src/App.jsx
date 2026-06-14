@@ -5,6 +5,7 @@ import { useDraggable } from "./lib/useDraggable";
 import { rulesFromRows } from './lib/contactValidation.js';
 import { supabase } from "./lib/supabase";
 import { STAGES, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, VIEWS, MEET_TYPES, FOLLOW_TYPES, ROLES, MANAGER_DISCOUNT_LIMIT, CAN_DELETE_LEADS } from './lib/appConstants.js';
+import { getStrength, validateEmail } from './lib/validationHelpers.js';
 import { hoursLeft, reservationUrgency } from './lib/reservationUtils.js';
 import { TEMPLATES, COLORS } from './lib/rolesConstants.js';
 import { fmtM, fmtAED } from './lib/formatters.js';
@@ -392,15 +393,6 @@ const EyeIcon=({open})=>(
     {open?<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>:<><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>}
   </svg>
 );
-const getStrength=pw=>{
-  if(!pw)return{score:0,label:"",color:"#E2E8F0",pct:0};
-  let s=0;
-  if(pw.length>=8)s++;if(pw.length>=12)s++;if(/[A-Z]/.test(pw))s++;if(/[0-9]/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;
-  if(s<=1)return{score:s,label:"Weak",color:"#B83232",pct:20};
-  if(s<=2)return{score:s,label:"Fair",color:"#A06810",pct:45};
-  if(s<=3)return{score:s,label:"Good",color:"#1A5FA8",pct:70};
-  return{score:s,label:"Strong",color:"#1A7F5A",pct:100};
-};
 const PwInput=({value,onChange,placeholder="••••••••",onKeyDown})=>{
   const[show,setShow]=useState(false);
   return <div style={{position:"relative"}}><input type={show?"text":"password"} value={value} onChange={onChange} placeholder={placeholder} onKeyDown={onKeyDown} style={{paddingRight:42}}/><button type="button" onClick={()=>setShow(s=>!s)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"#A0AEC0",padding:0,display:"flex",alignItems:"center",cursor:"pointer"}}><EyeIcon open={show}/></button></div>;
@@ -433,14 +425,6 @@ const AuthTabs=({mode,setMode})=>(
 // ─── FIELD VALIDATORS ────────────────────────────────────────────
 
 // Email validation
-const validateEmail = (email) => {
-  if (!email) return null; // optional field — only validate if filled
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-  if (!re.test(email.trim())) return "Invalid email — use format: name@domain.com";
-  const banned = ["@test.","@example.","@fake.","@dummy."];
-  if (banned.some(b => email.includes(b))) return "Please use a real email address";
-  return null;
-};
 
 // Phone formats by country/nationality
 const NATIONALITIES = [
