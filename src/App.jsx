@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef, Fragment } from "react";
+import { useLS } from './lib/useLS.js';
 import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, PROPOSAL_STATUS_META, VALIDITY_PRESETS, OPP_STAGES, OPP_STAGE_META } from './modules/constants.js';
 import { useDraggable } from "./lib/useDraggable";
 import { rulesFromRows } from './lib/contactValidation.js';
@@ -289,11 +290,6 @@ function PermSetSelector({ companyId, value, onChange }) {
   );
 }
 
-function useLS(key,seed){
-  const[v,setV]=useState(()=>{ try{const s=localStorage.getItem(key);return s?JSON.parse(s):seed;}catch{return seed;}});
-  const set=x=>{setV(x);try{localStorage.setItem(key,JSON.stringify(x));}catch{}};
-  return[v,set];
-}
 
 // Check stage gate — returns array of missing fields
 const checkGate = (targetStage, lead) => {
