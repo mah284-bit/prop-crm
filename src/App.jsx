@@ -5,6 +5,7 @@ import { rulesFromRows } from './lib/contactValidation.js';
 import { supabase } from "./lib/supabase";
 import { STAGES, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, VIEWS, MEET_TYPES, FOLLOW_TYPES, ROLES, MANAGER_DISCOUNT_LIMIT, CAN_DELETE_LEADS } from './lib/appConstants.js';
 import { fmtM, fmtAED } from './lib/formatters.js';
+import { fmtDate, fmtDT, ini, uid } from './lib/utils.js';
 import { normalisePhone, addWorkingDays, downloadIcsAndOpenMail } from './lib/appUtils.js';
 import { useLeadPersons, ROLE_LABELS } from './lib/useLeadPersons.js';
 import SettingsPage from "./components/settings/SettingsPage.jsx";
@@ -224,10 +225,6 @@ const ROLE_META = {
 };
 
 // ─── UTILS ────────────────────────────────────────────────────
-const fmtDate = d  => d ? new Date(d).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"}) : "—";
-const fmtDT   = d  => d ? new Date(d).toLocaleString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
-const ini     = n  => (n||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
-const uid     = () => Date.now()+Math.floor(Math.random()*9999);
 const can = (role, action) => ({
   super_admin:    ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_companies","manage_inventory","reserve_unit"],
   admin:          ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_inventory","reserve_unit"],
