@@ -19,6 +19,7 @@ import { ASKS_GRID_OPTIONS } from './ActivitiesList.jsx';
 import StageCaptureDialog from "./StageCaptureDialog.jsx";
 import ProposalBuilderDialog from "./ProposalBuilderDialog.jsx";
 
+import UnitSearchPicker from '../UnitSearchPicker.jsx';
 function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated, onActivityLog }) {
   // 19 May 2026: Internal approval features (broker -> manager -> admin) hidden
   // Hide until full workflow is implemented end-to-end.
