@@ -13,8 +13,9 @@ import { RoleBadge } from "../../modules/shared/RoleBadge.jsx";
 import { DiscBadge } from "../../modules/shared/DiscBadge.jsx";
 import { TypeBadge } from "../../modules/shared/TypeBadge.jsx";
 import { ROLES, COLORS, OPP_STAGES, OPP_STAGE_META, STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, PROPOSAL_STATUS_META, VALIDITY_PRESETS } from "../../modules/constants.js";
+import { addWorkingDays } from "../../lib/appUtils.js";
 import { can } from "../../modules/utils.js";
-import ActivitiesList from "./ActivitiesList.jsx";
+import ActivitiesList, { ASKS_GRID_OPTIONS } from "./ActivitiesList.jsx";
 import StageCaptureDialog from "./StageCaptureDialog.jsx";
 import ProposalBuilderDialog from "./ProposalBuilderDialog.jsx";
 
