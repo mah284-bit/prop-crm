@@ -353,7 +353,7 @@ function PropPulse({ currentUser, showToast }) {
   );
 
   return (
-    <div style={{display:"flex",flexDirection:"column",height:"100%",gap:0}}>
+    <div style={{display:"flex",flexDirection:"column",height:"100vh",gap:0}}>
 
       {/* Header */}
       <div style={{/* pp-banner-light */background:"linear-gradient(135deg,#F7F9FC 0%,#EEF2F7 100%)",border:"1px solid #E2E8F0",padding:"20px 24px",borderRadius:12,marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>

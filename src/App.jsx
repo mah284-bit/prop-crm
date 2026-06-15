@@ -19,6 +19,9 @@ import PropertyMaster from './components/inventory/PropertyMaster.jsx';
 import CommissionOutstanding from './components/CommissionOutstanding.jsx';
 import PropertyPackModal from './components/property/PropertyPackModal.jsx';
 import ReleaseDialog from "./components/leadqueue/ReleaseDialog.jsx";
+import InventoryModule from "./components/InventoryModule.jsx";
+import ReportsModule from "./components/ReportsModule.jsx";
+import PropPulse from "./components/PropPulse.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
    PROPCCRM v3.0
@@ -7615,7 +7618,7 @@ export default function App(){
           {tab==="lead_queue" && <LeadQueuePage currentUser={currentUser} users={users} showToast={showToast} onNavigateToLead={(leadId)=>{const l=leads.find(x=>x.id===leadId); if(l){setSelLead(l);setView("lead");setTab("leads");}}}/>}
           {tab==="customers" && <CustomersPage leads={leads} currentUser={currentUser} showToast={showToast} onNavigateToLead={(leadId)=>{const l=leads.find(x=>x.id===leadId); if(l){setSelLead(l);setView("lead");setTab("leads");}}}/>}
           {tab==="commission_outstanding" && (hasCapability("see_brokerage_commission") ? <CommissionOutstanding currentUser={currentUser} showToast={showToast} developers={[]}/>: <div style={{padding:"20px"}}><p>⚠️ You do not have permission to view commission data.</p></div>)}
-          {/* STUB: PropPulse - Phase 2 */}
+          {tab==="proppulse" && <PropPulse currentUser={currentUser} showToast={showToast}/>}
           {tab==="coach_ai" && <CoachPage opps={opps} leads={leads} activities={activities} users={users} currentUser={currentUser} showToast={showToast} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})}/>}
           {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
           {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
