@@ -3783,19 +3783,6 @@ function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activiti
         </div>
       </div>
 
-      {/* Activity Log Modal */}
-      {showActivityModal&&(
-        <LogActivityModal
-          lead={showActivityModal.lead}
-          currentUser={currentUser}
-          showToast={showToast}
-          onClose={()=>setShowActivityModal(null)}
-          onSaved={(act)=>{
-            showToast("Activity logged","success");
-            setShowActivityModal(null);
-          }}
-        />
-      )}
 
       {/* Reservation Modal */}
       {showReserveModal&&(
@@ -7668,6 +7655,19 @@ export default function App(){
       </div>
     </div>
     {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+    {showActivityModal&&(
+      <LogActivityModal
+        lead={showActivityModal.lead}
+        currentUser={currentUser}
+        showToast={showToast}
+        defaultType={showActivityModal.type||"Call"}
+        onClose={()=>setShowActivityModal(null)}
+        onSaved={(act)=>{
+          showToast("Activity logged","success");
+          setShowActivityModal(null);
+        }}
+      />
+    )}
     {/* Phase 2.2b — global Property Pack viewer (opens from anywhere via openPropertyPack) */}
     <PropertyPackModal />
     </>
