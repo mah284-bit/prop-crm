@@ -385,7 +385,7 @@ Return ONLY the JSON, no explanation.`}
   const PurposeBadge=({p})=>{const c={Sale:{c:"#1A7F5A",bg:"#E6F4EE"},Lease:{c:"#1A5FA8",bg:"#E6EFF9"},Both:{c:"#8A6200",bg:"#FDF3DC"}}[p]||{c:"#718096",bg:"#F7F9FC"};return <span style={{fontSize:10,fontWeight:600,padding:"2px 6px",borderRadius:20,background:c.bg,color:c.c}}>{p}</span>;};
 
   return (
-    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+    <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100vh"}}>
       {/* Top filter bar */}
       <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
         <input value={fSearch} onChange={e=>setFSearch(e.target.value)} placeholder="🔍 Universal search — unit ref, project, floor, view, price, status…" style={{flex:1,minWidth:150}}/>
