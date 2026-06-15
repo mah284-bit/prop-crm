@@ -10,6 +10,7 @@ import LeadQueuePage from "./components/leadqueue/LeadQueuePage.jsx";
 import CustomersPage from "./components/customers/CustomersPage.jsx";
 import RemindersBell from './components/RemindersBell.jsx';
 import LeadPeopleSection from './components/LeadPeopleSection.jsx';
+import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";
 import ActivitiesList from './components/opportunities/ActivitiesList.jsx';
 import OpportunityDetail from './components/opportunities/OpportunityDetail.jsx';
 import Opportunities from './components/sales/Opportunities.jsx';
@@ -7615,7 +7616,7 @@ export default function App(){
           {/* ── Sales CRM ─────────────────────────────────────── */}
           {tab==="dashboard"   &&null /*Dashboard deferred - will extract properly in Phase 2*/}
           {tab==="leads"       &&<Leads leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})} refCountries={refCountries} refRules={refRules}/>}
-          {tab==="opportunities" &&<Opportunities leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} activities={activities} setActivities={setActivities} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter} onActivityLog={(type, lead)=>{console.log("onActivityLog called:", type, lead); setShowActivityModal({lead:lead});}}/>}
+          {tab==="opportunities" &&<Opportunities leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} activities={activities} setActivities={setActivities} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter} onActivityLog={(type, lead)=>{console.log("onActivityLog called:", type, lead); setShowActivityModal({lead:lead});}} CreateOpportunityDialog={CreateOpportunityDialog}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
           {tab==="builder"     &&null /*STUB: InventoryModule builder - Phase 2*/}
           {tab==="discounts"   &&<DiscountApprovals discounts={discounts} setDiscounts={setDiscounts} leads={leads} user={currentUser} toast={showToast}/>}

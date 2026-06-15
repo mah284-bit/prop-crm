@@ -7,7 +7,7 @@ import { StageBadge } from "../../modules/shared/StageBadge.jsx";
 import { OPP_STAGES, OPP_STAGE_META } from "../../modules/constants.js";
 import OpportunityDetail from "../opportunities/OpportunityDetail.jsx";
 
-function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, projects, salePricing, activities, setActivities, currentUser, users, showToast, initialFilter=null }) {
+function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, projects, salePricing, activities, setActivities, currentUser, users, showToast, initialFilter=null, CreateOpportunityDialog }) {
   const [view, setView] = useState("list"); // "list" | "opportunity"
   const [selOpp, setSelOpp] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
