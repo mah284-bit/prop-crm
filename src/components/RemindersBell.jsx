@@ -5,6 +5,7 @@ import { Toast } from "../modules/shared/Toast.jsx";
 import { Btn } from "../modules/shared/Btn.jsx";
 import { Badge } from "../modules/shared/Badge.jsx";
 import { fmtDT } from "../modules/utils.js";
+import { aiInvoke } from '../lib/aiInvoke.js';
 
 function RemindersBell({ currentUser, onNavigateToOpp, onNavigateToLead, showToast }) {
   const [open, setOpen] = useState(false);

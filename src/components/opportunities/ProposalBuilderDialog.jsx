@@ -6,6 +6,7 @@ import { Btn } from "../../modules/shared/Btn.jsx";
 import { FF } from "../../modules/shared/FormComponents.jsx";
 import { PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, VALIDITY_PRESETS } from "../../modules/constants.js";
 import { useDraggable } from "../../lib/useDraggable.js";
+import { aiInvoke } from '../../lib/aiInvoke.js';
 
 function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, currentUser, lastProposal, onClose, onSaved, showToast }) {
   /* draggable-sendproposal */ const { ref: dragRef, posStyle, handleProps } = useDraggable({ open: true });

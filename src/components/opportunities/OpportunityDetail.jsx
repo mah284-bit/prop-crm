@@ -1,6 +1,7 @@
 import { openPropertyPack } from "../property/propertyPackBus.js";
 import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { supabase } from "../../lib/supabase.js";
+import { aiInvoke } from '../../lib/aiInvoke.js';
 import { Modal } from "../../modules/shared/Modal.jsx";
 import { Btn } from "../../modules/shared/Btn.jsx";
 import { FF } from "../../modules/shared/FormComponents.jsx";
@@ -4702,24 +4703,6 @@ You will become the assigned agent.`);
    Lets any component call Claude via the existing /api/ai endpoint
    (ANTHROPIC_API_KEY lives in Vercel env, never in the browser).
 ═══════════════════════════════════════════════════════════════ */
-async function aiInvoke({ system, prompt, messages, max_tokens }) {
-  // Either pass a single prompt (becomes one user message) or pass full messages array
-  const msgs = messages || [{ role: "user", content: prompt || "" }];
-  const cleaned = msgs
-    .filter(m => m && m.content && (m.role === "user" || m.role === "assistant"))
-    .map(m => ({ role: m.role, content: m.content }));
-  const body = { messages: cleaned };
-  if (system) body.system = system;
-  if (max_tokens) body.max_tokens = max_tokens;
-  const res = await fetch("/api/ai", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `AI request failed (${res.status})`);
-  return data.text || "";
-}
 
 /* ═══════════════════════════════════════════════════════════════
    Phase 2.1 — writeBrokerCreatedLog (audit helper)

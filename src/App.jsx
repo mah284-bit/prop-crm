@@ -25,6 +25,7 @@ import PwRecoveryForm from './components/PwRecoveryForm.jsx';
 import UsersTab from './components/UsersTab.jsx';
 import SettingsTab from './components/SettingsTab.jsx';
 import LogActivityModal from './components/LogActivityModal.jsx';
+import { aiInvoke } from './lib/aiInvoke.js';
 import { openPropertyPack } from './components/property/propertyPackBus';
 import ReleaseDialog from "./components/leadqueue/ReleaseDialog.jsx";
 import InventoryModule from "./components/InventoryModule.jsx";
