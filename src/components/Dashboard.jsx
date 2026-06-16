@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { supabase } from "../../lib/supabase";
-import { Btn } from "../../modules/shared/Btn.jsx";
-import { Spinner } from "../../modules/shared/Spinner.jsx";
-import { Empty } from "../../modules/shared/Empty.jsx";
-import { FR } from "../../modules/shared/FR.jsx";
-import { Badge } from "../../modules/shared/Badge.jsx";
-import { DiscBadge } from "../../modules/shared/DiscBadge.jsx";
-import { Toast } from "../../modules/shared/Toast.jsx";
-import { RoleBadge } from "../../modules/shared/RoleBadge.jsx";
-import { StageBadge } from "../../modules/shared/StageBadge.jsx";
-import { TypeBadge } from "../../modules/shared/TypeBadge.jsx";
-import { Modal } from "../../modules/shared/Modal.jsx";
-import { Av } from "../../modules/shared/Av.jsx";
-import { G3 } from "../../modules/shared/G3.jsx";
-import { STAGES, OPP_STAGES, ROLE_META, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, ROLES, VIEWS, MEET_TYPES, FOLLOW_TYPES, CAN_DELETE_LEADS, DISC_TYPES, STAGE_META, TYPE_META, ACT_META, OPP_STAGE_META } from "../../modules/constants.js";
-import { fmtM, fmtAED, fmtDate, fmtDT, uid, getStrength, ini, can } from "../../modules/utils.js";
+import { supabase } from "../lib/supabase";
+import { Btn } from "../modules/shared/Btn.jsx";
+import { Spinner } from "../modules/shared/Spinner.jsx";
+import { Empty } from "../modules/shared/Empty.jsx";
+import { FR } from "../modules/shared/FR.jsx";
+import { Badge } from "../modules/shared/Badge.jsx";
+import { DiscBadge } from "../modules/shared/DiscBadge.jsx";
+import { Toast } from "../modules/shared/Toast.jsx";
+import { RoleBadge } from "../modules/shared/RoleBadge.jsx";
+import { StageBadge } from "../modules/shared/StageBadge.jsx";
+import { TypeBadge } from "../modules/shared/TypeBadge.jsx";
+import { Modal } from "../modules/shared/Modal.jsx";
+import { Av } from "../modules/shared/Av.jsx";
+import { G3 } from "../modules/shared/G3.jsx";
+import { STAGES, OPP_STAGES, ROLE_META, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, ROLES, VIEWS, MEET_TYPES, FOLLOW_TYPES, CAN_DELETE_LEADS, DISC_TYPES, STAGE_META, TYPE_META, ACT_META, OPP_STAGE_META } from "../modules/constants.js";
+import { fmtM, fmtAED, fmtDate, fmtDT, uid, getStrength, ini, can } from "../modules/utils.js";
 
 export default function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],followups=[],crmContext="sales",units=[],salePricing=[],leasePricing=[],leases=[],users=[],onNavigate=()=>{}}){
   const visible      = can(currentUser.role,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id);

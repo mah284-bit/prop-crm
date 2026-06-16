@@ -30,6 +30,7 @@ import CoachPage from './components/CoachPage.jsx';
 import ProjectsModule from './components/ProjectsModule.jsx';
 import ReservationModal from './components/ReservationModal.jsx';
 import CreateOpportunityDialog from './components/CreateOpportunityDialog.jsx';
+import Dashboard from './components/Dashboard.jsx';
 import { openPropertyPack } from './components/property/propertyPackBus';
 import ReleaseDialog from "./components/leadqueue/ReleaseDialog.jsx";
 import InventoryModule from "./components/InventoryModule.jsx";
@@ -3602,7 +3603,7 @@ export default function App(){
         {(dataLoading&&leads.length===0&&aiUnits.length===0)?<Spinner msg="Loading your data…"/>:(<>
 
           {/* ── Sales CRM ─────────────────────────────────────── */}
-          {tab==="dashboard"   &&null /*Dashboard deferred - will extract properly in Phase 2*/}
+          {tab==="dashboard"   &&<Dashboard leads={leads} opps={opps} properties={properties} activities={activities} currentUser={currentUser} crmContext="sales" units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} onNavigate={(t,filter)=>navigateToTab(t,filter)}/>}
           {tab==="leads"       &&<LeadDetail Av={Av} Badge={Badge} Empty={Empty} Modal={Modal} Spinner={Spinner} CreateOpportunityDialog={CreateOpportunityDialog} LogActivityModal={LogActivityModal} leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} properties={properties} activities={activities} setActivities={setActivities} discounts={discounts} setDiscounts={setDiscounts} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})} refCountries={refCountries} refRules={refRules}/>}
           {tab==="opportunities" &&<Opportunities leads={leads} setLeads={setLeads} opps={opps} setOpps={setOpps} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} activities={activities} setActivities={setActivities} currentUser={currentUser} users={users} showToast={showToast} initialFilter={navFilter} onActivityLog={(type, lead)=>{console.log("onActivityLog called:", type, lead); setShowActivityModal({lead:lead});}} CreateOpportunityDialog={CreateOpportunityDialog}/>}
           {tab==="projects"    &&<ProjectsModule currentUser={currentUser} showToast={showToast} crmContext="sales" preloadedProjects={aiProjects} preloadedUnits={aiUnits}/>}
