@@ -71,3 +71,15 @@ Source docs: docs/Feature_Backlog.md, docs/Day39_Afternoon_Session_Complete.md
 - Founder confirmed Day 40. Was a known "last session left-out" issue.
 - FIX TIMING: after A-series extractions complete (stable single-source tree), not mid-normalisation.
 - Likely location: save handler in src/components/LogActivityModal.jsx + how OpportunityDetail.jsx:4679 / App.jsx FAB path pass context.
+
+---
+
+## 🧭 BUSINESS-LOGIC QUESTION — revisit post-cleanup (founder raised Day 40)
+
+**Reserve-from-Inventory path — is it legitimate?**
+- ReservationModal is triggered by a "🔒 Reserve Unit" button inside InventoryModule's unit popup (gated by canReserve capability).
+- Founder concern: reservation should flow through the BROKER WORKFLOW (tied to an opportunity + reservation FEE PAID), not be a direct inventory action.
+- Inventory EDIT rights = admin/sales_manager only; brokers USE inventory, don't edit it.
+- No fee paid = not a real reservation.
+- Admin/manager should be able to BLOCK/hold a unit (≠ reserve).
+- DECISION: NOT a cleanup change. Extraction kept behaviour identical. This is a workflow + permissions redesign — belongs in post-cleanup feature work, ties to the ACL/capability vision (Settings customization phase).
