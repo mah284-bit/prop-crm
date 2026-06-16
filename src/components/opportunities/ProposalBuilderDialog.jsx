@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from "../../lib/supabase.js";
 import { Modal } from "../../modules/shared/Modal.jsx";
+import UnitSearchPicker from "../UnitSearchPicker.jsx";
 import { Btn } from "../../modules/shared/Btn.jsx";
 import { FF } from "../../modules/shared/FormComponents.jsx";
 import { PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, VALIDITY_PRESETS } from "../../modules/constants.js";
