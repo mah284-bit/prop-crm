@@ -23,6 +23,7 @@ import PermissionSetsModule from './components/PermissionSetsModule.jsx';
 import GroupConsolidatedView from './components/GroupConsolidatedView.jsx';
 import PwRecoveryForm from './components/PwRecoveryForm.jsx';
 import UsersTab from './components/UsersTab.jsx';
+import SettingsTab from './components/SettingsTab.jsx';
 import { openPropertyPack } from './components/property/propertyPackBus';
 import ReleaseDialog from "./components/leadqueue/ReleaseDialog.jsx";
 import InventoryModule from "./components/InventoryModule.jsx";
@@ -5187,41 +5188,6 @@ function UserManagement({currentUser, leads=[], activities=[], showToast, appCon
 }
 
 
-function SettingsTab({appConfig, onConfigChange, currentUser, showToast}) {
-  // 21 May 2026: Handle null appConfig (destructure default {} only applies when undefined, not null)
-  const cfg = appConfig || {};
-  const [form, setForm] = useState({
-    mode:     cfg.mode||"both",
-    company:  cfg.company||"PropCRM",
-    currency: cfg.currency||"AED",
-    country:  cfg.country||"UAE",
-  });
-  const save=()=>{
-    const cfg={...appConfig,...form,updatedAt:new Date().toISOString()};
-    onConfigChange(cfg);
-    showToast("Settings saved","success");
-  };
-  return(
-    <div style={{maxWidth:480}}>
-      <div style={{display:"flex",flexDirection:"column",gap:14}}>
-        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>CRM Mode</label>
-          <select value={form.mode} onChange={e=>setForm(f=>({...f,mode:e.target.value}))}>
-            <option value="sales">Sales Only</option>
-            <option value="leasing">Leasing Only</option>
-            <option value="both">Sales & Leasing</option>
-          </select>
-        </div>
-        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Company Name</label><input value={form.company} onChange={e=>setForm(f=>({...f,company:e.target.value}))}/></div>
-        <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:6,textTransform:"uppercase",letterSpacing:".5px"}}>Currency</label>
-          <select value={form.currency} onChange={e=>setForm(f=>({...f,currency:e.target.value}))}>
-            {["AED","USD","GBP","EUR","SAR","QAR","KWD"].map(c=><option key={c}>{c}</option>)}
-          </select>
-        </div>
-        <button onClick={save} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",alignSelf:"flex-start"}}>Save Settings</button>
-      </div>
-    </div>
-  );
-}
 
 
 
