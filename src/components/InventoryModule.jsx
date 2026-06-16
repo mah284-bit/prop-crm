@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import UnitDetailPanel from "./property/UnitDetailPanel.jsx";
 import { supabase } from "../lib/supabase";
 import { openPropertyPack } from "./property/propertyPackBus";
 // Role-based permission check.
@@ -955,6 +956,7 @@ Return ONLY the JSON, no explanation.`}
           </div>
         </div>
       )}
+      {selUnit ? <UnitDetailPanel unit={selUnit} project={projects?.find?.(p => p?.id === selUnit?.project_id)} onClose={() => setSelUnit(null)} /> : null}
     </div>
   );
 }

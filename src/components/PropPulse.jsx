@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import ProjectDetailPanel from "./property/ProjectDetailPanel.jsx";
 import { supabase } from "../lib/supabase";
 import MediaGallery from "./property/MediaGallery";
 import AmenityGrid from "./property/AmenityGrid";
@@ -849,6 +850,7 @@ function PropPulse({ currentUser, showToast }) {
           </div>
         </div>
       )}
+      {selProject && <ProjectDetailPanel project={selProject} onClose={() => setSelProject(null)} />}
     </div>
   );
 }
