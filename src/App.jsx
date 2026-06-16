@@ -18,6 +18,7 @@ import ActivityLog from './components/sales/ActivityLog.jsx';
 import PropertyMaster from './components/inventory/PropertyMaster.jsx';
 import CommissionOutstanding from './components/CommissionOutstanding.jsx';
 import PropertyPackModal from './components/property/PropertyPackModal.jsx';
+import { openPropertyPack } from './components/property/propertyPackBus';
 import ReleaseDialog from "./components/leadqueue/ReleaseDialog.jsx";
 import InventoryModule from "./components/InventoryModule.jsx";
 import LeadDetail from "./components/sales/LeadDetail.jsx";
