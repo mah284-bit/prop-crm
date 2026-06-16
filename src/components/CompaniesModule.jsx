@@ -1,4 +1,9 @@
-function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompanyId }) {
+// CompaniesModule — extracted from App.jsx (live inline copy, MAP A1)
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "../lib/supabase";
+import { Spinner } from "../modules/shared/Spinner.jsx";
+
+export default function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompanyId }) {
   const [companies,  setCompanies]  = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [showAdd,    setShowAdd]    = useState(false);
@@ -34,7 +39,7 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("companies").select("*").order("name");
+      const { data: allCos, error } = await supabase.from("companies").select("*").order("name"); const data = currentUser?.role === "super_admin" ? allCos : (allCos || []).filter(c => c.id === currentUser.company_id);
       if(error) throw error;
       setCompanies(data || []);
     } catch(e) {
@@ -202,12 +207,12 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
                     <span style={{fontSize:18}}>✦</span>
                     <label style={{fontSize:11,fontWeight:700,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".5px"}}>AI Assistant Name</label>
                   </div>
-                  <div style={{fontSize:12,color:"rgba(255,255,255,.6)",marginBottom:10,lineHeight:1.6}}>
+                  <div style={{fontSize:12,color:"#718096",marginBottom:10,lineHeight:1.6}}>
                     What should the AI assistant be called for this company? This name will appear on the AI tab and in all AI interactions.
                   </div>
                   <input value={form.ai_assistant_name||""} onChange={e=>sf("ai_assistant_name",e.target.value)}
                     placeholder={form.name?(form.name.split(" ")[0]+" AI"):"e.g. Mansoori AI"}
-                    style={{background:"rgba(255,255,255,.1)",border:"1px solid rgba(201,168,76,.4)",borderRadius:8,padding:"8px 12px",color:"#fff",fontSize:13,width:"100%",boxSizing:"border-box"}}/>
+                    style={{background:"#fff",border:"1px solid #CBD5E1",borderRadius:8,padding:"8px 12px",color:"#0F2540",fontSize:13,width:"100%",boxSizing:"border-box"}}/>
                   <div style={{fontSize:11,color:"rgba(201,168,76,.6)",marginTop:6}}>
                     💡 Tip: Use your brand name for ownership — e.g. "Mansoori AI", "Atlas AI", "Emaar AI"
                   </div>
@@ -292,71 +297,3 @@ function CompaniesModule({ currentUser, showToast, onSwitchCompany, activeCompan
     </div>
   );
 }
-
-
-
-// ══════════════════════════════════════════════════════════════════
-// PERMISSION SETS MODULE
-// ══════════════════════════════════════════════════════════════════
-
-const PERMISSION_DEFS = [
-  {
-    group: "Sales",
-    color: "#1A5FA8",
-    bg:    "#E6EFF9",
-    icon:  "🏷",
-    perms: [
-      { key:"p_view_leads",       label:"View Leads",              desc:"See leads in the pipeline" },
-      { key:"p_edit_leads",       label:"Create & Edit Leads",     desc:"Add new leads and update existing" },
-      { key:"p_delete_leads",     label:"Delete Leads",            desc:"Permanently remove leads" },
-      { key:"p_request_discount", label:"Request Discounts",       desc:"Submit discount requests for approval" },
-      { key:"p_approve_discount", label:"Approve Discounts",       desc:"Approve or reject discount requests" },
-    ]
-  },
-  {
-    group: "Inventory",
-    color: "#8A6200",
-    bg:    "#FDF3DC",
-    icon:  "🏗",
-    perms: [
-      { key:"p_view_inventory",   label:"View Inventory",          desc:"Browse projects and units" },
-      { key:"p_manage_inventory", label:"Manage Inventory",        desc:"Add, edit and delete projects and units" },
-    ]
-  },
-  {
-    group: "Leasing",
-    color: "#5B3FAA",
-    bg:    "#EEE8F9",
-    icon:  "🔑",
-    perms: [
-      { key:"p_view_leasing",     label:"View Leasing",            desc:"See tenants, leases and payments" },
-      { key:"p_manage_leasing",   label:"Manage Leasing",          desc:"Add tenants, create leases, log payments" },
-    ]
-  },
-  {
-    group: "General",
-    color: "#4A5568",
-    bg:    "#F7F9FC",
-    icon:  "⊞",
-    perms: [
-      { key:"p_view_dashboard",   label:"View Dashboard",          desc:"Access the dashboard overview" },
-      { key:"p_view_activity",    label:"View Activity Log",       desc:"See all logged activities" },
-      { key:"p_use_ai",           label:"Use AI Assistant",        desc:"Access the AI chat assistant" },
-      { key:"p_manage_users",     label:"Manage Users",            desc:"Add, edit and deactivate users" },
-    ]
-  },
-];
-
-const ALL_PERM_KEYS = PERMISSION_DEFS.flatMap(g => g.perms.map(p => p.key));
-
-const TEMPLATES = [
-  { id:"10000000-0000-0000-0000-000000000001", name:"Company Admin",    color:"#8A6200" },
-  { id:"10000000-0000-0000-0000-000000000002", name:"Sales Manager",    color:"#1A5FA8" },
-  { id:"10000000-0000-0000-0000-000000000003", name:"Sales Agent",      color:"#1A7F5A" },
-  { id:"10000000-0000-0000-0000-000000000004", name:"Leasing Manager",  color:"#5B3FAA" },
-  { id:"10000000-0000-0000-0000-000000000005", name:"Leasing Agent",    color:"#0F6E56" },
-  { id:"10000000-0000-0000-0000-000000000006", name:"Viewer",           color:"#718096" },
-];
-
-const COLORS = ["#1A5FA8","#1A7F5A","#5B3FAA","#0F6E56","#8A6200","#B85C10","#B83232","#718096","#0F2540","#C9A84C"];
-
