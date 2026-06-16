@@ -77,3 +77,55 @@ function Leads({
 
 *Prepared: Day 39 morning*
 *Next: Full code scan for undeclared identifiers*
+
+
+# Phase 1: LeadDetail Extraction — Dependency Audit (UPDATED)
+
+**Scan Results Summary:**
+
+## Critical Dependencies Found
+
+### 1. Supabase ✅ SAFE TO IMPORT
+- Used 11 times (`supabase.from()`)
+- Can import directly: `import { supabase } from "./lib/supabase";`
+
+### 2. React Hooks ✅ STANDARD
+- useState, useEffect, useRef
+- Standard React imports
+
+### 3. Inline Components ⚠️ NEEDS CHECKING
+- LeadForm
+- NewLeadForm  
+- DupeBlock
+- OppForm
+- Action: Verify if these are inline or imported
+
+### 4. External Components (from scan)
+- CreateOpportunityDialog (known from earlier)
+- LogActivityModal (known from earlier)
+
+### 5. Utilities Already Exported ✅
+- `can()` — Phase 0
+- `canWithPS()` — Phase 0
+
+---
+
+## Extraction Safety Assessment
+
+**Props received:** 17 (manageable)
+**Supabase calls:** 11 (can import directly)
+**React hooks:** Standard (no issue)
+**Inline components:** Need to extract or pass as props
+
+**Recommendation:** SAFE TO EXTRACT with props for:
+- Dialog components (CreateOppDialog, LogActivityModal)
+- Toast handler (showToast)
+- All data setters (setLeads, setActivities, etc.)
+
+---
+
+## Next Action
+
+Search Leads for LeadForm, NewLeadForm, DupeBlock locations.
+If inline → pass as props.
+If imported → import in LeadDetail.
