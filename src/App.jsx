@@ -3660,6 +3660,7 @@ export default function App(){
     {showActivityModal&&(
       <LogActivityModal
         lead={showActivityModal.lead}
+        opp={showActivityModal.opp}
         currentUser={currentUser}
         showToast={showToast}
         defaultType={showActivityModal.type||"Call"}

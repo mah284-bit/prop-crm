@@ -1,4 +1,5 @@
 import { openPropertyPack } from "../property/propertyPackBus.js";
+import LogActivityModal from "../LogActivityModal.jsx";
 import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { supabase } from "../../lib/supabase.js";
 import { aiInvoke } from '../../lib/aiInvoke.js';
@@ -121,6 +122,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [proposals, setProposals] = useState([]);
   // Phase 2.1 — FAB activity logging
   const [showFabLog, setShowFabLog] = useState(false);
+  const [fabLogType, setFabLogType] = useState("Call");
   const [viewingProposal, setViewingProposal] = useState(null); // proposal row to show in viewer
 
   // Phase E W3 — open-items guard: a proposal is the first official document.
@@ -1156,15 +1158,15 @@ You will become the assigned agent.`);
                       <div style={{flex:"1 1 280px",minWidth:260,background:"#F8FAFC",border:"1px solid #E8EDF4",borderRadius:10,padding:"6px 10px"}}>
                         <div style={{fontSize:9,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:4}}>Log activity</div>
                         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                          <button onClick={()=>onActivityLog("Call")}
+                          <button onClick={()=>{setFabLogType("Call");setShowFabLog(true);}}
                             style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
                             📞 Log Call
                           </button>
-                          <button onClick={()=>onActivityLog("WhatsApp")}
+                          <button onClick={()=>{setFabLogType("WhatsApp");setShowFabLog(true);}}
                             style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
                             💬 WhatsApp
                           </button>
-                          <button onClick={()=>onActivityLog("Note")}
+                          <button onClick={()=>{setFabLogType("Note");setShowFabLog(true);}}
                             style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:11,fontWeight:600,cursor:"pointer",color:"#0F2540"}}>
                             📝 Add Note
                           </button>
@@ -4680,6 +4682,7 @@ You will become the assigned agent.`);
         <LogActivityModal
           lead={lead}
           opp={opp}
+          defaultType={fabLogType}
           currentUser={currentUser}
           showToast={showToast}
           onClose={()=>setShowFabLog(false)}

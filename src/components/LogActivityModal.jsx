@@ -23,7 +23,7 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
   const sf = k => e => setForm(f=>({...f,[k]:e.target.value}));
 
   const save = async() => {
-    if(!lead){showToast("No lead found","error");return;}
+    if(!lead && !opp?.lead_id){showToast("No lead found","error");return;}
     const hasNextStep = form.ns_enabled && form.ns_due;
     if(!(form.note||"").trim() && !hasNextStep){showToast("Please add discussion notes or set a next step","error");return;}
     if(savingRef.current) return;  // Day 18: block double-click — a save already in flight
@@ -39,8 +39,8 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
         form.duration_mins?("\n⏱ Duration: "+form.duration_mins+" mins"):"",
       ].filter(Boolean).join("");
       const payload = {
-        lead_id: lead.id,
-        lead_name: lead.name,
+        lead_id: lead?.id || opp?.lead_id || null,
+        lead_name: lead?.name || null,
         company_id: (opp?.company_id) || currentUser.company_id || null,
         type: form.type,
         note: noteText || null,
