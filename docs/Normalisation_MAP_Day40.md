@@ -83,3 +83,12 @@ Source docs: docs/Feature_Backlog.md, docs/Day39_Afternoon_Session_Complete.md
 - No fee paid = not a real reservation.
 - Admin/manager should be able to BLOCK/hold a unit (≠ reserve).
 - DECISION: NOT a cleanup change. Extraction kept behaviour identical. This is a workflow + permissions redesign — belongs in post-cleanup feature work, ties to the ACL/capability vision (Settings customization phase).
+
+---
+
+## 💡 PRODUCT THOUGHT — stage-aware logging discipline (founder, Day 40, discuss during testing)
+
+Once a lead converts to an opportunity, should logging/communication still be allowed FROM the lead?
+Founder's framing: after the buyer passes the assignment stage and becomes an opportunity, communication should flow through the OPP, not continue from the lead. Logging "from lead" may need to be gated/disabled post-conversion.
+Ties to: Feature_Backlog #1 (Stage Gate Discipline) + #3 (Task Closure) + lifecycle (Phase 2.5).
+Decision: discuss during end-to-end testing, not a cleanup item. Captured so it's not lost.
