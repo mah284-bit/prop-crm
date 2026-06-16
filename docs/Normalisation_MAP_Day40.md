@@ -59,3 +59,15 @@ When App.jsx normalisation completes, return to feature build in this order:
 3. Other backlog docs: Sales_UX_Polish_Backlog, PropPulse_Improvement_Backlog, Phase_2_Backlog_Master_Doc
 
 Source docs: docs/Feature_Backlog.md, docs/Day39_Afternoon_Session_Complete.md
+
+---
+
+## 🐛 LOGGED BUG — fix AFTER cleanup (architect decision Day 40)
+
+**LogActivityModal context-awareness broken on OPP path:**
+- Lead path: ✅ works (logs call against lead correctly)
+- Opp path: ❌ "lead not found" error on save — modal opened from opportunity tries to resolve/save against a lead instead of using the opp context
+- Component IS correctly designed as shared/context-aware (takes both `lead` + `opp` props) — bug is in save-resolution logic, not architecture
+- Founder confirmed Day 40. Was a known "last session left-out" issue.
+- FIX TIMING: after A-series extractions complete (stable single-source tree), not mid-normalisation.
+- Likely location: save handler in src/components/LogActivityModal.jsx + how OpportunityDetail.jsx:4679 / App.jsx FAB path pass context.
