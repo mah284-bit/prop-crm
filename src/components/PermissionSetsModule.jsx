@@ -1,4 +1,9 @@
-function PermissionSetsModule({ currentUser, showToast }) {
+// PermissionSetsModule — extracted from App.jsx (live inline copy, MAP A10)
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "../lib/supabase";
+import { Spinner } from "../modules/shared/Spinner.jsx";
+
+export default function PermissionSetsModule({ currentUser, showToast }) {
   const [sets,      setSets]      = useState([]);
   const [templates, setTemplates] = useState([]);
   const [users,     setUsers]     = useState([]);
@@ -16,7 +21,7 @@ function PermissionSetsModule({ currentUser, showToast }) {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const safe = q => q.catch(()=>({data:[]}));
+    const safe = q => q.then(r=>r).catch(()=>({data:[]}));
     const [s, t, u] = await Promise.all([
       safe(supabase.from("permission_sets").select("*").eq("company_id", currentUser.company_id||"").order("name")),
       safe(supabase.from("permission_sets").select("*").is("company_id", null).order("name")),
@@ -326,30 +331,3 @@ function PermissionSetsModule({ currentUser, showToast }) {
     </div>
   );
 }
-
-
-
-// ══════════════════════════════════════════════════════════════════
-// LEASING ENQUIRIES — Tenant lead tracking for Leasing CRM
-// Uses same leads table, filtered by property_type = "Lease"
-// Stages: New Enquiry → Contacted → Viewing Scheduled → Offer Made → Lease Signed → Lost
-// ══════════════════════════════════════════════════════════════════
-
-
-// ══════════════════════════════════════════════════════════════════
-// LEASING ENQUIRIES — Tenant contacts + Lease Opportunities
-// Same architecture as Sales Leads + Opportunities
-// ══════════════════════════════════════════════════════════════════
-
-const LEASE_STAGES = ["New Enquiry","Contacted","Viewing","Offer Made","Reserved","Lease Signed","Lost"];
-const LEASE_STAGE_META = {
-  "New Enquiry":   {c:"#1A5FA8", bg:"#E6EFF9"},
-  "Contacted":     {c:"#5B3FAA", bg:"#EEE8F9"},
-  "Viewing":       {c:"#A06810", bg:"#FDF3DC"},
-  "Offer Made":    {c:"#B83232", bg:"#FAEAEA"},
-  "Reserved":      {c:"#1A7F5A", bg:"#E6F4EE"},
-  "Lease Signed":  {c:"#0F2540", bg:"#E2E8F0"},
-  "Lost":          {c:"#718096", bg:"#F7F9FC"},
-};
-
-// ── Lease Opportunity Detail ──────────────────────────────────────
