@@ -43,3 +43,19 @@ No bulk movement. Verify which copy renders BEFORE deleting anything.
 6. Section D — post-cleanup
 
 Each row: pre-op dep check -> move -> npm run dev test -> commit -> next.
+
+---
+
+## ⏸️ RESUME AFTER CLEANUP — pending feature work (do NOT start until normalisation done)
+
+When App.jsx normalisation completes, return to feature build in this order:
+1. **Phase 2.5 Lead Lifecycle** — buyer_intent + lifecycle_stage columns + UI (Day 39 doc named this as "demo later → continue"). The immediate next feature when cleanup stopped.
+2. **Feature_Backlog.md** (deeper queue, mostly Phase B/C):
+   - #2 Negotiation Outcome Capture (Phase B, ~10h) — final price/discount/concessions on Offer Accepted
+   - #3 Task Closure Workflow (Phase B, ~9h) — open/completed/no-show/cancelled
+   - #5 Data Integrity Gates (Phase B, ~15-20h) — block opp on unpriced unit / no KYC / no master agreement
+   - #7 Browser Navigation / React Router (Phase B, ~9h)
+   - #1 Stage Gate Discipline (Phase C), #4 PropPulse v2 Living Intelligence (Phase C, ~38h)
+3. Other backlog docs: Sales_UX_Polish_Backlog, PropPulse_Improvement_Backlog, Phase_2_Backlog_Master_Doc
+
+Source docs: docs/Feature_Backlog.md, docs/Day39_Afternoon_Session_Complete.md
