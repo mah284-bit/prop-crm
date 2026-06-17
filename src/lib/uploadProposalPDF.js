@@ -11,7 +11,7 @@ export async function uploadProposalPDF(pdfBlob, fileName, companyId) {
 
   const fileNameSafe = fileName.replace(/[^a-z0-9._-]/gi, '_').toLowerCase();
   const timestamp = Date.now();
-  const storagePath = `proposals/${companyId}/${timestamp}_${fileNameSafe}`;
+  const storagePath = `private/proposals/${companyId}/${timestamp}_${fileNameSafe}`;
 
   const { data, error } = await supabase.storage
     .from('property-pack')
