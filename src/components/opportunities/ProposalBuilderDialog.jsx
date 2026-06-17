@@ -752,7 +752,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         }
       }
 
-      showToast("✓ Proposal sent","success");
+      showToast(sendEmail ? "✓ Proposal sent" : "✓ Proposal saved","success");
       onSaved(propData, actRow);
     } catch (e) {
       console.error("Proposal save error:", e);
