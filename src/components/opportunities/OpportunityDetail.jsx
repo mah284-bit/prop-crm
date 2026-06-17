@@ -29,6 +29,8 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   // To re-enable: change to true. Code is preserved.
   const INTERNAL_APPROVAL_FEATURES_ENABLED = false;
   // ISSUE D Phase 2 — Detect if THIS opp's unit has been taken by another deal
+  const [showUnitPack, setShowUnitPack] = useState(false);
+  const [selectedUnitForPack, setSelectedUnitForPack] = useState(null);
   const [unitConflict, setUnitConflict] = useState(null);
   useEffect(() => {
     if (!opp?.unit_id) { setUnitConflict(null); return; }
@@ -967,6 +969,12 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
                 <strong style={{color:"#0C4A6E",fontWeight:700}}>{linkedUnit.unit_ref}</strong>
                 {linkedPrice && <strong style={{color:"#1A5FA8",fontWeight:700,marginLeft:2}}>AED {Number(linkedPrice).toLocaleString()}</strong>}
                 <span style={{color:"#0369A1"}}>· {details}</span>
+                <button
+                  onClick={() => { setSelectedUnitForPack(linkedUnit); setShowUnitPack(true); }}
+                  style={{background:"#1A5FA8",color:"#fff",border:"none",padding:"2px 8px",borderRadius:4,fontSize:10,fontWeight:600,cursor:"pointer",marginLeft:4}}
+                >
+                  📦 Pack
+                </button>
               </div>
             );
           })()}
@@ -4691,6 +4699,13 @@ You will become the assigned agent.`);
             setShowFabLog(false);
             showToast("Activity logged","success");
           }}
+        />
+      )}
+      {showUnitPack && selectedUnitForPack && (
+        <UnitDetailPanel
+          unit={selectedUnitForPack}
+          project={projects?.find(p => p.id === selectedUnitForPack.project_id)}
+          onClose={() => { setShowUnitPack(false); setSelectedUnitForPack(null); }}
         />
       )}
     </div>
