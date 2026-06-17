@@ -3,26 +3,8 @@
  * Handles all proposal success actions: download, WhatsApp, email
  */
 
-export async function downloadProposalPDF(pdfUrl) {
-  try {
-    const response = await fetch(pdfUrl);
-    if (!response.ok) throw new Error('Failed to fetch PDF');
-    
-    const blob = await response.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = blobUrl;
-    link.download = 'proposal.pdf';
-    document.body.appendChild(link);
-    link.click();
-    
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(blobUrl);
-  } catch (error) {
-    console.error('PDF download failed:', error);
-    window.open(pdfUrl, '_blank');
-  }
+export function downloadProposalPDF(pdfUrl) {
+  window.open(pdfUrl, '_blank');
 }
 
 export function shareViaWhatsApp(pdfUrl, leadName, leadPhone) {
@@ -33,7 +15,7 @@ export function shareViaWhatsApp(pdfUrl, leadName, leadPhone) {
 
   const message = `Hi ${leadName}, here's your property proposal:\n\n${pdfUrl}`;
   const encodedMessage = encodeURIComponent(message);
-  const cleanPhone = leadPhone.replace(/\D/g, '');
+  const cleanPhone = leadPhone.replace(/\D/g, ''); // Remove non-digits
 
   const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
   window.open(whatsappUrl, '_blank');
@@ -46,7 +28,18 @@ export function shareViaEmail(pdfUrl, leadName, leadEmail) {
   }
 
   const subject = `Your Property Proposal - ${leadName}`;
-  const body = `Hi ${leadName},\n\nPlease find your property proposal:\n\n${pdfUrl}\n\nBest regards`;
+  const body = `Hi ${leadName},\n\nPlease find attached your property proposal:\n\n${pdfUrl}\n\nBest regards`;
+
   const mailtoUrl = `mailto:${leadEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   window.location.href = mailtoUrl;
+}
+
+export function generateShareText(leadName, pdfUrl) {
+  return {
+    whatsapp: `Hi ${leadName}, here's your property proposal: ${pdfUrl}`,
+    email: {
+      subject: `Your Property Proposal`,
+      body: `Hi ${leadName},\n\nPlease find your property proposal:\n${pdfUrl}\n\nBest regards`,
+    },
+  };
 }
