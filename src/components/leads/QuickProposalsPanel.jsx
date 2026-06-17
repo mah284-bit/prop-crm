@@ -32,7 +32,7 @@ export default function QuickProposalsPanel({
   const fetchData = async () => {
     try {
       setLoading(true);
-      const { data: proposals } = await supabase.from('proposals').select('*').eq('lead_id', leadId).order('created_at', { ascending: false });
+      const { data: proposals } = await supabase.from('proposals').select('*').order('created_at', { ascending: false });
       const { data: units } = await supabase.from('project_units').select('*');
       const { data: projects } = await supabase.from('projects').select('*');
       const { data: pricing } = await supabase.from('unit_sale_pricing').select('*');
