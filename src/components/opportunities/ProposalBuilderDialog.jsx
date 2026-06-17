@@ -7,7 +7,8 @@ import { FF } from "../../modules/shared/FormComponents.jsx";
 import { PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, VALIDITY_PRESETS } from "../../modules/constants.js";
 import { useDraggable } from "../../lib/useDraggable.js";
 import { aiInvoke } from '../../lib/aiInvoke.js';
-import { generateProposalPDF } from '../../lib/generateProposalPDF.js';
+import { generateProposalPDF } from "../../lib/generateProposalPDF.js";
+import { uploadProposalPDF } from "../../lib/uploadProposalPDF.js";
 
 function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, currentUser, lastProposal, onClose, onSaved, showToast }) {
   /* draggable-sendproposal */ const { ref: dragRef, posStyle, handleProps } = useDraggable({ open: true });
@@ -532,6 +533,35 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         return;
       }
 
+      // 1. Generate + upload PDF before saving proposal
+      try {
+        const firstPropUnit = proposalUnits[0];
+        const contextUnit = units.find(u => u.id === firstPropUnit.unit_id);
+        const contextProject = projects.find(p => p.id === contextUnit?.project_id);
+        
+        const pdfBlob = await generateProposalPDF({
+          lead,
+          coverNotes,
+          proposalUnits,
+          selectedPaymentPlan: paymentPlanPreset,
+          validityDays: validityDaysValue,
+          unit: contextUnit,
+          project: contextProject,
+          currentUser,
+        });
+        
+        const pdfUrl = await uploadProposalPDF(
+          pdfBlob,
+          `proposal-${(lead.name||"buyer").replace(/\s+/g,"_")}.pdf`,
+          currentUser.company_id
+        );
+        
+        _preRoutedPayload.pdf_url = pdfUrl;
+      } catch (e) {
+        console.warn("PDF generation/upload failed (non-fatal):", e);
+        showToast("Proposal saved, but PDF generation failed","warning");
+      }
+      
       // 1. Insert proposal — defensive against missing schema columns
       const tryInsert = async (payload) => {
         return await supabase.from("proposals").insert(payload).select().single();
