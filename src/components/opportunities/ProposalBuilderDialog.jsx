@@ -533,6 +533,24 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         return;
       }
 
+      // 1. Insert proposal — defensive against missing schema columns
+      const tryInsert = async (payload) => {
+        return await supabase.from("proposals").insert(payload).select().single();
+      };
+
+      // Issue 3 polish 11 May 2026: preemptively route fields not in proposals schema
+      // into structured_data, eliminating 3 failed HTTP calls per save attempt.
+      // Schema drift refactor (proper column alignment) deferred to post-demo.
+      const KNOWN_JSONB_FIELDS = ['discounted_price', 'lead_id', 'payment_plan'];
+      const _preRoutedPayload = {...fullPayload};
+      const _preRoutedSd = {...(fullPayload.structured_data || {})};
+      KNOWN_JSONB_FIELDS.forEach(f => {
+        if (_preRoutedPayload[f] !== undefined) {
+          _preRoutedSd[f] = _preRoutedPayload[f];
+          delete _preRoutedPayload[f];
+        }
+      });
+      _preRoutedPayload.structured_data = _preRoutedSd;
       // 1. Generate + upload PDF before saving proposal
       try {
         const firstPropUnit = proposalUnits[0];
@@ -562,24 +580,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         showToast("Proposal saved, but PDF generation failed","warning");
       }
       
-      // 1. Insert proposal — defensive against missing schema columns
-      const tryInsert = async (payload) => {
-        return await supabase.from("proposals").insert(payload).select().single();
-      };
 
-      // Issue 3 polish 11 May 2026: preemptively route fields not in proposals schema
-      // into structured_data, eliminating 3 failed HTTP calls per save attempt.
-      // Schema drift refactor (proper column alignment) deferred to post-demo.
-      const KNOWN_JSONB_FIELDS = ['discounted_price', 'lead_id', 'payment_plan'];
-      const _preRoutedPayload = {...fullPayload};
-      const _preRoutedSd = {...(fullPayload.structured_data || {})};
-      KNOWN_JSONB_FIELDS.forEach(f => {
-        if (_preRoutedPayload[f] !== undefined) {
-          _preRoutedSd[f] = _preRoutedPayload[f];
-          delete _preRoutedPayload[f];
-        }
-      });
-      _preRoutedPayload.structured_data = _preRoutedSd;
 
       let { data: propData, error: propErr } = await tryInsert(_preRoutedPayload);
       if (propErr && /Could not find the '(.+?)' column/.test(propErr.message||"")) {
