@@ -53,7 +53,7 @@ export async function sendQuickProposal({
 
     const timestamp = Date.now();
     const filename = `quick-proposal-${leadId.substring(0, 8)}-${timestamp}.pdf`;
-    const pdfUrl = await uploadProposalPDF(pdfBlob, filename, company.id);
+    const pdfUrl = await uploadProposalPDF(pdfBlob, filename, currentUser.company_id);
 
     console.log('PDF uploaded:', pdfUrl);
 
