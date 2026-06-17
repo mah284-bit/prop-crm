@@ -55,30 +55,11 @@ export async function sendQuickProposal({
     const filename = `quick-proposal-${leadId.substring(0, 8)}-${timestamp}.pdf`;
     const pdfUrl = await uploadProposalPDF(pdfBlob, filename, currentUser.company_id);
 
-    console.log('PDF uploaded:', pdfUrl);
+    console.log('✅ PDF uploaded:', pdfUrl);
 
-    // Save pdf_url to proposals table
-    const { data, error } = await supabase
-      .from('proposals')
-      .insert({
-        pdf_url: pdfUrl,
-        status: 'sent',
-        created_at: new Date().toISOString(),
-        created_by: currentUser.id,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('❌ DB insert error:', error);
-      throw error;
-    }
-
-    console.log('✅ Proposal saved:', data.id);
-
+    // PDF saved to Storage only - no DB insert
     return {
       success: true,
-      proposalId: data.id,
       pdfUrl: pdfUrl,
     };
 
