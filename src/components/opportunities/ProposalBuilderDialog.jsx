@@ -566,6 +566,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           unit: contextUnit,
           project: contextProject,
           currentUser,
+          company: companyData,
         });
         
         const pdfUrl = await uploadProposalPDF(
