@@ -21,6 +21,7 @@ import ActivitiesList, { ASKS_GRID_OPTIONS } from "./ActivitiesList.jsx";
 import StageCaptureDialog from "./StageCaptureDialog.jsx";
 import UnitSearchPicker from "../UnitSearchPicker.jsx";
 import NegotiationRoundDialog from "../dialogs/NegotiationRoundDialog.jsx";
+import UnitDetailPanel from "../property/UnitDetailPanel.jsx";
 import ProposalBuilderDialog from "./ProposalBuilderDialog.jsx";
 
 function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated, onActivityLog }) {
