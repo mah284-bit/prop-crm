@@ -571,6 +571,17 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         const contextUnit = units.find(u => u.id === firstPropUnit.unit_id);
         const contextProject = projects.find(p => p.id === contextUnit?.project_id);
         
+        // Convert images to base64
+        let projectWithBase64 = { ...contextProject };
+        if (contextProject?.hero_image_url) {
+          projectWithBase64.hero_image_base64 = await urlToBase64(contextProject.hero_image_url);
+        }
+        if (contextProject?.photo_gallery_urls?.length > 0) {
+          projectWithBase64.photo_gallery_base64 = await Promise.all(
+            contextProject.photo_gallery_urls.map(url => urlToBase64(url))
+          );
+        }
+        
         const pdfBlob = await generateProposalPDF({
           lead,
           coverNotes,
