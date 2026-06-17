@@ -19,6 +19,19 @@ export async function sendQuickProposal({
 
     const primaryUnit = selectedUnits[0];
 
+    // Fetch project data for primary unit
+    const { data: project, error: projErr } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', primaryUnit.project_id)
+      .single();
+
+    if (projErr || !project) {
+      throw new Error('Project not found for unit');
+    }
+
+    console.log('Project loaded:', project.name);
+
     const pdfBlob = await generateProposalPDF({
       lead: { name: leadName, email: leadEmail },
       proposalUnits: selectedUnits.map(u => ({
@@ -31,14 +44,18 @@ export async function sendQuickProposal({
       selectedPaymentPlan: 'To be discussed',
       validityDays: 10,
       unit: primaryUnit,
-      project: { name: company.name },
+      project: project,
       company: company,
       currentUser: currentUser,
     });
 
+    console.log('PDF generated');
+
     const timestamp = Date.now();
     const filename = `quick-proposal-${leadId.substring(0, 8)}-${timestamp}.pdf`;
     const pdfUrl = await uploadProposalPDF(pdfBlob, filename, company.id);
+
+    console.log('PDF uploaded:', pdfUrl);
 
     const { data, error } = await supabase
       .from('proposals')
@@ -55,6 +72,8 @@ export async function sendQuickProposal({
       .single();
 
     if (error) throw error;
+
+    console.log('Proposal saved:', data.id);
 
     return {
       success: true,
