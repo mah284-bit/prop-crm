@@ -57,10 +57,33 @@ export async function sendQuickProposal({
 
     console.log('PDF uploaded:', pdfUrl);
 
-    return { success: true, proposalId: null, pdfUrl: pdfUrl };
+    // Save pdf_url to proposals table
+    const { data, error } = await supabase
+      .from('proposals')
+      .insert({
+        pdf_url: pdfUrl,
+        status: 'sent',
+        created_at: new Date().toISOString(),
+        created_by: currentUser.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('❌ DB insert error:', error);
+      throw error;
+    }
+
+    console.log('✅ Proposal saved:', data.id);
+
+    return {
+      success: true,
+      proposalId: data.id,
+      pdfUrl: pdfUrl,
+    };
 
   } catch (error) {
-    console.error('Failed to send proposal:', error);
+    console.error('❌ Failed to send proposal:', error);
     throw new Error(`Failed to send proposal: ${error.message}`);
   }
 }
