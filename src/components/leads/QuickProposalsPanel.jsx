@@ -69,7 +69,7 @@ export default function QuickProposalsPanel({
     setError(null);
     try {
       await sendQuickProposal({ leadId, leadEmail, leadName, selectedUnits, company, currentUser });
-      setStep(4);
+      setStep(4); await fetchData();
       setSelectedUnits([]);
       setSelectedType(null);
       await fetchData();
