@@ -57,19 +57,7 @@ export async function sendQuickProposal({
 
     console.log('PDF uploaded:', pdfUrl);
 
-    const { data, error } = await supabase
-      .from('proposals')
-      .insert({
-        
-        type: 'quick_send',
-        units_quoted: selectedUnits.map(u => u.id),
-        pdf_url: pdfUrl,
-        status: 'sent',
-        created_at: new Date().toISOString(),
-        created_by: currentUser.id,
-      })
-      .select()
-      .single();
+    const { data, error } = await supabase.from('proposals').insert({ pdf_url: pdfUrl, status: 'sent', created_at: new Date().toISOString(), created_by: currentUser.id }).select().single();
 
     if (error) throw error;
 
