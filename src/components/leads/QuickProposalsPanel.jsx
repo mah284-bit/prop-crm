@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from "../../lib/supabase";
 import UnitPickerMulti from "./UnitPickerMulti";
+import { ProposalSuccessDialog } from './ProposalSuccessDialog';
 import { sendQuickProposal } from "../../lib/quickProposalFlow";
 import { prepareUnitForConversion } from "../../lib/conversionHandler";
 
@@ -18,6 +19,7 @@ export default function QuickProposalsPanel({
   const [showPicker, setShowPicker] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const [successPdfUrl, setSuccessPdfUrl] = useState(null);
   const [pastProposals, setPastProposals] = useState([]);
   const [allUnits, setAllUnits] = useState([]);
   const [allProjects, setAllProjects] = useState([]);
@@ -69,14 +71,11 @@ export default function QuickProposalsPanel({
     setSending(true);
     setError(null);
     try {
-      await sendQuickProposal({ leadId, leadEmail, leadName, selectedUnits, company, currentUser });
-      setStep(4); await fetchData();
-      setSelectedUnits([]);
-      setSelectedType(null);
-      await fetchData();
-      setTimeout(() => setStep(0), 3000);
+      const result = await sendQuickProposal({ leadId, leadEmail, leadName, selectedUnits, company, currentUser });
+      setSuccessPdfUrl(result.pdfUrl);
+      setSending(false);
     } catch (err) {
-      console.error('Send failed:', err);
+      console.error("Send failed:", err);
       setError(`Failed to send proposal: ${err.message}`);
       setSending(false);
     }
@@ -176,6 +175,19 @@ export default function QuickProposalsPanel({
           <p style={{ margin: '0 0 12px 0', fontSize: '11px', color: '#94A3B8' }}>PDF sent to {leadEmail}</p>
           <button onClick={handleReset} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', background: '#0F2540', color: '#fff', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>← Back</button>
         </div>
+      )}
+      {successPdfUrl     </div>    </div> (
+        <ProposalSuccessDialog
+          pdfUrl={successPdfUrl}
+          leadName={leadName}
+          leadEmail={leadEmail}
+          leadPhone={lead?.phone}
+          onClose={() => {
+            setSuccessPdfUrl(null);
+            setStep(0);
+            setSelectedUnits([]);
+          }}
+        />
       )}
     </div>
   );

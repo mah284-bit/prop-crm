@@ -2,8 +2,8 @@ import React from 'react';
 import { downloadProposalPDF, shareViaWhatsApp, shareViaEmail } from '../../lib/proposalSuccessHandler';
 
 export function ProposalSuccessDialog({ pdfUrl, leadName, leadEmail, leadPhone, onClose }) {
-  const handleDownload = () => {
-    downloadProposalPDF(pdfUrl);
+  const handleDownload = async () => {
+    await downloadProposalPDF(pdfUrl);
   };
 
   const handleWhatsApp = () => {
