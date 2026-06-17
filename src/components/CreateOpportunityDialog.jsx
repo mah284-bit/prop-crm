@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { aiInvoke } from "../lib/aiInvoke.js";
 import { COUNTRY_CODES, NATIONALITIES } from "../App.jsx";
+import { openPropertyPack } from "./property/propertyPackBus.js";
 
 export default function CreateOpportunityDialog({ leads, setLeads, units, projects, salePricing, users, currentUser, showToast, onClose, onCreated, prefilledLead = null }) {
   // Step state - if lead is pre-selected (from Leads tab), skip Step 1
