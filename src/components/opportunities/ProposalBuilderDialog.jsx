@@ -552,12 +552,17 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       });
       _preRoutedPayload.structured_data = _preRoutedSd;
       // 0. Fetch company data for branding
-      const { data: companyData } = await supabase
-        .from("companies")
-        .select("*")
-        .eq("id", currentUser.company_id)
-        .single()
-        .catch(e => ({ data: null }));
+      let companyData = null;
+      try {
+        const { data } = await supabase
+          .from("companies")
+          .select("*")
+          .eq("id", currentUser.company_id)
+          .single();
+        companyData = data;
+      } catch (e) {
+        console.warn("Company fetch failed (non-fatal):", e);
+      }
 
       // 1. Generate + upload PDF before saving proposal
       try {
