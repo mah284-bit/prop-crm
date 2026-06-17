@@ -7,6 +7,7 @@ import { FF } from "../../modules/shared/FormComponents.jsx";
 import { PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, VALIDITY_PRESETS } from "../../modules/constants.js";
 import { useDraggable } from "../../lib/useDraggable.js";
 import { aiInvoke } from '../../lib/aiInvoke.js';
+import { urlToBase64 } from "../../lib/imageToBase64.js";
 import { generateProposalPDF } from "../../lib/generateProposalPDF.js";
 import { uploadProposalPDF } from "../../lib/uploadProposalPDF.js";
 
@@ -577,7 +578,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           selectedPaymentPlan: paymentPlanPreset,
           validityDays: validityDays,
           unit: contextUnit,
-          project: contextProject,
+          project: projectWithBase64,
           currentUser,
           company: companyData,
         });

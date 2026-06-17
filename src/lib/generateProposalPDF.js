@@ -56,9 +56,10 @@ export async function generateProposalPDF({
   yPos = 50;
 
   // Hero image
-  if (project?.hero_image_url) {
+  if (project?.hero_image_base64 || project?.hero_image_url) {
     try {
-      doc.addImage(project.hero_image_url, 'JPEG', margin, yPos, contentWidth, 80);
+      const heroImage = project.hero_image_base64 || project.hero_image_url;
+      doc.addImage(heroImage, 'JPEG', margin, yPos, contentWidth, 80);
       yPos += 85;
     } catch (e) {
       console.warn('Hero image failed:', e);
@@ -99,14 +100,20 @@ export async function generateProposalPDF({
     yPos += 8;
 
     const photoUrls = project.photo_gallery_urls.slice(0, 3);
+    console.log("DEBUG - photoUrls:", photoUrls);
     const photoWidth = (contentWidth - 4) / 3;
     const photoHeight = 40;
 
     for (let i = 0; i < photoUrls.length; i++) {
       const photoX = margin + i * (photoWidth + 2);
       try {
-        doc.addImage(photoUrls[i], 'JPEG', photoX, yPos, photoWidth, photoHeight);
+        const photoImage = project.photo_gallery_base64 ? project.photo_gallery_base64[i] : photoUrls[i];
+        if (photoImage) {
+          console.log("Adding photo", i);
+          doc.addImage(photoImage, 'JPEG', photoX, yPos, photoWidth, photoHeight);
+        }
       } catch (e) {
+        console.error("Photo load failed:", e.message);
         doc.setFillColor(240, 240, 240);
         doc.rect(photoX, yPos, photoWidth, photoHeight, 'F');
       }
