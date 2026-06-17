@@ -1173,12 +1173,9 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
             </button>
             <button onClick={()=>submit(false)} disabled={saving}
               style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #1A5FA8",background:"#fff",color:"#1A5FA8",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
-              {saving?"Saving…":"Save (don't email)"}
+              {saving?"Saving…":"Save"}
             </button>
-            <button onClick={()=>submit(true)} disabled={saving}
-              style={{padding:"9px 22px",borderRadius:8,border:"none",background:saving?"#94A3B8":"#0F2540",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
-              {saving?"Sending…":"📤 Save & Email"}
-            </button>
+
           </div>
         </div>
       </div>
