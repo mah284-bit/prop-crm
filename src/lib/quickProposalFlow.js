@@ -60,7 +60,7 @@ export async function sendQuickProposal({
     const { data, error } = await supabase
       .from('proposals')
       .insert({
-        lead_id: leadId,
+        
         type: 'quick_send',
         units_quoted: selectedUnits.map(u => u.id),
         pdf_url: pdfUrl,
