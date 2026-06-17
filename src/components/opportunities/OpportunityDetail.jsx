@@ -1415,7 +1415,14 @@ You will become the assigned agent.`);
                                   <td style={{padding:"9px 10px"}}>
                                     <span style={{fontSize:9,padding:"2px 6px",borderRadius:8,background:sm2.bg,color:sm2.c,fontWeight:700}}>{sm2.label}</span>
                                   </td>
-                                  <td style={{padding:"9px 10px",textAlign:"right"}}>
+                                  <td style={{padding:"9px 10px",textAlign:"right",display:"flex",gap:6,justifyContent:"flex-end"}}>
+                                    {p.pdf_url && (
+                                      <a href={p.pdf_url} download target="_blank" rel="noopener noreferrer"
+                                        title="Download proposal PDF"
+                                        style={{padding:"3px 9px",borderRadius:5,border:"none",background:"#059669",color:"#fff",fontSize:10,fontWeight:700,cursor:"pointer",textDecoration:"none",display:"inline-block"}}>
+                                        📥 PDF
+                                      </a>
+                                    )}
                                     {isLatest && canEdit && !["Closed Won","Closed Lost"].includes(opp.stage) && (
                                       <button onClick={()=>requestProposalDialog()} title="Edit latest as revision (saves as new version)"
                                         style={{padding:"3px 9px",borderRadius:5,border:"none",background:"#1D4ED8",color:"#fff",fontSize:10,fontWeight:700,cursor:"pointer"}}>
