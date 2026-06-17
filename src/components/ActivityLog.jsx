@@ -1,3 +1,7 @@
+import { STAGES, OPP_STAGES, ROLE_META, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, ROLES, VIEWS, MEET_TYPES, FOLLOW_TYPES, CAN_DELETE_LEADS, DISC_TYPES, STAGE_META, TYPE_META, ACT_META, OPP_STAGE_META } from "../modules/constants.js";
+import React, { useState, useMemo } from "react";
+import { supabase } from "../../lib/supabase.js";
+import { can } from "../../modules/utils.js";
 function ActivityLog({leads,activities,setActivities,currentUser,showToast,initialFilter=null}){
   const[fType,setFType]=useState("All");
   const[fLead,setFLead]=useState("All");
