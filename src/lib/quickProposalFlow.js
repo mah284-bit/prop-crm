@@ -1,7 +1,6 @@
-import { supabase } from './supabaseClient';
-import { generateProposalPDF } from './generateProposalPDF';
-import { uploadProposalPDF } from './uploadProposalPDF';
-import { sendEmail } from './sendEmail';
+import { supabase } from "./supabase";
+import { generateProposalPDF } from "./generateProposalPDF";
+import { uploadProposalPDF } from "./uploadProposalPDF";
 
 export async function sendQuickProposal({
   leadId,
@@ -14,15 +13,12 @@ export async function sendQuickProposal({
   if (!selectedUnits || selectedUnits.length === 0) {
     throw new Error('No units selected');
   }
-  if (!leadEmail) {
-    throw new Error('Lead email is required');
-  }
 
   try {
     console.log('Sending quick proposal with', selectedUnits.length, 'units...');
 
     const primaryUnit = selectedUnits[0];
-    
+
     const pdfBlob = await generateProposalPDF({
       lead: { name: leadName, email: leadEmail },
       proposalUnits: selectedUnits.map(u => ({
@@ -31,8 +27,6 @@ export async function sendQuickProposal({
         asking_price: u.price,
         bedrooms: u.bedrooms,
         size_sqft: u.size_sqft,
-        sub_type: u.sub_type,
-        view: u.view,
       })),
       selectedPaymentPlan: 'To be discussed',
       validityDays: 10,
@@ -42,36 +36,10 @@ export async function sendQuickProposal({
       currentUser: currentUser,
     });
 
-    console.log('Uploading PDF to Storage...');
-    
     const timestamp = Date.now();
     const filename = `quick-proposal-${leadId.substring(0, 8)}-${timestamp}.pdf`;
-    
     const pdfUrl = await uploadProposalPDF(pdfBlob, filename, company.id);
 
-    console.log('Sending email to', leadEmail);
-    
-    const unitSummary = selectedUnits
-      .map(u => `${u.unit_ref} (${u.bedrooms === 0 ? 'Studio' : `${u.bedrooms}BR`})`)
-      .join(', ');
-
-    await sendEmail({
-      to: leadEmail,
-      subject: `${company.name} - Your Property Options`,
-      context: {
-        leadName: leadName,
-        companyName: company.name,
-        unitCount: selectedUnits.length,
-        unitSummary: unitSummary,
-        pdfUrl: pdfUrl,
-        companyPhone: company.phone || 'Contact us',
-        companyEmail: company.email || 'info@company.ae',
-      },
-      attachmentUrl: pdfUrl,
-    });
-
-    console.log('Saving proposal record...');
-    
     const { data, error } = await supabase
       .from('proposals')
       .insert({
@@ -87,8 +55,6 @@ export async function sendQuickProposal({
       .single();
 
     if (error) throw error;
-
-    console.log('✅ Quick proposal sent successfully!');
 
     return {
       success: true,

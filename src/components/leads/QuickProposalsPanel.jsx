@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabaseClient';
-import UnitPickerMulti from './UnitPickerMulti';
-import { sendQuickProposal } from '../../lib/quickProposalFlow';
+import { supabase } from "../../lib/supabase";
+import UnitPickerMulti from "./UnitPickerMulti";
+import { sendQuickProposal } from "../../lib/quickProposalFlow";
 
 export default function QuickProposalsPanel({
   leadId,

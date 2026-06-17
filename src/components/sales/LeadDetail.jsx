@@ -4,6 +4,7 @@ import { can, canWithPS, roleTeam } from "../../lib/permissions.js";
 import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, PROPOSAL_STATUS_META, VALIDITY_PRESETS, OPP_STAGES, OPP_STAGE_META, STAGE_META, ACT_META } from "../../modules/constants.js";
 import { fmtM, fmtAED, fmtDate, fmtDT, uid, getStrength, ini } from "../../modules/utils.js";
 import ActivitiesList from "../opportunities/ActivitiesList.jsx";
+import QuickProposalsPanel from "../leads/QuickProposalsPanel";
 import LeadPeopleSection from "../LeadPeopleSection.jsx";
 import PropertyPackModal from "../property/PropertyPackModal.jsx";
 import RemindersBell from "../RemindersBell.jsx";
@@ -605,6 +606,16 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
           </div>
         );
       })()}
+
+      {/* Quick Proposals Panel — Phase 2.3 */}
+      <QuickProposalsPanel
+        leadId={selLead.id}
+        leadEmail={selLead.email}
+        leadName={selLead.name}
+        company={currentUser.company || {}}
+        currentUser={currentUser}
+      />
+
       {/* Opportunities — dense table layout */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540"}}>
