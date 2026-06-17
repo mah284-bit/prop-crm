@@ -21,6 +21,8 @@ export default function QuickProposalsPanel({
   const [allProjects, setAllProjects] = useState([]);
   const [salePricing, setSalePricing] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [convertingUnitId, setConvertingUnitId] = useState(null);
+  const [onConvertUnit, setOnConvertUnit] = useState(null);
 
   useEffect(() => {
     fetchData();
