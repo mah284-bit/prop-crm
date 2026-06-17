@@ -551,6 +551,14 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         }
       });
       _preRoutedPayload.structured_data = _preRoutedSd;
+      // 0. Fetch company data for branding
+      const { data: companyData } = await supabase
+        .from("companies")
+        .select("*")
+        .eq("id", currentUser.company_id)
+        .single()
+        .catch(e => ({ data: null }));
+
       // 1. Generate + upload PDF before saving proposal
       try {
         const firstPropUnit = proposalUnits[0];
