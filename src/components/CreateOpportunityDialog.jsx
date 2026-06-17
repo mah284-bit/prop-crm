@@ -5,7 +5,7 @@ import { aiInvoke } from "../lib/aiInvoke.js";
 import { COUNTRY_CODES, NATIONALITIES } from "../App.jsx";
 import { openPropertyPack } from "./property/propertyPackBus.js";
 
-export default function CreateOpportunityDialog({ leads, setLeads, units, projects, salePricing, users, currentUser, showToast, onClose, onCreated, prefilledLead = null }) {
+export default function CreateOpportunityDialog({ leads, setLeads, units, projects, salePricing, users, currentUser, showToast, onClose, onCreated, prefilledLead = null, prefilledUnit = null }) {
   // Step state - if lead is pre-selected (from Leads tab), skip Step 1
   const [step, setStep] = useState(prefilledLead ? 2 : 1);
   const [saving, setSaving] = useState(false);
@@ -107,6 +107,19 @@ export default function CreateOpportunityDialog({ leads, setLeads, units, projec
     loadAgreement();
     return () => { cancelled = true; };
   }, [oppForm.unit_id, currentUser?.company_id]);
+
+  // Auto-populate oppForm when prefilledUnit is provided (Phase 2.4 conversion)
+  useEffect(() => {
+    if (prefilledUnit) {
+      setOppForm(f => ({
+        ...f,
+        unit_id: prefilledUnit.unit_id,
+        budget: prefilledUnit.final_price ? String(prefilledUnit.final_price) : "",
+        title: prefilledUnit.unit_ref && selectedLead ? `${prefilledUnit.unit_ref} — ${selectedLead.name}` : "",
+      }));
+    }
+  }, [prefilledUnit, selectedLead]);
+
 
   // Step 2: unit picker state (Phase F W6.2 — searchable)
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);

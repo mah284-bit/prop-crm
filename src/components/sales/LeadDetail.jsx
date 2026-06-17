@@ -36,6 +36,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
   const [oppForm,  setOppForm]  = useState({title:"",unit_id:"",budget:"",assigned_to:"",notes:"",property_category:"Off-Plan"});
   // 16 May 2026: Consolidation - canonical opportunity dialog from Leads tab
   const [showCanonicalOppDialog, setShowCanonicalOppDialog] = useState(false);
+  const [prefilledUnit, setPrefilledUnit] = useState(null);
   // Phase E dense layout: activities for ALL of this lead's opportunities (used to enrich opp rows)
   const [leadActivities, setLeadActivities] = useState([]);
   const canEdit = can(currentUser.role,"write");
@@ -614,6 +615,10 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
         leadName={selLead.name}
         company={currentUser.company || {}}
         currentUser={currentUser}
+        onConvertUnit={(unitData) => {
+          setPrefilledUnit(unitData);
+          setShowCanonicalOppDialog(true);
+        }}
       />
 
       {/* Opportunities — dense table layout */}
@@ -827,6 +832,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
           currentUser={currentUser}
           showToast={showToast}
           prefilledLead={selLead}
+          prefilledUnit={prefilledUnit}
           onClose={() => setShowCanonicalOppDialog(false)}
           onCreated={(newOpp, newLead) => {
             // Update LOCAL opps (what leadOpps filters on) so the new opp appears

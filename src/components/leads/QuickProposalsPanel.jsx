@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from "../../lib/supabase";
 import UnitPickerMulti from "./UnitPickerMulti";
 import { sendQuickProposal } from "../../lib/quickProposalFlow";
+import { prepareUnitForConversion } from "../../lib/conversionHandler";
 
 export default function QuickProposalsPanel({
+  onConvertUnit,
   leadId,
   leadEmail,
   leadName,
@@ -22,7 +24,6 @@ export default function QuickProposalsPanel({
   const [salePricing, setSalePricing] = useState([]);
   const [loading, setLoading] = useState(true);
   const [convertingUnitId, setConvertingUnitId] = useState(null);
-  const [onConvertUnit, setOnConvertUnit] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -77,6 +78,22 @@ export default function QuickProposalsPanel({
       console.error('Send failed:', err);
       setError(`Failed to send proposal: ${err.message}`);
       setSending(false);
+    }
+  };
+
+  const handleConvertUnit = async (unitId) => {
+    setConvertingUnitId(unitId);
+    setError(null);
+    try {
+      const unitData = await prepareUnitForConversion(unitId);
+      if (onConvertUnit) {
+        onConvertUnit(unitData);
+      }
+      setConvertingUnitId(null);
+    } catch (err) {
+      console.error("Convert failed:", err);
+      setError(`Failed to convert: ${err.message}`);
+      setConvertingUnitId(null);
     }
   };
 
