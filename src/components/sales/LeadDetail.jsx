@@ -613,6 +613,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
         leadId={selLead.id}
         leadEmail={selLead.email}
         leadName={selLead.name}
+        leadPhone={selLead.phone}
         company={currentUser.company || {}}
         currentUser={currentUser}
         onConvertUnit={(unitData) => {

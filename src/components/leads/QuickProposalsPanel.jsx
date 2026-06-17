@@ -10,6 +10,7 @@ export default function QuickProposalsPanel({
   leadId,
   leadEmail,
   leadName,
+  leadPhone,
   company,
   currentUser,
 }) {
@@ -72,7 +73,8 @@ export default function QuickProposalsPanel({
     setError(null);
     try {
       const result = await sendQuickProposal({ leadId, leadEmail, leadName, selectedUnits, company, currentUser });
-      setSuccessPdfUrl(result.pdfUrl);
+  leadPhone,
+      console.log("🎯 Setting successPdfUrl:", result.pdfUrl); setSuccessPdfUrl(result.pdfUrl);
       setSending(false);
     } catch (err) {
       console.error("Send failed:", err);
@@ -176,12 +178,13 @@ export default function QuickProposalsPanel({
           <button onClick={handleReset} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', background: '#0F2540', color: '#fff', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>← Back</button>
         </div>
       )}
-      {successPdfUrl     </div>    </div> (
+
+      {successPdfUrl && (
         <ProposalSuccessDialog
           pdfUrl={successPdfUrl}
           leadName={leadName}
           leadEmail={leadEmail}
-          leadPhone={lead?.phone}
+          leadPhone={leadPhone}
           onClose={() => {
             setSuccessPdfUrl(null);
             setStep(0);
