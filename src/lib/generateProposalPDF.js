@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 /**
  * Phase 2.2 — Proposal PDF Generator
