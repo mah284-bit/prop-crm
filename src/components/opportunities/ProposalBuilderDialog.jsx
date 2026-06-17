@@ -7,6 +7,7 @@ import { FF } from "../../modules/shared/FormComponents.jsx";
 import { PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, VALIDITY_PRESETS } from "../../modules/constants.js";
 import { useDraggable } from "../../lib/useDraggable.js";
 import { aiInvoke } from '../../lib/aiInvoke.js';
+import { generateProposalPDF } from '../../lib/generateProposalPDF.js';
 
 function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, currentUser, lastProposal, onClose, onSaved, showToast }) {
   /* draggable-sendproposal */ const { ref: dragRef, posStyle, handleProps } = useDraggable({ open: true });
@@ -680,24 +681,39 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         .in("reason", ["auto_proposal_followup","auto_proposal_expiring"]);
       await supabase.from("reminders").insert(reminderRows);
 
-      // 5. If sendEmail, generate the .txt + open mailto:
+      // 5. If sendEmail, generate PDF + open mailto:
       if (sendEmail) {
         try {
-          const summary = buildSummaryText();
-          const fullBody = `${coverNotes}\n\n${summary}`;
           const subject = `Property Proposal — ${proposalUnits.length} Option${proposalUnits.length===1?"":"s"} for ${lead.name}`;
-          // Generate a .txt file as the "attachment" stand-in (real PDF post-Sunday)
-          const blob = new Blob([fullBody], {type:"text/plain;charset=utf-8"});
-          const url = URL.createObjectURL(blob);
+          
+          // Get the first proposed unit for context
+          const firstPropUnit = proposalUnits[0];
+          const contextUnit = units.find(u => u.id === firstPropUnit.unit_id);
+          const contextProject = projects.find(p => p.id === contextUnit?.project_id);
+          
+          // Generate PDF blob
+          const pdfBlob = await generateProposalPDF({
+            lead,
+            coverNotes,
+            proposalUnits,
+            selectedPaymentPlan: paymentPlanPreset,
+            validityDays: validityDaysValue,
+            unit: contextUnit,
+            project: contextProject,
+            currentUser,
+          });
+          
+          const url = URL.createObjectURL(pdfBlob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = `proposal-${(lead.name||"buyer").replace(/\s+/g,"_")}.txt`;
+          a.download = `proposal-${(lead.name||"buyer").replace(/\s+/g,"_")}.pdf`;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
           setTimeout(()=>URL.revokeObjectURL(url), 1000);
+          
           // Open mail client
-          const mailto = `mailto:${encodeURIComponent(lead.email||"")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(fullBody)}`;
+          const mailto = `mailto:${encodeURIComponent(lead.email||"")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent("Please see attached proposal.")}`;
           setTimeout(()=>{ window.location.href = mailto; }, 300);
         } catch (e) {
           console.warn("Send email step failed (non-fatal):", e);
