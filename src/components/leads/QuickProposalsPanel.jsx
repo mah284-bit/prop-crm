@@ -32,6 +32,8 @@ export default function QuickProposalsPanel({
   const [loading, setLoading] = useState(true);
   const [successPdfUrl, setSuccessPdfUrl] = useState(null);
   const [showViewDialog, setShowViewDialog] = useState(false);
+  const [successPdfUrl, setSuccessPdfUrl] = useState(null);
+  const [showViewDialog, setShowViewDialog] = useState(false);
   const [convertingUnitId, setConvertingUnitId] = useState(null);
 
   useEffect(() => {
@@ -95,6 +97,7 @@ export default function QuickProposalsPanel({
         leadId,
         leadEmail,
         leadName,
+  leadPhone,
         selectedUnits,
         company,
         currentUser,
