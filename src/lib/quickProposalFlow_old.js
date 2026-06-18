@@ -57,43 +57,12 @@ export async function sendQuickProposal({
 
     console.log('✅ PDF uploaded:', pdfUrl);
 
-    // Log activity: proposal sent
-    try {
-      // Count existing proposals to get version
-      const { data: existingProposals } = await supabase
-        .from('activities')
-        .select('*')
-        .eq('lead_id', leadId)
-        .eq('type', 'proposal_sent');
-      const version = (existingProposals?.length || 0) + 1;
-
-      await supabase.from('activities').insert({
-        lead_id: leadId,
-        type: 'proposal_sent',
-        note: `Sent proposal v${version} for ${selectedUnits.map(u => u.unit_ref).join(', ')}`,
-        structured_data: {
-          pdf_url: pdfUrl,
-          units_quoted: selectedUnits.map(u => ({
-            id: u.id,
-            unit_ref: u.unit_ref,
-            bedrooms: u.bedrooms,
-            price: u.price,
-          })),
-          unit_count: selectedUnits.length,
-        },
-        user_id: currentUser.id,
-        user_name: currentUser.name || 'Unknown',
-      });
-      console.log('✅ Activity logged');
-    } catch (activityErr) {
-      console.error('⚠️ Activity logging failed (non-blocking):', activityErr);
-      // Don't throw - proposal was sent successfully
-    }
-
+    // PDF saved to Storage only - no DB insert
     return {
       success: true,
       pdfUrl: pdfUrl,
     };
+
   } catch (error) {
     console.error('❌ Failed to send proposal:', error);
     throw new Error(`Failed to send proposal: ${error.message}`);

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from "../../lib/supabase";
+import { ViewProposalsDialog } from './ViewProposalsDialog';
 import UnitPickerMulti from "./UnitPickerMulti";
 import { ProposalSuccessDialog } from './ProposalSuccessDialog';
 import { sendQuickProposal } from "../../lib/quickProposalFlow";
@@ -20,6 +21,7 @@ export default function QuickProposalsPanel({
   const [showPicker, setShowPicker] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  const [showViewDialog, setShowViewDialog] = useState(false);
   const [successPdfUrl, setSuccessPdfUrl] = useState(null);
   const [pastProposals, setPastProposals] = useState([]);
   const [allUnits, setAllUnits] = useState([]);
@@ -36,7 +38,19 @@ export default function QuickProposalsPanel({
     try {
       setLoading(true);
       setPastProposals([]);
-      const { data: proposals } = await supabase.from('proposals').select('*').order('created_at', { ascending: false });
+      const { data: activities } = await supabase
+        .from('activities')
+        .select('*')
+        .eq('lead_id', leadId)
+        .eq('type', 'proposal_sent')
+        .order('created_at', { ascending: false });
+      const proposals = activities?.map(a => ({
+        id: a.id,
+        created_at: a.created_at,
+        pdf_url: a.metadata?.pdf_url,
+        units_quoted: a.metadata?.units_quoted || [],
+        unit_count: a.metadata?.unit_count || 0,
+      })) || [];
       const { data: units } = await supabase.from('project_units').select('*');
       const { data: projects } = await supabase.from('projects').select('*');
       const { data: pricing } = await supabase.from('unit_sale_pricing').select('*');
@@ -127,6 +141,7 @@ export default function QuickProposalsPanel({
             </div>
           )}
           {pastProposals.length === 0 && <div style={{ padding: '12px', borderRadius: '6px', background: '#fff', border: '1px solid #E2E8F0', color: '#94A3B8', fontSize: '12px', marginBottom: '12px' }}>No proposals sent yet</div>}
+          <button onClick={() => setShowViewDialog(true)} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #0F2540', background: '#fff', color: '#0F2540', fontSize: '12px', fontWeight: '600', cursor: 'pointer', marginBottom: '8px' }}>📋 View Proposals</button>
           <button onClick={() => setStep(1)} style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: 'none', background: '#0F2540', color: '#fff', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>📤 Send New Proposal</button>
         </div>
       )}
@@ -177,6 +192,13 @@ export default function QuickProposalsPanel({
           <p style={{ margin: '0 0 12px 0', fontSize: '11px', color: '#94A3B8' }}>PDF sent to {leadEmail}</p>
           <button onClick={handleReset} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', background: '#0F2540', color: '#fff', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>← Back</button>
         </div>
+      )}
+
+      {showViewDialog && (
+        <ViewProposalsDialog
+          leadId={leadId}
+          onClose={() => setShowViewDialog(false)}
+        />
       )}
 
       {successPdfUrl && (
