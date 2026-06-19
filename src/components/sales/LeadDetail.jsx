@@ -405,6 +405,9 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
         </div>
       </div>
 
+      {/* ── 2-Column: Assigned + Quick Proposals ─────────────────── */}
+      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:16}}>
+        <div>
       {/* ── Phase 2.1 Day 22: Assignment section ─────────────────── */}
       {(()=>{
         const assignedUser = users.find(u => u.id === selLead.assigned_to);
@@ -494,6 +497,12 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
           </div>
         );
       })()}
+        </div>
+        <div style={{display:"flex", flexDirection:"column", padding:"12px 16px", background:"#fff", border:"1px solid #E5E9EF", borderRadius:12, gap:8}}>
+      {/* Quick Proposals Panel — Phase 2.3 */}
+      <QuickProposalsPanel leadId={selLead.id} leadEmail={selLead.email} leadName={selLead.name} leadPhone={selLead.phone} company={currentUser.company || {}} currentUser={currentUser} onConvertUnit={(unitData) => { setPrefilledUnit(unitData); setShowCanonicalOppDialog(true); }} />
+        </div>
+      </div>
 
       {/* Release Dialog (Phase 2.1 Day 22) */}
       {showReleaseDialog && (
@@ -607,20 +616,6 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
           </div>
         );
       })()}
-
-      {/* Quick Proposals Panel — Phase 2.3 */}
-      <QuickProposalsPanel
-        leadId={selLead.id}
-        leadEmail={selLead.email}
-        leadName={selLead.name}
-        leadPhone={selLead.phone}
-        company={currentUser.company || {}}
-        currentUser={currentUser}
-        onConvertUnit={(unitData) => {
-          setPrefilledUnit(unitData);
-          setShowCanonicalOppDialog(true);
-        }}
-      />
 
       {/* Opportunities — dense table layout */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
