@@ -148,53 +148,6 @@ export default function QuickProposalsPanel({
         </div>
       )}
 
-      {step === 1 && (
-        <div>
-          <h4 style={{ margin: '0 0 12px 0', fontSize: '12px', fontWeight: '600' }}>What type of property?</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '12px' }}>
-            {['Studio', '1BR', '2BR', '3BR', '4BR+', 'Villa'].map((type) => (
-              <button key={type} onClick={() => handleTypeSelect(type)} style={{ padding: '10px 8px', borderRadius: '6px', border: '1px solid #D1D9E6', background: '#fff', color: '#0F2540', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>{type}</button>
-            ))}
-          </div>
-          <button onClick={handleReset} style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #D1D9E6', background: '#fff', color: '#64748B', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-        </div>
-      )}
-
-      {showPicker && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 37, 64, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }} onClick={() => setShowPicker(false)}>
-          <div onClick={(e) => e.stopPropagation()}>
-            <UnitPickerMulti initialBedrooms={selectedType === 'Studio' ? 0 : selectedType === 'Villa' ? null : parseInt(selectedType)} onSelect={handleUnitsSelected} onClose={() => setShowPicker(false)} units={allUnits} projects={allProjects} salePricing={salePricing} />
-          </div>
-        </div>
-      )}
-
-      {step === 3 && (
-        <div>
-          <h4 style={{ margin: '0 0 12px 0', fontSize: '12px', fontWeight: '600' }}>Ready to send?</h4>
-          <div style={{ padding: '12px', borderRadius: '6px', background: '#fff', border: '1px solid #E2E8F0', marginBottom: '12px' }}>
-            <p style={{ margin: '0 0 8px 0', fontSize: '11px', color: '#64748B' }}>{selectedUnits.length} unit{selectedUnits.length !== 1 ? 's' : ''} selected:</p>
-            {selectedUnits.map((unit) => (
-              <div key={unit.id} style={{ padding: '6px 8px', borderRadius: '4px', background: '#F8FAFC', marginBottom: '4px', fontSize: '11px', display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: '600', color: '#0F2540' }}>{unit.unit_ref}</span>
-                <span style={{ color: '#94A3B8' }}>{unit.bedrooms === 0 ? 'Studio' : `${unit.bedrooms}BR`} • AED {Math.round(unit.price || 0).toLocaleString()}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={() => setStep(1)} style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #D1D9E6', background: '#fff', color: '#64748B', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>← Back</button>
-            <button onClick={handleSendProposal} disabled={sending} style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: 'none', background: sending ? '#CBD5E1' : '#0F2540', color: '#fff', fontSize: '11px', fontWeight: '600', cursor: sending ? 'not-allowed' : 'pointer' }}>{sending ? 'Sending...' : '📤 Send Proposal'}</button>
-          </div>
-        </div>
-      )}
-
-      {step === 4 && (
-        <div style={{ textAlign: 'center', padding: '16px' }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>✅</div>
-          <h4 style={{ margin: '0 0 4px 0', fontSize: '13px', fontWeight: '700' }}>Proposal Sent!</h4>
-          <p style={{ margin: '0 0 12px 0', fontSize: '11px', color: '#94A3B8' }}>PDF sent to {leadEmail}</p>
-          <button onClick={handleReset} style={{ padding: '8px 12px', borderRadius: '6px', border: 'none', background: '#0F2540', color: '#fff', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>← Back</button>
-        </div>
-      )}
 
       {showViewDialog && (
         <ViewProposalsDialog
@@ -216,6 +169,7 @@ export default function QuickProposalsPanel({
           }}
         />
       )}
+      {showProposalModal && <ProposalFormModal leadId={leadId} leadEmail={leadEmail} leadName={leadName} leadPhone={leadPhone} company={company} currentUser={currentUser} onClose={() => setShowProposalModal(false)} onSuccess={() => { setShowProposalModal(false); fetchData(); }} />}
     </div>
   );
 }
