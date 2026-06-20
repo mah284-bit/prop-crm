@@ -14,10 +14,12 @@ export default function QuickProposalsPanel({
   const [showProposalModal, setShowProposalModal] = useState(false);
 
   return (
-    <div style={{ padding: '16px', border: '1px solid #E2E8F0', borderRadius: '8px', background: '#F8FAFC', marginTop: '16px' }}>
-      <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '700' }}>Quick Proposals</h3>
-      <button onClick={() => setShowViewDialog(true)} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #0F2540', background: '#fff', color: '#0F2540', fontSize: '11px', fontWeight: '600', cursor: 'pointer', marginBottom: '8px' }}>📋 View Proposals</button>
-      <button onClick={() => setShowProposalModal(true)} style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: 'none', background: '#0F2540', color: '#fff', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>📤 Send New Proposal</button>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
+      <h3 style={{ margin: 0, fontSize: '14px', fontWeight: '700', whiteSpace: 'nowrap', color: '#0F2540' }}>Quick Proposals</h3>
+      <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
+        <button onClick={() => setShowViewDialog(true)} style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #0F2540', background: '#fff', color: '#0F2540', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>📋 View Proposals</button>
+        <button onClick={() => setShowProposalModal(true)} style={{ padding: '8px 14px', borderRadius: '6px', border: 'none', background: '#0F2540', color: '#fff', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>📤 Send New Proposal</button>
+      </div>
 
       {showViewDialog && (
         <ViewProposalsDialog

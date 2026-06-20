@@ -498,7 +498,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
         );
       })()}
         </div>
-        <div style={{display:"flex", flexDirection:"row", alignItems:"center", flexWrap:"wrap", padding:"12px 16px", background:"#fff", border:"1px solid #E5E9EF", borderRadius:12, gap:16, minHeight:"88px"}}>
+        <div style={{display:"flex", flexDirection:"row", alignItems:"center", flexWrap:"wrap", padding:"12px 16px", background:"#fff", border:"1px solid #E5E9EF", borderRadius:12, gap:16}}>
       {/* Quick Proposals Panel — Phase 2.3 */}
       <QuickProposalsPanel leadId={selLead.id} leadEmail={selLead.email} leadName={selLead.name} leadPhone={selLead.phone} company={currentUser.company || {}} currentUser={currentUser} onConvertUnit={(unitData) => { setPrefilledUnit(unitData); setShowCanonicalOppDialog(true); }} />
         </div>
