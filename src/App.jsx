@@ -3306,7 +3306,7 @@ export default function App(){
           safe(cid
             ? supabase.from("leads").select("*").eq("company_id",cid).order("created_at",{ascending:false})
             : supabase.from("leads").select("*").eq("company_id", currentUser.company_id).order("created_at",{ascending:false})),
-          safe(supabase.from("properties").select("*").eq("company_id", currentUser.company_id).order("created_at",{ascending:false})),
+          safe(supabase.from("properties").select("*").order("created_at",{ascending:false})),
           safe(supabase.from("activities").select("*").eq("company_id", currentUser.company_id).order("created_at",{ascending:false})),
           safe(cid ? supabase.from("profiles").select("*").eq("company_id",cid).order("full_name") : supabase.from("profiles").select("*").order("full_name")),
           safe(cid
