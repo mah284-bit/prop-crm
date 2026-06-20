@@ -4,10 +4,8 @@ import { supabase } from '../../lib/supabase';
 import { sendQuickProposal } from '../../lib/quickProposalFlow';
 
 export function ProposalFormModal({ leadId, leadEmail, leadName, leadPhone, company, currentUser, onClose, onSuccess }) {
-  const [step, setStep] = useState(1);
-  const [bedrooms, setBedrooms] = useState(null);
+  const [step, setStep] = useState(2);
   const [units, setUnits] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
   const [allUnits, setAllUnits] = useState([]);
@@ -27,7 +25,6 @@ export function ProposalFormModal({ leadId, leadEmail, leadName, leadPhone, comp
     } catch (err) { console.error('Load failed:', err); setError('Failed to load'); }
   };
 
-  const handleSelectBedrooms = (br) => { setBedrooms(br); setStep(2); };
   const handleUnitsSelected = (selected) => { setUnits(selected); setStep(3); };
   const handleSend = async () => {
     if (units.length === 0) { setError('Select units'); return; }
@@ -44,21 +41,10 @@ export function ProposalFormModal({ leadId, leadEmail, leadName, leadPhone, comp
       <div style={{background:'#fff',borderRadius:'12px',width:'90%',maxWidth:'500px',maxHeight:'85vh',overflowY:'auto',padding:'32px',position:'relative'}} onClick={e => e.stopPropagation()}>
         <button onClick={onClose} style={{position:'absolute',top:'12px',right:'12px',background:'none',border:'none',fontSize:'20px',cursor:'pointer'}}>✕</button>
         {error && <div style={{padding:'10px',borderRadius:'6px',background:'#fee2e2',color:'#c53030',fontSize:'12px',marginBottom:'16px'}}>⚠️ {error}</div>}
-        
-        {step === 1 && (
-          <div>
-            <h2 style={{fontSize:'18px',fontWeight:'700',marginBottom:'16px'}}>Select Property Type</h2>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'8px'}}>
-              {[{label:'Studio',value:0},{label:'1BR',value:1},{label:'2BR',value:2},{label:'3BR',value:3},{label:'4BR+',value:4},{label:'Villa',value:null}].map(t => (
-                <button key={t.label} onClick={() => handleSelectBedrooms(t.value)} style={{padding:'12px',borderRadius:'6px',border:'1px solid #d1d9e6',background:'#fff',cursor:'pointer',fontSize:'12px',fontWeight:'600'}}>{t.label}</button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {step === 2 && (
           <div>
-            <UnitPickerMulti initialBedrooms={bedrooms} onSelect={handleUnitsSelected} onClose={() => setStep(1)} units={allUnits} projects={allProjects} salePricing={salePricing} />
+            <UnitPickerMulti initialBedrooms={null} onSelect={handleUnitsSelected} onClose={onClose} units={allUnits} projects={allProjects} salePricing={salePricing} />
           </div>
         )}
 
@@ -75,7 +61,7 @@ export function ProposalFormModal({ leadId, leadEmail, leadName, leadPhone, comp
               ))}
             </div>
             <div style={{display:'flex',gap:'8px'}}>
-              <button onClick={() => setStep(1)} style={{flex:1,padding:'10px',borderRadius:'6px',border:'1px solid #d1d9e6',background:'#fff',cursor:'pointer',fontSize:'12px',fontWeight:'600'}}>Back</button>
+              <button onClick={() => setStep(2)} style={{flex:1,padding:'10px',borderRadius:'6px',border:'1px solid #d1d9e6',background:'#fff',cursor:'pointer',fontSize:'12px',fontWeight:'600'}}>Back</button>
               <button onClick={handleSend} disabled={sending} style={{flex:1,padding:'10px',borderRadius:'6px',border:'none',background:sending ? '#cbd5e1' : '#0f2540',color:'#fff',cursor:sending ? 'not-allowed' : 'pointer',fontSize:'12px',fontWeight:'600'}}>{sending ? 'Sending...' : 'Send'}</button>
             </div>
           </div>
