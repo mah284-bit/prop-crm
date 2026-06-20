@@ -1,0 +1,160 @@
+# PropCRM — Master Context & Takeover
+
+**Living document. Read this FIRST every session.**
+Last updated: 20 Jun 2026 (evening) · Maintained by: Architect, per founder instruction
+Supersedes scattered/stale project files for "where we stand" and "what this product is."
+
+> Note on status: this is a living frame. Small or large changes will happen as outcomes
+> teach us — nothing here is a stone tablet. Amend it at each session change rather than
+> re-explaining context verbally.
+
+---
+
+## 0. HOW TO USE THIS DOC
+- This is the single source of truth for product intent + current state.
+- The older `Phase_2_Backlog_Master_Doc.md` and assorted phase docs are reference history,
+  NOT current truth. Where they conflict with this doc or the repo, the REPO wins, then this doc.
+- Repo numbering of phases ≠ old master-doc numbering. They drifted. Trust commit messages.
+
+---
+
+## 1. PRODUCT FRAME (the "why" — rarely changes)
+
+### The core problem we solve
+Brokers are **data-poor at the moment a buyer connects.** They don't have enough authentic
+information on hand to advise well. Everything in the product serves closing that gap.
+
+### PropPulse — the data engine
+PropPulse collects property intelligence by sniffing/aggregating from multiple sources, so the
+broker walks into the buyer conversation already informed.
+
+**Staging (deliberate):**
+- **Today:** free, public-domain sources only.
+- **Post product-readiness + investment:** connect to government sites and paid authentic
+  feeds; authenticated data is uploaded into **PropPulse Inventory.**
+- Brokers then **enable the slices relevant to their organisation's areas of work.**
+
+**Forward intention — IMPORTANT framing (do not mis-state):**
+- The product is **NOT limited to ~20 developers.** That number is a *current
+  development-tracking scope* used to keep a tab on expenses during the build phase.
+- It is a **starting scope for development, explicitly not a product ceiling.**
+- The forward intention is **broad market coverage** once authenticated government and paid
+  sources come online. Never frame PropPulse as "we only cover 20 orgs."
+
+### Scope boundary (who the app is for)
+- The app today is for **broker companies / individual brokers & agents.**
+- The broker/community role is to **make the buyer and the developer meet.**
+- **Developer-side features are intentionally low-intensity.** Example: Discount recording
+  exists only to capture what discounts a developer gives, so final broker **commission** can
+  be computed correctly. It is developer discretion, not broker workflow. Do not over-invest
+  engineering effort there.
+
+### Positioning
+- The product is **AI-heavy** by design — AI is utilised throughout the app, and that is a
+  deliberate positioning angle, not incidental.
+
+---
+
+## 2. CURRENT TECHNICAL STATE (the "where" — update each session)
+
+- **Repo:** `mah284-bit/prop-crm` · local `/d/prop-crm` (Windows MINGW64, CRLF)
+- **Branch:** `main` (production → prop-crm-two.vercel.app, auto-deploy)
+- **Latest commit:** `2a7f56b` (properties 400 fix)
+- **Golden / revert floor:** `pre-refactor-resume` (stamped this session, pushed)
+- **Prior golden:** `refactor-day40-complete`, `phase-2.7-complete-final`
+- **App.jsx:** ~3,681 lines (down from 6,708 pre-Day-40 refactor; the shrink held)
+- **Env health (this session):** clean tree, build green, dev server 200. PRE-OP verified.
+
+### What is LIVE (verified from repo, not docs)
+- Phase 2.0 Realtime sync; Phase 2.1 Lead Ingestion + governance (pools, assignment, audit).
+- App-layer multi-tenant isolation (Stage 3a) + role_capabilities gating (Stage 4).
+- Day-40 normalisation: 11 inline modules extracted from App.jsx; `aiInvoke` → shared lib.
+- LeadDetail + OpportunityDetail extracted; Property Detail Pack (Project/Unit panels).
+- **Phase 2.5 Lead Lifecycle is LIVE** (not "future" as old docs claim): `lifecycle_stage` +
+  `buyer_intent` wired; `customers/CustomersPage.jsx` shows converted customers; intent
+  segmentation in Coach + LeadCreationFormV2.
+- Phase 2.7: ProposalFormModal (inline form removed; clean 2-column Lead Detail).
+
+---
+
+## 3. ACTIVE WORK — Refactor-Resume
+
+**Direction (locked):** finish the normalisation refactor. **No new features built inline in
+App.jsx.** Remaining inline/duplicated modules → own feature-folder components, one at a time.
+
+**Method (Day-40, keep using):**
+pre-op dep scan → ONE move → build/visual test → commit → next. No bulk.
+Verify which copy renders before deleting twins. Tag a revert floor before risky moves.
+
+**Helpers stay inline (decision):** tiny shared primitives (Av, Badge, Modal, Spinner, Btn,
+FF, G2/G3, RoleBadge, PwInput, Toast, etc.) are NOT extraction targets — high churn, low
+benefit, regression risk. Leave them.
+
+**Big inline modules = the real extraction queue (Sales-first):**
+- `AIAssistant` (App.jsx ~2182) — broker-facing, AI-heavy, demo-relevant → top candidate.
+- `PaymentPlanTemplates` (~1960)
+- `SetupWizard` (~2512)
+- `UserManagement` (~3042) — ⚠️ possible twin with already-extracted UsersTab; verify first.
+- Leasing modules (LeasingDashboard ~2747, LeasingChequeManager ~1632) — PARKED (leasing
+  out of current scope).
+
+**Completed operations this session:**
+- Op #1 ✅ `properties` 400 fix — removed invalid `company_id` filter on global table (`2a7f56b`).
+- Pre-cleanup ✅ QuickProposalsPanel dead-code strip, 163→43 lines (`98bb981`).
+
+---
+
+## 4. DEFERRED / PARKED (explicit — so nothing is silently forgotten)
+
+- 🅿️ **Teething issues on the flows** — KNOWN, acknowledged by founder, **sealed by founder
+  decision.** Not to be discussed or fixed mid-refactor. Order: finish listed refactor work →
+  full app walkthrough together → THEN a dedicated teething-issues pass. Architect will not
+  drag the conversation toward these early.
+- 🅿️ **DiscountApprovals twin** — inline (App.jsx 1485) is live; `src/components/
+  DiscountApprovals.jsx` is an orphan. Unresolved. Low priority (developer-side record-keeping).
+  Resolve later, not now.
+- 🅿️ **projects / project_units company_id filters** (App.jsx ~3328-3329) — conditional on
+  `cid`; not confirmed safe to change. VERIFY against live schema before any edit.
+- 🅿️ **Leasing module** — parked entirely; sales flows only in current scope.
+- 🅿️ **RLS server-side audit** (`is_super_admin` bypass) — app-layer isolation is in; server
+  hardening flagged before scaling beyond pilot. In-scope only if an external brokerage onboards.
+- 🅿️ **Section C orphan deletes** (Day-40 list: old permissions tabs, old SettingsTab subtab,
+  CountryPicker, LeadPersonEditModal, top-of-file inline twins) — harmless dead code; later or never.
+
+---
+
+## 5. PRODUCTION TARGET
+- **Sales production-ready on or before 30 Jun 2026** (founder-set).
+- Demo is founder-controlled and decoupled from this date (founder manages demo timing).
+- June 30 is a **finish-and-harden** goal, not a new-build goal — functionally Sales is largely there.
+
+---
+
+## 6. KEY IDENTIFIERS & OPS NOTES
+- `company_id` (Al Mansoori) = `c23a2320-1b35-4636-a840-532c247a6cf9`
+- Abid `user_id` = `fa0aae73-847a-4bdc-b4be-f4c0ebb80974`
+- Test users: Raja Shekhar (Al Mansoori admin); Roy James (Emirates Premium Realty,
+  company `e536de3f-0090-474e-8036-315e474174f1`).
+- Folder convention: `src/components/<feature>/` **all lowercase** (Vercel/Linux case-sensitive).
+- App.jsx top-level nav add = 4 edits (import, TABS, MODE_TABS sales+both, render handler).
+- PropPulse tables (`projects`, `project_units`, `properties`) are **GLOBAL** — never apply
+  `company_id` filters to them.
+
+---
+
+## 7. WORKING DYNAMIC
+- Founder Abid executes ALL terminal/git/SQL himself; never edits files directly in VS Code.
+- Architect (Claude) decides technical direction, hands exact commands.
+- Founder trusts architect on technicals; architect still defers to founder on
+  momentum/energy/scope and reads back understanding before acting.
+- Founder principles: "1 step forward, 2 steps back is bothering me" · "no half-hearted work
+  which spoils" · broken states never committed · each commit = revertable checkpoint.
+- File delivery: founder is on Claude desktop and CANNOT download. Deliver file content via
+  **quoted heredoc** (`<< 'EOF'`) which is safe for content with backticks/quotes.
+
+---
+
+## 8. CHANGE LOG
+- 20 Jun 2026 (eve): Doc created. Product frame captured (PropPulse staging + forward
+  intention; "20 devs is not a ceiling" correction; broker-scope boundary; AI-heavy
+  positioning). Refactor-resume started: Op#1 properties-400 fixed. Teething backlog parked.
