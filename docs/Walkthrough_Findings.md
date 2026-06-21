@@ -102,3 +102,10 @@ Clicking the 5 dashboard stat cards:
 - Reserved -> Inventory listing (should be reserved-filtered, or acceptable)
 Same family as #2 (stage bars) and #3 (won/lost) — all dashboard click-targets are
 roughly wired but not precise. Fix ALL together during the #4 wow-redesign, not piecemeal.
+
+### Finding #6 — CONFIRMED (founder verified all 4 cards)
+Active Opps + Won Value -> both land on full Pipeline Report (not their filtered slice).
+Available + Reserved -> both land on full Inventory list (not filtered).
+Card promises a slice; click delivers the whole table. NOT presentable as-is.
+Reports + Inventory screens themselves render fine — defect is purely card->destination wiring.
+Fix ALL dashboard nav (#2,#3,#6) in ONE pass during #4 wow-redesign. Do NOT patch piecemeal.
