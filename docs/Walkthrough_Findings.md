@@ -175,3 +175,16 @@ Settings tab = SettingsPage (settings/, Agent Pools + Lead Routing) — a DIFFER
 NOT interchangeable, NOT a delete. This is "scattered settings" = belongs in the Unified
 Settings consolidation (old-doc Phase 2.9: migrate Users/Companies/AI-Quotas/Branding/this
 app-config INTO one Settings module). PARKED until that consolidation pass. No action now.
+
+### Finding #11 — Hierarchical RLS & need-to-know data access (MAJOR ARCHITECTURE)
+Founder directive. 5-level hierarchy: Group → Company → Group Manager → Branch Manager →
+Broker (Admin sits at group + branch level). Each level sees data on a NEED-TO-KNOW basis
+only. Configurable PER COMPANY in Settings (a company chooses what each level may see).
+Applies EVERYWHERE: dashboard, all reports, every screen. Principle: NO "you are not
+authorised" walls — silently show only what's relevant to that user's level (extends
+Finding #5 role-no-blanks). Super Admin (founder) eventually limited to company setup +
+settings + first-user creation only — NO access to company CRM data (ties to
+Architecture_Multi_Tenant_Identity_Model.md). This is a MULTI-DAY foundational build touching
+every query + the Settings module — its own dedicated effort, POST dashboard-cleanup. Dashboard
+cleanup now is layout/redundancy only; data already role-seeded via can(...see_all) so the
+hierarchy slots in cleanly later.
