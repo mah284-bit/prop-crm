@@ -70,3 +70,17 @@ Do not chase dashboard number-correctness until clean seed data exists. Revisit 
 
 (Also: smoke-test of today's 5 extractions still pending — confirm AI bubble, Lead Detail,
 Users/Settings render live before/at start of next session.)
+
+### Finding #4 — UPDATE (21 Jun evening, founder + screenshots)
+Confirmed visually: alert banner + hero band consume ~HALF the first screen before any
+working element. Hero band is the worst offender — a billboard for ONE number (pipeline value)
++ greeting, with large empty middle. Stat cards (the useful at-a-glance layer) barely above
+fold; Quick Actions + Recent Activity not visible without scrolling.
+
+Sharpened direction:
+- COLLAPSE hero band to a slim strip (greeting + pipeline value on ~one line + role badge),
+  not a billboard. Biggest space reclaim for least loss.
+- THIN the alert banner to a single compact line, not a full padded card.
+- PROMOTE stat cards + Quick Actions + Recent Activity into reclaimed space — broker's daily
+  cockpit lands above the fold.
+- Principle: "wow" = dense, intentional, beautiful information design — NOT whitespace/billboard.
