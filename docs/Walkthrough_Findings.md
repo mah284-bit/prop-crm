@@ -128,3 +128,6 @@ PDFs (the docs/"herodocs") ready to send to customer, with re-ask-if-not-sent fl
 Likely lost/reverted in a refactor. Fix-pass step 1: git-history check — was the working
 picker present then overwritten by the placeholder, or never wired here? Then restore.
 Priority: real broker value (customer-facing doc send). Confirm scope vs Q3 Comms-Overhaul.
+
+## SCREEN 4 — PROJECTS — swept 21 Jun
+Clean. All major forms open, no issues.
