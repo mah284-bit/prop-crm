@@ -115,3 +115,16 @@ Clean. List, Lead Detail, proposal flow (ProposalFormModal + UnitPickerMulti), a
 logging, lifecycle badges, assignment strip — all working.
 PARKED (not new): View-Proposal versioning + AI-picker promote-to-Opportunity = the
 Lead-Proposal AI thread already logged in master context doc. Surfaces in proposal-flow UX pass.
+
+## SCREEN 3 — OPPORTUNITIES / OPP DETAIL — swept 21 Jun
+All forms/tabs render and work (Deal Journey, Log Call/WhatsApp/Note/Send Proposal,
+Proposals(9), Coach, Next Steps, Financials, Negotiations, Payment Plan). Good.
+
+### Finding #7 — Share Pack shows placeholder, not the document picker (REGRESSION?)
+Opp Detail "Share Pack" opens the Property Pack card (type/beds/size/view/amenities render
+fine) BUT the action reads "Share / Attach Pack — coming Q3 2026" (coming-soon placeholder).
+Founder memory: this was BUILT and working — clicking used to list the brochure/floor-plan
+PDFs (the docs/"herodocs") ready to send to customer, with re-ask-if-not-sent flow.
+Likely lost/reverted in a refactor. Fix-pass step 1: git-history check — was the working
+picker present then overwritten by the placeholder, or never wired here? Then restore.
+Priority: real broker value (customer-facing doc send). Confirm scope vs Q3 Comms-Overhaul.
