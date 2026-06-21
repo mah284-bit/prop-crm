@@ -37,19 +37,17 @@ export function ProposalFormModal({ leadId, leadEmail, leadName, leadPhone, comp
   };
 
   return (
-    <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2000}} onClick={onClose}>
-      <div style={{background:'#fff',borderRadius:'12px',width:'90%',maxWidth:'500px',maxHeight:'85vh',overflowY:'auto',padding:'32px',position:'relative'}} onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} style={{position:'absolute',top:'12px',right:'12px',background:'none',border:'none',fontSize:'20px',cursor:'pointer'}}>✕</button>
-        {error && <div style={{padding:'10px',borderRadius:'6px',background:'#fee2e2',color:'#c53030',fontSize:'12px',marginBottom:'16px'}}>⚠️ {error}</div>}
+    <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2000,padding:'20px'}} onClick={onClose}>
+      <div style={{background:'#fff',borderRadius:'12px',width:'100%',maxWidth:'920px',maxHeight:'88vh',overflowY:'auto',position:'relative'}} onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} style={{position:'absolute',top:'12px',right:'12px',background:'none',border:'none',fontSize:'20px',cursor:'pointer',zIndex:10}}>✕</button>
+        {error && <div style={{margin:'16px',padding:'10px',borderRadius:'6px',background:'#fee2e2',color:'#c53030',fontSize:'12px'}}>⚠️ {error}</div>}
 
         {step === 2 && (
-          <div>
-            <UnitPickerMulti initialBedrooms={null} onSelect={handleUnitsSelected} onClose={onClose} units={allUnits} projects={allProjects} salePricing={salePricing} />
-          </div>
+          <UnitPickerMulti initialBedrooms={null} onSelect={handleUnitsSelected} onClose={onClose} units={allUnits} projects={allProjects} salePricing={salePricing} />
         )}
 
         {step === 3 && (
-          <div>
+          <div style={{padding:'32px'}}>
             <h2 style={{fontSize:'18px',fontWeight:'700',marginBottom:'16px'}}>Review</h2>
             <div style={{background:'#f8fafc',padding:'12px',borderRadius:'6px',marginBottom:'16px'}}>
               <p style={{fontSize:'12px',color:'#64748b',marginBottom:'8px'}}>{units.length} unit{units.length !== 1 ? 's' : ''} selected</p>
@@ -68,7 +66,7 @@ export function ProposalFormModal({ leadId, leadEmail, leadName, leadPhone, comp
         )}
 
         {step === 4 && (
-          <div style={{textAlign:'center',padding:'24px'}}>
+          <div style={{textAlign:'center',padding:'40px'}}>
             <div style={{fontSize:'48px',marginBottom:'12px'}}>✅</div>
             <p style={{fontSize:'12px',color:'#64748b',marginBottom:'16px'}}>Proposal sent to {leadEmail}</p>
             <button onClick={onClose} style={{width:'100%',padding:'10px',borderRadius:'6px',border:'none',background:'#0f2540',color:'#fff',cursor:'pointer',fontSize:'12px',fontWeight:'600'}}>Close</button>
