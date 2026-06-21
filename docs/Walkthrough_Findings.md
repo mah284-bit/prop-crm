@@ -188,3 +188,13 @@ Architecture_Multi_Tenant_Identity_Model.md). This is a MULTI-DAY foundational b
 every query + the Settings module — its own dedicated effort, POST dashboard-cleanup. Dashboard
 cleanup now is layout/redundancy only; data already role-seeded via can(...see_all) so the
 hierarchy slots in cleanly later.
+
+### Finding #12 — Filtered-list redundancy (DESIGN PRINCIPLE, app-wide)
+Founder insight. Inventory views — Available / Reserved / Sold — ALL open the SAME inventory
+list, just pre-filtered. So a stat card + a quick-action button + a Today-at-a-Glance line can
+all do the identical thing: open a list the broker can filter himself in 2 clicks. That is one
+feature in five costumes, not five features. PRINCIPLE: a dashboard/UI element earns its place
+only if it shows info you can't see otherwise, OR goes somewhere not trivially reachable. A
+button that dumps you on a list you'd filter anyway fails the test — the list's own filters ARE
+the feature. Apply app-wide during the content/UX pass (not just dashboard). Dashboard cleanup
+now removes the worst offenders; full principle audit is its own pass.
