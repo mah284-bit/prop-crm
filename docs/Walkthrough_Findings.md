@@ -213,3 +213,23 @@ modal. Candidate files referencing pack/doc logic: InventoryModule, opportunitie
 ProjectsModule, property/ProjectDetailPanel, property/UnitDetailPanel, PropPulse. Founder will
 point to the working one when he lands on it. Until then: this is net-new Phase 2.3 Send work
 (picker UI + send/delivery), foundation ready. NOT a quick restore. Park under Comms Overhaul.
+
+### Finding #11 — UPDATE (dug the schema): group model ALREADY SCAFFOLDED, not greenfield
+Code dig confirms the simple model is already the architecture:
+- `groups` TABLE EXISTS (id, name, branch_visibility, created_at) — queried in
+  src/components/settings/GroupBranchesSection.jsx. `branch_visibility` = the per-level
+  "what each level sees" config hook.
+- `companies` ALREADY HAS `group_id` (nullable). null = standalone/individual; code already
+  handles it: `if (!myco?.group_id)`. Individual = company-of-one (no separate type) — matches
+  the recommended simple model.
+- Relationship wired: group -> companies(branches) via
+  .from("companies").eq("group_id", myco.group_id). Branch = company.
+- GroupBranchesSection.jsx (settings) = group config UI exists.
+- GroupConsolidatedView component exists, rendered on group_view / l_group_view tabs
+  (currently super_admin only; sales group_view tab def is commented out at App.jsx:1366).
+REVISED SCOPE: #11 is FINISH + ENFORCE, not invent. Remaining work: (a) wire group-scope
+("OR same group_id for group-level users") into the ~43 company_id queries in App.jsx + 36
+components that currently filter company_id only; (b) fully consume branch_visibility for
+per-level need-to-know across dashboard + reports + screens; (c) decide super_admin endgame
+(setup/settings/first-user only, no CRM data — ties Multi_Tenant_Identity_Model.md). Bounded,
+built on real foundations. Founder's mental model was correct — dig vindicated it.
