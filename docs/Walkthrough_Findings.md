@@ -166,3 +166,12 @@ likely wins) to other brokers to test assignment. Data state, not a defect. Will
 clean data. No code action.
 
 ## WALKTHROUGH SWEEP COMPLETE — all 14 screens covered 21 Jun.
+
+### Finding #8 — UPDATE (scanned): NOT a duplicate/fossil — PARK for Settings consolidation
+Investigated. Users>Settings sub-view = OLD SettingsTab (src/components/SettingsTab.jsx, 38
+lines) managing app-level config: mode (sales/leasing/both), currency, country. It is LIVE
+and unique (this config has no other home — it superseded the deleted SetupWizard). The main
+Settings tab = SettingsPage (settings/, Agent Pools + Lead Routing) — a DIFFERENT surface.
+NOT interchangeable, NOT a delete. This is "scattered settings" = belongs in the Unified
+Settings consolidation (old-doc Phase 2.9: migrate Users/Companies/AI-Quotas/Branding/this
+app-config INTO one Settings module). PARKED until that consolidation pass. No action now.
