@@ -158,3 +158,50 @@ benefit, regression risk. Leave them.
 - 20 Jun 2026 (eve): Doc created. Product frame captured (PropPulse staging + forward
   intention; "20 devs is not a ceiling" correction; broker-scope boundary; AI-heavy
   positioning). Refactor-resume started: Op#1 properties-400 fixed. Teething backlog parked.
+
+---
+
+## SESSION ADDENDUM — 21 Jun 2026 (refactor-resume continued)
+
+### Completed this session
+- Op: properties-400 fix (2a7f56b)
+- Proposal flow polish: dead-code strip, Screen 3 removed, modal widened 500->920,
+  picker row rebuilt (minWidth:0 fix) + enriched with view/floor/specs (conditional)
+- Lead Detail header cards aligned
+- EXTRACTION: AIAssistant -> src/components/ai/AIAssistant.jsx (d21b129).
+  Brought buildContext + writeBrokerCreatedLog along (self-contained). App.jsx -366 lines.
+- EXTRACTION: PaymentPlanTemplates -> src/components/payments/PaymentPlanTemplates.jsx
+  (aff6228). Local Spinner + can() from lib/permissions. App.jsx -221 lines.
+- App.jsx now ~3,095 lines (was 6,708 pre-Day-40; ~3,681 at session start).
+
+### PARKED items logged this session (do NOT action without founder ask)
+1. **Payment Plan Templates (`pay_plans` tab)** — deliberately HIDDEN from main nav.
+   Developer-side responsibility, not broker MVP workflow. Component built + extracted +
+   verified rendering, but kept hidden ON PURPOSE. Revisit POST-MVP (after couple-of-brokers
+   pilot) ONLY if there's an ask. (Reason recorded so it isn't re-dug.)
+2. **Hidden tabs generally** — pay_plans and other route-map-only tabs were parked for a
+   SINGLE consolidated pass at the END of the build, deliberately, to avoid piecemeal
+   revisiting. Do not expose hidden tabs one-by-one during refactor.
+3. **Lead-Proposal AI (Phase-2 thread)** — Lead-level proposals are intentionally ephemeral
+   (PDF-only, NOT in DB) to avoid junk-data bloat from unverified/repeat buyers; the friction
+   is a deliberate signal to drop tyre-kickers. Proper DB sales cycle starts at Opportunity.
+   Scope when its turn comes: (a) version the Sent-Proposals list + timestamps + sort
+   latest->oldest [connects to logged "v4 for AGR-10-06" label bug]; (b) AI caution/provoke
+   broker to decide on repeat-asking leads; (c) when buyer turns serious, broker picks unit
+   PDF(s) and promotes to Opportunity, AI extracting since not in DB. Surfaces in proposal-flow
+   UX pass, post-refactor.
+4. **AI call-path unification** — 4 files call AI directly (App via AIAssistant now extracted,
+   AIBubble, InventoryModule, LeasingModule) instead of shared lib/aiInvoke.js. AIAssistant's
+   path is /api/ai (Vercel serverless, key in env) — architecturally fine, just not unified.
+   Dedicated cleanup pass later; Leasing ones are parked scope anyway.
+5. **writeBrokerCreatedLog duplicated** — defined in OpportunityDetail.jsx AND now copied into
+   AIAssistant.jsx. Should be lifted to a shared lib (used by 4 callers). Cleanup pass later.
+6. **Proposal-flow debris** — orphan files from Phase 2.7's 25+ failed attempts: ProposalHome,
+   ProposalSent, ProposalTest, ConfirmProposal, PropertyTypeSelector, QuickProposalsPanel_ENDING_FINAL.js.
+   Verify-then-delete pass later. Plus DiscountApprovals inline-vs-file twin (still unresolved).
+
+### Remaining big inline extraction candidates in App.jsx
+- SetupWizard (~admin-only, self-contained) — next likely target
+- UserManagement (check twin vs already-extracted UsersTab first)
+- Leasing modules (LeasingDashboard, LeasingChequeManager) — PARKED (leasing out of scope)
+- helpers (Av/Badge/Modal/Spinner/etc.) stay inline — not extraction targets
