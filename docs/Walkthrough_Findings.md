@@ -131,3 +131,38 @@ Priority: real broker value (customer-facing doc send). Confirm scope vs Q3 Comm
 
 ## SCREEN 4 — PROJECTS — swept 21 Jun
 Clean. All major forms open, no issues.
+
+## SCREENS 5–14 — swept 21 Jun (one-pass founder sweep)
+
+### Screen 5 — Inventory: CLEAN. No issues (list, filters, 50/50, Add Unit, unit rows).
+### Screen 6 — Reports: CLEAN. All report tabs present and open.
+  NOTE: Reports content is the SAME as what the Dashboard 4–5 stat cards drill into —
+  confirms Finding #6: cards route to these full reports instead of filtered slices.
+  Fix together in #4 wow-redesign.
+### Screen 7 — Companies: CLEAN. All major forms open.
+### Screen 8 — PropPulse: NOT TESTED (deliberate). Renders clean. AI Agent run costs $ and
+  can't exercise from localhost — defer live-site test. Visually one of the cleanest screens.
+### Screen 9 — AI Coach: NOT TESTED (deliberate, same reason — live-site only).
+### Screen 10 — Master Agreements: CLEAN. No issues.
+### Screen 11 — Settings (main tab): CLEAN. No issues.
+### Screen 12 — Lead Queue: CLEAN (good for now).
+### Screen 13 — Master Agreements / Users — see Finding #8 below.
+### Screen 14 — Customers: opens, all forms work, no issues. See Finding #9 (purpose recall).
+
+### Finding #8 — Users screen has TWO buttons incl. its own "Settings" (duplicate? old?)
+The Users screen contains a Settings button/sub-view, but Settings ALSO exists as a main
+top-level tab. Possible duplicate OR pre-dates the main Settings tab (legacy sub-view left
+behind). Same twin-pattern as UserManagement/ActivityLog. Fix-pass: check if Users>Settings
+is the old SettingsTab now superseded by the main Settings tab; reconcile or remove. Low risk.
+
+### Finding #9 — "Customers" tab purpose (founder recall pending, NOT a defect)
+New Customers tab (Phase 2.5 Lead Lifecycle — leads convert to customers on SPA/win, plus
+buyer_intent segmentation: investor/owner-occupier/etc). Opens fine, all forms work. Founder
+memory-recall pending on full intent; revisit when it comes up. No action needed now.
+
+### Finding #10 — Commission Outstanding shows empty (DATA issue, not code — OK)
+Shows nothing now. Cause: during earlier testing, founder reassigned many customers (and
+likely wins) to other brokers to test assignment. Data state, not a defect. Will resolve with
+clean data. No code action.
+
+## WALKTHROUGH SWEEP COMPLETE — all 14 screens covered 21 Jun.
