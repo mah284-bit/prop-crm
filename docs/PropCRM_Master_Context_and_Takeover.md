@@ -205,3 +205,45 @@ benefit, regression risk. Leave them.
 - UserManagement (check twin vs already-extracted UsersTab first)
 - Leasing modules (LeasingDashboard, LeasingChequeManager) — PARKED (leasing out of scope)
 - helpers (Av/Badge/Modal/Spinner/etc.) stay inline — not extraction targets
+
+---
+
+## SESSION ADDENDUM — 21 Jun 2026 (evening: walkthrough + dashboard redesign)
+
+### Code shipped
+- ActivityLog crash FIXED (7f15e78): live src/components/sales/ActivityLog.jsx missing imports
+  ACT_TYPES, ACT_META, fmtDate. Orphan twin src/components/ActivityLog.jsx deleted.
+- DASHBOARD REDESIGN (1f0e935 + 16376ea): premium-dense. Slim navy greeting strip replaced
+  tall gradient hero. Above-fold cockpit row (Opportunities-by-Stage + Quick Actions + Recent
+  Activity). Kept Team Performance (role-gated, no-blanks). Cut Today-at-a-Glance band,
+  Won/Lost row, Quick Actions 5->3. Nav fixed: Active/Won/stage -> "opportunities" (was
+  reports/leads). Stat-card padding trimmed to fit one screen. Floor tag: pre-dashboard-redesign.
+
+### Full 14-screen walkthrough COMPLETE — details in docs/Walkthrough_Findings.md (Findings #1-#12)
+- #1 ActivityLog crash FIXED. #2/#3/#6 dashboard nav FIXED in redesign. #4/#5 wow-redesign +
+  role-no-blanks DONE.
+- #7 PropertyPackModal share button = intentional Phase 2.3 seam, NOT regression. Foundation
+  (getPropertyPackAssets resolver) built; SEND UI unbuilt. Founder recalls a WORKING picker on
+  ANOTHER surface (to locate). Park under Comms Overhaul.
+- #8 Users>Settings = old SettingsTab (app-config mode/currency/country), park for Unified
+  Settings consolidation. #9 Customers = Phase 2.5 lifecycle (works). #10 Commission empty =
+  test-data only.
+
+### MAJOR ARCHITECTURE captured (founder directives)
+- #11 HIERARCHICAL RLS / need-to-know: simple model = everything is a Company (company_id is
+  the foundation); individual = company-of-one (no separate type); optional group_id above
+  (null = standalone). DIG FOUND IT'S ALREADY SCAFFOLDED: groups table exists (id, name,
+  branch_visibility), companies.group_id nullable + code handles null, GroupBranchesSection.jsx
+  (settings) + GroupConsolidatedView component (group_view tab, super_admin) exist. Scope =
+  FINISH + ENFORCE not greenfield: wire group-scope into ~43 company_id queries (App.jsx) + 36
+  components; consume branch_visibility for per-level need-to-know; super_admin endgame =
+  setup/settings/first-user only, no CRM data (ties Multi_Tenant_Identity_Model.md). Founder's
+  mental model verified correct by the dig.
+- #12 FILTERED-LIST REDUNDANCY (design principle, app-wide): multiple buttons/cards opening the
+  same pre-filtered list = one feature in many costumes. An element earns its place only if it
+  shows info not otherwise visible OR goes somewhere not trivially reachable. List filters ARE
+  the feature. Apply app-wide in content/UX pass.
+
+### Method reinforced
+"One cut, one visual check" when edits touch a live screen (build-clean != renders-right).
+Mutual accountability active — founder holds architect to it.
