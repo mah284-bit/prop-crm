@@ -198,3 +198,18 @@ only if it shows info you can't see otherwise, OR goes somewhere not trivially r
 button that dumps you on a list you'd filter anyway fails the test — the list's own filters ARE
 the feature. Apply app-wide during the content/UX pass (not just dashboard). Dashboard cleanup
 now removes the worst offenders; full principle audit is its own pass.
+
+### Finding #7 — UPDATE (investigated): PropertyPackModal share button is an INTENTIONAL seam, not a regression
+git history of src/components/property/PropertyPackModal.jsx shows only 2 commits, both
+BUILDING it (b64780d created, 8946e8e made draggable) — no commit where a working picker was
+replaced by the placeholder. The button is a deliberate disabled seam:
+  {/* SEAM: Phase 2.3 Send plugs in here (enable + asset picker) */}
+  disabled, title "Phase 2 — Communications Overhaul, Q3 2026".
+Foundation IS built: getPropertyPackAssets.js already resolves a typed assets[] list
+(brochures/floor-plans, tagged project/unit) expressly so a future picker shows them as
+checkboxes. DISPLAY layer uses it now; SEND layer left as seam.
+BUT founder recalls a WORKING share/picker SOMEWHERE — likely a DIFFERENT surface, not this
+modal. Candidate files referencing pack/doc logic: InventoryModule, opportunities/OpportunityDetail,
+ProjectsModule, property/ProjectDetailPanel, property/UnitDetailPanel, PropPulse. Founder will
+point to the working one when he lands on it. Until then: this is net-new Phase 2.3 Send work
+(picker UI + send/delivery), foundation ready. NOT a quick restore. Park under Comms Overhaul.
