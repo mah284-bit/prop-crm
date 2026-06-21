@@ -84,3 +84,21 @@ Sharpened direction:
 - PROMOTE stat cards + Quick Actions + Recent Activity into reclaimed space — broker's daily
   cockpit lands above the fold.
 - Principle: "wow" = dense, intentional, beautiful information design — NOT whitespace/billboard.
+
+### Finding #1 — RESOLVED (commit 7f15e78)
+ActivityLog crash fixed. Root cause: TWO ActivityLog files exist —
+LIVE = src/components/sales/ActivityLog.jsx (App.jsx imports this);
+ORPHAN = src/components/ActivityLog.jsx (88 lines, unimported, mixed-depth paths).
+Live file used ACT_TYPES, ACT_META, fmtDate but never imported them (lost in move).
+Added: import {ACT_TYPES, ACT_META} from constants + fmtDate to the utils import.
+TODO: delete orphan twin src/components/ActivityLog.jsx.
+
+### Finding #6 — Dashboard stat-card nav imprecise (folds into #4 redesign)
+Clicking the 5 dashboard stat cards:
+- Upcoming Tasks -> Activity Log (CORRECT, now works post-#1-fix)
+- Active Opps -> Pipeline Report (should be active opportunities list)
+- Won Value -> Pipeline Report (should be won deals)
+- Available Units -> Inventory listing (acceptable)
+- Reserved -> Inventory listing (should be reserved-filtered, or acceptable)
+Same family as #2 (stage bars) and #3 (won/lost) — all dashboard click-targets are
+roughly wired but not precise. Fix ALL together during the #4 wow-redesign, not piecemeal.
