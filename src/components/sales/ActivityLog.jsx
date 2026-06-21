@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
+import { ACT_TYPES, ACT_META } from "../../modules/constants.js";
 import { supabase } from "../../lib/supabase.js";
-import { can } from "../../modules/utils.js";
+import { can, fmtDate } from "../../modules/utils.js";
 
 function ActivityLog({leads,activities,setActivities,currentUser,showToast,initialFilter=null}){
   const[fType,setFType]=useState("All");
