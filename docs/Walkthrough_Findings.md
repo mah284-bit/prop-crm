@@ -109,3 +109,9 @@ Available + Reserved -> both land on full Inventory list (not filtered).
 Card promises a slice; click delivers the whole table. NOT presentable as-is.
 Reports + Inventory screens themselves render fine — defect is purely card->destination wiring.
 Fix ALL dashboard nav (#2,#3,#6) in ONE pass during #4 wow-redesign. Do NOT patch piecemeal.
+
+## SCREEN 2 — LEADS / LEAD DETAIL — swept 21 Jun
+Clean. List, Lead Detail, proposal flow (ProposalFormModal + UnitPickerMulti), activity
+logging, lifecycle badges, assignment strip — all working.
+PARKED (not new): View-Proposal versioning + AI-picker promote-to-Opportunity = the
+Lead-Proposal AI thread already logged in master context doc. Surfaces in proposal-flow UX pass.
