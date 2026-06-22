@@ -42,3 +42,14 @@ Every list item is delivered, by-design, or future-scope-not-yet-started.
   (single-tenant sales test doesn't exercise it).
 - Deal-flow functional run — reserved for an uninterrupted session (verifies depth, not breadth).
 - Documentation package — to be written LAST, against settled state.
+
+---
+## KNOWN LIMITATION (documented, for testers) — Browser Back/Forward
+Already captured in Feature_Backlog.md §7, Phase_2_Strategic_Roadmap_v1 (items 401/408),
+Sales_UX_Polish_Backlog, Sprint_Plan. Status:
+- IN-APP back buttons work fine.
+- The browser's native ← Back button does NOT navigate within the app (SPA limitation).
+- Planned fix: Phase 2 "Nav-History App-Wide" — single navigation stack syncing app-back +
+  browser-back via history.pushState + popstate listener.
+TESTER GUIDANCE: use the in-app back/navigation, not the browser Back button. This is a known
+limitation, not a bug — do not log it.
