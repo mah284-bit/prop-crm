@@ -1363,7 +1363,7 @@ const TABS=[
   {id:"commission_outstanding",label:"Commission Outstanding", icon:"💰", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
   // 21 May 2026: Hide Group View for Phase 1 demo (placeholder "Planned for MVP Phase")
   // Re-enable in Phase 2 when parent-subsidiary aggregation is built
-  // {id:"group_view", label:"Group View",    icon:"🏛", app:"sales",   roles:["super_admin"]},
+  {id:"group_view", label:"Group View",    icon:"🏛", app:"sales",   roles:["super_admin"]},
   // ── Leasing CRM ────────────────────────────────────────────────
   {id:"l_dashboard",label:"Dashboard",    icon:"⊞",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
   {id:"l_leads",    label:"Leads",        icon:"👤", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
@@ -2814,7 +2814,7 @@ export default function App(){
 }} activeCompanyId={activeCompanyId}/>}
           {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {tab==="permissions" &&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
-          {tab==="group_view"  &&<GroupConsolidatedView/>}
+          {tab==="group_view"  &&<GroupConsolidatedView currentUser={currentUser}/>}
 
           {/* ── Leasing CRM ───────────────────────────────────── */}
           {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={(t,filter)=>navigateToTab(t,filter)} followupAlerts={followupAlerts} key="l_dash"/>}
@@ -2837,7 +2837,7 @@ export default function App(){
           {tab==="l_users"     &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {tab==="l_permissions"&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
 
-          {tab==="l_group_view" &&<GroupConsolidatedView/>}
+          {tab==="l_group_view" &&<GroupConsolidatedView currentUser={currentUser}/>}
         </>)}
       </div>
     </div>
