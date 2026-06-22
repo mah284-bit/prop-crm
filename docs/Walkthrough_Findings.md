@@ -233,3 +233,28 @@ components that currently filter company_id only; (b) fully consume branch_visib
 per-level need-to-know across dashboard + reports + screens; (c) decide super_admin endgame
 (setup/settings/first-user only, no CRM data — ties Multi_Tenant_Identity_Model.md). Bounded,
 built on real foundations. Founder's mental model was correct — dig vindicated it.
+
+### Finding #11 — piece 3 (RLS enforcement) — FOUNDATION DONE, sequencing decided (22 Jun)
+SHIPPED this session:
+- getVisibleCompanyIds primitive (src/components/getVisibleCompanyIds.js, commit edb50ea).
+  Capability-driven (see_all, not hardcoded roles), honors branch_visibility
+  (isolated / group_admin_only / shared), fail-safe to [own]. Console-proven: returns
+  correct branch id array for super_admin on Al Mansoori.
+- GroupConsolidatedView built + live (commit cafaf67) — piece 2 done.
+
+KEY DISCOVERY (central load, App.jsx ~2500): a client-side `filterByCo` security filter
+(`arr.filter(x=>x.company_id===cid)`) hard-pins ALL loaded data to ONE company AFTER the
+queries run. Group-scoping requires changing BOTH the queries (.eq->.in visibleIds) AND
+filterByCo (===cid -> visibleIds.includes(x.company_id)) IN LOCKSTEP — change only queries
+and filterByCo silently undoes it. This is why piece 3 must be done as a coherent unit, not
+piecemeal.
+
+DECISION (founder + architect aligned): Do NOT convert queries piecemeal now. With only a
+single-branch group, every .in([one_id]) behaves identically to .eq — so no conversion can be
+MEANINGFULLY tested yet. Correct sequence:
+  1. BUILD group test data first (2nd branch under Al Mansoori group + its own opps/leads/agents)
+  2. THEN convert queries (central load filterByCo + ~43 company_id sites) against real data
+  3. THEN real end-to-end multi-branch test (group user sees BOTH branches; branch user sees own)
+Rationale: "no half-hearted work which spoils" at architecture level — don't ship scoping
+changes that can't be verified. Build ground truth, enforce against it, test for real.
+Remaining piece-3 work = its own focused fresh session.
