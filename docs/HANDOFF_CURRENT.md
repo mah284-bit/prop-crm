@@ -53,3 +53,14 @@ compute from asking (net = asking when discount is 0). Plan/DLD blanks are legit
 yet" for a fresh draft V1 — only Net Price is the real gap.
 FIX (next session, small): stamp discount_pct:0 + discounted_price:v1price on the V1 insert so Net Price
 shows asking. Status stays draft. Test on prod, commit.
+
+## RESOLVED 23 Jun PM — V1 carry-over net price now renders
+Root cause was TWO things: (1) proposals table has NO discounted_price column (schema drift) and
+(2) the Opp table reads ONLY structured_data (sd.total_value || proposal_units[0].discounted_price),
+never top-level fields. Fix (commit 6a0a930): V1 carry-over now writes total_value + discount_pct +
+proposal_units[] into structured_data, matching the builder's shape. VERIFIED on prod with a FRESH
+promote (AGR-07-03): Net Price AED 1,670,660, Discount 0%, Commission 5%. Plan/DLD stay blank by
+design (broker sets when pricing). Old pre-fix rows (e.g. AGR-11-07) still show — and can be ignored
+or cleaned in the orphan-cleanup pass.
+LESSON: when a display value is missing, read the actual DB row + the display code's field path
+BEFORE patching — three blind patches were avoidable by checking schema first.
