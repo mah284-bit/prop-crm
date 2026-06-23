@@ -9,6 +9,7 @@ export default function QuickProposalsPanel({
   leadPhone,
   company,
   currentUser,
+  onPromote,
 }) {
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [showProposalModal, setShowProposalModal] = useState(false);
@@ -25,6 +26,7 @@ export default function QuickProposalsPanel({
         <ViewProposalsDialog
           leadId={leadId}
           onClose={() => setShowViewDialog(false)}
+          onPromote={onPromote ? (proposal) => { setShowViewDialog(false); onPromote(proposal); } : undefined}
         />
       )}
 

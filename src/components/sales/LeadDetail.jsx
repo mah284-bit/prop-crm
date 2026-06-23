@@ -42,6 +42,54 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
   const canEdit = can(currentUser.role,"write");
   const canDel  = can(currentUser.role,"delete_leads");
 
+  // ── Promote proposal -> Opportunity (AI-extract) ───────────────────
+  const [promoting, setPromoting] = useState(false);
+  const handlePromoteProposal = async (proposal) => {
+    if (!proposal?.pdf_url) { showToast?.("This proposal has no PDF to read.", "error"); return; }
+    setPromoting(true);
+    try {
+      const res = await fetch("/api/extract-proposal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentUrl: proposal.pdf_url }),
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        showToast?.(`Could not read proposal: ${e.error || res.status}`, "error");
+        setPromoting(false); return;
+      }
+      const ext = await res.json();
+      const ref = (ext.unit_ref || "").trim().toUpperCase();
+      const unit = ref ? (units || []).find(u => (u.unit_ref || "").trim().toUpperCase() === ref) : null;
+      if (!unit) {
+        showToast?.(ref
+          ? `Unit "${ext.unit_ref}" from the proposal isn't in inventory — please pick the unit.`
+          : "Couldn't read a unit reference — please pick the unit.", "warning");
+        setShowCanonicalOppDialog(true);
+        setPromoting(false); return;
+      }
+      if (unit.status === "Reserved" || unit.status === "Sold") {
+        const proceed = window.confirm(
+          `⚠️ Unit ${unit.unit_ref} was in this proposal but is now ${unit.status}.\n\n` +
+          `Promote anyway? You can still create the Opportunity, but verify availability first.`
+        );
+        if (!proceed) { setPromoting(false); return; }
+      }
+      const sp = (salePricing || []).find(s => s.unit_id === unit.id);
+      const price = sp?.asking_price || 0;
+      if (!price || price <= 0) {
+        showToast?.(`⚠️ Unit ${unit.unit_ref} has no price set. Get pricing from the developer; the Opportunity will be created without a price.`, "warning");
+      }
+      setPrefilledUnit({ unit_id: unit.id, unit_ref: unit.unit_ref, final_price: price || null });
+      setShowCanonicalOppDialog(true);
+    } catch (err) {
+      console.error("promote proposal failed:", err);
+      showToast?.("Promote failed — please try again.", "error");
+    } finally {
+      setPromoting(false);
+    }
+  };
+
 
   // ── Browser history sync ────────────────────────────────────────
   // Push state changes into browser history so the browser back button
@@ -500,7 +548,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
         </div>
         <div style={{display:"flex", flexDirection:"row", alignItems:"center", flexWrap:"wrap", padding:"12px 16px", background:"#fff", border:"1px solid #E5E9EF", borderRadius:12, gap:16}}>
       {/* Quick Proposals Panel — Phase 2.3 */}
-      <QuickProposalsPanel leadId={selLead.id} leadEmail={selLead.email} leadName={selLead.name} leadPhone={selLead.phone} company={currentUser.company || {}} currentUser={currentUser} onConvertUnit={(unitData) => { setPrefilledUnit(unitData); setShowCanonicalOppDialog(true); }} />
+      <QuickProposalsPanel leadId={selLead.id} leadEmail={selLead.email} leadName={selLead.name} leadPhone={selLead.phone} company={currentUser.company || {}} currentUser={currentUser} onConvertUnit={(unitData) => { setPrefilledUnit(unitData); setShowCanonicalOppDialog(true); }} onPromote={handlePromoteProposal} />
         </div>
       </div>
 

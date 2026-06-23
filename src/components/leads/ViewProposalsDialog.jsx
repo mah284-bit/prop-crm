@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 
-export function ViewProposalsDialog({ leadId, onClose }) {
+export function ViewProposalsDialog({ leadId, onClose, onPromote }) {
   const [proposals, setProposals] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -137,6 +137,26 @@ export function ViewProposalsDialog({ leadId, onClose }) {
                   </div>
                 </div>
 
+                {proposal.pdf_url && onPromote && (
+                  <button
+                    onClick={() => onPromote(proposal)}
+                    style={{
+                      padding: '6px 10px',
+                      borderRadius: 4,
+                      border: 'none',
+                      background: '#C9A84C',
+                      color: '#0F2540',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      marginLeft: 8,
+                    }}
+                    title="AI reads this proposal and pre-fills a new Opportunity"
+                  >
+                    ⇪ Promote to Opp
+                  </button>
+                )}
                 {proposal.pdf_url && (
                   <button
                     onClick={() => handleDownloadPDF(proposal.pdf_url)}
