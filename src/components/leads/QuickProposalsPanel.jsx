@@ -20,10 +20,10 @@ export default function QuickProposalsPanel({
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
       <h3 style={{ margin: 0, fontSize: '14px', fontWeight: '700', whiteSpace: 'nowrap', color: '#0F2540' }}>Quick Quote</h3>
       <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto' }}>
-        <button onClick={() => setShowViewDialog(true)} style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #0F2540', background: '#fff', color: '#0F2540', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>📋 View Proposals</button>
+        <button onClick={() => setShowViewDialog(true)} style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #0F2540', background: '#fff', color: '#0F2540', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>📋 View Quotes</button>
         {leadHasOpp ? (
           <div onClick={onOpenOpp} title="Open the Opportunity to send proposals" style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #C9A84C', background: '#FFF9EC', color: '#8A6D1F', fontSize: '11px', fontWeight: '600', cursor: onOpenOpp ? 'pointer' : 'default', whiteSpace: 'nowrap', maxWidth: '420px', lineHeight: 1.35 }}>
-            🔒 Locked — quotes are sent from the lead; priced proposals are sent from the Opportunity.{onOpenOpp ? ' → Open Opportunity' : ''}
+            🔒 Priced proposals are sent from the Opportunity.{onOpenOpp ? ' → Open Opportunity' : ''}
           </div>
         ) : (
           <button onClick={() => setShowProposalModal(true)} style={{ padding: '8px 14px', borderRadius: '6px', border: 'none', background: '#0F2540', color: '#fff', fontSize: '11px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}>📤 Send Quote</button>
