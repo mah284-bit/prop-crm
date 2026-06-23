@@ -42,3 +42,14 @@ Last updated: 23 June 2026. Branch: main. Read this FIRST on any new session.
   stale bundle). Cost us a phantom "AED 0 still showing" chase this session.
 - Golden tags: refactor-and-dashboard-day41, group-view-and-rls-foundation-day42,
   lead-quote-and-opp-gate-day43.
+
+## BACKLOG ADD (logged 23 Jun, end of session) — V1 carry-over net price shows "—"
+On a promoted Quote, the Opp Proposals row shows V1 with Discount 0% but Net Price / Plan / DLD as "—".
+ROOT CAUSE (confirmed in LeadDetail.jsx ~903-922): the V1 carry-over insert writes asking_price +
+status:"draft" but does NOT write discount_pct or discounted_price. The Opp table reads
+discounted_price for Net Price, so it renders blank.
+FOUNDER RULE: 0% discount is VALID (means full price) and must never blank the line — Net Price should
+compute from asking (net = asking when discount is 0). Plan/DLD blanks are legitimately "not entered
+yet" for a fresh draft V1 — only Net Price is the real gap.
+FIX (next session, small): stamp discount_pct:0 + discounted_price:v1price on the V1 insert so Net Price
+shows asking. Status stays draft. Test on prod, commit.
