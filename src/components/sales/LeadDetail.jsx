@@ -922,6 +922,17 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
                         source: "promoted_from_lead_proposal",
                         extracted: stash.extracted || {},
                         asking_price: v1price,
+                        // 23 Jun 2026: write the SAME shape the builder uses so the Opp table
+                        // renders Net Price/Discount for V1 (table reads structured_data, not top-level).
+                        total_value: v1price,
+                        discount_pct: 0,
+                        discounted_price: v1price,
+                        proposal_units: [{
+                          unit_id: stash.unit_id,
+                          asking_price: v1price,
+                          discount_pct: 0,
+                          discounted_price: v1price,
+                        }],
                       },
                     });
                     if (v1err) {
