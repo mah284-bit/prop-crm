@@ -30,3 +30,6 @@ in the Opp. Naming reinforces the flow: quote at the door, proposal once they ar
 ## RULE FOR FUTURE SESSIONS / SUPPORT
 If a user says "quote" they mean a LEAD-stage proposal record. It is stored in the proposals
 table like any other. Do not build a separate quotes table. This divergence is by design.
+
+## POST-TESTER (Path B) — make code consistent
+UI-label divergence is temporary. Post-tester: add a stage/is_quote signal so code+data agree with the UI (lead record = quote, opp record = proposal). Removes the permanent 'UI says Quote, code says proposal' trap.
