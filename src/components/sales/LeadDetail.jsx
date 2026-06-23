@@ -9,6 +9,7 @@ import LeadPeopleSection from "../LeadPeopleSection.jsx";
 import PropertyPackModal from "../property/PropertyPackModal.jsx";
 import RemindersBell from "../RemindersBell.jsx";
 import LeadCreationFormV2 from "../LeadCreationFormV2.jsx";
+import { insertProposalRecord } from "../../lib/createProposal";
 
 function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogActivityModal,leads,setLeads,opps:globalOppsFromParent=[],setOpps:setGlobalOpps=()=>{},properties,activities,setActivities,discounts,setDiscounts,currentUser,users,showToast,initialFilter=null,onNavigateToOpp=null,refCountries=[],refRules={}}){
   const [search,   setSearch]   = useState("");
@@ -44,6 +45,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
 
   // ── Promote proposal -> Opportunity (AI-extract) ───────────────────
   const [promoting, setPromoting] = useState(false);
+  const [promotedProposal, setPromotedProposal] = useState(null); // V1 carry-over stash
   const handlePromoteProposal = async (proposal) => {
     if (!proposal?.pdf_url) { showToast?.("This proposal has no PDF to read.", "error"); return; }
     setPromoting(true);
@@ -80,6 +82,12 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
       if (!price || price <= 0) {
         showToast?.(`⚠️ Unit ${unit.unit_ref} has no price set. Get pricing from the developer; the Opportunity will be created without a price.`, "warning");
       }
+      setPromotedProposal({
+        pdf_url: proposal.pdf_url,
+        extracted: ext,
+        unit_id: unit.id,
+        asking_price: price || 0,
+      });
       setPrefilledUnit({ unit_id: unit.id, unit_ref: unit.unit_ref, final_price: price || null });
       setShowCanonicalOppDialog(true);
     } catch (err) {
@@ -885,6 +893,46 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
             setOpps(prev => prev.find(o=>o.id===newOpp.id) ? prev : [newOpp, ...prev]);
             if (setGlobalOpps) setGlobalOpps(prev => prev.find(o=>o.id===newOpp.id) ? prev : [newOpp, ...prev]);
             setShowCanonicalOppDialog(false);
+            // 23 Jun 2026 STEP 3 — carry the lead proposal into the new Opp as V1 (draft).
+            // Carries the EXISTING pdf_url (no regeneration). Zero-price guard. V1 failure never blocks the Opp.
+            if (promotedProposal) {
+              const stash = promotedProposal;
+              setPromotedProposal(null);
+              const v1price = Number(stash.asking_price || 0);
+              if (!v1price || v1price <= 0) {
+                showToast?.("Opportunity created. Lead proposal NOT carried as V1 — unit has no price. Set price, then build the proposal from the Opp.", "warning");
+              } else {
+                (async () => {
+                  try {
+                    const { error: v1err } = await insertProposalRecord({
+                      opportunity_id: newOpp.id,
+                      lead_id: selLead.id,
+                      company_id: currentUser.company_id,
+                      version: 1,
+                      unit_id: stash.unit_id,
+                      asking_price: v1price,
+                      status: "draft",
+                      pdf_url: stash.pdf_url || null,
+                      created_by: currentUser.id,
+                      structured_data: {
+                        source: "promoted_from_lead_proposal",
+                        extracted: stash.extracted || {},
+                        asking_price: v1price,
+                      },
+                    });
+                    if (v1err) {
+                      console.error("V1 carry-over insert failed:", v1err);
+                      showToast?.("Opportunity created, but carrying the proposal as V1 failed — you can rebuild it from the Opp.", "warning");
+                    } else {
+                      showToast?.("Opportunity created. Lead proposal carried in as V1 (draft) — open the Opp to price & send it.", "success");
+                    }
+                  } catch (e) {
+                    console.error("V1 carry-over threw:", e);
+                    showToast?.("Opportunity created, but carrying the proposal as V1 failed — you can rebuild it from the Opp.", "warning");
+                  }
+                })();
+              }
+            }
           }}
         />
       )}

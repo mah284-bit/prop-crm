@@ -10,6 +10,7 @@ import { aiInvoke } from '../../lib/aiInvoke.js';
 import { urlToBase64 } from "../../lib/imageToBase64.js";
 import { generateProposalPDF } from "../../lib/generateProposalPDF.js";
 import { uploadProposalPDF } from "../../lib/uploadProposalPDF.js";
+import { insertProposalRecord } from "../../lib/createProposal";
 
 function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, currentUser, lastProposal, onClose, onSaved, showToast }) {
   /* draggable-sendproposal */ const { ref: dragRef, posStyle, handleProps } = useDraggable({ open: true });
@@ -536,7 +537,10 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
 
       // 1. Insert proposal — defensive against missing schema columns
       const tryInsert = async (payload) => {
-        return await supabase.from("proposals").insert(payload).select().single();
+        // 23 Jun 2026: route the WRITE through the shared helper so the proposals
+        // INSERT + schema-drift field-routing live in ONE place (src/lib/createProposal.js).
+        // Builder keeps its own PDF/branding/stage-gate/fallback flow untouched.
+        return await insertProposalRecord(payload);
       };
 
       // Issue 3 polish 11 May 2026: preemptively route fields not in proposals schema
