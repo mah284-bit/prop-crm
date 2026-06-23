@@ -913,6 +913,8 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
                       version: 1,
                       unit_id: stash.unit_id,
                       asking_price: v1price,
+                      discount_pct: 0,
+                      discounted_price: v1price,
                       status: "draft",
                       pdf_url: stash.pdf_url || null,
                       created_by: currentUser.id,
