@@ -122,7 +122,7 @@ Please analyze the attached document and return the JSON validation result.`;
 
     // Build Claude API request with vision
     const claudePayload = {
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-5",
       max_tokens: 1500,
       system: systemPrompt,
       messages: [
@@ -196,7 +196,7 @@ Please analyze the attached document and return the JSON validation result.`;
 
     // Add metadata
     parsed.validated_at = new Date().toISOString();
-    parsed.model = "claude-sonnet-4-20250514";
+    parsed.model = "claude-sonnet-4-5";
 
     return res.status(200).json(parsed);
   } catch (err) {

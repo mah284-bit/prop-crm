@@ -75,7 +75,7 @@ Respond ONLY with the JSON object. No preamble, no explanation outside JSON.`;
     const userPrompt = `Please read the attached proposal document and return the JSON extraction result.`;
 
     const claudePayload = {
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-5",
       max_tokens: 1000,
       system: systemPrompt,
       messages: [
@@ -138,7 +138,7 @@ Respond ONLY with the JSON object. No preamble, no explanation outside JSON.`;
       parsed.price = Number.isFinite(n) && n > 0 ? n : null;
     }
     parsed.extracted_at = new Date().toISOString();
-    parsed.model = "claude-sonnet-4-20250514";
+    parsed.model = "claude-sonnet-4-5";
 
     return res.status(200).json(parsed);
   } catch (err) {
