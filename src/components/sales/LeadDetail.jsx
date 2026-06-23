@@ -457,7 +457,9 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
         </div>
         <div style={{display:"flex",gap:6}}>
           {canEdit&&<button onClick={()=>{setEditLeadForV2(selLead);setEditFormVersion(v=>v+1);setShowAddV2(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
-          {canEdit&&<button onClick={()=>setShowCanonicalOppDialog(true)} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Opportunity</button>}
+          {canEdit&&(leadOpps.length>0
+            ? <span title="This buyer is already an active opportunity. Add further units from the Opportunity side." style={{padding:"6px 14px",borderRadius:8,border:"1px solid #C9A84C",background:"#FFF9EC",color:"#8A6D1F",fontSize:12,fontWeight:600,whiteSpace:"nowrap"}}>🎯 Active opportunity — add units from the Opp</span>
+            : <button onClick={()=>setShowCanonicalOppDialog(true)} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Opportunity</button>)}
         </div>
       </div>
 

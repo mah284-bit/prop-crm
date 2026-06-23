@@ -64,7 +64,13 @@ export default function UnitPickerMulti({
   };
 
   const handleDone = () => {
-    const selectedObjects = selectedUnitIds.map(id => units.find(u => u.id === id)).filter(Boolean);
+    const selectedObjects = selectedUnitIds
+      .map(id => units.find(u => u.id === id))
+      .filter(Boolean)
+      // 23 Jun 2026 price-integrity fix: stamp the real price from pricingMap onto each
+      // selected unit so downstream (review, units_quoted, V1 carry-over) sees the true
+      // value, not AED 0. Price lives in unit_sale_pricing, not on the unit row.
+      .map(u => ({ ...u, price: pricingMap[u.id] || 0 }));
     if (onSelect) onSelect(selectedObjects);
   };
 
