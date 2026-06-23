@@ -85,7 +85,7 @@ export function ViewProposalsDialog({ leadId, onClose, onPromote }) {
             📋 Sent Proposals
           </h2>
           <p style={{ margin: 0, color: '#64748B', fontSize: 14 }}>
-            {proposals.length} proposal{proposals.length !== 1 ? 's' : ''} sent
+            {proposals.length} quote{proposals.length !== 1 ? 's' : ''} sent
           </p>
         </div>
 
@@ -95,7 +95,7 @@ export function ViewProposalsDialog({ leadId, onClose, onPromote }) {
           </div>
         ) : proposals.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '20px', color: '#94A3B8' }}>
-            No proposals sent yet
+            No quotes sent yet
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
