@@ -14,7 +14,7 @@ get the price from the developer and add it. Until then, the unit price is N/A /
 ## Three parts
 
 ### Part 1 — Send-time guard (proposal send, BOTH Lead and Opp)
-When a broker tries to SEND a proposal with no price / zero price:
+When a broker tries to SEND a proposal with no price OR no payment plan (either missing = incomplete):
 - NOW: HARD WARNING — clear message "This proposal has no price. A proposal without a price is
   incomplete. Get the price from the developer first." Broker may override (proceed) for now.
 - LATER (post broker-testing): convert to HARD BLOCK (cannot send). Small tweak when ready.
