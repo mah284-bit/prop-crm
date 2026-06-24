@@ -54,3 +54,23 @@ financial engine to enforce or compute. Therefore presets + Custom free-text is 
 correct for a broker tool — NOT a limitation, NOT a Phase-2 rebuild. Expectation captured so the
 reasoning is never re-litigated: if PropCRM ever expands to developer-side / collections (PropOS
 vision), THEN payment-plan modeling becomes real scope. Until then, current design is intentional.
+
+## CAPABILITY (logged 24 Jun, revisit POST-WEEKEND) — Lead Intelligence & Stale-Lead handling
+FOUNDER FRAMING: not a settings number — a lead-lifecycle intelligence problem. Leads arrive from
+many channels (events, webinars, social, print, portals); the company must triage + assign, brokers
+must work them, and AI should HELP brokers act on the right lead at the right time. There is NO single
+method to solve stale leads — intent/channel/behaviour all vary. Architecture posture: SUPPORT, not
+SOLVE. Surface + nudge + ease assignment; the human broker still decides. Do not over-engineer a
+false silver bullet.
+FOUNDATIONS ALREADY BUILT (enrich, don't rebuild): Lead Queue, Agent Pools, round-robin assignment,
+stale detection, AI Coach.
+SCOPE TO DESIGN POST-WEEKEND:
+  - Lead SOURCE/channel field + intake tagging
+  - Company-level triage + assignment rules (beyond round-robin)
+  - "Leads needing attention" intelligence view
+  - AI broker nudges (gone cold / high-intent / matches inventory / best next action)
+ROUGH ESTIMATE (planning, not promise): mechanical layer ~3-5 days; AI-intelligence layer ~2-4 days;
+~1-2 weeks total as one push. Handleable — not rocket science.
+KNOWN SMALL BUG (fix in build phase, NOT now): Settings exposes a configurable stale threshold, but
+App.jsx (~2551) + Dashboard.jsx (~38/86) HARD-CODE >=7 days and ignore the configured value. UI says
+configurable, code ignores it. Concrete correctness gap to fix when this capability is built.
