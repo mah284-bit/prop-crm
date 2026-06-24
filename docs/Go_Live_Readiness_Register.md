@@ -121,3 +121,10 @@ BOUNDARY OF RESPONSIBILITY (founder insight — GIGO): software CANNOT prevent a
   (auto-resolve), (2) force a conscious checkpoint (invoice gate), (3) leave an audit trail (traceable,
   accountable). Beyond that, accuracy is a HUMAN/finance-process responsibility, not a software one.
   STOP adding controls past the audit trail — diminishing returns + friction. This is the right ceiling.
+
+## CLARIFICATION (24 Jun) — Commission hiding = REMOVE, never mask
+Considered masking commission with ***** (cheaper UI change). REJECTED: a visual mask only hides the
+rendered value — the real number still arrives in React state, the API/network response, and props,
+fully visible via browser DevTools/Network tab. For confidential margin data that is FALSE security.
+CORRECT METHOD (build-phase): filter commission server/query-side by capability so a broker's session
+NEVER RECEIVES the value. Nothing sent = nothing to leak. Do NOT mask. Remove at the data layer.
