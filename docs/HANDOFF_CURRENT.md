@@ -65,3 +65,27 @@ design (broker sets when pricing). Old pre-fix rows (e.g. AGR-11-07) still show 
 or cleaned in the orphan-cleanup pass.
 LESSON: when a display value is missing, read the actual DB row + the display code's field path
 BEFORE patching — three blind patches were avoidable by checking schema first.
+
+
+## 24 JUN — HORIZON-2 DESIGN DAY (capture session, NO build — tester state untouched)
+Tester cleanup done (4 test opps/proposals removed; orphaned PDFs deferred to reset routine).
+Spent the day capturing Go-Live design into docs/Go_Live_Readiness_Register.md — now a real spec
+library. Locked this session:
+- SETTINGS (complete): all company-level/admin-locked/group-aware; DLD platform-fixed; payment terms
+  editable-presets correct scope; branding (logo/AI name/colours); proposal validity company default;
+  ROLES = fixed 7 + configurable capabilities (custom roles parked, revisit on real client pull).
+- COMMISSION (locked spec): resolution hierarchy (unit/deal override -> project -> agreement ->
+  developer standard -> company fallback); visibility = capability (broker NEVER sees/enters); invoice
+  draft = mandatory anti-miss confirmation gate; audit trail; GIGO boundary; hide = REMOVE at data
+  layer NOT mask (masks leak via DevTools).
+- RESET ROUTINE (schema+FK verified): WIPE/PRESERVE/GLOBAL/DROP buckets for all 60 tables. Pricing
+  (unit_sale/lease_pricing) = tenant selling-inventory -> WIPE (re-import from PropPulse). LANDMINES
+  CAUGHT: pp_commissions + pp_launch_events + pp_agent_jobs are GLOBAL (FK-only to projects/devs) -
+  never wipe. communications/followups/pp_documents = wipe-via-parent-join. renewal_config verify-at-
+  build. BUILD + REHEARSE post-tester, never executed yet.
+- METHODS captured: RLS audit, backup/restore+monitoring, multi-tenant identity-split pointer,
+  PropPulse data-doc intent (needs live refresh run), Horizon-3 deliberately thin (real figures only
+  post-rehearsal).
+BUILD-PHASE TODO surfaced (post-tester): remove commission_pct from broker CreateOpportunityDialog +
+gate display; honor configurable stale threshold (code hard-codes >=7); the reset build itself.
+Latest commit: 5935284.
