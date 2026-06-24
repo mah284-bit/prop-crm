@@ -169,3 +169,29 @@ never touch PropPulse global source. Schema-verified against live table list (60
   - Must be parameterised by company_id, idempotent, DRY-RUN tested on test tenant FIRST.
   - Confirm pp_commissions / pp_sales_closures / pp_documents / pp_launch_events are tenant-scoped
     (have company_id) before including — DO NOT assume.
+
+## RESET SPEC — FK verification (24 Jun) — corrections + landmines caught
+Verified company_id presence + FK links for all uncertain tables. Two GLOBAL tables were wrongly
+near the WIPE bucket — caught before any build:
+
+WIPE directly (confirmed company_id): discount_requests, lead_assignment_log, maintenance,
+  pp_commission_invoices, pp_sales_closures, pp_watchlist, reservations, stage_history, tenants
+  (+ the earlier company_id-scoped leads/opps/proposals/etc.)
+
+WIPE via PARENT JOIN (tenant data, NO company_id — delete via parent, not blanket):
+  - communications  -> FK lead_id -> leads      (delete where lead_id in tenant's leads)
+  - followups       -> FK lead_id -> leads      (same)
+  - pp_documents    -> MIXED FKs (lead_id, opportunity_id = tenant; unit_id, project_id = global)
+    *** SURGICAL: delete ONLY rows where lead_id/opportunity_id belongs to tenant. NEVER delete
+    project/unit-attached rows (those are global PropPulse docs). ***
+
+🛑 NEVER WIPE — GLOBAL (FK links ONLY to projects/developers/agreements — caught as landmines):
+  - pp_commissions   -> projects + pp_developers + pp_master_agreements ONLY = GLOBAL reference data
+  - pp_launch_events -> projects + pp_developers ONLY = GLOBAL PropPulse launch data
+  - pp_agent_jobs    -> (PropPulse job log, no company_id) = GLOBAL
+  These were tentatively near WIPE; FK check proves global. Wiping them = destroying shared data.
+
+⚠️ VERIFY AT BUILD: renewal_config (no FK surfaced; leasing config — read before classifying).
+
+LESSON REINFORCED: company_id absence does NOT mean "global" — could be parent-scoped (tenant) OR
+truly global. ONLY the FK links disambiguate. Never classify a reset table by name or assumption.
