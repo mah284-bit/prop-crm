@@ -93,3 +93,11 @@ GOVERNANCE PRINCIPLE (applies to MANY settings, capture once):
   individual broker is still part of a company and must operate under company rules, not personal
   convenience. ("Company type" handling for solo brokers vs multi-agent orgs = open question, note
   for Settings design.)
+
+## DECISION FINAL (24 Jun) — ALL settings are COMPANY-LEVEL. Full stop.
+Resolved (supersedes prior over-analysis of broker types). Every PropCRM user belongs to a company_id
+— a solo broker is simply a company-of-one (own one-person tenant; "no company" onboards as their own
+company record). So there is NO separate individual-broker settings concept. ALL settings live at the
+COMPANY level, editable by ADMIN or MANAGER. GROUP-LEVEL must be respected where a brokerage has
+branches (multi-branch group sees/sets per group rules — see getVisibleCompanyIds + group model).
+No special-casing broker types. The multi-tenant model already absorbs the complexity. Keep it simple.
