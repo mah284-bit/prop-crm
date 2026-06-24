@@ -128,3 +128,44 @@ rendered value — the real number still arrives in React state, the API/network
 fully visible via browser DevTools/Network tab. For confidential margin data that is FALSE security.
 CORRECT METHOD (build-phase): filter commission server/query-side by capability so a broker's session
 NEVER RECEIVES the value. Nothing sent = nothing to leak. Do NOT mask. Remove at the data layer.
+
+## RESET ROUTINE — schema-verified bucket spec (designed 24 Jun; BUILD/REHEARSE post-tester)
+Reset a tenant to clean slate: wipe their transactional + imported-inventory data, preserve structure,
+never touch PropPulse global source. Schema-verified against live table list (60 tables, 24 Jun).
+
+🗑️ WIPE (tenant data — scoped by company_id; dependency order: children before parents):
+  Leads cluster: lead_phones, lead_person_contacts, lead_persons, lead_units, leads, lead_assignment_log
+  Deal cluster:  proposals, activities, reminders, followups, communications, discount_requests,
+                 stage_history, reservations, opportunities
+  Assignment:    agent_pool_members, agent_pools
+  Sales:         sales_payments, sales_contracts
+  Lease:         lease_cheques, lease_payments, rent_payments, maintenance, renewal_config,
+                 lease_contracts, leases, lease_opportunities, tenants
+  Commission:    pp_commission_invoices, pp_commissions, pp_sales_closures
+  PP-tenant:     pp_watchlist, pp_agent_jobs, pp_documents, pp_launch_events
+  INVENTORY (tenant's imported "selling inventory" — has company_id, re-imported from PropPulse):
+                 unit_sale_pricing, unit_lease_pricing
+                 (NOTE: price VALUE is developer-sourced; ROW is tenant copy → wipe is safe, source
+                  stays in PropPulse; fresh tenant re-imports.)
+
+🔒 PRESERVE (structure/config — survives reset):
+  companies, profiles, groups, role_capabilities, permission_sets, payment_plan_templates,
+  pp_master_agreements, reference_buyer_type_rules, reference_countries
+
+🌍 GLOBAL — NEVER TOUCH (PropPulse cross-tenant source of truth):
+  projects, project_units, properties, pp_developers, pp_facilities, pp_payment_plans, pb_projects
+
+🧹 DROP ENTIRELY (leftover manual backup/junk tables, NOT app data — clean these up separately):
+  _backup_alkhaleej_dup_activities_20260606, _backup_alkhaleej_dup_proposals_20260606,
+  _backup_dup_invoices_20260605, _backup_pb_projects_junk_20260605,
+  _backup_shrikant_dup_reminders_20260606, _backup_sobha_dup_20260605,
+  _deleted_projects_backup, _opp_assignee_backup
+
+⚠️ OPEN ITEMS before build:
+  - STORAGE: also delete tenant PDFs in property-pack/private/proposals/<company_id>/ (cross-ref
+    surviving pdf_url; the orphaned-PDF method already logged).
+  - VERIFY each WIPE table actually has company_id (some pp_* may be global — check before wiping).
+  - FK dependency order must be exact (children first) — same lesson as the manual cleanup.
+  - Must be parameterised by company_id, idempotent, DRY-RUN tested on test tenant FIRST.
+  - Confirm pp_commissions / pp_sales_closures / pp_documents / pp_launch_events are tenant-scoped
+    (have company_id) before including — DO NOT assume.
