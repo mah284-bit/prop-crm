@@ -101,3 +101,23 @@ company record). So there is NO separate individual-broker settings concept. ALL
 COMPANY level, editable by ADMIN or MANAGER. GROUP-LEVEL must be respected where a brokerage has
 branches (multi-branch group sees/sets per group rules — see getVisibleCompanyIds + group model).
 No special-casing broker types. The multi-tenant model already absorbs the complexity. Keep it simple.
+
+## DECISION (24 Jun) — Commission model + anti-miss gate (locked design, build-phase)
+RESOLUTION HIERARCHY (most-specific wins, always resolves to a value — never blank):
+  Unit/Deal override (on-the-fly market incentive) → Project → Master Agreement → Developer standard
+  → Company fallback.
+VISIBILITY = CAPABILITY (not a fixed "Finance" role): company assigns who holds commission visibility
+  (extends existing see_brokerage_commission). Broker NEVER sees or enters commission. Remove
+  commission_pct from broker-facing CreateOpportunityDialog; gate all commission display by capability.
+ON-THE-FLY COMMISSION: handled as the top (most-specific) tier = unit/deal override. Broker may FLAG a
+  developer's higher offer informally but cannot SET it; capability-holder sets/confirms.
+ANTI-MISS MECHANISM (the key gate): invoice draft at Won/Closed CANNOT finalize without explicit
+  commission confirmation by a capability-holder. No silent pass-through. Adhoc adjustment allowed AT
+  the gate. Unconfirmed-commission invoices surfaced loudly (Commission Outstanding + dashboard count).
+AUDIT: every set/confirm/change logged (who, what, when, why) — mandatory-reason pattern as used in
+  lead assignment governance.
+BOUNDARY OF RESPONSIBILITY (founder insight — GIGO): software CANNOT prevent a capability-holder
+  entering a wrong number. Our job is NOT to prevent GIGO — impossible. It is: (1) default to correct
+  (auto-resolve), (2) force a conscious checkpoint (invoice gate), (3) leave an audit trail (traceable,
+  accountable). Beyond that, accuracy is a HUMAN/finance-process responsibility, not a software one.
+  STOP adding controls past the audit trail — diminishing returns + friction. This is the right ceiling.
