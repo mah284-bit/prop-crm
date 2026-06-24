@@ -36,3 +36,11 @@ NOT a build list yet. Items get a method + dry-run status as we work them down p
 ## PRINCIPLE
 Do NOT open a later horizon while an earlier one is unfinished. Capture freely; build in order.
 Rehearse go-live steps 2+ times on the test tenant before the real cutover. No improvised cutover.
+
+## NOTE (24 Jun) — orphaned PDF cleanup is SCRIPTED, not manual
+Storage bucket property-pack/private/proposals/<company_id>/ holds ~36 PDFs named by timestamp only
+(e.g. 1781716747109_quick-pro...). Filenames carry NO lead/opp name, so manual "delete the test ones"
+is unsafe guesswork. CORRECT METHOD (folds into Horizon-2 clean-slate reset): list all storage PDFs,
+cross-reference against pdf_url still referenced by surviving proposals rows, delete only UNREFERENCED
+files. Orphaned PDFs are invisible to testers (not linked from any opp), so SAFE TO DEFER for weekend.
+Weekend DB cleanup (4 test opps + proposals removed) was the tester-facing part — done 24 Jun.
