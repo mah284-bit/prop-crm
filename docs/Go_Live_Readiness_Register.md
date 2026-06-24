@@ -254,3 +254,12 @@ TO DOCUMENT (needs a LIVE run to capture real numbers — do with founder trigge
 METHOD: read baseline counts (SQL) -> founder runs PropPulse agent/refresh -> re-read counts ->
 diff -> document the delta. Produces docs/PropPulse_Data_Model.md. Lighter task; do when founder is
 live to trigger the refresh. NOT blocking tester.
+
+## NOTE (24 Jun) — Horizon-3 (Investor/Scale) is DELIBERATELY left thin
+Horizon-3 items — costing model, server sizing, production architecture, SLAs, incident/support model
+— are INTENTIONALLY not detailed yet. Reason: they depend on numbers we will not have until Horizon-2
+is rehearsed and real tenants exist (actual DB load, realtime connection counts, AI spend per tenant,
+storage growth, tenant count). Detailing them now = guessing, which produces false confidence in an
+investor conversation. CORRECT POSTURE: hold as named placeholders; populate with REAL figures only
+after the reset routine is rehearsed and 1-2 pilot tenants generate actual usage data. Investor pack
+becomes credible precisely BECAUSE it is backed by measured numbers, not estimates. Do NOT fake-detail.
