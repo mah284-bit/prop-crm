@@ -56,3 +56,37 @@ displayed + verify-queue ≈ table total. The number depends on WHERE you look; 
 Mechanism CONFIRMED with live SQL evidence (24 Jun). Governance decided. Verification-UX (source
 evidence beside queue items) = open build-phase design item. Agent-run access control (platform-only)
 = build-phase enforcement (today founder runs it as super_admin/platform during testing).
+
+## VERIFICATION — how it works today + forward design (evidenced 24 Jun, schema + live queue + data dump)
+PROVENANCE ALREADY IN SCHEMA (projects table): is_pp_verified (bool), pp_data_source (e.g.
+"ai_agent_v2"), pp_confidence_score (int %), pp_source_id (uuid), pp_last_updated, plus
+rera_project_no + dld_project_no + website_url. So the BASIS for verification already exists in data
+— we need a POLICY on top, not new ingestion.
+
+TODAY (observed live): AI discovers -> assigns confidence (seen 72%-98%) -> EVERYTHING queues for
+MANUAL ✓Verify/✗Reject ("Review AI-discovered projects before publishing to the PropPulse catalog").
+Currently pure-manual with confidence as a hint. Queue = platform responsibility (confirmed).
+
+CONFIDENCE CORRELATES WITH COMPLETENESS (from the dump): 95-98% items carry specific verifiable facts
+(contract values, exact unit counts, RERA-style detail); 72-80% items are vague (no price/units, soft
+descriptions). So confidence is a usable quality signal.
+
+FORWARD VERIFICATION POLICY (tiered, uses fields we ALREADY have — scales + keeps trust, same GIGO
+discipline as commission):
+  1. AUTO-VERIFY candidate: confidence >= 90% AND corroboration (rera_project_no OR dld_project_no OR
+     website_url present). Strong evidence -> low-risk auto-publish.
+  2. MANUAL REVIEW (human): confidence 75-90%, OR missing RERA/DLD number. Human checks dev site,
+     verify/reject. Human effort concentrates HERE.
+  3. HOLD / likely-reject: confidence < 75% OR no price/units/registration. Real scrutiny or reject.
+  4. DEDUP CHECK (the BIGGER quality risk — caught in the dump): agent RE-PULLS same project under
+     near-duplicate names each run (e.g. "Island B Infrastructure" x4 variants; "The Acres New Phase"
+     x6; "Affordable Housing Baniyas & MBZ" x5). So 134->163 (+29) is partly near-dups, NOT all truly
+     new. Before queueing, fuzzy-match name+developer+community against existing catalog -> flag likely
+     dups for MERGE, not treat as new. Verification's real job = "is it NEW + true", not just "true".
+
+FUTURE UPGRADE (parked): when govt-site (RERA/DLD) integration lands, step 1 upgrades from "has a RERA
+number" to "RERA number VALIDATED against registry" — policy improves without redesign. This is the
+authoritative-source basis we want long-term.
+
+WHO: verification = PLATFORM responsibility (PropPulse quality is the product/moat). Tenants consume,
+do not verify. Audit each verify/reject (who, when, confidence-at-decision).
