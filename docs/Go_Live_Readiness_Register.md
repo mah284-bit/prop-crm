@@ -208,3 +208,22 @@ founder (who knows UAE brokerages) confirms 7 fit "for now". TRIGGER TO REVISIT:
 client says the 7 roles genuinely don't fit them. Wait for the pull (same discipline as multi-unit
 promote). CHEAP MIDDLE-GROUND if ever needed: per-company role DISPLAY LABEL (cosmetic rename, hours
 of work, no structural change) — but only if a client asks.
+
+## METHOD (24 Jun) — RLS Audit (Horizon-2, before any real client)
+SCOPE: confirm every tenant table enforces company_id isolation server-side, not just app-layer.
+STEPS: (1) list all tables with company_id (from reset spec — the WIPE/PRESERVE company_id set);
+(2) for each, verify an RLS policy exists that scopes rows to the caller's company_id; (3) find every
+policy using is_super_admin or role='super_admin' as an UNCONDITIONAL bypass and scope it to
+"super_admin WITHIN own company" (per Multi-Tenant Identity doc); (4) verify PropPulse globals
+(projects, project_units, properties, pp_developers, pp_facilities, pp_payment_plans, pp_commissions,
+pp_launch_events) are intentionally readable cross-tenant BY DESIGN; (5) penetration test with 2 test
+tenants — confirm tenant A cannot read tenant B via API. App-layer .eq("company_id") filters exist
+today but are NOT a substitute for DB-level RLS. Effort ~1 day. Document results.
+
+## METHOD (24 Jun) — Backup / Restore + Monitoring (Horizon-2, before any real client)
+BACKUP: Supabase Pro provides automated daily backups + PITR (verify tier + retention). Confirm it's
+ON and the retention window is acceptable. RESTORE: rehearse a restore to a scratch project at least
+ONCE before go-live — an untested backup is not a backup. MONITORING: define what we watch — DB
+connection count vs tier limit, realtime connection count (200 free / 500 pro), API error rate,
+storage usage, AI/Anthropic API spend. Set alert thresholds. No paying client onboards until backup
+is confirmed + a restore has been rehearsed once. Effort ~1 day.
