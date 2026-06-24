@@ -263,3 +263,27 @@ storage growth, tenant count). Detailing them now = guessing, which produces fal
 investor conversation. CORRECT POSTURE: hold as named placeholders; populate with REAL figures only
 after the reset routine is rehearsed and 1-2 pilot tenants generate actual usage data. Investor pack
 becomes credible precisely BECAUSE it is backed by measured numbers, not estimates. Do NOT fake-detail.
+
+## CAPABILITY (logged 24 Jun PM, build POST-TESTER) — Unify stale-lead logic (systemic, not silo)
+FOUNDER INSIGHT: caught that fixing the hard-coded threshold in one place is a SILO edit; the
+valuable correction is systemic. Confirmed by grep — "stale" is computed in FOUR places, TWO different
+ways:
+  STAGE-BASED (crude, hard-coded >=7, ignores Settings): App.jsx:2551 (followup alerts),
+    Dashboard.jsx:38 (stale card), LeadDetail.jsx:770 (isStale badge).
+  ACTIVITY-BASED (better, reads companies.stale_lead_threshold_days): LeadQueuePage.jsx:115
+    (the real designed stale-lead feature — no activity within threshold).
+PROBLEM: the 3 stage-based copies (a) hard-code 7, ignoring the Settings field, AND (b) use a
+DIFFERENT definition (stage hasn't moved) than the Lead Queue (no activity). So they're both
+inconsistent in NUMBER and in CONCEPT.
+SYSTEMIC FIX (the valuable correction): one shared helper isStale(date, thresholdDays) in src/lib/ or
+utils.js, reading the Settings threshold, called by ALL modules. Requires a DESIGN DECISION first:
+which definition is canonical — stage-based or activity-based? Lean = activity-based (matches the
+designed Lead Queue feature + the Settings field's intent). Then refactor all 4 call sites to the
+helper.
+WHY POST-TESTER: touches 4 modules + a definition change. 2 days from tester = "1 step forward 2 back"
+risk. The Lead Queue (real feature) ALREADY honors Settings correctly; the stage-based alerts using 7
+are cosmetically inconsistent, not broken. Safe to ship tester as-is.
+ACTION TODAY: reverted the partial App.jsx silo edit (tag pre-stale-threshold-fix) — do it right,
+systemically, post-tester.
+PRINCIPLE (founder, reinforced): prefer systemic corrections over silo edits — ask "can this live in
+a shared helper across all sub-modules?" before patching one spot.
