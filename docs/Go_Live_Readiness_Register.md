@@ -74,3 +74,22 @@ ROUGH ESTIMATE (planning, not promise): mechanical layer ~3-5 days; AI-intellige
 KNOWN SMALL BUG (fix in build phase, NOT now): Settings exposes a configurable stale threshold, but
 App.jsx (~2551) + Dashboard.jsx (~38/86) HARD-CODE >=7 days and ignore the configured value. UI says
 configurable, code ignores it. Concrete correctness gap to fix when this capability is built.
+
+## DECISION + PRINCIPLE (24 Jun) — Settings governance: company-level, admin-locked
+SPECIFIC DECISION — Stale-lead threshold:
+  Set at COMPANY/ORG level by admin ONLY. Every broker operates under the company rule. NO per-broker
+  override (else each broker games it to personal convenience and the company standard is lost).
+  Field already exists: companies.stale_lead_threshold_days. Build-phase work: (a) make code honor it
+  (App.jsx/Dashboard.jsx currently hard-code >=7), (b) gate editing to admin only.
+  Per-channel/per-source thresholds = NOT here; belongs in the Lead Intelligence capability.
+
+GOVERNANCE PRINCIPLE (applies to MANY settings, capture once):
+  Settings split into two classes —
+    (1) ADMIN-LOCKED / company-wide: stale threshold, commission defaults, routing rules, branding,
+        roles/capabilities, plan presets. Set by admin; brokers cannot self-adjust. Protects the
+        company standard from individual drift.
+    (2) Personal/broker-level (small, cosmetic): only things that don't affect company governance.
+  RULE: default a setting to ADMIN-LOCKED unless there's a clear reason it should be personal. An
+  individual broker is still part of a company and must operate under company rules, not personal
+  convenience. ("Company type" handling for solo brokers vs multi-agent orgs = open question, note
+  for Settings design.)
