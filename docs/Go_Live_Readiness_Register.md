@@ -44,3 +44,13 @@ is unsafe guesswork. CORRECT METHOD (folds into Horizon-2 clean-slate reset): li
 cross-reference against pdf_url still referenced by surviving proposals rows, delete only UNREFERENCED
 files. Orphaned PDFs are invisible to testers (not linked from any opp), so SAFE TO DEFER for weekend.
 Weekend DB cleanup (4 test opps + proposals removed) was the tester-facing part — done 24 Jun.
+
+## DECISION (24 Jun) — Payment Terms: editable presets + Custom is CORRECT scope (not a gap)
+Resolved after discussion. DLD = authority-fixed (4%, only absorber varies — handled). Payment plan
+(20/80, 10/90, etc.) is editable BY DESIGN and that is the RIGHT call, because: the broker is NOT
+responsible for collections or managing payments — the buyer pays the DEVELOPER directly. The
+developer owns payment logic. In PropCRM the payment plan is INFORMATIONAL/communicative, not a
+financial engine to enforce or compute. Therefore presets + Custom free-text is sufficient and
+correct for a broker tool — NOT a limitation, NOT a Phase-2 rebuild. Expectation captured so the
+reasoning is never re-litigated: if PropCRM ever expands to developer-side / collections (PropOS
+vision), THEN payment-plan modeling becomes real scope. Until then, current design is intentional.
