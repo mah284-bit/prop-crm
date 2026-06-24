@@ -89,3 +89,23 @@ library. Locked this session:
 BUILD-PHASE TODO surfaced (post-tester): remove commission_pct from broker CreateOpportunityDialog +
 gate display; honor configurable stale threshold (code hard-codes >=7); the reset build itself.
 Latest commit: 5935284.
+
+
+## 24 JUN — PropPulse CAPTURE added (same design day, after the handoff summary above)
+New doc: docs/PropPulse_Data_Model.md — PropPulse fully characterised via a LIVE agent run + SQL diff:
+- MECHANISM (evidenced): "Run AI Agent" sweeps the FIXED 20-developer set (one job each), pulls new +
+  changed projects into a Verify Queue. One run measured: +29 new projects (134->163), 53 existing
+  updated, +20 agent_jobs, verify queue 84->100. Units flat (110) — runs bring PROJECT data, unit
+  depth lags.
+- VELOCITY/CADENCE (evidenced): ~every 2 weeks, 12-37 new/run, never zero. Steadily active market.
+- GOVERNANCE DECIDED: Run AI Agent = PLATFORM-OPERATOR ONLY, automated/scheduled (period TBD via diff
+  data) — not tenant-runnable (cost + data-integrity + it's not a tenant need). Verify Queue = PLATFORM
+  responsibility. Import = tenant self-service (creates tenant unit_sale_pricing copies; ties to reset
+  spec). Provenance already in schema (pp_confidence_score, rera_project_no, dld_project_no, etc.).
+- VERIFICATION POLICY (forward design): tiered — auto-verify >=90%+RERA/DLD; manual 75-90%; hold <75%.
+- BIGGEST RISK FOUND: DEDUP. Agent re-pulls same project under near-dup names (Island B Infra x4, The
+  Acres New Phase x6, etc.) — so +29 "new" is partly near-dups. Known new-routine artifact; PRE-LIVE fix.
+- FUTURE: a DEDICATED PropPulse session for dedup engine + tiered-verify build + stale-decay + source
+  transparency + conflict resolution + coverage + unit-depth + cadence tuning + reject-learning. All
+  pre-live, all listed in the doc's checklist.
+PropPulse is the moat/selling point -> captured fully so no blind spots. Latest commit: a1fcca0.
