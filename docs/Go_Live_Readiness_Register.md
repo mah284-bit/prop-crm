@@ -195,3 +195,16 @@ WIPE via PARENT JOIN (tenant data, NO company_id — delete via parent, not blan
 
 LESSON REINFORCED: company_id absence does NOT mean "global" — could be parent-scoped (tenant) OR
 truly global. ONLY the FK links disambiguate. Never classify a reset table by name or assumption.
+
+## DECISION (24 Jun) — Roles: keep fixed 7 + configurable capabilities (NOT custom roles)
+Resolved. The 7 roles (super_admin/admin/sales_manager/sales_agent/leasing_manager/leasing_agent/
+viewer) cover the permission SHAPE of every brokerage: owner/admin, team manager, sellers/leasers,
+viewer. Fancy titles ("Senior Consultant", "Team Lead") are LABELS, not different permission
+structures — cosmetic, not structural. Capabilities per role are ALREADY company-configurable
+(role_capabilities table), which is the flexibility that actually matters.
+CUSTOM ROLES = deliberately NOT built. It is a structural change (threads through RLS, capability
+gates, assignment, group visibility, reporting) — high cost, mostly cosmetic payoff. No real demand:
+founder (who knows UAE brokerages) confirms 7 fit "for now". TRIGGER TO REVISIT: only when a real
+client says the 7 roles genuinely don't fit them. Wait for the pull (same discipline as multi-unit
+promote). CHEAP MIDDLE-GROUND if ever needed: per-company role DISPLAY LABEL (cosmetic rename, hours
+of work, no structural change) — but only if a client asks.
