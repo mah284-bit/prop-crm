@@ -90,3 +90,28 @@ authoritative-source basis we want long-term.
 
 WHO: verification = PLATFORM responsibility (PropPulse quality is the product/moat). Tenants consume,
 do not verify. Audit each verify/reject (who, when, confidence-at-decision).
+
+## FUTURE DEDICATED SESSION — open items checklist (capture 24 Jun, do PRE-LIVE)
+PropPulse is a serious selling point -> no blind spots allowed. Parked for a focused session:
+1. DEDUP ENGINE (known new-routine artifact): agent re-pulls same project under near-dup names. Build
+   fuzzy-match (name+developer+community) -> merge-not-duplicate. Decide canonical-name rule. Highest
+   priority — it inflates counts + pollutes the catalog.
+2. TIERED VERIFICATION build (per policy above): auto-verify >=90%+RERA/DLD; manual 75-90%; hold <75%.
+3. STALE-DATA decay: a project verified once can go out of date (price changes, status moves
+   Announced->Under Construction->Completed). Need a re-check / freshness flag (pp_last_updated exists
+   — use it to surface "verified but old" items for re-verification).
+4. SOURCE TRANSPARENCY: surface pp_source_id / website_url beside each queue item so a human verifies
+   against evidence, not memory. (Investor question "how do you know it's real?" answered by showing
+   the source.)
+5. CONFLICTING PULLS: same project, two runs, different facts (price/units/handover differ). Define
+   which wins (newest? highest-confidence? human-decides?). Audit the change.
+6. COVERAGE GAPS: agent only sweeps 20 FIXED developers. Define how/when new developers get added
+   (manual +Developer today). A "missing developer" = a coverage hole in the selling point.
+7. UNIT-LEVEL depth: runs bring PROJECT data; units lag (110 flat). Decide if/when unit-level
+   ingestion is needed (affects "import inventory" richness).
+8. COST/CADENCE tuning: use before/after diff data to set the right scheduled-run period (slow-
+   announcement market -> maybe monthly enough; tune with real deltas).
+9. REJECT LEARNING: when a human rejects an item, can the agent learn (avoid re-pulling rejected
+   items each run)? Otherwise rejected dups keep returning.
+STATUS: PropPulse mechanism + governance + verification basis CAPTURED (24 Jun). Above = the focused
+build/design backlog for a dedicated PropPulse session, all PRE-LIVE. Closing PropPulse capture here.
