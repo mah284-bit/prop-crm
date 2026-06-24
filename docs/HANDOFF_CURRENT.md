@@ -5,7 +5,8 @@ Last updated: 23 June 2026. Branch: main. Read this FIRST on any new session.
 - Branch: main. Production: prop-crm-two.vercel.app (auto-deploys from main).
 - App.jsx ~2,866 lines, refactored into src/components/<feature>/ + src/lib/ helpers.
 - June 5 demo PAST. Target: WEEKEND TESTER HANDOFF.
-- Latest commit: 88b2523. Golden tag: lead-quote-and-opp-gate-day43.
+- Latest commit: 982c7c2. Golden tag: lead-quote-and-opp-gate-day43.
+- 24 Jun: V1 net-price fix DONE + verified; weekend tester DB cleanup DONE (4 test opps/proposals removed; orphaned PDFs deferred to Horizon-2 reset).
 
 ## SHIPPED + VERIFIED ON PROD (this session, all committed/pushed)
 1. V1 carry-over: promote a lead Quote -> creates Opp + carries it in as V1 (draft, carries PDF).
