@@ -1,3 +1,8 @@
+> ⚠️ SUPERSEDED — HISTORICAL SNAPSHOT (31 May 2026, Day 22).
+> This describes an OLD state (dev2 branch, pre-June-5 demo, App.jsx ~17,200 lines).
+> NONE of this is current. The live resume point is docs/HANDOFF_CURRENT.md.
+> Kept for history only. Do NOT use this to resume work.
+
 # Day 22 End-of-Session Handoff (31 May 2026, Sun evening)
 
 ## STATUS: Phase 2.1 100% SHIPPED to production
