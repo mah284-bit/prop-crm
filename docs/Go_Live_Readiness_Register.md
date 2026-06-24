@@ -227,3 +227,14 @@ ONCE before go-live — an untested backup is not a backup. MONITORING: define w
 connection count vs tier limit, realtime connection count (200 free / 500 pro), API error rate,
 storage usage, AI/Anthropic API spend. Set alert thresholds. No paying client onboards until backup
 is confirmed + a restore has been rehearsed once. Effort ~1 day.
+
+## POINTER (24 Jun) — Multi-Tenant Identity Split (Horizon-2, post-tester)
+FULL DESIGN already exists: docs/Architecture_Multi_Tenant_Identity_Model.md (Platform Operator vs
+Tenant User — two-tier identity; platform staff have NO data access to tenant CRM records).
+CURRENT SHORTCUT: founder Abid's account is BOTH Platform Super Admin AND a tenant user of Al Mansoori
+(testing convenience). TARGET: split into a platform-only identity (company_id=NULL, is_platform_
+operator=true) that cannot read any tenant CRM data. MIGRATION: 5 phases (A schema prep, B founder
+identity split, C Platform Admin UI, D RLS lockdown, E impersonation tooling) ~6-9 days. Phase 2.1
+work already compatible (everything scoped by company_id). GO-LIVE RELEVANCE: the RLS Audit (above)
+and this split are linked — do RLS audit WITH the identity split, since both touch is_super_admin
+bypass semantics. NOT pre-tester. Investor "can your staff read our data?" answer lives here.
