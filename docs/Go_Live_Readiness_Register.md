@@ -287,3 +287,24 @@ ACTION TODAY: reverted the partial App.jsx silo edit (tag pre-stale-threshold-fi
 systemically, post-tester.
 PRINCIPLE (founder, reinforced): prefer systemic corrections over silo edits — ask "can this live in
 a shared helper across all sub-modules?" before patching one spot.
+
+## CAPABILITY (logged 24 Jun PM, build MONDAY post-tester) — Unify stale-lead logic (systemic)
+FOUNDER INSIGHT: fixing the hard-coded threshold in one place = SILO edit; the valuable correction is
+systemic. Confirmed by grep — "stale" computed in FOUR places, TWO different ways:
+  STAGE-BASED (crude, hard-coded >=7, ignores Settings): App.jsx:2551, Dashboard.jsx:38,
+    LeadDetail.jsx:770.
+  ACTIVITY-BASED (better, reads companies.stale_lead_threshold_days): LeadQueuePage.jsx:115 (the real
+    designed feature).
+PROBLEM: the 3 stage-based copies (a) hard-code 7 ignoring Settings, AND (b) use a DIFFERENT definition
+than Lead Queue. Inconsistent in NUMBER and CONCEPT.
+SYSTEMIC FIX: one shared helper isStale(date, thresholdDays) in src/lib/ (or utils.js), reading the
+Settings threshold, called by ALL modules. DESIGN DECISION FIRST: canonical definition = stage-based
+or activity-based? Lean = activity-based (matches Lead Queue + Settings intent). Then refactor 4 call
+sites + thread threshold via props to Dashboard + LeadDetail.
+WHY MONDAY not now: minimum CORRECT fix = 5 edits across 3 files + prop threading + a definition
+decision. 2 days from tester = "1 step forward 2 back" risk. Lead Queue (real feature) ALREADY honors
+Settings; the stage-based 7 alerts are cosmetically inconsistent, NOT broken. Tester ships safe as-is.
+ACTION TAKEN 24 Jun: reverted the partial App.jsx silo edit (uncommitted; tag pre-stale-threshold-fix
+exists as belt-and-suspenders). Build systemically Monday.
+PRINCIPLE (founder, reinforced): prefer systemic corrections over silo edits — ask "can this live in a
+shared helper across all sub-modules?" BEFORE patching one spot.
