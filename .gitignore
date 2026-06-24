@@ -42,3 +42,4 @@ test-data/
 src/components/*.bak
 *.bak
 /*.cjs
+docs/*.docx
