@@ -238,3 +238,19 @@ identity split, C Platform Admin UI, D RLS lockdown, E impersonation tooling) ~6
 work already compatible (everything scoped by company_id). GO-LIVE RELEVANCE: the RLS Audit (above)
 and this split are linked — do RLS audit WITH the identity split, since both touch is_super_admin
 bypass semantics. NOT pre-tester. Investor "can your staff read our data?" answer lives here.
+
+## CAPTURE (24 Jun) — PropPulse Data Documentation (intent; needs LIVE observation)
+PURPOSE: document how PropPulse works as a pure DATA-AGGREGATION layer (NO AI lives in PropPulse —
+the interactive-AI ideas are app-internal, separate). PropPulse brings developer-sourced data
+(projects, developers, units, pricing) from public sources into PropCRM; companies then "Add to my
+inventory" (creating tenant unit_sale_pricing copies) or upload their own if not found — but pricing
+VALUE always originates from the developer.
+TO DOCUMENT (needs a LIVE run to capture real numbers — do with founder triggering a refresh):
+  - Current baseline: count of projects / project_units / developers NOW (memory says ~38 proj /
+    20 dev / 119 units but VERIFY live — likely stale).
+  - How a source refresh/agent run ADDS net-new projects and UPDATES existing ones.
+  - BEFORE/AFTER diff of one refresh (counts + which fields changed on an existing project).
+  - Verification flow (how data gets marked verified).
+METHOD: read baseline counts (SQL) -> founder runs PropPulse agent/refresh -> re-read counts ->
+diff -> document the delta. Produces docs/PropPulse_Data_Model.md. Lighter task; do when founder is
+live to trigger the refresh. NOT blocking tester.
