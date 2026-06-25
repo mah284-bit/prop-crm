@@ -23,7 +23,7 @@ STATUS per doc: exists/current · partial/needs-refresh · to-create
 ## D. ONBOARDING & IMPLEMENTATION
 11. Client Onboarding Runbook (staged process incl. 10-record test)
 12. Legacy Data Import Guide + Excel Templates (migration kit)
-13. Implementation Doctrine (P1-P3: data-not-process; team enforces)
+13. Implementation Doctrine (P1-P3: data-not-process; team enforces) — DONE 25 Jun (docs/Implementation_Doctrine.md)
 14. Configuration Guide (every company-level setting + effect)
 
 ## E. END-USER
