@@ -115,3 +115,21 @@ PropPulse is a serious selling point -> no blind spots allowed. Parked for a foc
    items each run)? Otherwise rejected dups keep returning.
 STATUS: PropPulse mechanism + governance + verification basis CAPTURED (24 Jun). Above = the focused
 build/design backlog for a dedicated PropPulse session, all PRE-LIVE. Closing PropPulse capture here.
+
+## REGRESSION FOUND (25 Jun) — ai_agent_v2 dropped document/image extraction
+EVIDENCE (live DB, group by pp_data_source):
+  ai_agent_v2 : 128 projects — hero 0, brochure 0, maps 0, photos 0  (ZERO docs across the board)
+  ai_agent    :  24 projects — hero 7, brochure 2, maps 24, photos 5  (v1 DID populate)
+  manual      :  11 projects — hero 2, brochure 2, photos 1
+  pp_documents table: EMPTY (0 rows) — agent is not writing docs relationally either.
+DIAGNOSIS: the v1 agent (pp_data_source='ai_agent') extracted media/links (esp. google_maps_url on
+all 24, plus hero/brochure/photos on several). The v2 agent (pp_data_source='ai_agent_v2') brings
+metadata shells ONLY — names, prices, handover, community — and populates NONE of:
+hero_image_url, brochure_url, brochure_file_url, master_plan_url, site_plan_url, photo_gallery_urls,
+video_url, website_url, google_maps_url. This is a REGRESSION (worked in v1, lost in v2 rewrite), not
+an unbuilt feature.
+IMPACT: Phase 2.2 Property Detail Pack NEEDS hero images — every v2-sourced project has none. Also
+undercuts the "rich intelligence" story. Currently 128 of 163 projects are doc-blank.
+FIX (POST-TESTER / PropPulse session): diff v1 vs v2 agent extraction prompt + write path; restore the
+media/URL extraction v1 had. Decide: backfill the 128 v2 projects, or re-run with the fixed agent.
+NOT NOW: do not touch the agent 2 days from tester. Logged for the dedicated PropPulse session.
