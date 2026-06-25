@@ -40,7 +40,7 @@ STATUS per doc: exists/current · partial/needs-refresh · to-create
 ## G. PROJECT GOVERNANCE
 22. Roadmap (horizons, what's next)
 23. Documentation Index (the bible — map to all docs)
-24. Decision Log (key decisions + rationale)
+24. Decision Log (key decisions + rationale) — DONE 24 Jun (docs/Decision_Log.md)
 
 ## PRIORITY (what's needed when)
 - THIS WEEKEND: #16 Tester Guide — DONE
