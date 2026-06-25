@@ -60,6 +60,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
   // Filters
   const [fSearch,  setFSearch]  = useState("");
   const [fProject, setFProject] = useState("All");
+  const [fDeveloper, setFDeveloper] = useState("All");
   const [fType,    setFType]    = useState("All");
   const [fCat,     setFCat]     = useState("All");
   const [fStatus,  setFStatus]  = useState(initialFilter?.type==="status"?initialFilter.value:"All");
@@ -182,6 +183,7 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
       u.furnishing, u.condition, sp?.asking_price?.toString(), lp?.annual_rent?.toString()
     ].some(f=>f?.toLowerCase().includes(q))) return false;
     if(fProject!=="All"&&u.project_id!==fProject) return false;
+    if(fDeveloper!=="All"&&proj?.developer!==fDeveloper) return false;
     if(fType!=="All"&&u.unit_type!==fType) return false;
     if(fCategory==="Residential"&&!["Residential","Villa","Flat","Penthouse","Townhouse","Duplex","Studio"].includes(u.unit_type)) return false;
     if(fCategory==="Commercial"&&!["Office","Warehouse","Plot","Commercial Unit","Retail"].includes(u.unit_type)) return false;
@@ -390,6 +392,10 @@ Return ONLY the JSON, no explanation.`}
       {/* Top filter bar */}
       <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
         <input value={fSearch} onChange={e=>setFSearch(e.target.value)} placeholder="🔍 Universal search — unit ref, project, floor, view, price, status…" style={{flex:1,minWidth:150}}/>
+        <select value={fDeveloper} onChange={e=>setFDeveloper(e.target.value)} style={{width:"auto",fontSize:12}}>
+          <option value="All">All Developers</option>
+          {[...new Set(companyProjects.map(p=>p.developer).filter(Boolean))].sort().map(dev=><option key={dev} value={dev}>{dev}</option>)}
+        </select>
         <select value={fProject} onChange={e=>setFProject(e.target.value)} style={{width:"auto",fontSize:12}}>
           <option value="All">All Projects</option>
           {companyProjects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
@@ -442,7 +448,8 @@ Return ONLY the JSON, no explanation.`}
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,tableLayout:"fixed"}}>
             <colgroup>
               <col style={{width:90}}/>{/* Ref */}
-              <col style={{width:140}}/>{/* Project */}
+              <col style={{width:130}}/>{/* Developer */}
+              <col style={{width:150}}/>{/* Project */}
               <col style={{width:50}}/>{/* Type */}
               <col style={{width:100}}/>{/* Category */}
               <col style={{width:60}}/>{/* Purpose */}
@@ -458,14 +465,14 @@ Return ONLY the JSON, no explanation.`}
             </colgroup>
             <thead style={{position:"sticky",top:0,zIndex:1}}>
               <tr style={{background:"#0F2540"}}>
-                {["Ref","Project","T","Category","For","Bd","Sqft","Fl","View","Sale","Rent/yr","Handover","Status",""].map(h=>(
+                {["Ref","Developer","Project","T","Category","For","Bd","Sqft","Fl","View","Sale","Rent/yr","Handover","Status",""].map(h=>(
                   <th key={h} style={{padding:"7px 8px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".3px",whiteSpace:"nowrap",overflow:"hidden"}}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {allFiltered.length===0&&(
-                <tr><td colSpan={14} style={{textAlign:"center",padding:"2rem",color:"#A0AEC0"}}>No units match filters</td></tr>
+                <tr><td colSpan={15} style={{textAlign:"center",padding:"2rem",color:"#A0AEC0"}}>No units match filters</td></tr>
               )}
               {allFiltered.map((u,i)=>{
                 const sp=getSP(u.id); const lp=getLP(u.id);
@@ -482,6 +489,7 @@ Return ONLY the JSON, no explanation.`}
                     onMouseOver={e=>{if(!isSel)e.currentTarget.style.background="#F0F7FF";}}
                     onMouseOut={e=>{if(!isSel)e.currentTarget.style.background=i%2===0?"#fff":"#FAFBFC";}}>
                     <td style={{padding:"5px 8px",fontWeight:700,color:"#0F2540",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.unit_ref}</td>
+                    <td style={{padding:"5px 8px",color:"#718096",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{proj?.developer||"—"}</td>
                     <td style={{padding:"5px 8px",color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{proj?.name||"—"}</td>
                     <td style={{padding:"5px 8px"}}><span style={{fontSize:9,fontWeight:700,padding:"1px 5px",borderRadius:20,background:u.unit_type==="Residential"?"#E6F4EE":"#E6EFF9",color:u.unit_type==="Residential"?"#1A7F5A":"#1A5FA8"}}>{u.unit_type==="Residential"?"R":"C"}</span></td>
                     <td style={{padding:"5px 8px",color:"#4A5568",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.sub_type}</td>
