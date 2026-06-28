@@ -431,3 +431,14 @@ Reconcile with the three related sticky notes above (SM-override, ACL, SM/Admin 
 coherent "who earns, who sees, and how it rolls up" model at that time.
 Founder principle: "one thing looks good for now, lets dive in and catch the fish - touching the fish
 tells you the current, so you catch the missed ones better."
+
+## CORRECTION to above note (30 Jun) — GATE is NOW, only the MIXED top-up is parked
+Founder clarified: the GATE (bracket cannot be less than company standard, same mode % or fixed) must
+be BUILT NOW — it is in scope. Brackets inherit the company's single mode; gate = bracket value >=
+standard value. Build immediately.
+
+PARKED (next week) = only the MIXED case: a FIXED top-up layered on a PERCENTAGE base. Example: company
+standard 35%; manager negotiates "can't raise your %, but +AED 10K per sale". A STANDING per-agent
+fixed kicker ON TOP of the % base — a real negotiation pattern (can't rule it out). Overlaps existing
+appreciation_bonus schema but that is per-deal one-off; this is a standing per-agent arrangement (every
+sale). Design next week after seeing response. NOT the gate — the gate is now.
