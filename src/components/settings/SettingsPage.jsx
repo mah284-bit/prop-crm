@@ -3,6 +3,7 @@ import AgentPoolsSection from "./AgentPoolsSection.jsx";
 import LeadRoutingRulesSection from "./LeadRoutingRulesSection.jsx";
 import GroupBranchesSection from "./GroupBranchesSection.jsx";
 import CommissionSettingsSection from "./CommissionSettingsSection.jsx";
+import AgentBracketsSection from "./AgentBracketsSection.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
    SettingsPage — Phase 2.1 Day 21
@@ -21,6 +22,7 @@ const SECTIONS = [
   { id: "agent_pools", label: "Agent Pools", icon: "👥", description: "Group agents for round-robin lead distribution" },
   { id: "lead_routing", label: "Lead Routing Rules", icon: "🎯", description: "Configure how pool-sourced leads flow" },
   { id: "commission", label: "Commission Defaults", icon: "💼", description: "Company-level default commission rate" },
+  { id: "agent_brackets", label: "Agentwise Commission Breakup", icon: "📊", description: "Per-agent commission rate that overrides the company standard" },
 ];
 
 export default function SettingsPage({ 
@@ -139,6 +141,13 @@ export default function SettingsPage({
         {activeSection === "commission" && (
           <CommissionSettingsSection
             currentUser={currentUser}
+            showToast={showToast}
+          />
+        )}
+        {activeSection === "agent_brackets" && (
+          <AgentBracketsSection
+            currentUser={currentUser}
+            users={users}
             showToast={showToast}
           />
         )}

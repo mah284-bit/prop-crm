@@ -360,3 +360,74 @@ FULL CORRECTED LAYER B MODEL (locked with founder):
 
 resolution: agent_base = deal_override ?? broker_bracket ?? company_standard; agent_total = agent_base
 + appreciation_bonus; company_net = company_commission − agent_total (agent never sees).
+
+## STICKY NOTE (30 Jun) — SM/Admin direct-earning eligibility (DISCUSS; reconcile w/ notes above)
+NEW facet (distinct from the two notes above): can an SM/Admin DIRECTLY EARN deal commission?
+- By default NO (operational/management roles don't close deals). EXCEPTION: they may earn IF they
+  personally handle a walk-in or an assigned customer — but only if the COMPANY ALLOWS it (discretion).
+- This is about DIRECT earning on a deal they close — NOT the SM team-override (see note ~282) and NOT
+  commission VISIBILITY (see ACL note ~294). Three related-but-different facets.
+- BUILD QUESTION raised at the "Agentwise Commission Breakup" screen: should that list FILTER OUT
+  non-earning roles (admin/SM) by default, or show everyone with "not set" = earns nothing?
+- CURRENT STATE (safe): the per-deal override on the opportunity already lets ANY assigned person earn
+  on a specific deal — so the walk-in case technically works today via override. Missing = the
+  default-eligibility model + a company toggle ("allow managers/admins to earn on deals they close").
+- DECISION: DISCUSS. Reconcile THIS + SM-override (~282) + ACL (~294) into ONE coherent
+  "who earns commission, who sees it, and how" model. No code now. Do it as the focused commission-ACL
+  + eligibility pass after the core capture UIs (Stage 5) are done.
+
+## DESIGN NOTE (30 Jun) - Management Commission Hierarchy (CAPTURE ONLY; dedicated future phase)
+Founder "downloaded the instinct" while seeing the agent-tier built (the fish-in-hand reveals the real
+shape). CAPTURE NOW, do NOT build now - finish the agent cycle (Stage 5) first, then a dedicated phase.
+
+### The crux founder named (architecturally important)
+You CANNOT forbid anyone in a brokerage from closing a deal - can't tell a customer "the sales manager
+won't sell you" or "admin won't either". So commission eligibility must NOT be a role lockout.
+RESOLUTION: EARNING FOLLOWS ASSIGNMENT, NOT ROLE. Whoever OWNS (is assigned) a deal earns the split on
+it - agent, SM, or admin alike. Role neither grants nor denies. This is already how the agent tier
+works (per-deal assignment). The Agentwise Commission Breakup showing everyone is therefore CORRECT
+(set a rate for anyone who may ever own a deal), not a bug. An optional role filter = tidiness only.
+
+### This is PURE SALES COMMISSION - it lives HERE, not ERP (corrects earlier ERP lean)
+Finance and HR CONSUME the sales commission split; they do not produce it. The Sales Manager must
+SUBMIT the COMPLETE commission breakdown (agent -> manager -> group) on completion - that submission IS
+the deliverable Finance/HR receive. If manager/group tiers are punted to ERP, the SM cannot submit a
+complete report. So the full hierarchy is the PRODUCT. Sensitive money ("all a money game - 1 fil off
+and the place goes up and down") => must be exact + auditable, DBA-grade.
+
+### The three earning tiers (rollup from one deal)
+GROUP MANAGER - earns group-wise pct across all branches/teams under them
+  MANAGER(s)  - each earns team-wise pct across their team's deals
+    BROKERS   - each earns their own split (company std -> bracket -> deal override) [BUILT]
+    DEAL closes -> agent split -> manager override -> group override, all rolling up from the same deal
+Manager/group tiers are a pct of the deals BENEATH them (not deals they personally closed - that's the
+agent tier via assignment). A manager who personally closes a walk-in earns as the AGENT on that deal
+(assignment) AND separately the manager-pct on their team's other deals. Two distinct things.
+
+### Q to architect: "1 sales team per org - what if multiple teams?" - ANSWERED
+Do NOT assume one team. Model a REPORTING TREE from the start, which handles both:
+  broker.manager_id points to manager ; manager.group_manager_id points to group manager
+  One team  = all brokers point to one manager (tree with one branch)
+  Many teams = brokers point to different managers, all under one group manager
+Same structure; the "1 team" case is a single-branch tree. Build the tree, both fall out free.
+
+### THE DEPENDENCY (foundation that must exist first)
+ORG REPORTING HIERARCHY (broker -> manager -> group manager) does NOT fully exist yet. Today there are
+groups/branches but not individual reporting lines. Management-commission tiers CANNOT compute without
+this tree. Build order:
+  1. Org reporting hierarchy (the tree)      [foundation - NOT built]
+  2. Manager override pct (team-wise)        needs #1
+  3. Group-manager override pct (group-wise) needs #1
+  4. Rollup engine + SM submission report    (the complete chain Finance/HR receive)
+
+### Looking complete without over-building
+Acknowledge the management layer in design/UI (a visible "Manager and Group overrides" concept, even if
+marked future) so it never looks FORGOTTEN - while the engine waits. Thought-through != built.
+
+### DECISION
+CAPTURE ONLY (this note). Build AFTER the agent-tier cycle (Stage 5) is finished. Then a DEDICATED
+"Management Commission + Org Hierarchy" phase (Stage number TBD when we connect docs and re-plan).
+Reconcile with the three related sticky notes above (SM-override, ACL, SM/Admin eligibility) into ONE
+coherent "who earns, who sees, and how it rolls up" model at that time.
+Founder principle: "one thing looks good for now, lets dive in and catch the fish - touching the fish
+tells you the current, so you catch the missed ones better."
