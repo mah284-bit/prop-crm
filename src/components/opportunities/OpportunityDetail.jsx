@@ -72,6 +72,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [payments,   setPayments]   = useState([]);
   const [contract,   setContract]   = useState(null);
   const [commissionInvoice, setCommissionInvoice] = useState(null); // Day 18 — in-opp commission invoice visibility
+  const [canSeeCommission, setCanSeeCommission] = useState(false); // Commission Stage 3 — capability gate
   const [saving,     setSaving]     = useState(false);
   const [showLog,    setShowLog]    = useState(false);
   const [coachReturn, setCoachReturn] = useState(false); // return to Coach tab after a Coach-triggered action
@@ -172,6 +173,34 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const isOwner  = opp.assigned_to === currentUser.id;
   const isAdmin  = ["super_admin","admin"].includes(currentUser.role);
   const isManager = ["sales_manager","leasing_manager"].includes(currentUser.role);
+
+  // Commission Stage 3 — resolve whether this user may see company-side commission figures.
+  // Admin/super_admin auto-pass (mirrors App.jsx hasCapability); else check see_brokerage_commission.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (["admin", "super_admin"].includes(currentUser?.role)) {
+        if (alive) setCanSeeCommission(true);
+        return;
+      }
+      if (!currentUser?.company_id) { if (alive) setCanSeeCommission(false); return; }
+      try {
+        const { data, error } = await supabase
+          .from("role_capabilities")
+          .select("capability, enabled")
+          .eq("company_id", currentUser.company_id)
+          .eq("role", currentUser.role)
+          .eq("capability", "see_brokerage_commission");
+        if (!alive) return;
+        if (error) throw error;
+        setCanSeeCommission(!!(data && data[0] && data[0].enabled === true));
+      } catch (e) {
+        console.warn("Commission capability load error:", e);
+        if (alive) setCanSeeCommission(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [currentUser?.role, currentUser?.company_id]);
   const canAction = isOwner || tookOwnership;
   const canReassign = isAdmin || isManager;
   const isWon    = opp.stage==="Closed Won";
