@@ -253,3 +253,15 @@ ARCHITECTURAL DECISION (locked):
   AFTER the two core layers work. Naming it, not chasing it.
 NET: the important real-world bonus behaviour is covered now via override; only the periodic
 auto-tier is deferred. Founder's memory of developer bonuses was correct and is market-standard.
+
+## STICKY NOTE (30 Jun) — Sales Manager override commission (Layer B variant, FUTURE)
+Founder insight mid-build: an SM who does NOT personally close a deal but acts as a CATALYST
+(coaching/enabling agents to close) may still earn a commission — a MANAGEMENT OVERRIDE on
+deals his team closes. Standard in brokerage comp (managers earn a small percent on team output).
+- THIRD Layer-B participant: Company to Agent (closer) AND Company to Manager (override).
+- Likely shape: a manager-override percent (on company commission, or on agent deals he oversees),
+  configurable per manager, sourced from company commission (NOT the agent cut — TBD).
+- Visibility: manager sees his override; still gated from plain agents.
+- DECISION: log as ADDITIONAL OPTION, build AFTER the core two-participant model works.
+  Do not widen current stages. Revisit at Stage 5 (agent split config) — natural home.
+- Open question: is the override drawn from company_net or a separate slice? Founder decides later.
