@@ -55,38 +55,63 @@ company_commission = sale_price × layerA_pct / 100
 
 ---
 
-## LAYER B — Company ↔ Agent (the agent's cut) — NET-NEW
+## LAYER B — Company <-> Agent (the agent's cut) — NET-NEW  [CORRECTED MODEL — authoritative]
 
-This layer does NOT exist anywhere today. It is the real build.
+An earlier 2-tier draft (agent_default ?? deal_override) was built in Stage 4 with correct math but is
+an INCOMPLETE model. The authoritative model below is 3-TIER + APPRECIATION BONUS + a complete
+per-broker bracket CYCLE + agent-money-only view + full audit. (Decision trail: correction blocks at
+end of doc.)
 
-### Two MODES (founder's field insight — both required)
-A company can pay each agent in one of two modes, chosen by the SM/Owner per agent:
-
+### Two MODES (per agent, both required)
 | Mode | Agent gets | Protects |
 |---|---|---|
-| **percentage** | X% of the COMPANY commission | scales with deal; agent CAN back-calc company margin |
-| **fixed** | a flat amount (e.g. AED 50,000) | company margin CONFIDENTIALITY — agent learns nothing about company's cut |
+| percentage | X% of COMPANY commission | scales with deal; agent CAN back-calc company margin |
+| fixed | a flat amount (e.g. AED 50,000) | company margin CONFIDENTIALITY — agent learns nothing |
 
-**Why fixed mode matters (founder's catch):** if the agent gets "30% of company commission", they can
-reverse-engineer the company's margin and "start getting ideas". Fixed mode shows ONLY their amount —
-the company's developer-commission stays invisible. The SM chooses the mode that fits each agent.
+Fixed mode matters: a % agent can reverse-engineer company margin; fixed shows ONLY their amount.
 
-### DEFAULT + OVERRIDE (same pattern as Layer A — consistency)
-- **DEFAULT** lives on the AGENT'S PROFILE — "Ahmed normally gets 30%" — set once by SM, auto-applies.
-- **OVERRIDE** lives on the OPPORTUNITY — "but on THIS deal, 25%" — set only when needed, else blank.
-- Resolution at calc time: `deal_override ?? agent_default`.
+### Split resolution — 3 TIERS (most-specific wins, mirrors Layer A)
+1. TIER 1 company-wide standard split — a SETTINGS field (e.g. house 20%). Base every broker gets
+   unless their bracket overrides. Lives on companies. SM/Owner sets.
+2. TIER 2 per-broker bracket — role/performance/ability (senior 30%, junior 15%). Overrides company
+   standard for that broker. Lives on profiles. SM/Owner sets AND advances (cycle below).
+3. TIER 3 per-deal override — a specific deal differs. Lives on opportunities.
+
+```
+agent_base = deal_override ?? broker_bracket ?? company_standard
+```
+
+### Per-broker bracket = a COMPLETE LIVING CYCLE (not a dead stored value)
+- SET: SM/Owner configures each broker's bracket (mode + value). [UI = Stage 5]
+- ADVANCE: bracket is a motivation mechanism — SM MANUALLY moves a broker between brackets on
+  role/performance/ability. NOT auto-metrics (founder's call). Every advance REASON-MANDATORY + AUDITED.
+- APPLY: at deal calc, the bracket feeds agent_base.
+- VERIFY: loop must be demonstrable end-to-end (set -> advance -> apply -> agent sees -> audit).
+
+### APPRECIATION BONUS (per-deal — the motivation lever)
+- ADDITIVE on top of agent_base. Per-deal (specific achievement). Per-period = future.
+- WHO: SM/Owner ONLY (capability-gated). Agent NEVER sets it. Admin not by default.
+- HOW: flat AED or percentage of deal commission. REASON-MANDATORY + AUDITED. Lives on opportunities (+audit log).
 
 ### Math
 ```
-percentage mode:  agent_commission = company_commission × split_value / 100
-fixed mode:       agent_commission = split_value   (a flat AED amount, ignores company_commission)
-company_net     = company_commission − agent_commission
+agent_base  = (deal_override ?? broker_bracket ?? company_standard)   // percentage or fixed
+agent_total = agent_base + appreciation_bonus                          // bonus additive
+company_net = company_commission - agent_total                         // agent NEVER sees this
 ```
 
-### Solo broker (World 1)
-- split_mode = percentage, split_value = 100 → agent_commission = company_commission.
-- The existing single-figure behaviour, unchanged. ONE model, both worlds.
+### Agent view = THEIR MONEY ONLY (founder: "this field is all money they see, nothing else")
+- Agent sees agent_base + appreciation_bonus = TOTAL earning. Bonus itemized as "Performance Bonus".
+  NEVER company commission / margin / company_net. SM/Owner sees full breakdown. [agent view = Stage 7]
+- "If there is no motivation there is no progress" — the visible number is the lever.
 
+### Governance (locked)
+ALL bracket changes AND all bonuses are TRACEABLE + AUDITABLE WITH REASONS (same rigor as lead
+reassignment) — a mandatory-reason audit log entry per change.
+
+### Solo broker (World 1)
+- No company-standard / bracket / bonus set → agent_base = company_commission (100%). Single-figure
+  behaviour unchanged. ONE model, both worlds.
 ---
 
 ## SCHEMA (the DB changes — DBA-grade, persisted, never cache-derived)
