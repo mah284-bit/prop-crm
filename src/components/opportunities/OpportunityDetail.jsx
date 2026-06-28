@@ -73,6 +73,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [contract,   setContract]   = useState(null);
   const [commissionInvoice, setCommissionInvoice] = useState(null); // Day 18 — in-opp commission invoice visibility
   const [canSeeCommission, setCanSeeCommission] = useState(false); // Commission Stage 3 — capability gate
+  const [companyStd, setCompanyStd] = useState({ mode: null, value: null }); // Commission correction — Tier 1 company-wide standard split
   const [saving,     setSaving]     = useState(false);
   const [showLog,    setShowLog]    = useState(false);
   const [coachReturn, setCoachReturn] = useState(false); // return to Coach tab after a Coach-triggered action
@@ -173,6 +174,29 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const isOwner  = opp.assigned_to === currentUser.id;
   const isAdmin  = ["super_admin","admin"].includes(currentUser.role);
   const isManager = ["sales_manager","leasing_manager"].includes(currentUser.role);
+
+  // Commission correction — load company-wide standard agent split (Tier 1 fallback).
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!currentUser?.company_id) return;
+      try {
+        const { data, error } = await supabase
+          .from("companies")
+          .select("default_agent_split_mode, default_agent_split_value")
+          .eq("id", currentUser.company_id)
+          .maybeSingle();
+        if (!alive || error) return;
+        setCompanyStd({
+          mode: data?.default_agent_split_mode ?? null,
+          value: (data?.default_agent_split_value === null || data?.default_agent_split_value === undefined) ? null : Number(data.default_agent_split_value),
+        });
+      } catch (e) {
+        console.warn("Company standard split load error:", e);
+      }
+    })();
+    return () => { alive = false; };
+  }, [currentUser?.company_id]);
 
   // Commission Stage 3 — resolve whether this user may see company-side commission figures.
   // Admin/super_admin auto-pass (mirrors App.jsx hasCapability); else check see_brokerage_commission.
@@ -1833,16 +1857,30 @@ You will become the assigned agent.`);
                     const initialAdvance = Math.round(finalPrice * initialPct / 100);
                     const commissionPctFin = Number(opp.commission_pct || 0);
                     const commissionAmt = Math.round(finalPrice * commissionPctFin / 100);
-                    // Layer B (Stage 4) — agent split: deal override ?? agent default; unset = 100% to agent (solo/not-configured)
-                    const _splitMode  = (opp.agent_split_mode ?? agent?.commission_split_mode) || null;
-                    const _splitValRaw = (opp.agent_split_value ?? agent?.commission_split_value);
+                    // Layer B (CORRECTED) — 3-tier split: deal override ?? broker bracket ?? company standard; unset = 100% to agent (solo)
+                    const _splitMode  = (opp.agent_split_mode ?? agent?.commission_split_mode ?? companyStd.mode) || null;
+                    const _splitValRaw = (opp.agent_split_value ?? agent?.commission_split_value ?? companyStd.value);
                     const _splitVal   = (_splitValRaw === null || _splitValRaw === undefined || _splitValRaw === "") ? null : Number(_splitValRaw);
-                    let agentCommission;
-                    if (_splitMode === "fixed" && _splitVal != null)            agentCommission = Math.round(_splitVal * 100) / 100;
-                    else if (_splitMode === "percentage" && _splitVal != null)  agentCommission = Math.round(commissionAmt * _splitVal / 100 * 100) / 100;
-                    else                                                        agentCommission = commissionAmt; // unset/solo = full
+                    // which tier resolved (for display transparency to SM)
+                    const _splitTier = (opp.agent_split_mode != null) ? "deal"
+                                     : (agent?.commission_split_mode != null) ? "broker"
+                                     : (companyStd.mode != null) ? "company" : "none";
+                    let agentBase;
+                    if (_splitMode === "fixed" && _splitVal != null)            agentBase = Math.round(_splitVal * 100) / 100;
+                    else if (_splitMode === "percentage" && _splitVal != null)  agentBase = Math.round(commissionAmt * _splitVal / 100 * 100) / 100;
+                    else                                                        agentBase = commissionAmt; // unset/solo = full
+                    // Appreciation bonus (additive, per-deal) — flat AED or percentage of company commission
+                    const _bonusMode = opp.appreciation_bonus_mode || null;
+                    const _bonusValRaw = opp.appreciation_bonus_value;
+                    const _bonusVal = (_bonusValRaw === null || _bonusValRaw === undefined || _bonusValRaw === "") ? null : Number(_bonusValRaw);
+                    let appreciationBonus = 0;
+                    if (_bonusMode === "fixed" && _bonusVal != null)            appreciationBonus = Math.round(_bonusVal * 100) / 100;
+                    else if (_bonusMode === "percentage" && _bonusVal != null)  appreciationBonus = Math.round(commissionAmt * _bonusVal / 100 * 100) / 100;
+                    const _bonusConfigured = (_bonusMode === "fixed" || _bonusMode === "percentage") && _bonusVal != null;
+                    // agent total = base + bonus; company keeps the rest (agent never sees company_net)
+                    const agentCommission = Math.round((agentBase + appreciationBonus) * 100) / 100;
                     const companyNet = Math.round((commissionAmt - agentCommission) * 100) / 100;
-                    const _splitConfigured = (_splitMode === "fixed" || _splitMode === "percentage") && _splitVal != null;
+                    const _splitConfigured = ((_splitMode === "fixed" || _splitMode === "percentage") && _splitVal != null) || _bonusConfigured;
                     return (
                       <div style={{padding:"4px 2px"}}>
                         {/* Header */}
@@ -1930,11 +1968,23 @@ You will become the assigned agent.`);
                                 </div>
                                 {_splitConfigured && (
                                   <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:2,padding:"10px 12px",background:"#F8FAFC",borderRadius:7,border:"1px dashed #CBD5E1"}}>
-                                    <div style={{fontSize:9,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>Split breakdown</div>
+                                    <div style={{fontSize:9,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>Split breakdown{_splitTier !== "none" ? ` · from ${_splitTier === "deal" ? "this deal" : _splitTier === "broker" ? "broker bracket" : "company standard"}` : ""}</div>
                                     <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#0F2540"}}>
-                                      <span>Agent's cut{_splitMode === "percentage" ? ` (${_splitVal}%)` : " (fixed)"}:</span>
-                                      <strong>AED {Math.round(agentCommission).toLocaleString()}</strong>
+                                      <span>Agent's base{_splitMode === "percentage" ? ` (${_splitVal}%)` : _splitMode === "fixed" ? " (fixed)" : ""}:</span>
+                                      <strong>AED {Math.round(agentBase).toLocaleString()}</strong>
                                     </div>
+                                    {_bonusConfigured && (
+                                      <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#0369A1"}}>
+                                        <span>Performance Bonus{_bonusMode === "percentage" ? ` (+${_bonusVal}%)` : " (+fixed)"}:</span>
+                                        <strong style={{color:"#0369A1"}}>AED {Math.round(appreciationBonus).toLocaleString()}</strong>
+                                      </div>
+                                    )}
+                                    {_bonusConfigured && (
+                                      <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:"#0F2540",borderTop:"1px solid #E2E8F0",paddingTop:6,fontWeight:700}}>
+                                        <span>Agent total:</span>
+                                        <strong>AED {Math.round(agentCommission).toLocaleString()}</strong>
+                                      </div>
+                                    )}
                                     <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#0F2540",borderTop:"1px solid #E2E8F0",paddingTop:6}}>
                                       <span>Company keeps:</span>
                                       <strong style={{color:"#1A7F5A"}}>AED {Math.round(companyNet).toLocaleString()}</strong>
