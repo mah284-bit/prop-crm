@@ -92,9 +92,23 @@ export default function CreateOpportunityDialog({ leads, setLeads, units, projec
             }));
           }
         } else {
+          // No Master Agreement — fall back to company default commission % (Layer A tier 3)
           setMasterAgreement(null);
           if (!commissionUserOverride) {
-            setOppForm(f => ({ ...f, commission_pct: "", master_agreement_id: null }));
+            let companyDefault = "";
+            try {
+              const { data: co } = await supabase
+                .from("companies")
+                .select("default_commission_pct")
+                .eq("id", currentUser.company_id)
+                .maybeSingle();
+              if (!cancelled && co?.default_commission_pct != null) {
+                companyDefault = String(co.default_commission_pct);
+              }
+            } catch (e) { /* fallback stays blank, broker can enter manually */ }
+            if (!cancelled) {
+              setOppForm(f => ({ ...f, commission_pct: companyDefault, master_agreement_id: null }));
+            }
           }
         }
       } catch (err) {
