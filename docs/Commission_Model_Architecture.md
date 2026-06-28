@@ -302,3 +302,36 @@ This is a SECOND revenue cycle alongside sales commission.
 - UI note today: the "Buyer agency services + property management tracked separately (Phase 2 module)"
   line in both commission panels is the breadcrumb for this. Decision on whether to keep/remove/reword
   that line is DEFERRED to this same future discussion (see decimals note below — handled separately).
+
+## ⚠️ EXPANDED CORRECTION (30 Jun) — Per-broker bracket = COMPLETE CYCLE, not just stored math
+Founder sharpened the gap: I delivered only 1 STEP (the split math on a stored value). The per-broker
+bracket must be a COMPLETE, WORKING, VERIFIABLE CYCLE. Three requirements:
+
+1. WHERE WE SET IT — SM/Owner configures each broker's bracket ("Ahmed is on 30%"). No UI today (only
+   the profiles column exists, SQL-only). The setting screen is MISSING.
+
+2. HOW IT ADVANCES + GETS APPRECIATED — the bracket is a LIVING motivation mechanism, not static:
+   - ADVANCEMENT IS MANUAL + SM-DECIDED (NOT auto-metrics — confirmed; matches doc line 216 "SM decides
+     manually"). SM judges role/performance/ability and MOVES the broker between brackets. Every move
+     REASON-MANDATORY + AUDITED.
+   - APPRECIATION = SM-granted bonus on TOP of wherever the broker sits (per-deal, reason+audit).
+   - The SYSTEM records + applies the SM's human decisions traceably; it does NOT auto-promote.
+
+3. CYCLE WITH RESULT — must be VERIFIABLE END-TO-END:
+   SET bracket -> (SM ADVANCES bracket w/ reason+audit) -> APPRECIATE (bonus, audited) -> APPLY (deal
+   closes, correct split+bonus computed) -> AGENT SEES their money (motivation) -> AUDIT (every change
+   traceable w/ reason) -> VERIFY the loop closes with correct numbers.
+   Today only APPLY (math) exists. The rest of the cycle is MISSING.
+
+FULL CORRECTED LAYER B MODEL (locked with founder):
+- TIER 1 company-wide standard split — SETTINGS field (e.g. house 20%). MISSING schema+UI.
+- TIER 2 per-broker bracket — role/perf/ability; SM manually advances, reason+audited. Storage built,
+  cycle (set/advance/audit) MISSING.
+- TIER 3 per-deal override — built.
+- APPRECIATION BONUS — per-deal, SM/Owner-only, additive, reason-mandatory, audited. MISSING entirely.
+- AGENT VIEW = their money only (base + bonus = total earning; NEVER company margin). Founder: "this
+  field is all money they see, nothing else. No motivation, no progress." MISSING (Stage 7 + guarantee).
+- ALL CHANGES traceable + auditable WITH REASONS (founder principle, locked).
+
+resolution: agent_base = deal_override ?? broker_bracket ?? company_standard; agent_total = agent_base
++ appreciation_bonus; company_net = company_commission − agent_total (agent never sees).
