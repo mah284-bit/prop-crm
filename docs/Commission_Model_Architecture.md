@@ -288,3 +288,17 @@ the company explicitly grants it, NOT by default.
   grant it the capability by default.
 - DECISION: DEFER. No exposure risk in waiting (current state is over-permissive, not leaky). Do this
   as a focused ACL pass AFTER the core Layer B model works. Do not fragment the current build flow.
+
+## STICKY NOTE (30 Jun) — Property management revenue cycle (AFTER-RELEASE, Phase 2)
+The "Buyer agency services + property management tracked separately" note in the commission panels
+points at a REAL bigger picture: most UAE broker companies ALSO act as property handlers/managers —
+managing rentals, rent-rise concerns, tenant issues, maintenance coordination, owner retainers, etc.
+This is a SECOND revenue cycle alongside sales commission.
+- Scope (future): property-management retainers, rent-collection cuts, renewal commissions, tenant
+  service fees — a recurring-revenue stream distinct from one-off sales commission.
+- Why it matters: brokerages want ONE platform covering sales commission AND management revenue.
+- DECISION: marked AFTER-RELEASE, Phase 2. Discuss properly AFTER the commission model is fully
+  finished (no deviation now). The current commission build is sales-side only.
+- UI note today: the "Buyer agency services + property management tracked separately (Phase 2 module)"
+  line in both commission panels is the breadcrumb for this. Decision on whether to keep/remove/reword
+  that line is DEFERRED to this same future discussion (see decimals note below — handled separately).
