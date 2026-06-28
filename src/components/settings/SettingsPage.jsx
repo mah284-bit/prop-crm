@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import AgentPoolsSection from "./AgentPoolsSection.jsx";
 import LeadRoutingRulesSection from "./LeadRoutingRulesSection.jsx";
 import GroupBranchesSection from "./GroupBranchesSection.jsx";
+import CommissionSettingsSection from "./CommissionSettingsSection.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
    SettingsPage — Phase 2.1 Day 21
@@ -19,6 +20,7 @@ const SECTIONS = [
   { id: "group_branches", label: "Group & Branches", icon: "🏛️", description: "Your organisation structure — group and its branches" },
   { id: "agent_pools", label: "Agent Pools", icon: "👥", description: "Group agents for round-robin lead distribution" },
   { id: "lead_routing", label: "Lead Routing Rules", icon: "🎯", description: "Configure how pool-sourced leads flow" },
+  { id: "commission", label: "Commission Defaults", icon: "💼", description: "Company-level default commission rate" },
 ];
 
 export default function SettingsPage({ 
@@ -131,6 +133,12 @@ export default function SettingsPage({
           <LeadRoutingRulesSection
             currentUser={currentUser}
             users={users}
+            showToast={showToast}
+          />
+        )}
+        {activeSection === "commission" && (
+          <CommissionSettingsSection
+            currentUser={currentUser}
             showToast={showToast}
           />
         )}
