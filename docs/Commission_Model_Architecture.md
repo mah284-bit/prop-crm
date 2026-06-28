@@ -265,3 +265,26 @@ deals his team closes. Standard in brokerage comp (managers earn a small percent
 - DECISION: log as ADDITIONAL OPTION, build AFTER the core two-participant model works.
   Do not widen current stages. Revisit at Stage 5 (agent split config) — natural home.
 - Open question: is the override drawn from company_net or a separate slice? Founder decides later.
+
+## STICKY NOTE (30 Jun) — Commission ACL refinement: admin is operational, not financial (DEFER)
+Founder clarified mid-build: ADMIN role is operational (config, add users, maintain standards,
+redirect/reassign leads when agents are away) — NOT financial. Admin should see commission ONLY if
+the company explicitly grants it, NOT by default.
+- Current BUILT state: canSeeCommission effect auto-passes ["admin","super_admin"] (inherited from
+  App.jsx hasCapability pattern). This is OVER-permissive for admin (safe — no agent leak — but admin
+  sees commission today when by design they shouldn't unless granted).
+- Doc's actual intent (visibility matrix line 148): "SM/Owner/Admin (HAS CAP)" = capability-driven for
+  all, NOT auto-pass. The admin auto-pass diverged from doc.
+- TARGET model:
+  * super_admin (owner) -> auto-pass (their company/income)
+  * admin -> NO auto-pass; capability-gated, OFF by default, grantable per company
+  * sales_manager / accounts -> capability-gated (normally granted)
+  * plain agent -> never (sees only own cut, later)
+- FIX when we do it: in OpportunityDetail canSeeCommission effect, change auto-pass from
+  ["admin","super_admin"] to ["super_admin"] only; admin falls through to the capability check.
+- NOTE TO RECORD: this makes commission gating INTENTIONALLY STRICTER than the global hasCapability
+  helper (which auto-passes admin). That is correct — money is more sensitive than general features.
+- Also revisit: is "Accounts" a distinct role in the system, or folded into another? If distinct,
+  grant it the capability by default.
+- DECISION: DEFER. No exposure risk in waiting (current state is over-permissive, not leaky). Do this
+  as a focused ACL pass AFTER the core Layer B model works. Do not fragment the current build flow.
