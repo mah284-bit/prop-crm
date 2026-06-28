@@ -1535,6 +1535,7 @@ You will become the assigned agent.`);
                                 )}
                               </div>
 
+                              {canSeeCommission && (
                               <div style={{padding:"14px 16px",background:"#FAFBFE",border:"1px solid #D1D9E6",borderRadius:10}}>
                                 <div style={{fontSize:11,fontWeight:700,color:"#475569",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>
                                   💼 Broker Commission (Revenue)
@@ -1559,6 +1560,7 @@ You will become the assigned agent.`);
                                   📋 Note: Buyer agency services + property management tracked separately (Phase 2 module).
                                 </div>
                               </div>
+                              )}
                             </div>
                           );
                         })()}
