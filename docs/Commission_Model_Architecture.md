@@ -231,3 +231,25 @@ Safety-tag before schema and before any risky stage.
 ## APPROVAL GATE
 Founder reviews this doc. Confirms/corrects against market reality. ONLY on approval do we run Stage 1
 (schema). Until then: zero code, zero schema.
+
+## MARKET VALIDATION + BONUS DECISION (30 Jun 2026)
+Researched whether developer/situational bonuses are real in UAE off-plan. CONFIRMED standard:
+- Developers add bonuses on harder-to-move / less-desirable / lesser-known-developer units, and vary
+  commission by market conditions (multiple sources).
+- Two-tier systems: standard ~5% + extra incentives for bulk sales (e.g. > AED 10M); launch bonuses
+  push off-plan commissions to 10-15% on some projects.
+- INTERNAL AGENCY SPLITS (validates Layer B): agents typically get 50-70% of the commission they
+  generate, balance to the agency. Use 50-70% as the real-world default range when configuring agent
+  splits.
+- Sub-agency/referral: referring agent gets 25-50% of total commission (NOTED for future, not now).
+
+ARCHITECTURAL DECISION (locked):
+- The SITUATIONAL developer bonus (extra % on a specific hard/strategic unit, market-driven) is NOT a
+  new system — it is just a higher Layer-A % on that deal. It is ALREADY handled by the existing
+  resolution hierarchy's TOP tier: Unit/Deal override. SM enters the bonus % as a deal override; it
+  beats the MA default. Works from day one, no new schema.
+- DEFERRED: only the MA volume-threshold auto-bonus (bonus_commission_pct + bonus_threshold, e.g.
+  "5+ deals -> +0.5%"). That needs deal-counting-over-a-period logic = its own mini-feature. Build
+  AFTER the two core layers work. Naming it, not chasing it.
+NET: the important real-world bonus behaviour is covered now via override; only the periodic
+auto-tier is deferred. Founder's memory of developer bonuses was correct and is market-standard.
