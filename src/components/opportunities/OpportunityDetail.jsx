@@ -1833,6 +1833,16 @@ You will become the assigned agent.`);
                     const initialAdvance = Math.round(finalPrice * initialPct / 100);
                     const commissionPctFin = Number(opp.commission_pct || 0);
                     const commissionAmt = Math.round(finalPrice * commissionPctFin / 100);
+                    // Layer B (Stage 4) — agent split: deal override ?? agent default; unset = 100% to agent (solo/not-configured)
+                    const _splitMode  = (opp.agent_split_mode ?? agent?.commission_split_mode) || null;
+                    const _splitValRaw = (opp.agent_split_value ?? agent?.commission_split_value);
+                    const _splitVal   = (_splitValRaw === null || _splitValRaw === undefined || _splitValRaw === "") ? null : Number(_splitValRaw);
+                    let agentCommission;
+                    if (_splitMode === "fixed" && _splitVal != null)            agentCommission = Math.round(_splitVal * 100) / 100;
+                    else if (_splitMode === "percentage" && _splitVal != null)  agentCommission = Math.round(commissionAmt * _splitVal / 100 * 100) / 100;
+                    else                                                        agentCommission = commissionAmt; // unset/solo = full
+                    const companyNet = Math.round((commissionAmt - agentCommission) * 100) / 100;
+                    const _splitConfigured = (_splitMode === "fixed" || _splitMode === "percentage") && _splitVal != null;
                     return (
                       <div style={{padding:"4px 2px"}}>
                         {/* Header */}
@@ -1915,9 +1925,22 @@ You will become the assigned agent.`);
                                   <div style={{fontSize:12,fontWeight:600,color:"#475569"}}>AED {Number(finalPrice).toLocaleString()}</div>
                                 </div>
                                 <div style={{padding:"10px 12px",background:"#ECFDF5",borderRadius:7,border:"1px solid #A8D5BE"}}>
-                                  <div style={{fontSize:9,color:"#065F46",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Your Commission</div>
+                                  <div style={{fontSize:9,color:"#065F46",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Company Commission (Total)</div>
                                   <div style={{fontSize:16,fontWeight:700,color:"#1A7F5A"}}>AED {Number(commissionAmt).toLocaleString()}</div>
                                 </div>
+                                {_splitConfigured && (
+                                  <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:2,padding:"10px 12px",background:"#F8FAFC",borderRadius:7,border:"1px dashed #CBD5E1"}}>
+                                    <div style={{fontSize:9,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>Split breakdown</div>
+                                    <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#0F2540"}}>
+                                      <span>Agent's cut{_splitMode === "percentage" ? ` (${_splitVal}%)` : " (fixed)"}:</span>
+                                      <strong>AED {Math.round(agentCommission).toLocaleString()}</strong>
+                                    </div>
+                                    <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#0F2540",borderTop:"1px solid #E2E8F0",paddingTop:6}}>
+                                      <span>Company keeps:</span>
+                                      <strong style={{color:"#1A7F5A"}}>AED {Math.round(companyNet).toLocaleString()}</strong>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <div style={{padding:"10px 12px",background:"#FEF9C3",borderRadius:7,fontSize:11,color:"#854D0E"}}>
