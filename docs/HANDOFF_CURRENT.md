@@ -1,54 +1,55 @@
-# HANDOFF — CURRENT RESUME POINT
+# PropCRM - Current Handoff (resume point)
+_Last updated: 28 Jun 2026 (Day 43)_
 
-**Last updated:** 30 Jun 2026 (Day 44 evening) — Commission Stages 1-4 shipped, BUT Layer B model
-needs correction before Stage 5. START with the correction.
-**Latest main commit:** (the EXPANDED correction doc commit)
-**Safety tag:** pre-commission-model
+## WHERE WE ARE: Commission Model - agent tier DONE through Stage 5b
 
-## ⚠️ START HERE NEXT SESSION — READ docs/Commission_Model_Architecture.md FIRST
-Specifically the two correction blocks at the END of that doc:
-"STAGE 4 CORRECTION NEEDED" + "EXPANDED CORRECTION — Per-broker bracket = COMPLETE CYCLE".
-Founder caught that Stage 4 shipped a plain 2-tier split (correct MATH, INCOMPLETE MODEL). The real
-model is bigger and must be corrected BEFORE building Stage 5 UI.
+The Commission Model (the revenue heart) is built in stages. Agent-level tier is complete:
 
-## WHAT'S DONE (committed, build-verified)
-- Stage 1 SCHEMA — 10 cols (companies/profiles/opportunities/pp_commission_invoices). Verified.
-- Stage 2 LAYER A — company-default commission fallback (MA->company default->manual). 2a (97c9fce)
-  + 2b Commission Defaults settings section, save-verified (fa6842f).
-- Stage 3 VISIBILITY — both OpportunityDetail commission panels gated by canSeeCommission
-  (c2bf956, a8e0650, 9782d66). Dialog field NOT gated (creation privileged). Stage 3 done.
-- Stage 4 LAYER B (math only, INCOMPLETE model) — split resolution deal_override ?? agent_default;
-  percentage|fixed; company_net; read-only display in Financials panel; both modes verified (c6d9140).
-  ^ This is the part needing correction (see below).
+### DONE + committed + tested
+- Correction (3-tier + bonus model): Layer A (company-developer) + Layer B (company-agent:
+  company-standard -> broker-bracket -> deal-override, + appreciation bonus). Resolution + display
+  verified via SQL on Shrikant opp (7490080c). Commits 9c2675a, b7b9236.
+- Stage 5a - company standard capture: Settings > Commission Defaults captures BOTH company
+  revenue pct AND agent-split house standard (mode + value). Commit 5f3a0a6.
+- Stage 5b - Agentwise Commission Breakup (the living cycle): Settings section (renamed from
+  "Agent Brackets"). Per-agent rate that OVERRIDES the house standard. Complete cycle:
+  SET (UI) -> FLOOR GATE (bracket >= company standard; inherits company single mode pct or fixed;
+  live above/below hint; no-standard-set blocks setting) -> REASON forced -> AUDIT (commission_audit_log,
+  RLS-secured, fatal-if-audit-fails) -> CALC flows to opportunity -> RATE HISTORY visible in dialog
+  (from->to + reason + date). Commits a2c5790, 42e0a43. Tested end-to-end (34/35 blocked, 35.5 saved,
+  history renders, audit rows confirmed).
+- HEAD = 7413950. Tree clean. All pushed to main.
 
-## ⚠️ NEXT SESSION — STAGE 4 CORRECTION (before Stage 5)
-The full corrected Layer B model (locked with founder):
-- TIER 1 company-wide standard split — SETTINGS field (e.g. 20%). MISSING schema+UI.
-- TIER 2 per-broker bracket — role/perf; SM MANUALLY advances w/ reason+audit. Storage built; the
-  SET/ADVANCE/AUDIT cycle MISSING. Must be a COMPLETE working cycle, not a dead field.
-- TIER 3 per-deal override — built.
-- APPRECIATION BONUS (per-deal) — SM/Owner-only, additive, reason-mandatory, audited. MISSING entirely.
-- AGENT VIEW = their money only (base+bonus total; never company margin). MISSING (Stage 7 + guarantee).
-- EVERYTHING traceable+auditable WITH REASONS.
+### Tables/columns (all live in Supabase)
+- companies: default_commission_pct, default_agent_split_mode, default_agent_split_value
+- profiles: commission_split_mode, commission_split_value
+- opportunities: agent_split_mode, agent_split_value, appreciation_bonus_mode/value/reason
+- pp_commission_invoices: agent_id, agent_split_mode/value, agent_commission, company_net
+- commission_audit_log (NEW table, RLS insert+select policies added - company_id scoped via profiles)
 
-Sequence next session:
-1. Update doc Layer B section to the 3-tier + bonus + agent-only-view + audit model.
-2. Add schema: companies.default_agent_split_mode/value; opportunities.appreciation_bonus_mode/value/
-   reason; bracket-change + bonus AUDIT LOG (reason-mandatory).
-3. Correct Stage 4 resolution to full hierarchy + bonus; re-verify math.
-4. THEN Stage 5 — config UIs (company-standard settings field; per-broker bracket set/advance screen
-   with reason+audit; per-deal bonus control gated to SM/Owner with reason). Each gated, each logged.
-5. Stage 6 invoice freeze; Stage 7 agent-facing money-only view; Stage 8 e2e verify both worlds.
+## NEXT: Stage 5c - per-deal bonus + override ON THE OPPORTUNITY
+SM-only, capability-gated, mandatory reason -> commission_audit_log (action bonus_grant / deal_override).
+The opportunity already has the schema (appreciation_bonus_*, agent_split_* override). Stage 5c builds
+the UI to SET them per-deal in OpportunityDetail Financials (resolution + display already read them).
 
-## OTHER STICKY NOTES (in design doc)
-- SM override commission (catalyst/mgmt cut on team deals) — build after core.
-- ACL: admin operational-not-financial; target super_admin-only auto-pass (admin currently
-  over-permissive but NOT leaky) — fix during correction or after.
-- Property management revenue cycle — after-release Phase 2.
+## THEN: Stage 6 (invoice freeze - extend SPA-signed auto-invoice ~OppDetail 787-836 to freeze
+agent_commission + company_net), Stage 7 (agent-facing money-only view), Stage 8 (verify both worlds).
 
-## DISCIPLINE
-- npm run build before every commit; visual check UI; commit per stage; push always.
-- Pay-math: DB-stored, DB-read, invoice=frozen authoritative; never alter company commission.
-- ALL commission/bracket/bonus changes: reason-mandatory + audited (founder principle).
-- Repo /d/prop-crm, branch main, MINGW64. supabase import "../../lib/supabase.js".
-- Test opp for splits: 7490080c-de51-4ad2-818d-65085d7895e9 (reset to null/null).
+## PARKED (sticky notes in docs/Commission_Model_Architecture.md - read before resuming)
+- Management Commission Hierarchy (broker-manager-group rollup; needs ORG REPORTING TREE first; pure
+  Sales not ERP; dedicated future phase) - the big one.
+- SM/Admin direct-earning eligibility (earning=assignment not role; reconcile w/ ACL + SM-override).
+- Mixed top-up (fixed kicker on pct base, e.g. +10K/sale negotiation) - standing per-agent bonus, design
+  after seeing response.
+- ACL refinement (canSeeCommission: change auto-pass from [admin,super_admin] to [super_admin] only).
+- Movable commission dialogs (UX polish).
+- Property management revenue cycle (after-release Phase 2).
+
+## OPERATIONAL NOTES
+- Repo /d/prop-crm, Windows MINGW64, branch main -> prop-crm-two.vercel.app
+- File delivery: heredoc cat > / Python scripts (abort-safe). Arrows/special chars jam heredocs - use Python.
+- supabase import: "../../lib/supabase.js"
+- Vite stale-module "no default export" after full-file rewrite -> clears on incognito/fresh load.
+- commission_audit_log: any new tenant table needs RLS insert+select policies (company_id via profiles).
+- Tags: pre-commission-model, pre-commission-correction, commission-agent-tier-5b-day43 (golden).
+- npm run build before every commit. One cut, one visual check. No half-built commits.
