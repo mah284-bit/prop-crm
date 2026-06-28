@@ -442,3 +442,8 @@ standard 35%; manager negotiates "can't raise your %, but +AED 10K per sale". A 
 fixed kicker ON TOP of the % base — a real negotiation pattern (can't rule it out). Overlaps existing
 appreciation_bonus schema but that is per-deal one-off; this is a standing per-agent arrangement (every
 sale). Design next week after seeing response. NOT the gate — the gate is now.
+
+## STICKY NOTE (30 Jun) — Make commission dialogs movable (UX polish, LATER)
+Most app dialogs are already movable/draggable. The new commission dialogs (Set rate, and later the
+per-deal bonus/override dialog) are fixed-center modals. Founder: make them movable too for consistency
+— LATER, after the core commission cycle is done. Pure UX polish, no logic. Low priority.
