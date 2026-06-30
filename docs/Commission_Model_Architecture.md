@@ -655,3 +655,17 @@ SOLO WORLD (Sole Broker Test): SETUP COMPLETE + code-confirmed, final walk DEFER
     session after/with the identity fix, through a correctly-scoped tenant owner.
 NEXT SESSION: (1) identity/ACL pass (the root-cause work), THEN (2) walk the solo deal Reserved→SPA
 Signed to close Stage 8, confirming 120k clean view + freeze + audit as a properly-scoped solo broker.
+
+## NOTE (30 Jun) — Stage 8 solo test: payment-schedule fields not populated (expected)
+Solo test deal (Federer, Sole Broker Test) created with final_price + commission_pct ONLY — enough to
+verify COMMISSION (120k solo, 100% to broker, clean view ✅). But buyer-PAYMENT side shows zeros:
+"Final Agreed Price 3,000,000 / 0" and Pre-SPA Payments all Pending (Booking, Reservation, Initial
+advance, SPA fee, DLD, Oqood) because reservation/initial-advance amounts were never entered.
+NOT a bug — incomplete test data on the payment side. Commission engine verified independently of
+payment schedule. Founder flagged (correctly): initial advance + reservation amounts SHOULD pull into
+deal financials when entered; zero here only because unpopulated.
+TIES TO DEFERRED SPA PASS: "SPA Signed" as a one-click stage advance oversimplifies a big real process
+(developer-side SPA fee collection, invoices/receipts from developer, recording payments for deal
+completion, uploading developer bills for record). Stage should likely be a flag/checkbox reached AFTER
+that process, not a casual stage button. Already in SPA sticky notes — capture this framing there too
+when the SPA cleanup pass runs. NOT touched now.
