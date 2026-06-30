@@ -472,3 +472,35 @@ Stage 5c (per-deal bonus + override on the opportunity) is complete. Decisions +
 4. UX NOTE — the two-step below-standard confirm (amber Review -> red Confirm) is two clicks to exit.
    Founder: "fine for now." Alternative if revisited: single red Save disabled until a checkbox
    "I confirm this is below standard" is ticked. Low priority.
+
+## STICKY NOTE (30 Jun) — SPA / stage-gate revisit (CAPTURE ONLY — revisit, no build now)
+Surfaced while testing the Stage 6 invoice freeze (moving a deal to SPA Signed). Notes to revisit:
+
+1. RESERVATION FEE not surfacing on the SPA stage-gate form. A reservation fee paid in a PRIOR step
+   does not show in the Pre-SPA Payments list, so the user had to mark it "Waived" to proceed. The
+   form should READ and DISPLAY already-captured reservation/booking payments, not require re-entry.
+   -> Review the SPA stage-gate form's payment capture/display + how prior payments are linked.
+
+2. BOOKING vs RESERVATION fee model (founder open question — needs proper design):
+   - Is a BOOKING fee taken first to mark the unit "Booked", then ADJUSTED into the reservation fee
+     or the initial advance? Sequence + adjustment rules unclear.
+   - Refund/reversal on cancellation (loan not approved, buyer loses interest, etc.): reverse all
+     payments BUT retain an administration/admin fee for work done + handle advances. Define the
+     refundable vs non-refundable split and the reversal flow.
+   - COMMISSION RULE (important): NO commission on any fees (booking/reservation/DLD/admin/etc.).
+     Commission is computed on PRICE ONLY. Confirm the commission base everywhere excludes fees.
+
+3. SPA form itself needs a full review pass to ensure correct capture of all pre-SPA payments and
+   their statuses. Important but DEFERRED — note now, revisit as a focused SPA pass (not in commission
+   stages). No deviation now.
+
+## SPA UPLOAD UX NOTE (30 Jun) — append to the SPA revisit (no build now)
+NOT a bug — the SPA upload control works, but the UX ordering has a gap:
+- The "Click to upload SPA" control renders INSIDE the SPA-Signed stage gate (optional there — can be
+  skipped). The Close-Won dialog only VALIDATES that a doc exists (hasSpaDoc, ~line 4722) and offers
+  NO upload control. So if upload is skipped at SPA-Signed, Close-Won blocks with no way forward
+  except returning to the SPA-Signed gate to upload.
+- Working path exists: upload at SPA-Signed -> Close-Won passes. So testers are not hard-blocked.
+- DECISION for the SPA pass: either (a) make SPA upload REQUIRED at SPA-Signed (can't confirm without
+  it), or (b) ADD an upload control to the Close-Won dialog too, or (c) both. Workflow design choice —
+  decide during the focused SPA revisit, not piecemeal.
