@@ -324,3 +324,28 @@ TARGET END STATE:
 The flag-based fixes already shipped (Cut 1 nav, Cut 2a UsersTab) are correct under THIS model too —
 they ensure only the real platform owner sees platform surfaces. Next: adopt tenant-tier role for
 owners + RLS. SoleBrokerUser should be RE-CREATED as tenant-tier (not super_admin) when we build this.
+
+## 🛑 DECISION (30 Jun) — stop app-layer whack-a-mole; RLS is the cure
+After Cut 1 (nav) + Cut 2a (UsersTab), testing as SoleBrokerUser (company has 0 activities, confirmed
+in DB) STILL shows "Activity Log: 1" — a 4th leak: a count computed from unscoped activities data.
+This is the pattern founder warned about all session: each app-layer count/list computes independently,
+so there's always a NEXT leak (Companies → Users → Activity → dashboard tallies → ...).
+
+ARCHITECT CALL (founder aligned): STOP patching app-layer leaks one by one. The STRUCTURAL leaks
+(Companies tab, company switcher, Users list — navigation/access surfaces) are closed + committed
+(Cut 1, 2a) — those mattered. The remaining ones are COUNT leaks (activity=1, dashboard tallies):
+lower severity (a number, not row-level browsing) AND exactly what RLS eliminates wholesale.
+
+WHY RLS IS THE CURE (not more patches): with RLS on activities/leads/opportunities/etc., a tenant's
+browser NEVER RECEIVES another company's rows — so no count, widget, or list can display them. One
+properly-scoped DB layer makes the ENTIRE class of count-leak bugs impossible, vs hunting each widget
+forever. RLS + the founder's tenant-tier-role model = the end product. App-layer flag-checks become
+defense-in-depth on top, not the only defense.
+
+NEXT SESSION (the real identity/RLS pass, fresh focus):
+1. RLS policies on all tenant tables (activities, leads, opportunities, proposals, etc.) scoped by
+   company_id; platform owner (is_super_admin) bypass where legitimate.
+2. Adopt founder's tenant-tier-role model (owners NOT super_admin); re-create SoleBrokerUser as
+   tenant-tier.
+3. Verify: tenant sees ONLY own company everywhere, by DB enforcement not UI hiding.
+DO NOT continue app-layer count-patching — it's symptom-chasing. RLS is the cure.
