@@ -153,3 +153,12 @@ Both WORK today and don't leak agents into company margin. But they are the exac
 flagged. The ACL pass removes them. Until then, the system is correct-but-rigid: changing who sees what
 needs a code touch for those two, OR the table grant for canSeeCommission. That's the debt we're
 knowingly carrying, documented, to be paid in the ACL pass.
+
+## ⚠️ CLEANUP TAB FOR THE ACL PASS (30 Jun)
+During the Stage 7 test we MANUALLY flipped one row to unblock Arun:
+  role_capabilities: company c23a2320..., sales_manager, see_brokerage_commission = true (was false).
+This was test-setup, NOT the final seeded model. When the ACL pass runs Phase A (seed sane per-company
+defaults), this hand-edited row must be RECONCILED — either it becomes the proper seeded default, or
+it is removed/overwritten by the seed. DO NOT leave a manual one-off alongside seeded defaults =
+double source of truth = the exact "double checks and issues" the founder warned about. Reconcile this
+row as part of Phase A.
