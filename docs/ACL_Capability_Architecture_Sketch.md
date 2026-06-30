@@ -162,3 +162,15 @@ defaults), this hand-edited row must be RECONCILED — either it becomes the pro
 it is removed/overwritten by the seed. DO NOT leave a manual one-off alongside seeded defaults =
 double source of truth = the exact "double checks and issues" the founder warned about. Reconcile this
 row as part of Phase A.
+
+## GUIDING PRINCIPLE (30 Jun, founder) — hard-codings are the killers
+Founder's organizing insight after the 40% mystery + the visibility bugs: things were built as "quick
+fixes without futuristic thought," and hard-coded role lists in code are the killers. The 40% split is
+the GOOD pattern (companies.default_agent_split_* read from DATA, company-configurable). The BAD pattern
+is hard-coded role lists that bypass config: see_all=p_view_leads||p_view_leasing (conflation),
+canSeeCommission auto-pass ["admin","super_admin"], canSeeCompanyMargin=isAdmin||isManager.
+NORTH STAR FOR THE ACL PASS: every permission/visibility decision reads from configurable data
+(role_capabilities / company settings), NEVER a hard-coded role list in code. Only true ownership
+(super_admin owns their company) stays structural. If a brokerage wants to reassign who-sees-what, they
+do it in Settings — code obeys the table. This is the test for every gate during the ACL pass: "is this
+reading config, or hard-coding a role?" If hard-coding → fix it.
