@@ -290,3 +290,12 @@ The half-hearted version would be: split identities pre-demo, do it under time p
 *Source: Founder observation during Phase 2.1 RPC test setup*
 *Status: Architectural foundation document. Cross-referenced by all multi-tenant features.*
 *Next: Resume Phase 2.1 real-world test, knowing Phase 2.1 design is compatible with target identity model.*
+
+## ADDENDUM (30 Jun) — Onboarding role must be separate from tenant super_admin (founder restated)
+During Stage 8 solo-broker setup, founder restated the Tier-1/Tier-2 split concretely: the role that
+ONBOARDS companies + provisions users (Platform Operator) must be SEPARATE from the super_admin who
+OWNS/operates a brokerage (Tenant Super Admin). Today conflated in founder's account (documented
+testing shortcut). For SOLO broker: Platform Operator onboards the company; the single user is that
+brokerage's owner (Tenant Super Admin) AND its agent. NO pre-Stage-8 change — post-demo identity
+refactor (Phases A-E). Stage 8 uses the founder-as-onboarder shortcut to create the solo company; the
+100%-to-broker commission path is what Stage 8 verifies.
