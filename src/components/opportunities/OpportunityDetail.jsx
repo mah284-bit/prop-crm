@@ -210,6 +210,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const isOwner  = opp.assigned_to === currentUser.id;
   const isAdmin  = ["super_admin","admin"].includes(currentUser.role);
   const isManager = ["sales_manager","leasing_manager"].includes(currentUser.role);
+  const canSeeCompanyMargin = isAdmin || isManager;
 
   // Commission correction — load company-wide standard agent split (Tier 1 fallback).
   useEffect(() => {
@@ -2098,13 +2099,17 @@ You will become the assigned agent.`);
                                   <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Based on Final Price</div>
                                   <div style={{fontSize:12,fontWeight:600,color:"#475569"}}>AED {Number(finalPrice).toLocaleString()}</div>
                                 </div>
+                                {canSeeCompanyMargin && (
                                 <div style={{padding:"10px 12px",background:"#ECFDF5",borderRadius:7,border:"1px solid #A8D5BE"}}>
                                   <div style={{fontSize:9,color:"#065F46",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Company Commission (Total)</div>
                                   <div style={{fontSize:16,fontWeight:700,color:"#1A7F5A"}}>AED {Number(commissionAmt).toLocaleString()}</div>
                                 </div>
+                                )}
+                                {canSeeCompanyMargin && (
                                 <button onClick={openBonusDialog} disabled={!canSeeCommission} style={{padding:"8px 10px",fontSize:11,fontWeight:600,borderRadius:7,border:"1px dashed #93C5FD",background:"#fff",color:"#1D4ED8",cursor:"pointer"}}>
                                   {_bonusConfigured ? "Edit performance bonus" : "+ Add performance bonus (this deal)"}
                                 </button>
+                                )}
                                 {showBonusDialog && (
                                   <Modal title="Performance bonus - this deal" width={460} onClose={()=>{ if(!bonusSaving) setShowBonusDialog(false); }}>
                                     <div style={{fontSize:12,color:"#64748B",marginBottom:14,lineHeight:1.5}}>
@@ -2142,9 +2147,11 @@ You will become the assigned agent.`);
                                     </div>
                                   </Modal>
                                 )}
+                                {canSeeCompanyMargin && (
                                 <button onClick={openOverrideDialog} disabled={!canSeeCommission} style={{padding:"8px 10px",fontSize:11,fontWeight:600,borderRadius:7,border:"1px dashed #C4B5FD",background:"#fff",color:"#6D28D9",cursor:"pointer"}}>
                                   {opp.agent_split_mode ? "Edit deal split override" : "Override split (this deal)"}
                                 </button>
+                                )}
                                 {showOverrideDialog && (() => {
                                   const stdSet = companyStd.mode && companyStd.value != null;
                                   const stdLabel = !stdSet ? "no company standard set" : companyStd.mode === "percentage" ? `${companyStd.value}%` : `AED ${Number(companyStd.value).toLocaleString()}`;
@@ -2195,7 +2202,7 @@ You will become the assigned agent.`);
                                 {_splitConfigured && (
                                   <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:2,padding:"10px 12px",background:_belowStandard?"#FFFBEB":"#F8FAFC",borderRadius:7,border:_belowStandard?"1px solid #F59E0B":"1px dashed #CBD5E1"}}>
                                     <div style={{fontSize:9,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>Split breakdown{_splitTier !== "none" ? ` · from ${_splitTier === "deal" ? "this deal" : _splitTier === "broker" ? "broker bracket" : "company standard"}` : ""}</div>
-                                    {_belowStandard && (<div style={{display:"inline-flex",alignItems:"center",gap:5,alignSelf:"flex-start",fontSize:10,fontWeight:700,color:"#92400E",background:"#FDE68A",border:"1px solid #F59E0B",borderRadius:20,padding:"2px 9px"}}>⚠ Below company standard ({companyStd.mode==="percentage"?`${companyStd.value}%`:`AED ${Number(companyStd.value).toLocaleString()}`})</div>)}
+                                    {canSeeCompanyMargin && _belowStandard && (<div style={{display:"inline-flex",alignItems:"center",gap:5,alignSelf:"flex-start",fontSize:10,fontWeight:700,color:"#92400E",background:"#FDE68A",border:"1px solid #F59E0B",borderRadius:20,padding:"2px 9px"}}>⚠ Below company standard ({companyStd.mode==="percentage"?`${companyStd.value}%`:`AED ${Number(companyStd.value).toLocaleString()}`})</div>)}
                                     <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#0F2540"}}>
                                       <span>Agent's base{_splitMode === "percentage" ? ` (${_splitVal}%)` : _splitMode === "fixed" ? " (fixed)" : ""}:</span>
                                       <strong>AED {Math.round(agentBase).toLocaleString()}</strong>
@@ -2212,10 +2219,17 @@ You will become the assigned agent.`);
                                         <strong>AED {Math.round(agentCommission).toLocaleString()}</strong>
                                       </div>
                                     )}
+                                    {!canSeeCompanyMargin && _bonusConfigured && opp.appreciation_bonus_reason && (
+                                      <div style={{marginTop:2,padding:"7px 10px",background:"#EFF6FF",borderRadius:6,border:"1px solid #BFDBFE",fontSize:11,color:"#1E40AF"}}>
+                                        Bonus awarded: <span style={{fontStyle:"italic"}}>{opp.appreciation_bonus_reason}</span>
+                                      </div>
+                                    )}
+                                    {canSeeCompanyMargin && (
                                     <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#0F2540",borderTop:"1px solid #E2E8F0",paddingTop:6}}>
                                       <span>Company keeps:</span>
                                       <strong style={{color:"#1A7F5A"}}>AED {Math.round(companyNet).toLocaleString()}</strong>
                                     </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
