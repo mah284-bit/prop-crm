@@ -74,6 +74,9 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [commissionInvoice, setCommissionInvoice] = useState(null); // Day 18 — in-opp commission invoice visibility
   const [canSeeCommission, setCanSeeCommission] = useState(false); // Commission Stage 3 — capability gate
   const [companyStd, setCompanyStd] = useState({ mode: null, value: null }); // Commission correction — Tier 1 company-wide standard split
+  const [showBonusDialog, setShowBonusDialog] = useState(false); // Stage 5c-1 per-deal performance bonus
+  const [bonusForm, setBonusForm] = useState({ mode: "fixed", value: "", reason: "" });
+  const [bonusSaving, setBonusSaving] = useState(false);
   const [saving,     setSaving]     = useState(false);
   const [showLog,    setShowLog]    = useState(false);
   const [coachReturn, setCoachReturn] = useState(false); // return to Coach tab after a Coach-triggered action
@@ -238,6 +241,56 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const proj     = unit ? projects.find(p=>p.id===unit.project_id) : null;
   const sp       = unit ? salePricing.find(s=>s.unit_id===unit.id) : null;
   const agent    = users.find(u=>u.id===opp.assigned_to);
+  // Stage 5c-1 -- per-deal performance bonus (additive, reason-mandatory, audited)
+  const openBonusDialog = () => {
+    setBonusForm({
+      mode: opp.appreciation_bonus_mode || "fixed",
+      value: opp.appreciation_bonus_value != null ? String(opp.appreciation_bonus_value) : "",
+      reason: "",
+    });
+    setShowBonusDialog(true);
+  };
+  const saveBonus = async ({ clear = false } = {}) => {
+    const reason = bonusForm.reason.trim();
+    if (!reason) { showToast?.("A reason is required (audit trail)", "error"); return; }
+    let toMode = null, toValue = null;
+    if (!clear) {
+      const v = Number(String(bonusForm.value).trim());
+      if (Number.isNaN(v) || v <= 0) { showToast?.("Enter a bonus amount greater than zero", "error"); return; }
+      if (bonusForm.mode === "percentage" && v > 100) { showToast?.("Percentage cannot exceed 100%", "error"); return; }
+      toMode = bonusForm.mode; toValue = v;
+    }
+    const fromMode = opp.appreciation_bonus_mode || null;
+    const fromValue = opp.appreciation_bonus_value != null ? Number(opp.appreciation_bonus_value) : null;
+    if (fromMode === toMode && fromValue === toValue) { showToast?.("No change to save", "error"); return; }
+    setBonusSaving(true);
+    try {
+      const logRow = {
+        company_id: currentUser.company_id,
+        action: clear ? "bonus_clear" : "bonus_grant",
+        subject_user_id: opp.assigned_to || null,
+        opportunity_id: opp.id,
+        from_mode: fromMode, from_value: fromValue,
+        to_mode: toMode, to_value: toValue,
+        reason: reason, triggered_by: currentUser.id,
+      };
+      const { error: logErr } = await supabase.from("commission_audit_log").insert(logRow);
+      if (logErr) throw new Error("Audit log failed - change not applied: " + logErr.message);
+      const { error: upErr } = await supabase.from("opportunities").update({
+        appreciation_bonus_mode: toMode,
+        appreciation_bonus_value: toValue,
+        appreciation_bonus_reason: clear ? null : reason,
+      }).eq("id", opp.id);
+      if (upErr) throw upErr;
+      onUpdated?.({ ...opp, appreciation_bonus_mode: toMode, appreciation_bonus_value: toValue, appreciation_bonus_reason: clear ? null : reason });
+      showToast?.(clear ? "Bonus removed" : "Performance bonus saved", "success");
+      setShowBonusDialog(false);
+    } catch (e) {
+      showToast?.("Couldn't save: " + e.message, "error");
+    } finally {
+      setBonusSaving(false);
+    }
+  };
   const sm       = OPP_STAGE_META[opp.stage]||OPP_STAGE_META["New"];
 
   useEffect(()=>{
@@ -1966,6 +2019,33 @@ You will become the assigned agent.`);
                                   <div style={{fontSize:9,color:"#065F46",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Company Commission (Total)</div>
                                   <div style={{fontSize:16,fontWeight:700,color:"#1A7F5A"}}>AED {Number(commissionAmt).toLocaleString()}</div>
                                 </div>
+                                <button onClick={openBonusDialog} disabled={!canSeeCommission} style={{padding:"8px 10px",fontSize:11,fontWeight:600,borderRadius:7,border:"1px dashed #93C5FD",background:"#fff",color:"#1D4ED8",cursor:"pointer"}}>
+                                  {_bonusConfigured ? "Edit performance bonus" : "+ Add performance bonus (this deal)"}
+                                </button>
+                                {showBonusDialog && (
+                                  <Modal title="Performance bonus - this deal" width={460} onClose={()=>{ if(!bonusSaving) setShowBonusDialog(false); }}>
+                                    <div style={{fontSize:12,color:"#64748B",marginBottom:14,lineHeight:1.5}}>
+                                      A one-off bonus for <strong>{agent?.full_name || "the assigned agent"}</strong> on this deal, on top of their base split. Company commission: <strong>AED {Number(commissionAmt).toLocaleString()}</strong>.
+                                    </div>
+                                    <label style={{display:"block",fontSize:12,fontWeight:600,color:"#0F2540",marginBottom:6}}>Bonus type</label>
+                                    <select value={bonusForm.mode} onChange={e=>setBonusForm(f=>({...f,mode:e.target.value}))} style={{width:"100%",fontSize:14,padding:"9px 10px",borderRadius:8,border:"1.5px solid #D1D9E6",marginBottom:14}}>
+                                      <option value="fixed">Fixed amount (AED)</option>
+                                      <option value="percentage">Percentage of company commission</option>
+                                    </select>
+                                    <label style={{display:"block",fontSize:12,fontWeight:600,color:"#0F2540",marginBottom:6}}>{bonusForm.mode==="percentage"?"Bonus (%)":"Bonus amount (AED)"}</label>
+                                    <input type="number" min="0" step="0.01" value={bonusForm.value} onChange={e=>setBonusForm(f=>({...f,value:e.target.value}))} placeholder={bonusForm.mode==="percentage"?"e.g. 5":"e.g. 10000"} style={{width:"100%",fontSize:14,padding:"9px 10px",borderRadius:8,border:"1.5px solid #D1D9E6",marginBottom:14}}/>
+                                    <label style={{display:"block",fontSize:12,fontWeight:600,color:"#0F2540",marginBottom:6}}>Reason <span style={{color:"#B42318"}}>*</span></label>
+                                    <textarea value={bonusForm.reason} onChange={e=>setBonusForm(f=>({...f,reason:e.target.value}))} rows={2} placeholder="e.g. Closed above asking, exceptional effort" style={{width:"100%",fontSize:13,padding:"9px 10px",borderRadius:8,border:"1.5px solid #D1D9E6",marginBottom:4,resize:"vertical",fontFamily:"inherit"}}/>
+                                    <p style={{fontSize:11,color:"#94A3B8",margin:"0 0 18px"}}>Required - recorded in the commission audit trail.</p>
+                                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+                                      <div>{_bonusConfigured && (<button onClick={()=>saveBonus({clear:true})} disabled={bonusSaving} style={{padding:"9px 14px",fontSize:12,fontWeight:600,borderRadius:8,border:"1px solid #FCA5A5",background:"#fff",color:"#B42318",cursor:"pointer"}}>Remove bonus</button>)}</div>
+                                      <div style={{display:"flex",gap:10}}>
+                                        <button onClick={()=>{ if(!bonusSaving) setShowBonusDialog(false); }} disabled={bonusSaving} style={{padding:"9px 18px",fontSize:13,fontWeight:600,borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",color:"#475569",cursor:"pointer"}}>Cancel</button>
+                                        <button onClick={()=>saveBonus()} disabled={bonusSaving} style={{padding:"9px 20px",fontSize:13,fontWeight:600,borderRadius:8,border:"none",background:bonusSaving?"#CBD5E1":"#0F2540",color:"#fff",cursor:bonusSaving?"default":"pointer"}}>{bonusSaving?"Saving...":"Save bonus"}</button>
+                                      </div>
+                                    </div>
+                                  </Modal>
+                                )}
                                 {_splitConfigured && (
                                   <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:2,padding:"10px 12px",background:"#F8FAFC",borderRadius:7,border:"1px dashed #CBD5E1"}}>
                                     <div style={{fontSize:9,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>Split breakdown{_splitTier !== "none" ? ` · from ${_splitTier === "deal" ? "this deal" : _splitTier === "broker" ? "broker bracket" : "company standard"}` : ""}</div>
