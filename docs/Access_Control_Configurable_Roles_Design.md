@@ -262,3 +262,25 @@ hierarchy, capability model, defense-in-depth security floor, RLS enforcement) B
 code. Founder verifies understanding before hands-on. The design docs being written now are the
 source material for that synthesis. Produced when the access-control layer is built and proven -
 not now (don't document a moving target).
+
+## CONNECTION (30 Jun) — today's identity work is the FIRST PIECE of this design
+Today (Day 44) we hit the super_admin leak (tenant super_admin saw all companies) and fixed the ROOT:
+is_super_admin() RLS function now checks the is_super_admin FLAG not role='super_admin' string —
+closing cross-tenant leak across all ~50 tables. THAT IS the WHO axis / Platform-Operator lockdown
+from this doc's Three-Axis model — we built the first piece without realizing the full design already
+existed here.
+
+REALIZATION: the New User form bug (shows company UUID; offers super_admin to tenants; no branch
+concept) is NOT a patch job — it is DOWNSTREAM of this access-control model. A correct "create user"
+form requires: (1) role list constrained to creator's tier (tenant can't mint Platform Operator/above),
+(2) Company→Branch→Group assignment per the WHERE axis, (3) capabilities from the configurable model.
+The form can't be right until the model it assigns into is built.
+
+DECISION: build the UNIFIED ACCESS-CONTROL LAYER per THIS doc as one coherent pass (not piecemeal —
+the doc itself warns of the forward/backward rework trap). Sequence:
+- WHO axis (Platform Operator vs Tenant) — RLS root-fix DONE today; tenant-tier role for owners next.
+- WHAT axis — configurable role→capability (role_capabilities table exists; code must trust it).
+- WHERE axis — Group→Branch→company scoping (group_id built Stage 1; wire visibility + branch assignment).
+- THEN: New User form, Settings UI for capability config, visibility everywhere — all fall out correctly.
+Today's piecemeal fixes (Cut 1 nav, Cut 2a UsersTab, RLS function) are correct pieces; remaining work
+is to build the rest IN ORDER per this spec, not patch leak-by-leak.
