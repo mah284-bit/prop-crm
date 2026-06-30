@@ -556,3 +556,27 @@ Likely an orphaned setMeetings call in an onAuthStateChange/logout handler where
 scope (leftover from a refactor). Also saw: /api/reset-password 404 (separate — reset-password endpoint
 not running locally). FIX: locate App.jsx:2458, remove/repair the setMeetings reference. Small, but
 throws on every auth change. Capture now, fix as a quick separate cut (not commission stages).
+
+## 🛑 BUG (30 Jun) — Sales agent sees ALL company opportunities (list-level visibility failure)
+Found during Stage 7 same-company isolation test. "New Test user 14" (sales_agent, Al Mansoori) opens
+Opportunities and sees ALL 38 deals — including deals owned by other users (Rajesh's Boris Becker deal,
+Abid's Shrikant, etc.). A sales_agent must see ONLY their own assigned deals (unless granted see_all).
+
+DISTINCTION (important):
+- Stage 7 (DONE) = gates what's shown INSIDE a deal's commission panel (agent sees own money, not margin). WORKS.
+- THIS BUG = gates WHICH DEALS appear in the Opportunities LIST. The list is NOT scoped by owner for
+  non-manager agents. Different gate, different layer.
+
+LIKELY CAUSE: the Opportunities list query/render lacks an assigned_to = currentUser.id filter for
+roles without the see_all capability. "All owners" filter + "38 of 38" implies no owner-scoping applied
+for agents. Check getVisibleCompanyIds / opp list fetch / the owner filter default per role.
+
+SCOPE TO CHECK (full pass, post-break):
+- Opportunities list (confirmed broken)
+- Leads list, Customers, Commission Outstanding, Dashboard, Inventory — verify each scopes correctly
+  per role (agent = own; manager = team/see_all; admin/super_admin per capability).
+- Cross-check against the ACL sketch — this is part of the same "code must enforce capability-scoped
+  visibility" theme. Likely belongs WITH the ACL pass, or as an urgent pre-tester fix before it.
+
+SEVERITY: HIGH — agents seeing all company deals (and their values/owners) is a real data-leak inside a
+tenant. Must fix before tester weekend. NOT a commission-stage item — separate visibility/ACL bug.
