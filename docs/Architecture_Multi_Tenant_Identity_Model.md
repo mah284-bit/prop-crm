@@ -299,3 +299,28 @@ testing shortcut). For SOLO broker: Platform Operator onboards the company; the 
 brokerage's owner (Tenant Super Admin) AND its agent. NO pre-Stage-8 change — post-demo identity
 refactor (Phases A-E). Stage 8 uses the founder-as-onboarder shortcut to create the solo company; the
 100%-to-broker commission path is what Stage 8 verifies.
+
+## FOUNDER'S MODEL (30 Jun) — don't give tenants super_admin at all; use tenant-tier role(s)
+Founder's plan (raised repeatedly, now adopted as target): the cleanest fix is NOT to patch
+super_admin's leaks — it's to STOP giving brokerage owners the super_admin role. A solo/brokerage owner
+should hold a TENANT-TIER role (admin, or a new 'tenant_owner') that bundles full in-company power
+(≈ Admin operational + Sales Manager commission authority) but has ZERO platform reach.
+
+WHY THIS IS BETTER than patching super_admin:
+- super_admin = role==="super_admin" unlocks platform surfaces. A tenant with that role triggers every
+  platform check. If the tenant simply ISN'T super_admin, the leak never fires — root avoided, not patched.
+- One person has one profiles.role today, so "give both Admin + Sales Manager" isn't literally
+  assignable. SOLUTION = either a new 'tenant_owner' role bundling those caps, OR the capability model
+  (role_capabilities) granting both sets to one role per company.
+
+TARGET END STATE:
+1. super_admin + is_super_admin=true = PLATFORM owner ONLY (founder). Never assigned to a tenant.
+2. Brokerage owner = tenant-tier role with full in-company capability via role_capabilities, NO platform
+   reach. The "Admin + Sales Manager" combined powers, expressed as capabilities.
+3. Platform surfaces gate on is_super_admin FLAG (done — Cut 1/2a); tenant powers flow from
+   role_capabilities (ACL pass). Flag + capability model = belt and suspenders.
+4. RLS enforces company isolation at the DB so none of this depends on UI gating alone.
+
+The flag-based fixes already shipped (Cut 1 nav, Cut 2a UsersTab) are correct under THIS model too —
+they ensure only the real platform owner sees platform surfaces. Next: adopt tenant-tier role for
+owners + RLS. SoleBrokerUser should be RE-CREATED as tenant-tier (not super_admin) when we build this.
