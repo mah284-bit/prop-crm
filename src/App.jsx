@@ -2455,7 +2455,7 @@ export default function App(){
     };
     restore();
     const{data:{subscription}}=supabase.auth.onAuthStateChange(async(event,session)=>{
-      if(event==="SIGNED_OUT"){setCurrentUser(null);setLeads([]);setProperties([]);setActivities([]);setMeetings([]);setFollowups([]);setOpps([]);setCompanies([]);localStorage.removeItem("propccrm_company_cache");}
+      if(event==="SIGNED_OUT"){setCurrentUser(null);setLeads([]);setProperties([]);setActivities([]);setFollowups([]);setOpps([]);setCompanies([]);localStorage.removeItem("propccrm_company_cache");}
       if(event==="PASSWORD_RECOVERY"){setPwRecovery(true);}
       if(event==="TOKEN_REFRESHED"&&session?.user){const{data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();if(p)setCurrentUser(u=>({...u,...p}));}
     });
