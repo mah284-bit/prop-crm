@@ -77,6 +77,11 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [showBonusDialog, setShowBonusDialog] = useState(false); // Stage 5c-1 per-deal performance bonus
   const [bonusForm, setBonusForm] = useState({ mode: "fixed", value: "", reason: "" });
   const [bonusSaving, setBonusSaving] = useState(false);
+  const [showOverrideDialog, setShowOverrideDialog] = useState(false); // Stage 5c-2 per-deal split override
+  const [overrideForm, setOverrideForm] = useState({ value: "", reason: "" }); // mode inherits company standard
+  const [overrideSaving, setOverrideSaving] = useState(false);
+  const [overrideConfirm, setOverrideConfirm] = useState(false); // 5c-2 two-step confirm for below-standard
+  const [dealHistory, setDealHistory] = useState([]); // 5c shared deal commission history
   const [saving,     setSaving]     = useState(false);
   const [showLog,    setShowLog]    = useState(false);
   const [coachReturn, setCoachReturn] = useState(false); // return to Coach tab after a Coach-triggered action
@@ -242,7 +247,18 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const sp       = unit ? salePricing.find(s=>s.unit_id===unit.id) : null;
   const agent    = users.find(u=>u.id===opp.assigned_to);
   // Stage 5c-1 -- per-deal performance bonus (additive, reason-mandatory, audited)
+  const fmtHistVal = (mode, val) => val == null ? "" : (mode === "percentage" ? `${val}%` : `AED ${Number(val).toLocaleString()}`);
+  const fmtHistDate = (iso) => { try { return new Date(iso).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}); } catch { return ""; } };
+  const histLabel = (h) => h.action==="bonus_grant"?`Bonus +${fmtHistVal(h.to_mode,h.to_value)}`:h.action==="bonus_clear"?"Bonus removed":h.action==="deal_override"?`Split override \u2192 ${fmtHistVal(h.to_mode,h.to_value)}`:h.action==="deal_override_clear"?"Override removed":h.action;
+  const loadDealHistory = async () => {
+    setDealHistory([]);
+    try {
+      const { data } = await supabase.from("commission_audit_log").select("action, to_mode, to_value, reason, created_at").eq("opportunity_id", opp.id).in("action", ["bonus_grant","bonus_clear","deal_override","deal_override_clear"]).order("created_at",{ascending:false}).limit(20);
+      setDealHistory(data || []);
+    } catch (e) { console.warn("deal history load error", e); }
+  };
   const openBonusDialog = () => {
+    loadDealHistory();
     setBonusForm({
       mode: opp.appreciation_bonus_mode || "fixed",
       value: opp.appreciation_bonus_value != null ? String(opp.appreciation_bonus_value) : "",
@@ -289,6 +305,59 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       showToast?.("Couldn't save: " + e.message, "error");
     } finally {
       setBonusSaving(false);
+    }
+  };
+  // Stage 5c-2 -- per-deal split override (this deal only; overrides the agent's bracket).
+  // Per founder decision (30 Jun): INFORM, do not block below standard -- warn + reason + audit.
+  const openOverrideDialog = () => {
+    const sameMode = opp.agent_split_mode === companyStd.mode;
+    setOverrideForm({
+      value: (sameMode && opp.agent_split_value != null) ? String(opp.agent_split_value) : "",
+      reason: "",
+    });
+    setOverrideConfirm(false);
+    loadDealHistory();
+    setShowOverrideDialog(true);
+  };
+  const saveOverride = async ({ clear = false } = {}) => {
+    const reason = overrideForm.reason.trim();
+    if (!reason) { showToast?.("A reason is required (audit trail)", "error"); return; }
+    const mode = companyStd.mode; // inherits company mode (single-mode model)
+    if (!clear && !mode) { showToast?.("Set a company standard in Commission Defaults first", "error"); return; }
+    let toMode = null, toValue = null;
+    if (!clear) {
+      const v = Number(String(overrideForm.value).trim());
+      if (Number.isNaN(v) || v <= 0) { showToast?.("Enter an override value greater than zero", "error"); return; }
+      if (mode === "percentage" && v > 100) { showToast?.("Percentage cannot exceed 100%", "error"); return; }
+      toMode = mode; toValue = v;
+    }
+    const fromMode = opp.agent_split_mode || null;
+    const fromValue = opp.agent_split_value != null ? Number(opp.agent_split_value) : null;
+    if (fromMode === toMode && fromValue === toValue) { showToast?.("No change to save", "error"); return; }
+    setOverrideSaving(true);
+    try {
+      const logRow = {
+        company_id: currentUser.company_id,
+        action: clear ? "deal_override_clear" : "deal_override",
+        subject_user_id: opp.assigned_to || null,
+        opportunity_id: opp.id,
+        from_mode: fromMode, from_value: fromValue,
+        to_mode: toMode, to_value: toValue,
+        reason: reason, triggered_by: currentUser.id,
+      };
+      const { error: logErr } = await supabase.from("commission_audit_log").insert(logRow);
+      if (logErr) throw new Error("Audit log failed - change not applied: " + logErr.message);
+      const { error: upErr } = await supabase.from("opportunities").update({
+        agent_split_mode: toMode, agent_split_value: toValue,
+      }).eq("id", opp.id);
+      if (upErr) throw upErr;
+      onUpdated?.({ ...opp, agent_split_mode: toMode, agent_split_value: toValue });
+      showToast?.(clear ? "Deal override removed" : "Deal split override saved", "success");
+      setShowOverrideDialog(false);
+    } catch (e) {
+      showToast?.("Couldn't save: " + e.message, "error");
+    } finally {
+      setOverrideSaving(false);
     }
   };
   const sm       = OPP_STAGE_META[opp.stage]||OPP_STAGE_META["New"];
@@ -1918,6 +1987,7 @@ You will become the assigned agent.`);
                     const _splitTier = (opp.agent_split_mode != null) ? "deal"
                                      : (agent?.commission_split_mode != null) ? "broker"
                                      : (companyStd.mode != null) ? "company" : "none";
+                    const _belowStandard = _splitTier === "deal" && _splitMode != null && _splitMode === companyStd.mode && _splitVal != null && companyStd.value != null && _splitVal < Number(companyStd.value);
                     let agentBase;
                     if (_splitMode === "fixed" && _splitVal != null)            agentBase = Math.round(_splitVal * 100) / 100;
                     else if (_splitMode === "percentage" && _splitVal != null)  agentBase = Math.round(commissionAmt * _splitVal / 100 * 100) / 100;
@@ -2027,6 +2097,19 @@ You will become the assigned agent.`);
                                     <div style={{fontSize:12,color:"#64748B",marginBottom:14,lineHeight:1.5}}>
                                       A one-off bonus for <strong>{agent?.full_name || "the assigned agent"}</strong> on this deal, on top of their base split. Company commission: <strong>AED {Number(commissionAmt).toLocaleString()}</strong>.
                                     </div>
+                                    {dealHistory.length > 0 && (
+                                      <div style={{marginBottom:16}}>
+                                        <div style={{fontSize:11,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px",marginBottom:6}}>This deal's commission history</div>
+                                        <div style={{border:"1px solid #E6EAF0",borderRadius:8,maxHeight:130,overflowY:"auto"}}>
+                                          {dealHistory.map((h,i)=>(
+                                            <div key={i} style={{padding:"7px 11px",borderTop:i===0?"none":"1px solid #F1F5F9",fontSize:12}}>
+                                              <div style={{color:"#0F2540",fontWeight:600}}>{histLabel(h)}<span style={{float:"right",color:"#94A3B8",fontWeight:500}}>{fmtHistDate(h.created_at)}</span></div>
+                                              {h.reason && <div style={{color:"#64748B",marginTop:1,fontStyle:"italic"}}>{h.reason}</div>}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
                                     <label style={{display:"block",fontSize:12,fontWeight:600,color:"#0F2540",marginBottom:6}}>Bonus type</label>
                                     <select value={bonusForm.mode} onChange={e=>setBonusForm(f=>({...f,mode:e.target.value}))} style={{width:"100%",fontSize:14,padding:"9px 10px",borderRadius:8,border:"1.5px solid #D1D9E6",marginBottom:14}}>
                                       <option value="fixed">Fixed amount (AED)</option>
@@ -2046,9 +2129,60 @@ You will become the assigned agent.`);
                                     </div>
                                   </Modal>
                                 )}
+                                <button onClick={openOverrideDialog} disabled={!canSeeCommission} style={{padding:"8px 10px",fontSize:11,fontWeight:600,borderRadius:7,border:"1px dashed #C4B5FD",background:"#fff",color:"#6D28D9",cursor:"pointer"}}>
+                                  {opp.agent_split_mode ? "Edit deal split override" : "Override split (this deal)"}
+                                </button>
+                                {showOverrideDialog && (() => {
+                                  const stdSet = companyStd.mode && companyStd.value != null;
+                                  const stdLabel = !stdSet ? "no company standard set" : companyStd.mode === "percentage" ? `${companyStd.value}%` : `AED ${Number(companyStd.value).toLocaleString()}`;
+                                  const raw = String(overrideForm.value).trim();
+                                  const nv = raw === "" ? null : Number(raw);
+                                  const below = stdSet && nv != null && !Number.isNaN(nv) && nv < Number(companyStd.value);
+                                  return (
+                                  <Modal title="Override split - this deal" width={470} onClose={()=>{ if(!overrideSaving) setShowOverrideDialog(false); }}>
+                                    <div style={{fontSize:12,color:"#64748B",marginBottom:14,lineHeight:1.5}}>
+                                      A one-off split for <strong>{agent?.full_name || "the assigned agent"}</strong> on <strong>this deal only</strong> - overrides their standing bracket. Company commission: <strong>AED {Number(commissionAmt).toLocaleString()}</strong>.
+                                    </div>
+                                    <div style={{fontSize:12,fontWeight:600,color:"#6D28D9",background:"#F5F3FF",borderRadius:8,padding:"8px 12px",marginBottom:16}}>Company standard: {stdLabel}</div>
+                                    {dealHistory.length > 0 && (
+                                      <div style={{marginBottom:16}}>
+                                        <div style={{fontSize:11,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px",marginBottom:6}}>This deal's commission history</div>
+                                        <div style={{border:"1px solid #E6EAF0",borderRadius:8,maxHeight:130,overflowY:"auto"}}>
+                                          {dealHistory.map((h,i)=>(
+                                            <div key={i} style={{padding:"7px 11px",borderTop:i===0?"none":"1px solid #F1F5F9",fontSize:12}}>
+                                              <div style={{color:"#0F2540",fontWeight:600}}>{histLabel(h)}<span style={{float:"right",color:"#94A3B8",fontWeight:500}}>{fmtHistDate(h.created_at)}</span></div>
+                                              {h.reason && <div style={{color:"#64748B",marginTop:1,fontStyle:"italic"}}>{h.reason}</div>}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    <label style={{display:"block",fontSize:12,fontWeight:600,color:"#0F2540",marginBottom:6}}>{companyStd.mode==="percentage"?"Override rate (%)":"Override amount (AED)"}</label>
+                                    <input type="number" min="0" step="0.01" value={overrideForm.value} onChange={e=>{setOverrideForm(f=>({...f,value:e.target.value})); setOverrideConfirm(false);}} placeholder={companyStd.mode==="percentage"?"e.g. 40":"e.g. 40000"} style={{width:"100%",fontSize:14,padding:"9px 10px",borderRadius:8,border:`1.5px solid ${below?"#F59E0B":"#D1D9E6"}`,marginBottom:4}}/>
+                                    <div style={{fontSize:11,minHeight:16,marginBottom:12,color:below?"#B45309":"#94A3B8"}}>{below?`⚠ Below the company standard of ${stdLabel} - allowed, but recorded.`:(nv!=null&&stdSet&&nv>=Number(companyStd.value)?"At or above standard.":"")}</div>
+                                    <label style={{display:"block",fontSize:12,fontWeight:600,color:"#0F2540",marginBottom:6}}>Reason <span style={{color:"#B42318"}}>*</span></label>
+                                    <textarea value={overrideForm.reason} onChange={e=>setOverrideForm(f=>({...f,reason:e.target.value}))} rows={2} placeholder="e.g. Special low-margin deal, agreed with agent" style={{width:"100%",fontSize:13,padding:"9px 10px",borderRadius:8,border:"1.5px solid #D1D9E6",marginBottom:4,resize:"vertical",fontFamily:"inherit"}}/>
+                                    <p style={{fontSize:11,color:"#94A3B8",margin:"0 0 18px"}}>Required - recorded in the commission audit trail.</p>
+                                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+                                      <div>{opp.agent_split_mode && (<button onClick={()=>saveOverride({clear:true})} disabled={overrideSaving} style={{padding:"9px 14px",fontSize:12,fontWeight:600,borderRadius:8,border:"1px solid #FCA5A5",background:"#fff",color:"#B42318",cursor:"pointer"}}>Remove override</button>)}</div>
+                                      <div style={{display:"flex",gap:10}}>
+                                        <button onClick={()=>{ if(!overrideSaving) setShowOverrideDialog(false); }} disabled={overrideSaving} style={{padding:"9px 18px",fontSize:13,fontWeight:600,borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",color:"#475569",cursor:"pointer"}}>Cancel</button>
+                                        {below ? (overrideConfirm ? (
+                                          <button onClick={()=>saveOverride({confirm:true})} disabled={overrideSaving} style={{padding:"9px 16px",fontSize:13,fontWeight:700,borderRadius:8,border:"none",background:overrideSaving?"#CBD5E1":"#B42318",color:"#fff",cursor:overrideSaving?"default":"pointer"}}>{overrideSaving?"Saving...":"Confirm \u2014 save below standard"}</button>
+                                        ) : (
+                                          <button onClick={()=>{ if(!overrideForm.reason.trim()){ showToast?.("A reason is required before you can review (audit trail)","error"); return; } setOverrideConfirm(true); }} disabled={overrideSaving} style={{padding:"9px 16px",fontSize:13,fontWeight:700,borderRadius:8,border:"none",background:"#D97706",color:"#fff",cursor:"pointer"}}>Review \u2014 below standard</button>
+                                        )) : (
+                                          <button onClick={()=>saveOverride()} disabled={overrideSaving} style={{padding:"9px 20px",fontSize:13,fontWeight:600,borderRadius:8,border:"none",background:overrideSaving?"#CBD5E1":"#0F2540",color:"#fff",cursor:overrideSaving?"default":"pointer"}}>{overrideSaving?"Saving...":"Save override"}</button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </Modal>
+                                  );
+                                })()}
                                 {_splitConfigured && (
-                                  <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:2,padding:"10px 12px",background:"#F8FAFC",borderRadius:7,border:"1px dashed #CBD5E1"}}>
+                                  <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:2,padding:"10px 12px",background:_belowStandard?"#FFFBEB":"#F8FAFC",borderRadius:7,border:_belowStandard?"1px solid #F59E0B":"1px dashed #CBD5E1"}}>
                                     <div style={{fontSize:9,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>Split breakdown{_splitTier !== "none" ? ` · from ${_splitTier === "deal" ? "this deal" : _splitTier === "broker" ? "broker bracket" : "company standard"}` : ""}</div>
+                                    {_belowStandard && (<div style={{display:"inline-flex",alignItems:"center",gap:5,alignSelf:"flex-start",fontSize:10,fontWeight:700,color:"#92400E",background:"#FDE68A",border:"1px solid #F59E0B",borderRadius:20,padding:"2px 9px"}}>⚠ Below company standard ({companyStd.mode==="percentage"?`${companyStd.value}%`:`AED ${Number(companyStd.value).toLocaleString()}`})</div>)}
                                     <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:"#0F2540"}}>
                                       <span>Agent's base{_splitMode === "percentage" ? ` (${_splitVal}%)` : _splitMode === "fixed" ? " (fixed)" : ""}:</span>
                                       <strong>AED {Math.round(agentBase).toLocaleString()}</strong>
