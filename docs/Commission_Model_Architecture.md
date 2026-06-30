@@ -514,3 +514,13 @@ GENUINE errors happen (wrong final price, wrong document). Better model:
 - Open question for the SPA pass: when a manager amends a signed SPA that already froze an invoice,
   does the invoice RE-freeze to new values, or stay locked with an audited amendment record? (Lean:
   audited re-freeze, since the correction is deliberate + on record.) Decide during the SPA revisit.
+
+## STICKY NOTE (30 Jun) — Commission REPORTS (future phase, after Stage 7/8)
+Once per-agent and per-manager commission views exist (Stage 7), reporting is the natural next build:
+- AGENT report: my earnings — base + bonuses per deal, per period, with reasons (motivation). No company margin.
+- MANAGER/OWNER report: full commission P&L — company gross, agent payouts, company net margin,
+  by agent / by period / by developer. Below-standard overrides surfaced for review.
+- Feeds / aligns with the existing Commission Outstanding screen (invoiced -> received).
+- Frozen invoice values (Stage 6) are the source of truth for closed deals — reports read frozen
+  numbers, not live recompute, so reported commission matches what was closed.
+Scope as its own reporting phase. Note now, build after the agent/manager views (7) + end-to-end (8).
