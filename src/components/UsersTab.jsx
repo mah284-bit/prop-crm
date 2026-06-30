@@ -12,7 +12,7 @@ export default function UsersTab({currentUser, showToast}) {
   const [showAdd,   setShowAdd]   = useState(false);
   const [editUser,  setEditUser]  = useState(null);
   const [saving,    setSaving]    = useState(false);
-  const isSuperAdmin = currentUser.is_super_admin || currentUser.role === "super_admin";
+  const isSuperAdmin = currentUser.is_super_admin === true; // platform owner only (flag, NOT role string) — tenant super_admin sees own company only
   const blank = {full_name:"",email:"",role:"sales_agent",is_active:true,company_id:currentUser.company_id||"",password:""};
   const [form, setForm] = useState(blank);
   const sf = k => e => setForm(f=>({...f,[k]:e.target?.value??e}));
