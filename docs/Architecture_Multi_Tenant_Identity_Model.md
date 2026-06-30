@@ -349,3 +349,17 @@ NEXT SESSION (the real identity/RLS pass, fresh focus):
    tenant-tier.
 3. Verify: tenant sees ONLY own company everywhere, by DB enforcement not UI hiding.
 DO NOT continue app-layer count-patching — it's symptom-chasing. RLS is the cure.
+
+## PRINCIPLE (30 Jun, founder) — buyer identity is per-company; cross-company duplication is CORRECT
+Founder stated the multi-tenant buyer rule precisely:
+- A real buyer may be talking to MANY brokerages at once → he is legitimately a lead/buyer in multiple
+  companies simultaneously. Same person across different companies = EXPECTED and must be ALLOWED.
+  Each company owns their OWN record/relationship with him. Never merge or block across companies.
+- Duplicate of the same buyer WITHIN one company = the MAJOR problem dedupe must catch (messy data,
+  split history). Dedupe is COMPANY-SCOPED: check email/phone within company_id before creating.
+- Identity = the row's id + company_id, NOT the name. Two "Roger Federer" rows in two companies are two
+  distinct identities. Name is a label; id-scoped-by-company is the identity.
+- NEVER MIXING UP across companies is critical — the foundation. RLS must enforce this at the DB so
+  cross-company bleed is IMPOSSIBLE, not merely avoided in code.
+RLS PASS must honor this: tenant queries return ONLY own-company rows (so cross-company buyer records
+never collide/bleed); within-company dedupe stays an app-level email/phone check scoped by company_id.
