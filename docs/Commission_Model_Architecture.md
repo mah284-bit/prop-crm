@@ -606,3 +606,29 @@ assigned_to for non-see_all roles) — likely FOLD INTO the ACL pass since it's 
 independently — needs systematic sweep, not piecemeal. Pre-tester: the LIST fix (shipped) stops the
 worst leak (browsing other agents' actual deals); summary-count leaks are lower severity (aggregate
 numbers, not row-level access) but still must be fixed before real brokerage use.
+
+## 🅿️ PARKED (30 Jun) — Dashboard refinement + ACL = separate focused sessions
+Architect call (founder agreed): the critical ROW-LEVEL leak is CLOSED (Opportunities list + LeadDetail
+chips scoped & shipped — agents can no longer browse other agents' actual deal records). The REMAINING
+dashboard work is systemic and must NOT be chased piecemeal mid-session ("going on and on"). Separated:
+
+SESSION A — DASHBOARD REFINEMENT (own session):
+Every dashboard tile needs ONE consistent rule set:
+- OWNED data (scope to agent for non-see_all): opps, leads, tasks/activities, followups. [tasks/followups
+  scoping was started this session — verify it landed: visibleActs/visibleFups in Dashboard.jsx.]
+- SHARED data (company-wide, correct by design): inventory/units (Available/Reserved). An agent SHOULD
+  see the shared unit catalog. NOT a leak.
+- FRAMING CONSISTENCY (founder's point): "Available 25 / 50 total" reads clearly; "Reserved 12" alone
+  does NOT — no denominator, doesn't reconcile (25 avail + 12 reserved ≠ 50; ~13 in other states hidden).
+  Every tile must tell a complete, reconcilable story. Decide ratio framing + which filters belong.
+- ALL TABS share this nature (founder: "all the tabs are of same nature") — needs a systematic sweep,
+  one rule applied everywhere, not tile-by-tile guesses.
+
+SESSION B — ACL / CAPABILITY PASS (own session, see ACL sketch doc):
+Table-as-source-of-truth, code trusts role_capabilities, RLS for money, structural-vs-assignable,
+Settings UI for free assignment. Dashboard scoping shares this root principle (capability-scoped
+visibility) so A and B are siblings — sequence B's RLS work to back A's app-layer scoping.
+
+WHAT'S DONE & SAFE FOR TESTERS NOW: row-level deal isolation (the dangerous leak). Aggregate-count and
+dashboard-framing issues are lower severity (numbers, not row access) and are knowingly deferred to
+Session A. Do A+B as a block post-commission (Stage 8), not interleaved with build.
