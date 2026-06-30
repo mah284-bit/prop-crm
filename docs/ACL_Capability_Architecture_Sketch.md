@@ -174,3 +174,30 @@ NORTH STAR FOR THE ACL PASS: every permission/visibility decision reads from con
 (super_admin owns their company) stays structural. If a brokerage wants to reassign who-sees-what, they
 do it in Settings — code obeys the table. This is the test for every gate during the ACL pass: "is this
 reading config, or hard-coding a role?" If hard-coding → fix it.
+
+## 🔴 ROOT-CAUSE PATTERN (30 Jun) — code trusts hard-coded ROLE STRINGS, not DATA flags/config
+Founder has flagged this repeatedly ("it should be free flow", "think before acting"). Today's bugs are
+ALL the same disease — code keys off a hard-coded role string instead of the data-driven flag/config
+that already exists:
+
+PROVEN INSTANCES:
+1. Platform vs tenant super_admin: App.jsx:1352/1379 (Companies tab roles:["super_admin"]) and 2650
+   (isSA = role==="super_admin") gate on the STRING. The data already has the correct flag:
+   mah284 is_super_admin=true (real platform owner), solebrokeruser is_super_admin=false (tenant owner)
+   — but code ignores the flag, so a tenant super_admin gets platform reach (Companies tab, company
+   switcher, all-companies user list). Should gate on is_super_admin flag, not role string.
+2. see_all = p_view_leads || p_view_leasing (conflation — viewing leads ≠ seeing all deals).
+3. canSeeCommission auto-pass ["admin","super_admin"]; canSeeCompanyMargin = isAdmin||isManager.
+4. Opportunities list defaulted "All owners" for everyone (fixed app-layer; RLS still pending).
+
+THE CURE (one principle, applied everywhere in the ACL/identity pass):
+Every permission/visibility/platform decision must read DATA — is_super_admin flag, role_capabilities
+table, company settings — NEVER a hard-coded role string in code. Role strings describe a job title;
+they must not BE the access decision. The flags/config are the source of truth; code obeys them.
+
+DO NOT fix piecemeal. The string→flag swap for super_admin LOOKS small but a UI-only swap (hide
+Companies tab) while the DATA layer (RLS, queries) still leaks via API = the "looks fixed but isn't"
+half-measure. UI gating + RLS scoping must ship together. This is the identity refactor
+(Architecture_Multi_Tenant_Identity_Model.md Phases A-E) + ACL pass, done as ONE coherent body of work,
+thought through fully before acting. Today's job was to PROVE the pattern (done); the FIX is its own
+deliberate pass.
