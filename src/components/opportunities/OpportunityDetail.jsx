@@ -1016,11 +1016,19 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           lookedUpDeveloperId = ma?.developer_id || null;
         }
 
+        // Stage 6 — FREEZE the agent split onto the invoice at SPA-Signed (same resolution the SM saw).
+        // Computed on the GROSS commission (pre-VAT) — the agent's cut is of earned commission, not VAT.
+        const _frozen = resolveCommission(opp, agent, companyStd, commissionGross);
         const { error: invErr } = await supabase
           .from("pp_commission_invoices")
           .insert({
             company_id: currentUser.company_id,
             opportunity_id: opp.id,
+            agent_id: opp.assigned_to || null,
+            agent_split_mode: _frozen._splitMode,
+            agent_split_value: _frozen._splitVal,
+            agent_commission: _frozen.agentCommission,
+            company_net: _frozen.companyNet,
             sales_closure_id: closure?.id || null,
             developer_id: lookedUpDeveloperId,
             master_agreement_id: opp.master_agreement_id || null,
