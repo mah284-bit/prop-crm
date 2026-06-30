@@ -639,3 +639,19 @@ and growth coming, card-per-company won't scale. Needs a proper company-manageme
 filter, paginate, status, sort) — belongs with the Platform Operator / multi-tenant identity work
 (Architecture_Multi_Tenant_Identity_Model.md), NOT commission. Also: clean up test-husk companies
 (2 with 0 users: "Test Company - 16-06-2026", "Gulf Leasing Solutions") at some point. Note + defer.
+
+## STAGE 8 STATUS (30 Jun) — substantially verified; solo final-walk deferred
+COMPANY WORLD (Al Mansoori): VERIFIED across 4-role test today — company-standard split, per-deal bonus,
+per-deal override, SPA-Signed invoice freeze (immutable), agent money-only view, manager/admin full
+view, cross-tenant isolation. The set→advance→apply→agent-sees→audit loop demonstrated.
+SOLO WORLD (Sole Broker Test): SETUP COMPLETE + code-confirmed, final walk DEFERRED.
+  - Company 5cbd690c... created with default_agent_split_mode/value = NULL (→ 100% to broker).
+  - SoleBrokerUser f85784c9... (super_admin of that company) created.
+  - Deal 5daa5139... "SOLO TEST - Federer 100% broker": Reserved, 3M × 4% = AED 120,000, split NULL.
+  - Code path CONFIRMED correct: resolveCommission line 41 (no split → agentBase=commissionAmt=100%);
+    render line 2202 (_splitConfigured false → NO split breakdown, broker sees full 120k clean).
+  - WALK DEFERRED because: logging in as SoleBrokerUser surfaced the platform-reach identity leak
+    (see identity doc). Verifying commission THROUGH a leaky identity is muddy; walk it in a clean
+    session after/with the identity fix, through a correctly-scoped tenant owner.
+NEXT SESSION: (1) identity/ACL pass (the root-cause work), THEN (2) walk the solo deal Reserved→SPA
+Signed to close Stage 8, confirming 120k clean view + freeze + audit as a properly-scoped solo broker.
