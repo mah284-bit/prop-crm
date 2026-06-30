@@ -524,3 +524,26 @@ Once per-agent and per-manager commission views exist (Stage 7), reporting is th
 - Frozen invoice values (Stage 6) are the source of truth for closed deals — reports read frozen
   numbers, not live recompute, so reported commission matches what was closed.
 Scope as its own reporting phase. Note now, build after the agent/manager views (7) + end-to-end (8).
+
+## STICKY NOTE (30 Jun) — Capability assignment must be company-configurable (ACL architecture, REVISIT)
+Founder concern (raised during Stage 7 manager-view test): we are hard-coding role->capability rules
+in CODE (the OpportunityDetail canSeeCommission auto-pass for ["admin","super_admin"]) AND partly in
+data (role_capabilities table). If brokerages want to FREELY assign who sees/decides commission, the
+hard-coded code gate will fight the configurable table and cause issues.
+
+PRINCIPLE TO ADOPT: the role_capabilities table is the source of truth (per-company, per-role,
+toggleable) — it is the RIGHT, flexible mechanism. The CODE should TRUST that table, not hard-code
+role lists that bypass it. Auto-pass in code (super_admin aside, as company owner) is what diverges.
+
+REVISIT as a focused ACL pass (not piecemeal):
+- Decide what is STRUCTURAL (e.g. super_admin owner always sees own company) vs ASSIGNABLE (everything
+  else flows from role_capabilities, set per company in Settings UI).
+- Remove/limit hard-coded role lists in commission gates; read capability from the table.
+- Decide gate location: app-layer capability check vs RLS (DB-enforced). Money may warrant RLS so it
+  is enforced server-side, not just hidden in UI.
+- Provide a Settings UI for brokerages to assign capabilities to roles freely (the "free assignment"
+  the founder is protecting).
+- Current data state (Al Mansoori) at time of note: admin=true, sales_manager=false, sales_agent=false
+  for see_brokerage_commission. Per doc, SM should be normally-granted; admin should default OFF
+  (admin is operational, not financial — see ACL refinement note above).
+NO deviation now — note + continue. Fix in the dedicated ACL pass.
