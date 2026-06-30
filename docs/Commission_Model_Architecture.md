@@ -504,3 +504,13 @@ NOT a bug — the SPA upload control works, but the UX ordering has a gap:
 - DECISION for the SPA pass: either (a) make SPA upload REQUIRED at SPA-Signed (can't confirm without
   it), or (b) ADD an upload control to the Close-Won dialog too, or (c) both. Workflow design choice —
   decide during the focused SPA revisit, not piecemeal.
+
+## SPA RE-EDIT — REFINEMENT (30 Jun): manager-amend, not hard-lock
+Refinement on the immutability note above. A hard "no changes after SPA Signed" is too rigid —
+GENUINE errors happen (wrong final price, wrong document). Better model:
+- AGENTS: SPA gate is read-only once Signed (cannot change a signed commitment).
+- MANAGERS (sales_manager / admin / super_admin): CAN amend a signed SPA, but the amendment must be
+  AUDITED (who, what changed, reason) — same governance as commission overrides.
+- Open question for the SPA pass: when a manager amends a signed SPA that already froze an invoice,
+  does the invoice RE-freeze to new values, or stay locked with an audited amendment record? (Lean:
+  audited re-freeze, since the correction is deliberate + on record.) Decide during the SPA revisit.
