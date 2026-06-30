@@ -580,3 +580,29 @@ SCOPE TO CHECK (full pass, post-break):
 
 SEVERITY: HIGH — agents seeing all company deals (and their values/owners) is a real data-leak inside a
 tenant. Must fix before tester weekend. NOT a commission-stage item — separate visibility/ACL bug.
+
+## 🛑 VISIBILITY SCOPING — broader than Opportunities list (30 Jun, post-fix findings)
+Opportunities LIST fix shipped (agent now sees only own deals + no owner dropdown). BUT testing as
+"New Test user 14" (owns 0 deals) revealed the same leak on OTHER surfaces — each computes its own
+totals from unscoped/company-wide data:
+
+CONFIRMED STILL LEAKING (agent sees company-wide, should see own):
+- Leads page summary chips: "31 active opportunities", "7 won deals" (should be agent's own; "0 total
+  contacts" is correctly scoped).
+- Dashboard: "Opportunities by Stage" (all stages show company counts), "Recent Activity" (shows other
+  agents' proposals e.g. Peter Ober), possibly "Available Units / Reserved" (may be company inventory —
+  decide if inventory is intentionally shared or should scope).
+- Dashboard "ACTIVE OPPS 0" IS correctly scoped (good — proves the pattern works where applied).
+
+ALSO NOTED (separate, likely stray test data — cleanup, not code):
+- Some dashboard sums / activity entries may be residue from heavy testing. Verify vs DB before
+  assuming code bug (we already confirmed opps data itself is clean: 38 Al Mansoori, 0 orphans).
+
+STILL TO AUDIT (not yet checked per-role): Customers list, Commission Outstanding, Inventory.
+
+DECISION NEEDED: do a dedicated VISIBILITY SCOPING PASS (every summary/count/widget scopes by
+assigned_to for non-see_all roles) — likely FOLD INTO the ACL pass since it's the same root cause
+(code must enforce capability-scoped visibility, ideally RLS-backed). Each counter in App.jsx computes
+independently — needs systematic sweep, not piecemeal. Pre-tester: the LIST fix (shipped) stops the
+worst leak (browsing other agents' actual deals); summary-count leaks are lower severity (aggregate
+numbers, not row-level access) but still must be fixed before real brokerage use.
