@@ -1349,7 +1349,7 @@ const TABS=[
   //{id:"ai",       label:"AI Assistant", icon:"✦",  app:"sales" -- removed, using AI bubble insteadles_manager","sales_agent"]},
   {id:"proppulse",  label:"PropPulse",   icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"coach_ai",   label:"AI Coach",    icon:"✨", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
-  {id:"companies",  label:"Companies",    icon:"🏢", app:"sales",   roles:["super_admin"]},
+  {id:"companies",  label:"Companies",    icon:"🏢", app:"sales",   roles:["super_admin"], platformOnly:true},
   {id:"users",      label:"Users",        icon:"👥", app:"sales",   roles:["admin","super_admin"]},
   // 21 May 2026: Hide Permissions menu for Phase 1 demo (admin config, not broker workflow)
   // Re-enable in Phase 2 with unified Settings module
@@ -1363,7 +1363,7 @@ const TABS=[
   {id:"commission_outstanding",label:"Commission Outstanding", icon:"💰", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
   // 21 May 2026: Hide Group View for Phase 1 demo (placeholder "Planned for MVP Phase")
   // Re-enable in Phase 2 when parent-subsidiary aggregation is built
-  {id:"group_view", label:"Group View",    icon:"🏛", app:"sales",   roles:["super_admin"]},
+  {id:"group_view", label:"Group View",    icon:"🏛", app:"sales",   roles:["super_admin"], platformOnly:true},
   // ── Leasing CRM ────────────────────────────────────────────────
   {id:"l_dashboard",label:"Dashboard",    icon:"⊞",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
   {id:"l_leads",    label:"Leads",        icon:"👤", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
@@ -1376,10 +1376,10 @@ const TABS=[
   {id:"l_activity", label:"Activity Log", icon:"📝", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_reports",  label:"Reports",      icon:"📊", app:"leasing", roles:["super_admin","admin","leasing_manager"]},
   {id:"l_proppulse",label:"PropPulse",   icon:"⚡", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
-  {id:"l_companies",label:"Companies",    icon:"🏢", app:"leasing", roles:["super_admin"]},
+  {id:"l_companies",label:"Companies",    icon:"🏢", app:"leasing", roles:["super_admin"], platformOnly:true},
   {id:"l_users",    label:"Users",        icon:"👥", app:"leasing", roles:["admin","super_admin"]},
   {id:"l_permsets", label:"Permissions",  icon:"🔐", app:"leasing", roles:["super_admin","admin"]},
-  {id:"l_group_view",label:"Group View",  icon:"🏛", app:"leasing", roles:["super_admin"]},
+  {id:"l_group_view",label:"Group View",  icon:"🏛", app:"leasing", roles:["super_admin"], platformOnly:true},
 ];
 
 // Who can see the app switcher
@@ -2613,7 +2613,7 @@ export default function App(){
   const cfg=(appConfig&&typeof appConfig==="object")?appConfig:{mode:"both"};
   // Always use currentApp to pick allowed tabs — ignore cfg.mode when app is explicitly selected
   const allowedTabs = currentApp==="leasing" ? MODE_TABS.leasing : (MODE_TABS[cfg.mode]||MODE_TABS.both);
-  const visibleTabs=TABS.filter(t=>t.app===currentApp&&t.roles.includes(userRole)&&allowedTabs.includes(t.id));
+  const visibleTabs=TABS.filter(t=>t.app===currentApp&&t.roles.includes(userRole)&&allowedTabs.includes(t.id)&&(!t.platformOnly||currentUser?.is_super_admin===true));
 
   const loadUserCapabilities = async (user) => {
     if (!user || !user.company_id) return;
@@ -2647,7 +2647,7 @@ export default function App(){
             const storedId = activeCompanyId || localStorage.getItem("propccrm_company_id") || currentUser?.company_id;
             const cachedCo = (()=>{ try{ return JSON.parse(localStorage.getItem("propccrm_company_cache")||"null"); }catch{return null;} })();
             const co = companies.find(c=>c.id===storedId) || companies.find(c=>c.id===currentUser?.company_id) || companies[0] || cachedCo || null;
-            const isSA = currentUser?.role==="super_admin";
+            const isSA = currentUser?.is_super_admin===true;
             const bizLabel = co?.business_type==="both"?"Sales & Leasing":co?.business_type==="sales"?"Sales Only":co?.business_type==="leasing"?"Leasing Only":co?.business_type||"";
 
             return (

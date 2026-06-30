@@ -39,7 +39,7 @@ export default function CompaniesModule({ currentUser, showToast, onSwitchCompan
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: allCos, error } = await supabase.from("companies").select("*").order("name"); const data = currentUser?.role === "super_admin" ? allCos : (allCos || []).filter(c => c.id === currentUser.company_id);
+      const { data: allCos, error } = await supabase.from("companies").select("*").order("name"); const data = currentUser?.is_super_admin === true ? allCos : (allCos || []).filter(c => c.id === currentUser.company_id);
       if(error) throw error;
       setCompanies(data || []);
     } catch(e) {
