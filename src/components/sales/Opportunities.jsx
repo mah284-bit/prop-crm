@@ -5,6 +5,7 @@ import { Badge } from "../../modules/shared/Badge.jsx";
 import { Spinner } from "../../modules/shared/Spinner.jsx";
 import { StageBadge } from "../../modules/shared/StageBadge.jsx";
 import { OPP_STAGES, OPP_STAGE_META } from "../../modules/constants.js";
+import { can } from "../../modules/utils.js";
 import OpportunityDetail from "../opportunities/OpportunityDetail.jsx";
 
 function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, projects, salePricing, activities, setActivities, currentUser, users, showToast, initialFilter=null, CreateOpportunityDialog }) {
@@ -71,12 +72,16 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
   // Index lookup helpers
   const leadById = useMemo(()=>Object.fromEntries((leads||[]).map(l=>[l.id,l])), [leads]);
   const userById = useMemo(()=>Object.fromEntries((users||[]).map(u=>[u.id,u])), [users]);
+  const canSeeAllOwners = can(currentUser.role, "see_all"); // render-scope: gates the owner dropdown
   const unitById = useMemo(()=>Object.fromEntries((units||[]).map(u=>[u.id,u])), [units]);
   const projectById = useMemo(()=>Object.fromEntries((projects||[]).map(p=>[p.id,p])), [projects]);
 
   // Apply filters
   const visible = useMemo(()=>{
     let rows = (opps||[]).filter(o => o && o.id);
+    // Visibility: users without see_all are HARD-scoped to their own deals
+    const canSeeAll = can(currentUser.role, "see_all");
+    if (!canSeeAll) rows = rows.filter(o => o.assigned_to === currentUser.id);
     // Stage filter
     if (fStage !== "All") rows = rows.filter(o => o.stage === fStage);
     // Owner filter
@@ -206,12 +211,14 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
             </button>
           )}
         </div>
+        {canSeeAllOwners && (
         <select value={fOwner} onChange={e=>setFOwner(e.target.value)}
           style={{padding:"8px 12px",borderRadius:8,border:"1.5px solid #E2E8F0",fontSize:12,fontWeight:600,color:"#0F2540",background:"#fff",cursor:"pointer",outline:"none"}}>
           <option value="All">👥 All owners</option>
           <option value="Mine">⭐ My opportunities</option>
           {(users||[]).map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
         </select>
+        )}
       </div>
 
       {/* Stage filter chips */}
