@@ -447,3 +447,28 @@ sale). Design next week after seeing response. NOT the gate — the gate is now.
 Most app dialogs are already movable/draggable. The new commission dialogs (Set rate, and later the
 per-deal bonus/override dialog) are fixed-center modals. Founder: make them movable too for consistency
 — LATER, after the core commission cycle is done. Pure UX polish, no logic. Low priority.
+
+## STICKY NOTE (30 Jun) — Stage 5c governance decisions + deferred items
+Stage 5c (per-deal bonus + override on the opportunity) is complete. Decisions + open items captured:
+
+1. DEFERRED — floor on per-deal OVERRIDE. Brackets have a hard floor (>= company standard). The
+   per-deal override does NOT (inform-don't-block): manager can go below standard, but it requires a
+   two-step amber->red confirm, a mandatory reason, and shows a PERSISTENT below-standard flag in the
+   breakdown. Founder: "the call is very difficult, perception differs by person/org — do as planned
+   (inform, not block) for now." REVISIT: whether deal-override should be floored, or stay the
+   explicit exception tool. Flipping warn->block later is a ~1-line change. Real below-standard cases
+   are being captured in commission_audit_log meanwhile — decide from real data.
+
+2. PRINCIPLE — audit trail as PREVENTION, not policing. Founder: managers won't manipulate (they share
+   in the same commission, incentive-aligned), but "things do happen — if there is an audit trail they
+   will use it carefully and inform the agent accordingly." The trail's purpose is to make everyone act
+   carefully up front (sunlight), with the OWNER/super_admin above the manager as the real check (they
+   see all). Below-standard splits are deliberate-to-set and impossible-to-hide by design.
+
+3. FOR STAGE 7 (agent-facing view) — agent transparency. Founder thought: "informing the agent
+   accordingly." Consider letting the AGENT see their OWN deal's commission history (the changes that
+   affect their pay), not just the manager. Transparency to the person affected. Build in Stage 7.
+
+4. UX NOTE — the two-step below-standard confirm (amber Review -> red Confirm) is two clicks to exit.
+   Founder: "fine for now." Alternative if revisited: single red Save disabled until a checkbox
+   "I confirm this is below standard" is ticked. Low priority.
