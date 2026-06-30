@@ -24,6 +24,34 @@ import NegotiationRoundDialog from "../dialogs/NegotiationRoundDialog.jsx";
 import UnitDetailPanel from "../property/UnitDetailPanel.jsx";
 import ProposalBuilderDialog from "./ProposalBuilderDialog.jsx";
 
+// Stage 6 -- single source of commission resolution (used by BOTH the live display and the
+// invoice freeze at SPA-Signed, so frozen numbers exactly match what the SM saw at close).
+// 3-tier split: deal override ?? broker bracket ?? company standard; unset = 100% to agent (solo).
+function resolveCommission(opp, agent, companyStd, commissionAmt) {
+  const _splitMode  = (opp.agent_split_mode ?? agent?.commission_split_mode ?? companyStd.mode) || null;
+  const _splitValRaw = (opp.agent_split_value ?? agent?.commission_split_value ?? companyStd.value);
+  const _splitVal   = (_splitValRaw === null || _splitValRaw === undefined || _splitValRaw === "") ? null : Number(_splitValRaw);
+  const _splitTier = (opp.agent_split_mode != null) ? "deal"
+                   : (agent?.commission_split_mode != null) ? "broker"
+                   : (companyStd.mode != null) ? "company" : "none";
+  const _belowStandard = _splitTier === "deal" && _splitMode != null && _splitMode === companyStd.mode && _splitVal != null && companyStd.value != null && _splitVal < Number(companyStd.value);
+  let agentBase;
+  if (_splitMode === "fixed" && _splitVal != null)            agentBase = Math.round(_splitVal * 100) / 100;
+  else if (_splitMode === "percentage" && _splitVal != null)  agentBase = Math.round(commissionAmt * _splitVal / 100 * 100) / 100;
+  else                                                        agentBase = commissionAmt;
+  const _bonusMode = opp.appreciation_bonus_mode || null;
+  const _bonusValRaw = opp.appreciation_bonus_value;
+  const _bonusVal = (_bonusValRaw === null || _bonusValRaw === undefined || _bonusValRaw === "") ? null : Number(_bonusValRaw);
+  let appreciationBonus = 0;
+  if (_bonusMode === "fixed" && _bonusVal != null)            appreciationBonus = Math.round(_bonusVal * 100) / 100;
+  else if (_bonusMode === "percentage" && _bonusVal != null)  appreciationBonus = Math.round(commissionAmt * _bonusVal / 100 * 100) / 100;
+  const _bonusConfigured = (_bonusMode === "fixed" || _bonusMode === "percentage") && _bonusVal != null;
+  const agentCommission = Math.round((agentBase + appreciationBonus) * 100) / 100;
+  const companyNet = Math.round((commissionAmt - agentCommission) * 100) / 100;
+  const _splitConfigured = ((_splitMode === "fixed" || _splitMode === "percentage") && _splitVal != null) || _bonusConfigured;
+  return { _splitMode, _splitVal, _splitTier, _belowStandard, agentBase, _bonusMode, _bonusVal, appreciationBonus, _bonusConfigured, agentCommission, companyNet, _splitConfigured };
+}
+
 function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated, onActivityLog }) {
   // 19 May 2026: Internal approval features (broker -> manager -> admin) hidden
   // Hide until full workflow is implemented end-to-end.
@@ -1979,31 +2007,8 @@ You will become the assigned agent.`);
                     const initialAdvance = Math.round(finalPrice * initialPct / 100);
                     const commissionPctFin = Number(opp.commission_pct || 0);
                     const commissionAmt = Math.round(finalPrice * commissionPctFin / 100);
-                    // Layer B (CORRECTED) — 3-tier split: deal override ?? broker bracket ?? company standard; unset = 100% to agent (solo)
-                    const _splitMode  = (opp.agent_split_mode ?? agent?.commission_split_mode ?? companyStd.mode) || null;
-                    const _splitValRaw = (opp.agent_split_value ?? agent?.commission_split_value ?? companyStd.value);
-                    const _splitVal   = (_splitValRaw === null || _splitValRaw === undefined || _splitValRaw === "") ? null : Number(_splitValRaw);
-                    // which tier resolved (for display transparency to SM)
-                    const _splitTier = (opp.agent_split_mode != null) ? "deal"
-                                     : (agent?.commission_split_mode != null) ? "broker"
-                                     : (companyStd.mode != null) ? "company" : "none";
-                    const _belowStandard = _splitTier === "deal" && _splitMode != null && _splitMode === companyStd.mode && _splitVal != null && companyStd.value != null && _splitVal < Number(companyStd.value);
-                    let agentBase;
-                    if (_splitMode === "fixed" && _splitVal != null)            agentBase = Math.round(_splitVal * 100) / 100;
-                    else if (_splitMode === "percentage" && _splitVal != null)  agentBase = Math.round(commissionAmt * _splitVal / 100 * 100) / 100;
-                    else                                                        agentBase = commissionAmt; // unset/solo = full
-                    // Appreciation bonus (additive, per-deal) — flat AED or percentage of company commission
-                    const _bonusMode = opp.appreciation_bonus_mode || null;
-                    const _bonusValRaw = opp.appreciation_bonus_value;
-                    const _bonusVal = (_bonusValRaw === null || _bonusValRaw === undefined || _bonusValRaw === "") ? null : Number(_bonusValRaw);
-                    let appreciationBonus = 0;
-                    if (_bonusMode === "fixed" && _bonusVal != null)            appreciationBonus = Math.round(_bonusVal * 100) / 100;
-                    else if (_bonusMode === "percentage" && _bonusVal != null)  appreciationBonus = Math.round(commissionAmt * _bonusVal / 100 * 100) / 100;
-                    const _bonusConfigured = (_bonusMode === "fixed" || _bonusMode === "percentage") && _bonusVal != null;
-                    // agent total = base + bonus; company keeps the rest (agent never sees company_net)
-                    const agentCommission = Math.round((agentBase + appreciationBonus) * 100) / 100;
-                    const companyNet = Math.round((commissionAmt - agentCommission) * 100) / 100;
-                    const _splitConfigured = ((_splitMode === "fixed" || _splitMode === "percentage") && _splitVal != null) || _bonusConfigured;
+                    // Stage 6 — resolution via shared helper (same math the invoice freeze uses)
+                    const { _splitMode, _splitVal, _splitTier, _belowStandard, agentBase, _bonusMode, _bonusVal, appreciationBonus, _bonusConfigured, agentCommission, companyNet, _splitConfigured } = resolveCommission(opp, agent, companyStd, commissionAmt);
                     return (
                       <div style={{padding:"4px 2px"}}>
                         {/* Header */}
