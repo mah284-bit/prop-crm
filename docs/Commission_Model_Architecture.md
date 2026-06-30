@@ -632,3 +632,10 @@ visibility) so A and B are siblings — sequence B's RLS work to back A's app-la
 WHAT'S DONE & SAFE FOR TESTERS NOW: row-level deal isolation (the dangerous leak). Aggregate-count and
 dashboard-framing issues are lower severity (numbers, not row access) and are knowingly deferred to
 Session A. Do A+B as a block post-commission (Stage 8), not interleaved with build.
+
+## STICKY NOTE (30 Jun) — Company list UI won't scale (defer to Platform Admin work)
+Founder observation during Stage 8 setup: companies render as cards; with 6 already (mostly test husks)
+and growth coming, card-per-company won't scale. Needs a proper company-management surface (search,
+filter, paginate, status, sort) — belongs with the Platform Operator / multi-tenant identity work
+(Architecture_Multi_Tenant_Identity_Model.md), NOT commission. Also: clean up test-husk companies
+(2 with 0 users: "Test Company - 16-06-2026", "Gulf Leasing Solutions") at some point. Note + defer.
