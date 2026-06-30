@@ -547,3 +547,12 @@ REVISIT as a focused ACL pass (not piecemeal):
   for see_brokerage_commission. Per doc, SM should be normally-granted; admin should default OFF
   (admin is operational, not financial — see ACL refinement note above).
 NO deviation now — note + continue. Fix in the dedicated ACL pass.
+
+## BUG NOTE (30 Jun) — setMeetings ReferenceError on auth change (NOT commission)
+During Stage 7 testing (login/logout as Rajesh), console threw:
+  ReferenceError: setMeetings is not defined  at App.jsx:2458 (auth callback, in handleLogout path).
+Fires on auth-state-change / signOut. Unrelated to commission (Stage 7 view rendered correctly).
+Likely an orphaned setMeetings call in an onAuthStateChange/logout handler where the setter isn't in
+scope (leftover from a refactor). Also saw: /api/reset-password 404 (separate — reset-password endpoint
+not running locally). FIX: locate App.jsx:2458, remove/repair the setMeetings reference. Small, but
+throws on every auth change. Capture now, fix as a quick separate cut (not commission stages).
