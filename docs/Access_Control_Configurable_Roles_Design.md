@@ -306,3 +306,33 @@ STAGE G — Full role×scope×policy security test pass → sign-off → go-live
 Slot-ins: New User form → Stage D/E. Solo-vs-brokerage worlds → company-type default profiles (C/D).
 Stage 7 commission visibility (already built) → folded into capability model (C).
 NO deviation from this order without an architect decision recorded here.
+
+## STAGE B FINDINGS (1 Jul, Day 45 AM) — harness surfaced two real DB-level leaks
+Harness engine PROVEN: impersonate via `begin; select set_config('request.jwt.claims','{"sub":"<uuid>","role":"authenticated"}',true); set local role authenticated; <queries>; rollback;`
+This drops the SQL-editor superuser bypass and enforces RLS as the target user. Verified working.
+
+LEAK 1 — profiles RLS was DISABLED (FIXED + migrated e65ca6a):
+  profiles was the ONE table with relrowsecurity=false; correct policy existed but dormant → every
+  user saw all 15 profiles cross-company. Enabled RLS (helpers are SECURITY DEFINER, safe). Harness
+  verified: SoleBrokerUser 15→1, platform owner still 15, login intact. All other ~55 tables already
+  had RLS on.
+
+LEAK 2 — master agreements crown-jewel leak (DIAGNOSED, fix is next Stage-C task, NOT yet done):
+  A5 hard rule = master agreements admin/manager ONLY, agents NEVER. Currently BROKEN at 3 levels:
+  (a) CONFIG: role_capabilities has view_master_agreements=true for sales_agent, leasing_agent, viewer
+      — for BOTH tenants (Al Mansoori c23a2320, EPR e536de3f). Agents are granted the capability.
+  (b) LOOSE POLICY: pp_master_agreements has TWO select policies OR'd — "Tenants see own agreements"
+      (company-match only, NO capability gate) bypasses the correct capability-gated one
+      "pp_master_agreements_select" (is_super_admin() OR (company + has_capability('view_master_agreements'))).
+  (c) NO STRUCTURAL FLOOR: nothing structurally refuses agents regardless of config (A7 lock b missing).
+  Harness proof: Rajesh (sales_agent) sees all 4 master agreements. Should see 0.
+  Note: capability string is 'view_master_agreements' in table+policy (doc A2 says 'see_master_agreements'
+  — doc wording only; live system consistent on 'view_master_agreements').
+
+FIX PLAN (next session, Stage C, done properly with safety tag + migration + harness verify):
+  1. Structural RLS floor (A7 lock b): master-agreement SELECT structurally excludes agents (role-based,
+     not just config capability).
+  2. Drop the loose "Tenants see own agreements" policy (the bypass).
+  3. Config lock (A7 lock a): set view_master_agreements=false for sales_agent/leasing_agent/viewer (both tenants).
+  4. Harness verify: agent→0, sales_manager→4, admin→4, cross-tenant→0.
+  NOT started pre-meeting — crown-jewel policy surgery must not be rushed before a hard stop.
