@@ -27,6 +27,7 @@ export default function UsersTab({currentUser, showToast}) {
       : supabase.from("profiles").select("*").eq("company_id", cid).order("created_at",{ascending:false});
     const queries = [userQuery];
     if(isSuperAdmin) queries.push(supabase.from("companies").select("id,name,business_type").order("name"));
+    else if(cid) queries.push(supabase.from("companies").select("id,name,business_type").eq("id",cid));
     const [u, co] = await Promise.all(queries);
     setUsers(u.data||[]);
     if(co) setCompanies(co.data||[]);
@@ -189,7 +190,7 @@ export default function UsersTab({currentUser, showToast}) {
                       {companies.map(c=><option key={c.id} value={c.id}>{c.name} ({c.business_type})</option>)}
                     </select>
                   ) : (
-                    <input value={companies.find(c=>c.id===currentUser.company_id)?.name || currentUser.company_id || "Your Company"} disabled style={{background:"#F7F9FC",color:"#718096"}}/>
+                    <input value={companies.find(c=>c.id===currentUser.company_id)?.name || "Your Company"} disabled style={{background:"#F7F9FC",color:"#718096"}}/>
                   )}
                   {!form.company_id && <div style={{fontSize:10,color:"#B83232",marginTop:3}}>⚠ Company is required</div>}
                 </div>
