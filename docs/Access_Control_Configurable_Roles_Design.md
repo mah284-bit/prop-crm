@@ -570,3 +570,19 @@ NEXT (the delicate cut — fresh session): rewrite can() to READ capabilities no
   decide wiring (pass in vs shared ref). Change hasCapability (App.jsx:2633): admin auto-pass REMOVED, use
   is_super_admin flag only. Add 6 business caps to Settings matrix. Retire hard-coded arrays. Verify screen
   by screen (buttons appear/hide correctly per role). This is the cut that kills app-layer hard-coding.
+
+## PATH B — RESUME POINT #2 (Day 45 end)
+FOUNDATION COMPLETE + PATTERN PROVEN. Done today: hasCapability de-hardcoded (is_super_admin flag only);
+canDo(user,action) helper built (permissions.js) with ACTION_TO_CAPABILITY map; capabilities attached to
+currentUser (App.jsx loadUserCapabilities); InventoryModule fully migrated + VISUALLY VERIFIED (agent
+manage_inventory=false correctly loses Add/Edit/Excel buttons). First screen off hard-coded roles.
+
+THE RECIPE (repeat per screen): grep screen for can(...) + inline "includes(currentUser.role)" arrays →
+read what each gates → map to capability → remove local duplicate can(), import canDo → swap to
+canDo(currentUser, action) → build + visual verify (agent loses what they shouldn't) → commit.
+
+REMAINING ~34 sites: App.jsx(8), LeadDetail(5), Dashboard(3), DiscountApprovals(2), LeasingLeads(2),
+LeasingModule(2), OpportunityDetail(2), ActivityLog(2), Opportunities(2), getVisibleCompanyIds(1),
+PropertyMaster(1), LeaseOpportunityDetail(1), PaymentPlanTemplates(1). WATCH for hidden inline role arrays
+(InventoryModule had 2 beyond the can() call). FINAL after all migrated: retire can()+PERMS arrays from
+permissions.js; add 6 business caps to Settings matrix (RoleCapabilitiesSection CAP_GROUPS).
