@@ -2630,8 +2630,8 @@ export default function App(){
   };
 
   const hasCapability = (capability) => {
-    if (["admin", "super_admin"].includes(currentUser?.role)) return true;
-    return userCapabilities[capability] === true;
+    if (currentUser?.is_super_admin === true) return true;   // platform owner only (flag, not role string)
+    return userCapabilities[capability] === true;             // admin + all tenant roles read config (de-hardcoded)
   };
   return (
     <>
