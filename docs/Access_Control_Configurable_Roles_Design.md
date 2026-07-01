@@ -460,3 +460,23 @@ Full harness sweep after Stages B+C+D. ALL PASS:
 State: Stage B (harness) + C (canonical capabilities, both crown jewels doubly locked) + D (two-tier
 identity enforced at RLS + DB CHECK + UI; New User form fixed) COMPLETE and harness-green.
 Remaining: Stage E (group-GM + broker-visibility at RLS layer), F (config UI), G (final sign-off).
+
+## STAGE E — BROKER-VISIBILITY COMPLETE (1 Jul, Day 45); group-GM cross-branch FORWARD-READY
+WHERE axis now enforced capability-driven on all 3 core tables (was flat company_id = agent-sees-all leak):
+  opportunities: agent 8 (own assigned) / manager 38 (branch) / cross-tenant 0. (migration 0668a47)
+  leads: agent 6 (leads behind own opps — decoupled lead/opp model) / manager 25 (branch). (fa4d268)
+  activities: agent 40 (via parent opp/lead; no assigned_to col) / manager 189 (branch). (18bc214)
+Policy pattern (no hard-coded roles): company_id floor AND (see_branch_data OR see_group_data OR
+  (see_own_data AND <ownership>)). Broker-visibility is thus CONFIGURABLE (grant see_branch_data to widen).
+Config confirmed: see_branch_data enabled for admin/sales_manager/leasing_manager/group_gm across all 7
+  companies; false for agent/viewer. No role accidentally over-restricted.
+
+DEFERRED (forward-ready, NOT built — no test surface): group-GM TRUE cross-branch. The see_group_data
+  clause EXISTS in all 3 policies but does not yet expand past company_id (tenant floor still wraps). True
+  cross-branch needs group->companies resolution AND real multi-branch groups AND group_gm users (NONE
+  exist today). Build when a multi-branch group exists to test against — untestable speculation avoided per
+  harness-first discipline.
+
+REMAINING IN ACL BUILD: Stage F (config UI in Settings), Stage G (full role×scope×policy sign-off).
+Activities lead-level-behind-opp edge (activity on a lead behind my opp, lead not mine) intentionally NOT
+covered — starting tighter is safe, widening is additive (doc principle). Note if it surfaces in use.
