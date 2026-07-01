@@ -480,3 +480,23 @@ DEFERRED (forward-ready, NOT built — no test surface): group-GM TRUE cross-bra
 REMAINING IN ACL BUILD: Stage F (config UI in Settings), Stage G (full role×scope×policy sign-off).
 Activities lead-level-behind-opp edge (activity on a lead behind my opp, lead not mine) intentionally NOT
 covered — starting tighter is safe, widening is additive (doc principle). Note if it surfaces in use.
+
+## STAGE G — SECURITY SIGN-OFF (1 Jul, Day 45) — ACL BUILD B–F COMPLETE & VERIFIED
+Comprehensive role × table sign-off sweep. ALL GREEN:
+  AGENT (sales_agent): opps 8 / leads 6 / activities 40 (own-scoped) ; master_agmts 0 / invoices 0 (crown
+    jewels refused) ; profiles 9 (own company — colleagues visible by design, cross-company blocked) ; companies 1.
+  MANAGER (sales_manager): opps 38 / leads 25 / activities 189 (branch) ; master_agmts 4 / invoices 10 (crown ok).
+  CROSS-TENANT (EPR agent): opps 0 / leads 0 / master_agmts 0 / invoices 0 ; companies 1 (EPR only) — isolated.
+  PLATFORM (mah284): companies 7 / profiles 15 / opps 41 (all tenants) — full reach.
+
+VERIFIED PROPERTIES:
+  - Broker-visibility (WHERE axis): agent own / manager branch — RLS-enforced, capability-driven, no role strings.
+  - Crown jewels (A5): master agreements + brokerage commission doubly locked (config + structural RLS floor);
+    agents refused even if config wrong.
+  - Two-tier identity (WHO): super_admin=platform-only (DB CHECK constraint, unbypassable); tenant=admin+below.
+  - Cross-tenant isolation: complete (is_super_admin() flag-based; profiles RLS enabled).
+  - Configurable (WHAT): tenant admin toggles role_capabilities via Settings UI; crown-jewel cells locked (honest).
+
+BUILD STATUS: Stages B (harness) + C (capabilities) + D (identity) + E (broker-visibility) + F (config UI)
+COMPLETE, harness-verified, migrated, tagged. DEFERRED (forward-ready, no test surface): group-GM true
+cross-branch (needs multi-branch groups + group_gm users). ACL layer is GO for the intended scope.
