@@ -383,3 +383,43 @@ This is a full-session foundational task, NOT a tail-end patch. Deferred is_admi
 
 INTERIM STATE (safe): is_admin_of phantom-'manager' bug means managers can't UPDATE company profiles (admins can;
 everyone can update own row). NOT a leak — a missing capability. Acceptable until the seed task.
+
+## STAGE C CANONICAL CAPABILITY MODEL — LOCKED (1 Jul, Day 45, architect's call)
+Current table = two half-built visibility systems (ad-hoc opportunity flags + partial scope model)
+layered together. Reconciled to ONE canonical vocabulary (doc A2 scope-axis wins; ad-hoc opp flags retired).
+
+CANONICAL SET (12):
+  Data scope:   see_own_data, see_branch_data, see_group_data
+  Commission:   see_own_commission, see_brokerage_commission
+  Master agmts: view_master_agreements, manage_master_agreements
+  Admin:        manage_users, manage_settings, manage_inventory, assign_leads, manage_commissions
+
+MIGRATION MAP (existing -> canonical):
+  see_own_opportunities_only  -> see_own_data
+  see_team_opportunities      -> see_branch_data (fold in)
+  see_all_opportunities       -> RETIRE (redundant; = branch/group scope)
+  see_agent_commission_split  -> see_own_commission
+  see_branch_data             -> keep
+  see_brokerage_commission    -> keep (crown jewel)
+  view_master_agreements      -> KEEP AS-IS (canonical). Doc A2 said 'see_master_agreements' but the
+    LIVE policy + 12 rows + our verified crown-jewel fix use 'view_master_agreements'. Consistency of
+    the live system beats matching a doc word — doc wording updated to view_master_agreements, not the DB.
+  manage_master_agreements    -> keep
+MISSING / TO SEED: see_group_data, see_own_commission (rename), manage_users, manage_settings,
+  manage_inventory, assign_leads, manage_commissions.
+NOTE: is_platform_operator is a profiles FLAG, not a role_capability row (handled in Stage D lockdown).
+
+DEFAULT MATRIX (to seed next session, per A4 company-type):
+  MULTI-AGENT (strict): agent = see_own_data + see_own_commission only. manager = +see_branch_data
+    +see_brokerage_commission +view_master_agreements +assign_leads +see agent splits. admin = admin caps
+    (manage_users/settings/inventory) + commercial per config. group_gm = +see_group_data. viewer = read-only.
+  SOLO: the single broker/owner gets ALL (collapse — broker IS the brokerage, per A4/Stage 8).
+  Crown-jewel floor (A5) still structurally enforced regardless of config (master agmts done; commission
+    invoices structural floor still TODO per earlier finding).
+
+NEXT SESSION EXECUTION (clean, now unblocked):
+  1. Seed all 12 canonical caps x every role x every company with the default matrix above.
+  2. Migrate the 4 retired-name rows into canonical (data migration).
+  3. Update policies referencing old names (if any) to canonical.
+  4. Migrate profiles UPDATE policy off is_admin_of -> (company + manage_users). Fixes the phantom-manager bug.
+  5. Harness-verify every role x table after.
