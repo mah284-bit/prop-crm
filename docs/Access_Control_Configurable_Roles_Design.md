@@ -284,3 +284,25 @@ the doc itself warns of the forward/backward rework trap). Sequence:
 - THEN: New User form, Settings UI for capability config, visibility everywhere — all fall out correctly.
 Today's piecemeal fixes (Cut 1 nav, Cut 2a UsersTab, RLS function) are correct pieces; remaining work
 is to build the rest IN ORDER per this spec, not patch leak-by-leak.
+
+## ARCHITECT SEQUENCE — LOCKED (1 Jul, Day 45)
+Architect owns the order (founder's explicit instruction: "the Technical Architect decides the
+sequence... I will not decide this"). Execution order, each step a prerequisite for the next:
+
+STAGE B (START — today) — Permission/Isolation TEST HARNESS. Repeatable script asserting, per
+  role × scope, EXACTLY which rows are visible. Every later stage verified by it. Built FIRST because
+  a wrong policy = silent leak (proven un-eyeball-able Day 44). No enforcement work before this exists.
+STAGE C — RLS enforcement, capability-driven, SAFE HARD-CODED DEFAULTS first. Replaces remaining
+  hard-coded role checks. Each change instantly verified by Stage B harness.
+STAGE D — Platform-Operator lockdown + tenant-tier role for owners. Completes the WHO axis
+  (is_super_admin() root-fix Day 44 was piece one). The New User form is fixed HERE (assigns into a
+  real tenant-tier model) — NOT before; it is downstream.
+STAGE E — Group-GM + broker-visibility (WHERE axis: group/branch scoping) as policy options on the
+  proven base.
+STAGE F — Config UI in Settings (tenant adjusts policy). NOT before enforcement is proven (doc rule:
+  policy UI is dangerous until the layer underneath holds).
+STAGE G — Full role×scope×policy security test pass → sign-off → go-live.
+
+Slot-ins: New User form → Stage D/E. Solo-vs-brokerage worlds → company-type default profiles (C/D).
+Stage 7 commission visibility (already built) → folded into capability model (C).
+NO deviation from this order without an architect decision recorded here.
