@@ -336,3 +336,24 @@ FIX PLAN (next session, Stage C, done properly with safety tag + migration + har
   3. Config lock (A7 lock a): set view_master_agreements=false for sales_agent/leasing_agent/viewer (both tenants).
   4. Harness verify: agent→0, sales_manager→4, admin→4, cross-tenant→0.
   NOT started pre-meeting — crown-jewel policy surgery must not be rushed before a hard stop.
+
+## STAGE B/C SWEEP (1 Jul, Day 45 late AM) — second crown jewel verified + latent findings
+COMMISSION INVOICES (pp_commission_invoices) — VERIFIED SAFE (no fix needed):
+  Single capability-gated SELECT policy (company + has_capability('see_brokerage_commission')),
+  NO loose duplicate. Harness: Rajesh (agent) 0, Arun (manager) 10. Built right originally.
+
+LATENT FINDINGS (not leaks — noted for Stage C/D, not fixed now):
+1. is_admin_of() PHANTOM-ROLE BUG: checks role IN ('admin','manager') but there is NO 'manager'
+   role (it's sales_manager/leasing_manager). Same hard-coded-role disease. Used in profiles
+   UPDATE policy → managers likely CANNOT update company profiles they should. Fix in Stage C/D
+   (replace with correct role strings or a tier helper like can_view_master_agreements).
+2. leasing_manager GAP on see_brokerage_commission: no role_capabilities row → COALESCE false →
+   leasing_manager denied brokerage-commission visibility they arguably should have (A5 admin/mgr
+   tier). Over-restriction, not a leak. Review when building company-type default profiles.
+3. STRUCTURAL-FLOOR ASYMMETRY: master agreements now has a structural floor
+   (can_view_master_agreements, defense-in-depth lock b); commission invoices relies on config-only
+   (has_capability). Per A7 both crown jewels should have structural floors. Add a
+   can_see_brokerage_commission() structural floor for pp_commission_invoices in Stage C proper.
+
+HARNESS STATUS: proven, reused across profiles + both crown jewels. Ready to formalize into a saved
+repeatable script (all test users × all sensitive tables) — the real Stage B deliverable, next.
