@@ -2623,6 +2623,7 @@ export default function App(){
       const capMap = {};
       (data || []).forEach(row => { capMap[row.capability] = row.enabled; });
       setUserCapabilities(capMap);
+      setCurrentUser(u => u ? { ...u, capabilities: capMap } : u);  // attach for canDo() everywhere
     } catch (e) {
       console.warn("Capabilities load error:", e);
       setUserCapabilities({});
