@@ -423,3 +423,29 @@ NEXT SESSION EXECUTION (clean, now unblocked):
   3. Update policies referencing old names (if any) to canonical.
   4. Migrate profiles UPDATE policy off is_admin_of -> (company + manage_users). Fixes the phantom-manager bug.
   5. Harness-verify every role x table after.
+
+## STAGE D DESIGN — LOCKED (1 Jul, Day 45, architect's call)
+INVARIANT: super_admin role = PLATFORM tier ONLY, and MUST have is_super_admin=true.
+  super_admin  <=>  platform operator  <=>  is_super_admin=true.
+Tenants get 'admin' and below — NEVER super_admin. 'admin' IS the tenant-top role: full in-company
+power (manage_users/settings/inventory + commercial via Stage C seed), zero platform reach (RLS-scoped).
+
+WHY NOT a new tenant_owner role: 'admin' already exists (5 users), already functions as tenant-top,
+already has correct capabilities seeded, already RLS-scoped with no platform reach. A new role = seed
+rows + role-list churn + migration for no functional gain. Doc intent ("tenant-top, full in-company,
+zero platform") already satisfied by admin.
+
+CURRENT STATE (clean): 15 users. super_admin/true = 1 (mah284, platform owner). super_admin/false = 1
+(SoleBrokerUser, solo tenant — the lone anomaly). All others admin/agent/manager (false). The
+is_super_admin() flag fix already neutralized the danger (tenant super_admins RLS-scoped); this is
+model-cleanup, not an active-leak fix.
+
+STAGE D TASKS:
+  1. Reclassify SoleBrokerUser super_admin/false -> admin (last tenant-holding-super_admin anomaly).
+     Solo company (1 user); admin = full company visibility = everything a solo needs. Reversible.
+  2. (Optional hardening) DB CHECK/trigger or app guard: role='super_admin' REQUIRES is_super_admin=true
+     — enforce the invariant structurally so no tenant can ever be minted super_admin.
+  3. NEW USER FORM FIX (the original thread): role dropdown filters by creator tier — a tenant (admin)
+     may assign admin and below, NEVER super_admin; only platform operator mints super_admin. Company
+     field shows the tenant's own company by NAME (not UUID), locked. This is now unblocked.
+  4. Harness-verify: reclassified user still sees own company fully, zero cross-tenant.
