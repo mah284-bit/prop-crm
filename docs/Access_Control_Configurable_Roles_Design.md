@@ -357,3 +357,29 @@ LATENT FINDINGS (not leaks — noted for Stage C/D, not fixed now):
 
 HARNESS STATUS: proven, reused across profiles + both crown jewels. Ready to formalize into a saved
 repeatable script (all test users × all sensitive tables) — the real Stage B deliverable, next.
+
+## STAGE C PLANNING FINDING (1 Jul, Day 45) — capability table is SEEDED PIECEMEAL, drifted from A2
+Investigating the is_admin_of bug, found role_capabilities is incomplete + inconsistent with the A2 spec.
+ACTUALLY SEEDED (8): view_master_agreements(12 rows), manage_master_agreements(2), see_brokerage_commission(6),
+  see_agent_commission_split(6), see_branch_data(6), see_all_opportunities(2), see_own_opportunities_only(2),
+  see_team_opportunities(2).
+PROBLEMS:
+  1. NAMING DRIFT vs doc A2: 'view_master_agreements' (doc: see_master_agreements); 'see_agent_commission_split'
+     (doc: see_own_commission); ad-hoc caps not in the model (see_all_opportunities, see_team_opportunities,
+     see_own_opportunities_only). Design vocabulary and implementation vocabulary diverged.
+  2. UNEVEN ROW COUNTS (2 vs 6 vs 12) → capabilities seeded for inconsistent role/company sets, not systematically.
+  3. MISSING ENTIRELY (doc A2 specifies): see_own_data, see_group_data, see_own_commission, manage_users,
+     manage_settings, manage_inventory, assign_leads, manage_commissions, is_platform_operator.
+  → Nothing can gate on manage_users yet (profiles UPDATE fix must wait or use interim role-strings).
+
+ROOT: table was populated feature-by-feature over time, not seeded from the A2 model. This is precisely the
+kind of drift that causes leaks (inconsistent/incomplete/misnamed).
+
+STAGE C FIRST TASK (revised) — NOT is_admin_of patch. It is: SEED THE CANONICAL CAPABILITY MODEL from A2:
+  (a) reconcile canonical names (pick one vocabulary; migrate existing rows/policies to it),
+  (b) define every capability × every role × every company with SAFE defaults (doc's "hard-coded defaults first"),
+  (c) THEN migrate policies (incl. profiles UPDATE → manage_users) onto the clean model, harness-verified.
+This is a full-session foundational task, NOT a tail-end patch. Deferred is_admin_of fix rides on top of it.
+
+INTERIM STATE (safe): is_admin_of phantom-'manager' bug means managers can't UPDATE company profiles (admins can;
+everyone can update own row). NOT a leak — a missing capability. Acceptable until the seed task.
