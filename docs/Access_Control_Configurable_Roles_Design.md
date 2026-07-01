@@ -558,3 +558,15 @@ NEXT (the delicate cut — fresh session): rewrite can() to READ capabilities no
   decide wiring (pass in vs shared ref). Change hasCapability (App.jsx:2633): admin auto-pass REMOVED, use
   is_super_admin flag only. Add 6 business caps to Settings matrix. Retire hard-coded arrays. Verify screen
   by screen (buttons appear/hide correctly per role). This is the cut that kills app-layer hard-coding.
+
+## PATH B — RESUME POINT (next session)
+DONE: Step 1 — 6 business capabilities seeded (18-cap model complete), permissions.js is canonical can(),
+utils.js re-exports it. Governance Bible written. Decision locked: super_admin(platform) auto-pass OK,
+admin+tenant configurable.
+NEXT (the delicate cut — fresh session): rewrite can() to READ capabilities not the hard-coded array —
+  action→capability map (write→edit_records, delete→delete_records, see_all→see_branch_data,
+  reserve_unit→reserve_units, request_discount→request_discounts, approve_manager/all→approve_discounts,
+  manage_users→manage_users). can() needs the user's loaded capabilities (userCapabilities, App.jsx:2348) —
+  decide wiring (pass in vs shared ref). Change hasCapability (App.jsx:2633): admin auto-pass REMOVED, use
+  is_super_admin flag only. Add 6 business caps to Settings matrix. Retire hard-coded arrays. Verify screen
+  by screen (buttons appear/hide correctly per role). This is the cut that kills app-layer hard-coding.
