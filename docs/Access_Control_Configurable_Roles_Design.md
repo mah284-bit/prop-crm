@@ -449,3 +449,14 @@ STAGE D TASKS:
      may assign admin and below, NEVER super_admin; only platform operator mints super_admin. Company
      field shows the tenant's own company by NAME (not UUID), locked. This is now unblocked.
   4. Harness-verify: reclassified user still sees own company fully, zero cross-tenant.
+
+## END-OF-DAY VERIFIED BASELINE (1 Jul, Day 45) — Stages B+C+D all green
+Full harness sweep after Stages B+C+D. ALL PASS:
+  mah284 (platform): companies 7, profiles 15 (full reach).
+  SoleBroker (reclassified to admin, solo): companies 1, leads 1 (isolated).
+  Rajesh (sales_agent): master_agreements 0, commission_invoices 0 (crown jewels refused).
+  Arun (sales_manager): master_agreements 4, commission_invoices 10 (full access).
+  EPR agent (cross-tenant): companies 1, master_agreements 0, commission_invoices 0 (isolated + refused).
+State: Stage B (harness) + C (canonical capabilities, both crown jewels doubly locked) + D (two-tier
+identity enforced at RLS + DB CHECK + UI; New User form fixed) COMPLETE and harness-green.
+Remaining: Stage E (group-GM + broker-visibility at RLS layer), F (config UI), G (final sign-off).
