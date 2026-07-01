@@ -18,12 +18,5 @@ export const getStrength = pw => {
 };
 
 
-export const can = (role, action) => ({
-  super_admin:    ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_companies","manage_inventory","reserve_unit"],
-  admin:          ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_inventory","reserve_unit"],
-  sales_manager:  ["read","write","delete","see_all","delete_leads","approve_manager","view_sales","request_discount","manage_inventory","reserve_unit"],
-  sales_agent:    ["read","write","view_sales","request_discount","reserve_unit"],
-  leasing_manager:["read","write","delete","see_all","delete_leads","approve_manager","view_leasing","request_discount","manage_inventory","reserve_unit"],
-  leasing_agent:  ["read","write","view_leasing","reserve_unit"],
-  viewer:         ["read","view_sales","view_leasing"],
-}[role]||[]).includes(action);
+// can() consolidated to single source of truth (Day 45): re-exported from lib/permissions.js
+export { can } from "../lib/permissions.js";
