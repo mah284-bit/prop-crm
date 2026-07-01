@@ -500,3 +500,27 @@ VERIFIED PROPERTIES:
 BUILD STATUS: Stages B (harness) + C (capabilities) + D (identity) + E (broker-visibility) + F (config UI)
 COMPLETE, harness-verified, migrated, tagged. DEFERRED (forward-ready, no test surface): group-GM true
 cross-branch (needs multi-branch groups + group_gm users). ACL layer is GO for the intended scope.
+
+## PATH B DECISION — APP-LAYER DE-HARDCODING (1 Jul, Day 45, founder ruling)
+GOAL (non-negotiable): no hard-coded roles at the TENANT tier. Configurable. Certification-clean,
+Reelly-ready, customer can shape roles to their world ("free birds, not caged").
+
+FOUNDER RULING on the auto-pass:
+  - super_admin (PropCRM PLATFORM owner, is_super_admin=true): hard-coded auto-pass is OK. It is the
+    platform key — structural, DB-CHECK-enforced, only ever PropCRM. Not a customer role. Auditors expect
+    platform-owner full access.
+  - admin (CUSTOMER tenant admin) + ALL tenant roles: MUST be configurable. Read powers from
+    role_capabilities, NOT hard-coded. A customer may want a different 'admin'; hard-coding a customer role
+    fails certification/partner review.
+
+hasCapability change (App.jsx ~2633):
+  FROM: if (["admin","super_admin"].includes(role)) return true;   // hard-codes admin too — WRONG
+  TO:   if (currentUser?.is_super_admin === true) return true;      // platform owner only (the flag)
+        return userCapabilities[capability] === true;               // admin + all tenant roles read config
+  (Uses is_super_admin FLAG, matching the DB invariant — consistent top to bottom.)
+
+TWO-TIER SETUP MODEL (founder):
+  - PropCRM does FIRST-CUT setup per customer at onboarding (gather requirements → seed capability config).
+  - Customer Admin self-serves only a PERMITTED SUBSET of capabilities; the rest are PropCRM-only.
+  - NEW DIMENSION required: each capability tagged "who can edit it" — CUSTOMER-EDITABLE vs PROPCRM-ONLY.
+    This governs which cells the Customer Admin sees as toggleable in Settings vs locked.
