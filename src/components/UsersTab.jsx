@@ -171,7 +171,7 @@ export default function UsersTab({currentUser, showToast}) {
                 {!editUser&&<div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Temporary Password</label><input type="password" value={form.password} onChange={sf("password")} placeholder="Leave blank to auto-generate"/></div>}
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Role</label>
                   <select value={form.role} onChange={sf("role")}>
-                    {["super_admin","admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"].map(r=><option key={r} value={r}>{r.replace(/_/g," ")}</option>)}
+                    {(isSuperAdmin?["super_admin","admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"]:["admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"]).map(r=><option key={r} value={r}>{r.replace(/_/g," ")}</option>)}
                   </select>
                 </div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Status</label>
