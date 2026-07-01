@@ -2,19 +2,8 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import UnitDetailPanel from "./property/UnitDetailPanel.jsx";
 import { supabase } from "../lib/supabase";
 import { openPropertyPack } from "./property/propertyPackBus";
-// Role-based permission check.
-// Mirrors the can() defined in App.jsx — kept in sync here because
-// App.jsx's version is not exported. If you change roles/permissions
-// in App.jsx, update the table below too.
-const can = (role, action) => ({
-  super_admin:    ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_companies","manage_inventory","reserve_unit"],
-  admin:          ["read","write","delete","manage_users","see_all","delete_leads","approve_all","approve_manager","view_sales","view_leasing","request_discount","manage_inventory","reserve_unit"],
-  sales_manager:  ["read","write","delete","see_all","delete_leads","approve_manager","view_sales","request_discount","manage_inventory","reserve_unit"],
-  sales_agent:    ["read","write","view_sales","request_discount","reserve_unit"],
-  leasing_manager:["read","write","delete","see_all","delete_leads","approve_manager","view_leasing","request_discount","manage_inventory","reserve_unit"],
-  leasing_agent:  ["read","write","view_leasing","reserve_unit"],
-  viewer:         ["read","view_sales","view_leasing"],
-}[role]||[]).includes(action);
+// Permission checks are capability-driven via canDo() (reads role_capabilities config, de-hardcoded).
+import { canDo } from "../lib/permissions.js";
 
 // Master dropdown lists. Mirrors the MASTER object in App.jsx — not exported there.
 const MASTER = {
@@ -82,9 +71,9 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
   const [tenants,      setTenants]      = useState([]);
   const [leads,        setLeads]        = useState([]);
 
-  const canEdit    = ["super_admin","admin","sales_manager","leasing_manager"].includes(currentUser.role);
-  const canReserve = can(currentUser.role,"reserve_unit");
-  const canManageInv = ["super_admin","admin","sales_manager","leasing_manager"].includes(currentUser.role);
+  const canEdit    = canDo(currentUser, "manage_inventory");
+  const canReserve = canDo(currentUser, "reserve_unit");
+  const canManageInv = canDo(currentUser, "manage_inventory");
   const [showInvExcel, setShowInvExcel] = useState(false);
   const [invProjId, setInvProjId] = useState("");
 
