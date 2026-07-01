@@ -122,11 +122,11 @@ export default function RoleCapabilitiesSection({ currentUser, showToast }) {
         security floor and cannot be granted to agents (company-confidential data).
       </div>
 
-      <div style={{ overflowX: "auto" }}>
+      <div style={{ overflowX: "auto", overflowY: "auto", maxHeight: "68vh" }}>
         <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12 }}>
-          <thead>
+          <thead style={{ position: "sticky", top: 0, zIndex: 3, background: "#fff" }}>
             <tr>
-              <th style={{ textAlign: "left", padding: "8px 10px", position: "sticky", left: 0, background: "#fff", color: "#6B7785", fontWeight: 700 }}>Capability</th>
+              <th style={{ textAlign: "left", padding: "8px 10px", position: "sticky", left: 0, top: 0, zIndex: 4, background: "#fff", color: "#6B7785", fontWeight: 700 }}>Capability</th>
               {ROLES.map(r => (
                 <th key={r} style={{ padding: "8px 6px", color: "#0F2540", fontWeight: 700, fontSize: 11, textAlign: "center", minWidth: 74 }}>
                   {ROLE_LABEL[r]}
