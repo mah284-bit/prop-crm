@@ -524,3 +524,25 @@ TWO-TIER SETUP MODEL (founder):
   - Customer Admin self-serves only a PERMITTED SUBSET of capabilities; the rest are PropCRM-only.
   - NEW DIMENSION required: each capability tagged "who can edit it" — CUSTOMER-EDITABLE vs PROPCRM-ONLY.
     This governs which cells the Customer Admin sees as toggleable in Settings vs locked.
+
+## BIBLE CORRECTION (1 Jul, Day 45) — "minimal" applies to PropCRM's RETAINED plate, NOT the setup
+CORRECTION to point 1: the first-cut setup is FULL AND COMPLETE, not minimal. The customer must leave
+onboarding with a full-blown working environment — all business requirements met, all workflows + controls
+functioning — able to run INDEPENDENTLY once PropCRM steps away. A minimal setup would leave them dependent
+(wrong). "Minimal" refers to what stays on PROPCRM'S plate after handover: a thin retained layer.
+
+### PropCRM's MINIMAL RETAINED CONTROL (everything else → customer, complete, from day one)
+Retain only what is STRUCTURAL, PLATFORM-GLOBAL, SCHEMA-LEVEL, or the SAFETY WELD:
+1. Group/branch hierarchy changes — add/remove a branch, restructure group→branch (architectural; affects
+   see_group_data + company scoping). Customer comes back to us.
+2. Tenant lifecycle — onboard/offboard a whole company (platform super_admin job by definition).
+3. PropPulse global layer — projects/developers intelligence (ours by design).
+4. Crown-jewel structural RLS floors — the welded protection (commission margin / master agreements can
+   never leak to agents regardless of config). We hold the weld; customer toggles config above it.
+5. Capability SCHEMA — WHAT capabilities exist (defining a new capability type = code/platform change).
+   Customer TOGGLES capabilities; only PropCRM DEFINES new ones.
+6. (Candidate — resolves the manage_settings TBD) Designating WHO at the customer holds the config keys
+   (anointing the trained IT-savvy champion). If PropCRM retains this, manage_settings = PropCRM-set at
+   onboarding, and the champion manages all else. Founder to confirm.
+
+Everything OPERATIONAL / BUSINESS-WORKFLOW → customer-owned, fully, from handover (per the Bible above).
