@@ -127,3 +127,13 @@ via a future branch-assignment layer. NOT needed for first testers. Build flexib
 it, deliberately — not speculatively now. REVISIT TRIGGER: after current work is finished and we move to the
 LEASING phase, re-open this discussion then. (Two-account workaround rejected — it's debt; wait and build
 branch-assignment properly.) Architecture confirmed extensible; timing is ours to control.
+
+## SEED REVIEW COMPLETE (Day 45) — group_gm set to OVERSIGHT
+Founder approved "see broadly, act narrowly, approve at height." group_gm (Al Mansoori) adjusted
+(tag pre-seed-groupgm-oversight-day45, revertable):
+  OFF: edit_records, delete_records, delete_leads, reserve_units, manage_commissions, manage_master_agreements
+  ON:  see_group_data, see_branch_data, view_master_agreements, see_brokerage_commission, approve_discounts,
+       approve_discounts_admin, assign_leads, request_discounts (visibility + approval + light oversight)
+Customer can toggle operational caps ON later if their GM is hands-on (enabler model).
+Sales/Leasing Manager: see_branch_data stays TRUE (= own branch, correct). Multi-branch = deferred to Leasing.
+Seed is now a sensible first-cut TEMPLATE the customer tunes. Seed review plate item CLOSED.
