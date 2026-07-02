@@ -83,3 +83,16 @@ onNavigate calls (e.g. App.jsx:2171 area, the l_inventory/inventory row buttons)
 {type:"status",value:"Available"|"Reserved"} like the leasing one already does (line 2025). ~2-min fix.
 Principle (founder): "every button has meaning, or it's demeaning." More such button-meaning issues to be
 collected during the full end-to-end walkthrough.
+
+## FOUNDER TASK — SEED-DEFAULTS REVIEW (the "complete first-cut" config pass)
+Walkthrough surfaced that seeded role_capabilities defaults don't fully match Abid's real broker org intent
+(NOT bugs — the capability model works live; these are config decisions). Examples found Day 45:
+  - sales_manager see_branch_data = TRUE, but Abid thinks branch/all-visibility should be Group Manager only.
+  - manage_inventory = TRUE for admin ONLY (group_gm + all managers = false). Confirm intent (should group_gm
+    manage inventory?).
+DO THIS AS ONE DELIBERATE PASS (per governance bible: PropCRM does the complete first-cut per customer
+requirements): Abid defines the intended role x capability matrix for the real broker org; align the seed in
+a single clean migration; re-verify per-role live. Not piecemeal mid-walkthrough.
+Current roles: super_admin(platform), admin, group_gm, sales_manager, sales_agent, leasing_manager,
+leasing_agent, viewer. 19 caps across Data Visibility / Commission / Master Agreements / Administrative /
+Operations groups (all toggleable in Settings > Role Capabilities).
