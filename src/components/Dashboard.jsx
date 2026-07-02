@@ -14,12 +14,13 @@ import { Modal } from "../modules/shared/Modal.jsx";
 import { Av } from "../modules/shared/Av.jsx";
 import { G3 } from "../modules/shared/G3.jsx";
 import { STAGES, OPP_STAGES, ROLE_META, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, ROLES, VIEWS, MEET_TYPES, FOLLOW_TYPES, CAN_DELETE_LEADS, DISC_TYPES, STAGE_META, TYPE_META, ACT_META, OPP_STAGE_META } from "../modules/constants.js";
-import { fmtM, fmtAED, fmtDate, fmtDT, uid, getStrength, ini, can } from "../modules/utils.js";
+import { fmtM, fmtAED, fmtDate, fmtDT, uid, getStrength, ini } from "../modules/utils.js";
+import { canDo } from "../lib/permissions.js";
 
 export default function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],followups=[],crmContext="sales",units=[],salePricing=[],leasePricing=[],leases=[],users=[],onNavigate=()=>{}}){
-  const visible      = can(currentUser.role,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id);
+  const visible      = canDo(currentUser,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id);
   // Use opportunities for pipeline stats
-  const visibleOpps  = can(currentUser.role,"see_all")?opps:opps.filter(o=>o.assigned_to===currentUser.id);
+  const visibleOpps  = canDo(currentUser,"see_all")?opps:opps.filter(o=>o.assigned_to===currentUser.id);
   const active       = visibleOpps.filter(o=>!["Closed Won","Closed Lost","Won","Lost"].includes(o.stage)&&o.status==="Active");
   const won          = visibleOpps.filter(o=>o.stage==="Closed Won"||o.status==="Won");
   const pipeVal      = active.reduce((s,o)=>s+(o.budget||0),0);
@@ -177,7 +178,7 @@ export default function Dashboard({leads,opps=[],properties,activities,currentUs
 
       </div>
 
-      {can(currentUser.role,"see_all") && (()=>{
+      {canDo(currentUser,"see_all") && (()=>{
         const teamUsers = (users||[]).filter(u=>u && u.id);
         const rows = teamUsers.map(u=>{
           const uo = opps.filter(o=>o.assigned_to===u.id);
