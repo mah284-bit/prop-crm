@@ -137,3 +137,10 @@ Founder approved "see broadly, act narrowly, approve at height." group_gm (Al Ma
 Customer can toggle operational caps ON later if their GM is hands-on (enabler model).
 Sales/Leasing Manager: see_branch_data stays TRUE (= own branch, correct). Multi-branch = deferred to Leasing.
 Seed is now a sensible first-cut TEMPLATE the customer tunes. Seed review plate item CLOSED.
+
+## CORRECTION (Day 45 eve) — DiscountApprovals + LeasingDashboard are LIVE, not dead
+Earlier HANDOFF notes said src/components/DiscountApprovals.jsx and LeasingDashboard.jsx were dead code
+(App.jsx inline duplicates). VERIFIED FALSE via grep: App.jsx RENDERS both as imported components —
+DiscountApprovals at lines 2764 (discounts) + 2794 (l_discounts); LeasingDashboard at line 2788 (l_dashboard).
+DO NOT DELETE these files. The "dead inline duplicate" assumption is retracted. (App.jsx is ~2,866 lines now,
+post-refactor — older 17k-line notes are stale too.) Any future cleanup must re-verify with grep first.
