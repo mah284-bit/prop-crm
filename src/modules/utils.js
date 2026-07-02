@@ -18,5 +18,3 @@ export const getStrength = pw => {
 };
 
 
-// can() consolidated to single source of truth (Day 45): re-exported from lib/permissions.js
-export { can } from "../lib/permissions.js";
