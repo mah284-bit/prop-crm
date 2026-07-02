@@ -3,6 +3,7 @@ import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARG
 import { useDraggable } from "./lib/useDraggable";
 import { rulesFromRows } from './lib/contactValidation.js';
 import { supabase } from "./lib/supabase";
+import { canDo } from "./lib/permissions.js";
 import { normalisePhone, addWorkingDays, downloadIcsAndOpenMail } from './lib/appUtils.js';
 import { useLeadPersons, ROLE_LABELS } from './lib/useLeadPersons.js';
 import SettingsPage from "./components/settings/SettingsPage.jsx";
@@ -1017,8 +1018,8 @@ function OpportunitiesPlaceholder({ currentUser, crmContext }) {
 
 
 function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activities=[]}) {
-  const canEdit = can(currentUser.role, "write");
-  const canReserve = can(currentUser.role, "reserve_unit");
+  const canEdit = canDo(currentUser, "write");
+  const canReserve = canDo(currentUser, "reserve_unit");
   const [search, setSearch] = useState("");
   const [fStage, setFStage] = useState("All");
   const [fAgent, setFAgent] = useState("All");
@@ -1038,7 +1039,7 @@ function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activiti
 
 
   const allOpps = localOpps.length > 0 ? localOpps : (opps||[]);
-  const myOpps = can(currentUser.role,"see_all") ? allOpps : allOpps.filter(o=>o.assigned_to===currentUser.id);
+  const myOpps = canDo(currentUser,"see_all") ? allOpps : allOpps.filter(o=>o.assigned_to===currentUser.id);
   const activeOpps = myOpps.filter(o=>o.status==="Active" && o.stage!=="Closed Won" && o.stage!=="Closed Lost");
   const wonOpps = myOpps.filter(o=>o.stage==="Closed Won");
   const lostOpps = myOpps.filter(o=>o.stage==="Closed Lost");
