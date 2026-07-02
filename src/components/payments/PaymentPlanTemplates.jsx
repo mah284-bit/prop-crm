@@ -1,7 +1,7 @@
 // PaymentPlanTemplates — milestone payment-plan templates, extracted from App.jsx.
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../lib/supabase";
-import { can } from "../../lib/permissions.js";
+import { canDo } from "../../lib/permissions.js";
 
 const Spinner = ({ msg = "Loading…" }) => (
   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 16, color: "#A0AEC0" }}>
@@ -17,7 +17,7 @@ export default function PaymentPlanTemplates({ currentUser, showToast, projects 
   const [editTpl, setEditTpl] = useState(null);
   const [saving, setSaving] = useState(false);
   const [selProject, setSelProject] = useState("all");
-  const canEdit = can(currentUser.role, "write");
+  const canEdit = canDo(currentUser, "write");
 
   const blankTpl = {
     name: "", project_id: "", description: "", requires_approval: false,
