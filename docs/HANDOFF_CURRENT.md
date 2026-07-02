@@ -96,3 +96,15 @@ a single clean migration; re-verify per-role live. Not piecemeal mid-walkthrough
 Current roles: super_admin(platform), admin, group_gm, sales_manager, sales_agent, leasing_manager,
 leasing_agent, viewer. 19 caps across Data Visibility / Commission / Master Agreements / Administrative /
 Operations groups (all toggleable in Settings > Role Capabilities).
+
+## STRATEGIC GROUPING — "ROLES CONFIGURABILITY" ARC = ONE PHASE 2 EFFORT (Day 45)
+Founder scope-check surfaced that three items are the SAME family (roles-as-data) and should be done
+TOGETHER as one deliberate arc, NOT piecemeal:
+  1. NAV de-hardcode (TABS visibility by capability not hard-coded roles:[...])
+  2. CUSTOMER-DEFINABLE ROLES (add "Regional Head"/"Director" — roles from data + Create-Role form)
+  3. SEED-DEFAULTS as a proper first-cut template the customer tunes
+These are DIFFERENT layers from the small remaining plate (per-role VERIFICATION = testing; SEED intent =
+founder product decision) — the arc does NOT subsume them. Decision: defer the Roles Configurability arc to
+a dedicated multi-session Phase 2 effort (it's schema+UI, not a finish-today job). NON-BLOCKING now: RLS
+enforces real access; in-screen actions already capability-gated (proven live). Return to the small plate
+(finish verification, seed review) for clean closure. Tag pre-nav-dehardcode-day45 marks the pause (no code).
