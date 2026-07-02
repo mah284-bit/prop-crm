@@ -1,44 +1,33 @@
 # PropCRM - Current Handoff (resume point)
-_Last updated: 2 Jul 2026 (Day 45+)_
+_Last updated: 2 Jul 2026 (Day 45) — Path B COMPLETE_
 
-## WHERE WE ARE: Access-Control build COMPLETE; app-layer de-hardcoding (Path B) IN PROGRESS
+## WHERE WE ARE: App is 100% capability-driven. ACL build + Path B de-hardcoding DONE.
 
 ### DONE + committed + pushed
-- Commission Model: agent tier complete (Stage 5b), per earlier handoff. Live.
-- ACCESS-CONTROL BUILD B-G COMPLETE (tag: acl-build-complete-day45). Harness, capability model
-  (18 caps), crown-jewel double-locking (master agreements + brokerage commission), two-tier identity
-  (super_admin=platform via is_super_admin flag, DB CHECK constraint; admin=tenant-top), capability-driven
-  broker-visibility RLS (agent own / manager branch), Settings config UI (RoleCapabilitiesSection).
-  Full role x table sign-off all green.
-- GOVERNANCE BIBLE written (docs/Access_Control_Configurable_Roles_Design.md): PropCRM = enabler,
-  complete first-cut setup, customer owns config post-handover via 1 trained role under change-approval;
-  PropCRM retains leak-prevention + monitoring + structural/PropPulse/schema layers.
+- ACCESS-CONTROL BUILD B-G COMPLETE (tag acl-build-complete-day45): harness, 18-cap model, crown-jewel
+  double-lock, two-tier identity (super_admin=platform via is_super_admin flag + DB CHECK), capability-driven
+  broker-visibility RLS, Settings config UI. Full role x table sign-off green.
+- GOVERNANCE BIBLE (docs/Access_Control_Configurable_Roles_Design.md): PropCRM=enabler, complete first-cut
+  setup, customer owns config post-handover via 1 trained role under change-approval; PropCRM retains
+  leak-prevention + monitoring + structural/PropPulse/schema.
+- PATH B COMPLETE (tag path-b-dehardcoding-complete-day45): ALL hard-coded role arrays retired from the app.
+  canDo(user,action) in lib/permissions.js reads role_capabilities. hasCapability de-hardcoded (is_super_admin
+  flag only). 13 screens + App.jsx (Pipeline, inline DiscountApprovals, nav gates) migrated. permissions.js =
+  only canDo + ACTION_TO_CAPABILITY. 19 caps seeded + all visible/toggleable in Settings > Role Capabilities
+  (Operations group added). Two-tier discount approval preserved (approve_discounts / approve_discounts_admin).
+- BUGS FIXED en route: 4 latent missing-can-import ReferenceErrors (leasing trio + inline DiscountApprovals),
+  1 ReservationsWidget crash (LeasingDashboard). HEAD = 76f9245. Tree clean.
 
-### IN PROGRESS: Path B - remove hard-coded roles from the APP layer
-- Decision: super_admin (platform, is_super_admin flag) auto-pass OK; admin + ALL tenant roles configurable.
-- DONE: hasCapability de-hardcoded; canDo(user,action) helper (src/lib/permissions.js) + ACTION_TO_CAPABILITY
-  map; capabilities attached to currentUser (App.jsx loadUserCapabilities); InventoryModule fully migrated
-  + VISUALLY VERIFIED (agent manage_inventory=false loses Add/Edit/Excel). First screen off hard-coded roles.
-- HEAD = ab51162. Tree clean. All pushed.
+## NEXT (before tester handoff)
+1. VERIFICATION WALKTHROUGH (the safety net — not yet done): as super_admin, click every migrated screen
+   end-to-end (Inventory, PropertyMaster, ActivityLog, Leasing x3, Dashboard, DiscountApprovals,
+   Opportunities, OpportunityDetail, LeadDetail, Pipeline, nav gates) — confirm buttons/data render per
+   capability. No tenant users exist yet to test non-super profiles.
+2. Confirm Settings > Role Capabilities shows the Operations group (7 new toggles) — trivial, verify on next open.
 
-## NEXT: continue Path B screen-by-screen (THE RECIPE)
-grep screen for can(...) + inline "includes(currentUser.role)" arrays -> read what each gates -> map to
-capability -> remove local duplicate can(), import canDo -> swap to canDo(currentUser, action) ->
-build + visual verify (agent loses what they shouldn't) -> commit.
-
-REMAINING ~34 sites: App.jsx(8), LeadDetail(5), Dashboard(3), DiscountApprovals(2), LeasingLeads(2),
-LeasingModule(2), OpportunityDetail(2), ActivityLog(2), Opportunities(2), getVisibleCompanyIds(1),
-PropertyMaster(1), LeaseOpportunityDetail(1), PaymentPlanTemplates(1). WATCH for hidden inline role arrays.
-FINAL: retire can()+PERMS arrays from permissions.js; add 6 business caps to Settings matrix.
-
-## OPEN / DEFERRED
-- getVisibleCompanyIds can(role,"see_all") is HIGH-STAKES (visibility scoping, not a button) - migrate with care.
+## PHASE 2 CAPTURES
+- ReservationsWidget: lost in refactor, removed dangling ref; rebuild (leasing dashboard reservations panel).
+- src/components/DiscountApprovals.jsx: DEAD CODE (App.jsx uses inline copy at ~1488); delete in cleanup.
+- LeasingDashboard.jsx: DEAD CODE (App.jsx inline is live); delete in cleanup.
 - group-GM cross-branch (forward-ready, no test surface). manage_settings edit-control (bible TBD).
-- Monitoring routine (extend harness into scheduled leak-check - PropCRM retained duty).
-
-## PHASE 2 CAPTURE (Day 45)
-- ReservationsWidget: lost in App.jsx refactor (referenced App.jsx:2214 + LeasingDashboard.jsx:283, defined
-  nowhere -> crashed live LeasingDashboard). Removed the dangling ref to un-break. REBUILD as Phase 2:
-  a reservations panel on the leasing dashboard (took currentUser + units; likely showed active unit
-  reservations). LeasingDashboard.jsx (extracted file) is DEAD CODE — not imported/rendered; App.jsx:1932
-  inline version is the live one. Consider deleting the orphaned .jsx during a cleanup pass.
+- Monitoring routine (extend harness into scheduled leak-check).
