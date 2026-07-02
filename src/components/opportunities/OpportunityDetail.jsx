@@ -208,9 +208,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [showReassign, setShowReassign] = useState(false);
   const [reassignForm, setReassignForm] = useState({assigned_to:"", reason:""});
   const isOwner  = opp.assigned_to === currentUser.id;
-  const isAdmin  = ["super_admin","admin"].includes(currentUser.role);
-  const isManager = ["sales_manager","leasing_manager"].includes(currentUser.role);
-  const canSeeCompanyMargin = isAdmin || isManager;
+  const canSeeCompanyMargin = canSeeCommission;  // company margin == brokerage-commission crown jewel (single gate)
 
   // Commission correction — load company-wide standard agent split (Tier 1 fallback).
   useEffect(() => {
@@ -240,7 +238,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   useEffect(() => {
     let alive = true;
     (async () => {
-      if (["admin", "super_admin"].includes(currentUser?.role)) {
+      if (currentUser?.is_super_admin === true) {   // platform owner only; admin+tenant read config
         if (alive) setCanSeeCommission(true);
         return;
       }
