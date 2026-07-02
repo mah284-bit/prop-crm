@@ -5,7 +5,7 @@ import { Badge } from "../../modules/shared/Badge.jsx";
 import { Spinner } from "../../modules/shared/Spinner.jsx";
 import { StageBadge } from "../../modules/shared/StageBadge.jsx";
 import { OPP_STAGES, OPP_STAGE_META } from "../../modules/constants.js";
-import { can } from "../../modules/utils.js";
+import { canDo } from "../../lib/permissions.js";
 import OpportunityDetail from "../opportunities/OpportunityDetail.jsx";
 
 function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, projects, salePricing, activities, setActivities, currentUser, users, showToast, initialFilter=null, CreateOpportunityDialog }) {
@@ -72,7 +72,7 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
   // Index lookup helpers
   const leadById = useMemo(()=>Object.fromEntries((leads||[]).map(l=>[l.id,l])), [leads]);
   const userById = useMemo(()=>Object.fromEntries((users||[]).map(u=>[u.id,u])), [users]);
-  const canSeeAllOwners = can(currentUser.role, "see_all"); // render-scope: gates the owner dropdown
+  const canSeeAllOwners = canDo(currentUser, "see_all"); // render-scope: gates the owner dropdown
   const unitById = useMemo(()=>Object.fromEntries((units||[]).map(u=>[u.id,u])), [units]);
   const projectById = useMemo(()=>Object.fromEntries((projects||[]).map(p=>[p.id,p])), [projects]);
 
@@ -80,7 +80,7 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
   const visible = useMemo(()=>{
     let rows = (opps||[]).filter(o => o && o.id);
     // Visibility: users without see_all are HARD-scoped to their own deals
-    const canSeeAll = can(currentUser.role, "see_all");
+    const canSeeAll = canDo(currentUser, "see_all");
     if (!canSeeAll) rows = rows.filter(o => o.assigned_to === currentUser.id);
     // Stage filter
     if (fStage !== "All") rows = rows.filter(o => o.stage === fStage);
