@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { ACT_TYPES, ACT_META } from "../../modules/constants.js";
 import { supabase } from "../../lib/supabase.js";
-import { can, fmtDate } from "../../modules/utils.js";
+import { fmtDate } from "../../modules/utils.js";
+import { canDo } from "../../lib/permissions.js";
 
 function ActivityLog({leads,activities,setActivities,currentUser,showToast,initialFilter=null}){
   const[fType,setFType]=useState("All");
@@ -15,7 +16,7 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast,initi
     (fStatus==="All"||(a.status||"completed")===fStatus)
   ),[activities,fType,fLead,fStatus]);
   const upcoming = activities.filter(a=>a.status==="upcoming");
-  const del=async id=>{if(!can(currentUser.role,"delete"))return;const{error}=await supabase.from("activities").delete().eq("id",id);if(!error)setActivities(p=>p.filter(a=>a.id!==id));};
+  const del=async id=>{if(!canDo(currentUser,"delete"))return;const{error}=await supabase.from("activities").delete().eq("id",id);if(!error)setActivities(p=>p.filter(a=>a.id!==id));};
   return(
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
       {/* Upcoming alert */}
@@ -76,7 +77,7 @@ function ActivityLog({leads,activities,setActivities,currentUser,showToast,initi
                     {a.scheduled_at&&<span> · 📅 {new Date(a.scheduled_at).toLocaleDateString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</span>}
                   </div>
                 </div>
-                {can(currentUser.role,"delete")&&<button onClick={()=>del(a.id)} style={{background:"none",border:"none",color:"#E2E8F0",fontSize:16,alignSelf:"flex-start",padding:0,transition:"color 0.15s"}} onMouseOver={e=>e.currentTarget.style.color="#B83232"} onMouseOut={e=>e.currentTarget.style.color="#E2E8F0"}>×</button>}
+                {canDo(currentUser,"delete")&&<button onClick={()=>del(a.id)} style={{background:"none",border:"none",color:"#E2E8F0",fontSize:16,alignSelf:"flex-start",padding:0,transition:"color 0.15s"}} onMouseOver={e=>e.currentTarget.style.color="#B83232"} onMouseOut={e=>e.currentTarget.style.color="#E2E8F0"}>×</button>}
               </div>
             </div>
           );
