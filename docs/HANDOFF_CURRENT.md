@@ -74,3 +74,12 @@ works end-to-end LIVE — de-hardcoding fully verified in the flesh, not just vi
 DONE + PROVEN. App is tester-handoff-ready.
 PRE-EXISTING items (NOT de-hardcoding related, to address separately): Dashboard + Inventory listing
 "sticky note" display issue — flagged by founder for review.
+
+## PHASE 2 / POLISH CAPTURE — dashboard Available/Reserved buttons don't pre-filter inventory
+Founder flagged (Day 45): Sales dashboard "Available Units" / "Reserved Units" buttons both open the FULL
+inventory instead of pre-filtering to their status — making them meaningless. Machinery already exists:
+InventoryModule accepts initialFilter (line 39) + applies it (line 55, fStatus). Fix = the dashboard button
+onNavigate calls (e.g. App.jsx:2171 area, the l_inventory/inventory row buttons) must pass
+{type:"status",value:"Available"|"Reserved"} like the leasing one already does (line 2025). ~2-min fix.
+Principle (founder): "every button has meaning, or it's demeaning." More such button-meaning issues to be
+collected during the full end-to-end walkthrough.
