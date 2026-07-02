@@ -66,3 +66,11 @@ testagent3@testmans1.ae) — delete via Supabase dashboard Auth panel. Harmless 
 NEXT: with user creation working, create sales_manager + viewer test users, then do the per-role live
 verification walkthrough (agent loses manage_inventory buttons, etc.) — the check pending since no tenant
 users existed.
+
+## ✅ PER-ROLE LIVE VERIFICATION PASSED (2 Jul, Day 45)
+Logged in as testagent4 (sales_agent, Al Mansoori) in incognito: login works; Inventory Add/Edit/Excel
+buttons correctly HIDDEN (manage_inventory=false). The capability model (canDo reading role_capabilities)
+works end-to-end LIVE — de-hardcoding fully verified in the flesh, not just via harness/build. Path B
+DONE + PROVEN. App is tester-handoff-ready.
+PRE-EXISTING items (NOT de-hardcoding related, to address separately): Dashboard + Inventory listing
+"sticky note" display issue — flagged by founder for review.
