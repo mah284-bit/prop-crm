@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { supabase } from "../../lib/supabase.js";
-import { can } from "../../modules/utils.js";
+import { canDo } from "../../lib/permissions.js";
 import { OPP_STAGES } from "../../modules/constants.js";
 
 function PropertyMaster({currentUser,showToast}){
@@ -18,7 +18,7 @@ function PropertyMaster({currentUser,showToast}){
   const[selUnit,setSelUnit]=useState(null);
   const[modal,setModal]=useState(null); // "project"|"category"|"building"|"unit"
   const[form,setForm]=useState({});
-  const canEdit=can(currentUser.role,"write");
+  const canEdit=canDo(currentUser,"manage_inventory");  // property master catalog = inventory management (managers/admin; config-toggleable)
 
   const load=useCallback(async()=>{
     setLoading(true);
