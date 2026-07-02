@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
+import { canDo } from "../lib/permissions.js";
 function LeasingLeads({ currentUser, showToast, users=[] }) {
   const [tenants,    setTenants]    = useState([]);
   const [lOpps,      setLOpps]      = useState([]);
@@ -18,8 +19,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
   const [saving,     setSaving]     = useState(false);
   const [oppForm,    setOppForm]    = useState({title:"",unit_id:"",budget:"",assigned_to:"",notes:""});
   const [showTenantUpload, setShowTenantUpload] = useState(false);
-  const canEdit = can(currentUser.role,"write");
-  const canManageTenants = ["super_admin","admin","leasing_manager"].includes(currentUser.role);
+  const canEdit = canDo(currentUser,"write");
   const tBlank = {full_name:"",phone:"",email:"",nationality:"",id_type:"Emirates ID",id_number:"",id_expiry:"",passport_number:"",tenant_type:"Individual",notes:""};
   const [tForm, setTForm] = useState(tBlank);
   const tf = k => e => setTForm(f=>({...f,[k]:e.target?.value??e}));
@@ -101,7 +101,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
     setSaving(false);
   };
 
-  const visible = (can(currentUser.role,"see_all")?tenants:tenants.filter(t=>{
+  const visible = (canDo(currentUser,"see_all")?tenants:tenants.filter(t=>{
     const myOpps=lOpps.filter(o=>o.tenant_id===t.id&&o.assigned_to===currentUser.id);
     return myOpps.length>0;
   }));
