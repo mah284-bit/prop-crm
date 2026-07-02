@@ -55,3 +55,14 @@ CLEANUP: orphaned auth users exist for testagent@testmans1.ae / testagent2@testm
   (auth.users rows without valid profiles). Clear via Supabase dashboard Auth panel before retesting.
 IMPACT: testers cannot be given accounts until fixed. TOP priority for next session.
 Tag before fix. Existing capability model + canDo is unaffected (this is purely the create-user flow).
+
+## ✅ BLOCKER RESOLVED (2 Jul, Day 45) — USER CREATION FIXED
+Fix (commit e097ecd): UsersTab signUp now passes full_name/role/company_id in options.data; the
+on_auth_user_created trigger sets the profile server-side (bypasses RLS, no session-switch). Removed the
+failing client upsert. VERIFIED: created testagent4@testmans1.ae (sales_agent, Al Mansoori) — no error,
+profile + company_id set correctly.
+CLEANUP (minor, next session): orphaned auth.users from failed attempts (testagent@ / testagent2@ /
+testagent3@testmans1.ae) — delete via Supabase dashboard Auth panel. Harmless (no valid profiles).
+NEXT: with user creation working, create sales_manager + viewer test users, then do the per-role live
+verification walkthrough (agent loses manage_inventory buttons, etc.) — the check pending since no tenant
+users existed.
