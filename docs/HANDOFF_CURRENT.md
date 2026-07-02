@@ -31,3 +31,10 @@ _Last updated: 2 Jul 2026 (Day 45) — Path B COMPLETE_
 - LeasingDashboard.jsx: DEAD CODE (App.jsx inline is live); delete in cleanup.
 - group-GM cross-branch (forward-ready, no test surface). manage_settings edit-control (bible TBD).
 - Monitoring routine (extend harness into scheduled leak-check).
+
+## VERIFICATION WALKTHROUGH (2 Jul, Day 45) — PASSED (super_admin)
+As super_admin (mah284): all top tabs open fast, Opportunities + OpportunityDetail + finance render clean,
+menus quick, no white screens / console errors. Migrated screens stable end-to-end. App is tester-handoff-ready.
+CAVEAT: agent/manager/viewer capability-gating verified via RLS harness (DB) + build (code), NOT live tenant
+logins — no tenant users exist yet. When real tenant users created, do a quick per-role click-through to
+confirm buttons/data gate correctly (agent loses manage_inventory buttons, etc.).
