@@ -16,7 +16,7 @@ import { DiscBadge } from "../../modules/shared/DiscBadge.jsx";
 import { TypeBadge } from "../../modules/shared/TypeBadge.jsx";
 import { ROLES, COLORS, OPP_STAGES, OPP_STAGE_META, STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, PROPOSAL_STATUS_META, VALIDITY_PRESETS } from "../../modules/constants.js";
 import { addWorkingDays } from "../../lib/appUtils.js";
-import { can } from "../../modules/utils.js";
+import { canDo } from "../../lib/permissions.js";
 import ActivitiesList, { ASKS_GRID_OPTIONS } from "./ActivitiesList.jsx";
 import StageCaptureDialog from "./StageCaptureDialog.jsx";
 import UnitSearchPicker from "../UnitSearchPicker.jsx";
@@ -203,7 +203,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   const [payForm,    setPayForm]    = useState({milestone:"Booking Deposit",amount:"",percentage:"",due_date:"",payment_type:"Cheque",cheque_number:"",cheque_date:"",bank_name:"",status:"Pending",notes:"",cheque_file_url:""});
   const [emailForm,  setEmailForm]  = useState({to:"",subject:"",body:""});
   const [editPayment,setEditPayment]= useState(null);
-  const canEdit  = can(currentUser.role,"write");
+  const canEdit  = canDo(currentUser,"write");
   const [tookOwnership, setTookOwnership] = useState(false);
   const [showReassign, setShowReassign] = useState(false);
   const [reassignForm, setReassignForm] = useState({assigned_to:"", reason:""});
@@ -263,7 +263,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
     return () => { alive = false; };
   }, [currentUser?.role, currentUser?.company_id]);
   const canAction = isOwner || tookOwnership;
-  const canReassign = isAdmin || isManager;
+  const canReassign = canDo(currentUser,"assign_leads");
   const isWon    = opp.stage==="Closed Won";
   const isDeveloper = (()=>{try{const c=JSON.parse(localStorage.getItem("propccrm_company_cache")||"null");return c?.company_category==="Developer";}catch{return false;}})();
   const isOffPlan = opp.property_category==="Off-Plan" || (!opp.property_category && sp?.booking_pct>0);
@@ -3307,7 +3307,7 @@ You will become the assigned agent.`);
             <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                 <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px"}}>Financials</div>
-                {INTERNAL_APPROVAL_FEATURES_ENABLED && canAction&&can(currentUser.role,"request_discount")&&!isWon&&(
+                {INTERNAL_APPROVAL_FEATURES_ENABLED && canAction&&canDo(currentUser,"request_discount")&&!isWon&&(
                   <button onClick={()=>{setDiscReqForm({type:"sale_price",discount_pct:"",reason:"",discount_source:"Developer",developer_auth_ref:""});setShowDiscReq(true);}}
                     style={{padding:"5px 12px",borderRadius:7,border:"1.5px solid #C9A84C",background:"#FDF3DC",color:"#8A6200",fontSize:11,fontWeight:600,cursor:"pointer"}}>
                     💰 Request Discount
