@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
+import { canDo } from "../lib/permissions.js";
 function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, users, currentUser, showToast, onBack, onUpdated }) {
   const [activeTab,  setActiveTab]  = useState("details");
   const [activities, setActivities] = useState([]);
@@ -14,17 +15,15 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
   const [showPDC,    setShowPDC]    = useState(false);
   const [pdcForm,    setPdcForm]    = useState({num_cheques:"1",annual_rent:"",start_date:"",bank_name:"",notes:"",start_cheque_num:""});
   const [pdcChequeNums, setPdcChequeNums] = useState({});
-  const canEdit = can(currentUser.role,"write");
+  const canEdit = canDo(currentUser,"write");
   const [tookOwnership, setTookOwnership] = useState(false);
   const [showReassign, setShowReassign] = useState(false);
   const [reassignForm, setReassignForm] = useState({assigned_to:"", reason:""});
   const [showStageGate, setShowStageGate] = useState(null);
   const [stageGateForm, setStageGateForm] = useState({});
   const isOwner = opp.assigned_to === currentUser.id;
-  const isAdmin = ["super_admin","admin"].includes(currentUser.role);
-  const isManager = ["leasing_manager","sales_manager"].includes(currentUser.role);
   const canAction = isOwner || tookOwnership;
-  const canReassign = isAdmin || isManager;
+  const canReassign = canDo(currentUser,"assign_leads");
   const isSigned = opp.stage==="Lease Signed";
   const isReserved = ["Reserved","Lease Signed"].includes(opp.stage);
   const hasPayments = payments.length>0;
