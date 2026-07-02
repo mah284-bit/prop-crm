@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import { supabase } from "../../lib/supabase";
-import { can, canWithPS, roleTeam } from "../../lib/permissions.js";
+import { canDo } from "../../lib/permissions.js";
 import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, PROPOSAL_STATUS_META, VALIDITY_PRESETS, OPP_STAGES, OPP_STAGE_META, STAGE_META, ACT_META } from "../../modules/constants.js";
 import { fmtM, fmtAED, fmtDate, fmtDT, uid, getStrength, ini } from "../../modules/utils.js";
 import ActivitiesList from "../opportunities/ActivitiesList.jsx";
@@ -40,8 +40,8 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
   const [prefilledUnit, setPrefilledUnit] = useState(null);
   // Phase E dense layout: activities for ALL of this lead's opportunities (used to enrich opp rows)
   const [leadActivities, setLeadActivities] = useState([]);
-  const canEdit = can(currentUser.role,"write");
-  const canDel  = can(currentUser.role,"delete_leads");
+  const canEdit = canDo(currentUser,"write");
+  const canDel  = canDo(currentUser,"delete_leads");
 
   // ── Promote proposal -> Opportunity (AI-extract) ───────────────────
   const [promoting, setPromoting] = useState(false);
@@ -218,7 +218,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
   const leadOpps = selLeadId ? opps.filter(o=>o.lead_id===selLeadId) : [];
 
   // Filter leads — exclude pure lease leads from Sales CRM
-  const visible = (can(currentUser.role,"see_all")?leads:leads.filter(l=>l&&l.assigned_to===currentUser.id))
+  const visible = (canDo(currentUser,"see_all")?leads:leads.filter(l=>l&&l.assigned_to===currentUser.id))
     .filter(l=>l&&l.property_type!=="Lease");
 
   // Aggregated stage from opportunities
@@ -311,8 +311,8 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
       {/* Lead summary strip */}
       <div style={{display:"flex",gap:8,marginBottom:12,flexShrink:0,flexWrap:"wrap"}}>
         <div style={{padding:"6px 14px",borderRadius:8,background:"#fff",border:"1px solid #E8EDF4",fontSize:12,color:"#0F2540",fontWeight:600}}>{visible.length} total contacts</div>
-        <div style={{padding:"6px 14px",borderRadius:8,background:"#EFF6FF",border:"1px solid #BFDBFE",fontSize:12,color:"#1A5FA8",fontWeight:600}}>{(can(currentUser.role,"see_all")?opps:opps.filter(o=>o.assigned_to===currentUser.id)).filter(o=>o.status==="Active").length} active opportunities</div>
-        <div style={{padding:"6px 14px",borderRadius:8,background:"#E6F4EE",border:"1px solid #A8D5BE",fontSize:12,color:"#1A7F5A",fontWeight:600}}>{(can(currentUser.role,"see_all")?opps:opps.filter(o=>o.assigned_to===currentUser.id)).filter(o=>o.stage==="Closed Won").length} won deals</div>
+        <div style={{padding:"6px 14px",borderRadius:8,background:"#EFF6FF",border:"1px solid #BFDBFE",fontSize:12,color:"#1A5FA8",fontWeight:600}}>{(canDo(currentUser,"see_all")?opps:opps.filter(o=>o.assigned_to===currentUser.id)).filter(o=>o.status==="Active").length} active opportunities</div>
+        <div style={{padding:"6px 14px",borderRadius:8,background:"#E6F4EE",border:"1px solid #A8D5BE",fontSize:12,color:"#1A7F5A",fontWeight:600}}>{(canDo(currentUser,"see_all")?opps:opps.filter(o=>o.assigned_to===currentUser.id)).filter(o=>o.stage==="Closed Won").length} won deals</div>
       </div>
 
       {/* Lead cards */}
