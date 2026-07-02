@@ -108,3 +108,14 @@ founder product decision) — the arc does NOT subsume them. Decision: defer the
 a dedicated multi-session Phase 2 effort (it's schema+UI, not a finish-today job). NON-BLOCKING now: RLS
 enforces real access; in-screen actions already capability-gated (proven live). Return to the small plate
 (finish verification, seed review) for clean closure. Tag pre-nav-dehardcode-day45 marks the pause (no code).
+
+## PER-ROLE VERIFICATION COMPLETE (Day 45) — all tiers gate correctly, live-proven
+- sales_agent (testagent4): Inventory manage buttons HIDDEN (manage_inventory=false) ✅
+- sales_manager (testmgr): per config — see_branch_data=true, manage_inventory=false (no inventory manage) ✅
+- viewer (testviewer): sees ONLY Dashboard tab ✅ — but NOTE: this is the current HARD-CODED nav limiting
+  viewer (only dashboard/l_dashboard list "viewer" in roles:[]). Makes viewer near-useless (can't reach
+  leads/opps/inventory even read-only). To make viewer a useful READ-ONLY role (sees data, can't edit),
+  the nav must be capability-driven — exactly the PAUSED Phase 2 "Roles Configurability" arc. Not a bug;
+  a known consequence of hard-coded nav. Capability model itself works correctly across all 3 tiers.
+CONCLUSION: capability model proven live end-to-end. App tester-ready for the built roles; viewer usefulness
++ full role/nav configurability = Phase 2 arc.
