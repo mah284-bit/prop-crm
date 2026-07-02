@@ -2813,7 +2813,7 @@ export default function App(){
   localStorage.setItem("propccrm_company_id",id);
   setTab("dashboard");
 }} activeCompanyId={activeCompanyId}/>}
-          {tab==="users"       &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
+          {tab==="users"       &&canDo(currentUser,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {tab==="permissions" &&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
           {tab==="group_view"  &&<GroupConsolidatedView currentUser={currentUser}/>}
 
@@ -2835,7 +2835,7 @@ export default function App(){
   localStorage.setItem("propccrm_company_id",id);
   setTab("l_dashboard");
 }} activeCompanyId={activeCompanyId}/>}
-          {tab==="l_users"     &&can(userRole,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
+          {tab==="l_users"     &&canDo(currentUser,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {tab==="l_permissions"&&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
 
           {tab==="l_group_view" &&<GroupConsolidatedView currentUser={currentUser}/>}
