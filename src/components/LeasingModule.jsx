@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
+import { canDo } from "../lib/permissions.js";
 function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=null,initialFilter=null}) {
   const [tab,setTab]               = useState(initialFilter?.type==="tab"&&initialFilter?.value ? initialFilter.value : "dashboard");
   const [tenants,setTenants]       = useState([]);
@@ -8,8 +9,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
   const [maintenance,setMaintenance]=useState([]);
   const [units,setUnits]           = useState([]);
   const [loading,setLoading]       = useState(true);
-  const canEdit = can(currentUser.role,"write");
-  const canDel  = can(currentUser.role,"delete");
+  const canEdit = canDo(currentUser,"write");
   const [showAddTenant,setShowAddTenant]=useState(false);
   const [showAddLease,setShowAddLease]  =useState(false);
   const [showAddPmt,setShowAddPmt]      =useState(false);
