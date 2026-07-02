@@ -2210,8 +2210,7 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
         </div>
       </div>
 
-      {/* Reservations Widget */}
-      <ReservationsWidget currentUser={currentUser} units={units}/>
+      {/* Reservations Widget — removed: component lost in refactor (undefined ref crashed LeasingDashboard). Rebuild = Phase 2. */}
     </div>
   );
 }
