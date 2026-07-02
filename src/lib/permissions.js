@@ -50,8 +50,8 @@ const ACTION_TO_CAPABILITY = {
   manage_inventory: "manage_inventory",
   reserve_unit:     "reserve_units",
   request_discount: "request_discounts",
-  approve_all:      "approve_discounts",
-  approve_manager:  "approve_discounts",
+  approve_all:      "approve_discounts_admin",   // admin/escalation tier
+  approve_manager:  "approve_discounts",         // manager tier
   see_all:          "see_branch_data",
 };
 export const canDo = (user, action) => {

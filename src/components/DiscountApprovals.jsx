@@ -1,3 +1,5 @@
+import { canDo } from "../lib/permissions.js";
+
 function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
   const [filter, setFilter] = useState("Pending");
   const [saving, setSaving] = useState(false);
@@ -5,8 +7,8 @@ function DiscountApprovals({discounts,setDiscounts,leads,user,toast}) {
   const [actingOn, setActingOn] = useState(null);
   const [action, setAction] = useState(null); // "approve"|"reject"|"escalate"
 
-  const canApproveManager = can(user.role,"approve_manager");
-  const canApproveAdmin   = can(user.role,"approve_all");
+  const canApproveManager = canDo(user,"approve_manager");
+  const canApproveAdmin   = canDo(user,"approve_all");
 
   const visible = discounts.filter(d=>{
     if(filter==="All") return true;
