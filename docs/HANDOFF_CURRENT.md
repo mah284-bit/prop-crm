@@ -144,3 +144,14 @@ Earlier HANDOFF notes said src/components/DiscountApprovals.jsx and LeasingDashb
 DiscountApprovals at lines 2764 (discounts) + 2794 (l_discounts); LeasingDashboard at line 2788 (l_dashboard).
 DO NOT DELETE these files. The "dead inline duplicate" assumption is retracted. (App.jsx is ~2,866 lines now,
 post-refactor — older 17k-line notes are stale too.) Any future cleanup must re-verify with grep first.
+
+## BUTTON-FILTER FIX — NEEDS SCREEN CONFIRMATION (Day 45 eve, not fixed)
+Founder reported Dashboard "Available Units"/"Reserved Units" buttons open FULL inventory instead of
+pre-filtering. Investigated: only TWO Available/Reserved navigate points in App.jsx, BOTH leasing:
+  - line 2025: leasing SC card -> onNavigate("builder",{type:"status",value:"Available"}) — ALREADY correct
+  - line 2171: leasing array link ["Available Units",...,"l_inventory"] — no filter passed
+  - NO "Reserved Units" navigate found anywhere; NO sales-dashboard Available/Reserved nav button found.
+So the exact button(s) founder saw are unconfirmed (sales vs leasing? which widget?). NEXT SESSION: founder
+shows the exact screen + button (screenshot or "Leasing Dashboard, Available card"), then it's a ~2-min fix
+(InventoryModule already accepts initialFilter line 39 / applies line 55; button just needs to pass
+{type:"status",value:"Available"|"Reserved"}). Do NOT fix blind — locate first.
