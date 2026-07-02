@@ -119,3 +119,11 @@ enforces real access; in-screen actions already capability-gated (proven live). 
   a known consequence of hard-coded nav. Capability model itself works correctly across all 3 tiers.
 CONCLUSION: capability model proven live end-to-end. App tester-ready for the built roles; viewer usefulness
 + full role/nav configurability = Phase 2 arc.
+
+## DEFERRED DISCUSSION — MULTI-BRANCH ASSIGNMENT (revisit at LEASING phase)
+Founder decision (Day 45): the multi-branch case (e.g. one manager covers Sharjah AND Ajman, not all
+branches) is real and structurally sound to add later — the capability+RLS foundation extends to it cleanly
+via a future branch-assignment layer. NOT needed for first testers. Build flexibility WHEN the market needs
+it, deliberately — not speculatively now. REVISIT TRIGGER: after current work is finished and we move to the
+LEASING phase, re-open this discussion then. (Two-account workaround rejected — it's debt; wait and build
+branch-assignment properly.) Architecture confirmed extensible; timing is ours to control.
