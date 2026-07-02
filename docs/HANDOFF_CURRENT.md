@@ -38,3 +38,20 @@ menus quick, no white screens / console errors. Migrated screens stable end-to-e
 CAVEAT: agent/manager/viewer capability-gating verified via RLS harness (DB) + build (code), NOT live tenant
 logins — no tenant users exist yet. When real tenant users created, do a quick per-role click-through to
 confirm buttons/data gate correctly (agent loses manage_inventory buttons, etc.).
+
+## 🛑 HANDOFF BLOCKER FOUND (Day 45 end) — USER CREATION BROKEN by profiles RLS
+Symptom: creating a user via Users tab → "User created but profile update failed: new row violates RLS
+policy for profiles". Auth user IS created, but profile lands with company_id=null (unusable).
+ROOT CAUSE: UsersTab.jsx:54 uses client-side supabase.auth.signUp() which SWITCHES the session to the
+new (powerless) user; the follow-up profiles upsert (line 59) then runs AS the new agent, not as
+super_admin → RLS UPDATE policy denies it. Stage C enabled profiles RLS (was OFF before, so this silently
+"worked"). The code comment (line 51) says "Secure user creation via serverless API route" — but it does
+client signUp instead (shortcut never replaced).
+PROPER FIX (fresh session — touches auth/secrets, do carefully NOT tired):
+  Build a serverless API route (e.g. api/create-user) using Supabase SERVICE-ROLE key to create the auth
+  user + insert the full profile row (id,email,full_name,role,company_id,is_active) atomically, server-side,
+  bypassing RLS correctly and avoiding the session switch. Matches the code's own stated intent.
+CLEANUP: orphaned auth users exist for testagent@testmans1.ae / testagent2@testmans1.ae / testagent3
+  (auth.users rows without valid profiles). Clear via Supabase dashboard Auth panel before retesting.
+IMPACT: testers cannot be given accounts until fixed. TOP priority for next session.
+Tag before fix. Existing capability model + canDo is unaffected (this is purely the create-user flow).
