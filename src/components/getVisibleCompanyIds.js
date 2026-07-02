@@ -19,7 +19,7 @@
 //   supabase.from("leads").select("*").in("company_id", ids)
 // =====================================================================
 import { supabase } from "../lib/supabase";
-import { can } from "../lib/permissions";
+import { canDo } from "../lib/permissions";
 
 export async function getVisibleCompanyIds(currentUser) {
   // own company = the floor, always present in the result
@@ -57,7 +57,7 @@ export async function getVisibleCompanyIds(currentUser) {
     if (vis === "isolated") return [own];
 
     // group_admin_only + shared: cross-branch ONLY if user has see_all capability
-    const seesAll = can(currentUser?.role || "viewer", "see_all");
+    const seesAll = canDo(currentUser, "see_all");  // capability-driven (null user -> false via canDo guard)
     if (!seesAll) return [own];
 
     // gather all branches under this group
