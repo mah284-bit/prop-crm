@@ -586,3 +586,13 @@ LeasingModule(2), OpportunityDetail(2), ActivityLog(2), Opportunities(2), getVis
 PropertyMaster(1), LeaseOpportunityDetail(1), PaymentPlanTemplates(1). WATCH for hidden inline role arrays
 (InventoryModule had 2 beyond the can() call). FINAL after all migrated: retire can()+PERMS arrays from
 permissions.js; add 6 business caps to Settings matrix (RoleCapabilitiesSection CAP_GROUPS).
+
+## PHASE 2 FEATURE — CUSTOMER-DEFINABLE ROLES (e.g. "Regional Head", "Director")
+Founder intent (confirmed Day 45, aligns with doc line ~434 "a new role = seed [capabilities]"): customers
+should be able to ADD their own tenant roles, not just reshape the 8 built-ins. The capability/RLS side is
+ALREADY role-as-data (role_capabilities keyed by role string; RLS reads capabilities not hard-coded roles).
+REMAINING to make it fully self-serve: (1) source the role LIST from data (per-company roles table) instead
+of the hard-coded 8; (2) make role dropdowns (New User form), ROLE_LABEL map, and nav read that list;
+(3) UI to add a role + seed its capabilities. Crown-jewel floors + super_admin=platform invariant still apply
+to any new tenant role. Moderate build (not huge — DB layer ready). The in-progress NAV de-hardcode (tabs
+gated by capability not role) removes one more role-name dependency, advancing toward this.
