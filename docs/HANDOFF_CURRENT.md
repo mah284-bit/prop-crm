@@ -35,3 +35,10 @@ FINAL: retire can()+PERMS arrays from permissions.js; add 6 business caps to Set
 - getVisibleCompanyIds can(role,"see_all") is HIGH-STAKES (visibility scoping, not a button) - migrate with care.
 - group-GM cross-branch (forward-ready, no test surface). manage_settings edit-control (bible TBD).
 - Monitoring routine (extend harness into scheduled leak-check - PropCRM retained duty).
+
+## PHASE 2 CAPTURE (Day 45)
+- ReservationsWidget: lost in App.jsx refactor (referenced App.jsx:2214 + LeasingDashboard.jsx:283, defined
+  nowhere -> crashed live LeasingDashboard). Removed the dangling ref to un-break. REBUILD as Phase 2:
+  a reservations panel on the leasing dashboard (took currentUser + units; likely showed active unit
+  reservations). LeasingDashboard.jsx (extracted file) is DEAD CODE — not imported/rendered; App.jsx:1932
+  inline version is the live one. Consider deleting the orphaned .jsx during a cleanup pass.
