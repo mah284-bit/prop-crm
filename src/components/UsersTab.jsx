@@ -51,25 +51,11 @@ export default function UsersTab({currentUser, showToast}) {
         // Secure user creation via serverless API route
         const tempPw = form.password || Math.random().toString(36).slice(-8)+"A1!";
         const activeCompanyId = form.company_id || currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
-        const{data:authUser,error:authError}=await supabase.auth.signUp({email:form.email,password:tempPw});
+        const{data:authUser,error:authError}=await supabase.auth.signUp({email:form.email,password:tempPw,options:{data:{full_name:form.full_name,role:form.role,company_id:activeCompanyId}}});
         if(authError){showToast(authError.message,"error");setSaving(false);return;}
-        const result={user:authUser.user};
-
-        // Update profile with role, company, active status
-        await new Promise(r=>setTimeout(r,1000));
-        const{error:pErr}=await supabase.from("profiles").upsert({
-          id:result.user.id,
-          email:form.email,
-          full_name:form.full_name,
-          role:form.role,
-          is_active:true,
-          company_id:activeCompanyId,
-        });
-        if(pErr) showToast("User created but profile update failed: "+pErr.message,"error");
-        else {
-          showToast(`✓ User created: ${form.email}  |  Temp password: ${tempPw}  |  Share this with them securely`,"success");
-          navigator.clipboard?.writeText(`Email: ${form.email}\nTemp Password: ${tempPw}`).catch(()=>{});
-        }
+        // Profile row is created by on_auth_user_created DB trigger (reads full_name/role/company_id from
+        // signUp metadata above; server-side, bypasses RLS, no session-switch issue). No client upsert needed.
+        showToast("✓ User created: "+form.email+"  |  Temp password: "+tempPw+"  |  Share securely","success");
       }
       setShowAdd(false);setEditUser(null);setForm(blank);loadUsers();
     }catch(e){showToast(e.message,"error");}
