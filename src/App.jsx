@@ -1350,6 +1350,15 @@ const TABS=[
   {id:"l_group_view",label:"Group View",  icon:"🏛", app:"leasing", roles:["super_admin"], platformOnly:true},
 ];
 
+// Nav visibility = capability-driven (Day 46 de-hardcode). Tabs NOT listed here are visible to all in
+// their app-mode (in-screen actions are already capability-gated). platformOnly tabs stay is_super_admin.
+const TAB_CAPABILITY = {
+  users:"manage_users", l_users:"manage_users",
+  settings:"manage_settings", l_permsets:"manage_settings",
+  master_agreements:"view_master_agreements",
+  commission_outstanding:"see_brokerage_commission",
+};
+
 // Who can see the app switcher
 const CAN_SWITCH_APP = ["super_admin","admin","sales_manager","leasing_manager"];
 
@@ -2580,7 +2589,13 @@ export default function App(){
   const cfg=(appConfig&&typeof appConfig==="object")?appConfig:{mode:"both"};
   // Always use currentApp to pick allowed tabs — ignore cfg.mode when app is explicitly selected
   const allowedTabs = currentApp==="leasing" ? MODE_TABS.leasing : (MODE_TABS[cfg.mode]||MODE_TABS.both);
-  const visibleTabs=TABS.filter(t=>t.app===currentApp&&t.roles.includes(userRole)&&allowedTabs.includes(t.id)&&(!t.platformOnly||currentUser?.is_super_admin===true));
+  // Nav visibility: platformOnly -> is_super_admin; else capability-gated (TAB_CAPABILITY) via canDo; else visible to all in app-mode.
+  const tabVisible = (t) => {
+    if (t.platformOnly) return currentUser?.is_super_admin === true;
+    const cap = TAB_CAPABILITY[t.id];
+    return cap ? canDo(currentUser, cap) : true;
+  };
+  const visibleTabs=TABS.filter(t=>t.app===currentApp&&allowedTabs.includes(t.id)&&tabVisible(t));
 
   const loadUserCapabilities = async (user) => {
     if (!user || !user.company_id) return;
