@@ -183,3 +183,28 @@ enforced uniqueness / a merge flow / a canonical-contact model? Founder wants a 
 ENHANCEMENT (later): AI/fuzzy matching (Mohd vs Mohammed, typo'd numbers) — v1 = exact match only (reliable,
 no false positives); AI-fuzzy = separate follow-on.
 Do this properly during end-of-project ironing. Tied to create_leads capability (lead-entry control) work.
+
+## ⏳ IN-PROGRESS (Day 46) — AGENT "+ Add Lead" BUTTON NOT SHOWING (unresolved, WIP stashed)
+GOAL: sales_agent should see "+ Add Lead" on Leads screen. It's hidden because canDo(user,"create_lead")
+returns false — the agent's currentUser.capabilities is EMPTY at runtime.
+DONE + COMMITTED (safe on main): create_leads capability seeded (agents/mgrs/admin/gm=true, viewer=false,
+verified in DB); permissions.js map has create_lead->create_leads; LeadDetail Add Lead gated by
+canDo(create_lead); Settings matrix shows Create leads (commit ced619a). Nav de-hardcode DONE (0661558).
+Button-filter fix DONE (bff838e). Orphan cleanup DONE.
+STASHED (git stash: "day46 create_leads debug..."): App.jsx WIP containing TWO REAL FIXES worth keeping +
+debug logs to strip:
+  1. setFollowups([]) removed from SIGNED_OUT handler (~line 2434) — was a real ReferenceError crashing logout.
+  2. restore path (~line 2426) now calls loadUserCapabilities(ru) — session-restore was SKIPPING cap load.
+  Plus temp debug logs: [LOGIN PATH], [LOADCAPS ENTRY], [LOADCAPS BAILED], [CAPS DEBUG], company_id log.
+THE UNSOLVED MYSTERY: handleLogin (line 2543) fires and logs "[LOGIN PATH] handleLogin -> role=sales_agent
+company_id=c23a2320..." (valid company_id!). Next line 2546 calls loadUserCapabilities(user). BUT the FIRST
+line inside that function "[LOADCAPS ENTRY]" NEVER prints — in dev (5173) AND in a fresh production build
+(4173) that PROVABLY contains the log (grep -c on dist = 1). No red console error. So loadUserCapabilities
+is called but its body never runs, with no thrown error. Defies normal JS. NEXT SESSION leads to chase:
+  (a) Is loadUserCapabilities somehow shadowed/redefined? grep -n "loadUserCapabilities" src/App.jsx (was 3 hits).
+  (b) const defined at 2600 but called at 2546 — TDZ? (but no error seen... verify in prod build w/ breakpoint).
+  (c) Put a debugger; breakpoint at line 2546 and step IN.
+  (d) SEPARATE the data (COUNTRY_CODES export line 911) OUT of App.jsx — it breaks React Fast Refresh
+      ("COUNTRY_CODES export incompatible" HMR error). Move consts to src/lib/ so App.jsx exports ONLY the
+      component. This likely fixes dev-HMR staleness AND is good hygiene.
+TO RESUME: git stash pop  (brings back the WIP). Then chase (a)-(d).
