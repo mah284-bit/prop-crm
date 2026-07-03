@@ -168,3 +168,18 @@ Root cause found: Dashboard.jsx buttons (lines 106/107) ALREADY passed {type:"st
 {navFilter} to InventoryModule (every other tab did). Fix: added initialFilter={navFilter} to the builder
 tab render. Verified live — Sales Dashboard Available/Reserved buttons now pre-filter inventory by status.
 Tag pre-inventory-filter-fix-day46. (Leasing l_inventory line 2792 also missing it — deferred to Leasing phase.)
+
+## 🛑 CRITICAL PHASE 2 — LEAD/CUSTOMER DUPLICATE PREVENTION (founder-flagged, Day 46)
+Founder emphasis: this is CRITICAL, not minor — must not surface as poor design at handoff. Currently NO
+duplicate check exists on lead creation (verified via grep — nothing on phone/email match). REAL AIM: prevent
+two accounts/contacts with the same person's details entering the system at the root — a data-integrity
+problem, not just a UX popup.
+MINIMUM (v1): on lead save, exact-match check on phone + email; if match found, warn "A lead with this
+phone/email already exists: [name]" -> user chooses Continue anyway / Cancel. Non-blocking, informative.
+Serves both control-freak brokerages (see dup, route it — pairs with create_leads capability restricting
+lead entry to a sales admin who dedup-checks) AND fast brokerages (proceed).
+DEEPER DESIGN QUESTION (needs proper thought, not a quick popup): is warn-continue enough, or do we need
+enforced uniqueness / a merge flow / a canonical-contact model? Founder wants a BETTER approach considered.
+ENHANCEMENT (later): AI/fuzzy matching (Mohd vs Mohammed, typo'd numbers) — v1 = exact match only (reliable,
+no false positives); AI-fuzzy = separate follow-on.
+Do this properly during end-of-project ironing. Tied to create_leads capability (lead-entry control) work.
