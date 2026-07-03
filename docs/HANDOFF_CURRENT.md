@@ -155,3 +155,9 @@ So the exact button(s) founder saw are unconfirmed (sales vs leasing? which widg
 shows the exact screen + button (screenshot or "Leasing Dashboard, Available card"), then it's a ~2-min fix
 (InventoryModule already accepts initialFilter line 39 / applies line 55; button just needs to pass
 {type:"status",value:"Available"|"Reserved"}). Do NOT fix blind — locate first.
+
+## CLEANUP DONE (Day 46 AM) — orphaned auth user removed
+Deleted testagent@testmans1.ae (company_id=null, role=null, unusable orphan from user-creation debugging)
+via Supabase Dashboard > Authentication. NOTE: HANDOFF earlier over-counted — testagent2@/testagent3@ did
+NOT exist (never created or already gone). Good test accounts REMAIN: testmgr@ (sales_manager), testviewer@
+(viewer), both Al Mansoori. testagent4@ (sales_agent) not seen in auth list — reverify it exists next time needed.
