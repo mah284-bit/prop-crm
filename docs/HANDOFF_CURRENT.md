@@ -161,3 +161,10 @@ Deleted testagent@testmans1.ae (company_id=null, role=null, unusable orphan from
 via Supabase Dashboard > Authentication. NOTE: HANDOFF earlier over-counted — testagent2@/testagent3@ did
 NOT exist (never created or already gone). Good test accounts REMAIN: testmgr@ (sales_manager), testviewer@
 (viewer), both Al Mansoori. testagent4@ (sales_agent) not seen in auth list — reverify it exists next time needed.
+
+## BUTTON-FILTER FIX — DONE + VERIFIED (Day 46 AM)
+Root cause found: Dashboard.jsx buttons (lines 106/107) ALREADY passed {type:"status",value:"Available"|
+"Reserved"} correctly; the break was App.jsx line 2763 (sales builder tab) NOT passing initialFilter=
+{navFilter} to InventoryModule (every other tab did). Fix: added initialFilter={navFilter} to the builder
+tab render. Verified live — Sales Dashboard Available/Reserved buttons now pre-filter inventory by status.
+Tag pre-inventory-filter-fix-day46. (Leasing l_inventory line 2792 also missing it — deferred to Leasing phase.)
