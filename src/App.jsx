@@ -2493,9 +2493,7 @@ export default function App(){
     console.log("[LOGIN PATH] handleLogin -> role="+user?.role+" company_id="+user?.company_id);
     loadUserCapabilities(user);
     const validCid = user.company_id; localStorage.setItem("propccrm_company_id", validCid);
-    setActiveApp(app);
-    setActiveApp(app); localStorage.setItem("propccrm_last_app", app);
-    localStorage.setItem("propccrm_last_app", app);
+    setActiveApp(activeApp); localStorage.setItem("propccrm_last_app", activeApp);
     // Load companies for all admin/manager roles to show in header
     if(["super_admin","admin","sales_manager","leasing_manager"].includes(user.role)){
       const query = isSuperAdmin ? supabase.from("companies").select("*").order("name") : supabase.from("companies").select("*").eq("company_id", currentUser.company_id).order("name");
