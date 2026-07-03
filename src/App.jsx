@@ -2364,6 +2364,23 @@ export default function App(){
   },[leads,aiUnits,aiProjects,currentUser]);
 
   useEffect(()=>{
+  const loadUserCapabilities = async (user) => {
+    console.log("[LOADCAPS ENTRY] user=",user?.role,user?.company_id);
+    if (!user || !user.company_id) { console.log("[LOADCAPS BAILED] no company_id"); return; }
+    try {
+      const { data, error } = await supabase.from("role_capabilities").select("capability, enabled").eq("company_id", user.company_id).eq("role", user.role);
+      if (error) throw error;
+      const capMap = {};
+      (data || []).forEach(row => { capMap[row.capability] = row.enabled; });
+      setUserCapabilities(capMap); if(typeof window!=="undefined"){window.__CAPS=capMap;}
+      console.log("[CAPS DEBUG] role="+user.role+" company="+user.company_id+" create_leads="+capMap.create_leads+" keys="+Object.keys(capMap).join(","));
+      setCurrentUser(u => u ? { ...u, capabilities: capMap } : u);  // attach for canDo() everywhere
+    } catch (e) {
+      console.warn("Capabilities load error:", e);
+      setUserCapabilities({});
+    }
+  };
+
     const restore=async()=>{
       const hp=new URLSearchParams(window.location.hash.replace("#","?").slice(1));
       if(hp.get("type")==="recovery"){setPwRecovery(true);return;}
@@ -2544,22 +2561,6 @@ export default function App(){
   };
   const visibleTabs=TABS.filter(t=>t.app===currentApp&&allowedTabs.includes(t.id)&&tabVisible(t));
 
-  const loadUserCapabilities = async (user) => {
-    console.log("[LOADCAPS ENTRY] user=",user?.role,user?.company_id);
-    if (!user || !user.company_id) { console.log("[LOADCAPS BAILED] no company_id"); return; }
-    try {
-      const { data, error } = await supabase.from("role_capabilities").select("capability, enabled").eq("company_id", user.company_id).eq("role", user.role);
-      if (error) throw error;
-      const capMap = {};
-      (data || []).forEach(row => { capMap[row.capability] = row.enabled; });
-      setUserCapabilities(capMap);
-      console.log("[CAPS DEBUG] role="+user.role+" company="+user.company_id+" create_leads="+capMap.create_leads+" keys="+Object.keys(capMap).join(","));
-      setCurrentUser(u => u ? { ...u, capabilities: capMap } : u);  // attach for canDo() everywhere
-    } catch (e) {
-      console.warn("Capabilities load error:", e);
-      setUserCapabilities({});
-    }
-  };
 
   const hasCapability = (capability) => {
     if (currentUser?.is_super_admin === true) return true;   // platform owner only (flag, not role string)
