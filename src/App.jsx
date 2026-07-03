@@ -1372,7 +1372,7 @@ const SUBTITLES={
 // - ReservationsDashboard: dashboard widget
 // ══════════════════════════════════════════════════════════════════
 
-export const MAX_RESERVATION_FEE = 5000;
+import { MAX_RESERVATION_FEE, RES_COLORS } from "./lib/refData.js";
 
 function hoursLeft(expiresAt, extendedUntil) {
   const exp = extendedUntil ? new Date(extendedUntil) : new Date(expiresAt);
@@ -1388,13 +1388,6 @@ function reservationUrgency(res) {
   return "ok";
 }
 
-export const RES_COLORS = {
-  ok:       { c:"#1A7F5A", bg:"#E6F4EE", border:"#A8D5BE" },
-  warning:  { c:"#A06810", bg:"#FDF3DC", border:"#E8C97A" },
-  critical: { c:"#B83232", bg:"#FAEAEA", border:"#F0BCBC" },
-  expired:  { c:"#718096", bg:"#F7F9FC", border:"#CBD5E0" },
-  inactive: { c:"#718096", bg:"#F7F9FC", border:"#CBD5E0" },
-};
 
 // ── Small badge shown on inventory row ─────────────────────────
 function ReservationBadge({ reservation }) {
@@ -2378,7 +2371,7 @@ export default function App(){
         const{data:{session}}=await supabase.auth.getSession();
         if(session?.user){
           const{data:profile}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
-          if(profile&&profile.is_active)setCurrentUser({...session.user,...profile});
+          if(profile&&profile.is_active){const ru={...session.user,...profile};console.log("[LOGIN PATH] restore ->",ru.role);setCurrentUser(ru);loadUserCapabilities(ru);}
           else await supabase.auth.signOut();
         }
       }catch(e){console.error("Session restore error:",e);}
@@ -2386,7 +2379,7 @@ export default function App(){
     };
     restore();
     const{data:{subscription}}=supabase.auth.onAuthStateChange(async(event,session)=>{
-      if(event==="SIGNED_OUT"){setCurrentUser(null);setLeads([]);setProperties([]);setActivities([]);setFollowups([]);setOpps([]);setCompanies([]);localStorage.removeItem("propccrm_company_cache");}
+      if(event==="SIGNED_OUT"){setCurrentUser(null);setLeads([]);setProperties([]);setActivities([]);setOpps([]);setCompanies([]);localStorage.removeItem("propccrm_company_cache");}
       if(event==="PASSWORD_RECOVERY"){setPwRecovery(true);}
       if(event==="TOKEN_REFRESHED"&&session?.user){const{data:p}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();if(p)setCurrentUser(u=>({...u,...p}));}
     });
@@ -2497,6 +2490,7 @@ export default function App(){
 
   const handleLogin=user=>{
     setCurrentUser(user);
+    console.log("[LOGIN PATH] handleLogin -> role="+user?.role+" company_id="+user?.company_id);
     loadUserCapabilities(user);
     const validCid = user.company_id; localStorage.setItem("propccrm_company_id", validCid);
     setActiveApp(app);
@@ -2553,13 +2547,15 @@ export default function App(){
   const visibleTabs=TABS.filter(t=>t.app===currentApp&&allowedTabs.includes(t.id)&&tabVisible(t));
 
   const loadUserCapabilities = async (user) => {
-    if (!user || !user.company_id) return;
+    console.log("[LOADCAPS ENTRY] user=",user?.role,user?.company_id);
+    if (!user || !user.company_id) { console.log("[LOADCAPS BAILED] no company_id"); return; }
     try {
       const { data, error } = await supabase.from("role_capabilities").select("capability, enabled").eq("company_id", user.company_id).eq("role", user.role);
       if (error) throw error;
       const capMap = {};
       (data || []).forEach(row => { capMap[row.capability] = row.enabled; });
       setUserCapabilities(capMap);
+      console.log("[CAPS DEBUG] role="+user.role+" company="+user.company_id+" create_leads="+capMap.create_leads+" keys="+Object.keys(capMap).join(","));
       setCurrentUser(u => u ? { ...u, capabilities: capMap } : u);  // attach for canDo() everywhere
     } catch (e) {
       console.warn("Capabilities load error:", e);

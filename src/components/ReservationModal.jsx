@@ -1,7 +1,7 @@
 // ReservationModal — extracted from App.jsx (MAP A7).
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
-import { MAX_RESERVATION_FEE, RES_COLORS } from "../App.jsx";
+import { MAX_RESERVATION_FEE, RES_COLORS } from "../lib/refData.js";
 
 export default function ReservationModal({ unit, reservation, currentUser, leads=[], tenants=[], opportunities=[], showToast, onClose, onSaved, unitHasPrice=true, unitLaunchDate=null }) {
   const isNew = !reservation;
