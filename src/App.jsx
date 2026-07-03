@@ -2365,15 +2365,13 @@ export default function App(){
 
   useEffect(()=>{
   const loadUserCapabilities = async (user) => {
-    console.log("[LOADCAPS ENTRY] user=",user?.role,user?.company_id);
-    if (!user || !user.company_id) { console.log("[LOADCAPS BAILED] no company_id"); return; }
+    if (!user || !user.company_id) return;
     try {
       const { data, error } = await supabase.from("role_capabilities").select("capability, enabled").eq("company_id", user.company_id).eq("role", user.role);
       if (error) throw error;
       const capMap = {};
       (data || []).forEach(row => { capMap[row.capability] = row.enabled; });
-      setUserCapabilities(capMap); if(typeof window!=="undefined"){window.__CAPS=capMap;}
-      console.log("[CAPS DEBUG] role="+user.role+" company="+user.company_id+" create_leads="+capMap.create_leads+" keys="+Object.keys(capMap).join(","));
+      setUserCapabilities(capMap);
       setCurrentUser(u => u ? { ...u, capabilities: capMap } : u);  // attach for canDo() everywhere
     } catch (e) {
       console.warn("Capabilities load error:", e);
@@ -2388,7 +2386,7 @@ export default function App(){
         const{data:{session}}=await supabase.auth.getSession();
         if(session?.user){
           const{data:profile}=await supabase.from("profiles").select("*").eq("id",session.user.id).single();
-          if(profile&&profile.is_active){const ru={...session.user,...profile};console.log("[LOGIN PATH] restore ->",ru.role);setCurrentUser(ru);loadUserCapabilities(ru);}
+          if(profile&&profile.is_active){const ru={...session.user,...profile};setCurrentUser(ru);loadUserCapabilities(ru);}
           else await supabase.auth.signOut();
         }
       }catch(e){console.error("Session restore error:",e);}
@@ -2507,7 +2505,6 @@ export default function App(){
 
   const handleLogin=user=>{
     setCurrentUser(user);
-    console.log("[LOGIN PATH] handleLogin -> role="+user?.role+" company_id="+user?.company_id);
     loadUserCapabilities(user);
     const validCid = user.company_id; localStorage.setItem("propccrm_company_id", validCid);
     setActiveApp(activeApp); localStorage.setItem("propccrm_last_app", activeApp);
