@@ -226,3 +226,26 @@ moved App.jsx -> src/lib/refData.js (App.jsx now component-only -> React Fast Re
 BIG LESSON: local Vite dev served STALE bundles for hours (broken Fast Refresh from non-component exports),
 making every local test lie. TRUTH = Vercel (committed code) OR aggressive Ctrl+Shift+R x8-10 on localhost.
 When local behaves impossibly, commit + test online.
+
+## 🔭 VISION / NORTH STAR (Day 47 — NOT near-term; capital-dependent, captured for direction only)
+Founder note: this needs funding PropCRM does not have yet. It is a compass, NOT a build plan. Do broker
+depth first; everything below waits for $$$ and traction.
+PROPOS = property-lifecycle OPERATING SYSTEM (not a CRM). One shared data spine + multi-tenant identity +
+capability engine; persona-apps layered on top as feature packs (modules/<persona>/), NOT forked codebases.
+  Lifecycle: Broker/Agency (LIVE) -> Developer -> CAFM/Facilities -> Construction/Contracting -> more
+  (leasing, valuation, property mgmt, owner portal). Building flows through ONE data spine: financed -> sold
+  -> built -> operated -> resold; nobody re-enters data. That continuity = the moat + the "minimal-entry,
+  click-and-go, AI-heavy" thesis EARNED (PropPulse already owns the data; entry is a consequence of owning it,
+  not an AI wrapper). Stay ruthlessly VERTICAL (real estate) — going generic = dilution/death.
+  Suggested sequence (data-adjacency first): Broker -> Developer -> CAFM -> Construction. Developer + CAFM
+  reuse existing spine most; Construction is the bigger domain leap.
+MULTI-GEOGRAPHY: universal engine + per-market DELTA packs in markets/<country>/ — slice ONLY the
+principle-level differences (compliance, reference data, capability defaults, stage defs) into region folders;
+NEVER fork the core. lead->won workflow is universal; specifics (UAE DLD/Oqood/RERA vs UK conveyancing/chains/
+EPC/seller-side commission) are swappable config. The refactor + de-hardcoding done to date is the ENABLER.
+  Near-term geo interest: MENA (GCC, esp. Saudi — structurally similar, config not fork). UK feeler exists
+  (friend's family) — treat as VALIDATION conversation, not a build commitment; UK is a bigger pivot
+  (resale/chain model, seller-side commission, no off-plan-dominant) = a UK config pack on the engine, later.
+WHY IT MATTERS: "PropOS — operating system for the property lifecycle" is a far bigger fundraise story than
+"UAE broker CRM." Art = pitch the BIG vision, execute NARROW (broker first). Foundation being hardened now
+(multi-tenant, capability-driven, de-hardcoded, refactored) IS the OS spine — build it right, add personas later.
