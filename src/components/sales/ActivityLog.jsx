@@ -3,6 +3,7 @@ import { ACT_TYPES, ACT_META } from "../../modules/constants.js";
 import { supabase } from "../../lib/supabase.js";
 import { fmtDate } from "../../modules/utils.js";
 import { canDo } from "../../lib/permissions.js";
+import { Empty } from "../../modules/shared/Empty.jsx";
 
 function ActivityLog({leads,activities,setActivities,currentUser,showToast,initialFilter=null}){
   const[fType,setFType]=useState("All");
