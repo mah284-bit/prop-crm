@@ -208,3 +208,21 @@ is called but its body never runs, with no thrown error. Defies normal JS. NEXT 
       ("COUNTRY_CODES export incompatible" HMR error). Move consts to src/lib/ so App.jsx exports ONLY the
       component. This likely fixes dev-HMR staleness AND is good hygiene.
 TO RESUME: git stash pop  (brings back the WIP). Then chase (a)-(d).
+
+## ✅ RESOLVED (Day 47) — AGENT "+ Add Lead" — SOLVED + VERIFIED END-TO-END
+ROOT CAUSE: TDZ ReferenceError — `const loadUserCapabilities` (arrow fn, not hoisted) was DEFINED at ~line
+2547 but USED earlier by the restore useEffect (~2374) and handleLogin (~2494). On session-restore it threw
+"Cannot access 'loadUserCapabilities' before initialization" (swallowed by try/catch) -> capabilities NEVER
+loaded -> agent currentUser.capabilities empty -> canDo(create_lead) false -> Add Lead hidden. super_admin
+bypasses canDo via is_super_admin flag, so it worked for them -> looked role-specific (it wasn't).
+FIX: moved loadUserCapabilities definition ABOVE the restore useEffect (commit 7af6352). Debug artifacts
+stripped (4be63eb). VERIFIED: testagent4 (sales_agent) sees + Add Lead AND successfully created a lead
+("test new lead from agent") — frontend + backend + RLS all confirmed working, online + local.
+REAL BUGS FIXED THIS ARC (all committed): setFollowups([]) crash in SIGNED_OUT handler; restore path now
+calls loadUserCapabilities; 4 data constants (COUNTRY_CODES, NATIONALITIES, MAX_RESERVATION_FEE, RES_COLORS)
+moved App.jsx -> src/lib/refData.js (App.jsx now component-only -> React Fast Refresh works); undefined
+`app` -> `activeApp` in handleLogin; ActivityLog.jsx missing `Empty` import; create_leads capability
+(agents/mgrs/admin/gm=true, viewer=false) gating Add Lead. Nav de-hardcode (0661558).
+BIG LESSON: local Vite dev served STALE bundles for hours (broken Fast Refresh from non-component exports),
+making every local test lie. TRUTH = Vercel (committed code) OR aggressive Ctrl+Shift+R x8-10 on localhost.
+When local behaves impossibly, commit + test online.
