@@ -12,6 +12,7 @@ const ACTION_TO_CAPABILITY = {
   approve_all:      "approve_discounts_admin",   // admin/escalation tier
   approve_manager:  "approve_discounts",         // manager tier
   see_all:          "see_branch_data",
+  create_lead:      "create_leads",
 };
 export const canDo = (user, action) => {
   if (!user) return false;

@@ -18,7 +18,7 @@ const CAP_GROUPS = [
   { group: "Commission", caps: ["see_own_commission","see_brokerage_commission"] },
   { group: "Master Agreements", caps: ["view_master_agreements","manage_master_agreements"] },
   { group: "Administrative", caps: ["manage_users","manage_settings","manage_inventory","assign_leads","manage_commissions"] },
-  { group: "Operations", caps: ["edit_records","delete_records","delete_leads","reserve_units","request_discounts","approve_discounts","approve_discounts_admin"] },
+  { group: "Operations", caps: ["create_leads","edit_records","delete_records","delete_leads","reserve_units","request_discounts","approve_discounts","approve_discounts_admin"] },
 ];
 
 const CAP_LABEL = {
@@ -27,7 +27,7 @@ const CAP_LABEL = {
   view_master_agreements:"View agreements", manage_master_agreements:"Manage agreements",
   manage_users:"Manage users", manage_settings:"Manage settings", manage_inventory:"Manage inventory",
   assign_leads:"Assign leads", manage_commissions:"Manage commissions",
-  edit_records:"Edit records", delete_records:"Delete records", delete_leads:"Delete leads",
+  create_leads:"Create leads", edit_records:"Edit records", delete_records:"Delete records", delete_leads:"Delete leads",
   reserve_units:"Reserve units", request_discounts:"Request discounts",
   approve_discounts:"Approve discounts (mgr)", approve_discounts_admin:"Approve discounts (admin/escalation)",
 };
