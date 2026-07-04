@@ -286,3 +286,12 @@ DEFERRED STICKIES (Day 48, founder calls): (1) leads_email_unique is GLOBAL not 
 hardening = make it (company_id, lower(email)). (2) Canonical identity via govt ID (EID/passport) at buyer/KYC
 stage. (3) Lead->Account model (SF pattern). (4) AI duplicate-leads report (who/when created) + merge tool.
 All deferred to the proper account/opp design phase near go-live.
+
+## 🛑 KNOWN ISSUE / STICKY (Day 48) — PDF hero image CORS-blocked (non-blocking)
+Proposal PDF generation tries to fetch the project hero image directly from the developer's site (e.g.
+aldar.com/.../grove-residences-hero.jpg). Those sites block cross-origin requests (CORS: "No
+Access-Control-Allow-Origin header"), so the hero image does NOT embed in the PDF. NON-BLOCKING: the PDF
+still generates + uploads successfully; only the hero image is missing. Console shows a CORS error + ERR_FAILED
+for the image — cosmetic, safe to ignore for testers. PROPER FIX (deferred): proxy external images through our
+own backend (Vercel function / Supabase) so they're served same-origin, OR download+re-host hero images in
+Supabase storage at PropPulse-import time. Phase 2 polish, not handoff-blocking.
