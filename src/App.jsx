@@ -1281,7 +1281,7 @@ const TABS=[
   // {id:"permsets",   label:"Permissions",  icon:"🔐", app:"sales",   roles:["super_admin","admin"]},
   {id:"master_agreements",label:"Master Agreements", icon:"📄", app:"sales", roles:["super_admin","admin"]},
   {id:"settings",label:"Settings", icon:"⚙️", app:"sales", roles:["super_admin","admin","sales_manager"]},
-  {id:"lead_queue",label:"Lead Queue", icon:"📋", app:"sales", roles:["super_admin","admin","sales_manager"]},
+  {id:"lead_queue",label:"Lead Assignment", icon:"📋", app:"sales", roles:["super_admin","admin","sales_manager"]},
   {id:"customers",label:"Customers", icon:"🤝", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"commission_outstanding",label:"Commission Outstanding", icon:"💰", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
   // 21 May 2026: Hide Group View for Phase 1 demo (placeholder "Planned for MVP Phase")

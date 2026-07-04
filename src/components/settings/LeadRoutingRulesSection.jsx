@@ -32,7 +32,7 @@ const STALE_ACTIONS = [
   { 
     id: "flag_for_admin", 
     label: "Flag for Lead Admin", 
-    description: "Stale leads appear in Lead Queue 'Stale Flagged' tab. Admin decides what to do.",
+    description: "Stale leads appear in Lead Assignment 'Stale Flagged' tab. Admin decides what to do.",
   },
   { 
     id: "auto_return_to_queue", 
@@ -192,7 +192,7 @@ export default function LeadRoutingRulesSection({ currentUser, users = [], showT
           Lead Routing Rules
         </h2>
         <div style={{ fontSize: 13, color: "#6B7785" }}>
-          Configure how pool-sourced leads flow into the Lead Queue and how stale leads are handled.
+          Configure how pool-sourced leads flow into the Lead Assignment and how stale leads are handled.
         </div>
       </div>
 

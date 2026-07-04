@@ -185,7 +185,7 @@ export default function LeadQueuePage({ currentUser, users = [], showToast, onNa
       {/* Header */}
       <div style={{ marginBottom: 16 }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, color: "#0F2540", margin: 0, marginBottom: 6 }}>
-          📋 Lead Queue
+          📋 Lead Assignment
         </h2>
         <div style={{ fontSize: 13, color: "#6B7785" }}>
           Pool-sourced and released leads waiting for assignment. Stale leads flagged automatically.
@@ -580,6 +580,7 @@ function HistoryRow({ entry, userName, daysSince, isLast, onNavigateToLead }) {
           <span style={{ fontSize: 11, color: "#6B7785" }}>
             {entry.from_user_id && `${userName(entry.from_user_id)} → `}
             {entry.to_user_id ? userName(entry.to_user_id) : "Queue"}
+            {entry.triggered_by && <span style={{ color: "#9CA3AF" }}> · by {userName(entry.triggered_by)}</span>}
           </span>
         </div>
         {entry.reason && (

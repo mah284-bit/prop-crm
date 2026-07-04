@@ -120,7 +120,7 @@ export default function ReleaseDialog({
       }
 
       const recipientName = isRelease 
-        ? "Lead Queue" 
+        ? "Lead Assignment" 
         : (eligibleRecipients.find(u => u.id === recipientId)?.full_name || "the recipient");
       showToast?.(
         isRelease 
@@ -190,8 +190,8 @@ export default function ReleaseDialog({
               selected={mode === "release_to_queue"}
               onClick={() => setMode("release_to_queue")}
               icon="📥"
-              title="Release to Lead Queue"
-              description="Return the lead to the admin Lead Queue. It re-enters the round-robin pool for re-assignment."
+              title="Release to Lead Assignment"
+              description="Return the lead to the admin Lead Assignment. It re-enters the round-robin pool for re-assignment."
             />
             <ModeOption
               selected={mode === "transfer_to_broker"}
