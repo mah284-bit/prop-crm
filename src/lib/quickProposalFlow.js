@@ -15,7 +15,6 @@ export async function sendQuickProposal({
   }
 
   try {
-    console.log('Sending quick proposal with', selectedUnits.length, 'units...');
 
     const primaryUnit = selectedUnits[0];
 
@@ -30,7 +29,6 @@ export async function sendQuickProposal({
       throw new Error('Project not found for unit');
     }
 
-    console.log('Project loaded:', project.name);
 
     const pdfBlob = await generateProposalPDF({
       lead: { name: leadName, email: leadEmail },
@@ -49,13 +47,11 @@ export async function sendQuickProposal({
       currentUser: currentUser,
     });
 
-    console.log('PDF generated');
 
     const timestamp = Date.now();
     const filename = `quick-proposal-${leadId.substring(0, 8)}-${timestamp}.pdf`;
     const pdfUrl = await uploadProposalPDF(pdfBlob, filename, currentUser.company_id);
 
-    console.log('✅ PDF uploaded:', pdfUrl);
 
     // Log activity: proposal sent
     try {
@@ -84,7 +80,6 @@ export async function sendQuickProposal({
         user_id: currentUser.id,
         user_name: currentUser.name || 'Unknown',
       });
-      console.log('✅ Activity logged');
     } catch (activityErr) {
       console.error('⚠️ Activity logging failed (non-blocking):', activityErr);
       // Don't throw - proposal was sent successfully

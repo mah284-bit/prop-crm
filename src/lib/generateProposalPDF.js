@@ -15,7 +15,6 @@ export async function generateProposalPDF({
   currentUser,
   company,
 }) {
-  console.log("DEBUG PDF - project:", project?.name, "hero:", project?.hero_image_url);
   
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -100,7 +99,6 @@ export async function generateProposalPDF({
     yPos += 8;
 
     const photoUrls = project.photo_gallery_urls.slice(0, 3);
-    console.log("DEBUG - photoUrls:", photoUrls);
     const photoWidth = (contentWidth - 4) / 3;
     const photoHeight = 40;
 
@@ -109,7 +107,6 @@ export async function generateProposalPDF({
       try {
         const photoImage = project.photo_gallery_base64 ? project.photo_gallery_base64[i] : photoUrls[i];
         if (photoImage) {
-          console.log("Adding photo", i);
           doc.addImage(photoImage, 'JPEG', photoX, yPos, photoWidth, photoHeight);
         }
       } catch (e) {
