@@ -55,6 +55,20 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
     })();
   }, [initialFilter?.type, initialFilter?.oppId, opps?.length]);
 
+  // Deep-link: if initialFilter says filter by stage, select that stage tab
+  useEffect(() => {
+    if (initialFilter && initialFilter.type === "stage" && initialFilter.value) {
+      setFStage(initialFilter.value);
+    }
+  }, [initialFilter?.type, initialFilter?.value]);
+
+  // Deep-link: if initialFilter says filter by stage, select that stage tab
+  useEffect(() => {
+    if (initialFilter && initialFilter.type === "stage" && initialFilter.value) {
+      setFStage(initialFilter.value);
+    }
+  }, [initialFilter?.type, initialFilter?.value]);
+
   const STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
   const STAGE_COLORS = {
     "New":            {c:"#1A5FA8", bg:"#E6EFF8"},
@@ -163,6 +177,7 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
             <span style={{fontSize:20}}>🎯</span>
             <span style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px"}}>Opportunities</span>
             <span style={{fontSize:12,color:"#64748B",fontWeight:500}}>{visible.length} of {(opps||[]).length}</span>
+            {fStage!=="All" && <span style={{fontSize:12,color:"#1A7F5A",fontWeight:700,background:"#D1FAE5",padding:"2px 10px",borderRadius:12}}>{fStage}: AED {visible.reduce((sum,o)=>sum+(o.final_price||o.budget||0),0).toLocaleString()}</span>}
           </div>
           <div style={{fontSize:12,color:"#64748B",marginTop:2}}>Your deal pipeline — click any row to open the workspace</div>
         </div>
