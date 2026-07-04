@@ -24,7 +24,7 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
 
   const save = async() => {
     if(!lead && !opp?.lead_id){showToast("No lead found","error");return;}
-    const hasNextStep = form.ns_enabled && form.ns_due;
+    const hasNextStep = form.ns_enabled && form.ns_due && form.status==="completed";
     if(!(form.note||"").trim() && !hasNextStep){showToast("Please add discussion notes or set a next step","error");return;}
     if(savingRef.current) return;  // Day 18: block double-click — a save already in flight
     savingRef.current = true;
@@ -56,6 +56,23 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
       };
       const{data,error}=await supabase.from("activities").insert(payload).select().single();
       if(error)throw error;
+      if (hasNextStep) {
+        await supabase.from("activities").insert({
+          lead_id: lead?.id || opp?.lead_id || null,
+          lead_name: lead?.name || null,
+          company_id: (opp?.company_id) || currentUser.company_id || null,
+          type: form.ns_type,
+          note: form.ns_note || null,
+          scheduled_at: new Date(form.ns_due).toISOString(),
+          status: "upcoming",
+          user_id: currentUser.id,
+          user_name: currentUser.full_name,
+          opportunity_id: opp?.id || null,
+          person_id: form.person_id || null,
+          stage_at_event: opp?.stage || null,
+          activity_subtype: "next_step",
+        });
+      }
       const nextStepIntent = hasNextStep ? {type:form.ns_type, due:form.ns_due, note:form.ns_note} : null;
       onSaved(data, nextStepIntent);
     }catch(e){showToast(e.message,"error"); setSaving(false); savingRef.current=false;}
@@ -88,7 +105,7 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
             <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Status</label>
             <div style={{display:"flex",gap:6}}>
               {[["completed","✅ Completed"],["upcoming","⏰ Scheduled"]].map(([v,l])=>(
-                <button key={v} onClick={()=>setForm(f=>({...f,status:v}))}
+                <button key={v} onClick={()=>setForm(f=>({...f,status:v, ns_enabled: v==="completed"?f.ns_enabled:false}))}
                   style={{padding:"5px 12px",borderRadius:7,border:`1.5px solid ${form.status===v?"#0F2540":"#E2E8F0"}`,background:form.status===v?"#0F2540":"#fff",color:form.status===v?"#fff":"#475569",fontSize:12,cursor:"pointer",fontWeight:form.status===v?600:400}}>
                   {l}
                 </button>
@@ -114,7 +131,7 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}}>
               <div>
                 <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Date & Time</label>
-                <input type="datetime-local" value={form.scheduled_at} onChange={sf("scheduled_at")}/>
+                <input type="datetime-local" value={form.scheduled_at} onChange={sf("scheduled_at")} max={form.status==="completed"? new Date().toISOString().slice(0,16): undefined} min={form.status==="upcoming"? new Date().toISOString().slice(0,16): undefined}/>
               </div>
               <div>
                 <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Duration</label>
