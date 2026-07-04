@@ -249,3 +249,28 @@ EPC/seller-side commission) are swappable config. The refactor + de-hardcoding d
 WHY IT MATTERS: "PropOS — operating system for the property lifecycle" is a far bigger fundraise story than
 "UAE broker CRM." Art = pitch the BIG vision, execute NARROW (broker first). Foundation being hardened now
 (multi-tenant, capability-driven, de-hardcoded, refactored) IS the OS spine — build it right, add personas later.
+
+## 🛑 PHASE 2 STICKY — CANONICAL IDENTITY (govt ID) — deferred, founder insight Day 48
+Email/phone are weak identity (shared, changed, faked). The FOOL-PROOF unique key = government ID:
+Emirates ID number (784-YYYY-NNNNNNN-C — immutable across card renewals) for locals/residents; passport
+for international (NOTE: passport number CHANGES on renewal — needs care + document copy upload). Design must
+branch by buyer type: EID routine vs international routine, each requiring an uploaded ID copy. KEY NUANCE:
+this only matters once a lead becomes an ACTUAL BUYER with a transaction — a habitual searcher/caller with no
+deals doesn't need govt-ID identity. So the ID-as-canonical-key belongs at the KYC/buyer-conversion stage,
+NOT at early lead entry (early leads won't have EID yet). Ties into KYC fields already on the form
+(pep_flag, source_of_funds, nationality). This UPGRADES the vague "canonical-contact model" to a concrete
+answer: identity = govt ID, captured at buyer stage.
+
+## 🛑 PHASE 2 STICKY — LEAD -> ACCOUNT MODEL (Salesforce pattern) — "rethink completely" Day 48
+SF does it cleanly: (1) Lead + Lead Details + all communications live in the LEAD space. (2) When an
+Opportunity is created, SF promotes the lead to a proper ACCOUNT record, and ALL transactions flow forward
+from the Account (not the lead). Cleaner separation of "prospect" vs "customer with deals". PropCRM currently
+keeps everything on the lead. Founder flags this as a possible COMPLETE rethink of the data model later —
+pairs with canonical-identity (Account = the person keyed by govt ID). Big design; revisit post-handoff.
+Architect TODO before revisit: research how SF/HubSpot/Zoho structure Lead vs Account vs Contact, and whether
+PropCRM should adopt Lead->Account promotion on opp-creation.
+
+## DUPLICATE-PREVENTION — v1 SCOPE (Day 48): keep SIMPLE = email + phone exact-match only.
+DB guarantee scope decided: EMAIL strict-unique per company (reliable). PHONE = UI-warn only (shared phones
+are legitimate — family/reps; test data already shows 2 different people sharing +9715012341234). Govt-ID
+canonical identity + Lead->Account model = the deeper stickies above, revisit later.
