@@ -163,7 +163,7 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
                 </div>
                 <div>
                   <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Due Date</label>
-                  <input type="date" value={form.ns_due} onChange={sf("ns_due")} style={{width:"100%"}}/>
+                  <input type="date" value={form.ns_due} onChange={sf("ns_due")} min={new Date().toISOString().slice(0,10)} style={{width:"100%"}}/>
                 </div>
                 <div style={{gridColumn:"span 2"}}>
                   <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Note (optional)</label>
