@@ -274,3 +274,15 @@ PropCRM should adopt Lead->Account promotion on opp-creation.
 DB guarantee scope decided: EMAIL strict-unique per company (reliable). PHONE = UI-warn only (shared phones
 are legitimate — family/reps; test data already shows 2 different people sharing +9715012341234). Govt-ID
 canonical identity + Lead->Account model = the deeper stickies above, revisit later.
+
+## ✅ RESOLVED (Day 48) — DUPLICATE-PREVENTION v1 — DONE + VERIFIED
+On + Add Lead, exact phone/email match (company-scoped, via src/lib/checkDuplicateLead.js — two clean
+.eq/.ilike queries, no fragile .or()) shows a BLOCK message: "🛑 This contact already exists: [name] ·
+[phone] · [email]. Please contact your administrator to be assigned this lead." Close-only (no Add anyway).
+Banner renders just above the footer Save button (was off-screen at form top in the scrollable panel — fixed).
+DB backstop: existing global UNIQUE INDEX leads_email_unique on (email) prevents dup email at DB level (kept).
+Verified on prod: duplicate email/phone -> block message, no 409 surfaced, no dup created; fresh lead saves clean.
+DEFERRED STICKIES (Day 48, founder calls): (1) leads_email_unique is GLOBAL not per-company -> multi-tenancy
+hardening = make it (company_id, lower(email)). (2) Canonical identity via govt ID (EID/passport) at buyer/KYC
+stage. (3) Lead->Account model (SF pattern). (4) AI duplicate-leads report (who/when created) + merge tool.
+All deferred to the proper account/opp design phase near go-live.
