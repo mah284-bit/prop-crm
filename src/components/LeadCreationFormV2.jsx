@@ -17,6 +17,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import CountryPicker from "./CountryPicker.jsx";
 import { useLeadPersons, getPrimaryContact, ROLE_LABELS } from "../lib/useLeadPersons";
+import { checkDuplicateLead } from "../lib/checkDuplicateLead.js";
 
 // IMPORTANT: This component does NOT import supabase directly. The parent
 // (App.jsx) handles all data persistence via the `onSubmit` prop. This
@@ -223,6 +224,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
 
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [dupWarn, setDupWarn] = useState(null); // {lead,payload} on exact phone/email match (create mode)
   const [fieldErrors, setFieldErrors] = useState({});
 
   // ----- Reference data now flows in via props (countries + rules) -----
@@ -354,6 +356,29 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
   }
 
   // ----- Submit -----
+  // "Add anyway" path: submit a payload that already passed (or bypassed) the dup-check.
+  async function proceedCreate(payload) {
+    setDupWarn(null);
+    setSaving(true);
+    setSubmitError("");
+    try {
+      let createdLead;
+      try {
+        createdLead = await onSubmit(payload);
+      } catch (err) {
+        setSubmitError(err?.message || "Failed to create lead");
+        setSaving(false);
+        return;
+      }
+      if (!createdLead) { setSubmitError("Failed to create lead (no result returned)."); setSaving(false); return; }
+      onCreated && onCreated(createdLead);
+    } catch (err) {
+      setSubmitError(err.message || "Network error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleSubmit() {
     setSubmitError("");
     if (!validate()) {
@@ -396,6 +421,11 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
         return;
       }
 
+      // Duplicate-prevention v1 (create mode only): exact phone/email match, company-scoped.
+      if (!editLead) {
+        const dup = await checkDuplicateLead({ phone: payload.phone, email: payload.email, company_id: companyId });
+        if (dup) { setDupWarn({ lead: dup, payload }); setSaving(false); return; }
+      }
       let createdLead;
       try {
         createdLead = await onSubmit(payload);
@@ -461,6 +491,16 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
         <div style={styles.badgeRow}>NEW · Sprint 1 form · buyer-type aware</div>
 
         {submitError && <div style={styles.errorBox}>{submitError}</div>}
+        {dupWarn && (
+          <div style={{ margin: "8px 0", padding: "12px 14px", borderRadius: 8, background: "#FFF9EC", border: "1.5px solid #C9A84C", fontSize: 13, color: "#8A6D1F" }}>
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>⚠️ Possible duplicate</div>
+            <div style={{ marginBottom: 10 }}>A contact with this phone or email already exists: <strong>{dupWarn.lead.name || "Unnamed"}</strong>{dupWarn.lead.phone ? ` · ${dupWarn.lead.phone}` : ""}{dupWarn.lead.email ? ` · ${dupWarn.lead.email}` : ""}.</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => proceedCreate(dupWarn.payload)} disabled={saving} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "#0F2540", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Add anyway</button>
+              <button onClick={() => setDupWarn(null)} disabled={saving} style={{ padding: "6px 14px", borderRadius: 8, border: "1.5px solid #D1D9E6", background: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        )}
 
         {/* Display name — always required */}
         <div style={styles.fieldGroup}>
