@@ -296,12 +296,14 @@ for the image — cosmetic, safe to ignore for testers. PROPER FIX (deferred): p
 own backend (Vercel function / Supabase) so they're served same-origin, OR download+re-host hero images in
 Supabase storage at PropPulse-import time. Phase 2 polish, not handoff-blocking.
 
-## ⏳ OPEN (Day 48) — Issue 1: agent proposal visibility (needs founder A/B call)
+## ✅ RESOLVED (Day 48) — Issue 1: agent proposal visibility — CORRECT BY DESIGN (no fix)
 Agent testagent4 opened a lead and saw 0 proposals under "view proposals sent", but super_admin saw
 proposals on the SAME lead (super_admin had created them). QUESTION for founder: should a sales agent see
 (A) ALL proposals on a lead ASSIGNED to them (even manager/admin-created) -> then it's a BUG, widen the
 proposal query scoping; or (B) ONLY proposals they personally created -> then current behavior is CORRECT
 (no fix). Architect lean = (A): the lead is in the agent's pipeline, they need full proposal history to
 follow up / avoid duplicates. Resume: get A/B from founder, then fix-or-confirm.
+
+RESOLUTION: verified T1 - Lead Test is assigned to super_admin (mah284), NOT the agent. activities RLS (activities_select_policy) scopes see_own_data users to proposals on leads/opps ASSIGNED to them. Agent correctly saw 0 -> RLS working as designed. Founder decision (agents see own work by default) is ALREADY enforced by RLS; the configurable widen-setting ALREADY exists = toggle see_branch_data / see_group_data per role. No code change needed.
 ✅ DONE Day 48: dup-prevention v1 (block + contact-admin), commission gate (see_brokerage_commission,
 configurable). Tags: dup-prevention-v1-day48, commission-gate-day48. HEAD 27692a5.
