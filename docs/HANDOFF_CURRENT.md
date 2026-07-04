@@ -295,3 +295,13 @@ still generates + uploads successfully; only the hero image is missing. Console 
 for the image — cosmetic, safe to ignore for testers. PROPER FIX (deferred): proxy external images through our
 own backend (Vercel function / Supabase) so they're served same-origin, OR download+re-host hero images in
 Supabase storage at PropPulse-import time. Phase 2 polish, not handoff-blocking.
+
+## ⏳ OPEN (Day 48) — Issue 1: agent proposal visibility (needs founder A/B call)
+Agent testagent4 opened a lead and saw 0 proposals under "view proposals sent", but super_admin saw
+proposals on the SAME lead (super_admin had created them). QUESTION for founder: should a sales agent see
+(A) ALL proposals on a lead ASSIGNED to them (even manager/admin-created) -> then it's a BUG, widen the
+proposal query scoping; or (B) ONLY proposals they personally created -> then current behavior is CORRECT
+(no fix). Architect lean = (A): the lead is in the agent's pipeline, they need full proposal history to
+follow up / avoid duplicates. Resume: get A/B from founder, then fix-or-confirm.
+✅ DONE Day 48: dup-prevention v1 (block + contact-admin), commission gate (see_brokerage_commission,
+configurable). Tags: dup-prevention-v1-day48, commission-gate-day48. HEAD 27692a5.
