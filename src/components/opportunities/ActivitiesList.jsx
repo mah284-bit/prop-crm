@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { supabase } from "../../lib/supabase.js";
+import AppendNote from "./AppendNote.jsx";
 import { Btn } from "../../modules/shared/Btn.jsx";
 import { Badge } from "../../modules/shared/Badge.jsx";
 import { Toast } from "../../modules/shared/Toast.jsx";
 import { useLeadPersons, ROLE_LABELS } from "../../lib/useLeadPersons.js";
 
-function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isLeasing=false, currentStage=null, units=[], onCaptureVisitOutcome=null}){
+function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isLeasing=false, currentStage=null, units=[], onCaptureVisitOutcome=null, currentUser=null}){
   const [outcomeModal, setOutcomeModal] = useState(null); // {activity, pendingOutcome}
   const { persons: actCardPersons } = useLeadPersons(opp?.lead_id);
   const personsById = (actCardPersons||[]).reduce((m,p)=>{m[p.id]=p;return m;},{});
@@ -232,6 +233,7 @@ function ActivitiesList({activities, setActivities, opp, canEdit, showToast, isL
 
           {a.outcome&&<div style={{fontSize:11,color:"#718096",fontStyle:"italic",marginBottom:4}}>Note: {a.outcome}</div>}
           <div style={{fontSize:11,color:"#A0AEC0"}}>{a.user_name}</div>
+          {!isUpcoming && <AppendNote a={a} canEdit={canEdit} setActivities={setActivities} showToast={showToast} currentUser={currentUser} />}
           {isUpcoming&&canEdit&&(
             <div style={{marginTop:10,paddingTop:10,borderTop:"1px dashed #E2E8F0"}}>
               {/* Phase E W2 — for Site Visit upcoming cards, offer a rich outcome capture */}
