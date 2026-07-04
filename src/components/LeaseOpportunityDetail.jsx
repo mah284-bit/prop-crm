@@ -568,7 +568,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             <button onClick={()=>setShowLog(true)} style={{alignSelf:"flex-end",padding:"7px 16px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Task</button>
             {activities.length===0&&<div style={{textAlign:"center",padding:"2.5rem",color:"#A0AEC0"}}>No tasks yet — log a call, meeting, site visit or note</div>}
-            {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast} isLeasing={true}/>}
+            {activities.length>0&&<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast} isLeasing={true} currentUser={currentUser}/>}
           </div>
         )}
 

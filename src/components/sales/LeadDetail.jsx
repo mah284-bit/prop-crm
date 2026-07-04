@@ -669,7 +669,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
             </div>
             {/* ActivitiesList - render full lifecycle (upcoming/past, outcomes, etc.) for this lead */}
             {leadActs.length>0&&(
-              <ActivitiesList activities={leadActs} setActivities={setActivities} opp={null} canEdit={canEdit} showToast={showToast} currentStage={null} units={units}/>
+              <ActivitiesList activities={leadActs} setActivities={setActivities} opp={null} canEdit={canEdit} showToast={showToast} currentStage={null} units={units} currentUser={currentUser}/>
             )}
           </div>
         );
