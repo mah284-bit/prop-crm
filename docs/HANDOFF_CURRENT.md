@@ -324,3 +324,6 @@ Tile showed 0 but click landed on unfiltered opp list showing a New opp as won. 
 
 ## PHASE 2 STICKY (Day 48) — Calendar of events on dashboard
 Founder idea: surface all scheduled activities (follow-up calls, meetings, site visits — the "Next: Meeting on 6 Jul" type entries logged against leads/opps) in a CALENDAR view on the dashboard. High value for agents/managers to see whats coming. Part of the broader dashboard-analytics-redesign sticky (dashboard = analytics not repetitive listings). Do properly post-handoff.
+
+## RESOLVED (Day 48) Activity append-only notes DONE+VERIFIED
+New src/components/opportunities/AppendNote.jsx: "+ Add note" on COMPLETED activity cards (canEdit-gated) appends a timestamped, attributed line to the activity note field WITHOUT editing the original (audit-safe). Original preserved above; addendum shows as "u21B3 [date time . user] text". Saves via supabase update, refreshes via setActivities re-fetch. currentUser threaded into ActivitiesList across all 3 render paths (OpportunityDetail, LeadDetail, LeaseOpportunityDetail) so attribution shows real name not "User". Verified prod. Tag activity-append-notes-day48. Decided: append-only (not edit) preserves audit trail; solves "add forgotten point e.g. buyer hard-stop on price". Calendar-on-dashboard = separate Phase 2 sticky.
