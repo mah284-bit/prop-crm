@@ -5,6 +5,8 @@ import { aiInvoke } from "../lib/aiInvoke.js";
 import { COUNTRY_CODES, NATIONALITIES } from "../lib/refData.js";
 import { openPropertyPack } from "./property/propertyPackBus.js";
 
+import { canDo } from "../lib/permissions.js";
+
 export default function CreateOpportunityDialog({ leads, setLeads, units, projects, salePricing, users, currentUser, showToast, onClose, onCreated, prefilledLead = null, prefilledUnit = null }) {
   // Step state - if lead is pre-selected (from Leads tab), skip Step 1
   const [step, setStep] = useState(prefilledLead ? 2 : 1);
@@ -991,6 +993,7 @@ What should the second agent know?`;
                 </div>
               </div>
               {/* Commission auto-populate from master agreement */}
+              {canDo(currentUser, "see_brokerage_commission") && (
               <div style={{gridColumn:"1 / -1", padding:"12px 14px", background: masterAgreement ? "#F0F9FF" : "#F9FAFB", border:`1px solid ${masterAgreement ? "#BAE6FD" : "#E5E7EB"}`, borderRadius:8, marginBottom:8}}>
                 <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8}}>
                   <div style={{fontSize:12, fontWeight:600, color:"#0F2540", display:"flex", alignItems:"center", gap:6}}>
@@ -1041,6 +1044,7 @@ What should the second agent know?`;
                   </div>
                 )}
               </div>
+              )}
 
               <div>
                 <label style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",display:"block",marginBottom:5}}>Owner</label>

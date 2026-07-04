@@ -13,6 +13,7 @@ const ACTION_TO_CAPABILITY = {
   approve_manager:  "approve_discounts",         // manager tier
   see_all:          "see_branch_data",
   create_lead:      "create_leads",
+  see_brokerage_commission: "see_brokerage_commission",
 };
 export const canDo = (user, action) => {
   if (!user) return false;
