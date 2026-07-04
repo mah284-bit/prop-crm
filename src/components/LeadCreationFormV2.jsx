@@ -493,17 +493,6 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
         <div style={styles.badgeRow}>NEW · Sprint 1 form · buyer-type aware</div>
 
         {submitError && <div style={styles.errorBox}>{submitError}</div>}
-        {dupWarn && (
-          <div style={{ margin: "8px 0", padding: "12px 14px", borderRadius: 8, background: "#FFF9EC", border: "1.5px solid #C9A84C", fontSize: 13, color: "#8A6D1F" }}>
-            <div style={{ fontWeight: 600, marginBottom: 8 }}>⚠️ Possible duplicate</div>
-            <div style={{ marginBottom: 10 }}>A contact with this phone or email already exists: <strong>{dupWarn.lead.name || "Unnamed"}</strong>{dupWarn.lead.phone ? ` · ${dupWarn.lead.phone}` : ""}{dupWarn.lead.email ? ` · ${dupWarn.lead.email}` : ""}.</div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => proceedCreate(dupWarn.payload)} disabled={saving} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "#0F2540", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Add anyway</button>
-              <button onClick={() => setDupWarn(null)} disabled={saving} style={{ padding: "6px 14px", borderRadius: 8, border: "1.5px solid #D1D9E6", background: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-            </div>
-          </div>
-        )}
-
         {/* Display name — always required */}
         <div style={styles.fieldGroup}>
           <label style={styles.label}>
@@ -755,6 +744,16 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
           />
         </div>
 
+        {dupWarn && (
+          <div style={{ margin: "8px 0", padding: "12px 14px", borderRadius: 8, background: "#FFF9EC", border: "1.5px solid #C9A84C", fontSize: 13, color: "#8A6D1F" }}>
+            <div style={{ fontWeight: 600, marginBottom: 8 }}>⚠️ Possible duplicate</div>
+            <div style={{ marginBottom: 10 }}>A contact with this phone or email already exists: <strong>{dupWarn.lead.name || "Unnamed"}</strong>{dupWarn.lead.phone ? ` · ${dupWarn.lead.phone}` : ""}{dupWarn.lead.email ? ` · ${dupWarn.lead.email}` : ""}.</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => proceedCreate(dupWarn.payload)} disabled={saving} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "#0F2540", color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Add anyway</button>
+              <button onClick={() => setDupWarn(null)} disabled={saving} style={{ padding: "6px 14px", borderRadius: 8, border: "1.5px solid #D1D9E6", background: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        )}
         {/* Footer */}
         <div style={styles.footer}>
           <button onClick={onCancel} style={styles.btnSecondary} disabled={saving}>Cancel</button>
