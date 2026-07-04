@@ -309,3 +309,12 @@ RESOLUTION: verified T1 - Lead Test is assigned to super_admin (mah284), NOT the
 RESOLUTION: verified T1 - Lead Test is assigned to super_admin (mah284), NOT the agent. activities RLS (activities_select_policy) scopes see_own_data users to proposals on leads/opps ASSIGNED to them. Agent correctly saw 0 -> RLS working as designed. Founder decision (agents see own work by default) is ALREADY enforced by RLS; the configurable widen-setting ALREADY exists = toggle see_branch_data / see_group_data per role. No code change needed.
 ✅ DONE Day 48: dup-prevention v1 (block + contact-admin), commission gate (see_brokerage_commission,
 configurable). Tags: dup-prevention-v1-day48, commission-gate-day48. HEAD 27692a5.
+
+## 🛑 PHASE 2 STICKY (Day 48) — Dashboard redesign: analytics, not repetitive listings
+Founder insight: the current dashboard is "full of listings" — nearly every tile just deep-links to a
+filtered list (opps/inventory), which is repetitive and under-uses the space. REAL DIRECTION: redesign the
+dashboard so tiles/sections surface genuine ANALYTICAL reports per persona (trends, breakdowns, conversion,
+aging, pipeline velocity, month-over-month) rather than N doors to the same list view. Also add report
+filters (date from/to, monthly, stage, owner). This is a deliberate design project — NOT to be rushed before
+the weekend tester handoff (redesign risk > handoff value). Do properly post-handoff. Today we fix only the
+one visible glitch (Won Value tile mismatch) so testers aren't confused.
