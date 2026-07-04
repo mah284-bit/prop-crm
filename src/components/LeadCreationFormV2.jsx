@@ -423,7 +423,9 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
 
       // Duplicate-prevention v1 (create mode only): exact phone/email match, company-scoped.
       if (!editLead) {
+        console.log("[DUPCHECK] phone=",payload.phone,"email=",payload.email,"company=",companyId);
         const dup = await checkDuplicateLead({ phone: payload.phone, email: payload.email, company_id: companyId });
+        console.log("[DUPCHECK] result=",dup);
         if (dup) { setDupWarn({ lead: dup, payload }); setSaving(false); return; }
       }
       let createdLead;
