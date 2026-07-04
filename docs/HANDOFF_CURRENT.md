@@ -305,5 +305,7 @@ proposal query scoping; or (B) ONLY proposals they personally created -> then cu
 follow up / avoid duplicates. Resume: get A/B from founder, then fix-or-confirm.
 
 RESOLUTION: verified T1 - Lead Test is assigned to super_admin (mah284), NOT the agent. activities RLS (activities_select_policy) scopes see_own_data users to proposals on leads/opps ASSIGNED to them. Agent correctly saw 0 -> RLS working as designed. Founder decision (agents see own work by default) is ALREADY enforced by RLS; the configurable widen-setting ALREADY exists = toggle see_branch_data / see_group_data per role. No code change needed.
+
+RESOLUTION: verified T1 - Lead Test is assigned to super_admin (mah284), NOT the agent. activities RLS (activities_select_policy) scopes see_own_data users to proposals on leads/opps ASSIGNED to them. Agent correctly saw 0 -> RLS working as designed. Founder decision (agents see own work by default) is ALREADY enforced by RLS; the configurable widen-setting ALREADY exists = toggle see_branch_data / see_group_data per role. No code change needed.
 ✅ DONE Day 48: dup-prevention v1 (block + contact-admin), commission gate (see_brokerage_commission,
 configurable). Tags: dup-prevention-v1-day48, commission-gate-day48. HEAD 27692a5.
