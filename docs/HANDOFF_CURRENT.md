@@ -318,3 +318,6 @@ aging, pipeline velocity, month-over-month) rather than N doors to the same list
 filters (date from/to, monthly, stage, owner). This is a deliberate design project — NOT to be rushed before
 the weekend tester handoff (redesign risk > handoff value). Do properly post-handoff. Today we fix only the
 one visible glitch (Won Value tile mismatch) so testers aren't confused.
+
+## RESOLVED (Day 48) Won Value tile mismatch DONE+VERIFIED
+Tile showed 0 but click landed on unfiltered opp list showing a New opp as won. FIX: (1) Won Value tile passes {type:stage,value:Closed Won} to onNavigate; (2) Opportunities consumes initialFilter.type==stage -> setFStage; (3) total-value pill (16px bold) sums filtered rows, shows <stage>: AED <total> when a stage filter active, updates by stage. Verified prod. Tag wonvalue-fix-day48. Dashboard analytics redesign = separate Phase 2 sticky.
