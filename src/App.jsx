@@ -24,6 +24,7 @@ import PropertyPackModal from './components/property/PropertyPackModal.jsx';
 import CompaniesModule from './components/CompaniesModule.jsx';
 import PermissionSetsModule from './components/PermissionSetsModule.jsx';
 import GroupConsolidatedView from './components/GroupConsolidatedView.jsx';
+import OrgChartPage from './components/orgchart/OrgChartPage.jsx';
 import PwRecoveryForm from './components/PwRecoveryForm.jsx';
 import UsersTab from './components/UsersTab.jsx';
 import SettingsTab from './components/SettingsTab.jsx';
@@ -169,9 +170,9 @@ const saveAppConfig = (cfg) => {
 };
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","customers","opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","settings","lead_queue","commission_outstanding","group_view"],
+  sales:   ["dashboard","projects","builder","leads","customers","opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","settings","lead_queue","commission_outstanding","group_view","org_chart"],
   leasing: ["l_dashboard","l_leads","l_opportunities","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_proppulse","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
-  both:    ["dashboard","projects","builder","leads","customers","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","settings","lead_queue","commission_outstanding","group_view"],
+  both:    ["dashboard","projects","builder","leads","customers","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","settings","lead_queue","commission_outstanding","group_view","org_chart"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -1287,6 +1288,7 @@ const TABS=[
   // 21 May 2026: Hide Group View for Phase 1 demo (placeholder "Planned for MVP Phase")
   // Re-enable in Phase 2 when parent-subsidiary aggregation is built
   {id:"group_view", label:"Group View",    icon:"🏛", app:"sales",   roles:["super_admin"], platformOnly:true},
+  {id:"org_chart", label:"Org Chart", icon:"🗂", app:"sales", roles:["super_admin","admin"]},
   // ── Leasing CRM ────────────────────────────────────────────────
   {id:"l_dashboard",label:"Dashboard",    icon:"⊞",  app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent","viewer"]},
   {id:"l_leads",    label:"Leads",        icon:"👤", app:"leasing", roles:["super_admin","admin","leasing_manager","leasing_agent"]},
@@ -2745,6 +2747,7 @@ export default function App(){
           {tab==="users"       &&canDo(currentUser,"manage_users")&&<UserManagement currentUser={currentUser} leads={leads} activities={activities} showToast={showToast} appConfig={appConfig} onConfigChange={cfg=>{saveAppConfig(cfg);setAppConfig(cfg);}}/>}
           {tab==="permissions" &&<PermissionSetsModule currentUser={currentUser} showToast={showToast}/>}
           {tab==="group_view"  &&<GroupConsolidatedView currentUser={currentUser}/>}
+          {tab==="org_chart" && <OrgChartPage currentUser={currentUser} showToast={showToast}/>}
 
           {/* ── Leasing CRM ───────────────────────────────────── */}
           {tab==="l_dashboard" &&<LeasingDashboard currentUser={currentUser} activities={activities} units={aiUnits} salePricing={aiSalePr} leasePricing={aiLeasePr} leasingData={leasingData} onNavigate={(t,filter)=>navigateToTab(t,filter)} followupAlerts={followupAlerts} key="l_dash"/>}
