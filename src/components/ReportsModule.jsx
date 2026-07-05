@@ -8,6 +8,7 @@ import { canDo } from "../lib/permissions.js";
 const OPP_STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
 
 function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activities=[], leasingData=null, initialFilter=null, crmContext="sales", preloadedUnits=[], preloadedProjects=[], preloadedSalePricing=[], preloadedLeasePricing=[], preloadedUsers=[] }) {
+  console.log("[REPORTS CAPS]", currentUser?.role, "see_branch_data=", currentUser?.capabilities?.see_branch_data, "caps=", currentUser?.capabilities);
   const [activeReport, setActiveReport] = useState(()=>{ const d=initialFilter?.value||(crmContext==="leasing"?"rent_roll":"pipeline"); return (!canDo(currentUser,"see_all") && ["agent_performance","lead_conversion"].includes(d)) ? (crmContext==="leasing"?"rent_roll":"pipeline") : d; });
   const [loading,      setLoading]      = useState(false);
   const [data,         setData]         = useState({
