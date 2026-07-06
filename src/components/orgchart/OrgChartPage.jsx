@@ -102,20 +102,21 @@ export default function OrgChartPage({ currentUser, showToast }) {
     const apex = size === "lg";
     return (
       <div style={{
-        display: "inline-flex", flexDirection: "column", alignItems: "center",
+        display: "inline-flex", flexDirection: "row", alignItems: "center", gap: 9,
         background: "#fff", border: "1px solid " + (apex ? rc : "#E2E8F0"),
-        borderTop: "3px solid " + rc, borderRadius: 12,
-        padding: "10px 14px", minWidth: 160,
+        borderLeft: "3px solid " + rc, borderRadius: 10,
+        padding: "6px 11px", minWidth: 185, maxWidth: 210,
         boxShadow: apex ? "0 4px 12px rgba(15,37,64,0.12)" : "0 1px 5px rgba(15,37,64,0.06)",
         opacity: dim ? 0.4 : 1, transition: "opacity .15s",
       }}>
-        <div style={ring(person.role, 40)}>{initials(person.full_name)}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 7 }}>
-          {apex && <span title="Top of hierarchy" style={{ fontSize: 12 }}>{"\u2605"}</span>}
-          <span style={{ fontWeight: 700, color: NAVY, fontSize: 12.5, textAlign: "center", whiteSpace: "nowrap" }}>{person.full_name || "Unnamed"}</span>
+        <div style={ring(person.role, 34)}>{initials(person.full_name)}</div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            {apex && <span title="Top" style={{ fontSize: 11 }}>{"\u2605"}</span>}
+            <span style={{ fontWeight: 700, color: NAVY, fontSize: 12.5, whiteSpace: "nowrap" }}>{person.full_name || "Unnamed"}</span>
+          </div>
+          <span style={{ fontSize: 10.5, fontWeight: 600, color: rc, whiteSpace: "nowrap" }}>{ROLE_LABEL[person.role] || person.role}{downlineCount(person.id) > 0 ? " \u00b7 " + downlineCount(person.id) + " team" : ""}</span>
         </div>
-        <span style={{ fontSize: 11, fontWeight: 600, color: rc, marginTop: 2 }}>{ROLE_LABEL[person.role] || person.role}</span>
-        {downlineCount(person.id) > 0 && <span style={{ fontSize: 10, color: "#94A3B8", marginTop: 1 }}>{downlineCount(person.id)} in team</span>}
         {editId === person.id
           ? <Editor person={person} />
           : <button onClick={() => setEditId(person.id)} title="Change reporting line"
@@ -133,12 +134,12 @@ export default function OrgChartPage({ currentUser, showToast }) {
         <Card person={person} size={size} dim={dim} />
         {kids.length > 0 && (
           <>
-            <span style={{ width: 2, height: 18, background: LINE }} />
+            <span style={{ width: 2, height: 10, background: LINE }} />
             <div style={{ display: "flex", alignItems: "flex-start", position: "relative" }}>
               {kids.length > 1 && <span style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: 2, background: LINE }} />}
               {kids.map((k) => (
                 <div key={k.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <span style={{ width: 2, height: 14, background: LINE }} />
+                  <span style={{ width: 2, height: 8, background: LINE }} />
                   <Subtree person={k} size="md" />
                 </div>
               ))}
