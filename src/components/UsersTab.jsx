@@ -10,6 +10,9 @@ export default function UsersTab({currentUser, showToast}) {
   const [companies, setCompanies] = useState([]);
   const [loading,   setLoading]   = useState(true);
   const [showAdd,   setShowAdd]   = useState(false);
+  const [qText, setQText] = useState("");
+  const [fRole, setFRole] = useState("all");
+  const [fStatus, setFStatus] = useState("all");
   const [editUser,  setEditUser]  = useState(null);
   const [saving,    setSaving]    = useState(false);
   const isSuperAdmin = currentUser.is_super_admin === true; // platform owner only (flag, NOT role string) — tenant super_admin sees own company only
@@ -79,16 +82,34 @@ export default function UsersTab({currentUser, showToast}) {
     }catch(e){showToast(e.message,"error");}
   };
 
+  const q=qText.trim().toLowerCase();
+  const filteredUsers=users.filter(u=>{
+    if(fRole!=="all" && u.role!==fRole) return false;
+    if(fStatus==="inactive" && u.is_active) return false;
+    return true;
+  });
   if(loading)return <Spinner msg="Loading users…"/>;
 
   return(
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-        <span style={{fontSize:13,color:"#718096"}}>{users.length} users · {users.filter(u=>u.is_active).length} active</span>
+        <span style={{fontSize:13,color:"#718096"}}>{filteredUsers.length} of {users.length} users · {users.filter(u=>u.is_active).length} active</span>
         <button onClick={()=>{setForm(blank);setEditUser(null);setShowAdd(true);}}
           style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
           + Add User
         </button>
+      </div>
+      <div style={{display:"flex",gap:10,marginBottom:12,flexWrap:"wrap"}}>
+        <input value={qText} onChange={e=>setQText(e.target.value)} placeholder="Search name or email…" style={{flex:1,minWidth:200,padding:"8px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13}}/>
+        <select value={fRole} onChange={e=>setFRole(e.target.value)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,color:"#0F2540"}}>
+          <option value="all">All roles</option>
+          {["super_admin","admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"].map(r=><option key={r} value={r}>{r.replace(/_/g," ")}</option>)}
+        </select>
+        <select value={fStatus} onChange={e=>setFStatus(e.target.value)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,color:"#0F2540"}}>
+          <option value="all">All status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
       </div>
       <div style={{flex:1,overflowY:"auto"}}>
         <table style={{width:"100%",borderCollapse:"collapse"}}>
@@ -100,7 +121,7 @@ export default function UsersTab({currentUser, showToast}) {
             </tr>
           </thead>
           <tbody>
-            {users.map((u,i)=>(
+            {filteredUsers.map((u,i)=>(
               <tr key={u.id} style={{background:i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5"}}>
                 <td style={{padding:"9px 12px"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
