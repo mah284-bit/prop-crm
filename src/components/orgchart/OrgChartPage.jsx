@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../lib/supabase.js";
 
 const NAVY = "#0F2540";
-const LINE = "#CBD5E1";
+const LINE = "#64748B";
 const BG = "#F8FAFC";
 
 const initials = (name) =>
@@ -134,12 +134,12 @@ export default function OrgChartPage({ currentUser, showToast }) {
         <Card person={person} size={size} dim={dim} />
         {kids.length > 0 && (
           <>
-            <span style={{ width: 2, height: 10, background: LINE }} />
+            <span style={{ width: 3, height: 10, background: LINE }} />
             <div style={{ display: "flex", alignItems: "flex-start", position: "relative" }}>
-              {kids.length > 1 && <span style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: 2, background: LINE }} />}
+              {kids.length > 1 && <span style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: 3, background: LINE }} />}
               {kids.map((k) => (
                 <div key={k.id} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <span style={{ width: 2, height: 8, background: LINE }} />
+                  <span style={{ width: 3, height: 8, background: LINE }} />
                   <Subtree person={k} size="md" />
                 </div>
               ))}
