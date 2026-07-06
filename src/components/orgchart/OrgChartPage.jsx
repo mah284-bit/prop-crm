@@ -105,14 +105,14 @@ export default function OrgChartPage({ currentUser, showToast }) {
         display: "inline-flex", flexDirection: "column", alignItems: "center",
         background: "#fff", border: "1px solid " + (apex ? rc : "#E2E8F0"),
         borderTop: "3px solid " + rc, borderRadius: 12,
-        padding: apex ? "12px 18px" : "10px 14px", minWidth: apex ? 170 : 150,
+        padding: "10px 14px", minWidth: 160,
         boxShadow: apex ? "0 4px 12px rgba(15,37,64,0.12)" : "0 1px 5px rgba(15,37,64,0.06)",
         opacity: dim ? 0.4 : 1, transition: "opacity .15s",
       }}>
-        <div style={ring(person.role, apex ? 48 : 40)}>{initials(person.full_name)}</div>
+        <div style={ring(person.role, 40)}>{initials(person.full_name)}</div>
         <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 7 }}>
           {apex && <span title="Top of hierarchy" style={{ fontSize: 12 }}>{"\u2605"}</span>}
-          <span style={{ fontWeight: 700, color: NAVY, fontSize: apex ? 14 : 12.5, textAlign: "center", whiteSpace: "nowrap" }}>{person.full_name || "Unnamed"}</span>
+          <span style={{ fontWeight: 700, color: NAVY, fontSize: 12.5, textAlign: "center", whiteSpace: "nowrap" }}>{person.full_name || "Unnamed"}</span>
         </div>
         <span style={{ fontSize: 11, fontWeight: 600, color: rc, marginTop: 2 }}>{ROLE_LABEL[person.role] || person.role}</span>
         {downlineCount(person.id) > 0 && <span style={{ fontSize: 10, color: "#94A3B8", marginTop: 1 }}>{downlineCount(person.id)} in team</span>}
