@@ -193,7 +193,7 @@ export default function OrgChartPage({ currentUser, showToast }) {
           </div>
 
           {unassigned.length > 0 && (
-            <div style={{ marginTop: 28, borderTop: "1px dashed " + LINE, paddingTop: 16 }}>
+            <div style={{ marginTop: 28, borderTop: "2px solid #334155", paddingTop: 16 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#64748B", marginBottom: 10 }}>
                 Unassigned — no manager set ({unassigned.length})
               </div>
