@@ -19,6 +19,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
   const [selLeadId,setSelLeadId]= useState(null);
   const [selOpp,   setSelOpp]   = useState(null);
   const [saving,   setSaving]   = useState(false);
+  const [actExpanded, setActExpanded] = useState(false);
   // 23 May 2026: Restore Lead Detail activity logging (lost during April Lead/Opp split rewrite)
   // Full feature parity with Opp Detail saveLog - scheduling, duration, next-step reminders
   // Separate state from opp-side to avoid coupling risk.
@@ -667,9 +668,19 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
                 </button>
               </div>
             </div>
-            {/* ActivitiesList - render full lifecycle (upcoming/past, outcomes, etc.) for this lead */}
+            {/* ActivitiesList - collapsible one-liner box (slim lead: click header to expand) */}
             {leadActs.length>0&&(
-              <ActivitiesList activities={leadActs} setActivities={setActivities} opp={null} canEdit={canEdit} showToast={showToast} currentStage={null} units={units} currentUser={currentUser}/>
+              <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,overflow:"hidden"}}>
+                <button onClick={()=>setActExpanded(v=>!v)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#fff",border:"none",cursor:"pointer"}}>
+                  <span style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{actExpanded?"\u25BC":"\u25B6"} Communications &amp; Activities ({leadActs.length}{upcomingCount>0?" \u00b7 "+upcomingCount+" upcoming":""})</span>
+                  <span style={{fontSize:11,color:"#94A3B8"}}>{actExpanded?"Hide":"Show"}</span>
+                </button>
+                {actExpanded&&(
+                  <div style={{borderTop:"1px solid #F0F2F5",padding:"4px 0"}}>
+                    <ActivitiesList activities={leadActs} setActivities={setActivities} opp={null} canEdit={canEdit} showToast={showToast} currentStage={null} units={units} currentUser={currentUser}/>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         );
