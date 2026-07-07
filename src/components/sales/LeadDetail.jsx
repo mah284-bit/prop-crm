@@ -628,8 +628,8 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
         );
       })()}
       {/* Phase 2.2B — People section (collapsible tile — slim lead) */}
-      <div style={{marginBottom:14,background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,overflow:"hidden"}}>
-        <button onClick={()=>setPeopleExpanded(v=>!v)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#fff",border:"none",cursor:"pointer"}}>
+      <div style={{marginBottom:14,background:"#fff",border:"1px solid #CBD5E1",borderRadius:10,overflow:"hidden"}}>
+        <button onClick={()=>setPeopleExpanded(v=>!v)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#F8FAFC",border:"none",cursor:"pointer"}}>
           <span style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{peopleExpanded?"\u25BC":"\u25B6"} People</span>
           <span style={{fontSize:11,color:"#94A3B8"}}>{peopleExpanded?"Hide":"Show"}</span>
         </button>
