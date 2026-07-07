@@ -406,6 +406,36 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
   );
 
   // ── LEAD DETAIL VIEW (contact + opportunities) ─────────────────
+  if(view==="client360"&&selLead){
+    const c360Opps = opps.filter(o=>o.lead_id===selLead.id);
+    const c360Active = c360Opps.filter(o=>o.status==="Active").length;
+    const c360Won = c360Opps.filter(o=>o.status==="Won").length;
+    const c360Value = c360Opps.filter(o=>o.status==="Won").reduce((s,o)=>s+(o.budget||0),0);
+    const c360Acts = activities.filter(a=>a.lead_id===selLead.id);
+    const c360Last = c360Acts.length>0 ? c360Acts.map(a=>new Date(a.created_at)).sort((x,y)=>y-x)[0] : null;
+    const c360LastTxt = c360Last ? (()=>{const d=(new Date()-c360Last)/864e5; return d<1?"today":d<2?"1 day ago":Math.floor(d)+" days ago";})() : "No activity";
+    const card=(label,value,color)=>(<div style={{flex:1,background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"18px 20px"}}><div style={{fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".5px",marginBottom:8}}>{label}</div><div style={{fontSize:26,fontWeight:800,color}}>{value}</div></div>);
+    return (
+      <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap"}}>
+          <button onClick={()=>setView("lead")} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>← Back to Lead</button>
+          <Av name={selLead.name} size={40}/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontFamily:"'Inter',sans-serif",fontSize:18,fontWeight:800,color:"#0F2540"}}>{selLead.name}</div>
+            <div style={{fontSize:12,color:"#94A3B8",fontWeight:600}}>Client 360 at a glance</div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:14,marginBottom:20,flexWrap:"wrap"}}>
+          {card("Active Opportunities",c360Active,"#1A5FA8")}
+          {card("Closed Won",c360Won,"#1A7F5A")}
+          {card("Total Business","AED "+c360Value.toLocaleString(),"#0F2540")}
+          {card("Last Activity",c360LastTxt,"#8A6D1F")}
+        </div>
+        <div style={{background:"#fff",border:"1px dashed #E2E8F0",borderRadius:12,padding:"28px",textAlign:"center",color:"#94A3B8",fontSize:13}}>Full deal and activity history coming next (Stage 2)</div>
+      </div>
+    );
+  }
+
   if(view==="lead"&&selLead) return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
       {/* ── Helpers (inline, used only in this view) ── */}
@@ -457,6 +487,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
           </div>
         </div>
         <div style={{display:"flex",gap:6}}>
+          <button onClick={()=>setView("client360")} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #C9A84C",background:"#FFF9EC",color:"#8A6D1F",fontSize:12,fontWeight:700,cursor:"pointer"}}>📊 360 View</button>
           {canEdit&&<button onClick={()=>{setEditLeadForV2(selLead);setEditFormVersion(v=>v+1);setShowAddV2(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
           {canEdit&&(leadOpps.length>0
             ? <span title="This buyer is already an active opportunity. Add further units from the Opportunity side." style={{padding:"6px 14px",borderRadius:8,border:"1px solid #C9A84C",background:"#FFF9EC",color:"#8A6D1F",fontSize:12,fontWeight:600,whiteSpace:"nowrap"}}>🎯 Active opportunity — add units from the Opp</span>
