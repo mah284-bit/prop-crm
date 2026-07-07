@@ -13,6 +13,7 @@ export default function UsersTab({currentUser, showToast}) {
   const [qText, setQText] = useState("");
   const [fRole, setFRole] = useState("all");
   const [fStatus, setFStatus] = useState("all");
+  const [fCompany, setFCompany] = useState("all");
   const [editUser,  setEditUser]  = useState(null);
   const [saving,    setSaving]    = useState(false);
   const isSuperAdmin = currentUser.is_super_admin === true; // platform owner only (flag, NOT role string) — tenant super_admin sees own company only
@@ -85,7 +86,10 @@ export default function UsersTab({currentUser, showToast}) {
   const q=qText.trim().toLowerCase();
   const filteredUsers=users.filter(u=>{
     if(fRole!=="all" && u.role!==fRole) return false;
+    if(fStatus==="active" && !u.is_active) return false;
     if(fStatus==="inactive" && u.is_active) return false;
+    if(fCompany!=="all" && u.company_id!==fCompany) return false;
+    if(q && !((u.full_name||"").toLowerCase().includes(q) || (u.email||"").toLowerCase().includes(q))) return false;
     return true;
   });
   if(loading)return <Spinner msg="Loading users…"/>;
@@ -110,6 +114,12 @@ export default function UsersTab({currentUser, showToast}) {
           <option value="active">Active</option>
           <option value="inactive">Inactive</option>
         </select>
+        {isSuperAdmin && (
+          <select value={fCompany} onChange={e=>setFCompany(e.target.value)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,color:"#0F2540"}}>
+            <option value="all">All companies</option>
+            {companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        )}
       </div>
       <div style={{flex:1,overflowY:"auto"}}>
         <table style={{width:"100%",borderCollapse:"collapse"}}>
