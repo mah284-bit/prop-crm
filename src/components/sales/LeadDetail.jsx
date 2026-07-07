@@ -583,6 +583,8 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
       )}
 
 
+      <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1.1fr)",gap:16,alignItems:"start"}}>
+      <div>
       {/* Identity + Notes — dense single-card layout */}
       {(()=>{
         const iso2ToFlag = (iso2)=>{ if(!iso2||iso2.length!==2)return ""; const c=iso2.toUpperCase(); return String.fromCodePoint(0x1F1E6+(c.charCodeAt(0)-65))+String.fromCodePoint(0x1F1E6+(c.charCodeAt(1)-65)); };
@@ -686,6 +688,8 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
         );
       })()}
 
+      </div>
+      <div>
       {/* Opportunities — dense table layout */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#0F2540"}}>
@@ -882,6 +886,8 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
             })}
           </div>
         )}
+      </div>
+      </div>
       </div>
 
       {/* Add Opportunity Modal */}
