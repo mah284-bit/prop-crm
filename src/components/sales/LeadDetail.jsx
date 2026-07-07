@@ -431,7 +431,24 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
           {card("Total Business","AED "+c360Value.toLocaleString(),"#0F2540")}
           {card("Last Activity",c360LastTxt,"#8A6D1F")}
         </div>
-        <div style={{background:"#fff",border:"1px dashed #E2E8F0",borderRadius:12,padding:"28px",textAlign:"center",color:"#94A3B8",fontSize:13}}>Full deal and activity history coming next (Stage 2)</div>
+        <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,overflow:"hidden"}}>
+          <div style={{padding:"12px 16px",borderBottom:"1px solid #F0F2F5",fontSize:13,fontWeight:700,color:"#0F2540"}}>Deals ({c360Opps.length})</div>
+          {c360Opps.length===0 && <div style={{padding:"24px",textAlign:"center",color:"#94A3B8",fontSize:13}}>No deals yet for this client</div>}
+          {c360Opps.map((o,i)=>{
+            const u=units.find(x=>x.id===o.unit_id);
+            const stMeta=OPP_STAGE_META[o.stage]||{c:"#718096",bg:"#F7F9FC"};
+            const stColor=o.status==="Won"?"#1A7F5A":o.status==="Lost"?"#94A3B8":"#1A5FA8";
+            return (<div key={o.id} onClick={()=>{ if(onNavigateToOpp) onNavigateToOpp(o.id); }} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 16px",borderTop:i===0?"none":"1px solid #F5F7FA",cursor:"pointer"}} onMouseOver={e=>e.currentTarget.style.background="#F8FAFC"} onMouseOut={e=>e.currentTarget.style.background="#fff"}>
+              <span style={{fontSize:10,fontWeight:700,padding:"3px 9px",borderRadius:20,background:stMeta.bg,color:stMeta.c,whiteSpace:"nowrap"}}>{o.stage}</span>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:600,color:"#0F2540",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{o.title||"Opportunity"}</div>
+                <div style={{fontSize:11,color:"#94A3B8"}}>{u?u.unit_ref:"No unit"}</div>
+              </div>
+              <div style={{fontSize:13,fontWeight:700,color:"#1A5FA8",whiteSpace:"nowrap"}}>{o.budget?"AED "+Number(o.budget).toLocaleString():"—"}</div>
+              <span style={{fontSize:10,fontWeight:700,color:stColor,minWidth:44,textAlign:"right"}}>{o.status}</span>
+            </div>);
+          })}
+        </div>
       </div>
     );
   }
