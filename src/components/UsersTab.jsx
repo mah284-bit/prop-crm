@@ -104,7 +104,7 @@ export default function UsersTab({currentUser, showToast}) {
         </button>
       </div>
       <div style={{display:"flex",gap:8,marginBottom:10,alignItems:"center",flexWrap:"wrap"}}>
-        <input value={qText} onChange={e=>setQText(e.target.value)} placeholder="🔍 Search name or email…" style={{flex:1,minWidth:150,padding:"6px 10px",borderRadius:6,border:"1px solid #E2E8F0",fontSize:12}}/>
+        <input value={qText} onChange={e=>setQText(e.target.value)} placeholder="🔍 Search name or email…" style={{width:260,padding:"6px 10px",borderRadius:6,border:"1px solid #E2E8F0",fontSize:12}}/>
         <select value={fRole} onChange={e=>setFRole(e.target.value)} style={{padding:"6px 8px",borderRadius:6,border:"1px solid #E2E8F0",fontSize:12,color:"#0F2540"}}>
           <option value="all">All roles</option>
           {["super_admin","admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"].map(r=><option key={r} value={r}>{r.replace(/_/g," ")}</option>)}
