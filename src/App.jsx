@@ -139,7 +139,15 @@ function buildIcsEvent({uid, summary, description, location, startISO, endISO, o
 }
 
 
-const STAGES      = ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
+const getStages = (country) => {
+  const stagesByCountry = {
+    AE: ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"],
+    US: ["Lead","Qualified","Discovery","Proposal","Negotiation","Closed Won","Closed Lost"],
+    UK: ["Prospect","Engaged","Viewing","Offered","Negotiating","Completed","Lost"],
+  };
+  return stagesByCountry[country] || stagesByCountry.AE; // Default to AE
+};
+const STAGES = getStages("AE"); // Will be dynamic later
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
 const UNIT_TYPES  = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
 const SOURCES     = ["Referral","Website","Portal","Cold Call","Event","Social Media","WhatsApp","Walk-in"];
@@ -2314,6 +2322,9 @@ export default function App(){
         setNavFilter(null);
       } else if(e.state?.tab) {
         setTab(e.state.tab);
+
+  // Get stages based on current country setting
+  const getActiveStages = () => getStages(appConfig?.country || 'AE');
         setNavFilter(e.state.filter||null);
       }
     };
