@@ -42,6 +42,7 @@ import LeadDetail from "./components/sales/LeadDetail.jsx";
 import ReportsModule from "./components/ReportsModule.jsx";
 import PropPulse from "./components/PropPulse.jsx";
 import MasterAgreements from "./components/MasterAgreements.jsx";
+import CompanyConfigPage from "./components/admin/CompanyConfigPage.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
    PROPCCRM v3.0
@@ -1283,6 +1284,7 @@ const TABS=[
   {id:"master_agreements",label:"Master Agreements", icon:"📄", app:"sales", roles:["super_admin","admin"]},
   {id:"settings",label:"Settings", icon:"⚙️", app:"sales", roles:["super_admin","admin","sales_manager"]},
   {id:"lead_queue",label:"Lead Assignment", icon:"📋", app:"sales", roles:["super_admin","admin","sales_manager"]},
+  {id:"company_config", label:"Company Config", icon:"🌍", app:"sales", roles:["super_admin"]}, // ← NEW
   {id:"customers",label:"Customers", icon:"🤝", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"commission_outstanding",label:"Commission Outstanding", icon:"💰", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
   // 21 May 2026: Hide Group View for Phase 1 demo (placeholder "Planned for MVP Phase")
@@ -2731,6 +2733,7 @@ export default function App(){
           {tab==="reports" && <ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leads={leads} activities={activities} leasingData={{}} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
           {tab==="master_agreements" && <MasterAgreements currentUser={currentUser} showToast={showToast}/>}
           {tab==="settings" && <SettingsPage currentUser={currentUser} users={users} showToast={showToast}/>}
+          {tab==="company_config" && <CompanyConfigPage appConfig={appConfig} onConfigChange={setAppConfig} showToast={showToast}/>}
           {tab==="lead_queue" && <LeadQueuePage currentUser={currentUser} users={users} showToast={showToast} onNavigateToLead={(leadId)=>{const l=leads.find(x=>x.id===leadId); if(l){setSelLead(l);setView("lead");setTab("leads");}}}/>}
           {tab==="customers" && <CustomersPage leads={leads} currentUser={currentUser} showToast={showToast} onNavigateToLead={(leadId)=>{const l=leads.find(x=>x.id===leadId); if(l){setSelLead(l);setView("lead");setTab("leads");}}}/>}
           {tab==="commission_outstanding" && (hasCapability("see_brokerage_commission") ? <CommissionOutstanding currentUser={currentUser} showToast={showToast} developers={[]}/>: <div style={{padding:"20px"}}><p>⚠️ You do not have permission to view commission data.</p></div>)}

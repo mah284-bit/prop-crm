@@ -5,6 +5,7 @@ import GroupBranchesSection from "./GroupBranchesSection.jsx";
 import CommissionSettingsSection from "./CommissionSettingsSection.jsx";
 import AgentBracketsSection from "./AgentBracketsSection.jsx";
 import RoleCapabilitiesSection from "./RoleCapabilitiesSection.jsx";
+import AppConfigSection from "./AppConfigSection.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
    SettingsPage — Phase 2.1 Day 21
@@ -25,9 +26,11 @@ const SECTIONS = [
   { id: "commission", label: "Commission Defaults", icon: "💼", description: "Company-level default commission rate" },
   { id: "agent_brackets", label: "Agentwise Commission Breakup", icon: "📊", description: "Per-agent commission rate that overrides the company standard" },
   { id: "role_capabilities", label: "Role Capabilities", icon: "🛡️", description: "Configure what each role can see and do" },
+  { id: "app_config", label: "App Configuration", icon: "⚙️", description: "CRM mode, company name, and currency" },
 ];
 
 export default function SettingsPage({ 
+  appConfig, onConfigChange = () => {},
   currentUser, 
   users = [],
   showToast,
@@ -156,6 +159,13 @@ export default function SettingsPage({
         {activeSection === "role_capabilities" && (
           <RoleCapabilitiesSection
             currentUser={currentUser}
+            showToast={showToast}
+          />
+        )}
+        {activeSection === "app_config" && (
+          <AppConfigSection
+            appConfig={appConfig}
+            onConfigChange={onConfigChange}
             showToast={showToast}
           />
         )}
