@@ -20,6 +20,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
   const [selOpp,   setSelOpp]   = useState(null);
   const [saving,   setSaving]   = useState(false);
   const [actExpanded, setActExpanded] = useState(false);
+  const [peopleExpanded, setPeopleExpanded] = useState(false);
   // 23 May 2026: Restore Lead Detail activity logging (lost during April Lead/Opp split rewrite)
   // Full feature parity with Opp Detail saveLog - scheduling, duration, next-step reminders
   // Separate state from opp-side to avoid coupling risk.
@@ -626,8 +627,18 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
           </div>
         );
       })()}
-      {/* Phase 2.2B — People section (Contacts Subsystem, read-only) */}
-      <LeadPeopleSection leadId={selLead.id} companyId={currentUser?.company_id} currentUserId={currentUser?.id} countries={refCountries} />
+      {/* Phase 2.2B — People section (collapsible tile — slim lead) */}
+      <div style={{marginBottom:14,background:"#fff",border:"1px solid #E2E8F0",borderRadius:10,overflow:"hidden"}}>
+        <button onClick={()=>setPeopleExpanded(v=>!v)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#fff",border:"none",cursor:"pointer"}}>
+          <span style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{peopleExpanded?"\u25BC":"\u25B6"} People</span>
+          <span style={{fontSize:11,color:"#94A3B8"}}>{peopleExpanded?"Hide":"Show"}</span>
+        </button>
+        {peopleExpanded&&(
+          <div style={{borderTop:"1px solid #F0F2F5",padding:"4px 0"}}>
+            <LeadPeopleSection leadId={selLead.id} companyId={currentUser?.company_id} currentUserId={currentUser?.id} countries={refCountries} />
+          </div>
+        )}
+      </div>
 
       {/* 23 May 2026: Lead-stage Activities section (restored from April original design) */}
       {(()=>{
