@@ -697,7 +697,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
           </div>
         )}
       </div>
-      <div style={{flex:1,overflowY:"auto"}}>
+      <div>
         {leadOpps.length===0&&(
           <div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0",background:"#fff",border:"1px dashed #E2E8F0",borderRadius:12}}>
             <div style={{fontSize:36,marginBottom:10}}>🎯</div>
