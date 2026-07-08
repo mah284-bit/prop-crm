@@ -397,6 +397,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
 
       const phoneE164 = buildE164();
 
+      console.log("DEBUG lifecycle_stage:", form.lifecycle_stage);
       const payload = {
         company_id: companyId,
         name: form.display_name.trim(), // sales-facing display name (existing column)
@@ -738,11 +739,11 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
         <div style={styles.fieldGroup}>
           <label style={styles.label}>Lifecycle Stage</label>
           <select value={form.lifecycle_stage} onChange={(e) => setField("lifecycle_stage", e.target.value)} style={styles.input}>
-            <option value="Raw">Raw</option>
-            <option value="Qualified">Qualified</option>
-            <option value="Active Prospect">Active Prospect</option>
-            <option value="Customer">Customer</option>
-            <option value="Portfolio">Portfolio</option>
+            <option value="raw">Raw</option>
+            <option value="qualified">Qualified</option>
+            <option value="active_prospect">Active Prospect</option>
+            <option value="customer">Customer</option>
+            <option value="portfolio_customer">Portfolio</option>
           </select>
         </div>
 
