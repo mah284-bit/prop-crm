@@ -192,6 +192,15 @@ const getLocale = (country) => {
   };
   return locales[country] || locales.AE;
 };
+
+const getPaymentTerms = (country) => {
+  const terms = {
+    AE: { defaultDays: 30, earlyPaymentDiscount: 2, latePaymentFee: 1.5 },
+    US: { defaultDays: 15, earlyPaymentDiscount: 3, latePaymentFee: 2 },
+    UK: { defaultDays: 45, earlyPaymentDiscount: 1, latePaymentFee: 1 },
+  };
+  return terms[country] || terms.AE;
+};
 const STAGES = getStages("AE"); // Will be dynamic later
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
 const UNIT_TYPES  = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
@@ -2325,6 +2334,7 @@ const LEASE_STAGE_META = {
 export default function App(){
   const [showActivityModal, setShowActivityModal] = useState(null); // {lead, type}
   const[checking,  setChecking]  = useState(true);
+  const getActivePaymentTerms = () => getPaymentTerms(appConfig?.country || "AE");
   const[currentUser,setCurrentUser]=useState(null);
   const[leads,     setLeads]     = useState([]);
   const[userCapabilities,setUserCapabilities]=useState({});
