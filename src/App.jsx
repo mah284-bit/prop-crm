@@ -147,6 +147,15 @@ const getStages = (country) => {
   };
   return stagesByCountry[country] || stagesByCountry.AE; // Default to AE
 };
+
+const getCommissionRate = (country) => {
+  const rates = {
+    AE: 5,
+    US: 3,
+    UK: 4,
+  };
+  return rates[country] || 5; // Default to AE
+};
 const STAGES = getStages("AE"); // Will be dynamic later
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
 const UNIT_TYPES  = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
@@ -2315,6 +2324,7 @@ export default function App(){
     window.history.replaceState({tab:"_sentinel"}, "", window.location.pathname);
     window.history.pushState({tab: dashboard, filter: null}, "", window.location.pathname);
 
+  const getActiveCommissionRate = () => getCommissionRate(appConfig?.country || "AE");
     const handlePop = (e) => {
       if(!e.state||e.state.tab==="_sentinel") {
         // User hit back past our app — push back in
