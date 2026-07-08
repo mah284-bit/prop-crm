@@ -211,6 +211,8 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
     legal_name_en: editLead?.legal_name_en || "",
     legal_name_ar: editLead?.legal_name_ar || "",
     nationality_iso2: editLead?.nationality_iso2 || "",
+    lifecycle_stage: editLead?.lifecycle_stage || "Raw",
+    buyer_intent: editLead?.buyer_intent || "Investor",
     residence_iso2: editLead?.residence_iso2 || "",
     tax_residency_iso2: editLead?.tax_residency_iso2 || "",
     email: editLead?.email || "",
@@ -403,6 +405,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
         legal_name_en: form.legal_name_en.trim() || null,
         legal_name_ar: form.legal_name_ar.trim() || null,
         nationality_iso2: form.nationality_iso2 || null,
+        lifecycle_stage: form.lifecycle_stage || "Raw",
         residence_iso2: form.residence_iso2 || null,
         tax_residency_iso2: form.tax_residency_iso2 || null,
         email: form.email.trim() || null,
@@ -731,7 +734,19 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
         {/* Phase 2.2B — Additional persons (Edit mode only, read-only for now) */}
         {editLead && <V2AdditionalPersonsRO leadId={editLead.id} />}
 
-        {/* Notes */}
+        {/* Lifecycle Stage */}
+        <div style={styles.fieldGroup}>
+          <label style={styles.label}>Lifecycle Stage</label>
+          <select value={form.lifecycle_stage} onChange={(e) => setField("lifecycle_stage", e.target.value)} style={styles.input}>
+            <option value="Raw">Raw</option>
+            <option value="Qualified">Qualified</option>
+            <option value="Active Prospect">Active Prospect</option>
+            <option value="Customer">Customer</option>
+            <option value="Portfolio">Portfolio</option>
+          </select>
+        </div>
+
+{/* Notes */}
         <div style={styles.fieldGroup}>
           <label style={styles.label}>Notes</label>
           <textarea

@@ -19,7 +19,10 @@ export async function checkDuplicateLead({ phone, email, company_id, excludeId =
     if (excludeId) q = q.neq("id", excludeId);
     q = q.limit(1);
     const { data, error } = await q;
-    if (error) { console.warn("checkDuplicateLead(" + column + ") error:", error.message); return null; }
+    if (error) { 
+      console.error("checkDuplicateLead(" + column + ") error:", error); 
+      return null; 
+    }
     return (data && data.length) ? data[0] : null;
   };
 
