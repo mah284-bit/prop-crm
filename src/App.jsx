@@ -165,6 +165,15 @@ const getLeadRoutingRules = (country) => {
   };
   return rules[country] || rules.AE;
 };
+
+const getValidationRules = (country) => {
+  const rules = {
+    AE: { emiratesId: true, phone: true, nationality: true, passport: false, visaStatus: true },
+    US: { ssn: false, phone: true, state: true, drivers_license: false, zip: true },
+    UK: { ni: false, phone: true, postcode: true, drivers_license: false, county: true },
+  };
+  return rules[country] || rules.AE;
+};
 const STAGES = getStages("AE"); // Will be dynamic later
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
 const UNIT_TYPES  = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
@@ -2319,6 +2328,7 @@ export default function App(){
   const navigateToTab = useCallback((newTab, filter=null) => {
     const prev = tab;
     setTab(newTab);
+  const getActiveValidationRules = () => getValidationRules(appConfig?.country || "AE");
     setNavFilter(filter||null);
     // Push state so browser back button works
     window.history.pushState({tab: newTab, filter}, "", window.location.pathname);
