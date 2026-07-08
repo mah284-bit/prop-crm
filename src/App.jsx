@@ -156,6 +156,15 @@ const getCommissionRate = (country) => {
   };
   return rates[country] || 5; // Default to AE
 };
+
+const getLeadRoutingRules = (country) => {
+  const rules = {
+    AE: { sources: ['direct', 'portal', 'agent_referral', 'broker_network'], threshold: 7, action: 'flag_for_admin' },
+    US: { sources: ['mls', 'referral', 'cold_call', 'paid_ads'], threshold: 5, action: 'auto_reassign' },
+    UK: { sources: ['rightmove', 'zoopla', 'agent_referral', 'portal'], threshold: 10, action: 'flag_for_admin' },
+  };
+  return rules[country] || rules.AE;
+};
 const STAGES = getStages("AE"); // Will be dynamic later
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
 const UNIT_TYPES  = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
@@ -2317,6 +2326,7 @@ export default function App(){
 
   useEffect(() => {
     const lastApp = localStorage.getItem("propccrm_last_app")||"sales";
+  const getActiveLeadRoutingRules = () => getLeadRoutingRules(appConfig?.country || "AE");
     const dashboard = lastApp==="leasing"?"l_dashboard":"dashboard";
 
     // Push two states: a sentinel at -1 and current at 0
