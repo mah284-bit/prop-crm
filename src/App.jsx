@@ -265,8 +265,9 @@ const ROLE_META = {
 };
 
 // ─── UTILS ────────────────────────────────────────────────────
-const fmtM    = n  => n ? `AED ${(n/1e6).toFixed(2)}M` : "—";
-const fmtAED  = n  => n ? `AED ${Number(n).toLocaleString("en-AE")}` : "—";
+const getCurrencySymbol = (curr) => { const s = { AED: "AED", USD: "$", GBP: "£", EUR: "€" }; return s[curr] || "AED"; };
+const fmtM    = (n, curr="AE")  => n ? `${getCurrencySymbol(curr)} ${(n/1e6).toFixed(2)}M` : "—";
+const fmtAED  = (n, curr="AED")  => n ? `${getCurrencySymbol(curr)} ${Number(n).toLocaleString("en-AE")}` : "—";
 const fmtDate = d  => d ? new Date(d).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"}) : "—";
 const fmtDT   = d  => d ? new Date(d).toLocaleString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
 const ini     = n  => (n||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
@@ -2321,6 +2322,7 @@ export default function App(){
         setTab(dashboard);
         setNavFilter(null);
       } else if(e.state?.tab) {
+  const getActiveCurrency = () => appConfig?.currency || "AED";
         setTab(e.state.tab);
 
   // Get stages based on current country setting
