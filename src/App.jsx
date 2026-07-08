@@ -183,6 +183,15 @@ const getTaxRate = (country) => {
   };
   return rates[country] || 5;
 };
+
+const getLocale = (country) => {
+  const locales = {
+    AE: { lang: 'ar', locale: 'ar-AE', dateFormat: 'DD/MM/YYYY', decimalSep: ',' },
+    US: { lang: 'en', locale: 'en-US', dateFormat: 'MM/DD/YYYY', decimalSep: '.' },
+    UK: { lang: 'en', locale: 'en-GB', dateFormat: 'DD/MM/YYYY', decimalSep: '.' },
+  };
+  return locales[country] || locales.AE;
+};
 const STAGES = getStages("AE"); // Will be dynamic later
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
 const UNIT_TYPES  = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
@@ -2323,6 +2332,7 @@ export default function App(){
   const[activities,setActivities]= useState([]);
   const[discounts, setDiscounts] = useState([]);
   const[users,     setUsers]     = useState([]);
+  const getActiveLocale = () => getLocale(appConfig?.country || "AE");
   const[aiProjects,setAiProjects]= useState([]);
   const[aiUnits,   setAiUnits]   = useState([]);
   const[aiSalePr,  setAiSalePr]  = useState([]);
