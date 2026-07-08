@@ -174,6 +174,15 @@ const getValidationRules = (country) => {
   };
   return rules[country] || rules.AE;
 };
+
+const getTaxRate = (country) => {
+  const rates = {
+    AE: 5,     // VAT
+    US: 0,     // 0 (state varies)
+    UK: 20,    // VAT
+  };
+  return rates[country] || 5;
+};
 const STAGES = getStages("AE"); // Will be dynamic later
 const PROP_TYPES  = ["Residential","Commercial","Luxury","Off-plan","Villa","Flat","Building"];
 const UNIT_TYPES  = ["Villa","Flat","Penthouse","Townhouse","Duplex","Studio","Office","Warehouse","Plot","Commercial Unit"];
@@ -2321,6 +2330,7 @@ export default function App(){
   const[navFilter, setNavFilter]  = useState(null); // {type, value} passed from dashboard
   const[tab,       setTab]       = useState(()=>{
     const lastApp = localStorage.getItem("propccrm_last_app")||"sales";
+  const getActiveTaxRate = () => getTaxRate(appConfig?.country || "AE");
     return lastApp==="leasing"?"l_dashboard":"dashboard";
   });
 
