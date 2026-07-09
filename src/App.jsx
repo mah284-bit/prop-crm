@@ -6,6 +6,7 @@ import { supabase } from "./lib/supabase";
 import { canDo } from "./lib/permissions.js";
 import { buildIcsEvent, hoursLeft, reservationUrgency } from "./lib/utils.js";
 import useLS from "./lib/hooks/useLS.js";
+import { getCurrencySymbol, fmtM, fmtAED, fmtDate, fmtDT, ini, uid } from "./lib/format.js";
 import { normalisePhone, addWorkingDays, downloadIcsAndOpenMail } from './lib/appUtils.js';
 import { useLeadPersons, ROLE_LABELS } from './lib/useLeadPersons.js';
 import SettingsPage from "./components/settings/SettingsPage.jsx";
@@ -291,13 +292,6 @@ const ROLE_META = {
 };
 
 // ─── UTILS ────────────────────────────────────────────────────
-const getCurrencySymbol = (curr) => { const s = { AED: "AED", USD: "$", GBP: "£", EUR: "€" }; return s[curr] || "AED"; };
-const fmtM    = (n, curr="AE")  => n ? `${getCurrencySymbol(curr)} ${(n/1e6).toFixed(2)}M` : "—";
-const fmtAED  = (n, curr="AED")  => n ? `${getCurrencySymbol(curr)} ${Number(n).toLocaleString("en-AE")}` : "—";
-const fmtDate = d  => d ? new Date(d).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"}) : "—";
-const fmtDT   = d  => d ? new Date(d).toLocaleString("en-AE",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—";
-const ini     = n  => (n||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase();
-const uid     = () => Date.now()+Math.floor(Math.random()*9999);
 // Permission model is capability-driven via canDo() (lib/permissions.js, reads role_capabilities).
 // Legacy hard-coded can()/roleTeam/canWithPS retired Day 45 — all call sites migrated to canDo.
 
