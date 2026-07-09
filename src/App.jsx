@@ -14,6 +14,7 @@ import PaymentPlanTemplates from "./components/payments/PaymentPlanTemplates.jsx
 import RemindersBell from './components/RemindersBell.jsx';
 import AppHeader from './components/AppHeader.jsx';
 import ModeSwitcher from './components/ModeSwitcher.jsx';
+import CompanyPicker from "./components/CompanyPicker.jsx";
 import LeadPeopleSection from './components/LeadPeopleSection.jsx';
 import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";
 import ActivitiesList from './components/opportunities/ActivitiesList.jsx';
@@ -2675,16 +2676,7 @@ export default function App(){
                   </span>
                   {bizLabel&&<span style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",lineHeight:1.3}}>{bizLabel}</span>}
                 </div>
-                {/* Super admin company switcher */}
-                {isSA&&companies.length>1&&(
-                  <select value={storedId||""} onChange={e=>{ if(e.target.value && e.target.value!==storedId) switchCompany(e.target.value); }} style={{
-                    background:"rgba(255,255,255,.1)",border:"1px solid rgba(201,168,76,.35)",
-                    borderRadius:6,padding:"3px 6px",color:"#C9A84C",fontSize:11,fontWeight:600,
-                    cursor:"pointer",maxWidth:130
-                  }}>
-                    {companies.map(c=><option key={c.id} value={c.id} style={{background:"#0F2540",color:"#fff"}}>{c.name}</option>)}
-                  </select>
-                )}
+        <CompanyPicker isSA={isSA} companies={companies} storedId={storedId} switchCompany={switchCompany} />
               </div>
             );
           })()}
