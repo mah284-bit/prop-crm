@@ -8,6 +8,7 @@ import { buildIcsEvent, hoursLeft, reservationUrgency } from "./lib/utils.js";
 import useLS from "./lib/hooks/useLS.js";
 import { getCurrencySymbol, fmtM, fmtAED, fmtDate, fmtDT, ini, uid } from "./lib/format.js";
 import { getStages, getCommissionRate, getLeadRoutingRules, getValidationRules, getTaxRate, getLocale, getPaymentTerms } from "./lib/lookups.js";
+import { getAppConfig, saveAppConfig } from "./lib/appConfig.js";
 import { normalisePhone, addWorkingDays, downloadIcsAndOpenMail } from './lib/appUtils.js';
 import { useLeadPersons, ROLE_LABELS } from './lib/useLeadPersons.js';
 import SettingsPage from "./components/settings/SettingsPage.jsx";
@@ -141,12 +142,6 @@ const ROLES = ["super_admin","admin","sales_manager","sales_agent","leasing_mana
 
 // ─── APP CONFIG ────────────────────────────────────────────────────
 // Stored in localStorage. Set once by admin. Controls which modules are visible.
-const getAppConfig = () => {
-  try { return JSON.parse(localStorage.getItem("propccrm_config")||"null"); } catch { return null; }
-};
-const saveAppConfig = (cfg) => {
-  localStorage.setItem("propccrm_config", JSON.stringify(cfg));
-};
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
   sales:   ["dashboard","projects","builder","leads","customers","opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","settings","company_config","lead_queue","commission_outstanding","group_view","org_chart"],
