@@ -4,6 +4,7 @@ import { useDraggable } from "./lib/useDraggable";
 import { rulesFromRows } from './lib/contactValidation.js';
 import { supabase } from "./lib/supabase";
 import { canDo } from "./lib/permissions.js";
+import { buildIcsEvent, hoursLeft, reservationUrgency } from "./lib/utils.js";
 import { normalisePhone, addWorkingDays, downloadIcsAndOpenMail } from './lib/appUtils.js';
 import { useLeadPersons, ROLE_LABELS } from './lib/useLeadPersons.js';
 import SettingsPage from "./components/settings/SettingsPage.jsx";
@@ -106,40 +107,6 @@ const GlobalStyle = () => (
 // default mail client with a `mailto:` link pre-filled (subject, body, recipient).
 // The agent attaches the downloaded .ics file before sending — works with
 // Outlook, Apple Mail, Gmail in browser, no SMTP setup needed.
-function buildIcsEvent({uid, summary, description, location, startISO, endISO, organizerName, organizerEmail, attendeeName, attendeeEmail}) {
-  const fmtIcsDate = (iso) => {
-    const d = new Date(iso);
-    const pad = n => String(n).padStart(2,"0");
-    return `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
-  };
-  const escape = (s) => (s||"").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
-  const lines = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "PRODID:-//PropCRM//Site Visit//EN",
-    "CALSCALE:GREGORIAN",
-    "METHOD:REQUEST",
-    "BEGIN:VEVENT",
-    `UID:${uid}`,
-    `DTSTAMP:${fmtIcsDate(new Date().toISOString())}`,
-    `DTSTART:${fmtIcsDate(startISO)}`,
-    `DTEND:${fmtIcsDate(endISO)}`,
-    `SUMMARY:${escape(summary)}`,
-    description ? `DESCRIPTION:${escape(description)}` : null,
-    location ? `LOCATION:${escape(location)}` : null,
-    organizerEmail ? `ORGANIZER;CN=${escape(organizerName||"")}:mailto:${organizerEmail}` : null,
-    attendeeEmail ? `ATTENDEE;CN=${escape(attendeeName||"")};RSVP=TRUE:mailto:${attendeeEmail}` : null,
-    "STATUS:CONFIRMED",
-    "BEGIN:VALARM",
-    "TRIGGER:-PT60M",
-    "ACTION:DISPLAY",
-    `DESCRIPTION:${escape("Reminder: "+summary)}`,
-    "END:VALARM",
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ].filter(Boolean);
-  return lines.join("\r\n");
-}
 
 
 const getStages = (country) => {
@@ -1443,20 +1410,6 @@ const SUBTITLES={
 // ══════════════════════════════════════════════════════════════════
 
 import { MAX_RESERVATION_FEE, RES_COLORS } from "./lib/refData.js";
-
-function hoursLeft(expiresAt, extendedUntil) {
-  const exp = extendedUntil ? new Date(extendedUntil) : new Date(expiresAt);
-  return Math.max(0, Math.round((exp - new Date()) / 36e5));
-}
-
-function reservationUrgency(res) {
-  const hrs = hoursLeft(res.expires_at, res.extended_until);
-  if (res.status !== "Active") return "inactive";
-  if (hrs <= 0)   return "expired";
-  if (hrs <= 12)  return "critical";
-  if (hrs <= 24)  return "warning";
-  return "ok";
-}
 
 
 // ── Small badge shown on inventory row ─────────────────────────
