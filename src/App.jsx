@@ -18,6 +18,7 @@ import RemindersBell from './components/RemindersBell.jsx';
 import AppHeader from './components/AppHeader.jsx';
 import ModeSwitcher from './components/ModeSwitcher.jsx';
 import CompanyPicker from "./components/CompanyPicker.jsx";
+import Av from "./components/Av.jsx";
 import ReservationBadge from "./components/ReservationBadge.jsx";
 import LeadPeopleSection from './components/LeadPeopleSection.jsx';
 import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";
@@ -342,9 +343,6 @@ const checkGate = (targetStage, lead) => {
 };
 
 // ─── ATOMS ────────────────────────────────────────────────────
-const Av = ({name,size=36,bg="#0F2540",tc="#C9A84C"}) => (
-  <div style={{width:size,height:size,borderRadius:"50%",background:bg,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:size*0.32,fontWeight:600,color:tc,letterSpacing:"0.5px"}}>{ini(name)}</div>
-);
 const StageBadge = ({stage}) => {
   const m=STAGE_META[stage]||{c:"#718096",bg:"#F7F9FC"};
   return <span style={{display:"inline-flex",alignItems:"center",gap:4,background:m.bg,color:m.c,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,whiteSpace:"nowrap"}}><span style={{width:5,height:5,borderRadius:"50%",background:m.c,display:"inline-block"}}/>{stage}</span>;
