@@ -12,6 +12,7 @@ import CustomersPage from "./components/customers/CustomersPage.jsx";
 import AIAssistant from "./components/ai/AIAssistant.jsx";
 import PaymentPlanTemplates from "./components/payments/PaymentPlanTemplates.jsx";
 import RemindersBell from './components/RemindersBell.jsx';
+import AppHeader from './components/AppHeader.jsx';
 import LeadPeopleSection from './components/LeadPeopleSection.jsx';
 import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";
 import ActivitiesList from './components/opportunities/ActivitiesList.jsx';
