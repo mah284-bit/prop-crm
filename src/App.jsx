@@ -5,6 +5,7 @@ import { rulesFromRows } from './lib/contactValidation.js';
 import { supabase } from "./lib/supabase";
 import { canDo } from "./lib/permissions.js";
 import { buildIcsEvent, hoursLeft, reservationUrgency } from "./lib/utils.js";
+import useLS from "./lib/hooks/useLS.js";
 import { normalisePhone, addWorkingDays, downloadIcsAndOpenMail } from './lib/appUtils.js';
 import { useLeadPersons, ROLE_LABELS } from './lib/useLeadPersons.js';
 import SettingsPage from "./components/settings/SettingsPage.jsx";
@@ -326,11 +327,6 @@ function PermSetSelector({ companyId, value, onChange }) {
   );
 }
 
-function useLS(key,seed){
-  const[v,setV]=useState(()=>{ try{const s=localStorage.getItem(key);return s?JSON.parse(s):seed;}catch{return seed;}});
-  const set=x=>{setV(x);try{localStorage.setItem(key,JSON.stringify(x));}catch{}};
-  return[v,set];
-}
 
 // Check stage gate — returns array of missing fields
 const checkGate = (targetStage, lead) => {
