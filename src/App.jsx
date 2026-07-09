@@ -19,6 +19,7 @@ import AppHeader from './components/AppHeader.jsx';
 import ModeSwitcher from './components/ModeSwitcher.jsx';
 import CompanyPicker from "./components/CompanyPicker.jsx";
 import Av from "./components/Av.jsx";
+import StageBadge from "./components/StageBadge.jsx";
 import ReservationBadge from "./components/ReservationBadge.jsx";
 import LeadPeopleSection from './components/LeadPeopleSection.jsx';
 import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";
@@ -343,10 +344,6 @@ const checkGate = (targetStage, lead) => {
 };
 
 // ─── ATOMS ────────────────────────────────────────────────────
-const StageBadge = ({stage}) => {
-  const m=STAGE_META[stage]||{c:"#718096",bg:"#F7F9FC"};
-  return <span style={{display:"inline-flex",alignItems:"center",gap:4,background:m.bg,color:m.c,fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,whiteSpace:"nowrap"}}><span style={{width:5,height:5,borderRadius:"50%",background:m.c,display:"inline-block"}}/>{stage}</span>;
-};
 const TypeBadge = ({type}) => {
   const m=TYPE_META[type]||{c:"#718096",bg:"#F7F9FC"};
   return <span style={{fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:m.bg,color:m.c}}>{type}</span>;
