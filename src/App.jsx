@@ -16,6 +16,7 @@ import RemindersBell from './components/RemindersBell.jsx';
 import AppHeader from './components/AppHeader.jsx';
 import ModeSwitcher from './components/ModeSwitcher.jsx';
 import CompanyPicker from "./components/CompanyPicker.jsx";
+import ReservationBadge from "./components/ReservationBadge.jsx";
 import LeadPeopleSection from './components/LeadPeopleSection.jsx';
 import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";
 import ActivitiesList from './components/opportunities/ActivitiesList.jsx';
@@ -1413,21 +1414,6 @@ import { MAX_RESERVATION_FEE, RES_COLORS } from "./lib/refData.js";
 
 
 // ── Small badge shown on inventory row ─────────────────────────
-function ReservationBadge({ reservation }) {
-  if (!reservation) return null;
-  const urg = reservationUrgency(reservation);
-  const col = RES_COLORS[urg];
-  const hrs = hoursLeft(reservation.expires_at, reservation.extended_until);
-  if (reservation.status === "Confirmed") return (
-    <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A",border:"1px solid #A8D5BE"}}>✓ Confirmed</span>
-  );
-  if (reservation.status !== "Active" && reservation.status !== "Extended") return null;
-  return (
-    <span style={{fontSize:9,fontWeight:700,padding:"2px 6px",borderRadius:20,background:col.bg,color:col.c,border:`1px solid ${col.border}`}}>
-      {urg === "expired" ? "⚠ Expired" : `🔒 ${hrs}h left`}
-    </span>
-  );
-}
 
 // ── Create / Manage Reservation Modal ──────────────────────────
 
