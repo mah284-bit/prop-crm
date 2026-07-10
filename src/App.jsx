@@ -261,25 +261,6 @@ function PermSetSelector({ companyId, value, onChange }) {
 
 
 // Check stage gate — returns array of missing fields
-const checkGate = (targetStage, lead) => {
-  const gate = STAGE_GATES[targetStage];
-  if (!gate) return [];
-  const missing = [];
-  gate.required.forEach(f => {
-    if (f === "meeting_scheduled" && !lead.meeting_scheduled) missing.push("A meeting must be scheduled before Site Visit");
-    else if (f === "unit_id" && !lead.unit_id) missing.push("Link a unit to this lead");
-    else if (f === "budget" && !lead.budget) missing.push("Confirm client budget");
-    else if (f === "proposal_notes" && !lead.proposal_notes?.trim()) missing.push("Add proposal notes");
-    else if (f === "final_price" && !lead.final_price) missing.push("Enter final agreed price");
-    else if (f === "payment_plan" && !lead.payment_plan?.trim()) missing.push("Specify payment plan");
-    else if (f === "phone" && !lead.phone?.trim()) missing.push("Phone number required");
-    else if (f === "email" && !lead.email?.trim()) missing.push("Email address required");
-    else if (f === "notes" && !lead.notes?.trim()) missing.push("Add reason for loss in notes");
-  });
-  return missing;
-};
-
-// ─── ATOMS ────────────────────────────────────────────────────
 const RoleBadge = ({role}) => {
   const m=ROLE_META[role]||{label:role,color:"#718096",bg:"#F7F9FC"};
   return <span style={{fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:m.bg,color:m.color,textTransform:"capitalize"}}>{m.label}</span>;
