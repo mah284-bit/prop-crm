@@ -9,6 +9,10 @@ export default function CompaniesModule({ currentUser, showToast, onSwitchCompan
   const [showAdd,    setShowAdd]    = useState(false);
   const [editComp,   setEditComp]   = useState(null);
   const [saving,     setSaving]     = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterBiz, setFilterBiz] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterPlan, setFilterPlan] = useState("all");
 
   const blank = {
     name:"", business_type:"both", company_category:"Brokerage",
@@ -87,6 +91,13 @@ export default function CompaniesModule({ currentUser, showToast, onSwitchCompan
   const BIZ_META  = { sales:{c:"#1A5FA8",bg:"#E6EFF9",icon:"🏷"}, leasing:{c:"#5B3FAA",bg:"#EEE8F9",icon:"🔑"}, both:{c:"#1A7F5A",bg:"#E6F4EE",icon:"◆"} };
 
   if (loading) return <Spinner msg="Loading companies…"/>;
+  const filtered = companies.filter(c => {
+    const matchSearch = c.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchBiz = filterBiz === "all" || c.business_type === filterBiz;
+    const matchStatus = filterStatus === "all" || (filterStatus === "active" ? c.is_active : !c.is_active);
+    const matchPlan = filterPlan === "all" || c.plan === filterPlan;
+    return matchSearch && matchBiz && matchStatus && matchPlan;
+  });
 
   return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
@@ -101,9 +112,17 @@ export default function CompaniesModule({ currentUser, showToast, onSwitchCompan
         </button>
       </div>
 
+      <div style={{display:"flex",gap:8,marginBottom:16,alignItems:"center",fontSize:13,flexWrap:"nowrap",overflowX:"auto"}}>
+        <input type="text" placeholder="🔍 Search…" value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} style={{flex:1,minWidth:120,padding:"8px 12px",borderRadius:6,border:"1px solid #D1D9E6"}} />
+        <select value={filterBiz} onChange={(e)=>setFilterBiz(e.target.value)} style={{padding:"8px 12px",borderRadius:6,border:"1px solid #D1D9E6",cursor:"pointer",minWidth:90}}><option value="all">All Types</option><option value="sales">Sales</option><option value="leasing">Leasing</option><option value="both">Both</option></select>
+        <select value={filterStatus} onChange={(e)=>setFilterStatus(e.target.value)} style={{padding:"8px 12px",borderRadius:6,border:"1px solid #D1D9E6",cursor:"pointer",minWidth:80}}><option value="all">All</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
+        <select value={filterPlan} onChange={(e)=>setFilterPlan(e.target.value)} style={{padding:"8px 12px",borderRadius:6,border:"1px solid #D1D9E6",cursor:"pointer",minWidth:90}}><option value="all">All</option><option value="starter">Starter</option><option value="professional">Pro</option><option value="enterprise">Ent</option></select>
+        <div style={{fontSize:12,color:"#718096",whiteSpace:"nowrap"}}>({filtered.length})</div>
+      </div>
+
       {/* Company cards */}
       <div style={{flex:1,overflowY:"auto",display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14,alignContent:"start"}}>
-        {companies.map(c => {
+        {filtered.map(c => {
           const bm = BIZ_META[c.business_type] || BIZ_META.both;
           const pm = PLAN_META[c.plan] || PLAN_META.professional;
           const isActive = activeCompanyId === c.id;
