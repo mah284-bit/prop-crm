@@ -213,6 +213,18 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
       .order("created_at",{ascending:false})
       .then(({data})=>setLeadActivities(data||[]));
   },[selLeadId]);
+  // Phase 2.0 Day 1 subtask 1 — per-lead realtime for activities
+  useEffect(()=>{
+    if(!selLeadId)return;
+    const ch=supabase.channel("lead-activities-"+selLeadId)
+      .on("postgres_changes",{event:"*",schema:"public",table:"activities",filter:`lead_id=eq.${selLeadId}`},p=>{
+        if(p.eventType==="INSERT")setActivities(x=> x.some(r=>r.id===p.new.id) ? x : [p.new,...x]);
+        else if(p.eventType==="UPDATE")setActivities(x=> x.map(a=>a.id===p.new.id?p.new:a));
+        else if(p.eventType==="DELETE")setActivities(x=> x.filter(a=>a.id!==p.old.id));
+      })
+      .subscribe();
+    return()=>supabase.removeChannel(ch);
+  },[selLeadId]);
 
   if(!currentUser) return null;
   const selLead = leads.find(l=>l&&l.id===selLeadId);

@@ -422,6 +422,18 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
       .subscribe();
     return()=>supabase.removeChannel(ch);
   },[opp?.id]);
+  // Phase 2.0 Day 1 subtask 1 — realtime for activities
+  useEffect(()=>{
+    if(!opp?.id)return;
+    const ch=supabase.channel("opp-activities-"+opp.id)
+      .on("postgres_changes",{event:"*",schema:"public",table:"activities",filter:`opportunity_id=eq.${opp.id}`},p=>{
+        if(p.eventType==="INSERT")setActivities(x=> x.some(r=>r.id===p.new.id) ? x : [p.new,...x]);
+        else if(p.eventType==="UPDATE")setActivities(x=> x.map(r=>r.id===p.new.id?p.new:r));
+        else if(p.eventType==="DELETE")setActivities(x=> x.filter(r=>r.id!==p.old.id));
+      })
+      .subscribe();
+    return()=>supabase.removeChannel(ch);
+  },[opp?.id]);
 
   const GATED_STAGES = ["Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
 
