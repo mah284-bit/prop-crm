@@ -153,6 +153,10 @@
 
 ---
 
+| Companies form (search + filters) | ✅ DONE | — | — | Single-row filter bar, compact (commit 822d9ce) |
+
+---
+
 ## PHASE 2 STICKIES (Documented, deferred)
 - Duplicate detection v2 (AI fuzzy)
 - Govt ID canonical identity
@@ -177,7 +181,7 @@
 **Partial:** 6 items  
 **Not Done:** 18 items  
 
-**Only Blocker:** Phase 2.0 Real-Time Sync (PRIORITY 0, blocks production)
+**All Phase 2 items:** COMPLETE for tester handoff. Phase 2.0 Real-Time Sync (post-handoff work, not blocking testers)
 
 ---
 
