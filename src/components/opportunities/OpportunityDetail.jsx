@@ -25,6 +25,7 @@ import UnitDetailPanel from "../property/UnitDetailPanel.jsx";
 import ProposalBuilderDialog from "./ProposalBuilderDialog.jsx";
 import { analyzeUnitSaturation } from "../../lib/unitSaturationAnalyzer.js";
 import UnitSaturationWarning from "./UnitSaturationWarning.jsx";
+import UnitSaturationInline from "./UnitSaturationInline.jsx";
 
 // Stage 6 -- single source of commission resolution (used by BOTH the live display and the
 // invoice freeze at SPA-Signed, so frozen numbers exactly match what the SM saw at close).
@@ -3557,17 +3558,16 @@ You will become the assigned agent.`);
                     projects={projects || []}
                     salePricing={salePricing || []}
 onSelect={(unitId) => {
-                      const sat = analyzeUnitSaturation(unitId, opps, currentUser.id);
-                      if (sat && sat.totalOpps >= 5) {
-                        setSaturationWarning({unitId, saturation: sat});
-                      } else {
-                        setEditOppForm(f => ({...f, unit_id: unitId}));
-                      }
+                      setEditOppForm(f => ({...f, unit_id: unitId}));
                     }}
                     placeholder="🔍 Search to change unit — e.g. AGR, Sobha, 2BR, sea view…"
                     emptyMessage="No units available"
                     autoFocus={false}
                     maxHeight={160}
+                  {editOppForm.unit_id && (() => {
+                    const sat = analyzeUnitSaturation(editOppForm.unit_id, opps, currentUser.id);
+                    return <UnitSaturationInline saturation={sat} />;
+                  })()}
                   />
                 </div>
                 <div>
