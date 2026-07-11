@@ -3564,11 +3564,11 @@ onSelect={(unitId) => {
                     emptyMessage="No units available"
                     autoFocus={false}
                     maxHeight={160}
+                  />
                   {editOppForm.unit_id && (() => {
                     const sat = analyzeUnitSaturation(editOppForm.unit_id, opps, currentUser.id);
                     return <UnitSaturationInline saturation={sat} />;
                   })()}
-                  />
                 </div>
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Commission %</label>
