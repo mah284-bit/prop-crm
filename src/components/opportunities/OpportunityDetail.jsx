@@ -23,6 +23,8 @@ import UnitSearchPicker from "../UnitSearchPicker.jsx";
 import NegotiationRoundDialog from "../dialogs/NegotiationRoundDialog.jsx";
 import UnitDetailPanel from "../property/UnitDetailPanel.jsx";
 import ProposalBuilderDialog from "./ProposalBuilderDialog.jsx";
+import { analyzeUnitSaturation } from "../../lib/unitSaturationAnalyzer.js";
+import UnitSaturationWarning from "./UnitSaturationWarning.jsx";
 
 // Stage 6 -- single source of commission resolution (used by BOTH the live display and the
 // invoice freeze at SPA-Signed, so frozen numbers exactly match what the SM saw at close).
@@ -119,6 +121,7 @@ function OpportunityDetail({ opp, lead, units, projects, salePricing, users, cur
   // Includes: title, budget, unit_id, commission_pct, assigned_to, property_category, notes
   const [showEditOpp, setShowEditOpp] = useState(false);
   const [editOppForm, setEditOppForm] = useState({});
+  const [saturationWarning, setSaturationWarning] = useState(null);
   const [showStageGate, setShowStageGate] = useState(null); // stage name being gated
   // 19 May 2026 Dashboard Redesign Phase 2a: dashboardTab controls which panel shows
   // null = welcome state, otherwise: 'proposals'|'coach'|'next-steps'|'financials'|'negotiations'|'upfront'|'plan'
@@ -1155,6 +1158,19 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     ? Math.max(0, Math.floor((new Date() - new Date(opp.stage_updated_at)) / 86400000))
     : null;
 
+  {saturationWarning && (
+    <UnitSaturationWarning
+      saturation={saturationWarning.saturation}
+      onContinue={() => {
+        setEditOppForm(f => ({...f, unit_id: saturationWarning.unitId}));
+        setSaturationWarning(null);
+      }}
+      onPickDifferent={() => {
+        setEditOppForm(f => ({...f, unit_id: ""}));
+        setSaturationWarning(null);
+      }}
+    />
+  )}
   return (
     <div className="fade-in" style={{display:"flex",flexDirection:"column",height:"100%"}}>
       {/* Compact header — name + stage + meta in one row */}
@@ -3540,7 +3556,14 @@ You will become the assigned agent.`);
                     units={units || []}
                     projects={projects || []}
                     salePricing={salePricing || []}
-                    onSelect={(unitId) => setEditOppForm(f => ({...f, unit_id: unitId}))}
+onSelect={(unitId) => {
+                      const sat = analyzeUnitSaturation(unitId, opps, currentUser.id);
+                      if (sat && sat.totalOpps >= 5) {
+                        setSaturationWarning({unitId, saturation: sat});
+                      } else {
+                        setEditOppForm(f => ({...f, unit_id: unitId}));
+                      }
+                    }}
                     placeholder="🔍 Search to change unit — e.g. AGR, Sobha, 2BR, sea view…"
                     emptyMessage="No units available"
                     autoFocus={false}
