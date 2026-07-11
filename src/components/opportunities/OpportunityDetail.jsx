@@ -955,6 +955,10 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     }).eq("id",opp.id);
     if(error){showToast(error.message,"error");return;}
     onUpdated({...opp,stage:toStage,status:newStatus,...extra});
+    // Phase 2.4: Auto-transition lead lifecycle to "customer" on Closed Won
+    if (toStage === "Closed Won" && lead && lead.lifecycle_stage !== "customer") {
+      supabase.from("leads").update({lifecycle_stage: "customer"}).eq("id", lead.id).catch(e => console.warn("Lifecycle update failed:", e));
+    }
 
     // Stage 5 — Sync final_price onto opportunity record when SPA is signed
     // (so subsequent stage validations like Closed Won find it)
