@@ -1473,6 +1473,7 @@ You will become the assigned agent.`);
                   ["negotiations", "🤝 Negotiations", null],
                   ["upfront", "📊 Upfront", null],
                   ["plan", "🏗️ Payment Plan", null],
+                  ["log-activity", "📋 Log Activity", activities.length],
                 ].map(([tabId, label, count]) => {
                   const isActive = dashboardTab === tabId;
                   // 20 May 2026: AI visual emphasis for Coach tab (gradient + glow)
@@ -2534,6 +2535,20 @@ You will become the assigned agent.`);
                       </div>
                     );
                   })()
+                ) : dashboardTab === "log-activity" ? (
+                  /* Log Activity Tab */
+                  <div style={{padding:"4px 2px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,paddingBottom:10,borderBottom:"2px solid #F1F5F9"}}>
+                      <div style={{fontSize:16,fontWeight:700,color:"#0F2540",display:"flex",alignItems:"center",gap:8}}>
+                        📋 Log Activity
+                        <span style={{fontSize:10,padding:"2px 7px",borderRadius:8,background:"#DBEAFE",color:"#1D4ED8",fontWeight:700}}>{activities.length} total</span>
+                      </div>
+                    </div>
+                    <div style={{marginBottom:14}}>
+                      <button onClick={()=>setShowLog(true)} style={{padding:"8px 14px",borderRadius:7,border:"1.5px solid #0F2540",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ Log Activity</button>
+                    </div>
+                    {activities.length===0?<div style={{textAlign:"center",padding:"40px 20px",color:"#A0AEC0",fontSize:12,border:"1px dashed #E2E8F0",borderRadius:10}}>No activity yet — log a call, meeting, or note. Stage advancements will also appear here.</div>:<ActivitiesList activities={activities} setActivities={setActivities} opp={opp} canEdit={canEdit} showToast={showToast} currentStage={opp.stage} units={units} currentUser={currentUser} onCaptureVisitOutcome={(act)=>setVisitOutcomeFor(act)}/>}
+                  </div>
                 ) : dashboardTab === "coach" ? (
                   /* 20 May 2026 Phase 2h-wire: COACH PANEL - full AI Coach UI */
                   (() => {
