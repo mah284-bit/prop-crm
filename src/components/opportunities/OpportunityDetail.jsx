@@ -54,7 +54,7 @@ function resolveCommission(opp, agent, companyStd, commissionAmt) {
   return { _splitMode, _splitVal, _splitTier, _belowStandard, agentBase, _bonusMode, _bonusVal, appreciationBonus, _bonusConfigured, agentCommission, companyNet, _splitConfigured };
 }
 
-function OpportunityDetail({ opp, lead, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated, onActivityLog }) {
+function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, users, currentUser, showToast, onBack, onUpdated, onActivityLog }) {
   // 19 May 2026: Internal approval features (broker -> manager -> admin) hidden
   // Hide until full workflow is implemented end-to-end.
   // To re-enable: change to true. Code is preserved.

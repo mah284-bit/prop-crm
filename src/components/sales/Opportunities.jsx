@@ -151,6 +151,7 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
         key={selOpp.id}
         opp={selOpp}
         lead={lead}
+        opps={opps}
         units={units}
         projects={projects}
         salePricing={salePricing}
