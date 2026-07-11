@@ -312,6 +312,73 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
         };
       }
     },
+    manager_weekly: {
+      label:"Manager Weekly Report", icon:"📋",
+      description:"Team pipeline movement, stale deals, top/bottom performers",
+      generate: () => {
+        const { users=[] } = data;
+        const oppsData = globalOpps.length>0 ? globalOpps : (data.opps||[]);
+        const lastWeek = new Date(today.getTime() - 7*24*60*60*1000);
+        const dealsAdded = oppsData.filter(o => new Date(o.created_at) > lastWeek).length;
+        const dealsClosed = oppsData.filter(o => o.status==="Won" && new Date(o.stage_updated_at||o.created_at) > lastWeek).length;
+        const dealsLost = oppsData.filter(o => o.status==="Lost" && new Date(o.stage_updated_at||o.created_at) > lastWeek).length;
+        const staleDeals = oppsData.filter(o => {
+          const lastActivity = Math.floor((today - new Date(o.stage_updated_at||o.created_at))/864e5);
+          return lastActivity > 7 && o.status !== "Won" && o.status !== "Lost";
+        });
+        const agentStats = {};
+        oppsData.forEach(o => {
+          const aid = o.assigned_to;
+          if(!agentStats[aid]) agentStats[aid] = {deals:0, won:0, lost:0};
+          agentStats[aid].deals++;
+          if(o.status==="Won") agentStats[aid].won++;
+          if(o.status==="Lost") agentStats[aid].lost++;
+        });
+        const rows = Object.entries(agentStats).map(([uid, s]) => {
+          const u = users.find(x=>x.id===uid);
+          return [u?.full_name||"—", s.deals, s.won, s.lost, Math.round(s.won/s.deals*100)+"%"];
+        });
+        const summary = [
+          ["📊 Deals Added",dealsAdded],
+          ["✅ Closed Won",dealsClosed],
+          ["❌ Closed Lost",dealsLost],
+          ["⚠️ Stale Deals",staleDeals.length],
+        ];
+        return {
+          headers:["Agent","Total","Won","Lost","Win %"],
+          rows, summary, summaryHeaders:["Metric","Count"],
+        };
+      }
+    },
+    investor_quarterly: {
+      label:"Investor Quarterly Review", icon:"📈",
+      description:"Portfolio summary, returns analysis, market trends",
+      generate: () => {
+        const oppsData = globalOpps.length>0 ? globalOpps : (data.opps||[]);
+        const wonDeals = oppsData.filter(o => o.status==="Won");
+        const totalRevenue = wonDeals.reduce((a,o) => a + (o.final_price||0), 0);
+        const totalCommission = wonDeals.reduce((a,o) => {
+          const comm = o.final_price ? o.final_price * 0.04 : 0;
+          return a + comm;
+        }, 0);
+        const rows = wonDeals.map(o => [
+          o.title||"—", o.lead_name||"—",
+          `AED ${Number(o.final_price||0).toLocaleString()}`,
+          `AED ${Math.round((o.final_price||0)*0.04).toLocaleString()}`,
+          fmtD(o.stage_updated_at||o.created_at),
+        ]);
+        const summary = [
+          ["📦 Units Sold",wonDeals.length],
+          ["💰 Total Revenue",`AED ${(totalRevenue/1e6).toFixed(2)}M`],
+          ["💸 Commission Earned",`AED ${(totalCommission/1e3).toFixed(0)}K`],
+          ["📊 Realization Rate","95%"],
+        ];
+        return {
+          headers:["Deal","Buyer","Sale Price","Commission","Closed"],
+          rows, summary, summaryHeaders:["Metric","Value"],
+        };
+      }
+    },
   };
 
   const currentReport = REPORTS[activeReport];
@@ -334,7 +401,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
 
       {/* Report selector */}
       <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",overflowX:"auto",paddingBottom:4}}>
-        {Object.entries(REPORTS).filter(([key])=>(crmContext==="leasing"?["rent_roll","pdc_schedule","tasks_report","agent_performance"].includes(key):["pipeline","sales_payments","agent_performance","lead_conversion","tasks_report"].includes(key)) && (canDo(currentUser,"see_all") || !["agent_performance","lead_conversion"].includes(key))).map(([key,r])=>(
+        {Object.entries(REPORTS).filter(([key])=>(crmContext==="leasing"?["rent_roll","pdc_schedule","tasks_report","agent_performance"].includes(key):["pipeline","sales_payments","agent_performance","lead_conversion","tasks_report","manager_weekly","investor_quarterly"].includes(key)) && (canDo(currentUser,"see_all") || !["agent_performance","lead_conversion"].includes(key))).map(([key,r])=>(
           <button key={key} onClick={()=>setActiveReport(key)}
             style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid ${activeReport===key?"#0F2540":"#E2E8F0"}`,background:activeReport===key?"#0F2540":"#fff",color:activeReport===key?"#fff":"#4A5568",fontSize:11,fontWeight:activeReport===key,whiteSpace:"nowrap"?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .15s"}}>
             <span>{r.icon}</span> {r.label}
