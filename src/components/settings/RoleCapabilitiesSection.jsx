@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { CustomRoleCreator } from "./CustomRoleCreator.jsx";
 import { supabase } from "../../lib/supabase.js";
 
 /*
@@ -109,6 +110,10 @@ export default function RoleCapabilitiesSection({ currentUser, showToast }) {
   if (loading) return <div style={{ padding: 24, color: "#6B7785" }}>Loading role capabilities…</div>;
 
   return (
+    <div style={{display:"flex", flexDirection:"column", gap:16}}>
+      <CustomRoleCreator companyId={currentUser.company_id} onRoleCreated={(roleId)=>{setMatrix(m=>({...m,[roleId]:{}}))} } showToast={showToast}/>
+      
+      <div>
     <div style={{ background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 2px 8px rgba(15,37,64,0.06)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
         <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 18, fontWeight: 700, color: "#0F2540" }}>
@@ -173,6 +178,7 @@ export default function RoleCapabilitiesSection({ currentUser, showToast }) {
             ))}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   );
