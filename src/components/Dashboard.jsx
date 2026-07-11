@@ -16,6 +16,7 @@ import { G3 } from "../modules/shared/G3.jsx";
 import { STAGES, OPP_STAGES, ROLE_META, PROP_TYPES, UNIT_TYPES, SOURCES, ACT_TYPES, ROLES, VIEWS, MEET_TYPES, FOLLOW_TYPES, CAN_DELETE_LEADS, DISC_TYPES, STAGE_META, TYPE_META, ACT_META, OPP_STAGE_META } from "../modules/constants.js";
 import { fmtM, fmtAED, fmtDate, fmtDT, uid, getStrength, ini } from "../modules/utils.js";
 import { canDo } from "../lib/permissions.js";
+import { renderDashboardForRole } from "../lib/roleBasedDashboard.js";
 
 export default function Dashboard({leads,opps=[],properties,activities,currentUser,meetings=[],followups=[],crmContext="sales",units=[],salePricing=[],leasePricing=[],leases=[],users=[],onNavigate=()=>{}}){
   const visible      = canDo(currentUser,"see_all")?leads:leads.filter(l=>l.assigned_to===currentUser.id);
@@ -120,7 +121,11 @@ export default function Dashboard({leads,opps=[],properties,activities,currentUs
             const val=visibleOpps.filter(o=>o.stage===s&&o.status==="Active").reduce((a,o)=>a+(o.budget||0),0);
             const m=OPP_STAGE_META[s]||{c:"#718096",bg:"#F7F9FC"};
             const maxCnt=Math.max(...OPP_STAGES.map(st=>visibleOpps.filter(o=>o.stage===st).length),1);
-            return (
+  const dashboardConfig = useMemo(() => {
+    return renderDashboardForRole(currentUser.role, { leads, opps, activities, users, currentUser, units });
+  }, [currentUser.role, leads, opps, activities, users, currentUser, units]);
+
+  return (
               <div key={s} onClick={()=>onNavigate("opportunities")} style={{marginBottom:9,cursor:"pointer"}}
                 onMouseOver={e=>e.currentTarget.style.opacity=".85"} onMouseOut={e=>e.currentTarget.style.opacity="1"}>
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
