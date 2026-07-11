@@ -15,6 +15,8 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
   const [search,   setSearch]   = useState("");
   const [fStage,   setFStage]   = useState("All");
   const [fType,    setFType]    = useState("All");
+  const [fLifecycle, setFLifecycle] = useState("All");
+  const [fBuyerIntent, setFBuyerIntent] = useState("All");
   const [view,     setView]     = useState("list");   // list | lead | opportunity
   const [selLeadId,setSelLeadId]= useState(null);
   const [selOpp,   setSelOpp]   = useState(null);
@@ -248,7 +250,9 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
     const stage = leadBestStage(l.id);
     return(!q||l.name?.toLowerCase().includes(q)||l.email?.toLowerCase().includes(q)||l.phone?.includes(q)||l.source?.toLowerCase().includes(q))
       &&(fType==="All"||l.property_type===fType)
-      &&(fStage==="All"||stage===fStage);
+      &&(fStage==="All"||stage===fStage)
+      &&(fLifecycle==="All"||l.lifecycle_stage===fLifecycle)
+      &&(fBuyerIntent==="All"||l.buyer_intent===fBuyerIntent);
   });
 
 
@@ -314,6 +318,22 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
         <select value={fStage} onChange={e=>setFStage(e.target.value)} style={{width:"auto"}}>
           <option value="All">All Stages</option>
           {["Walk-In","Referral","Online","Social Media","Cold Call","Exhibition","Portal","Other"].map(s=><option key={s}>{s}</option>)}
+        </select>
+        <select value={fLifecycle} onChange={e=>setFLifecycle(e.target.value)} style={{width:"auto"}}>
+          <option value="All">Lifecycle</option>
+          <option value="raw">Raw</option>
+          <option value="qualified">Qualified</option>
+          <option value="active_prospect">Active Prospect</option>
+          <option value="customer">Customer</option>
+          <option value="portfolio_customer">Portfolio</option>
+        </select>
+        <select value={fBuyerIntent} onChange={e=>setFBuyerIntent(e.target.value)} style={{width:"auto"}}>
+          <option value="All">All Buyer Types</option>
+          <option value="investor">Investor</option>
+          <option value="owner_occupier">Owner-Occupier</option>
+          <option value="hybrid">Hybrid</option>
+          <option value="corporate">Corporate</option>
+          <option value="reseller">Reseller</option>
         </select>
         <span style={{fontSize:12,color:"#A0AEC0",whiteSpace:"nowrap"}}>{filtered.length}/{visible.length}</span>
         {canDo(currentUser,"create_lead")&&(
