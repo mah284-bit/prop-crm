@@ -52,7 +52,14 @@ export default function OpportunityForm({
   };
 
   const selectedUnit = units.find(u => u.id === form.unit_id);
-  const saturation = form.unit_id ? analyzeUnitSaturation(form.unit_id, opps, currentUser?.id) : null;
+  const [saturation, setSaturation] = useState(null);
+  useEffect(() => {
+    if (!form.unit_id) return;
+    (async () => {
+      const sat = await analyzeUnitSaturation(form.unit_id, currentUser?.id, supabase);
+      setSaturation(sat);
+    })();
+  }, [form.unit_id, currentUser?.id]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
