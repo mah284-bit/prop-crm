@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import UnitSearchPicker from "../UnitSearchPicker.jsx";
 import UnitSaturationInline from "./UnitSaturationInline.jsx";
 import { analyzeUnitSaturation } from "../../lib/unitSaturationAnalyzer.js";
@@ -23,6 +23,7 @@ export default function OpportunityForm({
   users = [],
   opps = [],
   currentUser,
+  supabase,
   onSubmit,
   onCancel,
 }) {
@@ -61,6 +62,7 @@ export default function OpportunityForm({
     })();
   }, [form.unit_id, currentUser?.id]);
 
+  console.log("🎯 OpportunityForm rendered. unit_id:", form.unit_id, "supabase:", !!supabase);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {/* Lead context (if provided) */}

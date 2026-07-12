@@ -18,6 +18,15 @@ export default function OpportunityFormAdapter({
   onSaved,
   onCancelled,
 }) {
+  console.log("📋 OpportunityFormAdapter Props:", {
+    leadId: lead?.id,
+    leadName: lead?.name,
+    companyId: currentUser?.company_id,
+    hasSupabase: !!supabase,
+    oppsCount: opps?.length,
+    currentUserId: currentUser?.id
+  });
+  
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (formData) => {
@@ -74,6 +83,7 @@ export default function OpportunityFormAdapter({
         users={users}
         opps={opps}
         currentUser={currentUser}
+        supabase={supabase}
         onSubmit={handleSubmit}
         onCancel={onCancelled}
       />
