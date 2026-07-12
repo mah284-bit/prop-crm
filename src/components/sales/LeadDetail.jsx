@@ -1,4 +1,3 @@
-import OpportunityFormAdapter from "../opportunities/OpportunityFormAdapter.jsx";
 import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import { supabase } from "../../lib/supabase";
 import { canDo } from "../../lib/permissions.js";
@@ -37,7 +36,6 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
   const [units,    setUnits]    = useState([]);
   const [projects, setProjects] = useState([]);
   const [salePricing,setSalePricing]=useState([]);
-  const [showAddOpp, setShowAddOpp]=useState(false);
   const [oppForm,  setOppForm]  = useState({title:"",unit_id:"",budget:"",assigned_to:"",notes:"",property_category:"Off-Plan"});
   // 16 May 2026: Consolidation - canonical opportunity dialog from Leads tab
   const [showCanonicalOppDialog, setShowCanonicalOppDialog] = useState(false);
@@ -291,7 +289,6 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
         supabase.from("leads").update({lifecycle_stage: "active_prospect"}).eq("id", selLead.id).catch(e => console.warn("Lifecycle update failed:", e));
       }
       showToast("Opportunity created","success");
-      setShowAddOpp(false);
       setOppForm({title:"",unit_id:"",budget:"",assigned_to:"",notes:"",property_category:"Off-Plan"});
       // Phase F W5 cut-over: navigate to Opportunities tab instead of opening
       // OpportunityDetail inside Leads. Falls back to old in-place open if the
@@ -1051,38 +1048,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
           }}
         />
       )}
-      {showAddOpp && (
-    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
-      <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
-          <div>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0F2540"}}>🎯 New Opportunity</div>
-            <div style={{fontSize:11,color:"#64748B",marginTop:2}}>for {selLead.name}</div>
-          </div>
-          <button onClick={()=>setShowAddOpp(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
-        </div>
-        <div style={{overflowY:"auto",padding:"1.25rem 1.5rem",flex:1}}>
-          <OpportunityFormAdapter
-            lead={selLead}
-            units={units}
-            projects={projects}
-            salePricing={salePricing}
-            users={users}
-            opps={globalOppsFromParent}
-            currentUser={currentUser}
-            supabase={supabase}
-            showToast={showToast}
-            onSaved={(newOpp) => {
-              setOpps(p => [newOpp, ...p]);
-              setGlobalOpps(p => [newOpp, ...p]);
-              setShowAddOpp(false);
-            }}
-            onCancelled={() => setShowAddOpp(false)}
-          />
-        </div>
-      </div>
-    </div>
-  )}
+      
       {/* Phase 2.1 — Floating Action Button for activity logging */}
       <button
         onClick={()=>{
