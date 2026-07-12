@@ -465,3 +465,17 @@ NEW STICKY (founder, Day 60): FORGOT-PASSWORD missing on login screen - locked-o
 (admin reset exposes password to 2nd person). Self-CHANGE exists (top-bar key modal, PwRecoveryForm).
 BUILD: login link -> supabase resetPasswordForEmail -> existing recovery path (~1 hr). Also verify key
 icon visible to agent role. Tester-blocker class - do before weekend handoff.
+
+## ── DAY 60 CLOSE — MODULARITY AUDIT (founder Q: are we 100% modular? Honest answer: ~85%) ──
+SOLID: file-level dedup COMPLETE (every src/ file imported or kept-by-design); single source of truth
+PROVEN for opp creation (4 paths, 1 canonical dialog), lead creation, activity logging, canDo perms.
+REMAINING for 100% (all in App.jsx ~2,866 lines) = DAY 61 PLAN, one auth-zone visit:
+1. forgot-password build FIRST (tester-blocker; login link -> resetPasswordForEmail -> existing recovery)
+2. inline PwInput (L336) duplicate of modules/auth/PwInput.jsx -> converge on module
+3. inline auth screens (~L600-640) -> extract, use module PwInput + StrengthBar
+4. UserManagement inline wrapper (~L2153) -> extract (known since Day 52)
+5. inline Change-Password modal (~L2540) -> extract
+6. legacy SettingsTab migration: CRM Mode is LOAD-BEARING (MODE_TABS reads cfg.mode) -> migrate to
+   Settings hub, then wire-or-retire company/currency stubs (= Settings-consolidation remainder)
+7. sweep App.jsx for further inline consts/components shadowing module versions (PwInput pattern)
+END STATE: App.jsx = routing + composition only. Then modularity claim = 100%, not 85%.
