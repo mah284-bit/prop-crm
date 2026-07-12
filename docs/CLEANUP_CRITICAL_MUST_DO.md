@@ -73,3 +73,21 @@ This is NOT a nice-to-have. This is foundational.
 *Architect: Claude*  
 *Decision: DEFER to post-deadline, EXECUTE without fail*  
 *Audit readiness: This document proves intentional cleanup, not neglect*
+
+### FINDING: QuickProposalsPanel Duplication (Day 12)
+
+**Location:** `src/components/leads/QuickProposalsPanel.jsx`
+
+**Issue:** Proposal sending logic duplicated here + in Opportunities module
+- Line 21: "Quick Quote" button
+- Line 23: "📋 View Quotes" button
+- Separate from opp-level proposal workflow
+
+**Status:** WORKING but architecturally suspect (appears orphaned or duplicative)
+
+**Action:** Audit in cleanup sprint - determine if:
+1. Actually used/imported?
+2. Can be consolidated with Opportunities proposals?
+3. Should be deleted?
+
+**Date Found:** 12 July 2026
