@@ -4,7 +4,6 @@
  */
 
 export async function analyzeUnitSaturation(unitId, currentUserId, supabase) {
-  console.log("🔍 Analyzer called:", { unitId, currentUserId, hasSupabase: !!supabase });
   
   if (!unitId || !supabase) {
     console.warn("⚠️ Missing: unitId or supabase");
@@ -12,7 +11,6 @@ export async function analyzeUnitSaturation(unitId, currentUserId, supabase) {
   }
 
   try {
-    console.log("📡 Fetching opps for unit:", unitId);
     
     const { data: opps, error } = await supabase
       .from('opportunities')
@@ -25,7 +23,6 @@ export async function analyzeUnitSaturation(unitId, currentUserId, supabase) {
       return null;
     }
 
-    console.log("✅ Found opps:", opps?.length || 0);
 
     const myOpps = (opps || []).filter(o => o.assigned_to === currentUserId);
     const competitors = (opps || []).filter(o => o.assigned_to !== currentUserId);
@@ -38,7 +35,6 @@ export async function analyzeUnitSaturation(unitId, currentUserId, supabase) {
 
     const result = { unitId, myOppsCount: myOpps.length, competitorCount: competitors.length, totalOpps: total, riskLevel: risk, riskColor: color, riskEmoji: emoji, disappointmentRisk: total - myOpps.length, saturationPct: Math.round((total / 10) * 100) };
     
-    console.log("📊 Saturation result:", result);
     return result;
   } catch (e) {
     console.error("💥 Analyzer exception:", e);

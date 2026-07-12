@@ -1,15 +1,12 @@
 import React from "react";
 
 export default function UnitSaturationInline({ saturation }) {
-  console.log("🔍 UnitSaturationInline:", saturation);
   
   if (!saturation) {
-    console.log("⚠️ No saturation data");
     return null;
   }
   
   if (saturation.totalOpps < 2) {
-    console.log("⚠️ Too few opps:", saturation.totalOpps);
     return null;
   }
 
