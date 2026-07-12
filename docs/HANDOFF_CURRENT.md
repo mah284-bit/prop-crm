@@ -451,3 +451,17 @@ NEXT: (a) Cleanup R2 by 25 Jul (docs/CLEANUP_CRITICAL_MUST_DO.md) - iterative de
 branch+tag; include RETIRING OpportunityForm.jsx + OpportunityFormAdapter.jsx + showAddOpp modal in
 LeadDetail (L40/294/1054-1080). (b) Settings consolidation remainder. (c) End-to-end testing round
 with fresh clean deals. LESSON: heredocs >30 lines split on paste in MINGW64 - keep short or use Python.
+
+## ── DAY 60 PM — CLEANUP ROUND 2 COMPLETE (main 9f20cb2, tag cleanup-round-2-done) ──
+17 more files / 1,266 lines deleted, each verified by grep + build gate (333 modules, 0 unresolved):
+thin form retired (OpportunityForm+Adapter+showAddOpp modal; ALL opp creation via canonical dialog,
+AI promote-to-opp verified pre-filling it with saturation live); widget twins (DiscBadge/Empty/Spinner/
+Toast - real ones in modules/shared); PwInput twin (live one = modules/auth, used by PwRecoveryForm);
+UnitPickerRich; exportProposalPDF dup (LIVE PDF = src/lib/generateProposalPDF.js); comms stubs
+(TemplateEngine/composeBundle/emailTemplates - rebuild properly in Phase 2.3); metadata/validation/
+proposalSuccessHandler. KEPT BY DESIGN: leasing quartet, getMyTeamIds, getVisibleCompanyIds. Codebase
+now fully accounted for. 25-Jul cleanup deadline CLOSED 13 days early.
+NEW STICKY (founder, Day 60): FORGOT-PASSWORD missing on login screen - locked-out user has no path
+(admin reset exposes password to 2nd person). Self-CHANGE exists (top-bar key modal, PwRecoveryForm).
+BUILD: login link -> supabase resetPasswordForEmail -> existing recovery path (~1 hr). Also verify key
+icon visible to agent role. Tester-blocker class - do before weekend handoff.
