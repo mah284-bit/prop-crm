@@ -439,3 +439,15 @@ TWO-HEADED AI INTELLIGENCE:
 DRILL-DOWN: details only on demand (dropdowns/expand) — Phase-2 "think about it", not default.
 FOUNDATION: reuses existing AI plumbing (Coach, proposal extraction) = extension of proven capability, becomes a real MOAT. NOT new infra.
 STATUS: rich strategic feature = its own DEDICATED design session (founder wants Claude to bring cross-industry patterns; founder brings UAE domain). NOT a rushed build. Captured so nothing lost. Client-360 currently = glance strip + deals list (live, bc1d7fd); insights layer replaces/augments later.
+
+## ── DAY 60 (12 Jul) — CLEANUP R1 + FORM CONVERGENCE MERGED (main 0db60a9, tag cleanup-and-form-convergence-done) ──
+DONE+VERIFIED PROD: (1) 30 orphans deleted (~2,384 lines; DiscountApprovals among them - founder: fine,
+rebuild at developer persona). Build gate passed: 335 modules, 0 unresolved imports. Recover any file:
+git checkout before-orphaned-cleanup -- path. (2) Saturation BOTH doors: async analyzeUnitSaturation
+wired into CreateOpportunityDialog (was amputated-not-transplanted). (3) ONE FORM ONE TRUTH: LeadDetail
++New Opportunity (L546) -> setShowCanonicalOppDialog; all 4 entry paths on canonical dialog. Thin
+OpportunityForm/Adapter now UNREACHABLE. (4) Gate removals merged (leadOpps>0 + SendQuote blocks gone).
+NEXT: (a) Cleanup R2 by 25 Jul (docs/CLEANUP_CRITICAL_MUST_DO.md) - iterative dev-server method, fresh
+branch+tag; include RETIRING OpportunityForm.jsx + OpportunityFormAdapter.jsx + showAddOpp modal in
+LeadDetail (L40/294/1054-1080). (b) Settings consolidation remainder. (c) End-to-end testing round
+with fresh clean deals. LESSON: heredocs >30 lines split on paste in MINGW64 - keep short or use Python.
