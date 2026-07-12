@@ -201,6 +201,7 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
           users={users}
           currentUser={currentUser}
           showToast={showToast}
+          opps={opps}
           onClose={()=>setShowCreate(false)}
           onCreated={(newOpp, newLead)=>{
             // Append to parent opps list, optionally append new lead

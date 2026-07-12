@@ -1,4 +1,6 @@
 // CreateOpportunityDialog — extracted from App.jsx (MAP A2, ~1060 lines). Shared into LeadDetail + Opportunities via prop.
+import UnitSaturationInline from "./opportunities/UnitSaturationInline.jsx";
+import { analyzeUnitSaturation } from "../lib/unitSaturationAnalyzer.js";
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { aiInvoke } from "../lib/aiInvoke.js";
@@ -7,7 +9,7 @@ import { openPropertyPack } from "./property/propertyPackBus.js";
 
 import { canDo } from "../lib/permissions.js";
 
-export default function CreateOpportunityDialog({ leads, setLeads, units, projects, salePricing, users, currentUser, showToast, onClose, onCreated, prefilledLead = null, prefilledUnit = null }) {
+export default function CreateOpportunityDialog({ leads, setLeads, units, projects, salePricing, users, currentUser, showToast, onClose, onCreated, prefilledLead = null, prefilledUnit = null, opps = [] }) {
   // Step state - if lead is pre-selected (from Leads tab), skip Step 1
   const [step, setStep] = useState(prefilledLead ? 2 : 1);
   const [saving, setSaving] = useState(false);
@@ -140,6 +142,7 @@ export default function CreateOpportunityDialog({ leads, setLeads, units, projec
   // Step 2: unit picker state (Phase F W6.2 — searchable)
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);
   const [unitSearch, setUnitSearch] = useState("");
+  const [showSaturationResult, setShowSaturationResult] = useState(false);
   const [unitProjFilter, setUnitProjFilter] = useState("All"); // project_id or "All"
   const [unitBedFilter, setUnitBedFilter] = useState("All");   // "All" | "Studio" | "1" | "2" | "3" | "4+"
   const [unitShowReserved, setUnitShowReserved] = useState(false);
@@ -991,13 +994,28 @@ What should the second agent know?`;
                 <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>
                   💡 Don't worry if you don't have a unit yet. AI Match in the proposal builder will help you pick one later.
                 </div>
+                {/* Auto-Calculate Saturation */}
+                {oppForm.unit_id && (
+                  (() => {
+                    const sat = analyzeUnitSaturation(oppForm.unit_id, opps || [], currentUser?.id);
+                    return sat ? (
+                      <div style={{gridColumn:"1 / -1", marginTop:8}}>
+                        <UnitSaturationInline saturation={sat} />
+                      </div>
+                    ) : null;
+                  })()
+                )}
+                {/* End Saturation Display */}
               </div>
               {/* Commission auto-populate from master agreement */}
               {canDo(currentUser, "see_brokerage_commission") && (
               <div style={{gridColumn:"1 / -1", padding:"12px 14px", background: masterAgreement ? "#F0F9FF" : "#F9FAFB", border:`1px solid ${masterAgreement ? "#BAE6FD" : "#E5E7EB"}`, borderRadius:8, marginBottom:8}}>
                 <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8}}>
                   <div style={{fontSize:12, fontWeight:600, color:"#0F2540", display:"flex", alignItems:"center", gap:6}}>
-                    💼 Commission
+                                    {/* Saturation Display */}
+
+                
+                💼 Commission
                     {agreementLoading && <span style={{fontSize:10, color:"#6B7280", fontWeight:500}}>· checking master agreement...</span>}
                   </div>
                   {masterAgreement && (

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import UnitSearchPicker from "./UnitSearchPicker.jsx";
+import UnitSearchPicker from "../UnitSearchPicker.jsx";
 import UnitSaturationInline from "./UnitSaturationInline.jsx";
 import { analyzeUnitSaturation } from "../../lib/unitSaturationAnalyzer.js";
 

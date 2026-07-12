@@ -1,3 +1,4 @@
+import OpportunityFormAdapter from "../opportunities/OpportunityFormAdapter.jsx";
 import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import { supabase } from "../../lib/supabase";
 import { canDo } from "../../lib/permissions.js";
@@ -1052,75 +1053,38 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
           }}
         />
       )}
-      {showAddOpp&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
-              <div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0F2540"}}>🎯 New Opportunity</div>
-                <div style={{fontSize:11,color:"#64748B",marginTop:2}}>for {selLead.name}</div>
-              </div>
-              <button onClick={()=>setShowAddOpp(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
-            </div>
-            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem",flex:1}}>
-              <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Opportunity Title</label>
-                  <input value={oppForm.title} onChange={e=>setOppForm(f=>({...f,title:e.target.value}))} placeholder="e.g. 2BR Palm Jumeirah (auto-filled if unit selected)"/>
-                </div>
-                <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Property Category *</label>
-                  <div style={{display:"flex",gap:8}}>
-                    {[["Off-Plan","🏗️"],["Ready / Resale","🔑"],["Commercial","🏢"]].map(([cat,icon])=>(
-                      <button key={cat} onClick={()=>setOppForm(f=>({...f,property_category:cat}))}
-                        style={{flex:1,padding:"8px",borderRadius:8,border:`1.5px solid ${oppForm.property_category===cat?"#0F2540":"#E2E8F0"}`,background:oppForm.property_category===cat?"#0F2540":"#fff",color:oppForm.property_category===cat?"#fff":"#4A5568",fontSize:12,cursor:"pointer",fontWeight:oppForm.property_category===cat?600:400}}>
-                        {icon} {cat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Linked Unit *</label>
-                  {/* 13 May 2026: Replaced plain <select> with rich UnitPickerRich for demo consistency */}
-                  {/* Preserves: title auto-fill on selection. Filters: Available + Sale/Both purpose. */}
-                  <UnitPickerRich
-                    value={oppForm.unit_id}
-                    onSelect={(unitId) => {
-                      const u = units.find(x => x.id === unitId);
-                      setOppForm(f => ({
-                        ...f,
-                        unit_id: unitId,
-                        title: u && !f.title ? `${u.unit_ref} — ${selLead?.name || ""}` : f.title
-                      }));
-                    }}
-                    units={units.filter(u => u.status === "Available" && (u.purpose === "Sale" || u.purpose === "Both"))}
-                    projects={projects}
-                    salePricing={salePricing}
-                  />
-                </div>
-                <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Budget (AED)</label>
-                  <input type="number" value={oppForm.budget} onChange={e=>setOppForm(f=>({...f,budget:e.target.value}))} placeholder="Client's budget"/>
-                </div>
-                <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Assign To</label>
-                  <select value={oppForm.assigned_to} onChange={e=>setOppForm(f=>({...f,assigned_to:e.target.value}))}>
-                    {users.filter(u=>u.is_active).map(u=><option key={u.id} value={u.id}>{u.full_name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label>
-                  <textarea value={oppForm.notes} onChange={e=>setOppForm(f=>({...f,notes:e.target.value}))} rows={3} placeholder="Any initial notes…"/>
-                </div>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
-              <button onClick={()=>setShowAddOpp(false)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={saveOpp} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":"Create Opportunity"}</button>
-            </div>
+      {showAddOpp && (
+    <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.65)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1100,padding:"1rem"}}>
+      <div style={{background:"#fff",borderRadius:16,width:500,maxWidth:"100%",maxHeight:"90vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 64px rgba(11,31,58,.4)"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"1rem 1.5rem",borderBottom:"1px solid #E8EDF4",background:"#fff"}}>
+          <div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0F2540"}}>🎯 New Opportunity</div>
+            <div style={{fontSize:11,color:"#64748B",marginTop:2}}>for {selLead.name}</div>
           </div>
+          <button onClick={()=>setShowAddOpp(false)} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
         </div>
-      )}
+        <div style={{overflowY:"auto",padding:"1.25rem 1.5rem",flex:1}}>
+          <OpportunityFormAdapter
+            lead={selLead}
+            units={units}
+            projects={projects}
+            salePricing={salePricing}
+            users={users}
+            opps={opps}
+            currentUser={currentUser}
+            supabase={supabase}
+            showToast={showToast}
+            onSaved={(newOpp) => {
+              setOpps(p => [newOpp, ...p]);
+              setGlobalOpps(p => [newOpp, ...p]);
+              setShowAddOpp(false);
+            }}
+            onCancelled={() => setShowAddOpp(false)}
+          />
+        </div>
+      </div>
+    </div>
+  )}
       {/* Phase 2.1 — Floating Action Button for activity logging */}
       <button
         onClick={()=>{
