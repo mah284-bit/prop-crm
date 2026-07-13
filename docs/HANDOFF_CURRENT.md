@@ -479,3 +479,13 @@ REMAINING for 100% (all in App.jsx ~2,866 lines) = DAY 61 PLAN, one auth-zone vi
    Settings hub, then wire-or-retire company/currency stubs (= Settings-consolidation remainder)
 7. sweep App.jsx for further inline consts/components shadowing module versions (PwInput pattern)
 END STATE: App.jsx = routing + composition only. Then modularity claim = 100%, not 85%.
+
+## DAY 61 ITEM-1 CLOSED - FORGOT-PASSWORD VERIFIED E2E + SMTP HARDENED
+Root cause of "no reset emails": Supabase BUILT-IN mailer (rate-limited, Hotmail-dropped) + Gmail-merge
+inbox quirk hiding earlier mails. Code was ALWAYS complete (L620 link -> L607 send -> L2308 listener ->
+L2441 PwRecoveryForm). FIX: custom SMTP via Resend (free 100/day). Account: mabid284@hotmail.com.
+Config: sender onboarding@resend.dev / name PropCrm / host smtp.resend.com / port 465 / username resend /
+password = Resend API key (propcrm-supabase). VERIFIED LIVE on production: send -> receive -> reset -> login.
+GOTCHAS: username must be literal "resend"; sender email MUST be onboarding@resend.dev until own domain
+verified (own-domain sender = Phase 2 polish); UI error box shows "{}" on auth 500s - display bug, real
+error in Network response (polish sticky). ALL auth emails (invites, signups, resets) now via Resend.
