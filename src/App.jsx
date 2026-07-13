@@ -2265,6 +2265,7 @@ export default function App(){
     return()=>window.removeEventListener('propcrm_ai_data_request',h);
   },[leads,aiUnits,aiProjects,currentUser]);
 
+  const loadCapsRef = useRef(null);
   useEffect(()=>{
   const loadUserCapabilities = async (user) => {
     if (!user || !user.company_id) return;
@@ -2280,6 +2281,7 @@ export default function App(){
       setUserCapabilities({});
     }
   };
+  loadCapsRef.current = loadUserCapabilities;
 
     const restore=async()=>{
       const hp=new URLSearchParams(window.location.hash.replace("#","?").slice(1));
@@ -2323,6 +2325,7 @@ export default function App(){
 
   useEffect(()=>{
     if(!currentUser)return;
+    let live = true;
     const safe=async(q)=>{ try{const r=await q;return{data:(r.data||[])};}catch(e){console.warn("Query error:",e);return{data:[]};} };
     const cid = activeCompanyId || currentUser.company_id || null;
     const load=async()=>{
@@ -2339,6 +2342,7 @@ export default function App(){
             ? supabase.from("discount_requests").select("*").eq("company_id",cid).order("created_at",{ascending:false})
             : supabase.from("discount_requests").select("*").order("created_at",{ascending:false})),
         ]);
+        if(!live) return;
         // SECURITY: filter all data by active company client-side
         const filterByCo = (arr) => cid ? arr.filter(x=>x.company_id===cid) : arr;
         setLeads(filterByCo(l.data));
@@ -2348,6 +2352,7 @@ export default function App(){
         setDiscounts(filterByCo(d.data));
         // Load opportunities globally
         const oppRes = await safe(supabase.from("opportunities").select("*").eq("company_id", currentUser.company_id).order("created_at",{ascending:false}));
+        if(!live) return;
         setOpps(filterByCo(oppRes.data||[]));
         // Load inventory + leasing data eagerly
         const[proj,units2,sp2,lp2,lt,ll,lp_,lm]=await Promise.all([
@@ -2360,6 +2365,7 @@ export default function App(){
           safe(cid ? supabase.from("rent_payments").select("*").order("due_date") : supabase.from("rent_payments").select("*").order("due_date")),
           safe(cid ? supabase.from("maintenance").select("*").eq("company_id",cid).order("created_at",{ascending:false}) : supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
         ]);
+        if(!live) return;
         setAiProjects(filterByCo(proj.data));
         setAiUnits(filterByCo(units2.data));
         setAiSalePr(filterByCo(sp2.data));
@@ -2386,6 +2392,7 @@ export default function App(){
           safe(supabase.from("reference_countries").select("*").order("priority", {ascending:false}).order("name_en")),
           safe(supabase.from("reference_buyer_type_rules").select("*")),
         ]);
+        if(!live) return;
         setRefCountries(refC.data || []);
         setRefRules(rulesFromRows(refB.data || []));
         const today2=new Date();
@@ -2394,7 +2401,7 @@ export default function App(){
         const expiringLeases30=(ll.data||[]).filter(l2=>l2.status==="Active"&&l2.end_date&&Math.ceil((new Date(l2.end_date)-today2)/864e5)<=30&&Math.ceil((new Date(l2.end_date)-today2)/864e5)>0);
         setFollowupAlerts({staleLeads:stale,overduePayments:overdueRent,expiringLeases:expiringLeases30});
       }catch(e){console.error("Load error:",e);}
-      setDataLoading(false);
+      if(live) setDataLoading(false);
     };
     load();
     const ch=supabase.channel("v3-changes-"+cid)
@@ -2402,12 +2409,12 @@ export default function App(){
       .on("postgres_changes",{event:"*",schema:"public",table:"activities"},p=>{if(p.eventType==="INSERT")setActivities(x=>x.some(r=>r.id===p.new.id)?x:[p.new,...x]);if(p.eventType==="UPDATE")setActivities(x=>x.map(a=>a.id===p.new.id?p.new:a));if(p.eventType==="DELETE")setActivities(x=>x.filter(a=>a.id!==p.old.id));})
       .on("postgres_changes",{event:"*",schema:"public",table:"opportunities"},p=>{if(p.eventType==="INSERT")setOpps(x=>x.some(r=>r.id===p.new.id)?x:[p.new,...x]);if(p.eventType==="UPDATE")setOpps(x=>x.map(o=>o.id===p.new.id?p.new:o));if(p.eventType==="DELETE")setOpps(x=>x.filter(o=>o.id!==p.old.id));})
       .subscribe();
-    return()=>supabase.removeChannel(ch);
+    return()=>{ live=false; supabase.removeChannel(ch); };
   },[currentUser, activeCompanyId]);
 
   const handleLogin=user=>{
     setCurrentUser(user);
-    loadUserCapabilities(user);
+    loadCapsRef.current?.(user);
     const validCid = user.company_id; localStorage.setItem("propccrm_company_id", validCid);
     setActiveApp(activeApp); localStorage.setItem("propccrm_last_app", activeApp);
     // Load companies for all admin/manager roles to show in header
