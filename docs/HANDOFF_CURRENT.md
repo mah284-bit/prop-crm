@@ -558,3 +558,13 @@ NEW CAPTURES: next-step ribbon lacks time+place for Meeting/SiteVisit (broker co
 service_charge_per_sqft missing on AGR units (maintenance calc warning); duplicate-key React warning
 from the 3 dup opps (dup-gate evidence); FOUNDER FLAG: full Opps-journey UX review = dedicated future
 design session (commercial flow must be smooth - proposals workspace, buyer outflow, tabs).
+
+## DAY 62 NIGHT - CLOSE-WON GATE HIT (working as built, workflow redesign flagged)
+Spine advanced Reserved -> SPA Signed OK. Close-Won dialog correct: final price LOCKED from SPA stage,
+handover date, notes. BLOCKED by design: 'SPA document (signed) must be uploaded before closing as Won'
+- the doc-discipline gate works. TOMORROW: upload a dummy signed SPA -> Close Won -> verify customer
+conversion + commission record + dashboard tiles + 360.
+FOUNDER WORKFLOW CAPTURE (for the dedicated Opps-journey design session, NOT a patch): stage ordering
+wrong for UAE practice - SPA cannot be signed until ALL payment collected; payment-verification gate
+must move BEFORE SPA Signed. Full Opp workflow (stages, gates, payment sequencing, proposals workspace
+UX) = its own planned session with founder domain input.
