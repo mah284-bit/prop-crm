@@ -1,3 +1,4 @@
+import { buildIcsEvent } from "../../lib/utils.js";
 import React, { useState, useEffect } from 'react';
 import { supabase } from "../../lib/supabase.js";
 import { Modal } from "../../modules/shared/Modal.jsx";

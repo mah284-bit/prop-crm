@@ -1,3 +1,4 @@
+import OpenItemsGuard from "./OpenItemsGuard.jsx";
 import { openPropertyPack } from "../property/propertyPackBus.js";
 import LogActivityModal from "../LogActivityModal.jsx";
 import React, { useState, useEffect, useRef, Fragment } from 'react';
