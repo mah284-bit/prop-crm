@@ -498,3 +498,25 @@ touch. Harmless at rest (each screen consistently uses its own resolution). Conv
 Items 3-6 arc (auth screens, UserManagement wrapper, ChangePassword modal, SettingsTab migration, these 9).
 ITEMS 2+7 CLOSED today; 3-6 PARKED post-handoff by architect call: tester clock outranks hygiene.
 PIVOT: tester-readiness - verify test accounts, then E2E round with fresh clean deals.
+
+## DAY 61 CRITICAL FINDING - COLD-LOGIN EMPTY DATA (diagnosed, fix NEXT SESSION first task)
+SYMPTOM: fresh login as scoped role (Arun/sales_manager) -> Leads shows 0/0 "No contacts found",
+dashboard scoped tiles 0, while Recent Activity/units partially populate. Ctrl+Shift+R always cures.
+Intermittent (timing-dependent). super_admin rarely affected. Tester-blocker class.
+EVIDENCE CHAIN (all verified clean): lead assigned_to=testagent4 OK; manager chain testagent4->Arun
+(78284963) OK; role_capabilities see_branch_data=true OK; leads_select_policy text OK; my_downline()
+body OK (CTE replicated, returns team); has_capability() body OK (company+role scoped, fail-safe).
+Manager visibility PROVEN working after refresh (Arun sees 8 leads incl fresh Julythe13th).
+ROOT CAUSE (App.jsx master loader, effect at ~L2324, deps [currentUser, activeCompanyId]):
+currentUser changes TWICE at login (restore ~L2291 sets profile; capabilities-attach L2277 sets NEW
+object). Effect fires twice -> two overlapping 15-table Promise.all loads, NO cancellation between
+runs. If run-1 (auth-not-fully-settled -> RLS returns empty) resolves AFTER run-2 (correct data),
+stale empty arrays CLOBBER good data. Explains: intermittency, partial population (per-table race),
+refresh-cures (single clean run), super_admin near-immunity (fast short-circuit).
+FIX SHAPE (~10 lines, surgical): cancellation guard in the L2324 effect - let live=true, discard
+results if !live on every setX, return ()=>{live=false}. Same pattern as saturation useEffect.
+OPTIONAL hardening: skip run when currentUser exists but capabilities not yet attached (single
+clean run instead of two).
+VERIFICATION PLAN: repeated fresh incognito logins as Arun + testagent4 + super_admin (5x each,
+timing-sensitive), leads/opps populated WITHOUT refresh; then normal regression (both opp doors).
+DO FRESH: this effect is the app's data heart (15 tables + realtime channel) - no tired surgery.
