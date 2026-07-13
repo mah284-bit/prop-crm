@@ -520,3 +520,20 @@ clean run instead of two).
 VERIFICATION PLAN: repeated fresh incognito logins as Arun + testagent4 + super_admin (5x each,
 timing-sensitive), leads/opps populated WITHOUT refresh; then normal regression (both opp doors).
 DO FRESH: this effect is the app's data heart (15 tables + realtime channel) - no tired surgery.
+
+## DAY 62 - COLD-LOGIN BUG KILLED + VERIFIED PROD (commit 6e5b3aa)
+TWO-LAYER ROOT CAUSE, both fixed:
+(1) Master loader (L2324 effect) double-fired on login (currentUser changes at restore AND caps-attach),
+no cancellation -> stale run-1 clobbered run-2. FIX: live-flag cancellation guard, 4 checkpoints.
+(2) THE REAL KILLER (probes proved it): loadUserCapabilities was scope-trapped INSIDE the auth useEffect.
+restore() (same scope) worked -> refresh always cured. handleLogin (L2417, outside) hit ReferenceError,
+silently swallowed -> caps NEVER loaded on login path -> canDo(see_all) false -> LeadDetail L235 filter
+(see_all ? all : own-only) showed 0 for managers. Day-47 TDZ ghost, third + final appearance.
+FIX: loadCapsRef (useRef) assigned inside effect, handleLogin calls loadCapsRef.current?.(user).
+VERIFIED PROD 5-login gauntlet: testagent4=4 own / arun.k=8 team incl fresh lead / mah284=36 all -
+instant, no refresh, correct scoping per role. RACE-PROBE debug lines stripped.
+LESSON (3rd occurrence - now standing rule): functions called from handleLogin/outside MUST live at
+component scope; anchored edits near the auth effect must re-verify scoping. Probe-first debugging
+(2 console.logs) beat theory - instrumentation showed caps=false + 8-fetched-but-0-shown in one run.
+NEXT: E2E Deal #1 continues as testagent4 (proposal -> promote to opp -> activities -> stages),
+then Arun manager-view check on the deal.
