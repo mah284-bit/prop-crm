@@ -537,3 +537,24 @@ component scope; anchored edits near the auth effect must re-verify scoping. Pro
 (2 console.logs) beat theory - instrumentation showed caps=false + 8-fetched-but-0-shown in one run.
 NEXT: E2E Deal #1 continues as testagent4 (proposal -> promote to opp -> activities -> stages),
 then Arun manager-view check on the deal.
+
+## DAY 62 EVENING - GHOST-IDENTIFIER CLASS KILLED (2b896c9), AGENT DEAL-SPINE RUN New->Reserved
+GHOST CLASS (bare identifiers used without import - invisible to build gate): 6 found via E2E clicks +
+targeted sweep, ALL FIXED: OpenItemsGuard (was App.jsx-inline, crashed opp screen; extracted to
+opportunities/, true boundary L645-820 - first cut over-grabbed to L842 incl mid-file refData import,
+reverted clean, recut with eyes-on boundary); VisitOutcomeDialog/ProposalViewerDialog/
+HandoverMeetingDialog/OutcomeModal (deleted in Cleanup R1, restored via git checkout
+before-orphaned-cleanup, imports wired in OpportunityDetail+ActivitiesList); buildIcsEvent +
+ASKS_GRID_OPTIONS (extraction-era missing imports in StageCaptureDialog/NegotiationRoundDialog).
+LESSON: build gate misses bare-identifier usage; grep USAGE of deleted exports, not imports.
+TOMORROW FIRST: generalized identifier sweep (components + CAPS constants + called functions) to
+certify the class extinct before testers.
+DEAL SPINE VERIFIED AS AGENT (deepest E2E ever): Julythe13th AGR-06-02 New->Contacted->Site Visit
+(outcome captured via restored dialog)->Quoted(3 versions, V3 self-narrating DLD 50/50 change)->
+Negotiation (round created)->Offer Accepted->RESERVED (AED 25,000 collected). Guard chain worked:
+open-items dialog blocked proposal until visit outcome captured.
+REMAINING SPINE: SPA Signed -> Closed Won -> customer conversion -> commission. Then Arun manager-view.
+NEW CAPTURES: next-step ribbon lacks time+place for Meeting/SiteVisit (broker compensates via note);
+service_charge_per_sqft missing on AGR units (maintenance calc warning); duplicate-key React warning
+from the 3 dup opps (dup-gate evidence); FOUNDER FLAG: full Opps-journey UX review = dedicated future
+design session (commercial flow must be smooth - proposals workspace, buyer outflow, tabs).
