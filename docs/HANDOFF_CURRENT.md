@@ -489,3 +489,12 @@ password = Resend API key (propcrm-supabase). VERIFIED LIVE on production: send 
 GOTCHAS: username must be literal "resend"; sender email MUST be onboarding@resend.dev until own domain
 verified (own-domain sender = Phase 2 polish); UI error box shows "{}" on auth 500s - display bug, real
 error in Network response (polish sticky). ALL auth emails (invites, signups, resets) now via Resend.
+
+## DAY 61 ITEM-7 SHADOW SWEEP DONE - 9 collisions found, DOCUMENTED NOT TOUCHED (pre-handoff risk call)
+Inline components in App.jsx that also exist as files: Btn, Empty, FR, G3, LeasingDashboard, Modal,
+RoleBadge, Spinner, Toast. Likely PwInput-pattern shadows (inline + modules/shared twin): Btn, Empty, FR,
+Spinner, Toast, RoleBadge. Needs individual verdicts: G3, Modal. LeasingDashboard = leasing parked, do not
+touch. Harmless at rest (each screen consistently uses its own resolution). Convergence = post-handoff
+Items 3-6 arc (auth screens, UserManagement wrapper, ChangePassword modal, SettingsTab migration, these 9).
+ITEMS 2+7 CLOSED today; 3-6 PARKED post-handoff by architect call: tester clock outranks hygiene.
+PIVOT: tester-readiness - verify test accounts, then E2E round with fresh clean deals.
