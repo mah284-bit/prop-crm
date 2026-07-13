@@ -24,6 +24,7 @@ export async function analyzeUnitSaturation(unitId, currentUserId, supabase) {
     }
 
 
+    console.log("SAT-PROBE unit=", unitId, "uid=", currentUserId, "rows=", (opps||[]).length, "err=", error);
     const myOpps = (opps || []).filter(o => o.assigned_to === currentUserId);
     const competitors = (opps || []).filter(o => o.assigned_to !== currentUserId);
     const total = (opps || []).length;
