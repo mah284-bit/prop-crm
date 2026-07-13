@@ -56,6 +56,7 @@ import ReportsModule from "./components/ReportsModule.jsx";
 import PropPulse from "./components/PropPulse.jsx";
 import MasterAgreements from "./components/MasterAgreements.jsx";
 import CompanyConfigPage from "./components/admin/CompanyConfigPage.jsx";
+import { PwInput } from "./modules/auth/PwInput.jsx";
 
 /* ═══════════════════════════════════════════════════════════════
    PROPCCRM v3.0
@@ -319,11 +320,6 @@ const Toast=({msg,type="success",onDone})=>{
 };
 
 // ─── AUTH (same as v2) ────────────────────────────────────────
-const EyeIcon=({open})=>(
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    {open?<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>:<><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>}
-  </svg>
-);
 const getStrength=pw=>{
   if(!pw)return{score:0,label:"",color:"#E2E8F0",pct:0};
   let s=0;
@@ -332,10 +328,6 @@ const getStrength=pw=>{
   if(s<=2)return{score:s,label:"Fair",color:"#A06810",pct:45};
   if(s<=3)return{score:s,label:"Good",color:"#1A5FA8",pct:70};
   return{score:s,label:"Strong",color:"#1A7F5A",pct:100};
-};
-const PwInput=({value,onChange,placeholder="••••••••",onKeyDown})=>{
-  const[show,setShow]=useState(false);
-  return <div style={{position:"relative"}}><input type={show?"text":"password"} value={value} onChange={onChange} placeholder={placeholder} onKeyDown={onKeyDown} style={{paddingRight:42}}/><button type="button" onClick={()=>setShow(s=>!s)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"#A0AEC0",padding:0,display:"flex",alignItems:"center",cursor:"pointer"}}><EyeIcon open={show}/></button></div>;
 };
 const StrengthBar=({password})=>{
   const s=getStrength(password);
