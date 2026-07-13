@@ -1,3 +1,4 @@
+import { ASKS_GRID_OPTIONS } from "../opportunities/ActivitiesList.jsx";
 import React, { useState } from 'react';
 import { supabase } from "../../lib/supabase";
 import { Btn } from "../../modules/shared/Btn.jsx";

@@ -1,3 +1,4 @@
+import { ASKS_GRID_OPTIONS } from "./ActivitiesList.jsx";
 import { buildIcsEvent } from "../../lib/utils.js";
 import React, { useState, useEffect } from 'react';
 import { supabase } from "../../lib/supabase.js";

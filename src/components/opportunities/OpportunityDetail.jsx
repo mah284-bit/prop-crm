@@ -1,3 +1,6 @@
+import VisitOutcomeDialog from "../dialogs/VisitOutcomeDialog.jsx";
+import ProposalViewerDialog from "../dialogs/ProposalViewerDialog.jsx";
+import HandoverMeetingDialog from "../dialogs/HandoverMeetingDialog.jsx";
 import OpenItemsGuard from "./OpenItemsGuard.jsx";
 import { openPropertyPack } from "../property/propertyPackBus.js";
 import LogActivityModal from "../LogActivityModal.jsx";
