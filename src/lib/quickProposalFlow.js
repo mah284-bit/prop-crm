@@ -65,6 +65,7 @@ export async function sendQuickProposal({
 
       await supabase.from('activities').insert({
         lead_id: leadId,
+        company_id: currentUser.company_id,
         type: 'proposal_sent',
         note: `Sent proposal v${version} for ${selectedUnits.map(u => u.unit_ref).join(', ')}`,
         structured_data: {
