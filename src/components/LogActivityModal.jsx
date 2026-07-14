@@ -15,7 +15,7 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
   // owns its reminders state, so it creates the reminder + updates its panel.
   const [form, setForm] = useState({
     type: defaultType, note:"", scheduled_at:"", duration_mins:"", status:"completed",
-    person_id:"", ns_enabled:false, ns_type:"Call", ns_due:"", ns_note:"",
+    person_id:"", ns_enabled:false, ns_type:"Call", ns_due:"", ns_time:"", ns_place:"", ns_note:"",
   });
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);  // Day 18: synchronous double-click guard (ref flips instantly, before re-render)
@@ -31,7 +31,7 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
     setSaving(true);
     try{
       const isScheduled = form.scheduled_at && new Date(form.scheduled_at) > new Date();
-      const nsLine = hasNextStep ? `\n\n✅ Next: ${form.ns_type} on ${new Date(form.ns_due).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}${form.ns_note?(" — "+form.ns_note):""}` : "";
+      const nsLine = hasNextStep ? `\n\n✅ Next: ${form.ns_type} on ${new Date(form.ns_due).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}${form.ns_time?(" at "+form.ns_time):""}${form.ns_place?(" · 📍 "+form.ns_place):""}${form.ns_note?(" — "+form.ns_note):""}` : "";
       const noteText = [
         form.note,
         nsLine,
@@ -63,7 +63,8 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
           company_id: (opp?.company_id) || currentUser.company_id || null,
           type: form.ns_type,
           note: form.ns_note || null,
-          scheduled_at: new Date(form.ns_due).toISOString(),
+          scheduled_at: new Date(form.ns_due + (form.ns_time ? "T"+form.ns_time : "T09:00")).toISOString(),
+          location: form.ns_place || null,
           status: "upcoming",
           user_id: currentUser.id,
           user_name: currentUser.full_name,
@@ -73,7 +74,7 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
           activity_subtype: "next_step",
         });
       }
-      const nextStepIntent = hasNextStep ? {type:form.ns_type, due:form.ns_due, note:form.ns_note} : null;
+      const nextStepIntent = hasNextStep ? {type:form.ns_type, due:form.ns_due, time:form.ns_time, place:form.ns_place, note:form.ns_note} : null;
       onSaved(data, nextStepIntent);
     }catch(e){showToast(e.message,"error"); setSaving(false); savingRef.current=false;}
   };
@@ -148,7 +149,7 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
             <textarea value={form.note} onChange={sf("note")} rows={3} placeholder="What was discussed? Key points, client feedback, objections…"/>
           </div>
 
-          <div style={{padding:"10px 12px",background:"#F8FAFC",border:"1px solid #E8EDF4",borderRadius:8,marginBottom:16}}>
+          {form.status==="completed" && <div style={{padding:"10px 12px",background:"#F8FAFC",border:"1px solid #E8EDF4",borderRadius:8,marginBottom:16}}>
             <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontSize:12,fontWeight:600,color:"#0F2540"}}>
               <input type="checkbox" checked={form.ns_enabled} onChange={e=>setForm(f=>({...f,ns_enabled:e.target.checked}))}/>
               📅 Schedule a next step
@@ -165,13 +166,23 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
                   <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Due Date</label>
                   <input type="date" value={form.ns_due} onChange={sf("ns_due")} min={new Date().toISOString().slice(0,10)} style={{width:"100%"}}/>
                 </div>
+                <div>
+                  <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Time</label>
+                  <input type="time" value={form.ns_time} onChange={sf("ns_time")} style={{width:"100%"}}/>
+                </div>
+                {["Meeting","Visit"].includes(form.ns_type)&&(
+                <div>
+                  <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Location</label>
+                  <input type="text" value={form.ns_place} onChange={sf("ns_place")} placeholder="e.g. Sales office / project site" style={{width:"100%"}}/>
+                </div>
+                )}
                 <div style={{gridColumn:"span 2"}}>
                   <label style={{fontSize:10,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".4px"}}>Note (optional)</label>
                   <input type="text" value={form.ns_note} onChange={sf("ns_note")} placeholder="e.g. Follow up on budget question" style={{width:"100%"}}/>
                 </div>
               </div>
             )}
-          </div>
+          </div>}
 
           <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
             <button onClick={onClose} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",color:"#475569"}}>Cancel</button>
