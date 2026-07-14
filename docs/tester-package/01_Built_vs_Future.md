@@ -102,3 +102,31 @@ disabled control, that's intentional — not a bug.
 ---
 
 *Generated 22 Jun 2026 from structural completeness audit + Phase 2 backlog master doc.*
+
+
+---
+## UPDATE — 14 July 2026 (pre-handoff refresh)
+
+### Newly BUILT & verified since 22 June (test these too)
+| Feature | What it does |
+|---|---|
+| **Full deal spine** | Walked end-to-end AS AN AGENT: lead -> quote -> AI promote-to-opp -> site visit -> 3 proposal versions -> negotiation -> offer -> Reserved (fee collected) -> SPA Signed -> Closed Won -> customer auto-created -> commission invoice auto-created (draft) |
+| **Unit Saturation banner** | Pick a unit in New Opportunity: shows total active opps on that unit incl. OTHER agents' (counts only, no deal details) |
+| **Duplicate warning** | Picking a unit the same buyer already has an active opp on shows an amber warning (does not block) |
+| **Forgot password** | Login screen link -> reset email (custom SMTP via Resend) -> set new password. WORKS with real email addresses only |
+| **Quick Quote (lead level)** | Send Quote from a lead -> PDF proposal -> View Quotes -> Promote to Opp (AI reads the PDF, prefills the form; takes 5-10s = AI reading time) |
+| **Client 360** | Lead header -> 360 View: opportunity counts + Total Business (won value) |
+
+### KNOWN BEHAVIORS — do NOT log as bugs
+| What you'll see | Why |
+|---|---|
+| Proposal PDFs missing the project hero image | External image host blocks cross-site fetch; PDF generates without it (known, queued) |
+| A few duplicate test opportunities on some units (e.g. AGR-06-02) | Deliberate test data proving the duplicate-warning feature |
+| Reports mixing odd old deals ("2 beds", missing buyer names) | Historic test data; a clean-data pass is scheduled |
+| Commission Outstanding tab not visible as Agent | By design - agents do not see brokerage commission |
+| "Company Config" tab absent for everyone but platform owner | By design |
+| Meeting/Site-Visit "next step" has date but no time/place fields | Known gap; put details in the note (redesign scheduled) |
+| Sold units absent from unit picker | By design - cannot open opps on sold units |
+
+### Out of scope (unchanged)
+Leasing module, Group View, org-chart editing rules, agent commission-split display.
