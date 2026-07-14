@@ -348,7 +348,7 @@ const AuthLogo=({sub})=>(
     <div style={{fontSize:13,color:"#A0AEC0",marginTop:6}}>{sub}</div>
   </div>
 );
-const ErrBox=({msg})=>msg?<div style={{background:"#FAEAEA",color:"#B83232",border:"1.5px solid #F0BCBC",borderRadius:8,padding:"10px 14px",fontSize:13,marginBottom:16,lineHeight:1.5}}>{msg}</div>:null;
+const ErrBox=({msg})=>{const t=typeof msg==="string"?msg:(msg?.message||msg?.error_description||(msg?JSON.stringify(msg):""));if(!t||t==="{}")return null;msg=t;return <div style={{background:"#FAEAEA",color:"#B83232",border:"1.5px solid #F0BCBC",borderRadius:8,padding:"10px 14px",fontSize:13,marginBottom:16,lineHeight:1.5}}>{msg}</div>;};
 const AuthTabs=({mode,setMode})=>(
   <div style={{display:"flex",background:"#F7F9FC",borderRadius:10,padding:4,marginBottom:24}}>
     {[["login","Sign In"]].map(([m,label])=>(
