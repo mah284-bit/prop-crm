@@ -520,6 +520,14 @@ What should the second agent know?`;
       const { data, error } = await supabase.from("opportunities").insert(payload).select().single();
       if (error) throw error;
       showToast("Opportunity created", "success");
+      // Lifecycle: opp creation implies active prospect (Design Capture #2; fires from ALL doors)
+      try {
+        const ls = (selectedLead?.lifecycle_stage || "raw").toLowerCase();
+        if (ls === "raw" || ls === "qualified") {
+          await supabase.from("leads").update({ lifecycle_stage: "active_prospect" }).eq("id", selectedLead.id);
+          if (typeof setLeads === "function") setLeads(prev => (prev||[]).map(x => x.id === selectedLead.id ? { ...x, lifecycle_stage: "active_prospect" } : x));
+        }
+      } catch (e) { console.warn("lifecycle update skipped:", e); }
       const wasNewLead = !(leads || []).find(l => l.id === selectedLead.id);
       onCreated(data, wasNewLead ? selectedLead : null);
     } catch (e) {

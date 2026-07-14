@@ -286,9 +286,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
       if(error)throw error;
       setOpps(p=>{const n=[data,...p];setGlobalOpps(n);return n;});
       // Phase 2.4: Auto-transition lead lifecycle on first opp creation
-      if (selLead && (selLead.lifecycle_stage === "raw" || selLead.lifecycle_stage === "qualified")) {
-        supabase.from("leads").update({lifecycle_stage: "active_prospect"}).eq("id", selLead.id).catch(e => console.warn("Lifecycle update failed:", e));
-      }
+      // lifecycle -> active_prospect now handled centrally in CreateOpportunityDialog (all doors)
       showToast("Opportunity created","success");
       setOppForm({title:"",unit_id:"",budget:"",assigned_to:"",notes:"",property_category:"Off-Plan"});
       // Phase F W5 cut-over: navigate to Opportunities tab instead of opening
