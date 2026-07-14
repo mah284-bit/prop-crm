@@ -609,3 +609,18 @@ PENDING (founder, pre-Saturday): 30-min golden-flow dry-run (incl SPA-upload UI 
 charge warning check); share passwords + report channel with testers.
 SUPABASE EDITOR QUIRK noted by founder: hover on Run can eat composed SQL - workaround: compose in
 Notepad, run with Ctrl+Enter.
+
+## DAY 64 - AGENT MOTIVATION DISPLAY SHIPPED (230f8cd, tag agent-motivation-display-done)
+AUDIT FIRST: Day-31 layer-2 mostly BUILT already - companies.default_agent_split_mode/value ('percentage'/40
+set), Close-Won auto-computes agent_commission (17,690.64 = 44,226.60 x 40% verified) + company_net.
+Missing was only per-user override (captured, later) and THE DISPLAY. Old May invoices: agent-less nulls
+(pre-engine) - clean-data round, no backfill; tile sums handle nulls naturally.
+BUILT: (A) opp-create banner 'Your estimated earning: AED X' - agents only, price x commission_pct x
+company split, brokerage % never rendered (verified AED 39,958 = 2.497M x 4% x 40%; absent for super).
+(B) Dashboard 'My Earnings' tile - agents only, exact AED, paid/pending sub (verified prod: AED 17,691).
+RLS: invoices SELECT policy + arm (agent_id = auth.uid()) = Day-31 see_own_commission intent; DDL lesson:
+verify policy list after DROP+CREATE pairs. NOTE: row exposes commission_gross to the agent (derivable
+anyway - founder-accepted); column-hiding via view = Phase 2 if ever needed.
+NEXT COMMISSION ITEM (founder spec, from tile feedback): tile onClick -> My Earnings detail view (agent's
+own commission list: deal/unit/cut/status). Build after ranked Tue-Fri items.
+QUEUE: founder dry-run (priority) -> next-step time+place -> TAB_CAPABILITY review -> org-chart gating.
