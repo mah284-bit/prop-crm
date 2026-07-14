@@ -645,3 +645,13 @@ CAPTURED FOLLOW-UP: lifecycle->active_prospect trigger lives ONLY in LeadDetail'
 must move into canonical CreateOpportunityDialog onCreated (all doors). Next block item.
 PENDING: prod smoke of this merge; golden-flow dry-run STILL owed (the walk became the design
 session - the click-through itself remains).
+
+## DAY 64 LATE - LIFECYCLE DOOR-UNIFICATION (9ef29fb)
+active_prospect trigger moved into canonical CreateOpportunityDialog post-create (all 4 doors fire it,
+case-proof, setLeads local flip); LeadDetail door-specific copy removed. VERIFIED: Shabbir
+qualified -> active_prospect via Opportunities-tab door. Full chain now live end-to-end:
+raw -> (call) -> qualified -> (opp) -> active_prospect -> (won) -> customer, with deals
+auto-advancing New -> Contacted on logged calls. The Day-64 design captures #2+#3 fully shipped.
+PENDING NEXT: prod smoke of the evening merges (auto-advance + door-unification); ranked leftovers
+(next-step time+place, TAB_CAPABILITY review, org-chart gating, My Earnings detail); golden-flow
+click-through still owed.
