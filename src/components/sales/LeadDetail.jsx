@@ -1,3 +1,4 @@
+import { autoAdvanceOnActivity } from "../../lib/autoAdvance.js";
 import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import { supabase } from "../../lib/supabase";
 import { canDo } from "../../lib/permissions.js";
@@ -376,7 +377,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
                     {wonOpps.length>0&&<span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ {wonOpps.length} Won</span>}
                     {activeOpps.length===0&&wonOpps.length===0&&<span style={{fontSize:10,fontWeight:500,padding:"1px 7px",borderRadius:20,background:"#F7F9FC",color:"#94A3B8"}}>No opportunities</span>}
                     {(()=>{const IM={investor:{l:"Investor",c:"#1A7F5A",bg:"#E6F4EE"},owner_occupier:{l:"Owner-Occupier",c:"#1A5FA8",bg:"#E6EFF9"},hybrid:{l:"Hybrid",c:"#8A6200",bg:"#FDF3DC"},corporate:{l:"Corporate",c:"#5B21B6",bg:"#EDE9FE"},reseller:{l:"Reseller",c:"#B83232",bg:"#FCE8E8"}};const im=IM[l.buyer_intent];return im?<span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:im.bg,color:im.c}}>{im.l}</span>:null;})()}
-                    {(()=>{const SM={customer:{l:"Customer",c:"#1A7F5A",bg:"#E6F4EE"},portfolio_customer:{l:"Portfolio",c:"#5B21B6",bg:"#EDE9FE"}};const sm=SM[l.lifecycle_stage];return sm?<span style={{fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:20,background:sm.bg,color:sm.c}}>{sm.l}</span>:null;})()}
+                    {(()=>{const SM={raw:{l:"Raw",c:"#64748B",bg:"#F1F5F9"},qualified:{l:"Qualified",c:"#1D4ED8",bg:"#DBEAFE"},active_prospect:{l:"Active Prospect",c:"#4338CA",bg:"#E0E7FF"},customer:{l:"Customer",c:"#1A7F5A",bg:"#E6F4EE"},portfolio_customer:{l:"Portfolio",c:"#5B21B6",bg:"#EDE9FE"}};const sm=SM[l.lifecycle_stage];return sm?<span style={{fontSize:10,fontWeight:700,padding:"1px 7px",borderRadius:20,background:sm.bg,color:sm.c}}>{sm.l}</span>:null;})()}
                   </div>
                   <div style={{display:"flex",gap:10,fontSize:11,color:"#718096",marginTop:2,flexWrap:"wrap"}}>
                     {l.phone&&<span>{l.phone}</span>}
@@ -801,6 +802,12 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
             onClose={()=>setShowLeadLog(false)}
             onSaved={async(data, nextStepIntent)=>{
               setActivities(p=>[data,...p]);
+              autoAdvanceOnActivity({ opp: null, lead: selLead, savedActivity: data, supabase, showToast,
+                onStageChanged: null }).then(()=>{
+                if((selLead.lifecycle_stage||"raw").toLowerCase()==="raw" && data?.status==="completed"){
+                  setLeads(ls=>ls.map(x=>x.id===selLead.id?{...x,lifecycle_stage:"qualified"}:x));
+                }
+              });
               if(nextStepIntent && nextStepIntent.due){
                 const triggerAt = new Date(nextStepIntent.due);
                 triggerAt.setHours(9,0,0,0);

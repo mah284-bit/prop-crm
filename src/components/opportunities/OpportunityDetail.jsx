@@ -1,3 +1,4 @@
+import { autoAdvanceOnActivity } from "../../lib/autoAdvance.js";
 import VisitOutcomeDialog from "../dialogs/VisitOutcomeDialog.jsx";
 import ProposalViewerDialog from "../dialogs/ProposalViewerDialog.jsx";
 import HandoverMeetingDialog from "../dialogs/HandoverMeetingDialog.jsx";
@@ -5109,6 +5110,7 @@ onSelect={(unitId) => {
             setActivities(a=>[saved,...a]);
             setShowFabLog(false);
             showToast("Activity logged","success");
+            autoAdvanceOnActivity({ opp, lead, savedActivity: saved, supabase, showToast, onStageChanged: (s)=>onUpdated({...opp, stage: s}) });
           }}
         />
       )}

@@ -211,7 +211,7 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
     legal_name_en: editLead?.legal_name_en || "",
     legal_name_ar: editLead?.legal_name_ar || "",
     nationality_iso2: editLead?.nationality_iso2 || "",
-    lifecycle_stage: editLead?.lifecycle_stage || "Raw",
+    lifecycle_stage: editLead?.lifecycle_stage || "raw",
     buyer_intent: editLead?.buyer_intent || "Investor",
     residence_iso2: editLead?.residence_iso2 || "",
     tax_residency_iso2: editLead?.tax_residency_iso2 || "",
