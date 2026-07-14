@@ -14,6 +14,8 @@ const ACTION_TO_CAPABILITY = {
   see_all:          "see_branch_data",
   create_lead:      "create_leads",
   see_brokerage_commission: "see_brokerage_commission",
+  assign_leads: "assign_leads",
+  use_proppulse: "use_proppulse",
 };
 export const canDo = (user, action) => {
   if (!user) return false;

@@ -1060,6 +1060,9 @@ const TAB_CAPABILITY = {
   settings:"manage_settings", l_permsets:"manage_settings",
   master_agreements:"view_master_agreements",
   commission_outstanding:"see_brokerage_commission",
+  lead_queue:"assign_leads",
+  org_chart:"assign_leads",
+  proppulse:"use_proppulse", l_proppulse:"use_proppulse",
 };
 
 // Who can see the app switcher

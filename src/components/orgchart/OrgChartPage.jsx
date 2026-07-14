@@ -1,3 +1,4 @@
+import { canDo } from "../../lib/permissions.js";
 import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../lib/supabase.js";
 
@@ -117,10 +118,10 @@ export default function OrgChartPage({ currentUser, showToast }) {
           </div>
           <span style={{ fontSize: 10.5, fontWeight: 600, color: rc, whiteSpace: "nowrap" }}>{ROLE_LABEL[person.role] || person.role}{downlineCount(person.id) > 0 ? " \u00b7 " + downlineCount(person.id) + " team" : ""}</span>
         </div>
-        {editId === person.id
+        {canDo(currentUser,"manage_users") && (editId === person.id
           ? <Editor person={person} />
           : <button onClick={() => setEditId(person.id)} title="Change reporting line"
-              style={{ marginTop: 6, fontSize: 10.5, color: "#64748B", background: BG, border: "1px solid #E2E8F0", borderRadius: 6, cursor: "pointer", padding: "2px 8px" }}>{"\u270e edit"}</button>}
+              style={{ marginTop: 6, fontSize: 10.5, color: "#64748B", background: BG, border: "1px solid #E2E8F0", borderRadius: 6, cursor: "pointer", padding: "2px 8px" }}>{"\u270e edit"}</button>)}
       </div>
     );
   };
