@@ -444,7 +444,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
     const c360Opps = opps.filter(o=>o.lead_id===selLead.id);
     const c360Active = c360Opps.filter(o=>o.status==="Active").length;
     const c360Won = c360Opps.filter(o=>o.status==="Won").length;
-    const c360Value = c360Opps.filter(o=>o.status==="Won").reduce((s,o)=>s+(o.budget||0),0);
+    const c360Value = c360Opps.filter(o=>o.status==="Won").reduce((s,o)=>s+(Number(o.final_price)||Number(o.budget)||0),0);
     const c360Acts = activities.filter(a=>a.lead_id===selLead.id);
     const c360Last = c360Acts.length>0 ? c360Acts.map(a=>new Date(a.created_at)).sort((x,y)=>y-x)[0] : null;
     const c360LastTxt = c360Last ? (()=>{const d=(new Date()-c360Last)/864e5; return d<1?"today":d<2?"1 day ago":Math.floor(d)+" days ago";})() : "No activity";
