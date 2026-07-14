@@ -568,3 +568,20 @@ FOUNDER WORKFLOW CAPTURE (for the dedicated Opps-journey design session, NOT a p
 wrong for UAE practice - SPA cannot be signed until ALL payment collected; payment-verification gate
 must move BEFORE SPA Signed. Full Opp workflow (stages, gates, payment sequencing, proposals workspace
 UX) = its own planned session with founder domain input.
+
+## DAY 63 - SATURATION RPC + DUP GATE SHIPPED (cf6d391, tag saturation-rpc-dup-gate-done)
+FEATURE COMPLETE: (1) get_unit_saturation(p_unit_id) - security definer SQL fn, counts-only
+{total, mine}, hard-scoped to caller's company, grant to authenticated. Analyzer swapped .select
+for .rpc - agents FINALLY see competitor pressure past RLS (verified: '3 active opps, 1 yours 2
+others' as testagent4 on AGR-05-01). 3-day RLS-visibility saga closed with zero deal-detail leak.
+(2) DUP GATE: amber warn (not block) when selectedLead already has Active opp on picked unit;
+extra scoped query in same effect, deps [unit_id, selectedLead?.id]. Gotcha fixed: first cut used
+nonexistent 'lead' var (silent no-op) - dialog's real state = selectedLead. NOTE: L266/275 in
+CreateOpportunityDialog also reference bare 'lead' in other paths - audit those next session.
+ALSO TODAY: nav tab overflow fixed (thin 4px scrollbar, was hidden - managers couldn't reach Org
+Chart); 2 sweep ghosts wired (ProposalViewerDialog constants, PropertyMaster 8 imports - Inventory
+master was a click-crash); AGR-06-02 confirmed Sold post-Close-Won = correctly absent from picker.
+CAPTURES: org-chart edit controls unbuilt (manager can edit whole org incl super_admin - gate to
+admin+); reports data quality = clean-data round; AI narration of saturation counts = Coach arc.
+NEXT SESSION: audit bare-'lead' refs in dialog L266/275; SPA upload gate UI re-verify; Arun-view
+checks done; then tester-package freshness + accounts doc = HANDOFF-READY for weekend.
