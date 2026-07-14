@@ -596,3 +596,16 @@ testagent4 / arun.k / viewer (password reset + verified).
 REMAINING HUMAN STEPS (off-repo): share passwords + report channel; founder 30-min dry-run of the
 golden flow before Saturday. Everything else on the lists = post-handoff by design.
 STATUS: READY FOR WEEKEND TESTERS.
+
+## DAY 63 BONUS BLOCK - polish + data hygiene (post HANDOFF-READY)
+DATA: AGR-06-02 dup opp closed (status must be 'Lost' not 'Closed Lost' - CHECK constraint: status in
+Active/Won/Lost/On Hold; stage carries 'Closed Lost'). Aldar Grove service charges: 15/sqft on projects
++ project_units + service_charge_yr computed - proposal maintenance warning should be gone (verify in
+founder dry-run). Active-count landscape healthy: 4 units at 3 actives = saturation demos for testers.
+CODE: ErrBox hardened (string/message/error_description/stringify guard, hides empty - no more {}).
+Lifecycle Stage field moved adjacent to Buyer Intent in LeadCreationFormV2 + DEBUG console.log stripped.
+bare-'lead' L266/275 = loadConflictContext param, healthy (audit closed).
+PENDING (founder, pre-Saturday): 30-min golden-flow dry-run (incl SPA-upload UI at step 6 + service-
+charge warning check); share passwords + report channel with testers.
+SUPABASE EDITOR QUIRK noted by founder: hover on Run can eat composed SQL - workaround: compose in
+Notepad, run with Ctrl+Enter.
