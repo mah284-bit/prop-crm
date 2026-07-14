@@ -1,3 +1,20 @@
+# Market Position Analysis - 14 July 2026
+**Sources:** public vendor/comparison material, checked July 2026. For strategy discussion.
+
+## Finding zero - NAME COLLISION
+An established UAE product named 'PropCRM' exists (cited by PropSpace's own 2026 comparisons alongside
+Pixxi; direct Property Finder API, mid-tier AED 300-1,500/mo). DECISION: rename before any public step.
+Technical cost ~half day. Name brainstorm + trademark search when founder ready.
+
+## Competitive map (UAE)
+Incumbent: PropSpace (2012) - AED 176/user/mo, RERA Forms A/B/F/I, Ejari, Trakheesi, direct PF API,
+80+ portal syndication, off-plan DB, PM module. Volume: Bitrix24 (~90% claimed). Others: Ruby, Ngage/
+Retyn (AED 2.2-5.5k tier), Pixxi, Masterkey, Sell.Do; global: Salesforce/Zoho/Pipedrive.
+TABLE STAKES WE LACK (connector layer only - pipeline already source-agnostic): portal lead capture,
+RERA forms, syndication, WhatsApp automation, mobile.
+OUR DEPTH NOBODY SHOWS: versioned proposals w/ narration, negotiation discipline, stage-gated docs,
+payment->commission automation w/ splits, saturation intelligence, dup gate, Commission aging/chase,
+Motivation Display. UAE leaders DO track Oqood/SPA schedules -> money-tail redesign = necessity.
 
 ## AI landscape 2026
 82% of agents use AI (writing 78%, chatbots 47%, market analysis 39%). Table stakes: behavioral lead
