@@ -144,6 +144,18 @@ export default function CreateOpportunityDialog({ leads, setLeads, units, projec
   const [unitSearch, setUnitSearch] = useState("");
   const [saturation, setSaturation] = useState(null);
   const [dupWarning, setDupWarning] = useState(false);
+  const [agentSplit, setAgentSplit] = useState(null);
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      if (!currentUser?.company_id) return;
+      const { data } = await supabase.from("companies")
+        .select("default_agent_split_mode, default_agent_split_value")
+        .eq("id", currentUser.company_id).single();
+      if (live && data) setAgentSplit(data);
+    })();
+    return () => { live = false; };
+  }, [currentUser?.company_id]);
   useEffect(() => {
     let live = true;
     (async () => {
@@ -1015,6 +1027,17 @@ What should the second agent know?`;
 
               </div>
               {saturation && <UnitSaturationInline saturation={saturation} />}
+              {(() => {
+                const isAgent = !["super_admin","admin","sales_manager","leasing_manager"].includes(currentUser?.role) && currentUser?.is_super_admin !== true;
+                const pct = Number(oppForm.commission_pct);
+                const selUnit = (units||[]).find(u => u.id === oppForm.unit_id);
+                const price = Number((salePricing||[]).find(s => s.unit_id === oppForm.unit_id)?.asking_price) || Number(selUnit?.base_price) || Number(oppForm.budget) || 0;
+                if (!isAgent || !pct || !price || !agentSplit?.default_agent_split_value) return null;
+                const gross = price * pct / 100;
+                const mine = agentSplit.default_agent_split_mode === "percentage" ? gross * Number(agentSplit.default_agent_split_value) / 100 : Number(agentSplit.default_agent_split_value);
+                if (!mine) return null;
+                return <div style={{marginTop:6,padding:"8px 12px",background:"#ECFDF5",borderLeft:"3px solid #10B981",borderRadius:4,fontSize:12,color:"#065F46",fontWeight:700}}>💰 Your estimated earning on this deal: AED {Math.round(mine).toLocaleString()}</div>;
+              })()}
               {dupWarning && <div style={{marginTop:6,padding:"8px 12px",background:"#FEF3C7",borderLeft:"3px solid #D97706",borderRadius:4,fontSize:11,color:"#92400E",fontWeight:600}}>⚠️ This buyer already has an active opportunity on this unit — consider opening the existing deal instead of creating a duplicate.</div>}
               {/* Commission auto-populate from master agreement */}
               {canDo(currentUser, "see_brokerage_commission") && (
