@@ -655,3 +655,18 @@ auto-advancing New -> Contacted on logged calls. The Day-64 design captures #2+#
 PENDING NEXT: prod smoke of the evening merges (auto-advance + door-unification); ranked leftovers
 (next-step time+place, TAB_CAPABILITY review, org-chart gating, My Earnings detail); golden-flow
 click-through still owed.
+
+## DAY 64 NIGHT - TIME+PLACE SHIPPED, SECURITY SESSION, PROD CERTIFIED
+SHIPPED: next-step ns_time+ns_place (Location for Meeting/Visit only; scheduled_at real time not 9am;
+narration 'at HH:MM / pin'; activities.location column added) + founder polish: ribbon hidden in
+Scheduled mode (a schedule IS the step). Merged 6f4ffc3.
+SECURITY: TAB_CAPABILITY + lead_queue/org_chart (assign_leads) + proppulse (use_proppulse - NEW
+capability, seeded SQL all companies, admin+ default, Permissions-screen flippable per founder).
+ROOT CAUSE CLASS: canDo requires the action in permissions.js ACTION map - unmapped = false for
+non-admins (managers silently lose legit tabs; Commission Outstanding rendering was the tell that
+caps loaded fine). LESSON: new capability = 3 steps: seed SQL + map entry + gate. Org Chart edit
+controls gated manage_users (admin+); managers view whole org read-only (founder: no subtree split).
+PROD CERTIFIED: auto-advance + lifecycle chain live (Shabbir active_prospect, both opps Contacted
+with auto-notes visible). Time+place NOT yet re-smoked on prod post-merge (was mid-deploy at check).
+NEXT SESSION PRIORITY: golden-flow click-through (the walk became the design session - the actual
+tester-path run remains). Then: KYC v1 half-day, My Earnings detail, remaining list.
