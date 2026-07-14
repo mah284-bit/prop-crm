@@ -143,6 +143,7 @@ export default function CreateOpportunityDialog({ leads, setLeads, units, projec
   const [unitPickerOpen, setUnitPickerOpen] = useState(false);
   const [unitSearch, setUnitSearch] = useState("");
   const [saturation, setSaturation] = useState(null);
+  const [dupWarning, setDupWarning] = useState(false);
   useEffect(() => {
     let live = true;
     (async () => {
@@ -150,10 +151,16 @@ export default function CreateOpportunityDialog({ leads, setLeads, units, projec
       try {
         const sat = await analyzeUnitSaturation(oppForm.unit_id, currentUser?.id, supabase);
         if (live) setSaturation(sat);
+        if (selectedLead?.id) {
+          const { data: dups } = await supabase.from("opportunities")
+            .select("id").eq("lead_id", selectedLead.id).eq("unit_id", oppForm.unit_id)
+            .eq("status", "Active").limit(1);
+          if (live) setDupWarning((dups || []).length > 0);
+        }
       } catch (e) { if (live) setSaturation(null); }
     })();
     return () => { live = false; };
-  }, [oppForm.unit_id]);
+  }, [oppForm.unit_id, selectedLead?.id]);
   const [unitProjFilter, setUnitProjFilter] = useState("All"); // project_id or "All"
   const [unitBedFilter, setUnitBedFilter] = useState("All");   // "All" | "Studio" | "1" | "2" | "3" | "4+"
   const [unitShowReserved, setUnitShowReserved] = useState(false);
@@ -1008,6 +1015,7 @@ What should the second agent know?`;
 
               </div>
               {saturation && <UnitSaturationInline saturation={saturation} />}
+              {dupWarning && <div style={{marginTop:6,padding:"8px 12px",background:"#FEF3C7",borderLeft:"3px solid #D97706",borderRadius:4,fontSize:11,color:"#92400E",fontWeight:600}}>⚠️ This buyer already has an active opportunity on this unit — consider opening the existing deal instead of creating a duplicate.</div>}
               {/* Commission auto-populate from master agreement */}
               {canDo(currentUser, "see_brokerage_commission") && (
               <div style={{gridColumn:"1 / -1", padding:"12px 14px", background: masterAgreement ? "#F0F9FF" : "#F9FAFB", border:`1px solid ${masterAgreement ? "#BAE6FD" : "#E5E7EB"}`, borderRadius:8, marginBottom:8}}>

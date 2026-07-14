@@ -12,11 +12,7 @@ export async function analyzeUnitSaturation(unitId, currentUserId, supabase) {
 
   try {
     
-    const { data: opps, error } = await supabase
-      .from('opportunities')
-      .select('*')
-      .eq('unit_id', unitId)
-      .neq('status', 'Closed Lost');
+    const { data: satData, error } = await supabase.rpc('get_unit_saturation', { p_unit_id: unitId });
 
     if (error) {
       console.error("❌ Query error:", error);
@@ -24,9 +20,10 @@ export async function analyzeUnitSaturation(unitId, currentUserId, supabase) {
     }
 
 
-    const myOpps = (opps || []).filter(o => o.assigned_to === currentUserId);
-    const competitors = (opps || []).filter(o => o.assigned_to !== currentUserId);
-    const total = (opps || []).length;
+    const total = Number(satData?.total || 0);
+    const mine = Number(satData?.mine || 0);
+    const myOpps = { length: mine };
+    const competitors = { length: total - mine };
 
     let risk = "low", color = "#1A7F5A", emoji = "✅";
     if (total >= 8) { risk = "critical"; color = "#B83232"; emoji = "🔴"; }
