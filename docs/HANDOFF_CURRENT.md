@@ -624,3 +624,24 @@ anyway - founder-accepted); column-hiding via view = Phase 2 if ever needed.
 NEXT COMMISSION ITEM (founder spec, from tile feedback): tile onClick -> My Earnings detail view (agent's
 own commission list: deal/unit/cut/status). Build after ranked Tue-Fri items.
 QUEUE: founder dry-run (priority) -> next-step time+place -> TAB_CAPABILITY review -> org-chart gating.
+
+## DAY 64 CLOSE - AUTO-ADVANCE V1 + LIFECYCLE SHIPPED (f4c876f, tag auto-advance-v1-done)
+BUILT (Design Capture items 2+3, v1 slice): lib/autoAdvance.js - completed activity on New-stage opp
+auto-advances to Contacted (stage update + journey auto-note activity_subtype auto_stage_advance +
+toast); first completed activity flips lead raw->qualified. Wired BOTH save paths: opp FAB
+(OpportunityDetail L5108 onSaved) + lead-side (LeadDetail L795 onSaved, w/ local-state flip so chip
+moves without refresh). 5-state lifecycle chip in lead header (extended existing L379 badge map:
+raw grey/qualified blue/active_prospect indigo/customer green/portfolio purple - founder chose single
+auto-moving chip over journey bar).
+BUG FIXED EN ROUTE: lifecycle casing chaos - LeadCreationFormV2 default was "Raw" (capital) vs
+lowercase dropdown values; 5 capital rows in DB normalized via SQL lower(); form default fixed;
+helper compares case-insensitively. LESSON: enum-ish text fields need canonical casing at every door.
+VERIFIED: Shabbir raw->qualified LIVE on save (lead-side); New->Contacted cascade on opp FAB call.
+DESIGN NOTES: auto-advance deliberately does NOT call moveStage (unit-conflict guard + capture
+dialogs live there - blind calls would pop dialogs mid-save); direct stage update is correct for
+the New->Contacted case where the activity IS the capture. Negotiation/SiteVisit auto-advance =
+redesign session (capture-dialog interplay). Proposal-send already advances via builder.
+CAPTURED FOLLOW-UP: lifecycle->active_prospect trigger lives ONLY in LeadDetail's create door -
+must move into canonical CreateOpportunityDialog onCreated (all doors). Next block item.
+PENDING: prod smoke of this merge; golden-flow dry-run STILL owed (the walk became the design
+session - the click-through itself remains).
