@@ -95,6 +95,8 @@ const GlobalStyle = () => (
     html{-webkit-text-size-adjust:100%;touch-action:manipulation}
     body{overflow-x:hidden}
     @media(max-width:768px){
+      .tab-bar::-webkit-scrollbar{height:4px}
+      .tab-bar::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:2px}
       .tab-bar{overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important}
       .tab-bar::-webkit-scrollbar{display:none}
       .filter-sidebar{display:none!important}
@@ -2386,7 +2388,7 @@ export default function App(){
         </div>
 
         {/* Tab bar */}
-        <div className="tab-bar" style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:40,gap:2,borderTop:"1px solid #F1F5F9",overflowX:"auto",background:"#FAFBFE",scrollbarWidth:"none"}}>
+        <div className="tab-bar" style={{display:"flex",alignItems:"center",padding:"0 1.25rem",height:40,gap:2,borderTop:"1px solid #F1F5F9",overflowX:"auto",background:"#FAFBFE",scrollbarWidth:"thin",scrollbarColor:"#CBD5E1 transparent"}}>
           {visibleTabs.map(t=>(
             <button key={t.id} onClick={()=>{navigateToTab(t.id);if(t.id==="ai"||t.id==="l_ai")loadAIData();}}
               style={{
