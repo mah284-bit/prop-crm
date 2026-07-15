@@ -79,7 +79,7 @@ export async function sendQuickProposal({
           unit_count: selectedUnits.length,
         },
         user_id: currentUser.id,
-        user_name: currentUser.name || 'Unknown',
+        user_name: currentUser.full_name || currentUser.name || 'Unknown',
       });
     } catch (activityErr) {
       console.error('⚠️ Activity logging failed (non-blocking):', activityErr);

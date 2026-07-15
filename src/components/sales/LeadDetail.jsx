@@ -816,8 +816,11 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
             onClose={()=>setShowLeadLog(false)}
             onSaved={async(data, nextStepIntent)=>{
               setActivities(p=>[data,...p]);
-              autoAdvanceOnActivity({ opp: null, lead: selLead, savedActivity: data, supabase, showToast,
-                onStageChanged: null }).then(()=>{
+              // GF-04: lead-side activity + exactly ONE active opp at New -> advance it (2+ -> touch nothing)
+              const _leadOpps = (opps||[]).filter(o => o.lead_id === selLead.id && !["Closed Won","Closed Lost","On Hold"].includes(o.stage));
+              const _soleNew = _leadOpps.length === 1 && _leadOpps[0].stage === "New" ? _leadOpps[0] : null;
+              autoAdvanceOnActivity({ opp: _soleNew, lead: selLead, savedActivity: data, supabase, showToast,
+                onStageChanged: (s)=>{ setOpps(prev=>prev.map(x=>x.id===_soleNew.id?{...x,stage:s}:x)); setGlobalOpps(prev=>(prev||[]).map(x=>x.id===_soleNew.id?{...x,stage:s}:x)); } }).then(()=>{
                 if((selLead.lifecycle_stage||"raw").toLowerCase()==="raw" && data?.status==="completed"){
                   setLeads(ls=>ls.map(x=>x.id===selLead.id?{...x,lifecycle_stage:"qualified"}:x));
                 }
