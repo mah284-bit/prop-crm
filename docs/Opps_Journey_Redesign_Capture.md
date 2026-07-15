@@ -52,3 +52,16 @@
 ## Open items intentionally deferred
 - Per-user commission split override; KYC file uploads; automated refund computation; reminder
   automation via email templates (Comms Overhaul dependency); developer portal/API for SPA status.
+
+## 6. Bulk / Portfolio deals (block sales) - DESIGN LATER, captured 15 Jul (Day 65 golden-flow walk)
+Scenario: investor buys multiple units / a floor. Principle AGREED: opp stays the deal atom (1 unit -
+all machinery assumes it: saturation, dup-gate, payment ledger, commission invoice). What's missing =
+a BUNDLE layer above:
+- Create-once: pick N units -> N opps auto-created (shared buyer/terms, auto-titled).
+- Multi-unit quote -> promote should offer per-unit opp creation via checkboxes (GF-04b, nearer-term).
+- Bundle-level NEGOTIATION (the hard part): 'all 8 at 7% off' negotiated as a bundle but distributed
+  to per-unit values/discounts - each unit's SPA + commission invoice needs ITS OWN number.
+  Distribution rules (pro-rata by price? manual per-unit? developer-driven?) = founder design input.
+- Bulk stage progression where gates allow; portfolio view on the buyer (the floor as one engagement).
+STATUS: identified as 1-unit vs multi-unit at intake; engineer separately after dedicated design
+session. Explicitly out of tester scope for the weekend.
