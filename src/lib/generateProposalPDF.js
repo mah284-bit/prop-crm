@@ -66,25 +66,29 @@ export async function generateProposalPDF({
     }
   }
 
-  // Property Overview Box
-  doc.setFillColor(245, 249, 255);
-  doc.rect(margin, yPos, contentWidth, 50, 'F');
-  doc.setDrawColor(26, 95, 168);
-  doc.setLineWidth(0.5);
-  doc.rect(margin, yPos, contentWidth, 50);
-
-  doc.setTextColor(15, 37, 64);
-  doc.setFontSize(12);
-  doc.setFont(undefined, 'bold');
-  doc.text(`${unit?.unit_ref || 'N/A'} · ${project?.name || 'Property'}`, margin + 5, yPos + 8);
-
-  doc.setFontSize(10);
-  doc.setFont(undefined, 'normal');
-  doc.text(`Developer: ${project?.name || 'N/A'}`, margin + 5, yPos + 18);
-  doc.text(`Unit: ${unit?.bedrooms || 'Studio'}BR · ${unit?.size_sqft || 'N/A'} sqft · ${unit?.view || 'N/A'}`, margin + 5, yPos + 24);
-  doc.text(`Status: ${unit?.status || 'Available'}`, margin + 5, yPos + 30);
-
-  yPos += 55;
+  // Property Overview Box - GF-01: one card per unit
+  const _unitsToRender = (proposalUnits && proposalUnits.length > 0) ? proposalUnits : (unit ? [unit] : []);
+  for (const _u of _unitsToRender) {
+    if (yPos > pageHeight - 60) { doc.addPage(); yPos = margin; }
+    doc.setFillColor(245, 249, 255);
+    doc.rect(margin, yPos, contentWidth, 50, 'F');
+    doc.setDrawColor(26, 95, 168);
+    doc.setLineWidth(0.5);
+    doc.rect(margin, yPos, contentWidth, 50);
+  
+    doc.setTextColor(15, 37, 64);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text(`${_u?.unit_ref || 'N/A'} · ${project?.name || 'Property'}`, margin + 5, yPos + 8);
+  
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Developer: ${project?.name || 'N/A'}`, margin + 5, yPos + 18);
+    doc.text(`Unit: ${_u?.bedrooms || 'Studio'}BR · ${_u?.size_sqft || 'N/A'} sqft · ${_u?.view || 'N/A'}`, margin + 5, yPos + 24);
+    doc.text(`Status: ${_u?.status || 'Available'}`, margin + 5, yPos + 30);
+  
+    yPos += 55;
+  }
 
   // Photos
   if (project?.photo_gallery_urls && project.photo_gallery_urls.length > 0) {
