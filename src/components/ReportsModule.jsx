@@ -401,7 +401,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
 
       {/* Report selector */}
       <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap",overflowX:"auto",paddingBottom:4}}>
-        {Object.entries(REPORTS).filter(([key])=>(crmContext==="leasing"?["rent_roll","pdc_schedule","tasks_report","agent_performance"].includes(key):["pipeline","sales_payments","agent_performance","lead_conversion","tasks_report","manager_weekly","investor_quarterly"].includes(key)) && (canDo(currentUser,"see_all") || !["agent_performance","lead_conversion"].includes(key))).map(([key,r])=>(
+        {Object.entries(REPORTS).filter(([key])=>(crmContext==="leasing"?["rent_roll","pdc_schedule","tasks_report","agent_performance"].includes(key):["pipeline","sales_payments","agent_performance","lead_conversion","tasks_report","manager_weekly","investor_quarterly"].includes(key)) && (canDo(currentUser,"see_all") || !["agent_performance","lead_conversion","manager_weekly","investor_quarterly"].includes(key))).map(([key,r])=>(
           <button key={key} onClick={()=>setActiveReport(key)}
             style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid ${activeReport===key?"#0F2540":"#E2E8F0"}`,background:activeReport===key?"#0F2540":"#fff",color:activeReport===key?"#fff":"#4A5568",fontSize:11,fontWeight:activeReport===key,whiteSpace:"nowrap"?700:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5,transition:"all .15s"}}>
             <span>{r.icon}</span> {r.label}
