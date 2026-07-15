@@ -50,6 +50,22 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
   const [promoting, setPromoting] = useState(false);
   const [promotedProposal, setPromotedProposal] = useState(null); // V1 carry-over stash
   const handlePromoteProposal = async (proposal) => {
+    // GF-04b v1: stored-record fast-path - own quotes carry proposal_units[].unit_id
+    try {
+      const pu = proposal?.units_quoted;
+      if (Array.isArray(pu) && pu.length > 0 && (pu[0]?.id || pu[0]?.unit_ref)) {
+        const unit = (units || []).find(u => u.id === pu[0].id) || (units || []).find(u => (u.unit_ref||"").trim().toUpperCase() === (pu[0].unit_ref||"").trim().toUpperCase());
+        if (unit) {
+          if ((unit.status === "Reserved" || unit.status === "Sold") && !window.confirm("Unit " + unit.unit_ref + " is now " + unit.status + ". Promote anyway?")) return;
+          const price = Number(pu[0].price) || Number(pu[0].asking_price) || ((salePricing || []).find(s => s.unit_id === unit.id)?.asking_price) || 0;
+          setPromotedProposal({ pdf_url: proposal.pdf_url || null, extracted: { source: "stored_record" }, unit_id: unit.id, asking_price: price });
+          setPrefilledUnit({ unit_id: unit.id, unit_ref: unit.unit_ref, final_price: price || null });
+          setShowCanonicalOppDialog(true);
+          return;
+        }
+      }
+    } catch (e) { console.warn("fast-path skipped:", e); }
+    // Fallback: AI extraction (external/legacy documents)
     if (!proposal?.pdf_url) { showToast?.("This proposal has no PDF to read.", "error"); return; }
     setPromoting(true);
     try {
