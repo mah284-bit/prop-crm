@@ -5126,6 +5126,22 @@ onSelect={(unitId) => {
           }}
         />
       )}
+      {showLog && (
+        <LogActivityModal
+          lead={lead}
+          opp={opp}
+          defaultType={"Call"}
+          currentUser={currentUser}
+          showToast={showToast}
+          onClose={()=>setShowLog(false)}
+          onSaved={(saved)=>{
+            setActivities(a=>[saved,...a]);
+            setShowLog(false);
+            showToast("Activity logged","success");
+            autoAdvanceOnActivity({ opp, lead, savedActivity: saved, supabase, showToast, onStageChanged: (s)=>onUpdated({...opp, stage: s}) });
+          }}
+        />
+      )}
       {showUnitPack && selectedUnitForPack && (
         <UnitDetailPanel
           unit={selectedUnitForPack}
