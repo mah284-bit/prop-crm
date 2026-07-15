@@ -65,3 +65,46 @@ a BUNDLE layer above:
 - Bulk stage progression where gates allow; portfolio view on the buyer (the floor as one engagement).
 STATUS: identified as 1-unit vs multi-unit at intake; engineer separately after dedicated design
 session. Explicitly out of tester scope for the weekend.
+
+## GOLDEN-FLOW WALK FINDINGS - Day 65, 15 Jul 2026 (full lead->Won cycle as agent, prod)
+WALK VERDICT: spine passed end-to-end SECOND time (GoldenFlow Test1: lead -> 2-unit quote -> AI promote
+-> auto-advance Contacted -> Site Visit -> proposal -> negotiation -> Offer -> Reserved -> SPA ledger +
+UI upload (WORKS - yesterday's 'missing upload' = skipped moment, machinery sound, re-entry path just
+needs visibility) -> Closed Won -> customer #2 -> commission invoice 97,932 = 4% verified).
+
+### Findings ledger (fix-batch triage pending)
+GF-01 Quick-quote PDF renders only FIRST unit (data layer correct: '2 units' in record + activity note).
+GF-02 Earning banner absent on Promote-to-Opp path (works on manual unit pick).
+GF-03 proposal_sent activity author 'Unknown' (user_name not carried).
+GF-04 Lead-side activity + exactly ONE active opp at New -> auto-advance it (founder-agreed rule);
+      2+ opps -> touch nothing. GF-04b: multi-unit quote promote -> offer per-unit opp creation (checkboxes).
+GF-06 Opp 'Log Activity' TAB = read-only history by original design (crowding fix) but renders a DEAD
+      '+ Log Activity' button + misleading name. Fix: remove button, retitle 'Activity History'.
+GF-07 Location field needed on MAIN activity form when Type=Meeting/SiteVisit (any status) - ribbon
+      fields work but main-form scheduled meetings have no location. Map-pin = later polish.
+GF-08 RESOLVED BY DESIGN (founder+architect): quick quotes are teasers - do NOT advance to Quoted, do
+      NOT count in Quoted chip; Quoted = real proposal exists. Promote lands at Contacted.
+GF-09 Reservation amount recorded at Reserve has NO display surface anywhere (founder-confirmed).
+      Surface on Financials tab = first brick of money-tail redesign.
+GF-10 Reserve-step payment recording does NOT flow into SPA dialog's ledger (re-entered manually).
+GF-11 All-received flow forces per-row amount+date entry though most amounts are computable; 5b
+      redesign dissolves this. Booking fee -> optional/waivable meanwhile.
+GF-12 Manager Weekly + Investor Quarterly report tabs VISIBLE TO AGENT - report-level role gating
+      needed (same capability treatment as nav tabs). Dashboards+reports = own walk-through later.
+GF-13 Opp financials panel: stray '0' under Final Agreed Price; Commission Invoice panel shows
+      NET/Outstanding AED 0 while invoice carries 97,932 gross - wrong field read or draft renders zeros.
+GF-14 My Earnings tile: 3 deals counted but sum stuck at 17,691 - second Won deal's agent_commission
+      (~39,173 expected) missing. POSSIBLE REGRESSION: split may not have computed on this invoice. PRIORITY.
+
+### Design amendments from the walk (into the redesign capture)
+- Booking vs Reservation = TWO products, not dups (booking 5k immediate/non-refundable 'hold NOW';
+  reservation 25k formal hold during bank approvals). Both optional, both credit toward initial
+  advance (Credit Note math verified good). Developer charging pattern defines which exist.
+- Initial advance likely = payment-plan first installment - CODE-CHECK whether derived or freehand.
+- 'Confirm SPA Signed' does NOT belong in the ledger dialog: ledger completes -> developer processes
+  -> developer's executed SPA arrives (channel TBC) -> upload = Won/Close trigger. Dialog's two jobs split.
+- Post-close follow-up till handover = existing activity/reminder machinery on Won opps; verify Won
+  opps aren't frozen for logging; nothing new to build.
+- Property Management module (broker manages investors' units) = post-release enhancement, planned.
+- North star (founder): 'a broker app, just recording, but depicting reality - the broker chases the
+  buyer AND the developer till the deal closes; after closing, follow-up calls till handover.'
