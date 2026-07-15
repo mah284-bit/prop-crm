@@ -697,3 +697,16 @@ bricks), GF-15..18 dashboard/report sums + cosmetics (dashboards session), GF-19
 at source when opps carry MA - promote polish), GF-20 viewer redesign (parked), KYC v1 (headliner),
 My Earnings detail view. TOMORROW: KYC v1 + promote-v1 (stored-record prefill) my picks.
 Screenshot budget exhausted mid-day - text-paste reporting worked well.
+
+## DAY 65 EVENING SPRINT (post-break) - PROMOTE FAST-PATH SHIPPED (6acfcb3)
+GF-04b v1 LIVE: Promote-to-Opp reads units_quoted[0] from the proposal ACTIVITY's structured_data
+(id-first, unit_ref fallback; price from record with salePricing fallback) - instant prefill, NO AI
+call for our own quotes; extraction demoted to fallback for external/legacy docs. Verified end-to-end
+on localhost (old path 404'd there = proof of bypass) + DB row confirmed (DAM-09-05, 2,506,034, unit
+linked). NOTE: dialog source = activities table type='proposal_sent' (NOT proposals table); the
+units_quoted shape is {id, price, bedrooms, unit_ref}.
+SIDE EFFECTS EXPECTED CURED WITH THIS PATH: GF-02 (banner should fire now - unit_id set pre-dialog,
+MA effect runs; VERIFY next session), GF-19 (opps get MA when effect runs -> invoices link developer).
+STILL QUEUED: GF-03 Unknown author (15min), GF-04 lead-side single-opp advance (20min), KYC v1
+(tomorrow's headliner), My Earnings detail, GF-09/10 money-tail bricks, dashboards session.
+DAY 66 PLAN: KYC v1 morning -> GF-03/04 -> prod smoke of fast-path + GF-02 banner verify.
