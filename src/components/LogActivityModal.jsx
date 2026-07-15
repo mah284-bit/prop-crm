@@ -15,7 +15,7 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
   // owns its reminders state, so it creates the reminder + updates its panel.
   const [form, setForm] = useState({
     type: defaultType, note:"", scheduled_at:"", duration_mins:"", status:"completed",
-    person_id:"", ns_enabled:false, ns_type:"Call", ns_due:"", ns_time:"", ns_place:"", ns_note:"",
+    person_id:"", ns_enabled:false, main_location:"", ns_type:"Call", ns_due:"", ns_time:"", ns_place:"", ns_note:"",
   });
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);  // Day 18: synchronous double-click guard (ref flips instantly, before re-render)
@@ -37,12 +37,14 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
         nsLine,
         form.scheduled_at?("\n📅 Scheduled: "+new Date(form.scheduled_at).toLocaleString("en-AE",{dateStyle:"medium",timeStyle:"short"})):"",
         form.duration_mins?("\n⏱ Duration: "+form.duration_mins+" mins"):"",
+        form.main_location?("\n\ud83d\udccd Location: "+form.main_location):"",
       ].filter(Boolean).join("");
       const payload = {
         lead_id: lead?.id || opp?.lead_id || null,
         lead_name: lead?.name || null,
         company_id: (opp?.company_id) || currentUser.company_id || null,
         type: form.type,
+        location: form.main_location || null,
         note: noteText || null,
         scheduled_at: form.scheduled_at || new Date().toISOString(),
         duration_mins: form.duration_mins?Number(form.duration_mins):null,
@@ -141,6 +143,12 @@ export default function LogActivityModal({lead, opp, currentUser, showToast, onC
                   {["15","30","45","60","90","120"].map(m=><option key={m} value={m}>{m} mins</option>)}
                 </select>
               </div>
+            </div>
+          )}
+          {["Meeting","Site Visit"].includes(form.type)&&(
+            <div style={{marginBottom:12}}>
+              <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4,textTransform:"uppercase",letterSpacing:".5px"}}>Location</label>
+              <input type="text" value={form.main_location} onChange={sf("main_location")} placeholder="e.g. Sales office / project site / cafe"/>
             </div>
           )}
 
