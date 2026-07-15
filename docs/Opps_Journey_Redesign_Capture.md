@@ -108,3 +108,15 @@ GF-14 My Earnings tile: 3 deals counted but sum stuck at 17,691 - second Won dea
 - Property Management module (broker manages investors' units) = post-release enhancement, planned.
 - North star (founder): 'a broker app, just recording, but depicting reality - the broker chases the
   buyer AND the developer till the deal closes; after closing, follow-up calls till handover.'
+
+## GF-04b RESOLUTION (founder ruling, Day 65 evening)
+Promote-to-Opp = ONE unit, ONE opp - always. Multi-unit quotes are MENUS (options shown), not
+commitments; spawning N opps would flood the pipeline with fiction (saturation, dashboards, manager
+views all treat an opp as intent). Junk-in-opps avoided by design.
+V1 FIX (queued, not tonight): promote prefills unit[0] FROM THE STORED QUOTE RECORD (no AI
+unit-guessing on our own PDF - deterministic, never fails at 1 or 10 units; wizard's existing unit
+picker is the override). AI extraction stays for its real job: external/uploaded documents.
+4-unit promote today arrived EMPTY (extractor choked on multi-card PDF) - confirms the redesign.
+ARCHITECT HOMEWORK (no rush, founder-ordered): the in-between state - buyer engaging a shortlist,
+not yet committed - lives nowhere today (just a sent quote). Shortlist-engagement tracking design
+for the redesign session; connects to Quoted-stage semantics (GF-08).
