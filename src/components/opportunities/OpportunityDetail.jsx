@@ -1014,8 +1014,19 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     // Stage 6 — Auto-create draft commission invoice when SPA is signed
     if (toStage === "SPA Signed" && stageGateForm.final_price) {
       try {
+        // GF-21 guard: one invoice per opportunity
+        const { data: existingInv } = await supabase.from("pp_commission_invoices")
+          .select("id").eq("opportunity_id", opp.id).limit(1);
+        if (existingInv && existingInv.length > 0) {
+          console.log("Commission invoice already exists - skipping create");
+        } else {
         const salePrice = Number(stageGateForm.final_price);
-        const commissionPct = Number(opp.commission_pct || 0);
+        // GF-14 fallback: pct from company default if opp arrived empty (any create door)
+        let commissionPct = Number(opp.commission_pct || 0);
+        if (!commissionPct) {
+          const { data: co } = await supabase.from("companies").select("default_commission_pct").eq("id", currentUser.company_id).maybeSingle();
+          commissionPct = Number(co?.default_commission_pct || 0);
+        }
         const commissionGross = Math.round(salePrice * commissionPct / 100 * 100) / 100;
         const vatPct = 5.00;
         const vatAmount = Math.round(commissionGross * vatPct / 100 * 100) / 100;
@@ -1069,6 +1080,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         if (invErr) {
           console.error("Commission invoice insert failed:", invErr);
           showToast("SPA recorded but commission invoice creation failed - check console", "warning");
+        }
         }
       } catch (e) {
         console.error("Commission invoice insert exception:", e);
@@ -2088,7 +2100,7 @@ You will become the assigned agent.`);
                                 <div style={{padding:"8px 10px",background:"#EFF6FF",borderRadius:7,border:"1px solid #BFDBFE",gridColumn:"span 2"}}>
                                   <div style={{fontSize:9,color:"#1D4ED8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Final Agreed Price</div>
                                   <div style={{fontSize:16,fontWeight:700,color:"#1D4ED8"}}>AED {Number(finalPrice).toLocaleString()}</div>
-                                  {discValueFin && discTypeFin && (
+                                  {!!discValueFin && !!discTypeFin && (
                                     <div style={{fontSize:10,color:"#64748B",marginTop:3}}>
                                       Discount: <strong style={{color:"#A06810"}}>{discTypeFin === "percent" ? `${discValueFin}%` : `AED ${Number(discValueFin).toLocaleString()}`}</strong>
                                       {discSourceFin && <span style={{color:"#94A3B8"}}> (from {discSourceFin})</span>}
