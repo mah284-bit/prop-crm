@@ -670,3 +670,30 @@ PROD CERTIFIED: auto-advance + lifecycle chain live (Shabbir active_prospect, bo
 with auto-notes visible). Time+place NOT yet re-smoked on prod post-merge (was mid-deploy at check).
 NEXT SESSION PRIORITY: golden-flow click-through (the walk became the design session - the actual
 tester-path run remains). Then: KYC v1 half-day, My Earnings detail, remaining list.
+
+## DAY 65 CLOSE (15 Jul, ~7pm) - GOLDEN-FLOW WALK + FIX AFTERNOON
+MORNING: full golden-flow click-through as agent on prod - spine passed 2nd complete run (GoldenFlow
+Test1, AGR-13-09, 2.448M: lead -> quote -> promote -> auto-advance -> visit -> proposal -> nego ->
+Offer -> Reserved -> SPA ledger + UI upload VERIFIED WORKING -> Won -> customer -> invoice).
+Findings GF-01..22 in docs/Opps_Journey_Redesign_Capture.md + design amendments (booking/reservation
+two-products, SPA-dialog job split, 5b charges ledger, one-unit-one-opp promote ruling, PM module
+planned, north-star quote).
+AFTERNOON FIXES SHIPPED (all on main, pushed):
+- MONEY ARC 8e71325: GF-21 dedupe guard (one invoice/opp), GF-14 pct fallback at invoice time,
+  falsy-0 fix; SQL heal (dup deleted, invoice recomputed 97,932/39,172.80/58,759.20). VERIFIED:
+  My Earnings 56,863, full 3-layer commission panel, manager ledger consistent (drafts 6).
+- GF-12 0225f77: manager_weekly + investor_quarterly gated behind see_all (agent verdict rides
+  next agent login - not explicitly re-checked).
+- GF-01 69713c5: quote PDF loops ALL units (verified 4-unit); GF-01b queued (per-unit project lookup
+  - multi-project quotes show first unit's project on every card).
+- GF-06+22 5eabb15: dead Log Activity tab button WIRED (showLog had NO render consumer - FAB modal
+  cloned incl auto-advance); Sent Proposals dialog widened 760/560.
+- GF-04b 864979c RESOLVED-BY-DESIGN: promote = one unit one opp (quotes are menus); v1 build queued:
+  prefill unit[0] from STORED record, no AI on own PDFs; shortlist-tracking = architect homework.
+- GF-07 (this commit): Location on main activity form, Meeting/Site Visit, any status.
+REMAINING QUEUE: GF-02 promote-banner (mitigated by engine fallback - polish), GF-03 Unknown author,
+GF-04 lead-side single-opp advance rule (build), GF-09/10 reservation display + ledger flow (money-tail
+bricks), GF-15..18 dashboard/report sums + cosmetics (dashboards session), GF-19 developer_id (cured
+at source when opps carry MA - promote polish), GF-20 viewer redesign (parked), KYC v1 (headliner),
+My Earnings detail view. TOMORROW: KYC v1 + promote-v1 (stored-record prefill) my picks.
+Screenshot budget exhausted mid-day - text-paste reporting worked well.
