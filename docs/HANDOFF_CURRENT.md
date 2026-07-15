@@ -710,3 +710,17 @@ MA effect runs; VERIFY next session), GF-19 (opps get MA when effect runs -> inv
 STILL QUEUED: GF-03 Unknown author (15min), GF-04 lead-side single-opp advance (20min), KYC v1
 (tomorrow's headliner), My Earnings detail, GF-09/10 money-tail bricks, dashboards session.
 DAY 66 PLAN: KYC v1 morning -> GF-03/04 -> prod smoke of fast-path + GF-02 banner verify.
+
+## DAY 65 FINAL (evening extension) - GF-03 + GF-04 SHIPPED (512a446)
+GF-03: proposal_sent author 'Unknown' = currentUser.name (undefined) - fixed to full_name. One token.
+GF-04: lead-side auto-advance live - completed activity + exactly ONE active opp at New -> advance
+with toast + local flip; 2+ opps or non-New -> untouched (founder rule). Verified both directions.
+LESSON RE-BANKED: dev server restart needed after lib/flow merges - stale bundle caused a false
+fast-path failure (slow + silent); restart cured instantly. Env-confusion (local vs prod) recurred -
+tester one-pager should state env explicitly per step.
+DAY 65 FULL TALLY: golden-flow walk (GF-01..22 + 6 design amendments) / money arc (13,14,21 killed,
+data healed, engine hardened) / GF-12 report gating / GF-01 PDF loop / GF-06 dead button wired /
+GF-22 dialog widened / GF-07 main-form location / GF-04b promote fast-path / GF-03 author / GF-04
+lead-side advance. NINE findings killed same day they were found + one flow rebuilt.
+DAY 66: KYC v1 headliner -> prod smoke (fast-path + GF-02 banner verify + GF-12 agent half) ->
+My Earnings detail if runway. Saturday: testers.
