@@ -1,3 +1,4 @@
+import KYCDialog from "../leads/KYCDialog.jsx";
 import { autoAdvanceOnActivity } from "../../lib/autoAdvance.js";
 import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import { supabase } from "../../lib/supabase";
@@ -41,6 +42,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
   // 16 May 2026: Consolidation - canonical opportunity dialog from Leads tab
   const [showCanonicalOppDialog, setShowCanonicalOppDialog] = useState(false);
   const [prefilledUnit, setPrefilledUnit] = useState(null);
+  const [showKYC, setShowKYC] = useState(false);
   // Phase E dense layout: activities for ALL of this lead's opportunities (used to enrich opp rows)
   const [leadActivities, setLeadActivities] = useState([]);
   const canEdit = canDo(currentUser,"write");
@@ -522,7 +524,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
               const KYC_META = {not_started:{c:"#8A6200",bg:"#FDF3DC",l:"KYC: Not started"},in_progress:{c:"#1A5FA8",bg:"#E6EFF8",l:"KYC: In progress"},verified:{c:"#1A7F5A",bg:"#E6F4EE",l:"KYC: Verified"},expired:{c:"#C53030",bg:"#FED7D7",l:"KYC: Expired"}};
               const k = selLead.kyc_status||"not_started";
               const m = KYC_META[k]||KYC_META.not_started;
-              return <span style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:m.bg,color:m.c}}>{m.l}</span>;
+              return <button onClick={()=>setShowKYC(true)} title="Update KYC" style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:m.bg,color:m.c,border:"1px dashed "+m.c,cursor:"pointer"}}>{m.l} \u270e</button>;
             })()}
             {(()=>{
               // Phase 2.2A — Lifecycle stage badge
@@ -806,6 +808,11 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
           </div>
         )}
         {/* 23 May 2026: Lead-stage Activity Log Dialog - full feature parity with Opp Detail */}
+        {showKYC && selLead && (
+          <KYCDialog lead={selLead} currentUser={currentUser} showToast={showToast}
+            onClose={()=>setShowKYC(false)}
+            onSaved={(kyc)=>setLeads(ls=>ls.map(x=>x.id===selLead.id?{...x,...kyc}:x))} />
+        )}
         {showLeadLog && (
           <LogActivityModal
             lead={selLead}
