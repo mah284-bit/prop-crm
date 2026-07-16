@@ -766,3 +766,26 @@ flexible, easy. Deal-spine doctrine banked: proposal=record-made-visible, negoti
 Reserve=confirmation-by-money; post-Reserve changes = controlled exceptions w/ ceremony.
 DATA-SEMANTICS notes for clean-data round: Portfolio/Customer chips over-counting from test deals.
 SATURDAY-READY: app + tester package + gates all live on prod.
+
+## STOCK-TAKE (Day 66 close) - EVERYTHING PENDING, PRIORITIZED
+### FRIDAY (deep work):
+1. WILDERNESS DESIGN SESSION (architect homework due): Path B reserve-first, post-reservation
+   renegotiation controls, unit-switch fund transfer, Launch Mode kiosk, block sales, developer
+   repricing, override logging (intent vs consequence), evidence-gate v2 (unit-link hard),
+   reserved-without-terms 'terms pending' state. ONE coherent design.
+2. DASHBOARDS/REPORTS SESSION (GF-15/16 parked): value sums by stage wrong on dashboard + reports
+   (Contacted/Site Visit showing 0.00M), dashboard vs report consistency, viewer/executive dashboard
+   redesign (GF-20: viewer sees Add New Lead it can't use).
+3. Money-tail redesign items if session runs long: SPA Requirements/SPA Signed stage split,
+   ask-then-credit layout, SPA fee from settings, booking-fee product (5k immediate non-refundable).
+### SATURDAY MORNING (landing strip):
+4. CLEAN-DATA ROUND: wipe 66 days of test mess, seed fresh demo data (leads, 2-3 marched deals,
+   MAs incl Sobha, clean invoices). Chip over-counting (Portfolio/Customer) resolves with it.
+5. Prod smoke: full pass as agent + manager + viewer.
+6. Tester credentials + package final check.
+### QUEUED (post-testers):
+- GF-01b per-unit project in multi-project PDFs | GF-10 full verify | Sent Proposals v-numbering
+- Shortlist-engagement tracking design | map-pin location | KYC v2 (private bucket + signed URLs,
+  buyer-type doc matrices, SPA-party packs, AI date extraction, hard gate at govt proceedings)
+- Negative-testing workstream | rename decision (PropCRM collision) | Property Management module
+- Comms overhaul | Manager dashboard | Leasing lead queue | identity-model split
