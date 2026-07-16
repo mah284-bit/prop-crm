@@ -30,8 +30,10 @@ export default function KYCDialog({ lead, currentUser, showToast, onClose, onSav
       const { data: { publicUrl } } = supabase.storage.from("propcrm-files").getPublicUrl(path);
       const nextDocs = { ...docs, [k]: { url: publicUrl, uploaded_at: new Date().toISOString() } };
       setDocs(nextDocs);
-      await supabase.from("leads").update({ kyc_docs: nextDocs }).eq("id", lead.id);
-      onSaved?.({ kyc_docs: nextDocs });
+      const bump = status === "not_started";
+      if (bump) setStatus("in_progress");
+      await supabase.from("leads").update(bump ? { kyc_docs: nextDocs, kyc_status: "in_progress" } : { kyc_docs: nextDocs }).eq("id", lead.id);
+      onSaved?.(bump ? { kyc_docs: nextDocs, kyc_status: "in_progress" } : { kyc_docs: nextDocs });
     } catch (e) { showToast?.("Upload failed: " + (e.message || e), "error"); }
     setUploading(null);
   };

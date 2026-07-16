@@ -596,7 +596,30 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     // note_only — no action
   };
 
+  const kycGate = async (toStage) => {
+    // KYC v1 soft gates (Design Capture #1): Reserved wants >= docs-collected; SPA wants verified.
+    const need = toStage === "Reserved" ? "in_progress" : toStage === "SPA Signed" ? "verified" : null;
+    if (!need) return true;
+    try {
+      const { data: l } = await supabase.from("leads").select("kyc_status, name").eq("id", opp.lead_id).maybeSingle();
+      const k = l?.kyc_status || "not_started";
+      const ok = need === "in_progress" ? ["in_progress","verified"].includes(k) : k === "verified";
+      if (ok) return true;
+      const label = need === "verified" ? "Verified" : "Docs Collected";
+      const reason = window.prompt("KYC gate: " + (l?.name || "buyer") + " is '" + k.replace("_"," ") + "' but " + toStage + " expects at least '" + label + "'.\n\nBest: Cancel and update KYC from the lead page.\nTo override: type the REASON for proceeding without KYC (e.g. docs promised at signing):");
+      if (reason === null || !reason.trim()) return false;
+      await supabase.from("activities").insert({
+        opportunity_id: opp.id, lead_id: opp.lead_id, company_id: opp.company_id || currentUser.company_id || null,
+        type: "Note", status: "completed",
+        note: "KYC gate OVERRIDE at " + toStage + " (status: " + k + ") - reason: " + reason.trim(),
+        user_id: currentUser.id, user_name: currentUser.full_name || null,
+        lead_name: l?.name || null, stage_at_event: toStage, activity_subtype: "kyc_override",
+      });
+      return true;
+    } catch (e) { console.warn("kycGate skipped:", e); return true; }
+  };
   const moveStage = async(toStage) => {
+    if ((toStage === "Reserved" || toStage === "SPA Signed") && !(await kycGate(toStage))) return;
     // ISSUE D guard duplication — block at moveStage entry too
     // (Dialogs like Capture Contact bypass commitStageMove, so guard
     //  has to be here before any dialog opens)
