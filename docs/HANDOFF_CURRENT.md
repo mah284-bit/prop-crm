@@ -752,3 +752,17 @@ consistency (opps-form skips budget), Quoted pill semantics, negative-testing wo
 SATURDAY: testers on prod. Founder can push back if needed but app is in best-ever shape.
 NEXT SESSION: fresh chat, read this HANDOFF; remaining queue: GF-17/18 cosmetics, GF-15/16 dashboards
 session, evidence-gates design, money-tail redesign, clean-data round before/after testers.
+
+## DAY 66 EVENING BLOCK - EVIDENCE GATE + COSMETICS
+EVIDENCE GATE v1 SHIPPED (86de45c): Reserve/SPA with zero sent proposals prompts w/ logged override
+(evidence_override). Verified firing. DESIGN RULINGS: soft-not-hard CORRECT (Path B reserve-first
+broker games real; hard stop drives deals out of CRM); override makes wilderness VISIBLE + queryable.
+GF-17 + GF-18 killed: duplicate active-opp chip removed; AED-AED doubling (fmtM embeds AED, L157
+double-prefixed) dead.
+ARCHITECT HOMEWORK COMMISSIONED (founder): survey the wilderness - Path B games, post-reservation
+renegotiation w/ smart controls, unit-switch fund transfer, Launch Mode kiosk, block sales, developer
+repricing, intent-vs-consequence override logging - return ONE coherent design: controlled, traceable,
+flexible, easy. Deal-spine doctrine banked: proposal=record-made-visible, negotiation=convergence,
+Reserve=confirmation-by-money; post-Reserve changes = controlled exceptions w/ ceremony.
+DATA-SEMANTICS notes for clean-data round: Portfolio/Customer chips over-counting from test deals.
+SATURDAY-READY: app + tester package + gates all live on prod.
