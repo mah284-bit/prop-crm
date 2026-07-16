@@ -596,6 +596,22 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     // note_only — no action
   };
 
+  const proposalGate = async (toStage) => {
+    // Evidence gate v1 (walk finding GF-walk-11): money stages require a documented offer.
+    // Reserve/SPA with ZERO sent proposals = taking money with no paper trail (RERA risk).
+    if (!["Reserved", "SPA Signed"].includes(toStage)) return true;
+    if ((proposals || []).length > 0) return true;
+    const reason = window.prompt("Evidence gate: no proposal has been sent on this deal.\n\n" + toStage + " means money/contract - the buyer should have documented terms first.\n\nBest: Cancel and send a proposal.\nTo override: type the REASON for proceeding without one:");
+    if (reason === null || !reason.trim()) return false;
+    await supabase.from("activities").insert({
+      opportunity_id: opp.id, lead_id: opp.lead_id, company_id: opp.company_id || currentUser.company_id || null,
+      type: "Note", status: "completed",
+      note: "EVIDENCE gate OVERRIDE at " + toStage + " (no proposals sent) - reason: " + reason.trim(),
+      user_id: currentUser.id, user_name: currentUser.full_name || null,
+      lead_name: lead?.name || null, stage_at_event: toStage, activity_subtype: "evidence_override",
+    });
+    return true;
+  };
   const kycGate = async (toStage) => {
     // KYC v1 soft gates (Design Capture #1): Reserved wants >= docs-collected; SPA wants verified.
     const need = toStage === "Reserved" ? "in_progress" : toStage === "SPA Signed" ? "verified" : null;
@@ -621,6 +637,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     } catch (e) { console.warn("kycGate skipped:", e); return true; }
   };
   const moveStage = async(toStage) => {
+    if ((toStage === "Reserved" || toStage === "SPA Signed") && !(await proposalGate(toStage))) return;
     if ((toStage === "Reserved" || toStage === "SPA Signed") && !(await kycGate(toStage))) return;
     // ISSUE D guard duplication — block at moveStage entry too
     // (Dialogs like Capture Contact bypass commitStageMove, so guard
