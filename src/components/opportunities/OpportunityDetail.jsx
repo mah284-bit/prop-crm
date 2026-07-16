@@ -1367,7 +1367,14 @@ You will become the assigned agent.`);
 
             {/* Workflow bar */}
             <div style={{background:"#fff",border:"1px solid #E8EDF4",borderRadius:12,padding:"8px 14px"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:4}}>Deal Journey</div>
+              <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".6px",marginBottom:4,display:"flex",alignItems:"center",gap:8}}>
+                <span>Deal Journey</span>
+                {(()=>{ /* kycChip: nag while money moves without verified KYC (piece 4) */
+                  const k = lead?.kyc_status || "not_started";
+                  if (!["Reserved","SPA Signed"].includes(opp.stage) || k === "verified") return null;
+                  return <span style={{fontSize:9,fontWeight:700,padding:"1px 8px",borderRadius:20,background:"#FDF3DC",color:"#8A6200",textTransform:"none",letterSpacing:0}}>{"\u26a0 KYC incomplete \u00b7 "}{k.replace("_"," ")}</span>;
+                })()}
+              </div>
               
               {/* Stage pills */}
               <div style={{display:"flex",alignItems:"center",overflowX:"auto",gap:0,marginBottom:6,paddingBottom:2}}>
