@@ -13,6 +13,8 @@ const DOCS = [
   { k: "proof_of_funds", l: "Proof of funds / source" },
 ];
 
+const isExpired = (d) => d?.url && d?.expiry && new Date(d.expiry) < new Date(new Date().toDateString());
+
 export default function KYCDialog({ lead, currentUser, showToast, onClose, onSaved }) {
   const [status, setStatus] = useState(lead?.kyc_status || "not_started");
   const [docs, setDocs] = useState(lead?.kyc_docs || {});
@@ -38,12 +40,21 @@ export default function KYCDialog({ lead, currentUser, showToast, onClose, onSav
     setUploading(null);
   };
   const missing = DOCS.filter(d => !docs[d.k]?.url).map(d => d.l);
+  const expired = DOCS.filter(d => isExpired(docs[d.k])).map(d => d.l);
   const save = async () => {
     if (status === "verified" && (!docs.passport?.url || !docs.eid_visa?.url)) {
       showToast?.("Verified requires Passport + Emirates ID/Visa uploaded", "error"); return;
     }
+    if (status === "verified" && (isExpired(docs.passport) || isExpired(docs.eid_visa))) {
+      showToast?.("Verified blocked: an identity document is EXPIRED - collect a renewed copy", "error"); return;
+    }
     setSaving(true);
-    const payload = { kyc_status: status, kyc_docs: docs, kyc_note: note || null };
+    let effStatus = status;
+    if (status !== "verified") {
+      if (isExpired(docs.passport) || isExpired(docs.eid_visa)) effStatus = "expired";
+      else if (Object.values(docs).some(d => d?.url) && status === "not_started") effStatus = "in_progress";
+    }
+    const payload = { kyc_status: effStatus, kyc_docs: docs, kyc_note: note || null };
     if (status === "verified" && lead?.kyc_status !== "verified") {
       payload.kyc_verified_at = new Date().toISOString();
       payload.kyc_verified_by_user_id = currentUser?.id || null;
@@ -79,6 +90,9 @@ export default function KYCDialog({ lead, currentUser, showToast, onClose, onSav
               <div style={{fontSize:13,color:"#0F2540",fontWeight:600,whiteSpace:"nowrap",textAlign:"left",flex:"1 1 auto"}}>{d.l}</div>
               {docs[d.k]?.url ? (
                 <div style={{display:"flex",alignItems:"center",gap:8,flex:"0 0 auto"}}>
+                  <input type="date" title="Document expiry" value={docs[d.k].expiry || ""}
+                    onChange={(e)=>{ const v=e.target.value; setDocs(x=>({ ...x, [d.k]: { ...x[d.k], expiry: v || undefined } })); }}
+                    style={{fontSize:11,padding:"2px 6px",border: isExpired(docs[d.k]) ? "1.5px solid #C53030" : "1px solid #E2E8F0", borderRadius:6}} />
                   <a href={docs[d.k].url} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#1A5FA8",fontWeight:600}}>View</a>
                   <button onClick={()=>setDocs(x=>{const y={...x}; delete y[d.k]; return y;})} style={{fontSize:11,color:"#B83232",border:"none",background:"none",cursor:"pointer",fontWeight:600}}>remove</button>
                 </div>
@@ -92,6 +106,9 @@ export default function KYCDialog({ lead, currentUser, showToast, onClose, onSav
             </div>
           ))}
         </div>
+        {expired.length > 0 && (
+          <div style={{fontSize:11,color:"#C53030",background:"#FED7D7",borderRadius:6,padding:"6px 10px",marginBottom:8,fontWeight:600}}>Expired: {expired.join(", ")} - renewed copies required</div>
+        )}
         {missing.length > 0 && status !== "verified" && (
           <div style={{fontSize:11,color:"#8A6200",background:"#FDF3DC",borderRadius:6,padding:"6px 10px",marginBottom:12}}>Missing: {missing.join(", ")}</div>
         )}

@@ -601,9 +601,11 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     const need = toStage === "Reserved" ? "in_progress" : toStage === "SPA Signed" ? "verified" : null;
     if (!need) return true;
     try {
-      const { data: l } = await supabase.from("leads").select("kyc_status, name").eq("id", opp.lead_id).maybeSingle();
+      const { data: l } = await supabase.from("leads").select("kyc_status, kyc_docs, name").eq("id", opp.lead_id).maybeSingle();
       const k = l?.kyc_status || "not_started";
-      const ok = need === "in_progress" ? ["in_progress","verified"].includes(k) : k === "verified";
+      const _exp = (d) => d?.url && d?.expiry && new Date(d.expiry) < new Date(new Date().toDateString());
+      const idExpired = _exp(l?.kyc_docs?.passport) || _exp(l?.kyc_docs?.eid_visa);
+      const ok = need === "in_progress" ? (["in_progress","verified"].includes(k) && !idExpired) : (k === "verified" && !idExpired);
       if (ok) return true;
       const label = need === "verified" ? "Verified" : "Docs Collected";
       const reason = window.prompt("KYC gate: " + (l?.name || "buyer") + " is '" + k.replace("_"," ") + "' but " + toStage + " expects at least '" + label + "'.\n\nBest: Cancel and update KYC from the lead page.\nTo override: type the REASON for proceeding without KYC (e.g. docs promised at signing):");
