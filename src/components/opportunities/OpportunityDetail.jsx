@@ -1075,6 +1075,14 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
             .maybeSingle();
           lookedUpDeveloperId = ma?.developer_id || null;
         }
+        // GF-19: no MA (the NORMAL 4%-flat path per founder) -> derive developer via unit->project
+        if (!lookedUpDeveloperId && opp.unit_id) {
+          const { data: u } = await supabase.from("project_units").select("project_id").eq("id", opp.unit_id).maybeSingle();
+          if (u?.project_id) {
+            const { data: pr } = await supabase.from("projects").select("pp_developer_id").eq("id", u.project_id).maybeSingle();
+            lookedUpDeveloperId = pr?.pp_developer_id || null;
+          }
+        }
 
         // Stage 6 — FREEZE the agent split onto the invoice at SPA-Signed (same resolution the SM saw).
         // Computed on the GROSS commission (pre-VAT) — the agent's cut is of earned commission, not VAT.
