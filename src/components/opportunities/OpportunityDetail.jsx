@@ -715,8 +715,8 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         opp.offer_price ||            // legacy fallback
         unitAskingPrice ||            // legacy fallback (unit list price)
         opp.budget;                   // last resort (buyer budget)
-      if (fallbackPrice && !stageGateForm.final_price) {
-        setStageGateForm(f => ({...f, final_price: String(fallbackPrice)}));
+      if (fallbackPrice) {
+        setStageGateForm(f => f.final_price ? f : ({...f, final_price: String(fallbackPrice)}));
       }
       // 18 May 2026 SPA Refactor: pre-fill DLD payer + split from current_dld_*
       // These are populated when proposal is saved (line 3853 area).
@@ -3863,7 +3863,11 @@ onSelect={(unitId) => {
             // Refresh reminders so the new follow-up + expiry reminders show in the strip
             supabase.from("reminders").select("*").eq("related_opportunity_id",opp.id).eq("status","pending").order("trigger_at",{ascending:true}).then(({data})=>setReminders(data||[]));
             // Stamp proposal_sent_at locally (stage stays as-is — agent decides when to move)
-            onUpdated({...opp, proposal_sent_at: new Date().toISOString()});
+            const _pterms = propRow?.structured_data || {};
+            onUpdated({...opp, proposal_sent_at: new Date().toISOString(),
+              current_agreed_price: _pterms.discounted_price || _pterms.asking_price || opp.current_agreed_price,
+              current_dld_payer: _pterms.dld_handling === "split_5050" ? "split" : (_pterms.dld_handling === "developer_absorbs" ? "developer" : (_pterms.dld_handling ? "buyer" : opp.current_dld_payer)),
+            });
             setShowProposalDialog(false);
             if(coachReturn){setDashboardTab("coach");setCoachReturn(false);}
           }}
