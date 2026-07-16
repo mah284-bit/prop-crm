@@ -1,3 +1,4 @@
+import EarningsDetailModal from "./EarningsDetailModal.jsx";
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from "../lib/supabase";
 import { Btn } from "../modules/shared/Btn.jsx";
@@ -26,16 +27,17 @@ export default function Dashboard({leads,opps=[],properties,activities,currentUs
   const won          = visibleOpps.filter(o=>o.stage==="Closed Won"||o.status==="Won");
   const isAgentRole = !["super_admin","admin","sales_manager","leasing_manager"].includes(currentUser?.role) && currentUser?.is_super_admin !== true;
   const [myEarnings, setMyEarnings] = useState(null);
+  const [showEarnDetail, setShowEarnDetail] = useState(false);
   useEffect(() => {
     let live = true;
     (async () => {
       if (!isAgentRole || !currentUser?.id) return;
       const { data } = await supabase.from("pp_commission_invoices")
-        .select("agent_commission, invoice_status").eq("agent_id", currentUser.id);
+        .select("id, agent_commission, invoice_status, sale_price, created_at, opportunity_id").eq("agent_id", currentUser.id);
       if (live && data) {
         const total = data.reduce((s,r)=>s+Number(r.agent_commission||0),0);
         const paid = data.filter(r=>r.invoice_status==="paid").reduce((s,r)=>s+Number(r.agent_commission||0),0);
-        setMyEarnings({ total, paid, count: data.length });
+        setMyEarnings({ total, paid, count: data.length, rows: data });
       }
     })();
     return () => { live = false; };
@@ -120,7 +122,7 @@ export default function Dashboard({leads,opps=[],properties,activities,currentUs
         <SC label="Upcoming Tasks"   value={upcomingTasks.length}  sub={overdueTasksCount>0?`⚠️ ${overdueTasksCount} overdue`:"All on track"} accent={overdueTasksCount>0?"#E53E3E":"#1A7F5A"} icon="📋" onClick={()=>onNavigate("activity",{type:"status",value:"upcoming"})} badge={overdueTasksCount>0?overdueTasksCount:null}/>
         <SC label="Active Opps"      value={active.length}         sub={`${won.length} won · ${convRate}% conv.`}   accent="#0F2540"  icon="🎯"  onClick={()=>onNavigate("opportunities")}/>
         {isAgentRole && myEarnings && myEarnings.total > 0 && (
-          <SC label="My Earnings" value={"AED "+Math.round(myEarnings.total).toLocaleString()} sub={`${myEarnings.count} deal${myEarnings.count===1?"":"s"}${myEarnings.paid>0?` · AED ${Math.round(myEarnings.paid).toLocaleString()} paid`:" · pending payout"}`} accent="#10B981" icon="💰"/>
+          <SC label="My Earnings" value={"AED "+Math.round(myEarnings.total).toLocaleString()} sub={`${myEarnings.count} deal${myEarnings.count===1?"":"s"}${myEarnings.paid>0?` · AED ${Math.round(myEarnings.paid).toLocaleString()} paid`:" · pending payout"}`} accent="#10B981" icon="💰" onClick={()=>setShowEarnDetail(true)}/>
         )}
         <SC label="Won Value"        value={fmtM(wonVal)}          sub={`${won.length} deals closed`}      accent="#1A7F5A"  icon="🏆"  onClick={()=>onNavigate("opportunities",{type:"stage",value:"Closed Won"})}/>
         <SC label="Available Units"  value={availUnits.length}     sub={`${ctxUnits.length} total`}        accent="#C9A84C"  icon="🏠"  onClick={()=>onNavigate("builder",{type:"status",value:"Available"})}/>
@@ -237,6 +239,9 @@ export default function Dashboard({leads,opps=[],properties,activities,currentUs
       })()}
 
 
+      {showEarnDetail && myEarnings && (
+        <EarningsDetailModal earnings={myEarnings} opps={visibleOpps} onClose={()=>setShowEarnDetail(false)} />
+      )}
     </div>
   );
 }
