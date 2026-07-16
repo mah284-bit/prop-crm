@@ -154,7 +154,7 @@ export default function Dashboard({leads,opps=[],properties,activities,currentUs
                     <span style={{fontSize:11,fontWeight:600,padding:"1px 8px",borderRadius:20,background:m.bg,color:m.c}}>{s}</span>
                     <span style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{cnt}</span>
                   </div>
-                  {val>0&&<span style={{fontSize:11,color:"#718096"}}>AED {fmtM(val)}</span>}
+                  {val>0&&<span style={{fontSize:11,color:"#718096"}}>{fmtM(val)}</span>}
                 </div>
                 <div style={{background:"#F7F9FC",borderRadius:6,height:7,overflow:"hidden"}}>
                   <div style={{width:`${maxCnt>0?Math.round(cnt/maxCnt*100):0}%`,height:"100%",background:m.c,borderRadius:6,transition:"width .4s"}}/>

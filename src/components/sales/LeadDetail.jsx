@@ -389,7 +389,6 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                     <span style={{fontWeight:700,fontSize:13,color:"#0F2540"}}>{l.name}</span>
-                    {activeOpps.length>0&&<span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:"#EFF6FF",color:"#1A5FA8"}}>{activeOpps.length} active opp{activeOpps.length!==1?"s":""}</span>}
                     {wonOpps.length>0&&<span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A"}}>✓ {wonOpps.length} Won</span>}
                     {activeOpps.length===0&&wonOpps.length===0&&<span style={{fontSize:10,fontWeight:500,padding:"1px 7px",borderRadius:20,background:"#F7F9FC",color:"#94A3B8"}}>No opportunities</span>}
                     {(()=>{const IM={investor:{l:"Investor",c:"#1A7F5A",bg:"#E6F4EE"},owner_occupier:{l:"Owner-Occupier",c:"#1A5FA8",bg:"#E6EFF9"},hybrid:{l:"Hybrid",c:"#8A6200",bg:"#FDF3DC"},corporate:{l:"Corporate",c:"#5B21B6",bg:"#EDE9FE"},reseller:{l:"Reseller",c:"#B83232",bg:"#FCE8E8"}};const im=IM[l.buyer_intent];return im?<span style={{fontSize:10,fontWeight:600,padding:"1px 7px",borderRadius:20,background:im.bg,color:im.c}}>{im.l}</span>:null;})()}
