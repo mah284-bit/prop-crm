@@ -120,3 +120,24 @@ picker is the override). AI extraction stays for its real job: external/uploaded
 ARCHITECT HOMEWORK (no rush, founder-ordered): the in-between state - buyer engaging a shortlist,
 not yet committed - lives nowhere today (just a sent quote). Shortlist-engagement tracking design
 for the redesign session; connects to Quoted-stage semantics (GF-08).
+
+## GF19 VERIFICATION WALK (Day 66 midday) - ENGINE PROVEN + SIBLING FINDINGS
+PROOF: fresh deal GF19 Walk / SHI-09-05 (Sobha, NO MA) marched lead->SPA Confirm. Invoice born:
+developer_id=2b7a9746 (Sobha via unit->project fallback), pct=4.00 (company default), gross=92,991.96
+(4% of corrected 2,324,799). Engine fully hardened: dedupe + pct fallback + developer fallback.
+Backfill healed all 12 historical invoices (linked=true count=12).
+SIBLINGS (the walk's findings, priority order):
+1. V_LATEST FLOW GAP (headline): Offer-Accepted dialog AND SPA dialog pre-fill ASKING price, ignore
+   V_latest negotiated terms (V2 was -2% = 2,324,799; dialogs showed 2,372,244; DLD computed off
+   asking AND ignored 50/50 split - Buyer Outflow card computes correctly, dialogs dont). Broker must
+   manually correct at SPA = error-prone. FIX: proposal save -> opp current_* fields -> dialogs read
+   them. Design: V_latest IS the negotiated truth (Brahma Lipi principle).
+2. Reservation/booking ask-then-credit LAYOUT comical (asks for fee, deducts it below as credit) -
+   credit-note logic CORRECT, presentation redesign rides 5b charges ledger.
+3. Initial advance should DERIVE from payment plan (20% of net) not free-typed.
+4. SPA fee should come from settings.
+5. Stage naming: SPA Signed -> split/rename SPA Requirements then SPA Signed (money-tail).
+6. Opps-form create door skips budget (lead-door sets it) - door consistency.
+7. Quoted(1) pill vs journey not moving to Quoted - stage semantics homework.
+8. Proposal/nego save slowness on localhost - watch on prod.
+9. KYC badge pencil renders literal \u270e - one-token JSX escape fix PENDING.
