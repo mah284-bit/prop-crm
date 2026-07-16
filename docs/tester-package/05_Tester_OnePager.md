@@ -60,3 +60,34 @@ an incognito window. If a screen looks stale: Ctrl+Shift+R.**
   reserve -> SPA confirm. Watch every number against your proposal.
 - KYC round-trip: upload docs, set an expiry IN THE PAST, watch the badge and the gates.
 - Break things: cancel dialogs midway, skip steps, use the back button. Report anything odd.
+
+
+---
+## WHAT'S NEW (16 Jul refresh - READ FIRST)
+**Environment: everything happens on https://prop-crm-two.vercel.app (production). Log in fresh in
+an incognito window. If a screen looks stale: Ctrl+Shift+R.**
+
+### New since last package:
+1. **KYC on every lead** - click the KYC badge (top of lead page, has a pencil) -> upload documents
+   (passport, Emirates ID, proof of funds), set expiry dates, mark Verified. Uploading a doc
+   auto-moves status to 'In progress'. TRY: reserve a unit for a lead with KYC 'Not started' - the
+   system prompts you (type a reason to proceed, it gets logged). SPA expects Verified.
+2. **My Earnings (agents)** - Dashboard 💰 tile shows your commission; CLICK it for the per-deal list.
+3. **Reservation card** - after reserving a unit, the fee shows on the deal's Financials tab (blue card).
+4. **Proposal terms flow forward** - your latest proposal's price/DLD/plan pre-fill the Offer and SPA
+   dialogs automatically. Check the Financials tab: it names which proposal version the price came from.
+5. **Quote PDFs** - multi-unit quotes render every unit (try 3-4 units).
+
+### Things to know (not bugs):
+- **Master Agreements are OPTIONAL** - most developers pay a flat 4% (company default). An MA only
+  documents an exception. Deals without MA still compute commission and link the developer correctly.
+- **Viewer role sees mostly empty screens** - by design (read-only scope). Don't file this.
+- **KYC gate prompts are intentional** - type a reason to proceed; it's audited, not blocked.
+- **Stages can currently be advanced without evidence** (e.g. Reserve without a proposal) - known,
+  redesign scheduled. Feel free to note where it lets you do something a real broker shouldn't.
+
+### What we most want tested:
+- Full deal spine: lead -> quote -> promote -> visit -> proposal (send a few versions!) -> offer ->
+  reserve -> SPA confirm. Watch every number against your proposal.
+- KYC round-trip: upload docs, set an expiry IN THE PAST, watch the badge and the gates.
+- Break things: cancel dialogs midway, skip steps, use the back button. Report anything odd.
