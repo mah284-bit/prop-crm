@@ -736,3 +736,19 @@ verified incl recovery. STORAGE: INSERT+SELECT policies added, upsert:false; buc
 form; prompt wording matters. V2: hard no-override gate before govt proceedings (money-tail/Close-Won),
 AI doc extraction, buyer-type matrices, SPA-party packs, auto-deselect-Verified UX.
 QUEUE: My Earnings detail, GF-09 reservation surface, GF-02 prod verify, remaining GF list.
+
+## DAY 66 CLOSE (16 Jul, afternoon) - THE PRE-TESTER DAY
+SHIPPED TODAY (all on main + prod): KYC v1 (dialog, uploads, gates, chip - tags kyc-v1-done) +
+v1.1 expiry (kyc-v1-1-expiry-done) | My Earnings detail modal | GF-09 Reservation card |
+GF-19 developer fallback PROVEN via fresh walk (Sobha invoice 92,991.96 via unit->project; backfill
+healed all 12 historical) | V_LATEST FLOW FIX (headline: onSaved carries cascade fields + setter-guard
+stale-closure fix - SPA dialog now pre-fills negotiated price 5,571,155, DLD terms, reservation 25k,
+AND resurrected the dormant plan-derived initial advance 557,116) | pencil escape fix | tester
+package refreshed (env clarity, MA-optional, negative-testing invite).
+WALK SIBLINGS BANKED (Opps_Journey_Redesign_Capture.md): evidence gates (money-without-proposal hole,
+PRODUCTION-CRITICAL), lock-at-true-SPA-Signed ruling (proposals stay open through payment collection),
+SPA Requirements->SPA Signed stage split, ask-then-credit layout, SPA fee from settings, door
+consistency (opps-form skips budget), Quoted pill semantics, negative-testing workstream.
+SATURDAY: testers on prod. Founder can push back if needed but app is in best-ever shape.
+NEXT SESSION: fresh chat, read this HANDOFF; remaining queue: GF-17/18 cosmetics, GF-15/16 dashboards
+session, evidence-gates design, money-tail redesign, clean-data round before/after testers.
