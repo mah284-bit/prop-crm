@@ -724,3 +724,15 @@ GF-22 dialog widened / GF-07 main-form location / GF-04b promote fast-path / GF-
 lead-side advance. NINE findings killed same day they were found + one flow rebuilt.
 DAY 66: KYC v1 headliner -> prod smoke (fast-path + GF-02 banner verify + GF-12 agent half) ->
 My Earnings detail if runway. Saturday: testers.
+
+## DAY 66 MORNING - KYC v1 + v1.1 SHIPPED (tags kyc-v1-done, kyc-v1-1-expiry-done)
+V1: KYCDialog (4 states, in_progress='Docs Collected'); per-doc UPLOAD propcrm-files/kyc (real files
+per founder); Verified needs passport+EID; auto-bump on first upload; clickable lead badge; SOFT GATES
+Reserved(>=docs)/SPA(verified) w/ logged override (kyc_override); chip on Deal Journey (Reserved/SPA).
+V1.1: per-doc EXPIRY (red border+banner); Verified blocked on expired identity docs; state
+self-computes (expired identity->expired, any doc->in_progress); gates check expiry. Round-trip
+verified incl recovery. STORAGE: INSERT+SELECT policies added, upsert:false; bucket PUBLIC - private
++ signed URLs post-testers. LESSONS: dev restart after every cut (3x); JSX escapes need JS-string
+form; prompt wording matters. V2: hard no-override gate before govt proceedings (money-tail/Close-Won),
+AI doc extraction, buyer-type matrices, SPA-party packs, auto-deselect-Verified UX.
+QUEUE: My Earnings detail, GF-09 reservation surface, GF-02 prod verify, remaining GF list.
