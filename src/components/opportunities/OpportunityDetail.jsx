@@ -2122,6 +2122,13 @@ You will become the assigned agent.`);
                                   <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>AED {Number(opp.budget).toLocaleString()}</div>
                                 </div>
                               )}
+                              {!!opp.reservation_amount && (
+                                <div style={{padding:"8px 10px",background:"#F0F9FF",borderRadius:7,border:"1px solid #BAE6FD"}}>
+                                  <div style={{fontSize:9,color:"#0369A1",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>{"Reservation Paid"}{opp.reservation_date ? " \u00b7 " + new Date(opp.reservation_date).toLocaleDateString("en-AE",{day:"numeric",month:"short"}) : ""}</div>
+                                  <div style={{fontSize:13,fontWeight:700,color:"#0369A1"}}>AED {Number(opp.reservation_amount).toLocaleString()}</div>
+                                  <div style={{fontSize:9,color:"#64748B",marginTop:2}}>credits toward initial advance</div>
+                                </div>
+                              )}
                               {unitAskingPriceFin && (
                                 <div style={{padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
                                   <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Asking Price</div>
