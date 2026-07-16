@@ -524,7 +524,7 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
               const KYC_META = {not_started:{c:"#8A6200",bg:"#FDF3DC",l:"KYC: Not started"},in_progress:{c:"#1A5FA8",bg:"#E6EFF8",l:"KYC: In progress"},verified:{c:"#1A7F5A",bg:"#E6F4EE",l:"KYC: Verified"},expired:{c:"#C53030",bg:"#FED7D7",l:"KYC: Expired"}};
               const k = selLead.kyc_status||"not_started";
               const m = KYC_META[k]||KYC_META.not_started;
-              return <button onClick={()=>setShowKYC(true)} title="Update KYC" style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:m.bg,color:m.c,border:"1px dashed "+m.c,cursor:"pointer"}}>{m.l} \u270e</button>;
+              return <button onClick={()=>setShowKYC(true)} title="Update KYC" style={{fontSize:10,fontWeight:600,padding:"2px 9px",borderRadius:20,background:m.bg,color:m.c,border:"1px dashed "+m.c,cursor:"pointer"}}>{m.l + " \u270e"}</button>;
             })()}
             {(()=>{
               // Phase 2.2A — Lifecycle stage badge
