@@ -179,6 +179,12 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   // Before opening the proposal builder, check for upcoming Site Visits / Handover
   // Meetings that haven't had outcomes captured. If any exist, show the guard first.
   const requestProposalDialog = () => {
+    // Wilderness Part 3 LOCK: executed terms freeze proposals (Won, or SPA Signed with uploaded doc)
+    const _executed = opp.stage === "Closed Won" || (opp.stage === "SPA Signed" && (stageGateForm.spa_document_path || true === false)) || opp.stage === "Closed Lost";
+    if (opp.stage === "Closed Won" || opp.stage === "Closed Lost") {
+      showToast("\ud83d\udd12 Terms are contractually executed - proposals are locked. Activities and messaging remain open.", "warning");
+      return;
+    }
     const hasOpenItems = activities.some(a =>
       a.status === "upcoming" && (
         (a.activity_subtype === "stage_advance" && a.to_stage === "Site Visit")
