@@ -4827,8 +4827,9 @@ onSelect={(unitId) => {
                   if(showStageGate==="SPA Signed"){
                     const bookingFee = prePaymentsState?.booking_fee || {};
                     const reservationFee = prePaymentsState?.reservation_fee || {};
-                    const bookingOK = bookingFee.status === "received" && Number(bookingFee.amount) > 0;
-                    const reservationOK = reservationFee.status === "received" && Number(reservationFee.amount) > 0;
+                    // Jul 17: waived satisfies (booking/reservation are optional PRODUCTS per redesign; SPA-form doctrine = record, not police)
+                    const bookingOK = bookingFee.status === "waived" || (bookingFee.status === "received" && Number(bookingFee.amount) > 0);
+                    const reservationOK = reservationFee.status === "waived" || (reservationFee.status === "received" && Number(reservationFee.amount) > 0);
                     if (!bookingOK || !reservationOK) {
                       const missing = [];
                       if (!bookingOK) missing.push("Booking fee");
