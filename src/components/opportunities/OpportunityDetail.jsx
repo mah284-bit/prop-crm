@@ -1401,6 +1401,10 @@ You will become the assigned agent.`);
                   if (!["Reserved","SPA Signed"].includes(opp.stage) || k === "verified") return null;
                   return <span style={{fontSize:9,fontWeight:700,padding:"1px 8px",borderRadius:20,background:"#FDF3DC",color:"#8A6200",textTransform:"none",letterSpacing:0}}>{"\u26a0 KYC incomplete \u00b7 "}{k.replace("_"," ")}</span>;
                 })()}
+                {(()=>{ /* Terms Pending chip (Wilderness Part 2): money held without documented terms */
+                  if (!["Reserved","SPA Signed"].includes(opp.stage) || (proposals || []).length > 0) return null;
+                  return <span style={{fontSize:9,fontWeight:700,padding:"1px 8px",borderRadius:20,background:"#FEF2F2",color:"#B91C1C",textTransform:"none",letterSpacing:0,marginLeft:6}}>{"\u26a0 Terms pending \u00b7 no proposal sent"}</span>;
+                })()}
               </div>
               
               {/* Stage pills */}
