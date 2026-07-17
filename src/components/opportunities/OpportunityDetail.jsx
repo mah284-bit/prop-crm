@@ -1477,7 +1477,7 @@ You will become the assigned agent.`);
                     {/* Next-action hint */}
                     {nextActionLabel&&(
                       <div style={{fontSize:11,color:"#475569",marginBottom:5,fontStyle:"italic"}}>
-                        💡 What's next: <strong style={{color:"#0F2540",fontStyle:"normal"}}>{nextActionLabel}</strong>
+                        💡 What's next: <strong style={{color:"#0F2540",fontStyle:"normal"}}>{(["Reserved","SPA Signed"].includes(opp.stage) && (proposals||[]).length===0) ? "Send the proposal \u2014 money is held on unagreed terms" : nextActionLabel}</strong>
                       </div>
                     )}
 
