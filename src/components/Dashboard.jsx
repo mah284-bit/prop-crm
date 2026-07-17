@@ -147,7 +147,7 @@ export default function Dashboard({leads,opps=[],properties,activities,currentUs
   }, [currentUser.role, leads, opps, activities, users, currentUser, units]);
 
   return (
-              <div key={s} onClick={()=>onNavigate("opportunities")} style={{marginBottom:9,cursor:"pointer"}}
+              <div key={s} onClick={()=>onNavigate("opportunities",{type:"stage",value:s})} style={{marginBottom:9,cursor:"pointer"}}
                 onMouseOver={e=>e.currentTarget.style.opacity=".85"} onMouseOut={e=>e.currentTarget.style.opacity="1"}>
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
