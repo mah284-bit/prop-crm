@@ -789,3 +789,10 @@ SATURDAY-READY: app + tester package + gates all live on prod.
   buyer-type doc matrices, SPA-party packs, AI date extraction, hard gate at govt proceedings)
 - Negative-testing workstream | rename decision (PropCRM collision) | Property Management module
 - Comms overhaul | Manager dashboard | Leasing lead queue | identity-model split
+
+## DAY 67 MIDDAY
+SEED ALIVE: wiped (backups _bk_*_20260717), 9 leads/3 agents, Priya WON (invoice 58,384.88, V_latest
+pre-fill VIRGIN-verified 1,459,622), James SPA Signed (25,100.48). Sobha re-proof rides testers.
+BRICKS: Terms Pending chip + hint (Part 2 done). DOCTRINE: SPA form = record not police (broker
+testimony); validator fixed - waived satisfies, 5000-workaround dead. BANKED: settings-feed audit,
+First-instalment label, schedule-on-Financials, post-SPA lock cut open, deduction-display polish.
