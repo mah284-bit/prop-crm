@@ -53,3 +53,29 @@ Sketch: kiosk-day rapid capture (buyer+unit+allocation+price-as-quoted), deferre
 post-event, launch record = E2 evidence form, bulk import + reconciliation vs developer confirmations.
 
 ## PART 6 - BLOCK SALES (PENDING - may deserve own session)
+
+## PART 5 - LAUNCH MODE (RATIFIED Day 67)
+Two pieces serving two moments:
+PIECE 1 - LAUNCH CAPTURE (the frenzy): Launch Event entity (name/developer/project/date, manager
+pre-creates). During event: stripped rapid form - buyer name+phone, unit ref FREE-TEXT (kiosk list
+may not match inventory), price-as-quoted, allocation status (allocated/waitlist/lost), note. 10
+seconds, mobile-first. Each capture = launch_record, NOT an opp. No gates. Frenzy is sacred.
+PIECE 2 - MORNING-AFTER RECONCILIATION: work-queue per event: match buyer->lead (or create), match
+unit-ref->inventory (import via PropPulse if new), developer confirmation check. One click 'Convert
+to deal' -> opp born at Reserved with evidence_source:launch_record - the launch record IS E2
+evidence (first-class alternative form, no override theater). Lands in Terms Pending naturally,
+KYC nags begin, normal spine takes over. Unmatched/lost stay as event history -> launch analytics
+(hit rate per event/developer).
+
+## PART 6 - BLOCK SALES (SKETCH RATIFIED, OWN SESSION POST-TESTERS)
+Shape: Block Deal entity ABOVE opps - one buyer, one negotiation thread, master terms (bulk
+discount, payment structure), N unit lines. Each line births child opp at confirmation (per-unit
+inventory/invoice/SPA - DLD registers per-unit); children inherit block terms, locked. Negotiation/
+proposals at BLOCK level; money can land at block and allocate down; commission per-unit, reports
+roll up. Evidence: terms/KYC at block, money/SPA at unit. Session needs: schema (parent entity),
+invoice allocation, bulk inventory holds, resale angle (Reseller intent), staging/drop-out/
+re-allocation flows from real broker input.
+
+## BUILD SEQUENCING (post-ratification note)
+Foundation order: stage split (SPA Requirements/Signed) -> Terms Pending state -> ceremony tiers ->
+unit switch -> Launch Mode -> Block Sales. Each rides the previous. Timing: post-tester feedback.
