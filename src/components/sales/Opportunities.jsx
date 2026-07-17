@@ -178,7 +178,7 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
             <span style={{fontSize:20}}>🎯</span>
             <span style={{fontFamily:"'Playfair Display',serif",fontSize:24,fontWeight:700,color:"#0F2540",letterSpacing:"-.4px"}}>Opportunities</span>
             <span style={{fontSize:12,color:"#64748B",fontWeight:500}}>{visible.length} of {(opps||[]).length}</span>
-            {fStage!=="All" && <span style={{fontSize:16,color:"#1A7F5A",fontWeight:800,background:"#D1FAE5",padding:"3px 14px",borderRadius:14}}>{fStage}: AED {visible.reduce((sum,o)=>sum+(o.final_price||o.budget||0),0).toLocaleString()}</span>}
+            {fStage!=="All" && <span style={{fontSize:16,color:"#1A7F5A",fontWeight:800,background:"#D1FAE5",padding:"3px 14px",borderRadius:14}}>{fStage}: AED {visible.reduce((sum,o)=>sum+(Number(o.final_price)||Number(o.current_agreed_price)||Number(o.budget)||0),0).toLocaleString()}</span>}
           </div>
           <div style={{fontSize:12,color:"#64748B",marginTop:2}}>Your deal pipeline — click any row to open the workspace</div>
         </div>
