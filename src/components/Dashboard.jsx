@@ -139,7 +139,7 @@ export default function Dashboard({leads,opps=[],properties,activities,currentUs
           </div>
           {OPP_STAGES.filter(s=>!["Closed Won","Closed Lost"].includes(s)).map(s=>{
             const cnt=visibleOpps.filter(o=>o.stage===s&&o.status==="Active").length;
-            const val=visibleOpps.filter(o=>o.stage===s&&o.status==="Active").reduce((a,o)=>a+(o.budget||0),0);
+            const val=visibleOpps.filter(o=>o.stage===s&&o.status==="Active").reduce((a,o)=>a+(Number(o.final_price)||Number(o.current_agreed_price)||Number(o.budget)||0),0);
             const m=OPP_STAGE_META[s]||{c:"#718096",bg:"#F7F9FC"};
             const maxCnt=Math.max(...OPP_STAGES.map(st=>visibleOpps.filter(o=>o.stage===st).length),1);
   const dashboardConfig = useMemo(() => {

@@ -101,7 +101,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
         const headers = ["Opportunity","Contact","Stage","Status","Budget","Final Price","Agent","Created","Days in Stage","Proposal Sent"];
         const summary = OPP_STAGES.map(s=>{
           const sl=oppsData.filter(o=>o.stage===s);
-          const val=sl.reduce((a,o)=>a+(o.budget||0),0);
+          const val=sl.reduce((a,o)=>a+(Number(o.final_price)||Number(o.current_agreed_price)||Number(o.budget)||0),0);
           return [s, sl.length, `AED ${(val/1e6).toFixed(2)}M`, oppsData.length?Math.round(sl.length/oppsData.length*100)+"%":"0%"];
         });
         return { rows, headers, summary, summaryHeaders:["Stage","Count","Value","% of Total"] };
