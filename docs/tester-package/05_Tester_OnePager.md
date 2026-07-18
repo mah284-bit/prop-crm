@@ -91,3 +91,15 @@ an incognito window. If a screen looks stale: Ctrl+Shift+R.**
   reserve -> SPA confirm. Watch every number against your proposal.
 - KYC round-trip: upload docs, set an expiry IN THE PAST, watch the badge and the gates.
 - Break things: cancel dialogs midway, skip steps, use the back button. Report anything odd.
+
+
+---
+## FRIDAY REFRESH (17 Jul) - read before testing
+Since Wednesday's notes, the app gained: (1) CLEAN DATA - fresh leads/deals, the old jungle is gone;
+(2) Terms Pending chip - reserve without sending a proposal and the deal wears a red warning chip
+(try it - that flow is a feature, not a bug); (3) Won/Lost deals are READ-ONLY - stage pills refuse
+with a lock message; (4) evidence + KYC prompts fire when you reserve/SPA without paperwork - type a
+reason to proceed, it's logged (intentional); (5) SPA dialog numbers (fees, DLD, advance) pre-fill
+from your proposal + market defaults - edit them to actuals, that's the design.
+Walk a FULL deal start to finish. Break things on purpose. Note every moment you feel lost - that
+feeling is our best data.
