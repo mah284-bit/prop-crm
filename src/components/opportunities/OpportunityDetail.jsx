@@ -134,6 +134,7 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   // Note: renamed from 'activeTab' to avoid collision with existing Activity Log filter state
   const [dashboardTab, setDashboardTab] = useState(null);
   const [stageGateForm, setStageGateForm] = useState({});
+  const [spaMode, setSpaMode] = useState("detailed"); // quick|detailed
   // Stage 5 — SPA upload + pre-SPA payments + edit-price toggle
   const [spaUploading, setSpaUploading] = useState(false);
   const [spaUploadError, setSpaUploadError] = useState(null);
@@ -702,6 +703,11 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   // Real broker workflow: save partial state, return next day to complete
   // Must load BEFORE pre-fill useEffects to prevent overwriting saved data
   // 12 May extension: Also fires for Closed Won so Gate 6 validation sees saved data
+  useEffect(() => {
+    if (showStageGate !== "SPA Signed") return;
+    supabase.from("companies").select("spa_mode").eq("id", currentUser.company_id).maybeSingle()
+      .then(({data}) => { if (data?.spa_mode) setSpaMode(data.spa_mode); });
+  }, [showStageGate]);
   useEffect(() => {
     if ((showStageGate !== "SPA Signed" && showStageGate !== "Closed Won") || !opp.id) return;
     (async () => {
@@ -4087,6 +4093,7 @@ onSelect={(unitId) => {
                   {showStageGate==="Offer Accepted"&&"✅ Record Offer Accepted"}
                   {showStageGate==="Reserved"&&"🔒 Record Reservation"}
                   {showStageGate==="SPA Signed"&&"📄 Record SPA Signing"}
+                  {showStageGate === "SPA Signed" && <span style={{marginLeft:10,display:"inline-flex",gap:4}}><button onClick={()=>setSpaMode("quick")} style={{fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:14,cursor:"pointer",border:"1.5px solid "+(spaMode==="quick"?"#0F2540":"#E2E8F0"),background:spaMode==="quick"?"#0F2540":"#fff",color:spaMode==="quick"?"#fff":"#64748B"}}>{"\u26a1 Quick"}</button><button onClick={()=>setSpaMode("detailed")} style={{fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:14,cursor:"pointer",border:"1.5px solid "+(spaMode==="detailed"?"#0F2540":"#E2E8F0"),background:spaMode==="detailed"?"#0F2540":"#fff",color:spaMode==="detailed"?"#fff":"#64748B"}}>{"\ud83d\udccb Detailed"}</button></span>}
                   {showStageGate==="Closed Won"&&"🏆 Close as Won"}
                   {showStageGate==="Closed Lost"&&"❌ Close as Lost"}
                 </div>
@@ -4419,7 +4426,7 @@ onSelect={(unitId) => {
                   )}
                 </div>
 
-                <div>
+                {spaMode === "detailed" && (<div>
                   <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Initial Advance Method</label>
                   <select value={stageGateForm.down_payment_method||"Cheque"} onChange={e=>setStageGateForm(f=>({...f,down_payment_method:e.target.value}))}>
                     {["Cheque","Bank Transfer","Cash","Credit Card"].map(m=><option key={m}>{m}</option>)}
@@ -4427,10 +4434,10 @@ onSelect={(unitId) => {
                   <div style={{fontSize:10,color:"#94A3B8",marginTop:3,fontStyle:"italic"}}>
                     💡 Enter the amount + date in "Initial advance" row of Pre-SPA Payments below
                   </div>
-                </div>
+                </div>)}
 
                 {/* Pre-SPA payment confirmations - 3-state model (pending / received / waived) */}
-                <div style={{padding:"12px 14px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8}}>
+                {spaMode === "detailed" && (/* Pre-SPA gated */<div style={{padding:"12px 14px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8}}>
                   <div style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".5px",marginBottom:4}}>
                     ✅ Pre-SPA Payments Status
                   </div>
@@ -4757,7 +4764,7 @@ onSelect={(unitId) => {
                       </div>
                     );
                   })()}
-                </div>
+                </div>)}
 
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label>
