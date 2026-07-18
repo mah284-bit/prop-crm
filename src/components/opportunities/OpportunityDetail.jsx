@@ -705,8 +705,22 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   // 12 May extension: Also fires for Closed Won so Gate 6 validation sees saved data
   useEffect(() => {
     if (showStageGate !== "SPA Signed") return;
-    supabase.from("companies").select("spa_mode").eq("id", currentUser.company_id).maybeSingle()
-      .then(({data}) => { if (data?.spa_mode) setSpaMode(data.spa_mode); });
+    (async () => {
+      const { data: co } = await supabase.from("companies").select("spa_mode,default_spa_fee,default_oqood_fee").eq("id", currentUser.company_id).maybeSingle();
+      if (co?.spa_mode) setSpaMode(co.spa_mode);
+      let spaFee = co?.default_spa_fee, oqoodFee = co?.default_oqood_fee;
+      if (opp.developer_id) {
+        const { data: dv } = await supabase.from("pp_developers").select("default_spa_fee,default_oqood_fee").eq("id", opp.developer_id).maybeSingle();
+        if (dv?.default_spa_fee != null) spaFee = dv.default_spa_fee;
+        if (dv?.default_oqood_fee != null) oqoodFee = dv.default_oqood_fee;
+      }
+      setPrePaymentsState(p => {
+        const out = {...p};
+        if (spaFee && !out.spa_fee?.amount) out.spa_fee = {...out.spa_fee, amount: String(spaFee), notes: out.spa_fee?.notes || "Pre-filled: developer/company default"};
+        if (oqoodFee && !out.oqood_fee?.amount) out.oqood_fee = {...out.oqood_fee, amount: String(oqoodFee), notes: out.oqood_fee?.notes || "Pre-filled: developer/company default"};
+        return out;
+      });
+    })();
   }, [showStageGate]);
   useEffect(() => {
     if ((showStageGate !== "SPA Signed" && showStageGate !== "Closed Won") || !opp.id) return;
