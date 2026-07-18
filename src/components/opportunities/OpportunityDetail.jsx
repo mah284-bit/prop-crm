@@ -4571,15 +4571,15 @@ onSelect={(unitId) => {
                   {[
                     ["booking_fee", "Booking fee 💳", true],
                     ["reservation_fee", "Reservation fee 💳", true],
-                    ["initial_advance", "Initial advance", false],
+                    ["initial_advance", "First instalment (per plan)", false],
                     ["spa_fee", "SPA fee", false],
                     ["dld_fee", "DLD fee (4%)", false],
                     ["oqood_fee", "Oqood fee", false],
                     ["other_fees", "Other developer fees", false]
                   ].map(([key, label, isCreditFee]) => {
                     // 18 May 2026: For initial_advance, show "Expected" hint from payment plan
-                    const showExpected = key === "initial_advance" && prePaymentsState[key]?.expected_amount;
-                    const expectedAmt = prePaymentsState[key]?.expected_amount;
+                    const showExpected = !!(prePaymentsState[key]?.expected_amount || (prePaymentsState[key]?.amount && prePaymentsState[key]?.status === "pending"));
+                    const expectedAmt = prePaymentsState[key]?.expected_amount || Number(prePaymentsState[key]?.amount || 0);
                     const expectedPct = prePaymentsState[key]?.expected_percent;
                     const actualAmt = Number(prePaymentsState[key]?.amount || 0);
                     const deviation = showExpected && actualAmt && actualAmt !== expectedAmt 
