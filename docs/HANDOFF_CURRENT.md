@@ -811,3 +811,11 @@ ALSO THIS MORNING: closed-deal read-only guard (bb40250) - Won/Lost refuse all s
 included; the live Record-SPA reopening on Won deals was one click from closure mutation).
 STATE: main = seed alive + 4 wilderness bricks + quick-spa + all guards. Testers tonight (US late
 night UAE). REMAINING: prod smoke, optional settings-feed audit, tester creds check.
+
+## DAY 67 PRE-BREAK SEAL (~11am)
+14 SHIPPED since 6:50am (chips/guards/Quick-SPA/fees/sums/marches/validator - see commits 9abe627
+through 2327c96). ESSENTIALS ALL CLOSED: prod live+smoked, creds trio verified, package refreshed,
+seed alive. Testers midnight - ZERO blockers.
+RETURN BOARD (optional, post-break ~1pm, kickoff 2-3pm): A small-fry (GF-01b PDF projects,
+v-numbering) | C ceremony Tier-2 brick | or rest. Parked-by-design backlog rides stage-split
+foundation post-testers (come-back principle - no double-builds).
