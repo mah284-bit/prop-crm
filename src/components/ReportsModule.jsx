@@ -17,6 +17,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
     payments: leasingData?.payments||[], users: preloadedUsers||[],
   });
   const [filters,      setFilters]      = useState({ dateFrom:"", dateTo:"", status:"All", agent:"All" });
+  const [expandedBroker, setExpandedBroker] = useState(null);
 
   // Load all data needed for reports
   const loadData = useCallback(async () => {
@@ -104,7 +105,18 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
           const val=sl.reduce((a,o)=>a+(Number(o.final_price)||Number(o.current_agreed_price)||Number(o.budget)||0),0);
           return [s, sl.length, `AED ${(val/1e6).toFixed(2)}M`, oppsData.length?Math.round(sl.length/oppsData.length*100)+"%":"0%"];
         });
-        return { rows, headers, summary, summaryHeaders:["Stage","Count","Value","% of Total"] };
+        const val = o => Number(o.final_price)||Number(o.current_agreed_price)||Number(o.budget)||0;
+        const byBroker = {};
+        oppsData.forEach(o => {
+          const k = o.assigned_to || "none";
+          if (!byBroker[k]) byBroker[k] = { name: userName(o.assigned_to), deals: [], active: 0, pipeline: 0, won: 0 };
+          byBroker[k].deals.push(o);
+          if (o.status === "Active") { byBroker[k].active++; byBroker[k].pipeline += val(o); }
+          if (o.stage === "Closed Won") byBroker[k].won += val(o);
+        });
+        const brokerGroups = Object.values(byBroker).sort((x,y) => y.pipeline - x.pipeline)
+          .map(g => ({ ...g, deals: g.deals.map(o => ({ title: o.title, stage: o.stage, value: val(o), lead: leadName(o.lead_id) })) }));
+        return { rows, headers, summary, summaryHeaders:["Stage","Count","Value","% of Total"], brokerGroups };
       }
     },
 
@@ -459,6 +471,31 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
             </div>
           )}
 
+          {reportData.brokerGroups && reportData.brokerGroups.length > 0 && (
+            <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:16,marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#A0AEC0",textTransform:"uppercase",letterSpacing:".6px",marginBottom:10}}>By Broker</div>
+              {reportData.brokerGroups.map((g,gi)=>(
+                <div key={gi} style={{borderBottom:"1px solid #F0F2F5"}}>
+                  <div onClick={()=>setExpandedBroker(expandedBroker===gi?null:gi)} style={{display:"grid",gridTemplateColumns:"20px 1.5fr 1fr 1fr 1fr",gap:8,padding:"9px 6px",cursor:"pointer",alignItems:"center"}}>
+                    <span style={{fontSize:10,color:"#94A3B8"}}>{expandedBroker===gi?"\u25bc":"\u25b6"}</span>
+                    <span style={{fontSize:12,fontWeight:700,color:"#0F2540"}}>{g.name}</span>
+                    <span style={{fontSize:12,color:"#475569"}}>{g.active} active</span>
+                    <span style={{fontSize:12,fontWeight:600,color:"#1A5FA8"}}>{g.pipeline?("AED "+(g.pipeline/1e6).toFixed(2)+"M"):"\u2014"}</span>
+                    <span style={{fontSize:12,fontWeight:600,color:"#1A7F5A"}}>{g.won?("AED "+(g.won/1e6).toFixed(2)+"M won"):"\u2014"}</span>
+                  </div>
+                  {expandedBroker===gi && g.deals.map((d,di)=>(
+                    <div key={di} style={{display:"grid",gridTemplateColumns:"20px 1.5fr 1fr 1fr 1fr",gap:8,padding:"5px 6px",background:"#F8FAFC",alignItems:"center"}}>
+                      <span/>
+                      <span style={{fontSize:11,color:"#0F2540"}}>{d.title}</span>
+                      <span style={{fontSize:11,color:"#64748B"}}>{d.stage}</span>
+                      <span style={{fontSize:11,color:"#475569"}}>{d.value?("AED "+Number(d.value).toLocaleString()):"\u2014"}</span>
+                      <span style={{fontSize:11,color:"#94A3B8"}}>{d.lead}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
           {/* Data table */}
           <div style={{flex:1,overflowY:"auto",overflowX:"auto",background:"#fff",border:"1px solid #E2E8F0",borderRadius:12}}>
             <div style={{padding:"10px 16px",borderBottom:"1px solid #F0F2F5",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
