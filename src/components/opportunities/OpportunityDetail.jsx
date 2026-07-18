@@ -4599,7 +4599,7 @@ onSelect={(unitId) => {
                           {showExpected && (
                             <div style={{fontSize:9,marginTop:2,letterSpacing:".2px"}}>
                               <span style={{color:"#065F46",fontWeight:600}}>
-                                Expected: AED {expectedAmt.toLocaleString()} · {expectedPct}% per plan
+                                Expected: AED {expectedAmt.toLocaleString()}{expectedPct ? " · " + expectedPct + "% per plan" : ""}
                               </span>
                               {deviation !== null && (
                                 <span style={{color:deviation > 0 ? "#92400E" : "#991B1B",fontWeight:700,marginLeft:6}}>
