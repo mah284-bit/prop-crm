@@ -643,6 +643,11 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     } catch (e) { console.warn("kycGate skipped:", e); return true; }
   };
   const moveStage = async(toStage) => {
+    // Executed deals are read-only (activities/messaging excepted) - Wilderness lock principle
+    if (opp.stage === "Closed Won" || opp.stage === "Closed Lost") {
+      showToast("\ud83d\udd12 This deal is closed - stages are read-only. Activities remain open.", "warning");
+      return;
+    }
     if ((toStage === "Reserved" || toStage === "SPA Signed") && !(await proposalGate(toStage))) return;
     if ((toStage === "Reserved" || toStage === "SPA Signed") && !(await kycGate(toStage))) return;
     // ISSUE D guard duplication — block at moveStage entry too
