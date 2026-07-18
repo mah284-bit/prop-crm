@@ -819,3 +819,5 @@ seed alive. Testers midnight - ZERO blockers.
 RETURN BOARD (optional, post-break ~1pm, kickoff 2-3pm): A small-fry (GF-01b PDF projects,
 v-numbering) | C ceremony Tier-2 brick | or rest. Parked-by-design backlog rides stage-split
 foundation post-testers (come-back principle - no double-builds).
+
+## DAY 67 ADDENDUM: #15 = By-Broker accordion in Pipeline Report (f0502aa, manager grouping umbrella first delivery). Kickoff 2-3pm; testers midnight; board clear.
