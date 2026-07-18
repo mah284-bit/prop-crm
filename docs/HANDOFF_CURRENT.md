@@ -796,3 +796,18 @@ pre-fill VIRGIN-verified 1,459,622), James SPA Signed (25,100.48). Sobha re-proo
 BRICKS: Terms Pending chip + hint (Part 2 done). DOCTRINE: SPA form = record not police (broker
 testimony); validator fixed - waived satisfies, 5000-workaround dead. BANKED: settings-feed audit,
 First-instalment label, schedule-on-Financials, post-SPA lock cut open, deduction-display polish.
+
+## DAY 67 LATE-MORNING - QUICK-SPA SHIPPED
+QUICK-SPA TOGGLE live (28ccb7d): Record-SPA dialog = two faces. Quick: Price+Date+Ref+Upload+Confirm
+(revenue-only broker's four fields, founder trust-moment design from internal broker arguments -
+'my job ends when they paid the developer'). Detailed: full form (default). Company default:
+companies.spa_mode ('detailed'|'quick', SQL-flippable, NO settings UI yet - flip on first tester
+complaint or demo moment). Same engine, invoice fires either way.
+BUILD SAGA (lessons re-struck): JSX wrap failed twice (conditional-boundary imbalance) -> take-three
+= chunk-wise div wraps + container gating, ALL verified by python repr line-looks first; toggle
+insert landed inside a JS string (comedy of errors: setSpa'quick'ode) -> collision-proof
+placeholders (@@/##) + orphan sweep. Heredoc split on long lines AGAIN - keep scripts small.
+ALSO THIS MORNING: closed-deal read-only guard (bb40250) - Won/Lost refuse all stage dialogs (pills
+included; the live Record-SPA reopening on Won deals was one click from closure mutation).
+STATE: main = seed alive + 4 wilderness bricks + quick-spa + all guards. Testers tonight (US late
+night UAE). REMAINING: prod smoke, optional settings-feed audit, tester creds check.
