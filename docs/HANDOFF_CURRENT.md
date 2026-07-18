@@ -821,3 +821,5 @@ v-numbering) | C ceremony Tier-2 brick | or rest. Parked-by-design backlog rides
 foundation post-testers (come-back principle - no double-builds).
 
 ## DAY 67 ADDENDUM: #15 = By-Broker accordion in Pipeline Report (f0502aa, manager grouping umbrella first delivery). Kickoff 2-3pm; testers midnight; board clear.
+
+## DAY 67 CLOSE (~1pm): 15 shipped, all merged, 3 gates ride tomorrow (By-Broker eyeball, hints polish, prod fees glance). Founder: team discussion tonight + testers midnight -> verdicts shape Saturday AM session. Next chat: read HANDOFF first.
