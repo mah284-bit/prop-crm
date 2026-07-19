@@ -828,3 +828,5 @@ foundation post-testers (come-back principle - no double-builds).
 3-HR DEMO NIGHT: testers THRILLED - SPA dual-face, MOAT APIs, AI-across-app all landed. They cannot test this weekend (engagements); will return with thoughts.
 RATIFIED PLAN: founder COMPLETES the app -> production cut -> 1wk pre-prod -> 1wk findings/setup -> 2-day tester review -> close.
 CONSEQUENCE: designed backlog = THE build list now (stage split first per wilderness build-order); no more ship-by-midnight constraints; proper foundation-first sequencing unlocked.
+
+## DAY 68 MORNING - FOUR BRICKS: stage split (TAGGED stage-split-done, DB constraint extended), lock completed (SPA Signed = executed), Ceremony Tier-2 (reason+markers+badges, verified pr=true), Buyers bill tile on Financials. Terminology unification (Initial Payment/Advance family) banked for v2 layout. Build-order marching: next = unit switch brick or bill-first dialog rebuild.
