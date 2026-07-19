@@ -71,7 +71,7 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   const [unitConflict, setUnitConflict] = useState(null);
   useEffect(() => {
     if (!opp?.unit_id) { setUnitConflict(null); return; }
-    if (["Reserved","SPA Signed","Closed Won"].includes(opp.stage)) { setUnitConflict(null); return; }
+    if (["Reserved","SPA Requirements","SPA Signed","Closed Won"].includes(opp.stage)) { setUnitConflict(null); return; }
     let alive = true;
     (async () => {
       const { data, error } = await supabase
@@ -79,7 +79,7 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
         .select("id, title, stage, stage_updated_at")
         .eq("unit_id", opp.unit_id)
         .neq("id", opp.id)
-        .in("stage", ["Reserved", "SPA Signed", "Closed Won"])
+        .in("stage", ["Reserved", "SPA Requirements", "SPA Signed", "Closed Won"])
         .order("stage_updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -606,7 +606,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   const proposalGate = async (toStage) => {
     // Evidence gate v1 (walk finding GF-walk-11): money stages require a documented offer.
     // Reserve/SPA with ZERO sent proposals = taking money with no paper trail (RERA risk).
-    if (!["Reserved", "SPA Signed"].includes(toStage)) return true;
+    if (!["Reserved", "SPA Requirements", "SPA Signed"].includes(toStage)) return true;
     if ((proposals || []).length > 0) return true;
     const reason = window.prompt("Evidence gate: no proposal has been sent on this deal.\n\n" + toStage + " means money/contract - the buyer should have documented terms first.\n\nBest: Cancel and send a proposal.\nTo override: type the REASON for proceeding without one:");
     if (reason === null || !reason.trim()) return false;
@@ -621,7 +621,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   };
   const kycGate = async (toStage) => {
     // KYC v1 soft gates (Design Capture #1): Reserved wants >= docs-collected; SPA wants verified.
-    const need = toStage === "Reserved" ? "in_progress" : toStage === "SPA Signed" ? "verified" : null;
+    const need = toStage === "Reserved" ? "in_progress" : (toStage === "SPA Requirements" || toStage === "SPA Signed") ? "verified" : null;
     if (!need) return true;
     try {
       const { data: l } = await supabase.from("leads").select("kyc_status, kyc_docs, name").eq("id", opp.lead_id).maybeSingle();
@@ -649,8 +649,8 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       showToast("\ud83d\udd12 This deal is closed - stages are read-only. Activities remain open.", "warning");
       return;
     }
-    if ((toStage === "Reserved" || toStage === "SPA Signed") && !(await proposalGate(toStage))) return;
-    if ((toStage === "Reserved" || toStage === "SPA Signed") && !(await kycGate(toStage))) return;
+    if ((toStage === "Reserved" || toStage === "SPA Requirements") && !(await proposalGate(toStage))) return;
+    if ((toStage === "Reserved" || toStage === "SPA Requirements" || toStage === "SPA Signed") && !(await kycGate(toStage))) return;
     // ISSUE D guard duplication — block at moveStage entry too
     // (Dialogs like Capture Contact bypass commitStageMove, so guard
     //  has to be here before any dialog opens)
@@ -661,7 +661,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           .select("id, title, stage, stage_updated_at")
           .eq("unit_id", opp.unit_id)
           .neq("id", opp.id)
-          .in("stage", ["Reserved", "SPA Signed", "Closed Won"]);
+          .in("stage", ["Reserved", "SPA Requirements", "SPA Signed", "Closed Won"]);
         if (conflictOpps && conflictOpps.length > 0) {
           const c = conflictOpps[0];
           const days = c.stage_updated_at
@@ -979,7 +979,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           .select("id, title, stage, stage_updated_at")
           .eq("unit_id", opp.unit_id)
           .neq("id", opp.id)
-          .in("stage", ["Reserved", "SPA Signed", "Closed Won"]);
+          .in("stage", ["Reserved", "SPA Requirements", "SPA Signed", "Closed Won"]);
 
         if (!conflictErr && conflictOpps && conflictOpps.length > 0) {
           const conflict = conflictOpps[0];
@@ -1429,11 +1429,11 @@ You will become the assigned agent.`);
                 <span>Deal Journey</span>
                 {(()=>{ /* kycChip: nag while money moves without verified KYC (piece 4) */
                   const k = lead?.kyc_status || "not_started";
-                  if (!["Reserved","SPA Signed"].includes(opp.stage) || k === "verified") return null;
+                  if (!["Reserved","SPA Requirements","SPA Signed"].includes(opp.stage) || k === "verified") return null;
                   return <span style={{fontSize:9,fontWeight:700,padding:"1px 8px",borderRadius:20,background:"#FDF3DC",color:"#8A6200",textTransform:"none",letterSpacing:0}}>{"\u26a0 KYC incomplete \u00b7 "}{k.replace("_"," ")}</span>;
                 })()}
                 {(()=>{ /* Terms Pending chip (Wilderness Part 2): money held without documented terms */
-                  if (!["Reserved","SPA Signed"].includes(opp.stage) || (proposals || []).length > 0) return null;
+                  if (!["Reserved","SPA Requirements","SPA Signed"].includes(opp.stage) || (proposals || []).length > 0) return null;
                   return <span style={{fontSize:9,fontWeight:700,padding:"1px 8px",borderRadius:20,background:"#FEF2F2",color:"#B91C1C",textTransform:"none",letterSpacing:0,marginLeft:6}}>{"\u26a0 Terms pending \u00b7 no proposal sent"}</span>;
                 })()}
               </div>
@@ -1508,7 +1508,7 @@ You will become the assigned agent.`);
                     {/* Next-action hint */}
                     {nextActionLabel&&(
                       <div style={{fontSize:11,color:"#475569",marginBottom:5,fontStyle:"italic"}}>
-                        💡 What's next: <strong style={{color:"#0F2540",fontStyle:"normal"}}>{(["Reserved","SPA Signed"].includes(opp.stage) && (proposals||[]).length===0) ? "Send the proposal \u2014 money is held on unagreed terms" : nextActionLabel}</strong>
+                        💡 What's next: <strong style={{color:"#0F2540",fontStyle:"normal"}}>{(["Reserved","SPA Requirements","SPA Signed"].includes(opp.stage) && (proposals||[]).length===0) ? "Send the proposal \u2014 money is held on unagreed terms" : nextActionLabel}</strong>
                       </div>
                     )}
 

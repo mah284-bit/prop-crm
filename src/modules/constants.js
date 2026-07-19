@@ -1,7 +1,7 @@
 // Stages and metadata
 export const STAGES = ["New Lead","Contacted","Site Visit","Proposal Sent","Negotiation","Closed Won","Closed Lost"];
 
-export const OPP_STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
+export const OPP_STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Requirements","SPA Signed","Closed Won","Closed Lost"];
 
 export const ROLE_META = {
   super_admin:    {label:"Super Admin",    color:"#B83232",bg:"#FAEAEA",desc:"All companies · Full access"},
@@ -74,6 +74,7 @@ export const OPP_STAGE_META = {
   "Negotiation":    {c:"#B83232", bg:"#FAEAEA"},
   "Offer Accepted": {c:"#0F766E", bg:"#CCFBF1"},
   "Reserved":       {c:"#7C3AED", bg:"#EDE9FE"},
+  "SPA Requirements": {c:"#B45309", bg:"#FEF3C7"},
   "SPA Signed":     {c:"#1D4ED8", bg:"#DBEAFE"},
   "Closed Won":     {c:"#1A7F5A", bg:"#E6F4EE"},
   "Closed Lost":    {c:"#718096", bg:"#F7F9FC"},

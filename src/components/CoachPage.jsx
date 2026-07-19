@@ -19,7 +19,7 @@ export default function CoachPage({ opps, leads, activities, users, currentUser,
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState("");
-  const STAGES = ["New", "Contacted", "Site Visit", "Proposal Sent", "Negotiation", "Offer Accepted", "Reserved", "SPA Signed"];
+  const STAGES = ["New", "Contacted", "Site Visit", "Proposal Sent", "Negotiation", "Offer Accepted", "Reserved", "SPA Requirements", "SPA Signed"];
   const SEGMENTS = [
     { id: "investor", label: "Investor" },
     { id: "owner_occupier", label: "Owner-Occupier" },

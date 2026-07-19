@@ -731,7 +731,7 @@ function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activiti
           .select("id, title, stage, stage_updated_at")
           .eq("unit_id", opp.unit_id)
           .neq("id", opp.id)
-          .in("stage", ["Reserved", "SPA Signed", "Closed Won"]);
+          .in("stage", ["Reserved", "SPA Requirements", "SPA Signed", "Closed Won"]);
         if (conflictOpps && conflictOpps.length > 0) {
           const c = conflictOpps[0];
           const days = c.stage_updated_at
@@ -774,7 +774,7 @@ function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activiti
     "SPA Signed":     [{label:"💰 Add payment",    act:"log"   },{label:"📋 Upload SPA",    act:"log"    },{label:"📝 Log note",      act:"log"     }],
   };
 
-  const nextStage = {"New":"Contacted","Contacted":"Site Visit","Site Visit":"Proposal Sent","Proposal Sent":"Negotiation","Negotiation":"Offer Accepted","Offer Accepted":"Reserved","Reserved":"SPA Signed","SPA Signed":"Closed Won"};
+  const nextStage = {"New":"Contacted","Contacted":"Site Visit","Site Visit":"Proposal Sent","Proposal Sent":"Negotiation","Negotiation":"Offer Accepted","Offer Accepted":"Reserved","Reserved":"SPA Requirements","SPA Requirements":"SPA Signed","SPA Signed":"Closed Won"};
   const totalVal = filtered.reduce((s,o)=>s+(o.budget||0),0);
 
   const StagePill = ({stage, count, value, color, bg, border}) => (

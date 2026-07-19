@@ -5,7 +5,7 @@ import { canDo } from "../lib/permissions.js";
 // 'ReferenceError: OPP_STAGES is not defined' when the pipeline report renders.
 // Defining locally to keep this file self-contained. Long-term, all shared
 // constants should move to src/lib/stages.js and be imported here + in App.jsx.
-const OPP_STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
+const OPP_STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Requirements","SPA Signed","Closed Won","Closed Lost"];
 
 function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activities=[], leasingData=null, initialFilter=null, crmContext="sales", preloadedUnits=[], preloadedProjects=[], preloadedSalePricing=[], preloadedLeasePricing=[], preloadedUsers=[] }) {
   const [activeReport, setActiveReport] = useState(()=>{ const d=initialFilter?.value||(crmContext==="leasing"?"rent_roll":"pipeline"); return (!canDo(currentUser,"see_all") && ["agent_performance","lead_conversion"].includes(d)) ? (crmContext==="leasing"?"rent_roll":"pipeline") : d; });

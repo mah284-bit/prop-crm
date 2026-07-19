@@ -69,7 +69,7 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
     }
   }, [initialFilter?.type, initialFilter?.value]);
 
-  const STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Signed","Closed Won","Closed Lost"];
+  const STAGES = ["New","Contacted","Site Visit","Proposal Sent","Negotiation","Offer Accepted","Reserved","SPA Requirements","SPA Signed","Closed Won","Closed Lost"];
   const STAGE_COLORS = {
     "New":            {c:"#1A5FA8", bg:"#E6EFF8"},
     "Contacted":      {c:"#0F766E", bg:"#CCFBF1"},
@@ -78,6 +78,7 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
     "Negotiation":    {c:"#C2410C", bg:"#FFEDD5"},
     "Offer Accepted": {c:"#1A7F5A", bg:"#D1FAE5"},
     "Reserved":       {c:"#7C3AED", bg:"#EDE9FE"},
+    "SPA Requirements": {c:"#B45309", bg:"#FEF3C7"},
     "SPA Signed":     {c:"#0F2540", bg:"#E2E8F0"},
     "Closed Won":     {c:"#1A7F5A", bg:"#D1FAE5"},
     "Closed Lost":    {c:"#C53030", bg:"#FEE2E2"},
