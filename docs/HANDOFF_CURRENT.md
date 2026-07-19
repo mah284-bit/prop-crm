@@ -823,3 +823,8 @@ foundation post-testers (come-back principle - no double-builds).
 ## DAY 67 ADDENDUM: #15 = By-Broker accordion in Pipeline Report (f0502aa, manager grouping umbrella first delivery). Kickoff 2-3pm; testers midnight; board clear.
 
 ## DAY 67 CLOSE (~1pm): 15 shipped, all merged, 3 gates ride tomorrow (By-Broker eyeball, hints polish, prod fees glance). Founder: team discussion tonight + testers midnight -> verdicts shape Saturday AM session. Next chat: read HANDOFF first.
+
+## DAY 68 (18 Jul, Sat) - TESTER DEMO VERDICT + NEW OPERATING PLAN
+3-HR DEMO NIGHT: testers THRILLED - SPA dual-face, MOAT APIs, AI-across-app all landed. They cannot test this weekend (engagements); will return with thoughts.
+RATIFIED PLAN: founder COMPLETES the app -> production cut -> 1wk pre-prod -> 1wk findings/setup -> 2-day tester review -> close.
+CONSEQUENCE: designed backlog = THE build list now (stage split first per wilderness build-order); no more ship-by-midnight constraints; proper foundation-first sequencing unlocked.
