@@ -30,6 +30,7 @@ import LeadCreationFormV2 from "./components/LeadCreationFormV2.jsx";
 import ActivitiesList from './components/opportunities/ActivitiesList.jsx';
 import OpportunityDetail from './components/opportunities/OpportunityDetail.jsx';
 import Opportunities from './components/sales/Opportunities.jsx';
+import LaunchMode from './components/launch/LaunchMode.jsx';
 import ActivityLog from './components/sales/ActivityLog.jsx';
 import PropertyMaster from './components/inventory/PropertyMaster.jsx';
 import CommissionOutstanding from './components/CommissionOutstanding.jsx';
@@ -148,9 +149,9 @@ const ROLES = ["super_admin","admin","sales_manager","sales_agent","leasing_mana
 // Stored in localStorage. Set once by admin. Controls which modules are visible.
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","customers","opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","settings","company_config","lead_queue","commission_outstanding","group_view","org_chart"],
+  sales:   ["dashboard","projects","builder","leads","customers","opportunities","launch","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","settings","company_config","lead_queue","commission_outstanding","group_view","org_chart"],
   leasing: ["l_dashboard","l_leads","l_opportunities","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_proppulse","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
-  both:    ["dashboard","projects","builder","leads","customers","opportunities","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","settings","company_config","lead_queue","commission_outstanding","group_view","org_chart"],
+  both:    ["dashboard","projects","builder","leads","customers","opportunities","launch","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","settings","company_config","lead_queue","commission_outstanding","group_view","org_chart"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -1016,6 +1017,7 @@ const TABS=[
   // {id:"activity",   label:"Activity Log", icon:"📝", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"reports",    label:"Reports",      icon:"📊", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   //{id:"ai",       label:"AI Assistant", icon:"✦",  app:"sales" -- removed, using AI bubble insteadles_manager","sales_agent"]},
+  {id:"launch",     label:"Launch",      icon:"\U0001f680", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"proppulse",  label:"PropPulse",   icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"coach_ai",   label:"AI Coach",    icon:"✨", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"companies",  label:"Companies",    icon:"🏢", app:"sales",   roles:["super_admin"], platformOnly:true},
@@ -2437,6 +2439,7 @@ export default function App(){
           {tab==="customers" && <CustomersPage leads={leads} currentUser={currentUser} showToast={showToast} onNavigateToLead={(leadId)=>{const l=leads.find(x=>x.id===leadId); if(l){setSelLead(l);setView("lead");setTab("leads");}}}/>}
           {tab==="commission_outstanding" && (hasCapability("see_brokerage_commission") ? <CommissionOutstanding currentUser={currentUser} showToast={showToast} developers={[]}/>: <div style={{padding:"20px"}}><p>⚠️ You do not have permission to view commission data.</p></div>)}
           {tab==="proppulse" && <PropPulse currentUser={currentUser} showToast={showToast}/>}
+          {tab==="launch" && <LaunchMode currentUser={currentUser} showToast={showToast}/>}
           {tab==="coach_ai" && <CoachPage opps={opps} leads={leads} activities={activities} users={users} currentUser={currentUser} showToast={showToast} onNavigateToOpp={(oppId)=>navigateToTab("opportunities",{type:"opp",oppId})}/>}
           {tab==="pay_plans"   &&<PaymentPlanTemplates currentUser={currentUser} showToast={showToast} projects={aiProjects}/>}
           {tab==="companies"   &&<CompaniesModule currentUser={currentUser} showToast={showToast} onSwitchCompany={(id, coObj)=>{
