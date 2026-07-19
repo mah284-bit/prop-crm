@@ -2223,8 +2223,32 @@ You will become the assigned agent.`);
                                   <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Initial Advance ({initialPct}%)</div>
                                   <div style={{fontSize:14,fontWeight:700,color:"#0F2540"}}>AED {Number(initialAdvance).toLocaleString()}</div>
                                   <div style={{fontSize:10,color:"#64748B",marginTop:2}}>Due at SPA signing</div>
-                                </div>
+                                  {["Reserved","SPA Requirements","SPA Signed","Closed Won"].includes(opp.stage) && finalPrice > 0 && (() => {
+                                const dldAmt = (opp.current_dld_payer === "developer") ? 0 : Math.round(finalPrice * 0.04 * ((opp.current_dld_payer === "split") ? ((opp.current_dld_split_pct || 50) / 100) : 1));
+                                const bill = (initialAdvance || 0) + dldAmt + 5250 + 4020;
+                                const credits = (Number(opp.reservation_amount) || 0) + (Number(opp.booking_amount) || 0);
+                                return (
+                                  <div style={{padding:"10px 12px",background:"#FFFBEB",borderRadius:7,border:"1.5px solid #FCD34D",gridColumn:"span 2"}}>
+                                    <div style={{fontSize:9,color:"#92400E",textTransform:"uppercase",letterSpacing:".4px",marginBottom:4}}>{"\ud83e\uddfe Buyers bill to SPA (est.)"}</div>
+                                    <div style={{fontSize:10,color:"#78716C"}}>First instalment {initialAdvance ? "AED " + Number(initialAdvance).toLocaleString() : "\u2014"} + DLD {dldAmt ? "AED " + dldAmt.toLocaleString() : "\u2014"} + SPA fee AED 5,250 + Oqood AED 4,020</div>
+                                    <div style={{fontSize:14,fontWeight:800,color:"#92400E",marginTop:3}}>AED {bill.toLocaleString()}{credits > 0 ? <span style={{fontSize:10,fontWeight:600,color:"#16A34A"}}>{" \u00b7 AED " + credits.toLocaleString() + " already credited"}</span> : null}</div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
                               )}
+                              {["Reserved","SPA Requirements","SPA Signed","Closed Won"].includes(opp.stage) && finalPrice > 0 && (() => {
+                                const dldAmt = (opp.current_dld_payer === "developer") ? 0 : Math.round(finalPrice * 0.04 * ((opp.current_dld_payer === "split") ? ((opp.current_dld_split_pct || 50) / 100) : 1));
+                                const bill = (initialAdvance || 0) + dldAmt + 5250 + 4020;
+                                const credits = (Number(opp.reservation_amount) || 0) + (Number(opp.booking_amount) || 0);
+                                return (
+                                  <div style={{padding:"10px 12px",background:"#FFFBEB",borderRadius:7,border:"1.5px solid #FCD34D",gridColumn:"span 2"}}>
+                                    <div style={{fontSize:9,color:"#92400E",textTransform:"uppercase",letterSpacing:".4px",marginBottom:4}}>{"\ud83e\uddfe Buyers bill to SPA (est.)"}</div>
+                                    <div style={{fontSize:10,color:"#78716C"}}>First instalment {initialAdvance ? "AED " + Number(initialAdvance).toLocaleString() : "\u2014"} + DLD {dldAmt ? "AED " + dldAmt.toLocaleString() : "\u2014"} + SPA fee AED 5,250 + Oqood AED 4,020</div>
+                                    <div style={{fontSize:14,fontWeight:800,color:"#92400E",marginTop:3}}>AED {bill.toLocaleString()}{credits > 0 ? <span style={{fontSize:10,fontWeight:600,color:"#16A34A"}}>{" \u00b7 AED " + credits.toLocaleString() + " already credited"}</span> : null}</div>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </div>
                           {/* RIGHT: Broker commission (SEPARATE per architectural law) */}
