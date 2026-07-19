@@ -860,6 +860,28 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       })();
     }
   }, [showStageGate, opp.id, opp.current_agreed_price, opp.reservation_amount, opp.booking_amount, opp.reservation_date, opp.booking_date]);
+  // v2 bill-first seed: ALL expected amounts computed on dialog open
+  useEffect(() => {
+    if (showStageGate !== "SPA Signed") return;
+    const price = Number(stageGateForm.final_price || opp.current_agreed_price || 0);
+    if (!price) return;
+    const planStr = String(stageGateForm.payment_plan_preset || opp.current_payment_plan_preset || "");
+    const pctMatch = planStr.match(/^(\d+)\s*\//);
+    const planPct = pctMatch ? Number(pctMatch[1]) : 10;
+    setPrePaymentsState(prev => {
+      const next = { ...prev };
+      const seedRow = (key, amt, pct) => {
+        const row = next[key] || { status: "pending", amount: "", date: "", notes: "" };
+        if (row.status !== "pending" || Number(row.amount)) return;
+        const _ex = Math.round(amt * 100) / 100;
+        next[key] = { ...row, expected_amount: _ex, amount: String(_ex), ...(pct ? { expected_percent: pct } : {}) };
+      };
+      seedRow("initial_advance", price * planPct / 100, planPct);
+      seedRow("spa_fee", 5250);
+      seedRow("oqood_fee", 4020);
+      return next;
+    });
+  }, [showStageGate, stageGateForm.final_price, stageGateForm.payment_plan_preset, opp.id]);
 
   // Phase 3b: auto-calc DLD fee row when final_price OR dldPayer changes
   useEffect(() => {
@@ -4380,20 +4402,7 @@ onSelect={(unitId) => {
                         </div>
                       </div>
                       {/* The single confirmation checkbox - gates advance */}
-                      <label style={{display:"flex",alignItems:"flex-start",gap:10,padding:"10px 12px",background:stageGateForm.offer_payments_confirmed ? "#ECFDF5" : "#FEFCE8",border:`1px solid ${stageGateForm.offer_payments_confirmed ? "#6EE7B7" : "#FDE68A"}`,borderRadius:8,cursor:"pointer"}}>
-                        <input type="checkbox"
-                          checked={!!stageGateForm.offer_payments_confirmed}
-                          onChange={e=>setStageGateForm(f=>({...f, offer_payments_confirmed:e.target.checked}))}
-                          style={{marginTop:2,flexShrink:0,width:16,height:16,cursor:"pointer"}}/>
-                        <div>
-                          <div style={{fontSize:12,fontWeight:700,color:stageGateForm.offer_payments_confirmed ? "#065F46" : "#92400E"}}>
-                            ✓ All expected amounts collected — ready to advance
-                          </div>
-                          <div style={{fontSize:10,color:"#64748B",marginTop:2}}>
-                            Confirms buyer has paid the initial advance + their DLD share. Without this, deal stays at "Offer Accepted" for follow-up.
-                          </div>
-                        </div>
-                      </label>
+                      <div style={{padding:"9px 12px",background:"#F0F9FF",border:"1px solid #BAE6FD",borderRadius:8,fontSize:11,color:"#0C4A6E"}}>{"\u2139\ufe0f This records the buyer acceptance of the offer terms. Collections are tracked at SPA Requirements - no payment confirmation needed here."}</div>
                     </div>
                   );
                 })()}
@@ -4667,7 +4676,7 @@ onSelect={(unitId) => {
                             ["waived", "Waived", "#7C3AED", "#EDE9FE"]
                           ].map(([s, lbl, fg, bg]) => (
                             <button key={s} type="button"
-                              onClick={()=>setPrePaymentsState(p=>({...p, [key]:{...p[key], status:s, date: s==="received"?(p[key]?.date||""):p[key]?.date||"", amount: p[key]?.amount||""}}))}
+                              onClick={()=>setPrePaymentsState(p=>({...p, [key]:{...p[key], status:s, date: s==="received"?(p[key]?.date||new Date().toISOString().slice(0,10)):(p[key]?.date||""), amount: (s==="received" && !Number(p[key]?.amount) && p[key]?.expected_amount) ? String(p[key].expected_amount) : (p[key]?.amount||"")}}))}
                               style={{
                                 flex:1,padding:"3px 6px",border:"none",borderRadius:4,fontSize:9,fontWeight:700,cursor:"pointer",
                                 background: status===s ? bg : "transparent",
@@ -4893,14 +4902,6 @@ onSelect={(unitId) => {
                   // Validation
                   // Offer Accepted - validate confirmation checkbox before advancing
                   // 19 May 2026 Issue 4: Gate advance on "all amounts collected" checkbox
-                  if (showStageGate === "Offer Accepted") {
-                    // Only enforce when the new section is visible (proposal data exists)
-                    const hasProposalData = !!(opp.current_dld_payer || opp.current_payment_plan_preset);
-                    if (hasProposalData && !stageGateForm.offer_payments_confirmed) {
-                      showToast("Please confirm all expected amounts are collected before advancing", "error");
-                      return;
-                    }
-                  }
                   // Offer Accepted - no required fields, price comes from inventory
                   if(showStageGate==="Reserved"&&!stageGateForm.reservation_fee){showToast("Reservation fee is required","error");return;}
                   if(showStageGate==="SPA Signed"&&!stageGateForm.final_price){showToast("Final price is required","error");return;}
