@@ -1017,7 +1017,7 @@ const TABS=[
   // {id:"activity",   label:"Activity Log", icon:"📝", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   {id:"reports",    label:"Reports",      icon:"📊", app:"sales",   roles:["super_admin","admin","sales_manager"]},
   //{id:"ai",       label:"AI Assistant", icon:"✦",  app:"sales" -- removed, using AI bubble insteadles_manager","sales_agent"]},
-  {id:"launch",     label:"Launch",      icon:"\U0001f680", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"launch",     label:"Launch",      icon:"🚀", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"proppulse",  label:"PropPulse",   icon:"⚡", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"coach_ai",   label:"AI Coach",    icon:"✨", app:"sales",   roles:["super_admin","admin","sales_manager","sales_agent"]},
   {id:"companies",  label:"Companies",    icon:"🏢", app:"sales",   roles:["super_admin"], platformOnly:true},
