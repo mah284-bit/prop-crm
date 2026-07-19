@@ -1758,7 +1758,7 @@ You will become the assigned agent.`);
                                 <tr style={{background:isLatest?"#F0F9FF":"#fff",borderBottom:_chips.length?"none":"1px solid #F1F5F9"}}>
                                   <td style={{padding:"9px 10px",fontWeight:700,color:"#0F2540"}}>
                                     V{proposalNumber}
-                                    {isLatest && <span style={{fontSize:8,padding:"1px 5px",background:"#ECFDF5",color:"#065F46",borderRadius:3,fontWeight:700,marginLeft:5}}>LATEST</span>}
+                                    {isLatest && <span style={{fontSize:8,padding:"1px 5px",background:"#ECFDF5",color:"#065F46",borderRadius:3,fontWeight:700,marginLeft:5}}>LATEST</span>}{(p.structured_data?.post_reservation || pr.structured_data?.post_reservation) && <span title={(p.structured_data||pr.structured_data||{}).post_reservation_reason||""} style={{fontSize:8,padding:"1px 5px",background:"#FEF2F2",color:"#B91C1C",borderRadius:3,fontWeight:700,marginLeft:4}}>{"\u26a0 post-res"}</span>}
                                   </td>
                                   <td style={{padding:"9px 10px",color:"#64748B"}}>{p.sent_at ? new Date(p.sent_at).toLocaleDateString("en-AE",{day:"numeric",month:"short"}) : "—"}</td>
                                   <td style={{padding:"9px 10px",color:discountPct>0?"#A06810":"#94A3B8",fontWeight:600}}>{discountPct>0 ? `-${discountPct}%` : "0%"}</td>
@@ -1997,7 +1997,7 @@ You will become the assigned agent.`);
                                   <tr key={r.id} style={{background:isLatest?"#FAFBFE":"#fff",borderBottom:"1px solid #F1F5F9"}}>
                                     <td style={{padding:"9px 10px",fontWeight:700,color:"#0F2540"}}>
                                       R{roundNumber}
-                                      {isLatest && <span style={{fontSize:8,padding:"1px 5px",background:"#ECFDF5",color:"#065F46",borderRadius:3,fontWeight:700,marginLeft:5}}>LATEST</span>}
+                                      {isLatest && <span style={{fontSize:8,padding:"1px 5px",background:"#ECFDF5",color:"#065F46",borderRadius:3,fontWeight:700,marginLeft:5}}>LATEST</span>}{(p.structured_data?.post_reservation || pr.structured_data?.post_reservation) && <span title={(p.structured_data||pr.structured_data||{}).post_reservation_reason||""} style={{fontSize:8,padding:"1px 5px",background:"#FEF2F2",color:"#B91C1C",borderRadius:3,fontWeight:700,marginLeft:4}}>{"\u26a0 post-res"}</span>}
                                     </td>
                                     <td style={{padding:"9px 10px",color:"#64748B"}}>{dateLabel}</td>
                                     <td style={{padding:"9px 10px"}}>

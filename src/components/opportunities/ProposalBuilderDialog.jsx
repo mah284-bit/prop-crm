@@ -451,6 +451,14 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   };
 
   const submit = async (sendEmail) => {
+      // Ceremony Tier-2: post-Reserve terms changes need a stated reason
+      let ceremonyReason = null;
+      if (["Reserved", "SPA Requirements"].includes(opp.stage)) {
+        ceremonyReason = window.prompt("Post-reservation change: money is already held on this deal.\n\nState the reason for revising terms (mandatory, audited):");
+        if (ceremonyReason === null || !ceremonyReason.trim()) { showToast("Revision cancelled - a reason is required after reservation", "warning"); return; }
+        ceremonyReason = ceremonyReason.trim();
+      }
+
     if (proposalUnits.length === 0) {
       showToast("Add at least one unit to the proposal","error");
       return;
@@ -505,6 +513,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         sent_at: new Date().toISOString(),
         created_by: currentUser.id,
         structured_data: {
+          ...(ceremonyReason ? { post_reservation: true, post_reservation_reason: ceremonyReason } : {}),
           proposal_units: cleanProposalUnits,
           payment_plan_preset: paymentPlanPreset,
           payment_plan: paymentPlan,
