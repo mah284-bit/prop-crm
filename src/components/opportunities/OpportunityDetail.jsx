@@ -1432,7 +1432,7 @@ You will become the assigned agent.`);
                   return <span style={{fontSize:9,fontWeight:700,padding:"1px 8px",borderRadius:20,background:"#FDF3DC",color:"#8A6200",textTransform:"none",letterSpacing:0}}>{"\u26a0 KYC incomplete \u00b7 "}{k.replace("_"," ")}</span>;
                 })()}
                 {(()=>{ /* Terms Pending chip (Wilderness Part 2): money held without documented terms */
-                  if (!["Reserved","SPA Requirements","SPA Signed"].includes(opp.stage) || (proposals || []).length > 0) return null;
+                  const termsCleared = !opp.current_agreed_price; if (!["Reserved","SPA Requirements","SPA Signed"].includes(opp.stage) || ((proposals || []).length > 0 && !termsCleared)) return null;
                   return <span style={{fontSize:9,fontWeight:700,padding:"1px 8px",borderRadius:20,background:"#FEF2F2",color:"#B91C1C",textTransform:"none",letterSpacing:0,marginLeft:6}}>{"\u26a0 Terms pending \u00b7 no proposal sent"}</span>;
                 })()}
               </div>
@@ -1758,7 +1758,7 @@ You will become the assigned agent.`);
                                 <tr style={{background:isLatest?"#F0F9FF":"#fff",borderBottom:_chips.length?"none":"1px solid #F1F5F9"}}>
                                   <td style={{padding:"9px 10px",fontWeight:700,color:"#0F2540"}}>
                                     V{proposalNumber}
-                                    {isLatest && <span style={{fontSize:8,padding:"1px 5px",background:"#ECFDF5",color:"#065F46",borderRadius:3,fontWeight:700,marginLeft:5}}>LATEST</span>}{(p.structured_data?.post_reservation || pr.structured_data?.post_reservation) && <span title={(p.structured_data||pr.structured_data||{}).post_reservation_reason||""} style={{fontSize:8,padding:"1px 5px",background:"#FEF2F2",color:"#B91C1C",borderRadius:3,fontWeight:700,marginLeft:4}}>{"\u26a0 post-res"}</span>}
+                                    {isLatest && <span style={{fontSize:8,padding:"1px 5px",background:"#ECFDF5",color:"#065F46",borderRadius:3,fontWeight:700,marginLeft:5}}>LATEST</span>}{p.structured_data?.post_reservation && <span title={(p.structured_data||{}).post_reservation_reason||""} style={{fontSize:8,padding:"1px 5px",background:"#FEF2F2",color:"#B91C1C",borderRadius:3,fontWeight:700,marginLeft:4}}>{"\u26a0 post-res"}</span>}
                                   </td>
                                   <td style={{padding:"9px 10px",color:"#64748B"}}>{p.sent_at ? new Date(p.sent_at).toLocaleDateString("en-AE",{day:"numeric",month:"short"}) : "—"}</td>
                                   <td style={{padding:"9px 10px",color:discountPct>0?"#A06810":"#94A3B8",fontWeight:600}}>{discountPct>0 ? `-${discountPct}%` : "0%"}</td>
@@ -1997,7 +1997,7 @@ You will become the assigned agent.`);
                                   <tr key={r.id} style={{background:isLatest?"#FAFBFE":"#fff",borderBottom:"1px solid #F1F5F9"}}>
                                     <td style={{padding:"9px 10px",fontWeight:700,color:"#0F2540"}}>
                                       R{roundNumber}
-                                      {isLatest && <span style={{fontSize:8,padding:"1px 5px",background:"#ECFDF5",color:"#065F46",borderRadius:3,fontWeight:700,marginLeft:5}}>LATEST</span>}{(p.structured_data?.post_reservation || pr.structured_data?.post_reservation) && <span title={(p.structured_data||pr.structured_data||{}).post_reservation_reason||""} style={{fontSize:8,padding:"1px 5px",background:"#FEF2F2",color:"#B91C1C",borderRadius:3,fontWeight:700,marginLeft:4}}>{"\u26a0 post-res"}</span>}
+                                      {isLatest && <span style={{fontSize:8,padding:"1px 5px",background:"#ECFDF5",color:"#065F46",borderRadius:3,fontWeight:700,marginLeft:5}}>LATEST</span>}{p.structured_data?.post_reservation && <span title={(p.structured_data||{}).post_reservation_reason||""} style={{fontSize:8,padding:"1px 5px",background:"#FEF2F2",color:"#B91C1C",borderRadius:3,fontWeight:700,marginLeft:4}}>{"\u26a0 post-res"}</span>}
                                     </td>
                                     <td style={{padding:"9px 10px",color:"#64748B"}}>{dateLabel}</td>
                                     <td style={{padding:"9px 10px"}}>
@@ -3732,10 +3732,25 @@ onSelect={(unitId) => {
             <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
               <button onClick={()=>setShowEditOpp(false)} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>Cancel</button>
               <button onClick={async()=>{
+                // Wilderness Part 4: unit switch ceremony (re-point, not clone)
+                const unitChanged = editOppForm.unit_id && editOppForm.unit_id !== opp.unit_id;
+                const unitCleared = !editOppForm.unit_id && opp.unit_id;
+                if (unitCleared && ["Reserved","SPA Requirements","SPA Signed"].includes(opp.stage)) { showToast("⛔ A reserved deal must keep a linked unit - switch to another unit instead of clearing", "error"); return; }
+                let switchReason = null;
+                if (unitChanged && ["Reserved","SPA Requirements"].includes(opp.stage)) {
+                  const clash = (opps||[]).find(o => o.id !== opp.id && o.unit_id === editOppForm.unit_id && o.status === "Active" && ["Reserved","SPA Requirements","SPA Signed"].includes(o.stage));
+                  if (clash) { showToast("\u26d4 " + ((units||[]).find(u=>u.id===editOppForm.unit_id)?.unit_ref || "Unit") + " is already held by another active deal (" + (clash.title||"") + ")", "error"); return; }
+                  const oldU = (units||[]).find(u=>u.id===opp.unit_id);
+                  const newU = (units||[]).find(u=>u.id===editOppForm.unit_id);
+                  switchReason = window.prompt("UNIT SWITCH on a reserved deal:\n" + (oldU?.unit_ref||"?") + " -> " + (newU?.unit_ref||"?") + "\n\nMoney collected stays on the deal. Terms will reset (Terms Pending until a new proposal is sent).\n\nReason for the switch (mandatory, audited):");
+                  if (switchReason === null || !switchReason.trim()) { return; }
+                  switchReason = switchReason.trim();
+                }
                 setSaving(true);
                 try {
+                  const _newRef = switchReason ? ((units||[]).find(u=>u.id===editOppForm.unit_id)?.unit_ref) : null;
                   const updates = {
-                    title: editOppForm.title || null,
+                    title: (_newRef && editOppForm.title && opp.unit_id) ? (editOppForm.title.replace(((units||[]).find(u=>u.id===opp.unit_id)?.unit_ref)||"\u0000", _newRef)) : (editOppForm.title || null),
                     budget: editOppForm.budget ? Number(editOppForm.budget) : null,
                     unit_id: editOppForm.unit_id || null,
                     commission_pct: editOppForm.commission_pct ? Number(editOppForm.commission_pct) : null,
@@ -3743,6 +3758,7 @@ onSelect={(unitId) => {
                     assigned_to: editOppForm.assigned_to || null,
                     property_category: editOppForm.property_category,
                     updated_at: new Date().toISOString(),
+                    ...(switchReason ? { current_agreed_price: null, current_payment_plan_preset: null, current_dld_payer: null, current_dld_split_pct: null } : {}),
                   };
                   const { data, error } = await supabase
                     .from("opportunities")
@@ -3751,8 +3767,22 @@ onSelect={(unitId) => {
                     .select()
                     .single();
                   if (error) throw error;
+                  if (switchReason) {
+                    try {
+                      await supabase.from("project_units").update({ status: "Available" }).eq("id", opp.unit_id);
+                      await supabase.from("project_units").update({ status: "Reserved" }).eq("id", editOppForm.unit_id);
+                      const oldU = (units||[]).find(u=>u.id===opp.unit_id);
+                      const newU = (units||[]).find(u=>u.id===editOppForm.unit_id);
+                      await supabase.from("activities").insert({
+                        opportunity_id: opp.id, lead_id: opp.lead_id, company_id: opp.company_id || currentUser.company_id || null,
+                        type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null,
+                        lead_name: lead?.name || null, stage_at_event: opp.stage, activity_subtype: "unit_switched",
+                        note: "UNIT SWITCHED: " + (oldU?.unit_ref||"?") + " -> " + (newU?.unit_ref||"?") + " (money stays on deal; terms reset to pending) - reason: " + switchReason,
+                      });
+                    } catch (se) { console.error("switch extras failed:", se); }
+                  }
                   if (onUpdated) onUpdated(data);
-                  showToast("Opportunity updated", "success");
+                  showToast(switchReason ? "Unit switched - terms reset, send a new proposal" : "Opportunity updated", "success");
                   setShowEditOpp(false);
                 } catch (e) {
                   console.error("Edit opp save failed:", e);
