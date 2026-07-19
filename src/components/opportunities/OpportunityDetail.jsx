@@ -1494,7 +1494,7 @@ You will become the assigned agent.`);
                   "Proposal Sent":  "Capture customer response",
                   "Negotiation":    "Lock in the offer",
                   "Offer Accepted": "Collect reservation fee",
-                  "Reserved":       "Draft & send SPA",
+                  "Reserved":       "Advance to SPA Requirements — collect payments",
                   "SPA Signed":     "Verify payments and close",
                 };
                 const nextActionLabel = NEXT_ACTION_BY_STAGE[opp.stage] || "";
@@ -3704,10 +3704,7 @@ onSelect={(unitId) => {
                     autoFocus={false}
                     maxHeight={160}
                   />
-                  {editOppForm.unit_id && (() => {
-                    const sat = analyzeUnitSaturation(editOppForm.unit_id, opps, currentUser.id);
-                    return <UnitSaturationInline saturation={sat} />;
-                  })()}
+
                 </div>
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Commission %</label>
