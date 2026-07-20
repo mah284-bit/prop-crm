@@ -1067,10 +1067,10 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
 
     // Stage 5 — Sync final_price onto opportunity record when SPA is signed
     // (so subsequent stage validations like Closed Won find it)
-    if (toStage === "SPA Signed" && stageGateForm.final_price) {
+    if (toStage === "SPA Signed" && (stageGateForm.final_price || opp.current_agreed_price || opp.budget)) {
       try {
         await supabase.from("opportunities")
-          .update({ final_price: Number(stageGateForm.final_price) })
+          .update({ final_price: Number(stageGateForm.final_price) || Number(opp.current_agreed_price) || Number(opp.budget) || 0 })
           .eq("id", opp.id);
         // Also reflect in local opp object for immediate validation
         opp.final_price = Number(stageGateForm.final_price);
@@ -1081,7 +1081,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
 
     // Stage 5 — Create or UPDATE sales closure record when SPA is signed
     // Bug C fix (12 May 2026): use upsert so re-edits work (was silently failing on duplicate)
-    if (toStage === "SPA Signed" && stageGateForm.final_price) {
+    if (toStage === "SPA Signed" && (stageGateForm.final_price || opp.current_agreed_price || opp.budget)) {
       try {
         const { error: closErr } = await supabase
           .from("pp_sales_closures")
@@ -1108,7 +1108,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     }
 
     // Stage 6 — Auto-create draft commission invoice when SPA is signed
-    if (toStage === "SPA Signed" && stageGateForm.final_price) {
+    if (toStage === "SPA Signed" && (stageGateForm.final_price || opp.current_agreed_price || opp.budget)) {
       try {
         // GF-21 guard: one invoice per opportunity
         const { data: existingInv } = await supabase.from("pp_commission_invoices")
@@ -1116,7 +1116,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         if (existingInv && existingInv.length > 0) {
           console.log("Commission invoice already exists - skipping create");
         } else {
-        const salePrice = Number(stageGateForm.final_price);
+        const salePrice = Number(stageGateForm.final_price) || Number(opp.current_agreed_price) || Number(opp.budget) || 0;
         // GF-14 fallback: pct from company default if opp arrived empty (any create door)
         let commissionPct = Number(opp.commission_pct || 0);
         if (!commissionPct) {
