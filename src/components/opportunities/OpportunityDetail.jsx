@@ -1477,8 +1477,15 @@ You will become the assigned agent.`);
                           // Completed stages can be REOPENED for view/edit (audit trail).
                           // GATED_STAGES have dialogs that load saved closure data automatically.
                           // Non-gated stages: show toast (details in activity log).
-                          if (isDone) {
+                          if (isDone || (isCur && GATED_STAGES.includes(s))) {
                             if (GATED_STAGES.includes(s)) {
+                              // view-mode hydration: seed the dialog from the captured record
+                              if (s === "Reserved") {
+                                setStageGateForm({
+                                  reservation_fee: opp.reservation_amount || "",
+                                  reservation_date: opp.reservation_date || "",
+                                });
+                              }
                               setStageGateViewMode(true);
                               setShowStageGate(s);
                             } else {
