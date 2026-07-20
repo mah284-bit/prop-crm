@@ -1580,7 +1580,7 @@ You will become the assigned agent.`);
                               💡 To advance to Quoted, use <strong style={{color:"#0F2540",fontStyle:"normal"}}>📤 Send Proposal</strong> in Log Activity
                             </div>
                           )}
-                          {(opp.stage==="Offer Accepted"||opp.stage==="Negotiation"||opp.stage==="Reserved")&&nextStageName!=="Reserved"&&(
+                          {(opp.stage==="Offer Accepted"||opp.stage==="Negotiation")&&(
                             <button onClick={()=>moveStage("Reserved")}
                               style={{padding:"6px 12px",borderRadius:7,border:"none",background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
                               🔒 Reserve Unit
