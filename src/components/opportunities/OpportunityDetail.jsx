@@ -1196,12 +1196,19 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     // Phase 3 TODO: auto-release with per-master-agreement timeout (mix of auto + manual)
     // Issue 1 fix 11 May 2026: capture reservation amount + date when advancing to Reserved
     // (will be pre-filled into SPA Signed dialog's pre-SPA payments later)
+    if (toStage === "Offer Accepted") {
+      try { await supabase.from("opportunities").update({ offer_accepted_at: new Date().toISOString() }).eq("id", opp.id); } catch (e) { console.error("offer stamp:", e); }
+    }
     if (toStage === "Reserved" && stageGateForm.reservation_fee) {
       try {
         await supabase.from("opportunities").update({
           reservation_amount: Number(stageGateForm.reservation_fee),
-          reservation_date: new Date().toISOString().slice(0,10),
+          reservation_date: stageGateForm.reservation_date || new Date().toISOString().slice(0,10),
+          reservation_method: stageGateForm.payment_method || "Cheque",
+          reservation_cheque_no: stageGateForm.cheque_number || null,
+          reservation_notes: stageGateForm.notes || null,
         }).eq("id", opp.id);
+        onUpdated?.({ ...opp, stage: "Reserved", status: "Active", reservation_amount: Number(stageGateForm.reservation_fee), reservation_date: stageGateForm.reservation_date || new Date().toISOString().slice(0,10), reservation_method: stageGateForm.payment_method || "Cheque", reservation_cheque_no: stageGateForm.cheque_number || null, reservation_notes: stageGateForm.notes || null });
       } catch (e) {
         console.error("Reservation capture exception:", e);
       }
@@ -1483,7 +1490,10 @@ You will become the assigned agent.`);
                               if (s === "Reserved") {
                                 setStageGateForm({
                                   reservation_fee: opp.reservation_amount || "",
-                                  reservation_date: opp.reservation_date || "",
+                                  reservation_date: (opp.reservation_date || "").slice(0,10),
+                                  payment_method: opp.reservation_method || "Cheque",
+                                  cheque_number: opp.reservation_cheque_no || "",
+                                  notes: opp.reservation_notes || "",
                                 });
                               }
                               setStageGateViewMode(true);
