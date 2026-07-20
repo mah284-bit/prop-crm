@@ -129,6 +129,7 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   const [editOppForm, setEditOppForm] = useState({});
   const [saturationWarning, setSaturationWarning] = useState(null);
   const [showStageGate, setShowStageGate] = useState(null); // stage name being gated
+  const [stageGateViewMode, setStageGateViewMode] = useState(false);
   // 19 May 2026 Dashboard Redesign Phase 2a: dashboardTab controls which panel shows
   // null = welcome state, otherwise: 'proposals'|'coach'|'next-steps'|'financials'|'negotiations'|'upfront'|'plan'
   // Note: renamed from 'activeTab' to avoid collision with existing Activity Log filter state
@@ -691,6 +692,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     }
     if(GATED_STAGES.includes(toStage)) {
       setStageGateForm({});
+      setStageGateViewMode(false);
       setShowStageGate(toStage);
       return;
     }
@@ -1211,6 +1213,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       await supabase.from("project_units").update({status:"Reserved"}).eq("id",opp.unit_id);
     showToast(`Moved to ${toStage}`,"success");
     setShowStageGate(null);
+    setStageGateViewMode(false);
     // Stage 5 — reset transient stage-gate UI state
     setPrePaymentsState({
       booking_fee:     { status: "pending", amount: "", date: "", notes: "" },
@@ -1476,6 +1479,7 @@ You will become the assigned agent.`);
                           // Non-gated stages: show toast (details in activity log).
                           if (isDone) {
                             if (GATED_STAGES.includes(s)) {
+                              setStageGateViewMode(true);
                               setShowStageGate(s);
                             } else {
                               showToast(`${s} details are captured in the activity log below`, "info");
@@ -4905,7 +4909,7 @@ onSelect={(unitId) => {
                   style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",color:"#475569"}}>
                   Cancel
                 </button>
-                <button onClick={async()=>{
+                <button onClick={stageGateViewMode ? () => setStageGateViewMode(false) : async()=>{
                   // Validation
                   // Offer Accepted - validate confirmation checkbox before advancing
                   // 19 May 2026 Issue 4: Gate advance on "all amounts collected" checkbox
@@ -5011,7 +5015,7 @@ onSelect={(unitId) => {
                   style={{padding:"8px 20px",borderRadius:8,border:"none",
                     background:showStageGate==="Closed Lost"?"#B83232":showStageGate==="Closed Won"?"#1A7F5A":"#0F2540",
                     color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
-                  {showStageGate==="Closed Lost"?"✗ Confirm Lost":showStageGate==="Closed Won"?"🏆 Close Won":showStageGate==="Reserved"?"🔒 Confirm Reservation":showStageGate==="SPA Signed"?"📄 Confirm SPA Signed":"✅ Confirm"}
+                  {stageGateViewMode ? "\u270f Amend this record" : showStageGate==="Closed Lost"?"✗ Confirm Lost":showStageGate==="Closed Won"?"🏆 Close Won":showStageGate==="Reserved"?"🔒 Confirm Reservation":showStageGate==="SPA Signed"?"📄 Confirm SPA Signed":"✅ Confirm"}
                 </button>
               </div>
             </div>
