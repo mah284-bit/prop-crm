@@ -4778,9 +4778,16 @@ onSelect={(unitId) => {
                     const price = Number(stageGateForm.final_price || 0);
                     const outstanding = price - totalReceived;
                     const receivedPct = price > 0 ? Math.round((totalReceived / price) * 1000) / 10 : 0;
+                    const billTotal = items.filter(i => i.status !== "waived").reduce((s, i) => s + (Number(i.amount) || Number(i.expected_amount) || 0), 0);
+                    const toCollect = Math.max(billTotal - totalReceived, 0);
                     return (
                       <div style={{marginTop:14,padding:"12px 14px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10}}>
                         <div style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",marginBottom:8}}>📊 Payment Summary</div>
+                        <div style={{display:"flex",justifyContent:"space-between",gap:8,padding:"8px 10px",marginBottom:8,background:"#FFFBEB",border:"1px solid #FCD34D",borderRadius:8}}>
+                          <div style={{textAlign:"center",flex:1}}><div style={{fontSize:9,color:"#92400E",textTransform:"uppercase"}}>Bill (this stage)</div><div style={{fontSize:14,fontWeight:800,color:"#92400E"}}>AED {billTotal.toLocaleString()}</div></div>
+                          <div style={{textAlign:"center",flex:1,borderLeft:"1px solid #FDE68A"}}><div style={{fontSize:9,color:"#166534",textTransform:"uppercase"}}>Collected</div><div style={{fontSize:14,fontWeight:800,color:"#16A34A"}}>AED {totalReceived.toLocaleString()}</div></div>
+                          <div style={{textAlign:"center",flex:1,borderLeft:"1px solid #FDE68A"}}><div style={{fontSize:9,color:"#991B1B",textTransform:"uppercase"}}>To Collect</div><div style={{fontSize:14,fontWeight:800,color:toCollect > 0 ? "#B91C1C" : "#16A34A"}}>{toCollect > 0 ? "AED " + toCollect.toLocaleString() : "\u2713 Complete"}</div></div>
+                        </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,fontSize:12}}>
                           <div style={{display:"flex",justifyContent:"space-between",color:"#16A34A"}}>
                             <span>Total Received:</span>
