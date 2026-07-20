@@ -1487,6 +1487,12 @@ You will become the assigned agent.`);
                           if (isDone || (isCur && GATED_STAGES.includes(s))) {
                             if (GATED_STAGES.includes(s)) {
                               // view-mode hydration: seed the dialog from the captured record
+                              if (s === "Offer Accepted") {
+                                setStageGateForm({
+                                  final_price: opp.current_agreed_price || "",
+                                  offer_valid_until: (opp.offer_valid_until || "").slice(0,10),
+                                });
+                              }
                               if (s === "Reserved") {
                                 setStageGateForm({
                                   reservation_fee: opp.reservation_amount || "",
