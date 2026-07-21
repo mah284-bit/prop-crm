@@ -717,8 +717,8 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       }
       setPrePaymentsState(p => {
         const out = {...p};
-        if (spaFee && !out.spa_fee?.amount) out.spa_fee = {...out.spa_fee, amount: String(spaFee), notes: out.spa_fee?.notes || "Pre-filled: developer/company default"};
-        if (oqoodFee && !out.oqood_fee?.amount) out.oqood_fee = {...out.oqood_fee, amount: String(oqoodFee), notes: out.oqood_fee?.notes || "Pre-filled: developer/company default"};
+        if (spaFee && !out.spa_fee?.expected_amount) out.spa_fee = {...out.spa_fee, expected_amount: Number(spaFee), notes: out.spa_fee?.notes || "Expected: developer/company default"};
+        if (oqoodFee && !out.oqood_fee?.expected_amount) out.oqood_fee = {...out.oqood_fee, expected_amount: Number(oqoodFee), notes: out.oqood_fee?.notes || "Expected: developer/company default"};
         return out;
       });
     })();
@@ -798,7 +798,6 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
                 ...p.initial_advance,
                 expected_amount: expectedInitial,
                 expected_percent: planPct,
-                amount: p.initial_advance?.amount || String(expectedInitial),
               }
             };
           }
@@ -876,9 +875,13 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         const row = next[key] || { status: "pending", amount: "", date: "", notes: "" };
         if (row.status !== "pending" || Number(row.amount)) return;
         const _ex = Math.round(amt * 100) / 100;
-        next[key] = { ...row, expected_amount: _ex, amount: String(_ex), ...(pct ? { expected_percent: pct } : {}) };
+        next[key] = { ...row, expected_amount: _ex, ...(pct ? { expected_percent: pct } : {}) };
       };
       seedRow("initial_advance", price * planPct / 100, planPct);
+      if (Number(opp.reservation_amount) > 0) {
+        const rrow = next.reservation_fee || { status: "pending", amount: "", date: "", notes: "" };
+        next.reservation_fee = { ...rrow, expected_amount: Number(opp.reservation_amount) };
+      }
       seedRow("spa_fee", 5250);
       seedRow("oqood_fee", 4020);
       return next;
@@ -901,10 +904,11 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
 
       if (dldPayer === "buyer") {
         next.dld_fee = {
-          status: "received",
-          amount: String(dldAmount),
-          date: next.dld_fee?.date || new Date().toISOString().slice(0,10),
-          notes: "Auto from DLD payer: Buyer (4% of final price)"
+          status: "pending",
+          amount: "",
+          expected_amount: dldAmount,
+          date: "",
+          notes: "Expected from DLD payer: Buyer (4% of final price)"
         };
       } else if (dldPayer === "developer") {
         next.dld_fee = {
@@ -919,9 +923,10 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         const buyerPortion = Math.round(dldAmount * (buyerPct/100) * 100) / 100;
         const devPortion = Math.round((dldAmount - buyerPortion) * 100) / 100;
         next.dld_fee = {
-          status: "received",
-          amount: String(buyerPortion),
-          date: next.dld_fee?.date || new Date().toISOString().slice(0,10),
+          status: "pending",
+          amount: "",
+          expected_amount: buyerPortion,
+          date: "",
           notes: `Auto from DLD payer: Split — Buyer ${buyerPct}% (AED ${buyerPortion.toLocaleString()}), Developer ${100-buyerPct}% (AED ${devPortion.toLocaleString()})`
         };
       } else {
@@ -4188,7 +4193,7 @@ onSelect={(unitId) => {
       {/* Stage Gate Modal */}
       {showStageGate&&(
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1200,padding:"1rem"}}>
-          <div style={{background:"#fff",borderRadius:16,width:880,maxWidth:"96vw",maxHeight:"90vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.25)"}}>
+          <div style={{background:"#fff",borderRadius:16,width:1080,maxWidth:"97vw",maxHeight:"96vh",overflow:"auto",boxShadow:"0 20px 60px rgba(11,31,58,.25)"}}>
             <div style={{padding:"1.25rem 1.5rem",borderBottom:"1px solid #E8EDF4",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
                 <div style={{fontSize:15,fontWeight:700,color:"#0F2540",letterSpacing:"-.3px"}}>
@@ -4643,111 +4648,67 @@ onSelect={(unitId) => {
                     </button>
                   </div>
 
-                  {[
-                    ["booking_fee", "Booking fee 💳", true],
-                    ["reservation_fee", "Reservation fee 💳", true],
-                    ["initial_advance", "First instalment (per plan)", false],
-                    ["spa_fee", "SPA fee", false],
-                    ["dld_fee", "DLD fee (4%)", false],
-                    ["oqood_fee", "Oqood fee", false],
-                    ["other_fees", "Other developer fees", false]
-                  ].map(([key, label, isCreditFee]) => {
-                    // 18 May 2026: For initial_advance, show "Expected" hint from payment plan
-                    const showExpected = !!(prePaymentsState[key]?.expected_amount || (prePaymentsState[key]?.amount && prePaymentsState[key]?.status === "pending"));
-                    const expectedAmt = prePaymentsState[key]?.expected_amount || Number(prePaymentsState[key]?.amount || 0);
-                    const expectedPct = prePaymentsState[key]?.expected_percent;
-                    const actualAmt = Number(prePaymentsState[key]?.amount || 0);
-                    const deviation = showExpected && actualAmt && actualAmt !== expectedAmt 
-                      ? actualAmt - expectedAmt 
-                      : null;
-                    const item = prePaymentsState[key] || { status:"pending", amount:"", date:"", notes:"" };
-                    const status = item.status || "pending";
-                    return (
-                      <div key={key} style={{display:"grid",gridTemplateColumns:"1fr 170px 100px 115px",gap:6,alignItems:"center",padding:"7px 4px",borderBottom:"1px dashed #E2E8F0"}}>
-                        <div style={{fontSize:12,color:"#0F2540",fontWeight:status==="received"?600:status==="waived"?500:400}}>
-                          {label}
-                          {isCreditFee && (
-                            <div style={{fontSize:9,color:"#0369A1",fontWeight:500,marginTop:1,letterSpacing:".2px"}}>
-                              credits toward initial advance
-                            </div>
-                          )}
-                          {showExpected && (
-                            <div style={{fontSize:9,marginTop:2,letterSpacing:".2px"}}>
-                              <span style={{color:"#065F46",fontWeight:600}}>
-                                Expected: AED {expectedAmt.toLocaleString()}{expectedPct ? " · " + expectedPct + "% per plan" : ""}
-                              </span>
-                              {deviation !== null && (
-                                <span style={{color:deviation > 0 ? "#92400E" : "#991B1B",fontWeight:700,marginLeft:6}}>
-                                  · Override: {deviation > 0 ? "+" : ""}{deviation.toLocaleString()}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        {/* 3-state pill selector */}
-                        <div style={{display:"flex",gap:4,background:"#fff",border:"1px solid #E2E8F0",borderRadius:6,padding:2}}>
-                          {[
-                            ["pending", "Pending", "#A0AEC0", "#F1F5F9"],
-                            ["received", "Received", "#16A34A", "#DCFCE7"],
-                            ["waived", "Waived", "#7C3AED", "#EDE9FE"]
-                          ].map(([s, lbl, fg, bg]) => (
-                            <button key={s} type="button"
-                              onClick={()=>setPrePaymentsState(p=>({...p, [key]:{...p[key], status:s, date: s==="received"?(p[key]?.date||new Date().toISOString().slice(0,10)):(p[key]?.date||""), amount: (s==="received" && !Number(p[key]?.amount) && p[key]?.expected_amount) ? String(p[key].expected_amount) : (p[key]?.amount||"")}}))}
-                              style={{
-                                flex:1,padding:"3px 6px",border:"none",borderRadius:4,fontSize:9,fontWeight:700,cursor:"pointer",
-                                background: status===s ? bg : "transparent",
-                                color: status===s ? fg : "#94A3B8",
-                                textTransform: "uppercase",
-                                letterSpacing: 0.4,
-                              }}>
-                              {lbl}
-                            </button>
-                          ))}
-                        </div>
-                        {/* Stage 5 v3: Amount input column */}
-                        {(status === "received" || status === "waived") ? (
-                          <input type="number" inputMode="numeric" min="0" step="100"
-                            value={item.amount || ""}
-                            onChange={e=>{
-                              const v = e.target.value;
-                              setPrePaymentsState(p=>({...p, [key]:{...p[key], amount:v}}));
-                            }}
-                            placeholder={status==="received"?"AED *":"optional"}
-                            style={{
-                              padding:"4px 6px",
-                              border:`1px solid ${status==="received" && !item.amount ? "#FCA5A5" : "#D1D5DB"}`,
-                              borderRadius:5,fontSize:11,
-                              background: status==="waived" ? "#FAFBFC" : "#fff",
-                              textAlign:"right"
-                            }}/>
-                        ) : (
-                          <span style={{fontSize:10,color:"#CBD5E0",fontStyle:"italic",textAlign:"center"}}>—</span>
-                        )}
-                        {/* Date input column */}
-                        {(status === "received" || status === "waived") ? (
-                          <input type="date" value={item.date || ""}
-                            max={new Date().toISOString().slice(0,10)}
-                            onChange={e=>{
-                              const v = e.target.value;
-                              if (v && v > new Date().toISOString().slice(0,10)) {
-                                showToast("Payment date cannot be in the future", "error");
-                                return;
-                              }
-                              setPrePaymentsState(p=>({...p, [key]:{...p[key], date:v}}));
-                            }}
-                            placeholder={status==="waived"?"optional":""}
-                            style={{
-                              padding:"4px 6px",
-                              border:`1px solid ${status==="received" && !item.date ? "#FCA5A5" : "#D1D5DB"}`,
-                              borderRadius:5,fontSize:11,
-                              background: status==="waived" ? "#FAFBFC" : "#fff"
-                            }}/>
-                        ) : (
-                          <span style={{fontSize:10,color:"#CBD5E0",fontStyle:"italic",textAlign:"center"}}>—</span>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {/* LEDGER TABLE v2 (founder spec Day 69): Particulars | Expected | Received | Mode | Date | Diff */}
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+                    <thead>
+                      <tr style={{background:"#F1F5F9",color:"#475569",textAlign:"left"}}>
+                        <th style={{padding:"6px 8px",fontWeight:700,width:"26%"}}>Particulars</th>
+                        <th style={{padding:"6px 8px",fontWeight:700,textAlign:"right",width:"15%"}}>Expected</th>
+                        <th style={{padding:"6px 8px",fontWeight:700,textAlign:"right",width:"15%"}}>Received</th>
+                        <th style={{padding:"6px 8px",fontWeight:700}}>Mode</th>
+                        <th style={{padding:"6px 8px",fontWeight:700}}>Date</th>
+                        <th style={{padding:"6px 8px",fontWeight:700,textAlign:"right"}}>Diff</th>
+                        <th style={{padding:"6px 8px"}}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        ["booking_fee", "Booking fee", true],
+                        ["reservation_fee", "Reservation fee", true],
+                        ["initial_advance", "First instalment (per plan)", false],
+                        ["spa_fee", "SPA fee", false],
+                        ["dld_fee", "DLD fee (4%)", false],
+                        ["oqood_fee", "Oqood fee", false],
+                        ["other_fees", "Other developer fees", false]
+                      ].map(([key, label, isCreditFee]) => {
+                        const item = prePaymentsState[key] || { status:"pending", amount:"", date:"", notes:"" };
+                        const status = item.status || "pending";
+                        const expected = Number(item.expected_amount) || 0;
+                        const received = Number(item.amount) || 0;
+                        const diff = (expected && received) ? received - expected : 0;
+                        const fmt2 = (n) => "AED " + Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+                        const upd = (patch) => setPrePaymentsState(pp => ({ ...pp, [key]: { ...(pp[key]||{}), ...patch } }));
+                        const waived = status === "waived";
+                        return (
+                          <tr key={key} style={{borderBottom:"1px dashed #E2E8F0",opacity:waived?0.5:1}}>
+                            <td style={{padding:"6px 8px",fontWeight:600,color:"#0F2540"}}>{label}{isCreditFee && <div style={{fontSize:9,color:"#0369A1",fontWeight:500}}>credits toward initial advance</div>}{waived && <div style={{fontSize:9,color:"#7C3AED",fontWeight:700}}>WAIVED</div>}</td>
+                            <td style={{padding:"6px 8px",textAlign:"right",color:"#065F46",fontWeight:600}}>{expected ? fmt2(expected) : "—"}</td>
+                            <td style={{padding:"6px 8px",textAlign:"right"}}><input type="number" disabled={waived} value={item.amount||""} onChange={e=>upd({amount:e.target.value, status: Number(e.target.value)>0?"received":"pending", date: (Number(e.target.value)>0 && !item.date) ? new Date().toISOString().slice(0,10) : item.date})} placeholder="0" style={{width:100,padding:"4px 6px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:11,textAlign:"right"}}/></td>
+                            <td style={{padding:"6px 8px"}}><select disabled={waived} value={item.method||""} onChange={e=>upd({method:e.target.value})} style={{padding:"4px 4px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:10}}><option value="">{"—"}</option><option>Cheque</option><option>Bank Transfer</option><option>Cash</option><option>Credit Card</option></select></td>
+                            <td style={{padding:"6px 8px"}}><input type="date" disabled={waived} value={item.date||""} onChange={e=>upd({date:e.target.value})} style={{padding:"4px 4px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:10}}/></td>
+                            <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:diff>0?"#B45309":diff<0?"#B91C1C":"#94A3B8"}}>{diff ? ((diff>0?"+":"")+fmt2(Math.abs(diff)).replace("AED ","")+(diff<0?" short":" over")) : "—"}</td>
+                            <td style={{padding:"6px 8px"}}><button type="button" onClick={()=>upd({status:waived?"pending":"waived"})} style={{fontSize:9,padding:"2px 8px",borderRadius:10,border:"1px solid #D1D5DB",background:waived?"#EDE9FE":"#fff",color:waived?"#7C3AED":"#94A3B8",cursor:"pointer",fontWeight:700}}>{waived?"unwaive":"waive"}</button></td>
+                          </tr>
+                        );
+                      })}
+                      {(() => {
+                        const keys=["booking_fee","reservation_fee","initial_advance","spa_fee","dld_fee","oqood_fee","other_fees"];
+                        let expT=0, recT=0;
+                        keys.forEach(k=>{ const it=prePaymentsState[k]||{}; if(it.status!=="waived"){ expT+=Number(it.expected_amount)||0; recT+=Number(it.amount)||0; } });
+                        const varT=recT-expT;
+                        return (
+                          <tr style={{background:"#F8FAFC",borderTop:"2px solid #CBD5E1",fontWeight:800}}>
+                            <td style={{padding:"7px 8px",color:"#0F2540"}}>TOTALS</td>
+                            <td style={{padding:"7px 8px",textAlign:"right",color:"#065F46"}}>AED {expT.toLocaleString()}</td>
+                            <td style={{padding:"7px 8px",textAlign:"right",color:"#16A34A"}}>AED {recT.toLocaleString()}</td>
+                            <td colSpan={2}></td>
+                            <td style={{padding:"7px 8px",textAlign:"right",color:varT<0?"#B91C1C":varT>0?"#B45309":"#16A34A"}}>{varT ? ((varT>0?"+":"")+varT.toLocaleString()) : "✓"}</td>
+                            <td></td>
+                          </tr>
+                        );
+                      })()}
+                    </tbody>
+                  </table>
 
                   {/* Phase C / Gate 7 (11 May 2026): Initial advance credit calculation note */}
                   {(() => {
@@ -4794,7 +4755,7 @@ onSelect={(unitId) => {
                     const price = Number(stageGateForm.final_price || 0);
                     const outstanding = price - totalReceived;
                     const receivedPct = price > 0 ? Math.round((totalReceived / price) * 1000) / 10 : 0;
-                    const billTotal = items.filter(i => i.status !== "waived").reduce((s, i) => s + (Number(i.amount) || Number(i.expected_amount) || 0), 0);
+                    const billTotal = items.filter(i => i.status !== "waived").reduce((s, i) => s + (Number(i.expected_amount) || Number(i.amount) || 0), 0);
                     const toCollect = Math.max(billTotal - totalReceived, 0);
                     return (
                       <div style={{marginTop:14,padding:"12px 14px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10}}>
