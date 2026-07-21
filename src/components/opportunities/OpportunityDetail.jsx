@@ -1550,7 +1550,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                   "Negotiation":    "Lock in the offer",
                   "Offer Accepted": "Collect reservation fee",
                   "Reserved":       "Advance to SPA Requirements — collect payments",
-                  "SPA Signed":     "Verify payments and close",
+                  "SPA Signed":     "SPA executed — close when handover terms settle",
                 };
                 const nextActionLabel = NEXT_ACTION_BY_STAGE[opp.stage] || "";
                 // Phase E W3 — Send Proposal available from any active stage.
@@ -4999,7 +4999,7 @@ onSelect={(unitId) => {
                   style={{padding:"8px 20px",borderRadius:8,border:"none",
                     background:showStageGate==="Closed Lost"?"#B83232":showStageGate==="Closed Won"?"#1A7F5A":"#0F2540",
                     color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
-                  {stageGateViewMode ? "\u270f Amend this record" : showStageGate==="Closed Lost"?"✗ Confirm Lost":showStageGate==="Closed Won"?"🏆 Close Won":showStageGate==="Reserved"?"🔒 Confirm Reservation":showStageGate==="SPA Signed"?"📄 Confirm SPA Signed":"✅ Confirm"}
+                  {stageGateViewMode ? "\u270f Amend this record" : showStageGate==="Closed Lost"?"✗ Confirm Lost":showStageGate==="Closed Won"?"🏆 Close Won":showStageGate==="Reserved"?"🔒 Confirm Reservation":showStageGate==="SPA Signed"?"📄 Record SPA & Continue":"✅ Confirm"}
                 </button>
               </div>
             </div>
