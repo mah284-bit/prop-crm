@@ -1067,7 +1067,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     onUpdated({...opp,stage:toStage,status:newStatus,...extra});
     // Phase 2.4: Auto-transition lead lifecycle to "customer" on Closed Won
     if (toStage === "Closed Won" && lead && lead.lifecycle_stage !== "customer") {
-      supabase.from("leads").update({lifecycle_stage: "customer"}).eq("id", lead.id).catch(e => console.warn("Lifecycle update failed:", e));
+      supabase.from("leads").update({lifecycle_stage: "customer"}).eq("id", lead.id).then(null, e => console.warn("Lifecycle update failed:", e));
     }
 
     // Stage 5 — Sync final_price onto opportunity record when SPA is signed
@@ -4958,8 +4958,12 @@ onSelect={(unitId) => {
                     let _exp = 0, _rec = 0, _pend = 0;
                     _vk.forEach(k => { const it = prePaymentsState[k] || {}; if (it.status !== "waived") { _exp += Number(it.expected_amount) || 0; _rec += Number(it.amount) || 0; if (it.status === "pending" && (Number(it.expected_amount) || 0) > 0) _pend++; } });
                     const _var = Math.round((_rec - _exp) * 100) / 100;
-                    if (_var < 0 && _pend > 0) {
-                      const vr = window.prompt("Variance check: AED " + Math.abs(_var).toLocaleString() + " still uncollected (" + _pend + " pending item" + (_pend === 1 ? "" : "s") + ").\n\nBest: collect or waive the rows first.\nTo proceed anyway: type the reason (audited):");
+                    // Rebalance Day 71 (primary checkpoint): materiality logic at Requirements->Signed, company tolerance
+                    let _tolA2 = 500, _tolP2 = 1;
+                    try { const { data: _co2 } = await supabase.from("companies").select("close_variance_tolerance_aed, close_variance_tolerance_pct").eq("id", currentUser.company_id).maybeSingle(); if (_co2) { _tolA2 = Number(_co2.close_variance_tolerance_aed) || 500; _tolP2 = Number(_co2.close_variance_tolerance_pct) || 1; } } catch (e) {}
+                    const _tol2 = Math.max(_tolA2, _exp * _tolP2 / 100);
+                    if (_var < 0 && Math.abs(_var) > _tol2) {
+                      const vr = window.prompt("Variance at signing: AED " + Math.abs(_var).toLocaleString() + " short (tolerance AED " + Math.round(_tol2).toLocaleString() + ", " + _pend + " pending).\n\nBest: collect or waive the rows first.\nTo record the SPA anyway: enter approval / follow-up note (who approved, what is the plan):");
                       if (vr === null || !vr.trim()) return;
                       try { await supabase.from("activities").insert({ opportunity_id: opp.id, lead_id: opp.lead_id, company_id: opp.company_id || currentUser.company_id || null, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, lead_name: lead?.name || null, stage_at_event: "SPA Signed", activity_subtype: "variance_override", note: "VARIANCE OVERRIDE at SPA signing: AED " + Math.abs(_var).toLocaleString() + " uncollected across " + _pend + " pending rows - reason: " + vr.trim() }); } catch (e) { console.error("variance audit:", e); }
                     }
