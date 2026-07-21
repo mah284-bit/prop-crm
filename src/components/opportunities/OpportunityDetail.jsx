@@ -4005,7 +4005,7 @@ onSelect={(unitId) => {
           onSaved={(propRow, actRow)=>{
             // Mark previous "sent" proposals as "superseded" since this is a revision
             setProposals(prev => prev.some(r => r.id === propRow.id) ? prev.map(p => p.id === propRow.id ? propRow : (p.status==="sent" ? {...p, status:"superseded"} : p)) : [propRow, ...prev.map(p => p.status==="sent" ? {...p, status:"superseded"} : p)]);
-            if(actRow) setActivities(p=>[actRow, ...p]);
+            if(actRow) setActivities(p=> p.some(r=>r.id===actRow.id) ? p : [actRow, ...p]);
             // Refresh reminders so the new follow-up + expiry reminders show in the strip
             supabase.from("reminders").select("*").eq("related_opportunity_id",opp.id).eq("status","pending").order("trigger_at",{ascending:true}).then(({data})=>setReminders(data||[]));
             // Stamp proposal_sent_at locally (stage stays as-is — agent decides when to move)
