@@ -1202,7 +1202,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     // Issue 1 fix 11 May 2026: capture reservation amount + date when advancing to Reserved
     // (will be pre-filled into SPA Signed dialog's pre-SPA payments later)
     if (toStage === "Offer Accepted") {
-      try { await supabase.from("opportunities").update({ offer_accepted_at: new Date().toISOString() }).eq("id", opp.id); } catch (e) { console.error("offer stamp:", e); }
+      try { await supabase.from("opportunities").update({ offer_accepted_at: new Date().toISOString(), offer_valid_until: stageGateForm.offer_valid_until || null, offer_notes: stageGateForm.notes || null }).eq("id", opp.id); onUpdated?.({ ...opp, stage: "Offer Accepted", status: "Active", offer_accepted_at: new Date().toISOString(), offer_valid_until: stageGateForm.offer_valid_until || null, offer_notes: stageGateForm.notes || null }); } catch (e) { console.error("offer stamp:", e); }
     }
     if (toStage === "Reserved" && stageGateForm.reservation_fee) {
       try {
@@ -1496,6 +1496,7 @@ You will become the assigned agent.`);
                                 setStageGateForm({
                                   final_price: opp.current_agreed_price || "",
                                   offer_valid_until: (opp.offer_valid_until || "").slice(0,10),
+                                  notes: opp.offer_notes || "",
                                 });
                               }
                               if (s === "Reserved") {
