@@ -4947,7 +4947,7 @@ onSelect={(unitId) => {
                   // Stage 5 v2 — validate all "received" pre-SPA items have dates
                   // Stage 5 v3 Phase 3c — also validate amounts + sanity check totals
                   if(showStageGate==="SPA Signed"){
-                    const missingDate = Object.entries(prePaymentsState||{}).filter(([k,v])=>v.status==="received" && !v.date).map(([k])=>k.replace(/_/g," "));
+                    const missingDate = Object.entries(prePaymentsState||{}).filter(([k,v])=>v.status==="received" && !v.date && (Number(v.amount)||0) > 0).map(([k])=>k.replace(/_/g," "));
                     if(missingDate.length>0){
                       showToast(`Date required for received items: ${missingDate.join(", ")}`,"error");
                       return;
@@ -5001,7 +5001,7 @@ onSelect={(unitId) => {
                       try { const { data: _co } = await supabase.from("companies").select("close_variance_tolerance_aed, close_variance_tolerance_pct").eq("id", currentUser.company_id).maybeSingle(); if (_co) { _tolA = Number(_co.close_variance_tolerance_aed) || 500; _tolP = Number(_co.close_variance_tolerance_pct) || 1; } } catch (e) {}
                       const _tol = Math.max(_tolA, _e * _tolP / 100);
                       if (_v < 0 && Math.abs(_v) > _tol) {
-                        const _cn = window.prompt("Net variance at close: AED " + Math.abs(_v).toLocaleString() + " short (tolerance AED " + Math.round(_tol).toLocaleString() + ").\n\nEnter approval / follow-up note (who approved, what is the plan):");
+                        const _cn = window.prompt("Net variance at signing: AED " + Math.abs(_v).toLocaleString() + " short (tolerance AED " + Math.round(_tol).toLocaleString() + ").\n\nEnter approval / follow-up note (who approved, what is the plan):");
                         if (_cn === null || !_cn.trim()) return;
                         try { await supabase.from("activities").insert({ opportunity_id: opp.id, lead_id: opp.lead_id, company_id: opp.company_id || currentUser.company_id || null, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, stage_at_event: "Closed Won", activity_subtype: "variance_closure_note", note: "CLOSE VARIANCE APPROVAL: AED " + Math.abs(_v).toLocaleString() + " short - " + _cn.trim() }); } catch (e) { console.error("closure note:", e); }
                       }
@@ -5053,7 +5053,7 @@ onSelect={(unitId) => {
                   style={{padding:"8px 20px",borderRadius:8,border:"none",
                     background:showStageGate==="Closed Lost"?"#B83232":showStageGate==="Closed Won"?"#1A7F5A":"#0F2540",
                     color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
-                  {stageGateViewMode ? "\u270f Amend" : showStageGate==="Closed Lost"?"✗ Close as Lost":showStageGate==="Closed Won"?"🏆 Close as Won":showStageGate==="Reserved"?"🔒 Confirm Reservation":showStageGate==="SPA Signed"?"📄 Record SPA":"✅ Confirm"}
+                  {stageGateViewMode ? "\u270f Amend" : showStageGate==="Closed Lost"?"✗ Close as Lost":showStageGate==="Closed Won"?"🏆 Close as Won":showStageGate==="Reserved"?"🔒 Confirm Reservation":showStageGate==="SPA Signed"?"📄 Record SPA":"✅ Record Offer"}
                 </button>
               </div>
             </div>
