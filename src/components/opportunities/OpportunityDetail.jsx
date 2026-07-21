@@ -1686,14 +1686,13 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
               <div style={{display:"flex",gap:2,background:"#fff",border:"1px solid #E2E8F0",borderRadius:"10px 10px 0 0",padding:"6px 6px 0 6px",overflowX:"auto",whiteSpace:"nowrap"}}>
                 {[
                   ["proposals", "📤 Proposals", proposals.length],
-                  /* 20 May 2026: Coach tab gets AI visual emphasis (sparkle + gradient + glow) */
-                  ["coach", "✨ 🤖 Coach", null],
-                  ["next-steps", "⏰ Next Steps", reminders.filter(r=>r.status==="pending").length],
-                  ["financials", "💰 Financials", null],
                   ["negotiations", "🤝 Negotiations", null],
-                  ["upfront", "📊 Upfront", null],
+                  ["financials", "💰 Money", null],
                   ["plan", "🏗️ Payment Plan", null],
-                  ["log-activity", "📋 Log Activity", activities.length],
+                  ["next-steps", "⏰ Next Steps", reminders.filter(r=>r.status==="pending").length],
+                  ["upfront", "📊 Upfront", null],
+                  ["log-activity", "📋 Activity", activities.length],
+                  ["coach", "✨ Coach", null],
                 ].map(([tabId, label, count]) => {
                   const isActive = dashboardTab === tabId;
                   // 20 May 2026: AI visual emphasis for Coach tab (gradient + glow)
