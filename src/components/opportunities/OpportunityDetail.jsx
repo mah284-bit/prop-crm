@@ -1632,7 +1632,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
 
                       {/* Stage advancement zone — changes stage */}
                       <div style={{flex:"1 1 280px",minWidth:260,background:`${m.bg}`,border:`1px solid ${m.c}33`,borderRadius:10,padding:"6px 10px"}}>
-                        <div style={{fontSize:9,fontWeight:700,color:m.c,textTransform:"uppercase",letterSpacing:".6px",marginBottom:4}}>Move stage</div>
+                        <div style={{fontSize:9,fontWeight:700,color:m.c,textTransform:"uppercase",letterSpacing:".6px",marginBottom:4}}>Deal actions</div>
                         <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
                           {/* 17 May 2026 ARCH-SIMPLIFY-002: hide Move Stage button when next is Proposal Sent.
                               Path to Proposal Sent must be through "Send Proposal" in Log Activity zone,
@@ -1652,7 +1652,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                           {(opp.stage==="Offer Accepted"||opp.stage==="Negotiation")&&(
                             <button onClick={()=>moveStage("Reserved")}
                               style={{padding:"6px 12px",borderRadius:7,border:"none",background:"#7C3AED",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>
-                              🔒 Reserve Unit
+                              🔒 Record Reservation
                             </button>
                           )}
                           {opp.stage==="SPA Signed"&&(
@@ -1663,7 +1663,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                           )}
                           <button onClick={()=>moveStage("Closed Lost")}
                             style={{padding:"6px 12px",borderRadius:7,border:"1.5px solid #FECACA",background:"#FEF2F2",color:"#B83232",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-                            ✗ Mark Lost
+                            ✗ Close as Lost
                           </button>
                         </div>
                       </div>
@@ -5053,7 +5053,7 @@ onSelect={(unitId) => {
                   style={{padding:"8px 20px",borderRadius:8,border:"none",
                     background:showStageGate==="Closed Lost"?"#B83232":showStageGate==="Closed Won"?"#1A7F5A":"#0F2540",
                     color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
-                  {stageGateViewMode ? "\u270f Amend this record" : showStageGate==="Closed Lost"?"✗ Confirm Lost":showStageGate==="Closed Won"?"🏆 Close Won":showStageGate==="Reserved"?"🔒 Confirm Reservation":showStageGate==="SPA Signed"?"📄 Record SPA & Continue":"✅ Confirm"}
+                  {stageGateViewMode ? "\u270f Amend" : showStageGate==="Closed Lost"?"✗ Close as Lost":showStageGate==="Closed Won"?"🏆 Close as Won":showStageGate==="Reserved"?"🔒 Confirm Reservation":showStageGate==="SPA Signed"?"📄 Record SPA":"✅ Confirm"}
                 </button>
               </div>
             </div>
