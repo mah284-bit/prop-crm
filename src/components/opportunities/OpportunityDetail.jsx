@@ -1219,6 +1219,19 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       }
     }
 
+    if (toStage === "Closed Won" && opp.stage === "SPA Signed") {
+      const _pp = opp.spa_prep || {};
+      const _missing = [];
+      if (!_pp.docs_complete) _missing.push("docs");
+      if (!_pp.signature_ready) _missing.push("signature");
+      if (!_pp.buyer_mode) _missing.push("buyer attend/remote");
+      if (!_pp.spa_uploaded) _missing.push("SPA upload");
+      if (_missing.length > 0) {
+        const pr = window.prompt("SPA preparation incomplete: " + _missing.join(", ") + ".\n\nBest: complete the checklist on the deal first.\nTo close anyway: type the reason (audited):");
+        if (pr === null || !pr.trim()) return;
+        try { await supabase.from("activities").insert({ opportunity_id: opp.id, lead_id: opp.lead_id, company_id: opp.company_id || currentUser.company_id || null, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, stage_at_event: "Closed Won", activity_subtype: "prep_override", note: "PREP OVERRIDE at close: missing " + _missing.join(", ") + " - reason: " + pr.trim() }); } catch (e) { console.error("prep audit:", e); }
+      }
+    }
     if(toStage==="Closed Won"&&opp.unit_id)
       await supabase.from("project_units").update({status:"Sold"}).eq("id",opp.unit_id);
     if(toStage==="Reserved"&&opp.unit_id)
@@ -1566,6 +1579,29 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                       </div>
                     )}
 
+                    {opp.stage === "SPA Signed" && (() => {
+                      const prep = opp.spa_prep || {};
+                      const togglePrep = async (k, v) => {
+                        const next = { ...prep, [k]: v };
+                        try { await supabase.from("opportunities").update({ spa_prep: next }).eq("id", opp.id); onUpdated?.({ ...opp, spa_prep: next }); } catch (e) { showToast("Prep save failed: " + e.message, "error"); }
+                      };
+                      const chip = (k, label) => { const on = !!prep[k]; return <button key={k} type="button" onClick={() => togglePrep(k, !on)} style={{padding:"4px 10px",borderRadius:14,border:"1.5px solid " + (on ? "#16A34A" : "#E2E8F0"),background:on ? "#DCFCE7" : "#fff",color:on ? "#166534" : "#94A3B8",fontSize:10,fontWeight:700,cursor:"pointer"}}>{(on ? "\u2713 " : "") + label}</button>; };
+                      return (
+                        <div style={{margin:"4px 0 8px",padding:"8px 10px",background:"#FAFBFE",border:"1px dashed #C7D2E5",borderRadius:10}}>
+                          <div style={{fontSize:9,fontWeight:700,color:"#7C3AED",textTransform:"uppercase",letterSpacing:".6px",marginBottom:5}}>SPA preparation</div>
+                          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                            {chip("docs_complete", "Docs complete")}
+                            {chip("signature_ready", "Signature ready")}
+                            <span style={{display:"inline-flex",gap:4,alignItems:"center"}}>
+                              <span style={{fontSize:9,color:"#94A3B8",fontWeight:700}}>BUYER:</span>
+                              <button type="button" onClick={() => togglePrep("buyer_mode", prep.buyer_mode === "attend" ? null : "attend")} style={{padding:"4px 10px",borderRadius:14,border:"1.5px solid " + (prep.buyer_mode === "attend" ? "#0F2540" : "#E2E8F0"),background:prep.buyer_mode === "attend" ? "#0F2540" : "#fff",color:prep.buyer_mode === "attend" ? "#fff" : "#94A3B8",fontSize:10,fontWeight:700,cursor:"pointer"}}>Attends</button>
+                              <button type="button" onClick={() => togglePrep("buyer_mode", prep.buyer_mode === "remote" ? null : "remote")} style={{padding:"4px 10px",borderRadius:14,border:"1.5px solid " + (prep.buyer_mode === "remote" ? "#0F2540" : "#E2E8F0"),background:prep.buyer_mode === "remote" ? "#0F2540" : "#fff",color:prep.buyer_mode === "remote" ? "#fff" : "#94A3B8",fontSize:10,fontWeight:700,cursor:"pointer"}}>Signs remotely</button>
+                            </span>
+                            {chip("spa_uploaded", "SPA uploaded")}
+                          </div>
+                        </div>
+                      );
+                    })()}
                     {/* Two clearly separated zones: ACTIVITY (left) and STAGE (right) */}
                     <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-start"}}>
 
@@ -4944,13 +4980,28 @@ onSelect={(unitId) => {
                   // Per founder spec: "No signature till all the money collected"
                   // Required: all 7 fees Received/Waived (no Pending) + SPA document uploaded
                   if(showStageGate==="Closed Won"){
-                    const pendingItems = Object.entries(prePaymentsState||{}).filter(([k,v])=>v.status==="pending" || !v.status).map(([k])=>k.replace(/_/g," "));
+                    // Softened Day 71: only rows with a real expectation block; reason-path per soft-gate doctrine (supersedes 11-May hard stop)
+                    const pendingItems = Object.entries(prePaymentsState||{}).filter(([k,v])=>(v.status==="pending" || !v.status) && (Number(v.expected_amount)||0) > 0).map(([k])=>k.replace(/_/g," "));
                     if(pendingItems.length>0){
-                      showToast(
-                        `⛔ Cannot close as Won with pending payments: ${pendingItems.join(", ")}. Mark each as Received or Waived first.`,
-                        "error"
-                      );
-                      return;
+                      setShowStageGate(null); setStageGateViewMode(false); setDashboardTab("financials");
+                      showToast("⛔ Close blocked - " + pendingItems.join(", ") + " still expected. Open the SPA record: mark each Received (developer confirmed) or Waived with a follow-up note.", "error"); return;
+                      
+                      try { await supabase.from("activities").insert({ opportunity_id: opp.id, lead_id: opp.lead_id, company_id: opp.company_id || currentUser.company_id || null, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, stage_at_event: "Closed Won", activity_subtype: "close_payment_override", note: "CLOSE W/ PENDING PAYMENTS: " + pendingItems.join(", ") + " - reason: " + cpr.trim() }); } catch (e) { console.error("close audit:", e); }
+                    }
+                    // Close-gate v2 (Day 71 founder-ratified): ONE materiality question at the bottom line, company-set tolerance
+                    {
+                      const _ck = ["booking_fee","reservation_fee","initial_advance","spa_fee","dld_fee","oqood_fee","other_fees"];
+                      let _e = 0, _r = 0;
+                      _ck.forEach(k => { const it = prePaymentsState[k] || {}; if (it.status !== "waived") { _e += Number(it.expected_amount) || 0; _r += Number(it.amount) || 0; } });
+                      const _v = Math.round((_r - _e) * 100) / 100;
+                      let _tolA = 500, _tolP = 1;
+                      try { const { data: _co } = await supabase.from("companies").select("close_variance_tolerance_aed, close_variance_tolerance_pct").eq("id", currentUser.company_id).maybeSingle(); if (_co) { _tolA = Number(_co.close_variance_tolerance_aed) || 500; _tolP = Number(_co.close_variance_tolerance_pct) || 1; } } catch (e) {}
+                      const _tol = Math.max(_tolA, _e * _tolP / 100);
+                      if (_v < 0 && Math.abs(_v) > _tol) {
+                        const _cn = window.prompt("Net variance at close: AED " + Math.abs(_v).toLocaleString() + " short (tolerance AED " + Math.round(_tol).toLocaleString() + ").\n\nEnter approval / follow-up note (who approved, what is the plan):");
+                        if (_cn === null || !_cn.trim()) return;
+                        try { await supabase.from("activities").insert({ opportunity_id: opp.id, lead_id: opp.lead_id, company_id: opp.company_id || currentUser.company_id || null, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, stage_at_event: "Closed Won", activity_subtype: "variance_closure_note", note: "CLOSE VARIANCE APPROVAL: AED " + Math.abs(_v).toLocaleString() + " short - " + _cn.trim() }); } catch (e) { console.error("closure note:", e); }
+                      }
                     }
                     // SPA document required (uploaded path or filename)
                     const hasSpaDoc = stageGateForm.spa_document_path || stageGateForm.spa_document_filename || opp.spa_document_path;
