@@ -1510,7 +1510,7 @@ You will become the assigned agent.`);
                               setStageGateViewMode(true);
                               setShowStageGate(s);
                             } else {
-                              showToast(`${s} details are captured in the activity log below`, "info");
+if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bill lives here - collect toward zero variance", "info"); } else {                               showToast(`${s} details are captured in the activity log below`, "info"); }
                             }
                           } else if (canAction) {
                             moveStage(s);
@@ -4657,7 +4657,7 @@ onSelect={(unitId) => {
                         <th style={{padding:"6px 8px",fontWeight:700,textAlign:"right",width:"15%"}}>Received</th>
                         <th style={{padding:"6px 8px",fontWeight:700}}>Mode</th>
                         <th style={{padding:"6px 8px",fontWeight:700}}>Date</th>
-                        <th style={{padding:"6px 8px",fontWeight:700,textAlign:"right"}}>Diff</th>
+                        <th style={{padding:"6px 8px",fontWeight:700,textAlign:"right"}}>Variance</th>
                         <th style={{padding:"6px 8px"}}></th>
                       </tr>
                     </thead>
@@ -4699,8 +4699,8 @@ onSelect={(unitId) => {
                         return (
                           <tr style={{background:"#F8FAFC",borderTop:"2px solid #CBD5E1",fontWeight:800}}>
                             <td style={{padding:"7px 8px",color:"#0F2540"}}>TOTALS</td>
-                            <td style={{padding:"7px 8px",textAlign:"right",color:"#065F46"}}>AED {expT.toLocaleString()}</td>
-                            <td style={{padding:"7px 8px",textAlign:"right",color:"#16A34A"}}>AED {recT.toLocaleString()}</td>
+                            <td style={{padding:"7px 8px",textAlign:"right",color:"#065F46"}}>AED {expT.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+                            <td style={{padding:"7px 8px",textAlign:"right",color:"#16A34A"}}>AED {recT.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
                             <td colSpan={2}></td>
                             <td style={{padding:"7px 8px",textAlign:"right",color:varT<0?"#B91C1C":varT>0?"#B45309":"#16A34A"}}>{varT ? ((varT>0?"+":"")+varT.toLocaleString()) : "✓"}</td>
                             <td></td>
@@ -4915,6 +4915,16 @@ onSelect={(unitId) => {
                     if(missingDate.length>0){
                       showToast(`Date required for received items: ${missingDate.join(", ")}`,"error");
                       return;
+                    }
+                    // Variance gate (founder close-discipline Day 70): nonzero variance needs a stated reason - soft, audited
+                    const _vk = ["booking_fee","reservation_fee","initial_advance","spa_fee","dld_fee","oqood_fee","other_fees"];
+                    let _exp = 0, _rec = 0, _pend = 0;
+                    _vk.forEach(k => { const it = prePaymentsState[k] || {}; if (it.status !== "waived") { _exp += Number(it.expected_amount) || 0; _rec += Number(it.amount) || 0; if (it.status === "pending" && (Number(it.expected_amount) || 0) > 0) _pend++; } });
+                    const _var = Math.round((_rec - _exp) * 100) / 100;
+                    if (_var < 0 && _pend > 0) {
+                      const vr = window.prompt("Variance check: AED " + Math.abs(_var).toLocaleString() + " still uncollected (" + _pend + " pending item" + (_pend === 1 ? "" : "s") + ").\n\nBest: collect or waive the rows first.\nTo proceed anyway: type the reason (audited):");
+                      if (vr === null || !vr.trim()) return;
+                      try { await supabase.from("activities").insert({ opportunity_id: opp.id, lead_id: opp.lead_id, company_id: opp.company_id || currentUser.company_id || null, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, lead_name: lead?.name || null, stage_at_event: "SPA Signed", activity_subtype: "variance_override", note: "VARIANCE OVERRIDE at SPA signing: AED " + Math.abs(_var).toLocaleString() + " uncollected across " + _pend + " pending rows - reason: " + vr.trim() }); } catch (e) { console.error("variance audit:", e); }
                     }
                     const missingAmount = Object.entries(prePaymentsState||{}).filter(([k,v])=>v.status==="received" && (!v.amount || Number(v.amount) <= 0)).map(([k])=>k.replace(/_/g," "));
                     if(missingAmount.length>0){
