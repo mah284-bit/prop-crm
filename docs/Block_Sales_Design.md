@@ -48,3 +48,15 @@ existing opps of same buyer -> block_deals parent created -> one line per opp
 distribution ceremony D1 over the adopted set (renegotiated terms flow down as amended
 per-unit prices). Spine holds it unchanged - lines are agnostic to born vs adopted.
 Guard: all opps must be same buyer + not closed. Sequenced after Cut 4.
+
+## CUT 3 AMENDED - BIDIRECTIONAL DISTRIBUTION CALCULATOR (founder design, 23 Jul during Cut 2)
+One screen, two entry doors, always reconciled:
+- TOP-DOWN: block discount (pct or flat) -> pro-rata suggestion fills all lines.
+- BOTTOM-UP: edit any line (per-unit pct or flat, MIXED modes allowed) -> block
+  effective totals recompute live.
+Per-line cost preview: list price, discount, net price, DLD/fees - the honest-ledger
+preview per unit (broker sees what buyer actually pays).
+LOCK at reconciliation -> FEED TO PROPOSAL: locked distribution becomes the block terms
+document = E2 evidence at block level.
+RENEGOTIATION: calculator reopens on D_latest, edits produce Dn+1 (spine versioning,
+zero new machinery).
