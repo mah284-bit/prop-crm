@@ -130,6 +130,15 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   const [saturationWarning, setSaturationWarning] = useState(null);
   const [showStageGate, setShowStageGate] = useState(null); // stage name being gated
   const [stageGateViewMode, setStageGateViewMode] = useState(false);
+  // Won-door hydration: reopening Closed Won shows saved handover date + close notes
+  useEffect(() => {
+    if (showStageGate !== "Closed Won") return;
+    setStageGateForm(f => ({
+      ...f,
+      handover_date: f.handover_date || (opp.expected_handover_date ? String(opp.expected_handover_date).slice(0,10) : ""),
+      notes: f.notes || opp.close_notes || "",
+    }));
+  }, [showStageGate, opp.id]);
   // 19 May 2026 Dashboard Redesign Phase 2a: dashboardTab controls which panel shows
   // null = welcome state, otherwise: 'proposals'|'coach'|'next-steps'|'financials'|'negotiations'|'upfront'|'plan'
   // Note: renamed from 'activeTab' to avoid collision with existing Activity Log filter state
@@ -1054,7 +1063,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
 
     const newStatus = toStage==="Closed Won"?"Won":toStage==="Closed Lost"?"Lost":"Active";
     const extra = {
-      ...(toStage==="Closed Won"?{won_at:new Date().toISOString()}:{}),
+      ...(toStage==="Closed Won"?{won_at:new Date().toISOString(), expected_handover_date: stageGateForm.handover_date||null, close_notes: stageGateForm.notes||null}:{}),
       ...(toStage==="Closed Lost"?{lost_at:new Date().toISOString()}:{}),
       ...extraData,
     };
@@ -4256,6 +4265,7 @@ onSelect={(unitId) => {
             </div>
 
             <div style={{padding:"1.25rem 1.5rem",display:"flex",flexDirection:"column",gap:14}}>
+              <fieldset disabled={stageGateViewMode} style={{border:"none",padding:0,margin:0,display:"flex",flexDirection:"column",gap:14,minWidth:0}}>
 
               {/* OFFER ACCEPTED fields */}
               {showStageGate==="Offer Accepted"&&(<>
@@ -4868,7 +4878,7 @@ onSelect={(unitId) => {
               {/* CLOSED WON fields */}
               {showStageGate==="Closed Won"&&(<>
                 <div style={{background:"#E6F4EE",border:"1px solid #A8D5BE",borderRadius:8,padding:"10px 14px",fontSize:12,color:"#1A7F5A",fontWeight:500}}>
-                  🎉 Congratulations! Confirm the final details to close this deal.
+                  {stageGateViewMode && opp.won_at ? ("🏆 Closed Won on " + new Date(opp.won_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})) : "🎉 Congratulations! Confirm the final details to close this deal."}
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                   <div>
@@ -4883,10 +4893,10 @@ onSelect={(unitId) => {
                       </span>
                     </div>
                   </div>
-                  <div>
+                  {!stageGateViewMode && (<div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Expected Handover Date</label>
                     <input type="date" value={stageGateForm.handover_date||""} onChange={e=>setStageGateForm(f=>({...f,handover_date:e.target.value}))}/>
-                  </div>
+                  </div>)}
                 </div>
                 <div>
                   <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label>
@@ -4912,6 +4922,28 @@ onSelect={(unitId) => {
                 </div>
               </>)}
 
+              </fieldset>
+              {/* HANDOVER-LIVE: future-fact stays editable on Won deals (founder doctrine 23 Jul) */}
+              {stageGateViewMode && showStageGate==="Closed Won" && (
+                <div style={{display:"flex",gap:10,alignItems:"flex-end",background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:8,padding:"10px 14px"}}>
+                  <div>
+                    <label style={{fontSize:11,fontWeight:600,color:"#166534",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Won / Close Date</label>
+                    <div style={{padding:"8px 12px",background:"#fff",border:"1px solid #86EFAC",borderRadius:7,fontSize:13,fontWeight:700,color:"#166534",whiteSpace:"nowrap"}}>{opp.won_at ? new Date(opp.won_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "-"}</div>
+                  </div>
+                  <div style={{flex:1}}>
+                    <label style={{fontSize:11,fontWeight:600,color:"#166534",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Expected Handover Date (editable - delays happen)</label>
+                    <input type="date" value={stageGateForm.handover_date||""} onChange={e=>setStageGateForm(f=>({...f,handover_date:e.target.value}))}/>
+                  </div>
+                  <button type="button" onClick={async()=>{
+                    const d = stageGateForm.handover_date || null;
+                    const { error } = await supabase.from("opportunities").update({ expected_handover_date: d }).eq("id", opp.id);
+                    if (error) { showToast(error.message, "error"); return; }
+                    onUpdated?.({ ...opp, expected_handover_date: d });
+                    supabase.from("activities").insert({ company_id: currentUser.company_id, opportunity_id: opp.id, lead_id: lead?.id || null, type: "note", note: "Expected handover date updated to " + (d || "(cleared)"), created_by: currentUser.id }).then(null, e=>console.warn("handover note:", e));
+                    showToast("Handover date saved", "success");
+                  }} style={{fontSize:11,fontWeight:700,padding:"8px 14px",borderRadius:7,border:"1px solid #86EFAC",background:"#fff",color:"#166534",cursor:"pointer",whiteSpace:"nowrap"}}>💾 Save date</button>
+                </div>
+              )}
               {/* Action buttons */}
               <div style={{display:"flex",gap:10,justifyContent:"flex-end",paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
                 <button onClick={()=>setShowStageGate(null)}
