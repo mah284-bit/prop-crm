@@ -7,6 +7,7 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   const [units, setUnits] = useState([]);
   const [pricing, setPricing] = useState([]);
   const [developers, setDevelopers] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ lead_id: "", title: "", developer_name: "", discount_mode: "pct", discount_value: "" });
   const [lines, setLines] = useState([]);
@@ -16,14 +17,15 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   const load = async () => {
     setLoading(true);
     const cid = currentUser.company_id;
-    const [b, l, u, sp, dv] = await Promise.all([
+    const [b, l, u, sp, dv, pj] = await Promise.all([
       supabase.from("block_deals").select("*, block_deal_units(*)").eq("company_id", cid).order("created_at", { ascending: false }),
       supabase.from("leads").select("id, name, phone").eq("company_id", cid).order("name"),
       supabase.from("project_units").select("id, unit_ref, project_id, status").eq("status", "Available").order("unit_ref"),
       supabase.from("unit_sale_pricing").select("*"),
       supabase.from("pp_developers").select("id, name").order("name"),
+      supabase.from("projects").select("id, developer"),
     ]);
-    setBlocks(b.data || []); setLeads(l.data || []); setUnits(u.data || []); setPricing(sp.data || []); setDevelopers(dv.data || []);
+    setBlocks(b.data || []); setLeads(l.data || []); setUnits(u.data || []); setPricing(sp.data || []); setDevelopers(dv.data || []); setProjects(pj.data || []);
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -108,7 +110,7 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
             <div style={{border:"1px solid #E8EDF4",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
               <div style={{fontSize:12,fontWeight:700,color:"#0F2540",marginBottom:8}}>UNIT LINES ({lines.length}) {String.fromCharCode(183)} {fmt(linesTotal)}</div>
               <div style={{display:"flex",gap:8,marginBottom:10}}>
-                <select value={unitPick} onChange={e=>{console.log("PICK fired:", e.target.value); setUnitPick(e.target.value);}} style={{flex:1,padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}><option value="">Pick a unit...</option>{units.filter(u=>!lines.some(x=>x.unit_id===u.id)).map(u=><option key={u.id} value={u.id}>{u.unit_ref} - {fmt(listPriceOf(u))}</option>)}</select>
+                <select value={unitPick} onChange={e=>{console.log("PICK fired:", e.target.value); setUnitPick(e.target.value);}} style={{flex:1,padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}><option value="">Pick a unit...</option>{units.filter(u=>!lines.some(x=>x.unit_id===u.id)).filter(u=>{ if(!form.developer_name) return true; const pr = projects.find(x=>x.id===u.project_id); const norm = s => String(s||"").toLowerCase().split(" ")[0]; return pr && norm(pr.developer) === norm(form.developer_name); }).map(u=><option key={u.id} value={u.id}>{u.unit_ref} - {fmt(listPriceOf(u))}</option>)}</select>
                 <button onClick={addLine} style={{padding:"8px 16px",borderRadius:7,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add</button>
               </div>
               {lines.map(x => (
