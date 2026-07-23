@@ -40,3 +40,11 @@ CUT 6+: drop-out/re-allocation flows (Q2 - designed when reached; spine already
 - Q2 drop-out market flows (renegotiate remaining? developer hold window?) -
   founder input at Cut 6; ANY answer fits event-lines + Dn+1.
 - Bulk inventory holds; staged handovers; Reseller intent wiring.
+
+## CUT 4b - ADOPT-INTO-BLOCK (founder insight, 23 Jul during Cut 1)
+Organic blocks: buyer with 2+ existing opps renegotiates as bulk. Convert flow: select
+existing opps of same buyer -> block_deals parent created -> one line per opp
+(status confirmed, child_opportunity_id back-ref) -> block_deal_id stamped on opps ->
+distribution ceremony D1 over the adopted set (renegotiated terms flow down as amended
+per-unit prices). Spine holds it unchanged - lines are agnostic to born vs adopted.
+Guard: all opps must be same buyer + not closed. Sequenced after Cut 4.
