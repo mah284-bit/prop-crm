@@ -613,6 +613,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   };
 
   const proposalGate = async (toStage) => {
+    if (opp.block_deal_id) return true; // block_deal_id: terms live at block level - locked distribution IS E2 evidence (24 Jul doctrine)
     // Evidence gate v1 (walk finding GF-walk-11): money stages require a documented offer.
     // Reserve/SPA with ZERO sent proposals = taking money with no paper trail (RERA risk).
     if (!["Reserved", "SPA Requirements", "SPA Signed"].includes(toStage)) return true;
