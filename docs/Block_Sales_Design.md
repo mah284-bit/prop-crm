@@ -60,3 +60,13 @@ LOCK at reconciliation -> FEED TO PROPOSAL: locked distribution becomes the bloc
 document = E2 evidence at block level.
 RENEGOTIATION: calculator reopens on D_latest, edits produce Dn+1 (spine versioning,
 zero new machinery).
+
+## BIRTH TRUTH AMENDMENT (founder ruling, 24 Jul during citizenship walk)
+Children are born at OFFER ACCEPTED, not Reserved - a confirmed block = terms accepted,
+zero dirhams collected; the deal journey tells collection truth. Inventory goes BOOKED
+at confirmation - the commercial hold: world sees the block claim instantly, no seller
+breaks a block for a 1-unit walk-in; Booked is hard-protected (2d guard excludes
+non-Available). RESERVED IS EARNED per child via the mainstream Record Reservation
+ceremony (fee collected) - both tiers step together: Booked->Reserved, OfferAcc->Reserved.
+Cut 5b polish: Booked units show block context in inventory; Money caption for
+proposal-less block children.

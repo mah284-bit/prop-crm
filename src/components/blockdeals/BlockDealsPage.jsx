@@ -82,21 +82,21 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
       const { data: opp, error: oe } = await supabase.from("opportunities").insert({
         company_id: currentUser.company_id, lead_id: b.lead_id,
         title: ln.unit_ref + " \u2014 " + buyer.name + " (block)",
-        stage: "Reserved", status: "Active", unit_id: ln.unit_id,
+        stage: "Offer Accepted", status: "Active", unit_id: ln.unit_id,
         budget: net, current_agreed_price: net,
         block_deal_id: b.id, assigned_to: currentUser.id,
         notes: "Born from block deal " + b.title + " at D" + dl.version + (alloc ? " (" + (alloc.mode === "pct" ? alloc.value + "% off" : "AED " + Number(alloc.discount).toLocaleString() + " off") + ")" : ""),
         stage_updated_at: new Date().toISOString(),
       }).select().single();
       if (oe) { showToast(ln.unit_ref + " birth failed: " + oe.message, "error"); continue; }
-      await supabase.from("project_units").update({ status: "Reserved" }).eq("id", ln.unit_id);
-      await supabase.from("activities").insert({ opportunity_id: opp.id, lead_id: b.lead_id, company_id: currentUser.company_id, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, lead_name: buyer.name, stage_at_event: "Reserved", activity_subtype: "block_conversion", note: "BLOCK CONVERSION: " + b.title + " confirmed at D" + dl.version + " \u00b7 " + ln.unit_ref + " \u00b7 net AED " + Number(net).toLocaleString() });
+      await supabase.from("project_units").update({ status: "Booked" }).eq("id", ln.unit_id);
+      await supabase.from("activities").insert({ opportunity_id: opp.id, lead_id: b.lead_id, company_id: currentUser.company_id, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, lead_name: buyer.name, stage_at_event: "Offer Accepted", activity_subtype: "block_conversion", note: "BLOCK CONVERSION: " + b.title + " confirmed at D" + dl.version + " \u00b7 " + ln.unit_ref + " \u00b7 net AED " + Number(net).toLocaleString() });
       await supabase.from("block_deal_units").update({ status: "confirmed", child_opportunity_id: opp.id, updated_at: new Date().toISOString() }).eq("id", ln.id);
       born++;
     }
     if (born === 0) { showToast("No deals were born - block NOT confirmed. Check the errors above.", "error"); load(); return; }
     await supabase.from("block_deals").update({ status: "confirmed", updated_at: new Date().toISOString() }).eq("id", b.id);
-    showToast(born + " deals born at Reserved from " + b.title + " - Terms Pending, units claimed", "success");
+    showToast(born + " deals born at Offer Accepted from " + b.title + " - Terms Pending, units claimed", "success");
     load();
   };
 

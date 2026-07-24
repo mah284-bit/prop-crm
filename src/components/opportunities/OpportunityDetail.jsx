@@ -1763,7 +1763,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                     </div>
                     <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"center"}}>
                       <span onClick={()=>setDashboardTab("proposals")} style={{padding:"5px 11px",borderRadius:14,background:"#F1F5F9",color:"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>📤 Proposals</span>
-                      <span onClick={()=>setDashboardTab("financials")} style={{padding:"5px 11px",borderRadius:14,background:"#F1F5F9",color:"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>💰 Financials</span>
+                      <span onClick={()=>setDashboardTab("financials")} style={{padding:"5px 11px",borderRadius:14,background:"#F1F5F9",color:"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>💰 Money</span>
                       <span onClick={()=>setDashboardTab("negotiations")} style={{padding:"5px 11px",borderRadius:14,background:"#F1F5F9",color:"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>🤝 Negotiations</span>
                     </div>
                   </div>
