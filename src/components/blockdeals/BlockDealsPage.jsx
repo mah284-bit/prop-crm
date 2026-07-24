@@ -7,6 +7,8 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   const [leads, setLeads] = useState([]);
   const [units, setUnits] = useState([]);
   const [pricing, setPricing] = useState([]);
+  const [buyerOpps, setBuyerOpps] = useState([]);
+  const [adoptPick, setAdoptPick] = useState([]);
   const [developers, setDevelopers] = useState([]);
   const [projects, setProjects] = useState([]);
   const [claimedUnitIds, setClaimedUnitIds] = useState(new Set());
@@ -21,17 +23,18 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   const load = async () => {
     setLoading(true);
     const cid = currentUser.company_id;
-    const [b, l, u, sp, dv, pj, bl, ao] = await Promise.all([
+    const [b, l, u, sp, dv, op, pj, bl, ao] = await Promise.all([
       supabase.from("block_deals").select("*, block_deal_units(*)").eq("company_id", cid).order("created_at", { ascending: false }),
       supabase.from("leads").select("id, name, phone").eq("company_id", cid).order("name"),
       supabase.from("project_units").select("id, unit_ref, project_id, status").eq("status", "Available").order("unit_ref"),
       supabase.from("unit_sale_pricing").select("*"),
       supabase.from("pp_developers").select("id, name").order("name"),
+      supabase.from("opportunities").select("id, title, lead_id, unit_id, stage, budget, current_agreed_price").eq("status", "Active").is("block_deal_id", null),
       supabase.from("projects").select("id, developer"),
       supabase.from("block_deal_units").select("unit_id, status, block_deal_id").neq("status", "dropped"),
       supabase.from("opportunities").select("unit_id, stage, status").eq("status", "Active").not("unit_id", "is", null),
     ]);
-    setBlocks(b.data || []); setLeads(l.data || []); setUnits(u.data || []); setPricing(sp.data || []); setDevelopers(dv.data || []); setProjects(pj.data || []);
+    setBlocks(b.data || []); setLeads(l.data || []); setUnits(u.data || []); setPricing(sp.data || []); setDevelopers(dv.data || []); setProjects(pj.data || []); setBuyerOpps(op.data || []);
     const blockById = {}; (b.data || []).forEach(x => { blockById[x.id] = x; });
     const hard = new Set((ao.data || []).map(x => x.unit_id).filter(Boolean));
     const soft = {};
@@ -65,6 +68,34 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   };
 
   const removeLine = (uid) => setLines(ls => ls.filter(x => x.unit_id !== uid));
+
+  const adoptBlock = async () => {
+    if (!form.lead_id) { showToast("Pick the buyer", "error"); return; }
+    if (!form.title.trim()) { showToast("Title is required", "error"); return; }
+    if (adoptPick.length < 2) { showToast("Adopt needs 2+ existing deals of this buyer", "error"); return; }
+    const chosen = buyerOpps.filter(o => adoptPick.includes(o.id));
+    if (chosen.some(o => o.lead_id !== form.lead_id)) { showToast("All adopted deals must belong to the selected buyer", "error"); return; }
+    const cid = currentUser.company_id;
+    const { data: bd, error } = await supabase.from("block_deals").insert({
+      company_id: cid, lead_id: form.lead_id, title: form.title.trim(),
+      developer_name: form.developer_name || null, status: "negotiating", created_by: currentUser.id,
+    }).select().single();
+    if (error) { showToast(error.message, "error"); return; }
+    for (const o of chosen) {
+      const u = units.find(x => x.id === o.unit_id);
+      const lp = u ? listPriceOf(u) : (Number(o.current_agreed_price) || Number(o.budget) || 0);
+      const { error: le } = await supabase.from("block_deal_units").insert({
+        company_id: cid, block_deal_id: bd.id, unit_id: o.unit_id, unit_ref: u ? u.unit_ref : (o.title || "unit"),
+        list_price: lp, status: "confirmed", child_opportunity_id: o.id, status_reason: "Adopted from existing deal",
+      });
+      if (le) { showToast("Line failed: " + le.message, "error"); continue; }
+      await supabase.from("opportunities").update({ block_deal_id: bd.id }).eq("id", o.id);
+      await supabase.from("activities").insert({ opportunity_id: o.id, lead_id: o.lead_id, company_id: cid, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, stage_at_event: o.stage, activity_subtype: "block_adoption", note: "ADOPTED INTO BLOCK: " + bd.title + " - terms to be renegotiated via distribution calculator" });
+    }
+    showToast(chosen.length + " deals adopted into " + bd.title + " - open it and lock a distribution to set bulk terms", "success");
+    setShowCreate(false); setForm({ lead_id: "", title: "", developer_name: "", discount_mode: "pct", discount_value: "" }); setLines([]); setAdoptPick([]);
+    load();
+  };
 
   const confirmBlock = async (b) => {
     const { data: dists } = await supabase.from("block_distributions").select("*").eq("block_deal_id", b.id).order("version", { ascending: false }).limit(1);
@@ -165,6 +196,20 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
                 <select value={form.developer_name} onChange={e=>setForm(f=>({...f,developer_name:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}><option value="">Select developer...</option>{developers.map(d=><option key={d.id} value={d.name}>{d.name}</option>)}</select></div>
               <div style={{fontSize:11,color:"#94A3B8",display:"flex",alignItems:"center"}}>Discount is set later in the distribution calculator - per unit, where it belongs.</div>
             </div>
+            {form.lead_id && buyerOpps.filter(o => o.lead_id === form.lead_id).length > 0 && (
+              <div style={{border:"1px solid #FDE68A",background:"#FFFBEB",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
+                <div style={{fontSize:12,fontWeight:700,color:"#92400E",marginBottom:6}}>ADOPT FROM EXISTING DEALS ({adoptPick.length} selected)</div>
+                <div style={{fontSize:11,color:"#B45309",marginBottom:8}}>This buyer has active deals. Select 2+ to convert them into a block (bulk terms set afterwards in the calculator). Or ignore and pick fresh units below.</div>
+                {/* adopt-row-fix */}
+                {buyerOpps.filter(o => o.lead_id === form.lead_id).map(o => { const uref = (o.title || "").match(/[A-Z]{2,4}-\d{2}-\d{2}/)?.[0] || (units.find(x => x.id === o.unit_id)?.unit_ref) || o.title; return (
+                  <label key={o.id} style={{/* adopt-row-v3 */display:"flex",gap:10,alignItems:"center",justifyContent:"flex-start",width:"100%",boxSizing:"border-box",padding:"7px 4px",fontSize:12,cursor:"pointer",borderBottom:"1px dashed #FDE68A",textAlign:"left"}}>
+                    <input type="checkbox" style={{flexShrink:0}} checked={adoptPick.includes(o.id)} onChange={e => setAdoptPick(p => e.target.checked ? [...p, o.id] : p.filter(x => x !== o.id))}/>
+                    <span style={{fontWeight:700,color:"#0F2540",whiteSpace:"nowrap"}}>{uref}</span>
+                    <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#F1F5F9",color:"#475569"}}>{o.stage}</span>
+                    <span style={{marginLeft:"auto",color:"#475569",fontWeight:600}}>{"AED " + Number(o.current_agreed_price || o.budget || 0).toLocaleString()}</span>
+                  </label>); })}
+              </div>
+            )}
             <div style={{border:"1px solid #E8EDF4",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
               <div style={{fontSize:12,fontWeight:700,color:"#0F2540",marginBottom:8}}>UNIT LINES ({lines.length}) {String.fromCharCode(183)} {fmt(linesTotal)}</div>
               <div style={{display:"flex",gap:8,marginBottom:10}}>
@@ -180,7 +225,7 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
             </div>
             <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
               <button onClick={()=>setShowCreate(false)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",color:"#475569"}}>Cancel</button>
-              <button onClick={saveBlock} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Create Block (draft)</button>
+              {adoptPick.length >= 2 ? <button onClick={adoptBlock} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#B45309",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Adopt {adoptPick.length} deals into block</button> : <button onClick={saveBlock} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Create Block (draft)</button>}
             </div>
           </div>
         </div>
