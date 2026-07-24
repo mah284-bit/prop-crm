@@ -1506,7 +1506,9 @@ You will become the assigned agent.`);
                 })()}
                 {(()=>{ /* Terms Pending chip (Wilderness Part 2): money held without documented terms */
                   const termsCleared = !opp.current_agreed_price; if (!["Reserved","SPA Requirements","SPA Signed"].includes(opp.stage) || ((proposals || []).length > 0 && !termsCleared)) return null;
-                  return <span style={{fontSize:9,fontWeight:700,padding:"1px 8px",borderRadius:20,background:"#FEF2F2",color:"#B91C1C",textTransform:"none",letterSpacing:0,marginLeft:6}}>{"\u26a0 Terms pending \u00b7 no proposal sent"}</span>;
+                  return opp.block_deal_id
+                    ? <span style={{fontSize:9,fontWeight:700,padding:"1px 8px",borderRadius:20,background:"#E6F4EE",color:"#1A7F5A",textTransform:"none",letterSpacing:0,marginLeft:6}}>{"\u2713 Block terms \u00b7 D-locked"}</span>
+                    : <span style={{fontSize:9,fontWeight:700,padding:"1px 8px",borderRadius:20,background:"#FEF2F2",color:"#B91C1C",textTransform:"none",letterSpacing:0,marginLeft:6}}>{"\u26a0 Terms pending \u00b7 no proposal sent"}</span>;
                 })()}
               </div>
               
@@ -2278,7 +2280,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                           <div style={{fontSize:16,fontWeight:700,color:"#0F2540",display:"flex",alignItems:"center",gap:8}}>
                             💰 Financials
                           </div>
-                          <span style={{fontSize:10,color:"#94A3B8"}}>Sourced from latest proposal + unit pricing</span>
+                          <span style={{fontSize:10,color:"#94A3B8"}}>{opp.block_deal_id ? "Sourced from block terms (locked distribution) + unit pricing" : "Sourced from latest proposal + unit pricing"}</span>
                         </div>
                         {/* Two-column layout: Buyer details + Broker commission */}
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
