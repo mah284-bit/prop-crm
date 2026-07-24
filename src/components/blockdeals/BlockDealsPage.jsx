@@ -97,7 +97,23 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
     load();
   };
 
-  const confirmBlock = async (b) => {
+    const recordApproval = async (b) => {
+    const ref = window.prompt("DEVELOPER APPROVAL for " + b.title + "\n\nThe developer has agreed to the block terms. Enter their approval reference (email ref, letter no, approval code):");
+    if (ref === null || !ref.trim()) return;
+    const who = window.prompt("Who approved it at the developer (name / desk)?");
+    if (who === null) return;
+    const { error } = await supabase.from("block_deals").update({
+      developer_approved_at: new Date().toISOString(),
+      developer_approval_ref: ref.trim(),
+      approved_by_name: (who || "").trim() || null,
+      status: "approved", updated_at: new Date().toISOString(),
+    }).eq("id", b.id);
+    if (error) { showToast(error.message, "error"); return; }
+    showToast("Developer approval recorded - bulk terms can now flow to the deals", "success");
+    load();
+  };
+
+const confirmBlock = async (b) => {
     const { data: dists } = await supabase.from("block_distributions").select("*").eq("block_deal_id", b.id).order("version", { ascending: false }).limit(1);
     const dl = dists && dists[0];
     if (!dl) { showToast("Lock a distribution first - confirmation births deals at D_latest prices", "error"); return; }
@@ -154,7 +170,7 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   /* BLOCK DEALS RENDER */
   const fmt = (n) => "AED " + Number(n || 0).toLocaleString();
   const linesTotal = lines.reduce((s, x) => s + Number(x.list_price || 0), 0);
-  const statusColors = { draft:"#94A3B8", negotiating:"#D97706", confirmed:"#16A34A", partially_dropped:"#DC2626", completed:"#0F2540", cancelled:"#64748B" };
+  const statusColors = { draft:"#94A3B8", negotiating:"#D97706", approved:"#7C3AED", confirmed:"#16A34A", partially_dropped:"#DC2626", completed:"#0F2540", cancelled:"#64748B" };
 
   return (
     <div style={{padding:"1.5rem"}}>
@@ -170,12 +186,12 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
       ) : (
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           {blocks.map(b => { const ls = b.block_deal_units || []; const tot = ls.reduce((s,x)=>s+Number(x.list_price||0),0); const buyer = leads.find(l=>l.id===b.lead_id); return (
-            <div key={b.id} onClick={()=>{ if(b.status==="draft"||b.status==="negotiating") setCalcBlock(b); }} style={{border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#fff",cursor:(b.status==="draft"||b.status==="negotiating")?"pointer":"default"}}>
+            <div key={b.id} onClick={()=>{ if(b.status==="draft"||b.status==="negotiating"||b.status==="approved") setCalcBlock(b); }} style={{border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#fff",cursor:(b.status==="draft"||b.status==="negotiating"||b.status==="approved")?"pointer":"default"}}>
               <div>
                 <div style={{fontWeight:700,fontSize:14,color:"#0F2540"}}>{b.title}</div>
                 <div style={{fontSize:12,color:"#64748B",marginTop:2}}>{buyer?.name || "-"} {String.fromCharCode(183)} {ls.length} units {String.fromCharCode(183)} {fmt(tot)} {String.fromCharCode(183)} {Number(b.discount_value) > 0 ? (b.discount_mode==="pct" ? (b.discount_value+"% off") : (fmt(b.discount_value)+" off")) : "terms pending"}</div>
               </div>
-              <span style={{display:"inline-flex",gap:8,alignItems:"center"}}>{b.status==="negotiating" && <button onClick={(e)=>{ e.stopPropagation(); confirmBlock(b); }} style={{fontSize:11,fontWeight:700,padding:"5px 12px",borderRadius:7,border:"none",background:"#16A34A",color:"#fff",cursor:"pointer"}}>Confirm block</button>}<span style={{fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:12,background:(statusColors[b.status]||"#94A3B8")+"22",color:statusColors[b.status]||"#94A3B8",textTransform:"uppercase",letterSpacing:".5px"}}>{b.status}</span></span>
+              <span style={{display:"inline-flex",gap:8,alignItems:"center"}}>{b.status==="negotiating" && <button onClick={(e)=>{ e.stopPropagation(); recordApproval(b); }} style={{fontSize:11,fontWeight:700,padding:"5px 12px",borderRadius:7,border:"1px solid #B45309",background:"#fff",color:"#B45309",cursor:"pointer"}}>Record developer approval</button>}{(b.status==="approved") && <button onClick={(e)=>{ e.stopPropagation(); confirmBlock(b); }} style={{fontSize:11,fontWeight:700,padding:"5px 12px",borderRadius:7,border:"none",background:"#16A34A",color:"#fff",cursor:"pointer"}}>Confirm block</button>}<span style={{fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:12,background:(statusColors[b.status]||"#94A3B8")+"22",color:statusColors[b.status]||"#94A3B8",textTransform:"uppercase",letterSpacing:".5px"}}>{b.status}</span></span>
             </div>); })}
         </div>
       )}

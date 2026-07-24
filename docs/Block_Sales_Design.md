@@ -90,3 +90,14 @@ NOTE: Booked->Reserved flip needs NO teach - moveStage line 1247 writes status
 unconditionally on toStage=Reserved; 5b item 1 closed by inspection.
 
 ## 5b-1 CERTIFIED (24 Jul PM): flash fires on different-buyer collision - Block-1 named at Booked-by-block, options include expiry-wait (Booking Clock anticipated). FOUNDER FINDING -> 5b-4: creation door must HARD-REFUSE hard-claimed units (Booked-by-confirmed-block + Reserved-family) - warn-only at create is inconsistent with 2d tiers; flash stays as the net for edge paths. Throwaway soft-closed.
+
+## FOUNDER RULING (24 Jul eve) - CLEARANCE AT THE DOOR, not late
+Developer clearance for a block sale must be asked at BLOCK CREATION (buyer selection
+moment): Is there developer clearance for a block on this project? NO -> block cannot be
+created (sorry, out). YES -> capture proof (ref/doc attach) before any lines are picked.
+Rationale: brokers will play; the whole block should not be buildable on an unapproved
+premise. INTERIM (shipped 24 Jul): approval gate sits later - Record developer approval
+required before bulk terms flow to children (lock D warns, prices held). DEFERRED BUILD:
+move clearance to the create door + proof attachment, AFTER the block vertical completes
+(avoid re-testing certified flows mid-stream). Play-mode (allow unapproved modelling) may
+come back later as a deliberate setting - not now.

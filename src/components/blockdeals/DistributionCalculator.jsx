@@ -69,6 +69,30 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
       status: "negotiating", updated_at: new Date().toISOString(),
     }).eq("id", block.id);
     if (e2) { showToast(e2.message, "error"); return; }
+    // REPRICE existing children - only when the developer has approved, only pre-SPA deals
+    const { data: liveLines } = await supabase.from("block_deal_units").select("id, unit_ref, unit_id, child_opportunity_id").eq("block_deal_id", block.id).neq("status", "dropped");
+    const withChildren = (liveLines || []).filter(x => x.child_opportunity_id);
+    if (withChildren.length > 0) {
+      if (block.status !== "approved" && block.status !== "confirmed" && block.status !== "completed") {
+        showToast("Model saved as D" + version + ". Deals keep current prices until developer approval is recorded.", "info");
+      } else {
+        let done = 0, skipped = [];
+        for (const ln of withChildren) {
+          const alloc = allocations.find(x => x.unit_id === ln.unit_id);
+          if (!alloc) continue;
+          const { data: child } = await supabase.from("opportunities").select("id, stage, current_agreed_price, budget").eq("id", ln.child_opportunity_id).maybeSingle();
+          if (!child) continue;
+          if (["SPA Signed","Closed Won","Closed Lost"].includes(child.stage)) { skipped.push(ln.unit_ref + " (" + child.stage + ")"); continue; }
+          const before = Number(child.current_agreed_price || child.budget || 0);
+          const { error: re } = await supabase.from("opportunities").update({ budget: alloc.net_price, current_agreed_price: alloc.net_price }).eq("id", child.id);
+          if (re) { showToast(ln.unit_ref + " reprice failed: " + re.message, "error"); continue; }
+          await supabase.from("activities").insert({ opportunity_id: child.id, company_id: currentUser.company_id, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, stage_at_event: child.stage, activity_subtype: "block_reprice", note: "BLOCK REPRICE (D" + version + ", developer-approved): AED " + before.toLocaleString() + " -> AED " + Number(alloc.net_price).toLocaleString() });
+          done++;
+        }
+        if (done > 0) showToast(done + " deal(s) repriced at D" + version + (skipped.length ? " - skipped (contract locked): " + skipped.join(", ") : ""), "success");
+        else if (skipped.length) showToast("No repricing - all deals are contract-locked: " + skipped.join(", "), "info");
+      }
+    }
     showToast("Distribution D" + version + " locked", "success");
     onLocked?.();
     onClose?.();
