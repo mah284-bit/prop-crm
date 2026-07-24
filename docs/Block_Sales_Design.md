@@ -70,3 +70,11 @@ non-Available). RESERVED IS EARNED per child via the mainstream Record Reservati
 ceremony (fee collected) - both tiers step together: Booked->Reserved, OfferAcc->Reserved.
 Cut 5b polish: Booked units show block context in inventory; Money caption for
 proposal-less block children.
+
+## REMINDER - UNIT-CONFLICT FLASH MUST LEARN BOOKED (founder, 24 Jul)
+Mainstream 1-to-1 deals: opening an opp whose unit is Reserved elsewhere flashes the
+conflict warning to all users. Block booking introduces BOOKED (commercial hold at
+confirmation) - the conflict flash + unit-clash checks (OpportunityDetail unitConflict
+logic, stage lists like Reserved/SPA Requirements/SPA Signed/Closed Won) must ALSO
+treat Booked-by-block as a conflicting hold, with message pointing at the owning block.
+Verify at Cut 5b alongside inventory block-context display. DO NOT FORGET.
