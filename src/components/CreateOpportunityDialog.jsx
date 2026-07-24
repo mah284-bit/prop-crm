@@ -854,7 +854,7 @@ What should the second agent know?`;
                     }
                   });
                   let pool = (units||[]).filter(u => _priceById[u.id] > 0);
-                  if (!unitShowReserved) pool = pool.filter(u => u.status !== "Reserved" && u.status !== "Sold");
+                  if (!unitShowReserved) pool = pool.filter(u => u.status !== "Reserved" && u.status !== "Sold" && u.status !== "Booked");
                   if (unitProjFilter !== "All") pool = pool.filter(u => u.project_id === unitProjFilter);
                   if (unitBedFilter !== "All") {
                     if (unitBedFilter === "Studio") pool = pool.filter(u => u.bedrooms === 0);
@@ -971,10 +971,12 @@ What should the second agent know?`;
                                 const proj = (projects||[]).find(p => p.id === u.project_id);
                                 const bedLabel = u.bedrooms===0?"Studio":(u.bedrooms?`${u.bedrooms}BR`:"");
                                 const isReserved = u.status === "Reserved" || u.status === "Sold";
+                                const isBooked = u.status === "Booked";
                                 return (
                                   <div key={u.id}
                                     onClick={()=>{
                                       // Finding 1 fix (11 May 2026): confirm before selecting Reserved/Sold unit
+                                      if (isBooked) { alert(u.unit_ref + " is held by a confirmed block deal - committed inventory cannot be taken by a new deal. It releases only if the block drops it or the booking clock expires."); return; }
                                       if (isReserved) {
                                         const ok = window.confirm(
                                           `⚠️ Unit ${u.unit_ref} is currently ${u.status}.\n\n` +
@@ -994,7 +996,7 @@ What should the second agent know?`;
                                     <div style={{minWidth:0,flex:1}}>
                                       <div style={{fontSize:12,fontWeight:700,color:"#0F2540",display:"flex",alignItems:"center",gap:6}}>
                                         {u.unit_ref}
-                                        {isReserved && <span style={{fontSize:9,padding:"1px 5px",borderRadius:7,background:"#FEE2E2",color:"#C53030",fontWeight:700}}>{u.status?.toUpperCase()}</span>}
+                                        {isBooked && <span style={{fontSize:9,padding:"1px 5px",borderRadius:7,background:"#FDE68A",color:"#92400E",fontWeight:700}}>BOOKED-BLOCK</span>}{isReserved && <span style={{fontSize:9,padding:"1px 5px",borderRadius:7,background:"#FEE2E2",color:"#C53030",fontWeight:700}}>{u.status?.toUpperCase()}</span>}
                                       </div>
                                       <div style={{fontSize:10,color:"#64748B",marginTop:1}}>
                                         {[bedLabel, u.sub_type, proj?.name, u.size_sqft && `${u.size_sqft} sqft`, u.view].filter(Boolean).join(" · ")}
