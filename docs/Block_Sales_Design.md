@@ -88,3 +88,5 @@ automatic drop event). Kills the freeze-the-book abuse: nothing holds for free, 
 block buys its Booked status with a deadline. Rides Cut 6 (needs drop-out flows).
 NOTE: Booked->Reserved flip needs NO teach - moveStage line 1247 writes status
 unconditionally on toStage=Reserved; 5b item 1 closed by inspection.
+
+## 5b-1 CERTIFIED (24 Jul PM): flash fires on different-buyer collision - Block-1 named at Booked-by-block, options include expiry-wait (Booking Clock anticipated). FOUNDER FINDING -> 5b-4: creation door must HARD-REFUSE hard-claimed units (Booked-by-confirmed-block + Reserved-family) - warn-only at create is inconsistent with 2d tiers; flash stays as the net for edge paths. Throwaway soft-closed.
