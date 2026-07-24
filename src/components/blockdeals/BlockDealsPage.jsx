@@ -9,6 +9,8 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   const [pricing, setPricing] = useState([]);
   const [developers, setDevelopers] = useState([]);
   const [projects, setProjects] = useState([]);
+  const [claimedUnitIds, setClaimedUnitIds] = useState(new Set());
+  const [softClaims, setSoftClaims] = useState({});
   const [showCreate, setShowCreate] = useState(false);
   const [calcBlock, setCalcBlock] = useState(null);
   const [form, setForm] = useState({ lead_id: "", title: "", developer_name: "", discount_mode: "pct", discount_value: "" });
@@ -19,15 +21,28 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   const load = async () => {
     setLoading(true);
     const cid = currentUser.company_id;
-    const [b, l, u, sp, dv, pj] = await Promise.all([
+    const [b, l, u, sp, dv, pj, bl, ao] = await Promise.all([
       supabase.from("block_deals").select("*, block_deal_units(*)").eq("company_id", cid).order("created_at", { ascending: false }),
       supabase.from("leads").select("id, name, phone").eq("company_id", cid).order("name"),
       supabase.from("project_units").select("id, unit_ref, project_id, status").eq("status", "Available").order("unit_ref"),
       supabase.from("unit_sale_pricing").select("*"),
       supabase.from("pp_developers").select("id, name").order("name"),
       supabase.from("projects").select("id, developer"),
+      supabase.from("block_deal_units").select("unit_id, status, block_deal_id").neq("status", "dropped"),
+      supabase.from("opportunities").select("unit_id, stage, status").eq("status", "Active").not("unit_id", "is", null),
     ]);
     setBlocks(b.data || []); setLeads(l.data || []); setUnits(u.data || []); setPricing(sp.data || []); setDevelopers(dv.data || []); setProjects(pj.data || []);
+    const blockById = {}; (b.data || []).forEach(x => { blockById[x.id] = x; });
+    const hard = new Set((ao.data || []).map(x => x.unit_id).filter(Boolean));
+    const soft = {};
+    (bl.data || []).forEach(x => {
+      const parent = blockById[x.block_deal_id];
+      if (parent && x.unit_id) {
+        if (parent.status === "confirmed" || parent.status === "completed") hard.add(x.unit_id);
+        else if (parent.status !== "cancelled") soft[x.unit_id] = parent.title;
+      }
+    });
+    setClaimedUnitIds(hard); setSoftClaims(soft);
     setLoading(false);
   };
   useEffect(() => { load(); }, []);
@@ -38,6 +53,12 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
     setUnitPick(current => {
       const u = units.find(x => x.id === current);
       if (!u) { showToast("Pick a unit first", "error"); return current; }
+      if (claimedUnitIds.has(u.id)) { showToast(u.unit_ref + " is committed - active deal or confirmed block", "error"); return current; }
+      if (softClaims[u.id]) {
+        const other = blocks.find(x => x.title === softClaims[u.id]);
+        if (other && other.lead_id === form.lead_id) { showToast(u.unit_ref + " is already in this buyer" + String.fromCharCode(39) + "s block " + softClaims[u.id], "error"); return current; }
+        showToast("Note: " + u.unit_ref + " is also being negotiated in " + softClaims[u.id] + " - first to commit wins", "info");
+      }
       setLines(ls => ls.some(x => x.unit_id === u.id) ? ls : [...ls, { unit_id: u.id, unit_ref: u.unit_ref, list_price: listPriceOf(u) }]);
       return "";
     });
@@ -113,7 +134,7 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
             <div style={{border:"1px solid #E8EDF4",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
               <div style={{fontSize:12,fontWeight:700,color:"#0F2540",marginBottom:8}}>UNIT LINES ({lines.length}) {String.fromCharCode(183)} {fmt(linesTotal)}</div>
               <div style={{display:"flex",gap:8,marginBottom:10}}>
-                <select value={unitPick} onChange={e=>{console.log("PICK fired:", e.target.value); setUnitPick(e.target.value);}} style={{flex:1,padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}><option value="">Pick a unit...</option>{units.filter(u=>!lines.some(x=>x.unit_id===u.id)).filter(u=>{ if(!form.developer_name) return true; const pr = projects.find(x=>x.id===u.project_id); const norm = s => String(s||"").toLowerCase().split(" ")[0]; return pr && norm(pr.developer) === norm(form.developer_name); }).map(u=><option key={u.id} value={u.id}>{u.unit_ref} - {fmt(listPriceOf(u))}</option>)}</select>
+                <select value={unitPick} onChange={e=>{console.log("PICK fired:", e.target.value); setUnitPick(e.target.value);}} style={{flex:1,padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}><option value="">Pick a unit...</option>{units.filter(u=>!claimedUnitIds.has(u.id)).filter(u=>!lines.some(x=>x.unit_id===u.id)).filter(u=>{ if(!form.developer_name) return true; const pr = projects.find(x=>x.id===u.project_id); const norm = s => String(s||"").toLowerCase().split(" ")[0]; return pr && norm(pr.developer) === norm(form.developer_name); }).map(u=><option key={u.id} value={u.id}>{u.unit_ref} - {fmt(listPriceOf(u))}{softClaims[u.id] ? (" (in block: " + softClaims[u.id] + ")") : ""}</option>)}</select>
                 <button onClick={addLine} style={{padding:"8px 16px",borderRadius:7,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add</button>
               </div>
               {lines.map(x => (
