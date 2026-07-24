@@ -66,6 +66,40 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
 
   const removeLine = (uid) => setLines(ls => ls.filter(x => x.unit_id !== uid));
 
+  const confirmBlock = async (b) => {
+    const { data: dists } = await supabase.from("block_distributions").select("*").eq("block_deal_id", b.id).order("version", { ascending: false }).limit(1);
+    const dl = dists && dists[0];
+    if (!dl) { showToast("Lock a distribution first - confirmation births deals at D_latest prices", "error"); return; }
+    const buyer = leads.find(x => x.id === b.lead_id);
+    if (!buyer) { showToast("Buyer lead not found", "error"); return; }
+    const activeLines = (b.block_deal_units || []).filter(x => x.status === "proposed");
+    if (activeLines.length === 0) { showToast("No proposed lines to confirm", "error"); return; }
+    if (!window.confirm("Confirm block " + b.title + "? This births " + activeLines.length + " deals at D" + dl.version + " prices and claims the units. This is the commitment moment.")) return;
+    let born = 0;
+    for (const ln of activeLines) {
+      const alloc = (dl.allocations || []).find(x => x.unit_id === ln.unit_id);
+      const net = alloc ? alloc.net_price : Number(ln.list_price || 0);
+      const { data: opp, error: oe } = await supabase.from("opportunities").insert({
+        company_id: currentUser.company_id, lead_id: b.lead_id,
+        title: ln.unit_ref + " \u2014 " + buyer.name + " (block)",
+        stage: "Reserved", status: "Active", unit_id: ln.unit_id,
+        budget: net, current_agreed_price: net,
+        block_deal_id: b.id, assigned_to: currentUser.id,
+        notes: "Born from block deal " + b.title + " at D" + dl.version + (alloc ? " (" + (alloc.mode === "pct" ? alloc.value + "% off" : "AED " + Number(alloc.discount).toLocaleString() + " off") + ")" : ""),
+        stage_updated_at: new Date().toISOString(),
+      }).select().single();
+      if (oe) { showToast(ln.unit_ref + " birth failed: " + oe.message, "error"); continue; }
+      await supabase.from("project_units").update({ status: "Reserved" }).eq("id", ln.unit_id);
+      await supabase.from("activities").insert({ opportunity_id: opp.id, lead_id: b.lead_id, company_id: currentUser.company_id, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, lead_name: buyer.name, stage_at_event: "Reserved", activity_subtype: "block_conversion", note: "BLOCK CONVERSION: " + b.title + " confirmed at D" + dl.version + " \u00b7 " + ln.unit_ref + " \u00b7 net AED " + Number(net).toLocaleString() });
+      await supabase.from("block_deal_units").update({ status: "confirmed", child_opportunity_id: opp.id, updated_at: new Date().toISOString() }).eq("id", ln.id);
+      born++;
+    }
+    if (born === 0) { showToast("No deals were born - block NOT confirmed. Check the errors above.", "error"); load(); return; }
+    await supabase.from("block_deals").update({ status: "confirmed", updated_at: new Date().toISOString() }).eq("id", b.id);
+    showToast(born + " deals born at Reserved from " + b.title + " - Terms Pending, units claimed", "success");
+    load();
+  };
+
   const saveBlock = async () => {
     if (!form.lead_id) { showToast("Pick the buyer", "error"); return; }
     if (!form.title.trim()) { showToast("Title is required", "error"); return; }
@@ -110,7 +144,7 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
                 <div style={{fontWeight:700,fontSize:14,color:"#0F2540"}}>{b.title}</div>
                 <div style={{fontSize:12,color:"#64748B",marginTop:2}}>{buyer?.name || "-"} {String.fromCharCode(183)} {ls.length} units {String.fromCharCode(183)} {fmt(tot)} {String.fromCharCode(183)} {Number(b.discount_value) > 0 ? (b.discount_mode==="pct" ? (b.discount_value+"% off") : (fmt(b.discount_value)+" off")) : "terms pending"}</div>
               </div>
-              <span style={{fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:12,background:(statusColors[b.status]||"#94A3B8")+"22",color:statusColors[b.status]||"#94A3B8",textTransform:"uppercase",letterSpacing:".5px"}}>{b.status}</span>
+              <span style={{display:"inline-flex",gap:8,alignItems:"center"}}>{b.status==="negotiating" && <button onClick={(e)=>{ e.stopPropagation(); confirmBlock(b); }} style={{fontSize:11,fontWeight:700,padding:"5px 12px",borderRadius:7,border:"none",background:"#16A34A",color:"#fff",cursor:"pointer"}}>Confirm block</button>}<span style={{fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:12,background:(statusColors[b.status]||"#94A3B8")+"22",color:statusColors[b.status]||"#94A3B8",textTransform:"uppercase",letterSpacing:".5px"}}>{b.status}</span></span>
             </div>); })}
         </div>
       )}
