@@ -78,3 +78,13 @@ confirmation) - the conflict flash + unit-clash checks (OpportunityDetail unitCo
 logic, stage lists like Reserved/SPA Requirements/SPA Signed/Closed Won) must ALSO
 treat Booked-by-block as a conflicting hold, with message pointing at the owning block.
 Verify at Cut 5b alongside inventory block-context display. DO NOT FORGET.
+
+## CUT 6a - BOOKING CLOCK (founder doctrine, 24 Jul): the Booked hold is a TIMED promise
+Block confirmation starts a clock: children must pay reservation fees within N days
+(company setting block_booking_days, default 2). World sees the hold M days
+(block_hold_days, default 5, weekend/holiday-aware) w/ clear message: Held for Block-X
+until <date>. Clock expires unpaid -> hold releases, units return Available (expiry =
+automatic drop event). Kills the freeze-the-book abuse: nothing holds for free, the
+block buys its Booked status with a deadline. Rides Cut 6 (needs drop-out flows).
+NOTE: Booked->Reserved flip needs NO teach - moveStage line 1247 writes status
+unconditionally on toStage=Reserved; 5b item 1 closed by inspection.
