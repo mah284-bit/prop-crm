@@ -42,6 +42,13 @@ function InventoryModule({ currentUser, showToast, crmContext="sales", preloaded
   const [units,       setUnits]       = useState(preloadedUnits||[]);
   const [projects,    setProjects]    = useState(preloadedProjects||[]);
   const [salePricing, setSalePricing] = useState(preloadedSalePricing||[]);
+  const [blockClaims, setBlockClaims] = useState({});
+  useEffect(() => { (async () => {
+    const { data } = await supabase.from("block_deal_units").select("unit_id, block_deals(title, status)").neq("status", "dropped");
+    const m = {};
+    (data || []).forEach(x => { if (x.block_deals && ["draft","negotiating","confirmed"].includes(x.block_deals.status)) m[x.unit_id] = x.block_deals.title; });
+    setBlockClaims(m);
+  })(); }, []);
   const [leasePricing,setLeasePricing]= useState(preloadedLeasePricing||[]);
   const [loading,     setLoading]     = useState(!preloadedUnits);
   const [selUnit,     setSelUnit]     = useState(null);
@@ -492,7 +499,7 @@ Return ONLY the JSON, no explanation.`}
                     <td style={{padding:"5px 8px",color:"#718096",whiteSpace:"nowrap",fontSize:11}}>{hdStr}</td>
                     <td style={{padding:"5px 8px"}}>
                       <div style={{display:"flex",flexDirection:"column",gap:2}}>
-                        <span style={{fontSize:9,fontWeight:600,padding:"2px 6px",borderRadius:20,background:sc.bg,color:sc.c,whiteSpace:"nowrap"}}>{u.status}</span>
+                        <span style={{fontSize:9,fontWeight:600,padding:"2px 6px",borderRadius:20,background:sc.bg,color:sc.c,whiteSpace:"nowrap"}}>{u.status}{u.status === "Booked" && blockClaims[u.id] ? (" \u00b7 " + blockClaims[u.id]) : ""}</span>
                         {(()=>{const r=reservations.find(x=>x.unit_id===u.id&&["Active","Extended"].includes(x.status));return r?<ReservationBadge reservation={r}/>:null;})()}
                       </div>
                     </td>
