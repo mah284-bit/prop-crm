@@ -63,10 +63,11 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
       locked_at: new Date().toISOString(), created_by: currentUser.id,
     });
     if (error) { showToast(error.message, "error"); return; }
+    const keepStatus = ["approved","confirmed","partially_dropped","completed"].includes(block.status) ? block.status : "negotiating";
     const { error: e2 } = await supabase.from("block_deals").update({
       discount_mode: hasBlockTarget ? blockMode : "flat",
       discount_value: hasBlockTarget ? (Number(blockValue) || 0) : Math.round(totDisc * 100) / 100,
-      status: "negotiating", updated_at: new Date().toISOString(),
+      status: keepStatus, updated_at: new Date().toISOString(),
     }).eq("id", block.id);
     if (e2) { showToast(e2.message, "error"); return; }
     // REPRICE existing children - only when the developer has approved, only pre-SPA deals
