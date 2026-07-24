@@ -90,6 +90,19 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
           : null;
         setUnitConflict({ title: data.title, stage: data.stage, daysAgo });
       } else {
+        // block hold check (24 Jul): Booked-by-block is a conflicting hold too
+        const { data: bl } = await supabase
+          .from("block_deal_units")
+          .select("block_deal_id, status, block_deals(title, status)")
+          .eq("unit_id", opp.unit_id)
+          .neq("status", "dropped")
+          .limit(1)
+          .maybeSingle();
+        if (!alive) return;
+        if (bl && bl.block_deals && ["draft","negotiating","confirmed"].includes(bl.block_deals.status) && bl.block_deal_id !== opp.block_deal_id) {
+          setUnitConflict({ title: bl.block_deals.title + " (block deal)", stage: "Booked by block", daysAgo: null });
+          return;
+        }
         setUnitConflict(null);
       }
     })();
