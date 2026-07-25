@@ -894,3 +894,10 @@ CONSEQUENCE: designed backlog = THE build list now (stage split first per wilder
 ## DAY 73 NIGHT: 4b-2 CERTIFIED - developer-authority doctrine live (approval capture -> gated repricing of existing children, pre-SPA only, contract-locked deals skipped by name). Chen Wei organic block repriced live at 4pct. Bug paid: lock downgraded approved blocks (keepStatus). BOARD: Cut 5 Block Workspace (blind card - founder-validated marquee), clearance-at-the-door (deferred build post-vertical), Cut 6+6a drop-outs+Booking Clock, Cut 7 money allocation.
 
 ## DAY 74: CUT 5 BLOCK WORKSPACE COMPLETE (5-1 shell+header, 5-2 children table w/ deal stages+prices, 5-3 Terms history + Activity tabs, 5-4 status-routed header actions). Blind card -> full control room. Operations layer done. RESTRAINT LIFTED: block operations now visible+testable. BOARD: top-down box init-blank polish (minor), add/remove units = Cut 6 drop-outs (detach vs drop doctrine pending founder ruling), Cut 6a Booking Clock, Cut 7 Block Money Allocation, clearance-at-door (post-vertical). Vertical near-complete.
+
+## PRE-PROD HARDENING (founder catch, 25 Jul) - STALE-RENDER / DATA FRESHNESS
+NOT browser cache - components render prior-fetch snapshots until hard refresh (seen:
+Workspace showed old child rows after edits elsewhere). App-wide risk on live process.
+FIX DISCIPLINE: views refetch on open/focus, not trust cached state; consider realtime
+subscriptions or refetch-on-mount + on-window-focus. Audit Workspace, calculator, opp
+lists, inventory. Pre-prod task (bites in tester week). Not block-specific.
