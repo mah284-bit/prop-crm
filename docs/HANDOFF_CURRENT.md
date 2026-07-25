@@ -1033,3 +1033,11 @@ get their own screens when those stages exist.
   AMENDED, children adjusted by delta, stages NOT pulled back). Engine + gate are built.
 - Partial-payment tranche stacking never tested (would have shown 'Received before 25,000').
 - DEBUG PROBE still in BlockPaymentDialog: console.log('[BPD] payment prop:'...). STRIP BEFORE MERGE.
+
+## CUT 7-6 - FOUNDER'S OWN WORDS (the shape, Day 74 close)
+'We know we have to collect 75K - keep showing. Receiving can be 1 plus, which is what we
+record, and ensure all collected and move on.'
+= A RUNNING BALANCE, not a variance calculation. The DUE figure is stated and stays visible;
+tranches accumulate against it (1 or many); the block stays open until collected in full, then
+moves on. The clock chases whatever remains outstanding. Simpler than the expected/landed pair
+that was removed - and it makes partial payments first-class rather than an exception.
