@@ -101,6 +101,14 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
     setLines(ls => ls.filter(y => y.unit_id !== x.unit_id));
     setRemoveTarget(null);
     showToast(x.unit_ref + (mode === "detach" ? " detached" : " dropped"), "success");
+    // 6-2: after a DROP, offer to renegotiate the survivors (bulk was priced for N units)
+    if (mode === "drop") {
+      const remaining = lines.filter(y => y.unit_id !== x.unit_id);
+      if (remaining.length >= 1) {
+        const go = window.confirm(x.unit_ref + " dropped. The bulk terms were struck for " + lines.length + " units; " + remaining.length + " remain.\n\nRenegotiate the block discount now? (You can re-run pro-rata or edit lines, then lock a new version.)\n\nOK = keep the calculator open to renegotiate\nCancel = leave terms as-is on the remaining deals");
+        if (go) { setRemoveTarget(null); return; } // stay in calculator, don't close
+      }
+    }
     onLocked && onLocked();
   };
 
