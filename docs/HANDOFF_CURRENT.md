@@ -976,3 +976,16 @@ path, not amend.
 DATA STATE: Fatima block healthy - 2 children Reserved at 25,000 each, 1 payment row, 2
 allocation rows, third unit correctly dropped/Closed Lost. Good fixture for testing amend.
 Do NOT delete it.
+
+## STANDING LAW (Day 74) - COLD-LOOK, ARCHITECT SIDE
+The architect must read every screen cut as a first-time broker holding a real cheque:
+what does this TELL me, what am I left GUESSING? Judge the screen BEFORE proving the engine
+- a working engine behind an unreadable screen is the wrong order, and the broker never
+sees the engine.
+Day-74 evidence: founder caught FOUR cold-look failures the architect shipped without
+noticing - (1) green 'AED 0' reading as satisfied when the truth was unknown, (2) Suggest
+split silently doing nothing when all members were satisfied, (3) REFERENCE/RECEIVED ON
+labels overlapping after a field was added, (4) the payment dialog giving a broker no way
+to tell a NEW payment from an AMEND, and no source for 'already received'.
+The founder's earlier principle generalizes: 'every button has meaning, or it is demeaning'
+-> every FIELD and every NUMBER must say what it is and where it came from.
