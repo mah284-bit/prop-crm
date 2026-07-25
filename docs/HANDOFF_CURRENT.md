@@ -914,3 +914,24 @@ subscriptions or refetch-on-mount + on-window-focus. Audit Workspace, calculator
 lists, inventory. Pre-prod task (bites in tester week). Not block-specific.
 
 ## DAY 74: CUT 6 COMPLETE (drop-outs) - remove(detach/drop fork)+add+reprice-prompt all in the calculator cockpit (founder: composition+money one screen), certified on Fatima born children. Calculator opens on confirmed blocks now. Top-down nudge shipped. Bugs paid: const-before-init crash, calculator-hidden-on-confirmed. BOARD: 6a Booking Clock, 7 Block Money Allocation, clearance-at-door, top-down box init cosmetic, DATA-FRESHNESS (pinned #1 pre-prod). Block vertical: create/adopt->calculate->approve->confirm->born->drop/add/reprice->honest ladder. Near feature-complete.
+
+## DAY 74 CUT 7 DESIGN PASS (block money allocation) - RULINGS RATIFIED
+Sequencing call: Cut 7 BEFORE 6a (block payments are frequent+real; 7 builds the ledger
+machinery 6a booking-clock depends on; completes the money story of the vertical).
+Scenario: buyer wires one lump covering several children; today broker must mentally split
+it into N child ledgers - error-prone, matches no bank line.
+Shape: block payment event -> allocation ceremony (suggested split, editable per child)
+-> remainder-to-zero -> lock -> each child ledger receives its own honest row.
+FOUR RULINGS (founder-ratified):
+1. ONE PARTICULAR per payment event (not restricted to reservation/booking fees). Mixed
+   lump = two events. No artificial fee-type ceiling.
+2. Suggestion basis = OUTSTANDING BILL per child, not net price. Fully-paid child shows
+   zero WITH REASON (greyed), never a silent 0.
+3. NO developer-approval gate. Day-73 developer-authority covers TERMS changes; money-in
+   is not a terms change. Record obligations stand (ref, mode, date, audit line) -
+   testimony, not permission.
+4. Allocations are AMENDABLE with reason (three-verb grammar), not frozen at lock.
+NEXT: docs/Block_Sales_Cut7_Design.md then build.
+LESSON BANKED: this design pass lived only in chat and did NOT reach HANDOFF before session
+end -> next session resumed from a stale board (proposed freshness work instead of Cut 7).
+Append design rulings AT RULING TIME, not at session close.
