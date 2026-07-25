@@ -989,3 +989,47 @@ labels overlapping after a field was added, (4) the payment dialog giving a brok
 to tell a NEW payment from an AMEND, and no source for 'already received'.
 The founder's earlier principle generalizes: 'every button has meaning, or it is demeaning'
 -> every FIELD and every NUMBER must say what it is and where it came from.
+
+## DAY 74 CLOSE - CUT 7 STATE (branch feature/block-cut7, NOT merged)
+PROVEN ON CLEAN DATA (Nshama walk, Chen Wei New Block 2, NTS-07-03/08-04/09-05):
+create -> calculator D1 (5pct, 274,099 off) -> developer approval -> confirm (3 children born
+Offer Accepted, units Booked) -> RECORD PAYMENT 75,000 -> equal split 25,000 x 3 -> all three
+children Reserved, all three units Reserved, Cheque + reference 789754 persisted on the bank
+line AND on every child. One payment row. The distribution engine is certified.
+FORM REBUILT MID-SESSION per founder's flow: money in -> SPLIT EQUALLY across live members
+(not by expectation, not by outstanding). Partial payments are normal tranches. Columns are
+Unit / Deal stage / Received before / This payment / Total after. 'Split differently' exists
+behind a mandatory reason (Tier-2 grammar) - the broker has no silent lever to favour one unit.
+FOUNDER RULINGS BANKED THIS SESSION:
+- The app records ACTUALS. Variance is surfaced for a human to approve, never absorbed. (The
+  10,000 case: crediting members their full agreed share when less money arrived = the app
+  fabricating money.)
+- Nothing auto-cancels. The clock NAGS - broker reminders escalating to sales manager; a human
+  decides cancellation + damages claim. Correct the Cut 6a note accordingly.
+- Recording a payment = broker, no gate. AMENDING a recorded payment = manager (rewriting
+  history is where error and manipulation live). Capability amend_payments SEEDED across all 7
+  companies (admin/group_gm/sales_manager/leasing_manager true; agents/viewer false), mapped in
+  permissions.js as amend_payment, Amend button gated - agents see 'manager only'.
+COST OF THE REBUILD (deliberate, acknowledged): the Expected / Actually-landed pair was removed,
+so the variance path went with it. There is currently NO way to record 'due 75,000, landed
+74,500, reason'. This is NOT to be fixed by restoring those fields - see Cut 7-6.
+## CUT 7-6 (next, the real fix) - THE SCREEN MUST STATE WHAT IS DUE
+Founder cold-look: a broker opens the payment screen holding a cheque and the form asks him for
+a number he has to already know. The system knows the units, the deal values and the developer -
+it should SAY 'Reservation due: AED 25,000 x 3 = AED 75,000. Received so far: X.' Broker then
+enters ONLY what actually arrived; shortfall and variance compute themselves; approval rides the
+difference. No typing of totals, no ambiguity.
+ARCHITECT RULING on the source (founder deferred it - fresh eyes may overrule):
+FIXED PER DEVELOPER, with an override at block creation. Basis: money-tail sec 5 already
+specifies developer/MA level, 'pickable at reserve-time, broker may adjust'; matches UAE
+practice; and the number is then known before any block exists.
+Build shape: default_reservation_fee on pp_master_agreements -> block creation reads and allows
+adjust -> payment screen states due vs received -> variance falls out of the difference.
+ALSO: the particular should be STAGE-DRIVEN, not a broker dropdown. At this rung the only thing
+being collected is the reservation fee. Retitle 'Record reservation fees'. Later money stages
+get their own screens when those stages exist.
+## STILL UNVERIFIED AT CLOSE
+- AMEND path never tested live (Payments tab -> Amend -> correct with reason -> one row badged
+  AMENDED, children adjusted by delta, stages NOT pulled back). Engine + gate are built.
+- Partial-payment tranche stacking never tested (would have shown 'Received before 25,000').
+- DEBUG PROBE still in BlockPaymentDialog: console.log('[BPD] payment prop:'...). STRIP BEFORE MERGE.

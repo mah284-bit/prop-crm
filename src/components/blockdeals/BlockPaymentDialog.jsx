@@ -4,84 +4,71 @@ const PARTICULARS = ["Reservation", "Booking", "DLD Fee", "SPA Fee", "Instalment
 const MODES = ["Wire", "Cheque", "Cash", "Card"];
 
 export default function BlockPaymentDialog({ block, childRows, currentUser, showToast, onClose, onLock, payment, priorAllocs }) {
-  console.log("[BPD] payment prop:", payment, "priorAllocs:", priorAllocs);
+  const isAmend = !!payment;
   const members = (childRows || []).filter(r => r.child && r.line.status !== "dropped");
-  const [milestone, setMilestone] = useState(payment ? payment.milestone : "Reservation");
-  const [amount, setAmount] = useState(payment ? String(payment.amount || "") : "");
-  const [expTotal, setExpTotal] = useState(payment ? String(payment.expected_total != null ? payment.expected_total : payment.amount || "") : "");
-  const [vreason, setVreason] = useState(payment ? (payment.variance_reason || "") : "");
-  const [mode, setMode] = useState(payment ? (payment.payment_type || "Wire") : "Wire");
-  const [reference, setReference] = useState(payment ? (payment.reference || "") : "");
-  const [rdate, setRdate] = useState(payment ? (payment.received_date || new Date().toISOString().slice(0, 10)) : new Date().toISOString().slice(0, 10));
+
+  const [milestone, setMilestone] = useState(isAmend ? payment.milestone : "Reservation");
+  const [amount, setAmount] = useState(isAmend ? String(payment.amount || "") : "");
+  const [mode, setMode] = useState(isAmend ? (payment.payment_type || "Wire") : "Wire");
+  const [reference, setReference] = useState(isAmend ? (payment.reference || "") : "");
+  const [rdate, setRdate] = useState(isAmend ? (payment.received_date || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10));
+  const [vreason, setVreason] = useState(isAmend ? (payment.variance_reason || "") : "");
   const [amendReason, setAmendReason] = useState("");
-  const [expected, setExpected] = useState({});
-  const [alloc, setAlloc] = useState(() => {
+  const [override, setOverride] = useState(() => {
     const seed = {};
     (priorAllocs || []).forEach(x => { seed[x.opportunity_id] = Number(x.amount) || 0; });
     return seed;
   });
+  const [uneven, setUneven] = useState(isAmend && (priorAllocs || []).length > 0);
 
   const fmt = (n) => "AED " + Math.round(Number(n || 0)).toLocaleString();
-  const wire = Number(expTotal) || 0;
-  const landed = amount === "" ? wire : (Number(amount) || 0);
-  const variance = landed - wire;
-  const evenShare = members.length ? Math.round(wire / members.length) : 0;
-  const expOf = (id) => expected[id] !== undefined ? (Number(expected[id]) || 0) : evenShare;
-  const recOf = (r) => milestone === "Reservation" ? Number(r.child.reservation_amount || 0) : 0;
-  const owedOf = (r) => Math.max(expOf(r.child.id) - recOf(r), 0);
-  const allocOf = (id) => Number(alloc[id]) || 0;
-  const allocated = members.reduce((s, r) => s + allocOf(r.child.id), 0);
+  const landed = Number(amount) || 0;
+  const n = members.length;
+
+  // THE RULE: money arriving is split EQUALLY across live members.
+  const equalShare = n ? Math.floor(landed / n) : 0;
+  const equalOf = (i) => n ? (i === n - 1 ? landed - equalShare * (n - 1) : equalShare) : 0;
+  const shareOf = (id, i) => uneven ? (Number(override[id]) || 0) : equalOf(i);
+
+  const allocated = members.reduce((s, r, i) => s + shareOf(r.child.id, i), 0);
   const remainder = landed - allocated;
-  const canLock = landed > 0 && Math.abs(remainder) < 0.5 && allocated > 0 && (variance === 0 || vreason.trim().length > 0) && (!payment || amendReason.trim().length > 0);
+  const balanced = Math.abs(remainder) < 0.5;
 
-  const owedTotal = members.reduce((s, r) => s + owedOf(r), 0);
-  const suggest = () => {
-    const next = {};
-    if (owedTotal <= 0) {
-      const each = members.length ? Math.round(landed / members.length) : 0;
-      members.forEach((r, i) => { next[r.child.id] = i === members.length - 1 ? landed - each * (members.length - 1) : each; });
-    } else {
-      let left = landed;
-      members.forEach(r => { const want = Math.max(Math.min(owedOf(r), left), 0); next[r.child.id] = want; left -= want; });
-    }
-    setAlloc(next);
-  };
+  const collectedSoFar = members.reduce((t, r) => t + Number(r.child.reservation_amount || 0), 0);
+  const canSave = landed > 0 && balanced && (!uneven || vreason.trim().length > 0) && (!isAmend || amendReason.trim().length > 0);
 
-  const bank = { milestone, amount: landed, expected_total: wire, variance_reason: variance !== 0 ? (vreason || null) : null, payment_type: mode, reference, received_date: rdate };
+  const bank = { milestone, amount: landed, expected_total: null, variance_reason: uneven ? (vreason.trim() || null) : null, payment_type: mode, reference, received_date: rdate };
+  const rows = () => members.map((r, i) => ({ opportunity_id: r.child.id, amount: shareOf(r.child.id, i) })).filter(x => x.amount > 0);
 
-  const lab = { fontSize: 10, fontWeight: 700, color: "#475569", textTransform: "uppercase", letterSpacing: ".4px", display: "block", marginBottom: 3 };
-  const inp = { width: "100%", padding: "7px 9px", border: "1px solid #CBD5E1", borderRadius: 7, fontSize: 12, boxSizing: "border-box" };
+  const lab = { fontSize:10, fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:".4px", display:"block", marginBottom:3 };
+  const inp = { width:"100%", padding:"7px 9px", border:"1px solid #CBD5E1", borderRadius:7, fontSize:12, boxSizing:"border-box" };
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1300,padding:"1rem"}}>
-      <div style={{background:"#fff",borderRadius:16,width:860,maxWidth:"97vw",maxHeight:"95vh",overflow:"auto"}}>
+      <div style={{background:"#fff",borderRadius:16,width:820,maxWidth:"97vw",maxHeight:"95vh",overflow:"auto"}}>
 
-        <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
           <div>
-            <div style={{fontSize:16,fontWeight:700,color:"#0F2540"}}>Record block payment</div>
-            <div style={{fontSize:11,color:"#64748B",marginTop:2}}>{block.title} {String.fromCharCode(183)} {members.length} deals in this block</div>
+            <div style={{fontSize:16,fontWeight:700,color:isAmend?"#B45309":"#0F2540"}}>{isAmend ? "Amend a recorded payment" : "Money received for this block"}</div>
+            <div style={{fontSize:11,color:"#64748B",marginTop:3}}>{block.title} {String.fromCharCode(183)} {n} units {String.fromCharCode(183)} collected so far {fmt(collectedSoFar)}</div>
+            {isAmend && <div style={{fontSize:11,color:"#B45309",marginTop:3,fontWeight:600}}>Correcting {payment.milestone} {String.fromCharCode(183)} {fmt(payment.amount)} {String.fromCharCode(183)} {payment.received_date || "-"}</div>}
           </div>
           <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#94A3B8",cursor:"pointer"}}>{String.fromCharCode(215)}</button>
         </div>
 
         <div style={{padding:"1.1rem 1.4rem"}}>
 
-          <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",marginBottom:16}}>
-            <div style={{fontSize:11,fontWeight:700,color:"#0F2540",textTransform:"uppercase",letterSpacing:".4px",marginBottom:9}}>The bank line</div>
+          <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",marginBottom:14}}>
             <div style={{display:"flex",gap:10,flexWrap:"nowrap"}}>
-              <div style={{width:130,flexShrink:0}}>
-                <label style={lab}>Particular</label>
-                <select value={milestone} onChange={e=>{setMilestone(e.target.value);setAlloc({});}} style={inp}>
+              <div style={{width:125,flexShrink:0}}>
+                <label style={lab}>Towards</label>
+                <select value={milestone} onChange={e=>setMilestone(e.target.value)} style={inp}>
                   {PARTICULARS.map(x => <option key={x} value={x}>{x}</option>)}
                 </select>
               </div>
-              <div style={{width:120,flexShrink:0}}>
-                <label style={lab}>Expected</label>
-                <input type="number" value={expTotal} onChange={e=>{setExpTotal(e.target.value);setAlloc({});}} placeholder="0" style={inp} />
-              </div>
-              <div style={{width:120,flexShrink:0}}>
-                <label style={lab}>Actually landed</label>
-                <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="same" style={inp} />
+              <div style={{width:135,flexShrink:0}}>
+                <label style={lab}>Amount received</label>
+                <input type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0" style={{...inp,fontWeight:700}} />
               </div>
               <div style={{width:105,flexShrink:0}}>
                 <label style={lab}>Mode</label>
@@ -93,73 +80,77 @@ export default function BlockPaymentDialog({ block, childRows, currentUser, show
                 <label style={lab}>Reference</label>
                 <input value={reference} onChange={e=>setReference(e.target.value)} placeholder="TT / cheque no" style={inp} />
               </div>
-              <div style={{width:130,flexShrink:0}}>
+              <div style={{width:135,flexShrink:0}}>
                 <label style={lab}>Received on</label>
                 <input type="date" value={rdate} onChange={e=>setRdate(e.target.value)} style={inp} />
               </div>
             </div>
           </div>
 
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>Distribute to members</div>
-            <button onClick={suggest} disabled={!wire} style={{padding:"6px 13px",borderRadius:8,border:"1px solid #0F2540",background:wire?"#fff":"#F1F5F9",color:wire?"#0F2540":"#94A3B8",fontSize:12,fontWeight:600,cursor:wire?"pointer":"not-allowed"}}>Suggest split</button>
-          </div>
-
-          {wire > 0 && owedTotal <= 0 && (
-            <div style={{fontSize:11,color:"#B45309",background:"#FFFBEB",border:"1px solid #FCD34D",borderRadius:8,padding:"7px 11px",marginBottom:9}}>
-              Every member has already satisfied {milestone}. Suggest split will divide this evenly as a top-up - or raise Expected per member first.
+          {landed > 0 && !uneven && (
+            <div style={{background:"#E6F4EE",border:"1px solid #A7D8C3",borderRadius:10,padding:"11px 14px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:"#14603F"}}>Split equally {String.fromCharCode(183)} {fmt(equalShare)} to each of {n} units</div>
+                <div style={{fontSize:11,color:"#4B7A63",marginTop:2}}>Every unit receives the same share of this payment.</div>
+              </div>
+              <button onClick={()=>{ const seed={}; members.forEach((r,i)=>{seed[r.child.id]=equalOf(i);}); setOverride(seed); setUneven(true); }} style={{padding:"6px 12px",borderRadius:8,border:"1px solid #14603F",background:"#fff",color:"#14603F",fontSize:11,fontWeight:600,cursor:"pointer"}}>Split differently</button>
             </div>
           )}
+
+          {uneven && (
+            <div style={{background:"#FFFBEB",border:"1px solid #FCD34D",borderRadius:10,padding:"11px 14px",marginBottom:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+                <div style={{fontSize:13,fontWeight:700,color:"#B45309"}}>Uneven split {String.fromCharCode(183)} reason required</div>
+                <button onClick={()=>{setUneven(false);setVreason("");}} style={{padding:"5px 11px",borderRadius:8,border:"1px solid #B45309",background:"#fff",color:"#B45309",fontSize:11,fontWeight:600,cursor:"pointer"}}>Back to equal</button>
+              </div>
+              <input value={vreason} onChange={e=>setVreason(e.target.value)} placeholder="Why is this not split equally? (required)" style={{width:"100%",padding:"7px 9px",border:"1px solid #FCD34D",borderRadius:7,fontSize:12,boxSizing:"border-box"}} />
+            </div>
+          )}
+
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
             <thead><tr style={{background:"#F8FAFC",color:"#475569",textAlign:"left"}}>
               <th style={{padding:"8px 10px"}}>Unit</th>
-              <th style={{padding:"8px 10px"}}>Stage</th>
-              <th style={{padding:"8px 10px",textAlign:"right"}}>Expected</th>
-              <th style={{padding:"8px 10px",textAlign:"right"}}>Already received</th>
-              <th style={{padding:"8px 10px",textAlign:"right"}}>Still owed</th>
-              <th style={{padding:"8px 10px",textAlign:"right",width:130}}>Allocate</th>
+              <th style={{padding:"8px 10px"}}>Deal stage</th>
+              <th style={{padding:"8px 10px",textAlign:"right"}}>Received before</th>
+              <th style={{padding:"8px 10px",textAlign:"right",width:150}}>This payment</th>
+              <th style={{padding:"8px 10px",textAlign:"right"}}>Total after</th>
             </tr></thead>
-            <tbody>{members.map(({line, child}) => {
-              const owed = owedOf({line, child});
-              const done = owed <= 0 && recOf({line, child}) > 0;
+            <tbody>{members.map(({line, child}, i) => {
+              const before = Number(child.reservation_amount || 0);
+              const share = shareOf(child.id, i);
               return (
-              <tr key={child.id} style={{borderBottom:"1px solid #F1F5F9",opacity:done?0.55:1}}>
-                <td style={{padding:"8px 10px",fontWeight:700,color:"#0F2540"}}>{line.unit_ref}</td>
-                <td style={{padding:"8px 10px",color:"#64748B"}}>{child.stage}</td>
-                <td style={{padding:"8px 10px",textAlign:"right"}}>
-                  <input type="number" value={expected[child.id] !== undefined ? expected[child.id] : evenShare} onChange={e=>setExpected(x=>({...x,[child.id]:e.target.value}))} style={{width:100,padding:"4px 7px",border:"1px solid #E2E8F0",borderRadius:6,fontSize:12,textAlign:"right"}} />
+              <tr key={child.id} style={{borderBottom:"1px solid #F1F5F9"}}>
+                <td style={{padding:"9px 10px",fontWeight:700,color:"#0F2540"}}>{line.unit_ref}</td>
+                <td style={{padding:"9px 10px",color:"#64748B"}}>{child.stage}</td>
+                <td style={{padding:"9px 10px",textAlign:"right",color:"#64748B"}}>{before ? fmt(before) : "-"}</td>
+                <td style={{padding:"9px 10px",textAlign:"right"}}>
+                  {uneven
+                    ? <input type="number" value={override[child.id] !== undefined ? override[child.id] : ""} onChange={e=>setOverride(x=>({...x,[child.id]:e.target.value}))} placeholder="0" style={{width:125,padding:"5px 8px",border:"1px solid #FCD34D",borderRadius:6,fontSize:12,textAlign:"right",fontWeight:700}} />
+                    : <span style={{fontWeight:700,color:"#16A34A",fontSize:13}}>{share ? fmt(share) : "-"}</span>}
                 </td>
-                <td style={{padding:"8px 10px",textAlign:"right",color:"#16A34A",fontWeight:600}}>{recOf({line, child}) ? fmt(recOf({line, child})) : "-"}</td>
-                <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:expOf(child.id)<=0&&!done?"#94A3B8":(owed>0?"#B91C1C":"#16A34A")}}>{done ? "satisfied" : (expOf(child.id) <= 0 ? "-" : fmt(owed))}</td>
-                <td style={{padding:"8px 10px",textAlign:"right"}}>
-                  <input type="number" value={alloc[child.id] !== undefined ? alloc[child.id] : ""} onChange={e=>setAlloc(x=>({...x,[child.id]:e.target.value}))} placeholder="0" style={{width:110,padding:"5px 8px",border:"1px solid #CBD5E1",borderRadius:6,fontSize:12,textAlign:"right",fontWeight:700}} />
-                </td>
+                <td style={{padding:"9px 10px",textAlign:"right",fontWeight:700,color:"#0F2540"}}>{fmt(before + share)}</td>
               </tr>); })}</tbody>
           </table>
-          {members.length===0 && <div style={{color:"#94A3B8",fontSize:12,padding:"10px 0"}}>No live deals in this block yet.</div>}
+          {n === 0 && <div style={{color:"#94A3B8",fontSize:12,padding:"10px 0"}}>No live deals in this block yet.</div>}
 
-          <div style={{marginTop:14,padding:"11px 14px",borderRadius:10,background:canLock?"#E6F4EE":"#FEF2F2",border:"1px solid "+(canLock?"#A7D8C3":"#FCA5A5"),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div style={{fontSize:12,color:"#475569"}}>Received {fmt(landed)} {String.fromCharCode(183)} allocated {fmt(allocated)}{variance !== 0 ? " " + String.fromCharCode(183) + " expected " + fmt(wire) : ""}</div>
-            <div style={{fontSize:14,fontWeight:800,color:canLock?"#16A34A":"#B91C1C"}}>{canLock ? "Remainder 0 " + String.fromCodePoint(0x2713) : "Remainder " + fmt(remainder)}</div>
-          </div>
-
-          {variance !== 0 && wire > 0 && (
-            <div style={{marginTop:9,padding:"10px 13px",borderRadius:9,background:"#FFFBEB",border:"1px solid #FCD34D"}}>
-              <div style={{fontSize:12,fontWeight:700,color:"#B45309",marginBottom:5}}>{variance < 0 ? "Short by " + fmt(Math.abs(variance)) : "Over by " + fmt(variance)} {String.fromCharCode(183)} bank charges or transfer difference</div>
-              <div style={{fontSize:11,color:"#78716C",marginBottom:6}}>Only what actually arrived is distributed. Record why it differs - approval of the difference stays a human decision.</div>
-              <input value={vreason} onChange={e=>setVreason(e.target.value)} placeholder="Reason for the difference (e.g. bank charges)" style={{width:"100%",padding:"7px 9px",border:"1px solid #FCD34D",borderRadius:7,fontSize:12,boxSizing:"border-box"}} />
+          {uneven && landed > 0 && (
+            <div style={{marginTop:11,padding:"10px 13px",borderRadius:9,background:balanced?"#E6F4EE":"#FEF2F2",border:"1px solid "+(balanced?"#A7D8C3":"#FCA5A5"),display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{fontSize:12,color:"#475569"}}>Received {fmt(landed)} {String.fromCharCode(183)} distributed {fmt(allocated)}</div>
+              <div style={{fontSize:14,fontWeight:800,color:balanced?"#16A34A":"#B91C1C"}}>{balanced ? "Balanced " + String.fromCodePoint(0x2713) : "Unassigned " + fmt(remainder)}</div>
             </div>
           )}
-          {payment && (
-            <div style={{marginTop:9,padding:"10px 13px",borderRadius:9,background:"#FEF3C7",border:"1px solid #FCD34D"}}>
-              <div style={{fontSize:12,fontWeight:700,color:"#B45309",marginBottom:5}}>Amending a recorded payment</div>
+
+          {isAmend && (
+            <div style={{marginTop:11,padding:"10px 13px",borderRadius:9,background:"#FEF3C7",border:"1px solid #FCD34D"}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#B45309",marginBottom:5}}>Correcting a recorded payment</div>
               <div style={{fontSize:11,color:"#78716C",marginBottom:6}}>The record is corrected in place - no second payment row. Stages already earned are not pulled back.</div>
-              <input value={amendReason} onChange={e=>setAmendReason(e.target.value)} placeholder="Why is this being amended? (required)" style={{width:"100%",padding:"7px 9px",border:"1px solid #FCD34D",borderRadius:7,fontSize:12,boxSizing:"border-box"}} />
+              <input value={amendReason} onChange={e=>setAmendReason(e.target.value)} placeholder="Why is this being corrected? (required)" style={{width:"100%",padding:"7px 9px",border:"1px solid #FCD34D",borderRadius:7,fontSize:12,boxSizing:"border-box"}} />
             </div>
           )}
+
           <div style={{display:"flex",justifyContent:"flex-end",gap:9,marginTop:16}}>
             <button onClick={onClose} style={{padding:"9px 17px",borderRadius:9,border:"1px solid #CBD5E1",background:"#fff",color:"#475569",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-            <button disabled={!canLock} onClick={()=>onLock && onLock(bank, amendReason, members.map(r=>({opportunity_id:r.child.id,amount:allocOf(r.child.id)})).filter(a=>a.amount>0))} style={{padding:"9px 19px",borderRadius:9,border:"none",background:canLock?(payment?"#B45309":"#16A34A"):"#CBD5E1",color:"#fff",fontSize:13,fontWeight:700,cursor:canLock?"pointer":"not-allowed"}}>{payment ? "Amend allocation" : "Lock allocation"}</button>
+            <button disabled={!canSave} onClick={()=>onLock && onLock(bank, amendReason, rows())} style={{padding:"9px 19px",borderRadius:9,border:"none",background:canSave?(isAmend?"#B45309":"#16A34A"):"#CBD5E1",color:"#fff",fontSize:13,fontWeight:700,cursor:canSave?"pointer":"not-allowed"}}>{isAmend ? "Save correction" : "Record payment"}</button>
           </div>
 
         </div>

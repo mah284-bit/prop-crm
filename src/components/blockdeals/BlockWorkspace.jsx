@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase.js";
 import BlockPaymentDialog from "./BlockPaymentDialog.jsx";
 import { lockBlockPayment, amendBlockPayment } from "../../lib/lockBlockPayment.js";
+import { canDo } from "../../lib/permissions.js";
 
 export default function BlockWorkspace({ block, leads, currentUser, showToast, onClose, onOpenCalculator, onRecordApproval, onConfirm, onReload }) {
   const [dLatest, setDLatest] = useState(null);
@@ -123,7 +124,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                         <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#166534"}}>{fmt(pm.amount)}</td>
                         <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:va===0?"#94A3B8":"#B45309"}}>{va===0 ? "-" : fmt(va)}</td>
                         <td style={{padding:"8px 10px",textAlign:"right",color:"#64748B"}}>{n}</td>
-                        <td style={{padding:"8px 10px",textAlign:"right"}}><button onClick={()=>{setEditPay(pm);setShowPay(true);}} style={{padding:"5px 11px",borderRadius:7,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:11,fontWeight:600,cursor:"pointer"}}>Open</button></td>
+                        <td style={{padding:"8px 10px",textAlign:"right"}}>{canDo(currentUser, "amend_payment") ? <button onClick={()=>{setEditPay(pm);setShowPay(true);}} style={{padding:"5px 11px",borderRadius:7,border:"1px solid #B45309",background:"#fff",color:"#B45309",fontSize:11,fontWeight:600,cursor:"pointer"}}>Amend</button> : <span style={{fontSize:10,color:"#94A3B8"}}>manager only</span>}</td>
                       </tr>); })}</tbody>
                   </table>}
                   {payments.some(p=>p.notes) && <div style={{fontSize:11,color:"#94A3B8",marginTop:9}}>Amendment reasons are stored on each payment and logged on every affected deal.</div>}
