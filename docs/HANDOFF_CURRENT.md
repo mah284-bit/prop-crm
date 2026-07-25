@@ -935,3 +935,44 @@ NEXT: docs/Block_Sales_Cut7_Design.md then build.
 LESSON BANKED: this design pass lived only in chat and did NOT reach HANDOFF before session
 end -> next session resumed from a stale board (proposed freshness work instead of Cut 7).
 Append design rulings AT RULING TIME, not at session close.
+
+## DAY 74 CUT 7 - BLOCK MONEY ALLOCATION (branch feature/block-cut7, NOT merged)
+CERTIFIED LIVE: 7-1 schema (block_payments + block_payment_allocations, RLS company-scoped,
+tags pre-block-cut7-schema/design; golden-block-vertical-cut6-complete marks pre-Cut-7 state).
+7-2 ceremony screen + 7-3 lock engine PROVEN END-TO-END on Fatima block
+(06c67a5b): AED 50,000 Reservation -> 2 children served 25,000 each -> both Offer Accepted
+-> RESERVED, both units Booked -> Reserved, 1 payment row + 2 allocation rows written.
+One wire, N members, from the block screen. Dropped child correctly untouched.
+DESIGN CORRECTION MID-BUILD (founder caught it, important): first cut distributed the
+EXPECTED amount and absorbed bank-charge variance at block level. FOUNDER OVERRULED with the
+10,000 case - if a buyer sends 10k against a 50k expectation, crediting members 25k each is
+the app FABRICATING money. LAW: the app records ACTUALS; variance is SURFACED for a human to
+approve, never absorbed silently. Rebuilt: allocations reconcile against LANDED, remainder
+measures actual money, reason MANDATORY whenever variance != 0. Mirrors the mainstream
+close-gate materiality grammar.
+7-4 AMEND (Payments tab + hydrate + amend-in-place) BUILT, NOT VERIFIED. amendBlockPayment()
+in lib/lockBlockPayment.js: corrects the record in place, no second row, adjusts member
+reservation by DELTA, logs audit activity per affected deal. Doctrine ruled: a downward amend
+does NOT pull a stage back (money paid is money paid, Part 4); genuine withdrawal = cancellation
+path, not amend.
+## OPEN AT PARK (resume here)
+1. UNVERIFIED: does the Payments tab actually RENDER in BlockWorkspace? Probe shows
+   payment prop = null on every open, which is CORRECT for the header 'Record payment'
+   button (new payment). Never confirmed whether founder was clicking the tab's Open button
+   or the header button. FIRST CHECK: is there a 'Payments (N)' tab beside Deals/Terms
+   history/Activity? No tab = the a2.py insert did not reach the render path. Tab present =
+   nothing broken, click Open on the payment row to test hydration.
+2. DEBUG PROBE LEFT IN: console.log('[BPD] payment prop:'...) at BlockPaymentDialog line 7.
+   STRIP before merge.
+3. BUG (cosmetic): bank-line labels REFERENCE / RECEIVED ON overlap after the two variance
+   fields were added - row exceeds width. Needs widths rebalanced.
+4. GAP (real, founder-flagged): 'Expected' has NO source. 1-to-1 gets reservation amount from
+   company/developer setup; block ceremony falls back to broker-typed. Nothing in the app
+   stores a per-developer reservation fee (money-tail sec 5 specifies it, never built; only
+   MAX_RESERVATION_FEE=5000 in lib/refData.js, which is a guard not a default). FIND where
+   1-to-1 sources it and wire the ceremony to the same place.
+5. Mode/Reference persistence to block_payments never confirmed with a deliberate non-default
+   entry (every successful lock ran with Wire + blank ref).
+DATA STATE: Fatima block healthy - 2 children Reserved at 25,000 each, 1 payment row, 2
+allocation rows, third unit correctly dropped/Closed Lost. Good fixture for testing amend.
+Do NOT delete it.

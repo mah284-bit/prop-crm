@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase.js";
+import BlockPaymentDialog from "./BlockPaymentDialog.jsx";
+import { lockBlockPayment, amendBlockPayment } from "../../lib/lockBlockPayment.js";
 
 export default function BlockWorkspace({ block, leads, currentUser, showToast, onClose, onOpenCalculator, onRecordApproval, onConfirm, onReload }) {
   const [dLatest, setDLatest] = useState(null);
@@ -8,6 +10,12 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
   const [dHistory, setDHistory] = useState([]);
   const [blockActivity, setBlockActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showPay, setShowPay] = useState(false);
+  const [payTick, setPayTick] = useState(0);
+  const [locking, setLocking] = useState(false);
+  const [payments, setPayments] = useState([]);
+  const [payAllocs, setPayAllocs] = useState([]);
+  const [editPay, setEditPay] = useState(null);
 
   useEffect(() => { (async () => {
     const { data } = await supabase.from("block_distributions").select("*").eq("block_deal_id", block.id).order("version", { ascending: false }).limit(1);
@@ -15,7 +23,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
     const { data: lines } = await supabase.from("block_deal_units").select("*").eq("block_deal_id", block.id).order("created_at");
     const childIds = (lines || []).map(x => x.child_opportunity_id).filter(Boolean);
     let opps = [];
-    if (childIds.length) { const { data: od } = await supabase.from("opportunities").select("id, stage, status, current_agreed_price, budget").in("id", childIds); opps = od || []; }
+    if (childIds.length) { const { data: od } = await supabase.from("opportunities").select("id, stage, status, current_agreed_price, budget, reservation_amount, reservation_date, lead_id, unit_id").in("id", childIds); opps = od || []; }
     setChildRows((lines || []).map(ln => ({ line: ln, child: opps.find(o => o.id === ln.child_opportunity_id) || null })));
     const { data: allD } = await supabase.from("block_distributions").select("*").eq("block_deal_id", block.id).order("version", { ascending: false });
     setDHistory(allD || []);
@@ -23,8 +31,12 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
       const { data: acts } = await supabase.from("activities").select("*").in("opportunity_id", childIds).in("activity_subtype", ["block_adoption","block_reprice","block_conversion"]).order("created_at", { ascending: false });
       setBlockActivity(acts || []);
     }
+    const { data: pays } = await supabase.from("block_payments").select("*").eq("block_deal_id", block.id).order("created_at", { ascending: false });
+    setPayments(pays || []);
+    const payIds = (pays || []).map(x => x.id);
+    if (payIds.length) { const { data: pa } = await supabase.from("block_payment_allocations").select("*").in("block_payment_id", payIds); setPayAllocs(pa || []); } else { setPayAllocs([]); }
     setLoading(false);
-  })(); }, [block.id]);
+  })(); }, [block.id, payTick]);
 
   const buyer = leads.find(l => l.id === block.lead_id);
   const fmt = (n) => "AED " + Math.round(Number(n || 0)).toLocaleString();
@@ -51,6 +63,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
               {block.status==="negotiating" && <button onClick={()=>onRecordApproval && onRecordApproval(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"1px solid #B45309",background:"#fff",color:"#B45309",cursor:"pointer"}}>Record developer approval</button>}
               {block.status==="approved" && <button onClick={()=>onConfirm && onConfirm(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#16A34A",color:"#fff",cursor:"pointer"}}>Confirm block</button>}
+              {["confirmed","partially_dropped","completed"].includes(block.status) && <button onClick={()=>setShowPay(true)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",cursor:"pointer"}}>Record payment</button>}
               <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#94A3B8",cursor:"pointer"}}>{String.fromCharCode(215)}</button>
             </div>
           </div>
@@ -59,7 +72,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
           {loading ? <div style={{color:"#94A3B8",fontSize:13}}>Loading...</div> : (
             <div>
               <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid #E8EDF4"}}>
-                {[["children","Deals"],["terms","Terms history"],["activity","Activity"]].map(([id,label]) => (
+                {[["children","Deals"],["payments","Payments (" + payments.length + ")"],["terms","Terms history"],["activity","Activity"]].map(([id,label]) => (
                   <button key={id} onClick={()=>setWsTab(id)} style={{padding:"7px 14px",border:"none",borderBottom:wsTab===id?"2px solid #0F2540":"2px solid transparent",background:"none",color:wsTab===id?"#0F2540":"#94A3B8",fontSize:12,fontWeight:700,cursor:"pointer"}}>{label}</button>
                 ))}
               </div>
@@ -89,6 +102,33 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
               </table>); })()}
               <div style={{fontSize:11,color:"#94A3B8",marginTop:10}}>Deals walk their own ladder in Opportunities. Add/remove arrives with drop-out flows.</div>
               </>)}
+              {wsTab==="payments" && (
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:10}}>Block payments received ({payments.length})</div>
+                  {payments.length===0 ? <div style={{color:"#94A3B8",fontSize:12}}>No block payment recorded yet.</div> :
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                    <thead><tr style={{background:"#F8FAFC",color:"#475569",textAlign:"left"}}>
+                      <th style={{padding:"8px 10px"}}>Particular</th><th style={{padding:"8px 10px"}}>Received on</th>
+                      <th style={{padding:"8px 10px"}}>Mode / ref</th>
+                      <th style={{padding:"8px 10px",textAlign:"right"}}>Received</th>
+                      <th style={{padding:"8px 10px",textAlign:"right"}}>Variance</th>
+                      <th style={{padding:"8px 10px",textAlign:"right"}}>Members</th>
+                      <th style={{padding:"8px 10px"}}></th>
+                    </tr></thead>
+                    <tbody>{payments.map(pm => { const va = pm.expected_total != null ? (Number(pm.amount)||0) - (Number(pm.expected_total)||0) : 0; const n = payAllocs.filter(x=>x.block_payment_id===pm.id).length; return (
+                      <tr key={pm.id} style={{borderBottom:"1px solid #F1F5F9"}}>
+                        <td style={{padding:"8px 10px",fontWeight:700,color:"#0F2540"}}>{pm.milestone}{pm.status==="amended" && <span style={{marginLeft:6,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:8,background:"#FEF3C7",color:"#B45309"}}>AMENDED</span>}</td>
+                        <td style={{padding:"8px 10px",color:"#64748B"}}>{pm.received_date || "-"}</td>
+                        <td style={{padding:"8px 10px",color:"#64748B"}}>{(pm.payment_type||"-")}{pm.reference ? " " + String.fromCharCode(183) + " " + pm.reference : ""}</td>
+                        <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#166534"}}>{fmt(pm.amount)}</td>
+                        <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:va===0?"#94A3B8":"#B45309"}}>{va===0 ? "-" : fmt(va)}</td>
+                        <td style={{padding:"8px 10px",textAlign:"right",color:"#64748B"}}>{n}</td>
+                        <td style={{padding:"8px 10px",textAlign:"right"}}><button onClick={()=>{setEditPay(pm);setShowPay(true);}} style={{padding:"5px 11px",borderRadius:7,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:11,fontWeight:600,cursor:"pointer"}}>Open</button></td>
+                      </tr>); })}</tbody>
+                  </table>}
+                  {payments.some(p=>p.notes) && <div style={{fontSize:11,color:"#94A3B8",marginTop:9}}>Amendment reasons are stored on each payment and logged on every affected deal.</div>}
+                </div>
+              )}
               {wsTab==="terms" && (
                 <div>
                   <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:10}}>Distribution versions ({dHistory.length})</div>
@@ -123,6 +163,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
           )}
         </div>
       </div>
+      {showPay && <BlockPaymentDialog key={editPay ? editPay.id : "new"} payment={editPay} priorAllocs={editPay ? payAllocs.filter(x=>x.block_payment_id===editPay.id) : []} block={block} childRows={childRows} currentUser={currentUser} showToast={showToast} onClose={()=>{setShowPay(false);setEditPay(null);}} onLock={async (bank, amendReason, allocs)=>{ if (locking) return; setLocking(true); const live = childRows.filter(r=>r.child && r.line.status!=="dropped"); const res = editPay ? await amendBlockPayment({ block, payment: editPay, bank, allocations: allocs, members: live, priorAllocs: payAllocs.filter(x=>x.block_payment_id===editPay.id), currentUser, reason: amendReason }) : await lockBlockPayment({ block, bank, allocations: allocs, members: live, currentUser }); setLocking(false); if (res.ok) { showToast(bank.milestone + " AED " + Math.round(Number(bank.amount)||0).toLocaleString() + " distributed to " + res.served + " deals", "success"); setShowPay(false); setEditPay(null); setPayTick(t=>t+1); onReload && onReload(); } else { showToast("Partial: " + res.served + " served. " + (res.failed||[]).join("; "), "error"); setPayTick(t=>t+1); } }} />}
     </div>
   );
 }
