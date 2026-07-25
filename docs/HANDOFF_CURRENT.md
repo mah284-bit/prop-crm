@@ -912,3 +912,5 @@ Workspace showed old child rows after edits elsewhere). App-wide risk on live pr
 FIX DISCIPLINE: views refetch on open/focus, not trust cached state; consider realtime
 subscriptions or refetch-on-mount + on-window-focus. Audit Workspace, calculator, opp
 lists, inventory. Pre-prod task (bites in tester week). Not block-specific.
+
+## DAY 74: CUT 6 COMPLETE (drop-outs) - remove(detach/drop fork)+add+reprice-prompt all in the calculator cockpit (founder: composition+money one screen), certified on Fatima born children. Calculator opens on confirmed blocks now. Top-down nudge shipped. Bugs paid: const-before-init crash, calculator-hidden-on-confirmed. BOARD: 6a Booking Clock, 7 Block Money Allocation, clearance-at-door, top-down box init cosmetic, DATA-FRESHNESS (pinned #1 pre-prod). Block vertical: create/adopt->calculate->approve->confirm->born->drop/add/reprice->honest ladder. Near feature-complete.
