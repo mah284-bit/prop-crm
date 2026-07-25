@@ -4,6 +4,9 @@ import { supabase } from "../../lib/supabase.js";
 export default function BlockWorkspace({ block, leads, currentUser, showToast, onClose, onOpenCalculator, onReload }) {
   const [dLatest, setDLatest] = useState(null);
   const [childRows, setChildRows] = useState([]);
+  const [wsTab, setWsTab] = useState("children");
+  const [dHistory, setDHistory] = useState([]);
+  const [blockActivity, setBlockActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { (async () => {
@@ -14,6 +17,12 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
     let opps = [];
     if (childIds.length) { const { data: od } = await supabase.from("opportunities").select("id, stage, status, current_agreed_price, budget").in("id", childIds); opps = od || []; }
     setChildRows((lines || []).map(ln => ({ line: ln, child: opps.find(o => o.id === ln.child_opportunity_id) || null })));
+    const { data: allD } = await supabase.from("block_distributions").select("*").eq("block_deal_id", block.id).order("version", { ascending: false });
+    setDHistory(allD || []);
+    if (childIds.length) {
+      const { data: acts } = await supabase.from("activities").select("*").in("opportunity_id", childIds).in("activity_subtype", ["block_adoption","block_reprice","block_conversion"]).order("created_at", { ascending: false });
+      setBlockActivity(acts || []);
+    }
     setLoading(false);
   })(); }, [block.id]);
 
@@ -45,6 +54,12 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
         <div style={{padding:"1.25rem 1.5rem"}}>
           {loading ? <div style={{color:"#94A3B8",fontSize:13}}>Loading...</div> : (
             <div>
+              <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid #E8EDF4"}}>
+                {[["children","Deals"],["terms","Terms history"],["activity","Activity"]].map(([id,label]) => (
+                  <button key={id} onClick={()=>setWsTab(id)} style={{padding:"7px 14px",border:"none",borderBottom:wsTab===id?"2px solid #0F2540":"2px solid transparent",background:"none",color:wsTab===id?"#0F2540":"#94A3B8",fontSize:12,fontWeight:700,cursor:"pointer"}}>{label}</button>
+                ))}
+              </div>
+              {wsTab==="children" && (<>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>Deals in this block ({childRows.length})</div>
                 {["draft","negotiating","approved"].includes(block.status) &&
@@ -68,7 +83,38 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                     <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#166534"}}>{child ? fmt(child.current_agreed_price || child.budget) : "-"}</td>
                   </tr>))}</tbody>
               </table>); })()}
-              <div style={{fontSize:11,color:"#94A3B8",marginTop:10}}>Add/remove units and terms history arrive next. Deals walk their own ladder in Opportunities.</div>
+              <div style={{fontSize:11,color:"#94A3B8",marginTop:10}}>Deals walk their own ladder in Opportunities. Add/remove arrives with drop-out flows.</div>
+              </>)}
+              {wsTab==="terms" && (
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:10}}>Distribution versions ({dHistory.length})</div>
+                  {dHistory.length===0 ? <div style={{color:"#94A3B8",fontSize:12}}>No distribution locked yet.</div> :
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                    <thead><tr style={{background:"#F8FAFC",color:"#475569",textAlign:"left"}}>
+                      <th style={{padding:"8px 10px"}}>Version</th><th style={{padding:"8px 10px"}}>Locked</th>
+                      <th style={{padding:"8px 10px",textAlign:"right"}}>Block list</th><th style={{padding:"8px 10px",textAlign:"right"}}>Discount</th>
+                    </tr></thead>
+                    <tbody>{dHistory.map((d,i) => (
+                      <tr key={d.id} style={{borderBottom:"1px solid #F1F5F9"}}>
+                        <td style={{padding:"8px 10px",fontWeight:700,color:"#0F2540"}}>D{d.version}{i===0 && <span style={{marginLeft:6,fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:8,background:"#E6F4EE",color:"#1A7F5A"}}>LATEST</span>}</td>
+                        <td style={{padding:"8px 10px",color:"#64748B"}}>{d.locked_at ? new Date(d.locked_at).toLocaleString("en-GB") : "-"}</td>
+                        <td style={{padding:"8px 10px",textAlign:"right",color:"#64748B"}}>{fmt(d.block_total)}</td>
+                        <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#B45309"}}>{fmt(d.discount_total)}</td>
+                      </tr>))}</tbody>
+                  </table>}
+                </div>
+              )}
+              {wsTab==="activity" && (
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:10}}>Block events ({blockActivity.length})</div>
+                  {blockActivity.length===0 ? <div style={{color:"#94A3B8",fontSize:12}}>No block-level events yet.</div> :
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>{blockActivity.map(a => (
+                    <div key={a.id} style={{borderLeft:"3px solid #7C3AED",padding:"6px 12px",background:"#FAFAFC",borderRadius:"0 8px 8px 0"}}>
+                      <div style={{fontSize:12,color:"#0F2540"}}>{a.note}</div>
+                      <div style={{fontSize:10,color:"#94A3B8",marginTop:2}}>{a.created_at ? new Date(a.created_at).toLocaleString("en-GB") : ""}</div>
+                    </div>))}</div>}
+                </div>
+              )}
             </div>
           )}
         </div>
