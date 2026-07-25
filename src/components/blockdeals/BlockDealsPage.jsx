@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase.js";
 import DistributionCalculator from "./DistributionCalculator.jsx";
+import BlockWorkspace from "./BlockWorkspace.jsx";
 
 export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   const [blocks, setBlocks] = useState([]);
@@ -15,6 +16,7 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   const [softClaims, setSoftClaims] = useState({});
   const [showCreate, setShowCreate] = useState(false);
   const [calcBlock, setCalcBlock] = useState(null);
+  const [wsBlock, setWsBlock] = useState(null);
   const [form, setForm] = useState({ lead_id: "", title: "", developer_name: "", discount_mode: "pct", discount_value: "" });
   const [lines, setLines] = useState([]);
   const [unitPick, setUnitPick] = useState("");
@@ -186,7 +188,7 @@ const confirmBlock = async (b) => {
       ) : (
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           {blocks.map(b => { const ls = b.block_deal_units || []; const tot = ls.reduce((s,x)=>s+Number(x.list_price||0),0); const buyer = leads.find(l=>l.id===b.lead_id); return (
-            <div key={b.id} onClick={()=>{ if(b.status==="draft"||b.status==="negotiating"||b.status==="approved") setCalcBlock(b); }} style={{border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#fff",cursor:(b.status==="draft"||b.status==="negotiating"||b.status==="approved")?"pointer":"default"}}>
+            <div key={b.id} onClick={()=>{ setWsBlock(b); }} style={{border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",background:"#fff",cursor:"pointer"}}>
               <div>
                 <div style={{fontWeight:700,fontSize:14,color:"#0F2540"}}>{b.title}</div>
                 <div style={{fontSize:12,color:"#64748B",marginTop:2}}>{buyer?.name || "-"} {String.fromCharCode(183)} {ls.length} units {String.fromCharCode(183)} {fmt(tot)} {String.fromCharCode(183)} {Number(b.discount_value) > 0 ? (b.discount_mode==="pct" ? (b.discount_value+"% off") : (fmt(b.discount_value)+" off")) : "terms pending"}</div>
@@ -195,6 +197,7 @@ const confirmBlock = async (b) => {
             </div>); })}
         </div>
       )}
+      {wsBlock && <BlockWorkspace block={wsBlock} leads={leads} currentUser={currentUser} showToast={showToast} onClose={()=>setWsBlock(null)} onOpenCalculator={(b)=>setCalcBlock(b)} onReload={load}/>}
       {calcBlock && <DistributionCalculator block={calcBlock} currentUser={currentUser} showToast={showToast} onClose={()=>setCalcBlock(null)} onLocked={load}/>}
       {showCreate && (
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1200,padding:"1rem"}}>
