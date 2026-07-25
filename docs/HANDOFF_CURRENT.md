@@ -1065,3 +1065,24 @@ Every number must carry its own LABEL, not just the arithmetic:
 Founder: 'tag it with a proper heading - what is the number, else ambiguous.' Same labelled
 shape on the calculator summary bar so both surfaces read identically and the broker learns
 the vocabulary once. 'Deal value' is the agreed term for list-minus-discount.
+
+## DAY 74 GRAND CLOSE - CUT 7-6 COLLECTION STATE CERTIFIED END-TO-END (branch feature/block-cut7)
+Khalid EBT walk, full arc live-proven: Expected 75,000 set (editable on Workspace header) ->
+tranche 60,000 (Cheque EBT-100) HELD at Offer Accepted -> tranche 14,850 (wire) HELD ->
+150 shortfall -> Accept shortfall & close (manager-gated, reason mandatory) -> all 3 deals
+Reserved, all 3 units Reserved, 24,950 each (ACTUALS - shortfall never recorded as money),
+block collection_status=accepted_short w/ reason+who+when. Payments (2), both persisted w/
+mode+ref. Header rebuilt: List/Discount(%)/Deal value/D1 all LABELLED + collection line
+'Reservation X of Y' + pulsing outstanding chip. RULES PROVEN: reservation = the test of the
+buyer; Reserved EARNED at full collection (the payment that closes the balance earns it);
+tranches first-class; actuals only; humans decide differences.
+SHIPPED TODAY (7-6a/b/c): reservation_expected + collection_status/note/closed_by/at on
+block_deals; Expected field on create form + editable on Workspace; due/received/outstanding
+strip on payment dialog; part-payment vs completes-reservation messaging; stage gate in
+lockBlockPayment (completesReservation); acceptShortCollection engine + dialog.
+OPEN AT CLOSE: (1) Payments-tab shows 'manager only' for SUPER_ADMIN while the Accept button
+gates correctly - same canDo, different result; suspect currentUser prop vs closure in the tab
+row render. (2) Amend path STILL never tested live. (3) Debug probe still in BlockPaymentDialog
+- STRIP BEFORE MERGE. (4) Text tweak owed: 'Reservation Received X of Y' + 'held until
+collected fully'. (5) Approval ref-vs-note split, adopt-panel overflow, rich unit picker
+(7-5), totals-on-top calculator - all banked earlier. Branch NOT merged to main.

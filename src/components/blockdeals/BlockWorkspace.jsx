@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase.js";
 import BlockPaymentDialog from "./BlockPaymentDialog.jsx";
-import { lockBlockPayment, amendBlockPayment } from "../../lib/lockBlockPayment.js";
+import { lockBlockPayment, amendBlockPayment, acceptShortCollection } from "../../lib/lockBlockPayment.js";
 import { canDo } from "../../lib/permissions.js";
 
 export default function BlockWorkspace({ block, leads, currentUser, showToast, onClose, onOpenCalculator, onRecordApproval, onConfirm, onReload }) {
@@ -17,6 +17,38 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
   const [payments, setPayments] = useState([]);
   const [payAllocs, setPayAllocs] = useState([]);
   const [editPay, setEditPay] = useState(null);
+  const [expEdit, setExpEdit] = useState(false);
+  const [expVal, setExpVal] = useState(block.reservation_expected != null ? String(block.reservation_expected) : "");
+  const [expSaving, setExpSaving] = useState(false);
+  const [showAccept, setShowAccept] = useState(false);
+  const [acceptReason, setAcceptReason] = useState("");
+  const [accepting, setAccepting] = useState(false);
+  const doAccept = async () => {
+    if (accepting) return;
+    setAccepting(true);
+    const live = childRows.filter(r => r.child && r.line.status !== "dropped");
+    const res = await acceptShortCollection({ block, members: live, currentUser, reason: acceptReason, due: dueAmt, collected });
+    setAccepting(false);
+    if (res.ok) {
+      showToast("Collection closed - " + res.moved + " units moved to Reserved", "success");
+      setShowAccept(false); setAcceptReason(""); setPayTick(t => t + 1); onReload && onReload();
+    } else { showToast(res.error || (res.failed || []).join("; "), "error"); }
+  };
+  const collected = childRows.reduce((t, r) => t + Number(r.child?.reservation_amount || 0), 0);
+  const dueAmt = Number(block.reservation_expected || 0);
+  const outstanding = dueAmt - collected;
+  const saveExpected = async () => {
+    setExpSaving(true);
+    const v = expVal === "" ? null : Number(expVal);
+    const { error } = await supabase.from("block_deals").update({ reservation_expected: v }).eq("id", block.id);
+    setExpSaving(false);
+    if (error) { showToast(error.message, "error"); return; }
+    block.reservation_expected = v;
+    setExpEdit(false);
+    showToast("Reservation amount set", "success");
+    setPayTick(t => t + 1);
+    onReload && onReload();
+  };
 
   useEffect(() => { (async () => {
     const { data } = await supabase.from("block_distributions").select("*").eq("block_deal_id", block.id).order("version", { ascending: false }).limit(1);
@@ -45,6 +77,8 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
   const sc = statusColors[block.status] || "#94A3B8";
 
   return (
+    <>
+    <style>{"@keyframes blkPulse{0%,100%{opacity:1}50%{opacity:.45}}"}</style>
     <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1250,padding:"1rem"}}>
       <div style={{background:"#fff",borderRadius:16,width:1020,maxWidth:"97vw",maxHeight:"95vh",overflow:"auto"}}>
         <div style={{padding:"1.25rem 1.5rem",borderBottom:"1px solid #E8EDF4"}}>
@@ -54,14 +88,48 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                 <span style={{fontSize:17,fontWeight:700,color:"#0F2540"}}>{String.fromCodePoint(0x1F9F1)} {block.title}</span>
                 <span style={{fontSize:10,fontWeight:700,padding:"3px 10px",borderRadius:12,background:sc+"22",color:sc,textTransform:"uppercase",letterSpacing:".5px"}}>{block.status}</span>
               </div>
-              <div style={{fontSize:12,color:"#475569",display:"flex",gap:10,flexWrap:"wrap"}}>
-                <span><strong style={{color:"#0F2540"}}>{buyer?.name || "-"}</strong></span>
+              <div style={{fontSize:12,color:"#475569",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                <strong style={{color:"#0F2540"}}>{buyer?.name || "-"}</strong>
                 {block.developer_name && <span>{String.fromCharCode(183)} {block.developer_name}</span>}
-                {dLatest && <span>{String.fromCharCode(183)} D{dLatest.version} {String.fromCharCode(183)} {fmt(dLatest.discount_total)} off</span>}
               </div>
+              {dLatest && (
+                <div style={{fontSize:12,color:"#475569",marginTop:4,display:"flex",gap:14,flexWrap:"wrap"}}>
+                  <span>List <strong style={{color:"#0F2540"}}>{fmt(dLatest.block_total)}</strong></span>
+                  <span>Discount <strong style={{color:"#B45309"}}>{fmt(dLatest.discount_total)}</strong>{dLatest.block_total ? " (" + (Number(dLatest.discount_total)/Number(dLatest.block_total)*100).toFixed(2) + "%)" : ""}</span>
+                  <span>Deal value <strong style={{color:"#166534"}}>{fmt(Number(dLatest.block_total) - Number(dLatest.discount_total))}</strong></span>
+                  <span style={{color:"#94A3B8"}}>D{dLatest.version}</span>
+                </div>
+              )}
+              {dueAmt > 0 && (
+                <div style={{fontSize:12,marginTop:5,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                  <span style={{fontWeight:700,color:outstanding>0.5?"#B91C1C":"#166534"}}>
+                    Reservation {fmt(collected)} of {fmt(dueAmt)}
+                  </span>
+                  {outstanding > 0.5
+                    ? <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#FEF2F2",color:"#B91C1C",border:"1px solid #FCA5A5",animation:"blkPulse 2.4s ease-in-out infinite"}}>Outstanding {fmt(outstanding)} {String.fromCharCode(183)} RESERVATION of units held until collected</span>
+                    : <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#E6F4EE",color:"#166534",border:"1px solid #A7D8C3"}}>Collected in full {String.fromCodePoint(0x2713)}</span>}
+                </div>
+              )}
               {block.developer_approved_at && <div style={{fontSize:11,color:"#7C3AED",marginTop:4}}>{String.fromCodePoint(0x2713)} Developer approved {String.fromCharCode(183)} ref {block.developer_approval_ref}{block.approved_by_name ? (" \u00b7 " + block.approved_by_name) : ""}</div>}
             </div>
-            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <div style={{display:"flex",gap:12,alignItems:"center"}}>
+              {dueAmt > 0 && outstanding > 0.5 && canDo(currentUser, "amend_payment") && (
+                <button onClick={()=>setShowAccept(true)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"1px solid #B45309",background:"#fff",color:"#B45309",cursor:"pointer"}}>Accept shortfall {String.fromCharCode(38)} close</button>
+              )}
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:9,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>Reservation Amt Expected</div>
+                {expEdit ? (
+                  <div style={{display:"flex",gap:5,alignItems:"center",marginTop:2}}>
+                    <input type="number" autoFocus value={expVal} onChange={e=>setExpVal(e.target.value)} placeholder="e.g. 75000" style={{width:110,padding:"4px 7px",border:"1px solid #CBD5E1",borderRadius:6,fontSize:12,textAlign:"right"}} />
+                    <button disabled={expSaving} onClick={saveExpected} style={{padding:"4px 9px",borderRadius:6,border:"none",background:"#16A34A",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer"}}>Save</button>
+                    <button onClick={()=>{setExpEdit(false);setExpVal(block.reservation_expected!=null?String(block.reservation_expected):"");}} style={{padding:"4px 7px",borderRadius:6,border:"1px solid #CBD5E1",background:"#fff",color:"#64748B",fontSize:11,cursor:"pointer"}}>Cancel</button>
+                  </div>
+                ) : (
+                  <div onClick={()=>setExpEdit(true)} style={{cursor:"pointer",fontSize:14,fontWeight:800,color:block.reservation_expected?"#0F2540":"#B91C1C",marginTop:1}}>
+                    {block.reservation_expected ? fmt(block.reservation_expected) : "Not set - click to set"}
+                  </div>
+                )}
+              </div>
               {block.status==="negotiating" && <button onClick={()=>onRecordApproval && onRecordApproval(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"1px solid #B45309",background:"#fff",color:"#B45309",cursor:"pointer"}}>Record developer approval</button>}
               {block.status==="approved" && <button onClick={()=>onConfirm && onConfirm(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#16A34A",color:"#fff",cursor:"pointer"}}>Confirm block</button>}
               {["confirmed","partially_dropped","completed"].includes(block.status) && <button onClick={()=>setShowPay(true)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",cursor:"pointer"}}>Record payment</button>}
@@ -164,7 +232,27 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
           )}
         </div>
       </div>
+      {showAccept && (
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1350,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:14,width:520,maxWidth:"95vw",padding:"1.2rem 1.4rem"}}>
+            <div style={{fontSize:15,fontWeight:700,color:"#B45309",marginBottom:4}}>Accept the shortfall and close collection</div>
+            <div style={{fontSize:12,color:"#64748B",marginBottom:12}}>{block.title}</div>
+            <div style={{display:"flex",gap:22,padding:"11px 13px",background:"#FFFBEB",border:"1px solid #FCD34D",borderRadius:9,marginBottom:12}}>
+              <div><div style={{fontSize:9,fontWeight:700,color:"#64748B",textTransform:"uppercase"}}>Due</div><div style={{fontSize:14,fontWeight:800,color:"#0F2540"}}>{fmt(dueAmt)}</div></div>
+              <div><div style={{fontSize:9,fontWeight:700,color:"#64748B",textTransform:"uppercase"}}>Collected</div><div style={{fontSize:14,fontWeight:800,color:"#16A34A"}}>{fmt(collected)}</div></div>
+              <div><div style={{fontSize:9,fontWeight:700,color:"#64748B",textTransform:"uppercase"}}>Shortfall</div><div style={{fontSize:14,fontWeight:800,color:"#B91C1C"}}>{fmt(outstanding)}</div></div>
+            </div>
+            <div style={{fontSize:11,color:"#78716C",marginBottom:8}}>The shortfall is NOT recorded as received - the block keeps an honest record of what actually arrived. Accepting releases all units to Reserved on your authority.</div>
+            <input value={acceptReason} onChange={e=>setAcceptReason(e.target.value)} placeholder="Why is this shortfall accepted? (required)" style={{width:"100%",padding:"8px 10px",border:"1px solid #FCD34D",borderRadius:7,fontSize:12,boxSizing:"border-box",marginBottom:12}} />
+            <div style={{display:"flex",justifyContent:"flex-end",gap:9}}>
+              <button onClick={()=>{setShowAccept(false);setAcceptReason("");}} style={{padding:"8px 16px",borderRadius:8,border:"1px solid #CBD5E1",background:"#fff",color:"#475569",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              <button disabled={!acceptReason.trim()||accepting} onClick={doAccept} style={{padding:"8px 18px",borderRadius:8,border:"none",background:acceptReason.trim()?"#B45309":"#CBD5E1",color:"#fff",fontSize:13,fontWeight:700,cursor:acceptReason.trim()?"pointer":"not-allowed"}}>Accept and close</button>
+            </div>
+          </div>
+        </div>
+      )}
       {showPay && <BlockPaymentDialog key={editPay ? editPay.id : "new"} payment={editPay} priorAllocs={editPay ? payAllocs.filter(x=>x.block_payment_id===editPay.id) : []} block={block} childRows={childRows} currentUser={currentUser} showToast={showToast} onClose={()=>{setShowPay(false);setEditPay(null);}} onLock={async (bank, amendReason, allocs)=>{ if (locking) return; setLocking(true); const live = childRows.filter(r=>r.child && r.line.status!=="dropped"); const res = editPay ? await amendBlockPayment({ block, payment: editPay, bank, allocations: allocs, members: live, priorAllocs: payAllocs.filter(x=>x.block_payment_id===editPay.id), currentUser, reason: amendReason }) : await lockBlockPayment({ block, bank, allocations: allocs, members: live, currentUser }); setLocking(false); if (res.ok) { showToast(bank.milestone + " AED " + Math.round(Number(bank.amount)||0).toLocaleString() + " distributed to " + res.served + " deals", "success"); setShowPay(false); setEditPay(null); setPayTick(t=>t+1); onReload && onReload(); } else { showToast("Partial: " + res.served + " served. " + (res.failed||[]).join("; "), "error"); setPayTick(t=>t+1); } }} />}
     </div>
+    </>
   );
 }

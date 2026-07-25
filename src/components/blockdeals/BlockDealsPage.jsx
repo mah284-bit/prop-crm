@@ -17,7 +17,7 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   const [showCreate, setShowCreate] = useState(false);
   const [calcBlock, setCalcBlock] = useState(null);
   const [wsBlock, setWsBlock] = useState(null);
-  const [form, setForm] = useState({ lead_id: "", title: "", developer_name: "", discount_mode: "pct", discount_value: "" });
+  const [form, setForm] = useState({ lead_id: "", title: "", developer_name: "", discount_mode: "pct", discount_value: "", reservation_expected: "" });
   const [lines, setLines] = useState([]);
   const [unitPick, setUnitPick] = useState("");
   const [loading, setLoading] = useState(true);
@@ -95,7 +95,7 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
       await supabase.from("activities").insert({ opportunity_id: o.id, lead_id: o.lead_id, company_id: cid, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, stage_at_event: o.stage, activity_subtype: "block_adoption", note: "ADOPTED INTO BLOCK: " + bd.title + " - terms to be renegotiated via distribution calculator" });
     }
     showToast(chosen.length + " deals adopted into " + bd.title + " - open it and lock a distribution to set bulk terms", "success");
-    setShowCreate(false); setForm({ lead_id: "", title: "", developer_name: "", discount_mode: "pct", discount_value: "" }); setLines([]); setAdoptPick([]);
+    setShowCreate(false); setForm({ lead_id: "", title: "", developer_name: "", discount_mode: "pct", discount_value: "", reservation_expected: "" }); setLines([]); setAdoptPick([]);
     load();
   };
 
@@ -157,6 +157,7 @@ const confirmBlock = async (b) => {
     const { data: bd, error } = await supabase.from("block_deals").insert({
       company_id: cid, lead_id: form.lead_id, title: form.title.trim(),
       developer_name: form.developer_name || null,
+      reservation_expected: form.reservation_expected ? Number(form.reservation_expected) : null,
       
       status: "draft", created_by: currentUser.id,
     }).select().single();
@@ -165,7 +166,7 @@ const confirmBlock = async (b) => {
     const { error: e2 } = await supabase.from("block_deal_units").insert(rows);
     if (e2) { showToast(e2.message, "error"); return; }
     showToast("Block deal created (draft)", "success");
-    setShowCreate(false); setForm({ lead_id: "", title: "", developer_name: "", discount_mode: "pct", discount_value: "" }); setLines([]);
+    setShowCreate(false); setForm({ lead_id: "", title: "", developer_name: "", discount_mode: "pct", discount_value: "", reservation_expected: "" }); setLines([]);
     load();
   };
 
@@ -213,7 +214,9 @@ const confirmBlock = async (b) => {
                 <input value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} placeholder="e.g. Khalid - Grove floor 9 block" style={{width:"100%",padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}/></div>
               <div><label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4}}>DEVELOPER</label>
                 <select value={form.developer_name} onChange={e=>setForm(f=>({...f,developer_name:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}><option value="">Select developer...</option>{developers.map(d=><option key={d.id} value={d.name}>{d.name}</option>)}</select></div>
-              <div style={{fontSize:11,color:"#94A3B8",display:"flex",alignItems:"center"}}>Discount is set later in the distribution calculator - per unit, where it belongs.</div>
+              <div><label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4}}>RESERVATION AMT EXPECTED (AED)</label>
+                <input type="number" value={form.reservation_expected} onChange={e=>setForm(f=>({...f,reservation_expected:e.target.value}))} placeholder="e.g. 75000" style={{width:"100%",padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}/>
+                <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>What the buyer must pay to reserve these units. Discount is set later in the calculator.</div></div>
             </div>
             {form.lead_id && buyerOpps.filter(o => o.lead_id === form.lead_id).length > 0 && (
               <div style={{border:"1px solid #FDE68A",background:"#FFFBEB",borderRadius:10,padding:"10px 14px",marginBottom:12}}>

@@ -26,6 +26,15 @@ export async function lockBlockPayment({ block, bank, allocations, members, curr
     .single();
   if (payErr || !pay) return { ok: false, error: payErr?.message || "Could not record the payment" };
 
+  // THE GATE: Reserved is EARNED when the reservation is fully collected.
+  // Tranches are allowed - money is recorded honestly either way - but the units
+  // stay on hold until the balance reaches zero. The payment that closes the
+  // balance is the one that earns the reservation.
+  const due = Number(block.reservation_expected || 0);
+  const collectedBefore = members.reduce((t, m) => t + Number(m.child?.reservation_amount || 0), 0);
+  const nowPaid = allocations.reduce((t, a) => t + (Number(a.amount) || 0), 0);
+  const completesReservation = bank.milestone === "Reservation" && due > 0 && (collectedBefore + nowPaid) >= due - 0.5;
+
   const failed = [];
   let served = 0;
 
@@ -51,10 +60,10 @@ export async function lockBlockPayment({ block, bank, allocations, members, curr
           reservation_method: bank.payment_type || null,
           reservation_cheque_no: bank.reference || null,
         };
-        if (child && child.stage === "Offer Accepted") { upd.stage = "Reserved"; upd.status = "Active"; }
+        if (completesReservation && child && child.stage === "Offer Accepted") { upd.stage = "Reserved"; upd.status = "Active"; }
         const { error: oErr } = await supabase.from("opportunities").update(upd).eq("id", a.opportunity_id);
         if (oErr) throw oErr;
-        if (child && child.stage === "Offer Accepted" && child.unit_id) {
+        if (completesReservation && child && child.stage === "Offer Accepted" && child.unit_id) {
           await supabase.from("project_units").update({ status: "Reserved" }).eq("id", child.unit_id);
         }
       }
@@ -78,7 +87,10 @@ export async function lockBlockPayment({ block, bank, allocations, members, curr
     }
   }
 
-  return { ok: failed.length === 0, paymentId: pay.id, served, failed };
+  if (completesReservation) {
+    await supabase.from("block_deals").update({ collection_status: "satisfied" }).eq("id", block.id);
+  }
+  return { ok: failed.length === 0, paymentId: pay.id, served, failed, completed: completesReservation };
 }
 
 // Cut 7-4: amend a recorded block payment in place. No second row.
@@ -168,4 +180,59 @@ export async function amendBlockPayment({ block, payment, bank, allocations, mem
   }
 
   return { ok: failed.length === 0, changed, failed };
+}
+
+// Cut 7-6c: accept a shortfall and close the collection.
+// Doctrine: accepting does NOT record money that never arrived. The block's story stays
+// honest - collected X of Y, shortfall Z accepted by <who> for <reason>. The units are
+// released to Reserved because a human with authority declared the reservation satisfied.
+export async function acceptShortCollection({ block, members, currentUser, reason, due, collected }) {
+  if (!reason || !reason.trim()) return { ok: false, error: "A reason is required" };
+  const companyId = block.company_id || currentUser?.company_id || null;
+  const shortfall = Number(due || 0) - Number(collected || 0);
+
+  const { error: bErr } = await supabase.from("block_deals").update({
+    collection_status: "accepted_short",
+    collection_note: reason.trim(),
+    collection_closed_by: currentUser?.id || null,
+    collection_closed_at: new Date().toISOString(),
+  }).eq("id", block.id);
+  if (bErr) return { ok: false, error: bErr.message };
+
+  const failed = [];
+  let moved = 0;
+  for (const m of members) {
+    const child = m.child;
+    const unitRef = m.line?.unit_ref || "";
+    try {
+      if (child && child.stage === "Offer Accepted") {
+        const { error: oErr } = await supabase.from("opportunities")
+          .update({ stage: "Reserved", status: "Active" }).eq("id", child.id);
+        if (oErr) throw oErr;
+        if (child.unit_id) {
+          await supabase.from("project_units").update({ status: "Reserved" }).eq("id", child.unit_id);
+        }
+        moved += 1;
+      }
+      await supabase.from("activities").insert({
+        opportunity_id: child.id,
+        lead_id: child.lead_id || null,
+        company_id: companyId,
+        type: "Note",
+        status: "completed",
+        user_id: currentUser?.id || null,
+        user_name: currentUser?.full_name || null,
+        activity_subtype: "collection_accepted_short",
+        note: "Reservation collection closed with a shortfall of AED " +
+              Math.round(shortfall).toLocaleString() + " (collected AED " +
+              Math.round(Number(collected||0)).toLocaleString() + " of AED " +
+              Math.round(Number(due||0)).toLocaleString() + ") on " + (block.title || "block") +
+              (unitRef ? " - unit " + unitRef : "") + ". Accepted by " +
+              (currentUser?.full_name || "user") + ". Reason: " + reason.trim(),
+      });
+    } catch (e) {
+      failed.push((unitRef || child?.id) + ": " + (e.message || "failed"));
+    }
+  }
+  return { ok: failed.length === 0, moved, shortfall, failed };
 }

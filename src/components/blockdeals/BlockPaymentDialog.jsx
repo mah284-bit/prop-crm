@@ -35,6 +35,9 @@ export default function BlockPaymentDialog({ block, childRows, currentUser, show
   const balanced = Math.abs(remainder) < 0.5;
 
   const collectedSoFar = members.reduce((t, r) => t + Number(r.child.reservation_amount || 0), 0);
+  const due = Number(block.reservation_expected || 0);
+  const outstandingNow = due > 0 ? due - collectedSoFar : 0;
+  const outstandingAfter = due > 0 ? due - collectedSoFar - landed : 0;
   const canSave = landed > 0 && balanced && (!uneven || vreason.trim().length > 0) && (!isAmend || amendReason.trim().length > 0);
 
   const bank = { milestone, amount: landed, expected_total: null, variance_reason: uneven ? (vreason.trim() || null) : null, payment_type: mode, reference, received_date: rdate };
@@ -50,7 +53,7 @@ export default function BlockPaymentDialog({ block, childRows, currentUser, show
         <div style={{padding:"1.1rem 1.4rem",borderBottom:"1px solid #E8EDF4",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
           <div>
             <div style={{fontSize:16,fontWeight:700,color:isAmend?"#B45309":"#0F2540"}}>{isAmend ? "Amend a recorded payment" : "Money received for this block"}</div>
-            <div style={{fontSize:11,color:"#64748B",marginTop:3}}>{block.title} {String.fromCharCode(183)} {n} units {String.fromCharCode(183)} collected so far {fmt(collectedSoFar)}</div>
+            <div style={{fontSize:11,color:"#64748B",marginTop:3}}>{block.title} {String.fromCharCode(183)} {n} units</div>
             {isAmend && <div style={{fontSize:11,color:"#B45309",marginTop:3,fontWeight:600}}>Correcting {payment.milestone} {String.fromCharCode(183)} {fmt(payment.amount)} {String.fromCharCode(183)} {payment.received_date || "-"}</div>}
           </div>
           <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#94A3B8",cursor:"pointer"}}>{String.fromCharCode(215)}</button>
@@ -58,6 +61,19 @@ export default function BlockPaymentDialog({ block, childRows, currentUser, show
 
         <div style={{padding:"1.1rem 1.4rem"}}>
 
+          {due > 0 ? (
+            <div style={{background:outstandingAfter<=0?"#E6F4EE":"#FFFBEB",border:"1px solid "+(outstandingAfter<=0?"#A7D8C3":"#FCD34D"),borderRadius:10,padding:"11px 14px",marginBottom:12,display:"flex",gap:26,alignItems:"center"}}>
+              <div><div style={{fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>Reservation due</div><div style={{fontSize:15,fontWeight:800,color:"#0F2540"}}>{fmt(due)}</div></div>
+              <div><div style={{fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>Received so far</div><div style={{fontSize:15,fontWeight:800,color:"#16A34A"}}>{fmt(collectedSoFar)}</div></div>
+              <div><div style={{fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>{landed>0?"Outstanding after this":"Outstanding"}</div><div style={{fontSize:15,fontWeight:800,color:(landed>0?outstandingAfter:outstandingNow)<=0?"#16A34A":"#B91C1C"}}>{(landed>0?outstandingAfter:outstandingNow)<=0 ? "Nil " + String.fromCodePoint(0x2713) : fmt(landed>0?outstandingAfter:outstandingNow)}</div></div>
+              {landed>0 && outstandingAfter>0 && <div style={{marginLeft:"auto",fontSize:11,color:"#B45309",maxWidth:230,textAlign:"right",fontWeight:600}}>Part payment - units stay on hold until the reservation is fully collected.</div>}
+              {landed>0 && outstandingAfter<=0 && <div style={{marginLeft:"auto",fontSize:11,color:"#14603F",maxWidth:230,textAlign:"right",fontWeight:600}}>This payment completes the reservation - all {n} units will move to Reserved.</div>}
+            </div>
+          ) : (
+            <div style={{background:"#FEF2F2",border:"1px solid #FCA5A5",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#B91C1C",fontWeight:600}}>
+              No reservation amount set for this block - the system cannot tell what is still owed. Set Expected to reserve on the block.
+            </div>
+          )}
           <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",marginBottom:14}}>
             <div style={{display:"flex",gap:10,flexWrap:"nowrap"}}>
               <div style={{width:125,flexShrink:0}}>
