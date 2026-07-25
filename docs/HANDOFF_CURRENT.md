@@ -1041,3 +1041,20 @@ record, and ensure all collected and move on.'
 tranches accumulate against it (1 or many); the block stays open until collected in full, then
 moves on. The clock chases whatever remains outstanding. Simpler than the expected/landed pair
 that was removed - and it makes partial payments first-class rather than an exception.
+
+## BUG (Day 74 eve) - ADOPT-FROM-EXISTING-DEALS PANEL IS UNUSABLE (create block door)
+Founder screenshot: the yellow 'Adopt from existing deals' panel on the New Block Deal form
+offers checkboxes for the buyer's active deals but shows NOTHING identifying them - just a
+checkbox and a truncated opp title ('Inquir...') running off the right edge of the panel.
+TWO FAULTS:
+1. CONTENT: rows render the opportunity TITLE only. Must show UNIT REF + STAGE + VALUE - the
+   three things that identify a deal. A broker cannot decide what to adopt from a title.
+2. LAYOUT: the row overflows horizontally past the panel edge (something in the row has no
+   width constraint / no truncation). Same class as the Day-52 Users-screen wrap saga - force
+   explicit widths + flexShrink:0 rather than hunting CSS.
+IMPACT: Cut 4b (adopt-into-block) is effectively inoperable through this door. Founder hit it
+live - Khalid had 2 existing 1-to-1 opps that were legitimate grouping candidates and he could
+not tell what they were, so he ignored them and picked fresh units.
+Not polish - the panel cannot be operated as it stands. Fix after the current walk.
+RELATED (already banked): Cut 7-5 - the unit picker on this same form is a bare dropdown; app
+has a rich unit finder with filters that should be reused here with multi-select.
