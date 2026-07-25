@@ -6,6 +6,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   const [blockMode, setBlockMode] = useState("pct");
   const [blockValue, setBlockValue] = useState("");
   const [dLatest, setDLatest] = useState(null);
+  const [removeTarget, setRemoveTarget] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { (async () => {
@@ -15,7 +16,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
     setDLatest(last || null);
     const allocOf = (uid) => { const a = (last?.allocations || []).find(x => x.unit_id === uid); return a || null; };
     setLines((units || []).map(u => { const a = allocOf(u.unit_id); return {
-      unit_id: u.unit_id, unit_ref: u.unit_ref, list_price: Number(u.list_price || 0),
+      line_id: u.id, child_opportunity_id: u.child_opportunity_id, unit_id: u.unit_id, unit_ref: u.unit_ref, list_price: Number(u.list_price || 0),
       mode: a ? a.mode : "pct", value: a ? String(a.value) : "",
     }; }));
     setLoading(false);
@@ -50,6 +51,36 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   };
 
   const updLine = (uid, patch) => setLines(ls => ls.map(x => x.unit_id === uid ? { ...x, ...patch } : x));
+
+  const doRemove = async (x, mode) => {
+    // unborn line (no child + no persisted line_id) -> silent local delete
+    if (!x.child_opportunity_id) {
+      if (x.line_id) { await supabase.from("block_deal_units").update({ status: "dropped", status_reason: "removed in calculator (unborn line)", updated_at: new Date().toISOString() }).eq("id", x.line_id); }
+      setLines(ls => ls.filter(y => y.unit_id !== x.unit_id));
+      setRemoveTarget(null);
+      showToast(x.unit_ref + " removed from the block", "success");
+      return;
+    }
+    const reason = window.prompt((mode === "detach" ? "DETACH " : "DROP ") + x.unit_ref + "\n\n" + (mode === "detach" ? "Deal survives standalone (keeps stage, loses block terms)." : "Deal -> Closed Lost, unit freed.") + "\n\nReason (audited):");
+    if (reason === null || !reason.trim()) return;
+    const cid = currentUser.company_id;
+    if (x.line_id) await supabase.from("block_deal_units").update({ status: "dropped", status_reason: mode + ": " + reason.trim(), updated_at: new Date().toISOString() }).eq("id", x.line_id);
+    const { data: child } = await supabase.from("opportunities").select("id, stage, lead_id").eq("id", x.child_opportunity_id).maybeSingle();
+    if (child) {
+      if (mode === "detach") {
+        await supabase.from("opportunities").update({ block_deal_id: null }).eq("id", child.id);
+        await supabase.from("activities").insert({ opportunity_id: child.id, lead_id: child.lead_id, company_id: cid, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, stage_at_event: child.stage, activity_subtype: "block_detach", note: "DETACHED from block " + block.title + " (calculator). Reason: " + reason.trim() });
+      } else {
+        await supabase.from("opportunities").update({ block_deal_id: null, stage: "Closed Lost", status: "Lost", lost_at: new Date().toISOString(), stage_updated_at: new Date().toISOString() }).eq("id", child.id);
+        if (!["SPA Signed","Closed Won"].includes(child.stage) && x.unit_id) await supabase.from("project_units").update({ status: "Available" }).eq("id", x.unit_id);
+        await supabase.from("activities").insert({ opportunity_id: child.id, lead_id: child.lead_id, company_id: cid, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, stage_at_event: "Closed Lost", activity_subtype: "block_drop", note: "DROPPED from block " + block.title + " (calculator) -> Closed Lost, unit freed. Reason: " + reason.trim() });
+      }
+    }
+    setLines(ls => ls.filter(y => y.unit_id !== x.unit_id));
+    setRemoveTarget(null);
+    showToast(x.unit_ref + (mode === "detach" ? " detached" : " dropped"), "success");
+    onLocked && onLocked();
+  };
 
   const lockDistribution = async () => {
     if (lines.length === 0) { showToast("No lines to distribute", "error"); return; }
@@ -129,6 +160,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
             <th style={{padding:"7px 8px",textAlign:"right"}}>Value</th>
             <th style={{padding:"7px 8px",textAlign:"right"}}>Discount</th>
             <th style={{padding:"7px 8px",textAlign:"right"}}>Net Price</th>
+            <th style={{padding:"7px 8px"}}></th>
           </tr></thead>
           <tbody>{lines.map(x => (
             <tr key={x.unit_id} style={{borderBottom:"1px dashed #F1F5F9"}}>
@@ -138,6 +170,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
               <td style={{padding:"7px 8px",textAlign:"right"}}><input type="number" value={x.value} onChange={e=>updLine(x.unit_id,{value:e.target.value})} placeholder="0" style={{width:110,padding:"5px 8px",border:"1px solid #D1D5DB",borderRadius:6,fontSize:12,textAlign:"right"}}/></td>
               <td style={{padding:"7px 8px",textAlign:"right",color:"#B45309",fontWeight:600}}>{fmt(discOf(x))}</td>
               <td style={{padding:"7px 8px",textAlign:"right",color:"#166534",fontWeight:700}}>{fmt(netOf(x))}</td>
+              <td style={{padding:"7px 8px",textAlign:"right"}}><button type="button" onClick={()=>{ if(!x.child_opportunity_id){ doRemove(x); } else { setRemoveTarget(x); } }} style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,border:"1px solid #FCA5A5",background:"#fff",color:"#DC2626",cursor:"pointer"}}>remove</button></td>
             </tr>))}</tbody>
         </table>)}
         <div style={{display:"flex",gap:18,alignItems:"center",background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"10px 16px",marginBottom:14,fontSize:12}}>
@@ -151,6 +184,17 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
           <button onClick={lockDistribution} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{String.fromCodePoint(0x1F512)} Lock Distribution D{(dLatest?.version || 0) + 1}</button>
         </div>
       </div>
+      {removeTarget && (
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1400,padding:"1rem"}} onClick={()=>setRemoveTarget(null)}>
+          <div style={{background:"#fff",borderRadius:14,width:460,maxWidth:"94vw",padding:"1.25rem 1.5rem"}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontSize:15,fontWeight:700,color:"#0F2540",marginBottom:6}}>Remove {removeTarget.unit_ref}?</div>
+            <div style={{fontSize:12,color:"#64748B",marginBottom:16}}>This unit has a live deal. Choose its fate - audited.</div>
+            <button onClick={()=>doRemove(removeTarget, "detach")} style={{display:"block",width:"100%",textAlign:"left",padding:"10px 14px",marginBottom:8,borderRadius:8,border:"1px solid #E2E8F0",background:"#fff",cursor:"pointer"}}><div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>Detach - keep the deal</div><div style={{fontSize:11,color:"#64748B"}}>Standalone 1-to-1. Keeps stage &amp; fee. Loses block terms.</div></button>
+            <button onClick={()=>doRemove(removeTarget, "drop")} style={{display:"block",width:"100%",textAlign:"left",padding:"10px 14px",marginBottom:14,borderRadius:8,border:"1px solid #FCA5A5",background:"#FEF2F2",cursor:"pointer"}}><div style={{fontSize:13,fontWeight:700,color:"#DC2626"}}>Drop - lose the deal</div><div style={{fontSize:11,color:"#B91C1C"}}>Closed Lost (reversible). Unit freed.</div></button>
+            <button onClick={()=>setRemoveTarget(null)} style={{fontSize:12,color:"#64748B",background:"none",border:"none",cursor:"pointer"}}>Cancel</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
