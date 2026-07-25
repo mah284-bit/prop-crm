@@ -1058,3 +1058,10 @@ not tell what they were, so he ignored them and picked fresh units.
 Not polish - the panel cannot be operated as it stands. Fix after the current walk.
 RELATED (already banked): Cut 7-5 - the unit picker on this same form is a bare dropdown; app
 has a rich unit finder with filters that should be reused here with multi-select.
+
+## HEADER LINE - FINAL SHAPE (founder, Day 74 eve)
+Every number must carry its own LABEL, not just the arithmetic:
+  List AED 5,160,029 . Discount AED 258,001 (5%) . Deal value AED 4,902,028 . D1
+Founder: 'tag it with a proper heading - what is the number, else ambiguous.' Same labelled
+shape on the calculator summary bar so both surfaces read identically and the broker learns
+the vocabulary once. 'Deal value' is the agreed term for list-minus-discount.
