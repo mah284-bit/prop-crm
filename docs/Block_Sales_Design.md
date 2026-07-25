@@ -101,3 +101,14 @@ required before bulk terms flow to children (lock D warns, prices held). DEFERRE
 move clearance to the create door + proof attachment, AFTER the block vertical completes
 (avoid re-testing certified flows mid-stream). Play-mode (allow unapproved modelling) may
 come back later as a deliberate setting - not now.
+
+## CUT 6 - DROP-OUTS / RE-ALLOCATION (founder: any circus can happen, 25 Jul)
+Remove a unit from a block (child deal exists) offers TWO paths, broker chooses + reason logged:
+- DETACH: unit leaves block, child deal SURVIVES standalone 1-to-1 (keeps stage + fee paid,
+  loses block terms, reverts to individual pricing, block_deal_id cleared). He still wants it.
+- DROP: unit leaves + child deal -> Closed Lost (scar, reversible). He walked from this unit.
+Line -> status dropped (event-line law, history intact). Unit: detach keeps deal claim;
+drop frees unit (Booked/Reserved -> Available if no other claim).
+RE-PRICE ON DROP: PROMPT not force - surface (N units remain, bulk priced for N+1 - renegotiate?),
+broker decides; if yes -> existing calculator+approval+lock flow (Dn+1). Never auto-rewrite terms.
+ADD a unit to existing block: pick available -> line proposed -> needs next lock+approval to birth child.
