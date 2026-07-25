@@ -7,6 +7,8 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   const [blockValue, setBlockValue] = useState("");
   const [dLatest, setDLatest] = useState(null);
   const [removeTarget, setRemoveTarget] = useState(null);
+  const [availUnits, setAvailUnits] = useState([]);
+  const [addUnitPick, setAddUnitPick] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { (async () => {
@@ -15,6 +17,13 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
     const last = dists && dists[0];
     setDLatest(last || null);
     const allocOf = (uid) => { const a = (last?.allocations || []).find(x => x.unit_id === uid); return a || null; };
+    const { data: pu } = await supabase.from("project_units").select("id, unit_ref, project_id, status").eq("status", "Available");
+    const { data: pj } = await supabase.from("projects").select("id, developer");
+    const { data: spx } = await supabase.from("unit_sale_pricing").select("unit_id, asking_price");
+    const norm = s => String(s||"").toLowerCase().split(" ")[0];
+    const priceOf = (id) => { const r = (spx||[]).find(s => s.unit_id === id); return Number(r?.asking_price || 0); };
+    const avail = (pu || []).filter(u => { if (!block.developer_name) return true; const pr = (pj||[]).find(x => x.id === u.project_id); return pr && norm(pr.developer) === norm(block.developer_name); }).map(u => ({ id: u.id, unit_ref: u.unit_ref, list_price: priceOf(u.id) }));
+    setAvailUnits(avail);
     setLines((units || []).map(u => { const a = allocOf(u.unit_id); return {
       line_id: u.id, child_opportunity_id: u.child_opportunity_id, unit_id: u.unit_id, unit_ref: u.unit_ref, list_price: Number(u.list_price || 0),
       mode: a ? a.mode : "pct", value: a ? String(a.value) : "",
@@ -51,6 +60,18 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   };
 
   const updLine = (uid, patch) => setLines(ls => ls.map(x => x.unit_id === uid ? { ...x, ...patch } : x));
+
+  const addUnitLine = async () => {
+    const u = availUnits.find(a => a.id === addUnitPick);
+    if (!u) { showToast("Pick a unit to add", "error"); return; }
+    if (lines.some(x => x.unit_id === u.id)) { showToast("Already in the block", "error"); return; }
+    const { data: newLine, error } = await supabase.from("block_deal_units").insert({ company_id: currentUser.company_id, block_deal_id: block.id, unit_id: u.id, unit_ref: u.unit_ref, list_price: u.list_price, status: "proposed" }).select().single();
+    if (error) { showToast(error.message, "error"); return; }
+    setLines(ls => [...ls, { line_id: newLine.id, child_opportunity_id: null, unit_id: u.id, unit_ref: u.unit_ref, list_price: u.list_price, mode: "pct", value: "" }]);
+    setAvailUnits(av => av.filter(a => a.id !== u.id));
+    setAddUnitPick("");
+    showToast(u.unit_ref + " added - set its discount and lock to birth the deal", "success");
+  };
 
   const doRemove = async (x, mode) => {
     // unborn line (no child + no persisted line_id) -> silent local delete
@@ -173,6 +194,14 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
               <td style={{padding:"7px 8px",textAlign:"right"}}><button type="button" onClick={()=>{ if(!x.child_opportunity_id){ doRemove(x); } else { setRemoveTarget(x); } }} style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,border:"1px solid #FCA5A5",background:"#fff",color:"#DC2626",cursor:"pointer"}}>remove</button></td>
             </tr>))}</tbody>
         </table>)}
+        <div style={{display:"flex",gap:8,alignItems:"center",margin:"10px 0 4px 0",padding:"8px 10px",background:"#F8FAFC",border:"1px dashed #CBD5E1",borderRadius:8}}>
+          <span style={{fontSize:11,fontWeight:700,color:"#64748B"}}>+ Add unit:</span>
+          <select value={addUnitPick} onChange={e=>setAddUnitPick(e.target.value)} style={{flex:1,padding:"6px 8px",border:"1px solid #D1D5DB",borderRadius:6,fontSize:12}}>
+            <option value="">Pick an available unit...</option>
+            {availUnits.map(u => <option key={u.id} value={u.id}>{u.unit_ref} - {fmt(u.list_price)}</option>)}
+          </select>
+          <button type="button" onClick={addUnitLine} style={{fontSize:12,fontWeight:700,padding:"6px 14px",borderRadius:7,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",cursor:"pointer"}}>Add</button>
+        </div>
         <div style={{display:"flex",gap:18,alignItems:"center",background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"10px 16px",marginBottom:14,fontSize:12}}>
           <div><span style={{color:"#92400E",fontWeight:600}}>Block list:</span> <strong>{fmt(totList)}</strong></div>
           <div><span style={{color:"#92400E",fontWeight:600}}>Discount:</span> <strong style={{color:"#B45309"}}>{fmt(totDisc)}</strong> ({effPct.toFixed(2)}%)</div>

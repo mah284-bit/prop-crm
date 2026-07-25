@@ -112,3 +112,9 @@ drop frees unit (Booked/Reserved -> Available if no other claim).
 RE-PRICE ON DROP: PROMPT not force - surface (N units remain, bulk priced for N+1 - renegotiate?),
 broker decides; if yes -> existing calculator+approval+lock flow (Dn+1). Never auto-rewrite terms.
 ADD a unit to existing block: pick available -> line proposed -> needs next lock+approval to birth child.
+
+## POLISH (founder UX catch, 25 Jul) - TOP-DOWN SILENT DEAD-END
+Typing a top-down block pct without pressing Suggest pro-rata does nothing visible ->
+broker thinks it broke (Cold-Look Law violation). FIX: when top-down box has a value that
+lines dont yet reflect, nudge - highlight/pulse the Suggest button or show hint (Press
+Suggest to apply X% to all lines). Silent box-vs-lines divergence is the trap. Small cut.
