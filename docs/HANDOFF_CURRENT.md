@@ -1086,3 +1086,18 @@ row render. (2) Amend path STILL never tested live. (3) Debug probe still in Blo
 - STRIP BEFORE MERGE. (4) Text tweak owed: 'Reservation Received X of Y' + 'held until
 collected fully'. (5) Approval ref-vs-note split, adopt-panel overflow, rich unit picker
 (7-5), totals-on-top calculator - all banked earlier. Branch NOT merged to main.
+
+## NEXT SESSION FIRST TASK (founder directive, Day 74 close) - THE MASTER PENDING BOARD
+Before ANY build: consolidate ALL pending work into ONE master board. Sources to sweep, in order:
+1. This HANDOFF end-to-end (54 pending markers: STICKY/DEFERRED/PHASE 2/QUEUE/banked/parked)
+2. docs/Opps_Journey_Redesign_Capture.md - GF items not marked resolved (GF-01b, 02-verify, 10,
+   11, 13 residuals, shortlist-engagement homework)
+3. docs/Deferred_Items_Day39.md, Backlog_Opp_List_Price_Columns.md, App_Normalisation_Priority.md,
+   Dashboard_Redesign_Spec.md, CLEANUP docs, Decision_Log.md - the OLDER strata the Day-74 sweep missed
+4. Phase_2_Backlog_Master_Doc.md (project files) - the original Phase 2 register
+Output: ONE doc (docs/MASTER_PENDING_BOARD.md) grouped A) Block finish+merge B) Pre-prod
+hardening C) Design sessions owed D) Post-tester/Phase 2 - each item with source reference.
+Founder reviews, ranks, THEN build resumes. Draft skeleton from Day-74 close exists in chat
+history; known-missing from founder memory check: Lead->Account model, govt-ID identity,
+Customer/Employee-360 AI, commission payables views, operator dashboard, Executive/BI arc,
+shortlist tracking, dup-leads AI report, CORS hero proxy, Upfront merge, chips wiring.
