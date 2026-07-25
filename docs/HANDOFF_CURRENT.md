@@ -1101,3 +1101,10 @@ Founder reviews, ranks, THEN build resumes. Draft skeleton from Day-74 close exi
 history; known-missing from founder memory check: Lead->Account model, govt-ID identity,
 Customer/Employee-360 AI, commission payables views, operator dashboard, Executive/BI arc,
 shortlist tracking, dup-leads AI report, CORS hero proxy, Upfront merge, chips wiring.
+
+## BOARD RULE (founder, final word Day 74): VERIFY, DON'T JUST COLLECT
+Many banked items may ALREADY BE CLOSED (fixed en route, superseded by redesigns, or dead with
+deleted code). First hour of next session = check each candidate against the REPO and DB (grep
+the code, query the data) before it earns a place on the board. Census protocol applies - the
+Day-72 cleanup audit proved stale lists nearly deleted live code; the same staleness cuts the
+other way here. Only VERIFIED-open items go on MASTER_PENDING_BOARD.md, each with evidence.
