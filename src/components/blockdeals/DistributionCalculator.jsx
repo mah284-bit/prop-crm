@@ -47,6 +47,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   };
   const remainder = blockTarget() - totDisc;
   const hasBlockTarget = Number(blockValue) > 0;
+  const topDownPending = hasBlockTarget && Math.abs(remainder) > 1;
 
   const applyProRata = () => {
     if (!hasBlockTarget) { showToast("Enter the block discount first", "error"); return; }
@@ -169,7 +170,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
               <input type="number" value={blockValue} onChange={e=>setBlockValue(e.target.value)} placeholder="0" style={{width:130,padding:"7px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}/>
             </div>
           </div>
-          <button onClick={applyProRata} style={{padding:"8px 14px",borderRadius:7,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:12,fontWeight:700,cursor:"pointer"}}>Suggest pro-rata {String.fromCharCode(8595)}</button>
+          <button onClick={applyProRata} style={{padding:"8px 14px",borderRadius:7,border:topDownPending?"2px solid #D97706":"1px solid #0F2540",background:topDownPending?"#FFFBEB":"#fff",color:topDownPending?"#B45309":"#0F2540",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:topDownPending?"0 0 0 3px rgba(217,119,6,.15)":"none"}}>Suggest pro-rata {String.fromCharCode(8595)}</button>{topDownPending && <span style={{fontSize:11,fontWeight:600,color:"#B45309",marginLeft:2}}>{String.fromCharCode(8592)} press to apply {blockValue}{blockMode==="pct"?"%":" AED"} to all lines</span>}
           <div style={{flex:1,fontSize:11,color:"#94A3B8",paddingBottom:6}}>...or work bottom-up: edit any line below, block totals recompute live.</div>
         </div>
         {loading ? <div style={{color:"#94A3B8",fontSize:13}}>Loading lines...</div> : (
