@@ -1,3 +1,14 @@
+# ============================================================
+# TOP DOCTRINE - DATA FRESHNESS (never bury this)
+# TRUST THE DB, NEVER PRIOR STATE. Components refetch on open/focus.
+# Stale-render = showing a prior-fetch snapshot until hard refresh.
+# This is the #1 pre-prod hardening item. Echoes Day-22 realtime +
+# localStorage cache-pollution lesson (validate/overwrite from auth
+# record). Audit: Workspace, calculator, opp lists, inventory, dashboards.
+# Fix pattern: refetch-on-mount + on-window-focus (or realtime subs).
+# Bites hardest in the tester week if unaddressed.
+# ============================================================
+
 # PropCRM - Current Handoff (resume point)
 _Last updated: 2 Jul 2026 (Day 45) — Path B COMPLETE_
 
