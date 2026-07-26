@@ -37,6 +37,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
   const collected = childRows.reduce((t, r) => t + Number(r.child?.reservation_amount || 0), 0);
   const dueAmt = Number(block.reservation_expected || 0);
   const outstanding = dueAmt - collected;
+  const collectionClosed = ["satisfied","accepted_short"].includes(block.collection_status);
   const saveExpected = async () => {
     setExpSaving(true);
     const v = expVal === "" ? null : Number(expVal);
@@ -132,7 +133,9 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
               </div>
               {block.status==="negotiating" && <button onClick={()=>onRecordApproval && onRecordApproval(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"1px solid #B45309",background:"#fff",color:"#B45309",cursor:"pointer"}}>Record developer approval</button>}
               {block.status==="approved" && <button onClick={()=>onConfirm && onConfirm(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#16A34A",color:"#fff",cursor:"pointer"}}>Confirm block</button>}
-              {["confirmed","partially_dropped","completed"].includes(block.status) && <button onClick={()=>setShowPay(true)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",cursor:"pointer"}}>Record payment</button>}
+              {["confirmed","partially_dropped","completed"].includes(block.status) && (collectionClosed
+                ? <span style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,background:"#E6F4EE",color:"#166534",border:"1px solid #A7D8C3"}}>Reservation settled {String.fromCodePoint(0x2713)}{block.collection_status==="accepted_short" ? " (shortfall accepted)" : ""}</span>
+                : <button onClick={()=>setShowPay(true)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",cursor:"pointer"}}>Record payment</button>)}
               <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#94A3B8",cursor:"pointer"}}>{String.fromCharCode(215)}</button>
             </div>
           </div>

@@ -10,6 +10,7 @@ export default function BlockPaymentDialog({ block, childRows, currentUser, show
   const [milestone, setMilestone] = useState(isAmend ? payment.milestone : "Reservation");
   const [amount, setAmount] = useState(isAmend ? String(payment.amount || "") : "");
   const [mode, setMode] = useState(isAmend ? (payment.payment_type || "Wire") : "Wire");
+  const [payNotes, setPayNotes] = useState(isAmend ? (payment.notes || "") : "");
   const [reference, setReference] = useState(isAmend ? (payment.reference || "") : "");
   const [rdate, setRdate] = useState(isAmend ? (payment.received_date || new Date().toISOString().slice(0,10)) : new Date().toISOString().slice(0,10));
   const [vreason, setVreason] = useState(isAmend ? (payment.variance_reason || "") : "");
@@ -40,7 +41,7 @@ export default function BlockPaymentDialog({ block, childRows, currentUser, show
   const outstandingAfter = due > 0 ? due - collectedSoFar - landed : 0;
   const canSave = landed > 0 && balanced && (!uneven || vreason.trim().length > 0) && (!isAmend || amendReason.trim().length > 0);
 
-  const bank = { milestone, amount: landed, expected_total: null, variance_reason: uneven ? (vreason.trim() || null) : null, payment_type: mode, reference, received_date: rdate };
+  const bank = { milestone, amount: landed, expected_total: null, variance_reason: uneven ? (vreason.trim() || null) : null, payment_type: mode, reference, received_date: rdate, notes: payNotes.trim() || null };
   const rows = () => members.map((r, i) => ({ opportunity_id: r.child.id, amount: shareOf(r.child.id, i) })).filter(x => x.amount > 0);
 
   const lab = { fontSize:10, fontWeight:700, color:"#475569", textTransform:"uppercase", letterSpacing:".4px", display:"block", marginBottom:3 };
@@ -63,9 +64,9 @@ export default function BlockPaymentDialog({ block, childRows, currentUser, show
 
           {due > 0 ? (
             <div style={{background:outstandingAfter<=0?"#E6F4EE":"#FFFBEB",border:"1px solid "+(outstandingAfter<=0?"#A7D8C3":"#FCD34D"),borderRadius:10,padding:"11px 14px",marginBottom:12,display:"flex",gap:26,alignItems:"center"}}>
-              <div><div style={{fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>Reservation due</div><div style={{fontSize:15,fontWeight:800,color:"#0F2540"}}>{fmt(due)}</div></div>
-              <div><div style={{fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>Received so far</div><div style={{fontSize:15,fontWeight:800,color:"#16A34A"}}>{fmt(collectedSoFar)}</div></div>
-              <div><div style={{fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>{landed>0?"Outstanding after this":"Outstanding"}</div><div style={{fontSize:15,fontWeight:800,color:(landed>0?outstandingAfter:outstandingNow)<=0?"#16A34A":"#B91C1C"}}>{(landed>0?outstandingAfter:outstandingNow)<=0 ? "Nil " + String.fromCodePoint(0x2713) : fmt(landed>0?outstandingAfter:outstandingNow)}</div></div>
+              <div><div style={{fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>Bill (reservation)</div><div style={{fontSize:15,fontWeight:800,color:"#0F2540"}}>{fmt(due)}</div></div>
+              <div><div style={{fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>Collected</div><div style={{fontSize:15,fontWeight:800,color:"#16A34A"}}>{fmt(collectedSoFar)}</div></div>
+              <div><div style={{fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:".4px"}}>{landed>0?"To collect after this":"To collect"}</div><div style={{fontSize:15,fontWeight:800,color:(landed>0?outstandingAfter:outstandingNow)<=0?"#16A34A":"#B91C1C"}}>{(landed>0?outstandingAfter:outstandingNow)<=0 ? "Nil " + String.fromCodePoint(0x2713) : fmt(landed>0?outstandingAfter:outstandingNow)}</div></div>
               {landed>0 && outstandingAfter>0 && <div style={{marginLeft:"auto",fontSize:11,color:"#B45309",maxWidth:230,textAlign:"right",fontWeight:600}}>Part payment - units stay on hold until the reservation is fully collected.</div>}
               {landed>0 && outstandingAfter<=0 && <div style={{marginLeft:"auto",fontSize:11,color:"#14603F",maxWidth:230,textAlign:"right",fontWeight:600}}>This payment completes the reservation - all {n} units will move to Reserved.</div>}
             </div>
@@ -77,7 +78,7 @@ export default function BlockPaymentDialog({ block, childRows, currentUser, show
           <div style={{background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"12px 14px",marginBottom:14}}>
             <div style={{display:"flex",gap:10,flexWrap:"nowrap"}}>
               <div style={{width:125,flexShrink:0}}>
-                <label style={lab}>Towards</label>
+                <label style={lab}>Particulars</label>
                 <select value={milestone} onChange={e=>setMilestone(e.target.value)} style={inp}>
                   {PARTICULARS.map(x => <option key={x} value={x}>{x}</option>)}
                 </select>
@@ -103,6 +104,10 @@ export default function BlockPaymentDialog({ block, childRows, currentUser, show
             </div>
           </div>
 
+          <div style={{marginBottom:12}}>
+            <label style={lab}>Notes</label>
+            <input value={payNotes} onChange={e=>setPayNotes(e.target.value)} placeholder="Any conditions on this payment..." style={inp} />
+          </div>
           {landed > 0 && !uneven && (
             <div style={{background:"#E6F4EE",border:"1px solid #A7D8C3",borderRadius:10,padding:"11px 14px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div>
