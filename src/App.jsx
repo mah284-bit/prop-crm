@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef, Fragment } from "react";
+import { useFreshData } from "./lib/useFreshData.js";
 import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, PROPOSAL_STATUS_META, VALIDITY_PRESETS, OPP_STAGES, OPP_STAGE_META } from './modules/constants.js';
 import { useDraggable } from "./lib/useDraggable";
 import { rulesFromRows } from './lib/contactValidation.js';
@@ -244,7 +245,7 @@ function PermSetSelector({ companyId, value, onChange }) {
   const [sets, setSets] = useState([]);
   const [templates, setTemplates] = useState([]);
 
-  useEffect(()=>{
+  useFreshData(()=>{
     if(!companyId) return;
     Promise.all([
       safe(supabase.from("permission_sets").select("id,name,color").eq("company_id",companyId).order("name")),
@@ -700,7 +701,7 @@ function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activiti
   const [units, setUnits] = useState([]);
   const [reservations, setReservations] = useState([]);
 
-  useEffect(() => {
+  useFreshData(() => {
     supabase.from("opportunities").select("*").eq("status","Active").order("created_at",{ascending:false})
       .then(({data}) => setLocalOpps(data||[]));
     supabase.from("project_units").select("id,unit_ref,status,project_id,bedrooms,sub_type").then(({data})=>setUnits(data||[]));
@@ -2138,7 +2139,7 @@ export default function App(){
     });
     return()=>subscription.unsubscribe();
   },[]);
-  useEffect(()=>{
+  useFreshData(()=>{
     if(!currentUser)return;
     const loadCompanies=async()=>{
       try{

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useFreshData } from "../../lib/useFreshData.js";
 import { supabase } from "../../lib/supabase.js";
 import DistributionCalculator from "./DistributionCalculator.jsx";
 import BlockWorkspace from "./BlockWorkspace.jsx";
@@ -50,7 +51,7 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
     setClaimedUnitIds(hard); setSoftClaims(soft);
     setLoading(false);
   };
-  useEffect(() => { load(); }, []);
+  useFreshData(() => { load(); }, []);
 
   const listPriceOf = (u) => { const sp = pricing.find(s => s.unit_id === u?.id); return Number(sp?.asking_price ?? sp?.list_price ?? sp?.price ?? 0); };
 

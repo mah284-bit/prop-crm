@@ -1,5 +1,6 @@
 import EarningsDetailModal from "./EarningsDetailModal.jsx";
 import React, { useState, useEffect, useMemo } from 'react';
+import { useFreshData } from "../lib/useFreshData.js";
 import { supabase } from "../lib/supabase";
 import { Btn } from "../modules/shared/Btn.jsx";
 import { Spinner } from "../modules/shared/Spinner.jsx";
@@ -28,7 +29,7 @@ export default function Dashboard({leads,opps=[],properties,activities,currentUs
   const isAgentRole = !["super_admin","admin","sales_manager","leasing_manager"].includes(currentUser?.role) && currentUser?.is_super_admin !== true;
   const [myEarnings, setMyEarnings] = useState(null);
   const [showEarnDetail, setShowEarnDetail] = useState(false);
-  useEffect(() => {
+  useFreshData(() => {
     let live = true;
     (async () => {
       if (!isAgentRole || !currentUser?.id) return;
