@@ -13,6 +13,7 @@ const ACTION_TO_CAPABILITY = {
   approve_manager:  "approve_discounts",         // manager tier
   see_all:          "see_branch_data",
   create_lead:      "create_leads",
+  amend_payment:    "amend_payments",
   see_brokerage_commission: "see_brokerage_commission",
   assign_leads: "assign_leads",
   use_proppulse: "use_proppulse",

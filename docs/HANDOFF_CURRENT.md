@@ -935,3 +935,176 @@ NEXT: docs/Block_Sales_Cut7_Design.md then build.
 LESSON BANKED: this design pass lived only in chat and did NOT reach HANDOFF before session
 end -> next session resumed from a stale board (proposed freshness work instead of Cut 7).
 Append design rulings AT RULING TIME, not at session close.
+
+## DAY 74 CUT 7 - BLOCK MONEY ALLOCATION (branch feature/block-cut7, NOT merged)
+CERTIFIED LIVE: 7-1 schema (block_payments + block_payment_allocations, RLS company-scoped,
+tags pre-block-cut7-schema/design; golden-block-vertical-cut6-complete marks pre-Cut-7 state).
+7-2 ceremony screen + 7-3 lock engine PROVEN END-TO-END on Fatima block
+(06c67a5b): AED 50,000 Reservation -> 2 children served 25,000 each -> both Offer Accepted
+-> RESERVED, both units Booked -> Reserved, 1 payment row + 2 allocation rows written.
+One wire, N members, from the block screen. Dropped child correctly untouched.
+DESIGN CORRECTION MID-BUILD (founder caught it, important): first cut distributed the
+EXPECTED amount and absorbed bank-charge variance at block level. FOUNDER OVERRULED with the
+10,000 case - if a buyer sends 10k against a 50k expectation, crediting members 25k each is
+the app FABRICATING money. LAW: the app records ACTUALS; variance is SURFACED for a human to
+approve, never absorbed silently. Rebuilt: allocations reconcile against LANDED, remainder
+measures actual money, reason MANDATORY whenever variance != 0. Mirrors the mainstream
+close-gate materiality grammar.
+7-4 AMEND (Payments tab + hydrate + amend-in-place) BUILT, NOT VERIFIED. amendBlockPayment()
+in lib/lockBlockPayment.js: corrects the record in place, no second row, adjusts member
+reservation by DELTA, logs audit activity per affected deal. Doctrine ruled: a downward amend
+does NOT pull a stage back (money paid is money paid, Part 4); genuine withdrawal = cancellation
+path, not amend.
+## OPEN AT PARK (resume here)
+1. UNVERIFIED: does the Payments tab actually RENDER in BlockWorkspace? Probe shows
+   payment prop = null on every open, which is CORRECT for the header 'Record payment'
+   button (new payment). Never confirmed whether founder was clicking the tab's Open button
+   or the header button. FIRST CHECK: is there a 'Payments (N)' tab beside Deals/Terms
+   history/Activity? No tab = the a2.py insert did not reach the render path. Tab present =
+   nothing broken, click Open on the payment row to test hydration.
+2. DEBUG PROBE LEFT IN: console.log('[BPD] payment prop:'...) at BlockPaymentDialog line 7.
+   STRIP before merge.
+3. BUG (cosmetic): bank-line labels REFERENCE / RECEIVED ON overlap after the two variance
+   fields were added - row exceeds width. Needs widths rebalanced.
+4. GAP (real, founder-flagged): 'Expected' has NO source. 1-to-1 gets reservation amount from
+   company/developer setup; block ceremony falls back to broker-typed. Nothing in the app
+   stores a per-developer reservation fee (money-tail sec 5 specifies it, never built; only
+   MAX_RESERVATION_FEE=5000 in lib/refData.js, which is a guard not a default). FIND where
+   1-to-1 sources it and wire the ceremony to the same place.
+5. Mode/Reference persistence to block_payments never confirmed with a deliberate non-default
+   entry (every successful lock ran with Wire + blank ref).
+DATA STATE: Fatima block healthy - 2 children Reserved at 25,000 each, 1 payment row, 2
+allocation rows, third unit correctly dropped/Closed Lost. Good fixture for testing amend.
+Do NOT delete it.
+
+## STANDING LAW (Day 74) - COLD-LOOK, ARCHITECT SIDE
+The architect must read every screen cut as a first-time broker holding a real cheque:
+what does this TELL me, what am I left GUESSING? Judge the screen BEFORE proving the engine
+- a working engine behind an unreadable screen is the wrong order, and the broker never
+sees the engine.
+Day-74 evidence: founder caught FOUR cold-look failures the architect shipped without
+noticing - (1) green 'AED 0' reading as satisfied when the truth was unknown, (2) Suggest
+split silently doing nothing when all members were satisfied, (3) REFERENCE/RECEIVED ON
+labels overlapping after a field was added, (4) the payment dialog giving a broker no way
+to tell a NEW payment from an AMEND, and no source for 'already received'.
+The founder's earlier principle generalizes: 'every button has meaning, or it is demeaning'
+-> every FIELD and every NUMBER must say what it is and where it came from.
+
+## DAY 74 CLOSE - CUT 7 STATE (branch feature/block-cut7, NOT merged)
+PROVEN ON CLEAN DATA (Nshama walk, Chen Wei New Block 2, NTS-07-03/08-04/09-05):
+create -> calculator D1 (5pct, 274,099 off) -> developer approval -> confirm (3 children born
+Offer Accepted, units Booked) -> RECORD PAYMENT 75,000 -> equal split 25,000 x 3 -> all three
+children Reserved, all three units Reserved, Cheque + reference 789754 persisted on the bank
+line AND on every child. One payment row. The distribution engine is certified.
+FORM REBUILT MID-SESSION per founder's flow: money in -> SPLIT EQUALLY across live members
+(not by expectation, not by outstanding). Partial payments are normal tranches. Columns are
+Unit / Deal stage / Received before / This payment / Total after. 'Split differently' exists
+behind a mandatory reason (Tier-2 grammar) - the broker has no silent lever to favour one unit.
+FOUNDER RULINGS BANKED THIS SESSION:
+- The app records ACTUALS. Variance is surfaced for a human to approve, never absorbed. (The
+  10,000 case: crediting members their full agreed share when less money arrived = the app
+  fabricating money.)
+- Nothing auto-cancels. The clock NAGS - broker reminders escalating to sales manager; a human
+  decides cancellation + damages claim. Correct the Cut 6a note accordingly.
+- Recording a payment = broker, no gate. AMENDING a recorded payment = manager (rewriting
+  history is where error and manipulation live). Capability amend_payments SEEDED across all 7
+  companies (admin/group_gm/sales_manager/leasing_manager true; agents/viewer false), mapped in
+  permissions.js as amend_payment, Amend button gated - agents see 'manager only'.
+COST OF THE REBUILD (deliberate, acknowledged): the Expected / Actually-landed pair was removed,
+so the variance path went with it. There is currently NO way to record 'due 75,000, landed
+74,500, reason'. This is NOT to be fixed by restoring those fields - see Cut 7-6.
+## CUT 7-6 (next, the real fix) - THE SCREEN MUST STATE WHAT IS DUE
+Founder cold-look: a broker opens the payment screen holding a cheque and the form asks him for
+a number he has to already know. The system knows the units, the deal values and the developer -
+it should SAY 'Reservation due: AED 25,000 x 3 = AED 75,000. Received so far: X.' Broker then
+enters ONLY what actually arrived; shortfall and variance compute themselves; approval rides the
+difference. No typing of totals, no ambiguity.
+ARCHITECT RULING on the source (founder deferred it - fresh eyes may overrule):
+FIXED PER DEVELOPER, with an override at block creation. Basis: money-tail sec 5 already
+specifies developer/MA level, 'pickable at reserve-time, broker may adjust'; matches UAE
+practice; and the number is then known before any block exists.
+Build shape: default_reservation_fee on pp_master_agreements -> block creation reads and allows
+adjust -> payment screen states due vs received -> variance falls out of the difference.
+ALSO: the particular should be STAGE-DRIVEN, not a broker dropdown. At this rung the only thing
+being collected is the reservation fee. Retitle 'Record reservation fees'. Later money stages
+get their own screens when those stages exist.
+## STILL UNVERIFIED AT CLOSE
+- AMEND path never tested live (Payments tab -> Amend -> correct with reason -> one row badged
+  AMENDED, children adjusted by delta, stages NOT pulled back). Engine + gate are built.
+- Partial-payment tranche stacking never tested (would have shown 'Received before 25,000').
+- DEBUG PROBE still in BlockPaymentDialog: console.log('[BPD] payment prop:'...). STRIP BEFORE MERGE.
+
+## CUT 7-6 - FOUNDER'S OWN WORDS (the shape, Day 74 close)
+'We know we have to collect 75K - keep showing. Receiving can be 1 plus, which is what we
+record, and ensure all collected and move on.'
+= A RUNNING BALANCE, not a variance calculation. The DUE figure is stated and stays visible;
+tranches accumulate against it (1 or many); the block stays open until collected in full, then
+moves on. The clock chases whatever remains outstanding. Simpler than the expected/landed pair
+that was removed - and it makes partial payments first-class rather than an exception.
+
+## BUG (Day 74 eve) - ADOPT-FROM-EXISTING-DEALS PANEL IS UNUSABLE (create block door)
+Founder screenshot: the yellow 'Adopt from existing deals' panel on the New Block Deal form
+offers checkboxes for the buyer's active deals but shows NOTHING identifying them - just a
+checkbox and a truncated opp title ('Inquir...') running off the right edge of the panel.
+TWO FAULTS:
+1. CONTENT: rows render the opportunity TITLE only. Must show UNIT REF + STAGE + VALUE - the
+   three things that identify a deal. A broker cannot decide what to adopt from a title.
+2. LAYOUT: the row overflows horizontally past the panel edge (something in the row has no
+   width constraint / no truncation). Same class as the Day-52 Users-screen wrap saga - force
+   explicit widths + flexShrink:0 rather than hunting CSS.
+IMPACT: Cut 4b (adopt-into-block) is effectively inoperable through this door. Founder hit it
+live - Khalid had 2 existing 1-to-1 opps that were legitimate grouping candidates and he could
+not tell what they were, so he ignored them and picked fresh units.
+Not polish - the panel cannot be operated as it stands. Fix after the current walk.
+RELATED (already banked): Cut 7-5 - the unit picker on this same form is a bare dropdown; app
+has a rich unit finder with filters that should be reused here with multi-select.
+
+## HEADER LINE - FINAL SHAPE (founder, Day 74 eve)
+Every number must carry its own LABEL, not just the arithmetic:
+  List AED 5,160,029 . Discount AED 258,001 (5%) . Deal value AED 4,902,028 . D1
+Founder: 'tag it with a proper heading - what is the number, else ambiguous.' Same labelled
+shape on the calculator summary bar so both surfaces read identically and the broker learns
+the vocabulary once. 'Deal value' is the agreed term for list-minus-discount.
+
+## DAY 74 GRAND CLOSE - CUT 7-6 COLLECTION STATE CERTIFIED END-TO-END (branch feature/block-cut7)
+Khalid EBT walk, full arc live-proven: Expected 75,000 set (editable on Workspace header) ->
+tranche 60,000 (Cheque EBT-100) HELD at Offer Accepted -> tranche 14,850 (wire) HELD ->
+150 shortfall -> Accept shortfall & close (manager-gated, reason mandatory) -> all 3 deals
+Reserved, all 3 units Reserved, 24,950 each (ACTUALS - shortfall never recorded as money),
+block collection_status=accepted_short w/ reason+who+when. Payments (2), both persisted w/
+mode+ref. Header rebuilt: List/Discount(%)/Deal value/D1 all LABELLED + collection line
+'Reservation X of Y' + pulsing outstanding chip. RULES PROVEN: reservation = the test of the
+buyer; Reserved EARNED at full collection (the payment that closes the balance earns it);
+tranches first-class; actuals only; humans decide differences.
+SHIPPED TODAY (7-6a/b/c): reservation_expected + collection_status/note/closed_by/at on
+block_deals; Expected field on create form + editable on Workspace; due/received/outstanding
+strip on payment dialog; part-payment vs completes-reservation messaging; stage gate in
+lockBlockPayment (completesReservation); acceptShortCollection engine + dialog.
+OPEN AT CLOSE: (1) Payments-tab shows 'manager only' for SUPER_ADMIN while the Accept button
+gates correctly - same canDo, different result; suspect currentUser prop vs closure in the tab
+row render. (2) Amend path STILL never tested live. (3) Debug probe still in BlockPaymentDialog
+- STRIP BEFORE MERGE. (4) Text tweak owed: 'Reservation Received X of Y' + 'held until
+collected fully'. (5) Approval ref-vs-note split, adopt-panel overflow, rich unit picker
+(7-5), totals-on-top calculator - all banked earlier. Branch NOT merged to main.
+
+## NEXT SESSION FIRST TASK (founder directive, Day 74 close) - THE MASTER PENDING BOARD
+Before ANY build: consolidate ALL pending work into ONE master board. Sources to sweep, in order:
+1. This HANDOFF end-to-end (54 pending markers: STICKY/DEFERRED/PHASE 2/QUEUE/banked/parked)
+2. docs/Opps_Journey_Redesign_Capture.md - GF items not marked resolved (GF-01b, 02-verify, 10,
+   11, 13 residuals, shortlist-engagement homework)
+3. docs/Deferred_Items_Day39.md, Backlog_Opp_List_Price_Columns.md, App_Normalisation_Priority.md,
+   Dashboard_Redesign_Spec.md, CLEANUP docs, Decision_Log.md - the OLDER strata the Day-74 sweep missed
+4. Phase_2_Backlog_Master_Doc.md (project files) - the original Phase 2 register
+Output: ONE doc (docs/MASTER_PENDING_BOARD.md) grouped A) Block finish+merge B) Pre-prod
+hardening C) Design sessions owed D) Post-tester/Phase 2 - each item with source reference.
+Founder reviews, ranks, THEN build resumes. Draft skeleton from Day-74 close exists in chat
+history; known-missing from founder memory check: Lead->Account model, govt-ID identity,
+Customer/Employee-360 AI, commission payables views, operator dashboard, Executive/BI arc,
+shortlist tracking, dup-leads AI report, CORS hero proxy, Upfront merge, chips wiring.
+
+## BOARD RULE (founder, final word Day 74): VERIFY, DON'T JUST COLLECT
+Many banked items may ALREADY BE CLOSED (fixed en route, superseded by redesigns, or dead with
+deleted code). First hour of next session = check each candidate against the REPO and DB (grep
+the code, query the data) before it earns a place on the board. Census protocol applies - the
+Day-72 cleanup audit proved stale lists nearly deleted live code; the same staleness cuts the
+other way here. Only VERIFIED-open items go on MASTER_PENDING_BOARD.md, each with evidence.
