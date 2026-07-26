@@ -104,3 +104,16 @@ A13. BLOCK PAYMENT LIFECYCLE (banked, look at END): block payments are recorded 
      Bounced/Replaced, due date) and a block cheque recorded pre-clearance has no way to
      bounce today. Founder: "generally after accounts have given, they move on - but good
      point, mark it." Not a merge blocker.
+
+## B1 STATUS (Day 75 close)
+DONE: useFreshData hook (focus/visibility refetch, 10s throttle, hold guard, silentReload
+variant). Adopted: BlockWorkspace (w/ dialog hold), BlockDealsPage, Dashboard earnings,
+App.jsx L703 (opps/units/reservations), L247 (permission sets), L2141 (companies). Founder
+walked lead/opp forms - waves on every reopen, no crashes.
+OPEN - B1a THE MASTER LOAD (App.jsx L2160-2247): conversion CRASHED the app - the effect
+ENTANGLES the main data load with a Supabase realtime subscription (postgres_changes, line
+~2243); re-running it re-subscribes an already-subscribed channel = hard error. REVERTED
+same hour. FIX: split into two effects - load half (convert w/ silentReload, no dataLoading
+flash on focus) + subscribe half (mount-once). READ ALL 87 LINES FIRST.
+LESSON (banked): never convert an effect read only at its top and bottom - the crash lived
+in the middle. Anchor the WHOLE body or split before converting.
