@@ -137,3 +137,18 @@ anything.
 7-6b due/received/outstanding on the payment screen and the workspace header
 7-6c accept-and-close decision, manager-gated, reason logged, tolerance-aware
 Then Cut 6a booking clock reads outstanding - it finally has something real to chase.
+
+## POST-RESERVATION BLOCK MONEY - FOUNDER RULING (Day 75): REUSE THE LEDGER, DON'T INVENT
+Founder, reviewing the 1-to-1 SPA ledger (Particulars/Expected/Received/Mode/Date/Variance/
+waive + Bill/Collected/ToCollect headline + quick-fill): "use screens 4 & 5 for the rest of
+the block payments to receive... it gives consistency, people already know how to do it,
+and better design."
+RULING: the block's post-reservation collections (instalments, DLD, SPA fees across N
+children) are the LEDGER PATTERN AT BLOCK LEVEL - same columns, same words, each particular
+expandable to per-child rows, writing into each child's pre-SPA state so child SPA dialogs
+and Close-Won gates see the same truth. Zero new vocabulary.
+The reservation intake ceremony (certified Day 74-75) stays as-is - it is a DISTRIBUTION
+ceremony (one wire -> N children -> stage gate), genuinely block-specific.
+SCOPE: this is the design of record for block money phase 2 (post-6a), NOT today's build.
+Today's A1 = small alignment only: Towards->Particulars, strip labels ->
+Bill (reservation)/Collected/To Collect, add Notes field.
