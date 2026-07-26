@@ -104,10 +104,10 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
               {dueAmt > 0 && (
                 <div style={{fontSize:12,marginTop:5,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
                   <span style={{fontWeight:700,color:outstanding>0.5?"#B91C1C":"#166534"}}>
-                    Reservation {fmt(collected)} of {fmt(dueAmt)}
+                    Reservation Received {fmt(collected)} of {fmt(dueAmt)}
                   </span>
                   {outstanding > 0.5
-                    ? <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#FEF2F2",color:"#B91C1C",border:"1px solid #FCA5A5",animation:"blkPulse 2.4s ease-in-out infinite"}}>Outstanding {fmt(outstanding)} {String.fromCharCode(183)} RESERVATION of units held until collected</span>
+                    ? <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#FEF2F2",color:"#B91C1C",border:"1px solid #FCA5A5",animation:"blkPulse 2.4s ease-in-out infinite"}}>Outstanding {fmt(outstanding)} {String.fromCharCode(183)} RESERVATION of units held until collected fully</span>
                     : <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#E6F4EE",color:"#166534",border:"1px solid #A7D8C3"}}>Collected in full {String.fromCodePoint(0x2713)}</span>}
                 </div>
               )}
@@ -152,7 +152,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>Deals in this block ({childRows.length})</div>
                 {["draft","negotiating","approved","confirmed","partially_dropped"].includes(block.status) &&
-                  <button onClick={()=>{ onClose(); onOpenCalculator(block); }} style={{padding:"7px 14px",borderRadius:8,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:12,fontWeight:600,cursor:"pointer"}}>{String.fromCodePoint(0x1F9EE)} Open Calculator</button>}
+                  <button onClick={()=>{ if (collectionClosed) { showToast("Reservation settled and locked. Price changes after money is collected need a manager ceremony (arrives with the ledger phase).", "error"); return; } onClose(); onOpenCalculator(block); }} style={{padding:"7px 14px",borderRadius:8,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:12,fontWeight:600,cursor:"pointer"}}>{String.fromCodePoint(0x1F9EE)} Open Calculator</button>}
               </div>
               {(() => { const lsc = { proposed:"#94A3B8", confirmed:"#16A34A", dropped:"#DC2626", re_allocated:"#7C3AED" }; const stc = (s) => s==="Closed Won"?"#0F2540":s==="Closed Lost"?"#DC2626":s==="Reserved"||s==="SPA Requirements"||s==="SPA Signed"?"#16A34A":"#D97706"; return (
               <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
@@ -195,7 +195,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                         <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:"#166534"}}>{fmt(pm.amount)}</td>
                         <td style={{padding:"8px 10px",textAlign:"right",fontWeight:700,color:va===0?"#94A3B8":"#B45309"}}>{va===0 ? "-" : fmt(va)}</td>
                         <td style={{padding:"8px 10px",textAlign:"right",color:"#64748B"}}>{n}</td>
-                        <td style={{padding:"8px 10px",textAlign:"right"}}>{canDo(currentUser, "amend_payment") ? <button onClick={()=>{setEditPay(pm);setShowPay(true);}} style={{padding:"5px 11px",borderRadius:7,border:"1px solid #B45309",background:"#fff",color:"#B45309",fontSize:11,fontWeight:600,cursor:"pointer"}}>Amend</button> : <span style={{fontSize:10,color:"#94A3B8"}}>manager only</span>}</td>
+                        <td style={{padding:"8px 10px",textAlign:"right"}}>{collectionClosed && pm.milestone==="Reservation" ? <span title={"accepted by manager"} style={{fontSize:10,fontWeight:700,color:"#166534"}}>settled {String.fromCodePoint(0x2713)}</span> : (canDo(currentUser, "amend_payment") ? <button onClick={()=>{setEditPay(pm);setShowPay(true);}} style={{padding:"5px 11px",borderRadius:7,border:"1px solid #B45309",background:"#fff",color:"#B45309",fontSize:11,fontWeight:600,cursor:"pointer"}}>Amend</button> : <span style={{fontSize:10,color:"#94A3B8"}}>manager only</span>)}</td>
                       </tr>); })}</tbody>
                   </table>}
                   {payments.some(p=>p.notes) && <div style={{fontSize:11,color:"#94A3B8",marginTop:9}}>Amendment reasons are stored on each payment and logged on every affected deal.</div>}

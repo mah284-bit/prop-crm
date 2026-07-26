@@ -49,3 +49,12 @@ BL-1 read child pre-SPA states + compute per-child expected per particular (plan
 BL-2 the ledger screen (read-only first: bill/collected/to-collect + expandable rows)
 BL-3 record-money flow (particular -> split by outstanding -> lock -> child writes)
 BL-4 waive + amend + variance at block level
+
+## A14 - CALCULATOR LOCK AFTER SETTLEMENT (founder catch, Day 75)
+Once the reservation collection is SETTLED, the distribution calculator is LOCKED on that
+block. Repricing children whose money was collected against D_locked prices silently
+diverges bills, DLD (4 pct of price), and the settled record. INTERIM (shipped Day 75):
+Open Calculator blocked with an explanatory toast when collection is settled/accepted_short.
+FULL: repricing after money = manager-gated ceremony with mandatory reason + audit, arrives
+with the ledger phase. Legitimate late-terms cases (developer-approved further discount,
+drop-out re-allocation) go through that ceremony, never the open door.
