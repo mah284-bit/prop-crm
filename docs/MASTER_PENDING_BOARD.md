@@ -96,3 +96,11 @@ X4. Stage-5-v4 core pain (SPA re-entry) - KILLED Day 66 (V_latest prefill verifi
     Display card folded into C2.
 X5. GF items resolved through Day 67 per capture doc; GF-01b/02-verify/10/11 residuals live
     inside B2/C2/C3.
+
+## ADDED DAY 75 (A1 convergence read, founder-ratified)
+A13. BLOCK PAYMENT LIFECYCLE (banked, look at END): block payments are recorded as FACTS
+     (money arrived, split it) which matches practice - accounts dept clears funds BEFORE the
+     broker records. But 1-to-1 sales_payments carry a LIFECYCLE (status Pending/Received/
+     Bounced/Replaced, due date) and a block cheque recorded pre-clearance has no way to
+     bounce today. Founder: "generally after accounts have given, they move on - but good
+     point, mark it." Not a merge blocker.
