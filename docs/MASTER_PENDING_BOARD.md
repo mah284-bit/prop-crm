@@ -110,6 +110,11 @@ C15. TITLE HOLDERS - "in whose name?" (`Title_Holders_Design_Capture.md`, Day 76
      to the OPPORTUNITY (same buyer holds different deals in different names). Founder HARD RULE:
      every name on the SPA must have documents, no override - the govt line. Pairs with C8.
      ⚠️ CANDIDATE FOR V1 - a broker cannot record a real joint purchase today.
+C15. TITLE HOLDERS - "in whose name?" (`Title_Holders_Design_Capture.md`, Day 76). The app
+     cannot record a JOINT purchase - one lead = one buyer is assumed everywhere. Holders belong
+     to the OPPORTUNITY (same buyer holds different deals in different names). Founder HARD RULE:
+     every name on the SPA must have documents, no override - the govt line. Pairs with C8.
+     ⚠️ CANDIDATE FOR V1 - a broker cannot record a real joint purchase today.
 
 ## D - POST-TESTER / PHASE 2
 D1. DEVELOPER PERSONA module (founder signal loud): developer-as-user, approval flows in-app.
