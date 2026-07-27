@@ -1114,3 +1114,26 @@ deleted code). First hour of next session = check each candidate against the REP
 the code, query the data) before it earns a place on the board. Census protocol applies - the
 Day-72 cleanup audit proved stale lists nearly deleted live code; the same staleness cuts the
 other way here. Only VERIFIED-open items go on MASTER_PENDING_BOARD.md, each with evidence.
+
+## ── DAY 76 (27 Jul) — B1 MERGED + THE DOCUMENTATION RESET ──
+BUILD: B1a master-load split shipped (data load via useFreshData w/ silentReload; realtime
+subscription its own effect). Verified live: silent refresh (screen still, network moving),
+cross-tab realtime alive, clean console across 15+ screens, lead edit round-tripped intact.
+Merged to main, tag golden-data-freshness. B1 CLOSED - the pinned #1 pre-prod item.
+FOUNDER FINDINGS: (1) Edit-lead form showed sparse data -> NOT a bug, Khalid's row genuinely
+had nulls; (2) every lead has buyer_type NULL because all were seeded from the backend, so the
+form's required guard was never invoked - board item B8, double-protection ruling.
+THE RESET (the day's real work): founder named the continuity failure - "documents are updated
+superficially; only my memory is tested." Proven live: the architect began writing a go-live
+section while docs/Go_Live_Readiness_Register.md already held 286 verified lines on it, because
+the HANDOFF carried no pointer. WHAT WE DID: ratified six documentation principles
+(DOCUMENTATION_PRINCIPLES.md) · archived 93 historical docs (137 -> 44 living) · rebuilt
+PropCRM_Master_Context_and_Takeover.md as THE HEAD with product frame + state measured from the
+repo + the DOCUMENT INDEX that Register item #23 asked for on 24 Jun · wired handoff and board
+to the head so no document is an orphan · wrote FOUNDER_SESSION_PROCEDURE.md · rewrote the board
+whole. TWO COMPETING HEADS COLLAPSED INTO ONE.
+DOCTRINE RE-ESTABLISHED: founder corrected the architect's plan to run E2E next - NO E2E until
+development STOPS (three rounds: dev-close, testers, pre-go-live). Board sequencing fixed.
+V1 SCOPE DEFINED (five items): C1 block ledger phase · C13 block polish + booking clock ·
+C4 money smalls · B5 KYC bucket private · B8 buyer_type guard. Then development stops.
+NEXT SESSION: read the head, then the board. V1-1 is the block ledger phase.
