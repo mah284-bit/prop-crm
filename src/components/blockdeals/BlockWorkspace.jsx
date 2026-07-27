@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useFreshData } from "../../lib/useFreshData.js";
 import { supabase } from "../../lib/supabase.js";
 import BlockPaymentDialog from "./BlockPaymentDialog.jsx";
 import { lockBlockPayment, amendBlockPayment, acceptShortCollection } from "../../lib/lockBlockPayment.js";
@@ -51,7 +52,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
     onReload && onReload();
   };
 
-  useEffect(() => { (async () => {
+  useFreshData(() => { (async () => {
     const { data } = await supabase.from("block_distributions").select("*").eq("block_deal_id", block.id).order("version", { ascending: false }).limit(1);
     setDLatest(data && data[0] ? data[0] : null);
     const { data: lines } = await supabase.from("block_deal_units").select("*").eq("block_deal_id", block.id).order("created_at");
@@ -70,7 +71,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
     const payIds = (pays || []).map(x => x.id);
     if (payIds.length) { const { data: pa } = await supabase.from("block_payment_allocations").select("*").in("block_payment_id", payIds); setPayAllocs(pa || []); } else { setPayAllocs([]); }
     setLoading(false);
-  })(); }, [block.id, payTick]);
+  })(); }, [block.id, payTick], { hold: showPay || showAccept || locking });
 
   const buyer = leads.find(l => l.id === block.lead_id);
   const fmt = (n) => "AED " + Math.round(Number(n || 0)).toLocaleString();

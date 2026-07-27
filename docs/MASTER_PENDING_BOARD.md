@@ -104,3 +104,34 @@ A13. BLOCK PAYMENT LIFECYCLE (banked, look at END): block payments are recorded 
      Bounced/Replaced, due date) and a block cheque recorded pre-clearance has no way to
      bounce today. Founder: "generally after accounts have given, they move on - but good
      point, mark it." Not a merge blocker.
+
+## B1 STATUS (Day 75 close)
+DONE: useFreshData hook (focus/visibility refetch, 10s throttle, hold guard, silentReload
+variant). Adopted: BlockWorkspace (w/ dialog hold), BlockDealsPage, Dashboard earnings,
+App.jsx L703 (opps/units/reservations), L247 (permission sets), L2141 (companies). Founder
+walked lead/opp forms - waves on every reopen, no crashes.
+OPEN - B1a THE MASTER LOAD (App.jsx L2160-2247): conversion CRASHED the app - the effect
+ENTANGLES the main data load with a Supabase realtime subscription (postgres_changes, line
+~2243); re-running it re-subscribes an already-subscribed channel = hard error. REVERTED
+same hour. FIX: split into two effects - load half (convert w/ silentReload, no dataLoading
+flash on focus) + subscribe half (mount-once). READ ALL 87 LINES FIRST.
+LESSON (banked): never convert an effect read only at its top and bottom - the crash lived
+in the middle. Anchor the WHOLE body or split before converting.
+
+## ADDED DAY 76 - BUYER_TYPE GAP (founder catch)
+FACT: every lead in the system has buyer_type NULL. Cause: all were seeded/inserted from the
+backend (via_app=0, seven share the Day-67 seed timestamp) - the form's required-field
+validation was never invoked. NOT a form bug; untested rather than broken.
+GAPS:
+ (a) leads.buyer_type is NULLABLE in DB - "required" exists only in the form. Founder ruling:
+     double protection needed (form validates + DB constrains). Add NOT NULL after backfill,
+     or a CHECK, decided at clean-data round (B3).
+ (b) VERIFY the form actually enforces it: + Add Lead with name only -> must refuse to save.
+     Untested to date.
+ (c) CONSEQUENCE: buyer-type-driven KYC document matrices have never been exercised - the
+     plumbing exists (reference_buyer_type_rules, form reads it) but matrices are unpopulated
+     and no lead carries a type to drive them. Belongs to KYC v2 + the E2E round.
+ (d) LATENT: LeadCreationFormV2 declares buyer_intent TWICE in state init (L215 and L223) -
+     last wins, silently overriding the default. One-line fix.
+LESSON: backend seeding bypasses every app-level guard. Seeds must go through the same
+validation the broker faces, or the guards stay unproven until testers find them.

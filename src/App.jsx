@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef, Fragment } from "react";
+import { useFreshData } from "./lib/useFreshData.js";
 import { STAGE_CAPTURE_CONFIGS, PAYMENT_PLAN_PRESETS, DLD_OPTIONS, SERVICE_CHARGE_PRESETS, PROPOSAL_STATUS_META, VALIDITY_PRESETS, OPP_STAGES, OPP_STAGE_META } from './modules/constants.js';
 import { useDraggable } from "./lib/useDraggable";
 import { rulesFromRows } from './lib/contactValidation.js';
@@ -244,7 +245,7 @@ function PermSetSelector({ companyId, value, onChange }) {
   const [sets, setSets] = useState([]);
   const [templates, setTemplates] = useState([]);
 
-  useEffect(()=>{
+  useFreshData(()=>{
     if(!companyId) return;
     Promise.all([
       safe(supabase.from("permission_sets").select("id,name,color").eq("company_id",companyId).order("name")),
@@ -700,7 +701,7 @@ function Pipeline({leads, opps, setOpps, users, currentUser, showToast, activiti
   const [units, setUnits] = useState([]);
   const [reservations, setReservations] = useState([]);
 
-  useEffect(() => {
+  useFreshData(() => {
     supabase.from("opportunities").select("*").eq("status","Active").order("created_at",{ascending:false})
       .then(({data}) => setLocalOpps(data||[]));
     supabase.from("project_units").select("id,unit_ref,status,project_id,bedrooms,sub_type").then(({data})=>setUnits(data||[]));
@@ -2138,7 +2139,7 @@ export default function App(){
     });
     return()=>subscription.unsubscribe();
   },[]);
-  useEffect(()=>{
+  useFreshData(()=>{
     if(!currentUser)return;
     const loadCompanies=async()=>{
       try{
@@ -2157,13 +2158,13 @@ export default function App(){
   },[currentUser]);
 
 
-  useEffect(()=>{
+  useFreshData((silent)=>{
     if(!currentUser)return;
     let live = true;
     const safe=async(q)=>{ try{const r=await q;return{data:(r.data||[])};}catch(e){console.warn("Query error:",e);return{data:[]};} };
     const cid = activeCompanyId || currentUser.company_id || null;
     const load=async()=>{
-      setDataLoading(true);
+      if(!silent) setDataLoading(true);
       try{
         const[l,pr,a,u,d]=await Promise.all([
           safe(cid
@@ -2238,12 +2239,18 @@ export default function App(){
       if(live) setDataLoading(false);
     };
     load();
+    return()=>{ live=false; };
+  },[currentUser, activeCompanyId], { silentReload: true });
+
+  useEffect(()=>{
+    if(!currentUser)return;
+    const cid = activeCompanyId || currentUser.company_id || null;
     const ch=supabase.channel("v3-changes-"+cid)
       .on("postgres_changes",{event:"*",schema:"public",table:"leads"},p=>{if(p.eventType==="INSERT")setLeads(x=>x.some(r=>r.id===p.new.id)?x:[p.new,...x]);if(p.eventType==="UPDATE")setLeads(x=>x.map(l=>l.id===p.new.id?p.new:l));if(p.eventType==="DELETE")setLeads(x=>x.filter(l=>l.id!==p.old.id));})
       .on("postgres_changes",{event:"*",schema:"public",table:"activities"},p=>{if(p.eventType==="INSERT")setActivities(x=>x.some(r=>r.id===p.new.id)?x:[p.new,...x]);if(p.eventType==="UPDATE")setActivities(x=>x.map(a=>a.id===p.new.id?p.new:a));if(p.eventType==="DELETE")setActivities(x=>x.filter(a=>a.id!==p.old.id));})
       .on("postgres_changes",{event:"*",schema:"public",table:"opportunities"},p=>{if(p.eventType==="INSERT")setOpps(x=>x.some(r=>r.id===p.new.id)?x:[p.new,...x]);if(p.eventType==="UPDATE")setOpps(x=>x.map(o=>o.id===p.new.id?p.new:o));if(p.eventType==="DELETE")setOpps(x=>x.filter(o=>o.id!==p.old.id));})
       .subscribe();
-    return()=>{ live=false; supabase.removeChannel(ch); };
+    return()=>{ supabase.removeChannel(ch); };
   },[currentUser, activeCompanyId]);
 
   const handleLogin=user=>{
