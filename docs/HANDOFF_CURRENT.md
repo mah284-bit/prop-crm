@@ -1137,3 +1137,23 @@ development STOPS (three rounds: dev-close, testers, pre-go-live). Board sequenc
 V1 SCOPE DEFINED (five items): C1 block ledger phase · C13 block polish + booking clock ·
 C4 money smalls · B5 KYC bucket private · B8 buyer_type guard. Then development stops.
 NEXT SESSION: read the head, then the board. V1-1 is the block ledger phase.
+
+## ── DAY 76 (27 Jul) — B1 MERGED + THE DOCUMENTATION RESET ──
+BUILD: B1a master-load split shipped and merged (tag golden-data-freshness). Verified live:
+silent refresh, cross-tab realtime alive, clean console, edit round-trip intact. B1 CLOSED.
+THE RESET: founder named the continuity failure - documents updated superficially, only his
+memory tested. Proven live when the architect began writing a go-live section that already
+existed in Go_Live_Readiness_Register.md. DONE: six documentation principles ratified · 93 docs
+archived (137 -> 44 living) · Master_Context rebuilt as THE HEAD with product frame + state
+measured from repo + the DOCUMENT INDEX (Register item #23, asked 24 Jun) · handoff and board
+wired to the head · FOUNDER_SESSION_PROCEDURE.md written · board rewritten whole.
+DOCTRINE: founder corrected the plan to run E2E next - NO E2E until development STOPS (three
+rounds: dev-close, testers, pre-go-live). Board sequencing fixed.
+V1 SCOPE DEFINED: C1 block ledger · C13 block polish + booking clock · C4 money smalls ·
+B5 KYC bucket private · B8 buyer_type guard. Then development stops.
+FOUND: buyer_type form guard WORKS (tested live). Doc-matrix seed has errors (local_national
+requires both emirates_id and national_id - same doc; corporate requires NO documents and asks
+a company for nationality + Arabic name). NEW C15 TITLE HOLDERS: the app cannot record a joint
+purchase - "in whose name?" is never asked. Holders belong to the OPPORTUNITY. Founder hard
+rule: every name on the SPA has documents, no override. OPEN: is C15 in v1?
+NEXT SESSION: read the head, then the board. V1-1 is the block ledger phase.
