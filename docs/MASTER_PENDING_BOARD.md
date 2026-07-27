@@ -1,142 +1,115 @@
 > **THIS IS THE WORK LIST - what is outstanding, verified.**
 > Head: `docs/PropCRM_Master_Context_and_Takeover.md` · Log: `docs/HANDOFF_CURRENT.md`
 > Go-live readiness lives in `docs/Go_Live_Readiness_Register.md` - NOT duplicated here.
-> Rule: nothing enters this board unverified against repo/DB.
+> Rule: nothing enters this board unverified against repo/DB. REWRITTEN, not appended.
 
 # MASTER PENDING BOARD
-Built Day 75 (26 Jul 2026), first hour. Swept: HANDOFF (54 markers) + GF capture + older strata
-(Deferred_Day39, Price_Columns, App_Normalisation, CLEANUP, Decision_Log, CURRENT_STATUS) +
-Phase 2 register. Rule: verify, don't collect. Items move to CLOSED with evidence, never deleted.
+Last verified against repo: 27 Jul 2026 (Day 76) - HEAD d1fb26c
 
-## A - BLOCK VERTICAL: FINISH + MERGE (branch feature/block-cut7)
-A1. Payment-form vocabulary CONVERGENCE with 1-to-1 (founder directive: read Record-Reservation
-    ceremony + payForm + honest ledger FIRST; block form = block face of same machinery).
-A2. Payments-tab shows "manager only" for SUPER_ADMIN; Accept button gates correctly. Same
-    canDo, different result - suspect stale currentUser in tab-row closure. VERIFIED OPEN.
-A3. AMEND path never tested live. Fixture: Khalid block (2 payments).
-A4. Strip [BPD] debug probe from BlockPaymentDialog BEFORE merge. VERIFIED PRESENT.
-A5. Text: "Reservation Received X of Y" / "held until collected fully".
-A6. Approval capture: separate REFERENCE from NOTE (prose floods header, proven twice).
-A7. Adopt-panel overflow (title fallback + nowrap). VERIFIED OPEN via screenshot.
-A8. Cut 7-5: block unit picker -> reuse rich unit finder, multi-select.
-A9. Calculator totals-on-top + Workspace net-price dash between D-lock and confirm.
-A10. Cut 6a BOOKING CLOCK - nags not auto-cancel; now has real outstanding to chase.
-A11. Clearance-at-the-door (deferred build, interim approval-gate shipped).
-A12. MERGE to main when A1-A5 done.
+## A - BLOCK VERTICAL — ✅ CLOSED (merged Day 75, tag golden-block-vertical-complete)
+A1 convergence ✓ (Particulars/Bill-Collected-ToCollect/Notes) · A2 ✓ NOT A BUG (gate correct;
+"manager only" was an agent session) · A3 amend — DEFERRED BY DESIGN (settled cycles are
+read-only per founder ruling; amend lives in the ledger phase) · A4 ✓ probe gone with the form
+rebuild · A5 ✓ text · A12 ✓ merged + tagged · A14 ✓ calculator locked after settlement.
+**Still open, moved into the sections below:** A6 approval ref-vs-note · A7 adopt-panel
+overflow · A8 rich unit picker · A9 calculator totals-on-top · A10 Cut 6a booking clock ·
+A11 clearance-at-the-door · A13 block payment lifecycle.
 
-## B - PRE-PROD HARDENING (the ratified plan's next phase)
-B1. DATA FRESHNESS (pinned #1): stale-render class - screens show prior-fetch snapshots until
-    hard refresh (blank-Dashboard specimen Day 74). Fix: refetch-on-mount + on-window-focus.
-    Audit all surfaces. Bites hardest in tester week.
-B2. END-TO-END TESTING ROUND (~1-2 days): fresh clean deals through the FULL ladder
+## B - PRE-PROD HARDENING (the live front)
+B1. ✅ **CLOSED Day 76** - data freshness. `useFreshData` hook (focus/visibility refetch, 10s
+    throttle, hold-during-dialog, silent variant) + master load SPLIT from realtime
+    subscription. Adopted on BlockWorkspace, BlockDealsPage, Dashboard, and 4 App.jsx loads.
+    Verified: no loading flash, cross-tab realtime alive, clean console. Tag
+    golden-data-freshness. LESSON BANKED: never convert an effect read only at its top and
+    bottom - the crash lived in the middle.
+B2. **END-TO-END TESTING ROUND** (~1-2 days) - fresh clean deals through the FULL ladder
     (lead->opp->proposal->nego->reserve->SPA->won->customer->commission), checking data at
     each step + report accuracy + every gate. Everything so far tested in silos.
-B3. CLEAN-DATA ROUND: wipe test mess, seed fresh demo data. Reset-routine buckets in
-    Decision_Log (landmines: pp_commissions, pp_launch_events, pp_agent_jobs are GLOBAL -
-    never wipe). Resolves chip over-counting + owner-mismatch archaeology.
-B4. NEGATIVE-TESTING workstream (banked Day 66) - app-wide round.
-B5. KYC v2 minimum for prod: PRIVATE bucket + signed URLs (bucket is PUBLIC today - real
-    exposure). Full KYC v2 (doc matrices, AI extraction, hard gate) lives in D.
-B6. Report count-accuracy (Tasks shows 0 despite data) - verify during B2.
-B7. Fieldset/lock sweep rides B2 (view-mode locks + terminal states on fresh deals).
+    RIDES B2: B6 report count-accuracy (Tasks shows 0) · B7 fieldset/lock sweep · Save-Draft
+    supersession check · buyer_type form-enforcement check (see B8b).
+B3. **CLEAN-DATA ROUND** - wipe test mess, seed fresh demo data. Method + FK-verified bucket
+    spec already exist in `Go_Live_Readiness_Register.md` (landmines: pp_commissions,
+    pp_launch_events, pp_agent_jobs are GLOBAL - never wipe). Resolves chip over-counting and
+    owner-mismatch archaeology.
+    ⚠️ SEEDS MUST GO THROUGH THE APP'S OWN VALIDATION, not raw SQL - see B8.
+B4. NEGATIVE-TESTING workstream - app-wide round.
+B5. KYC minimum for prod: PRIVATE bucket + signed URLs (bucket is PUBLIC today - real
+    exposure). Full KYC v2 lives in D.
+B8. **BUYER_TYPE GAP** (founder catch Day 76): every lead has buyer_type NULL because all were
+    seeded from the backend (via_app=0) - the form's required-field validation was never
+    invoked. NOT a form bug; untested rather than broken.
+    (a) `leads.buyer_type` is NULLABLE in DB - "required" exists only in the form. Founder
+        ruling: DOUBLE PROTECTION (form validates + DB constrains). Add NOT NULL after backfill
+        during B3.
+    (b) VERIFY the form enforces it: + Add Lead with name only must REFUSE to save.
+    (c) CONSEQUENCE: buyer-type-driven KYC document matrices have never been exercised -
+        plumbing exists (`reference_buyer_type_rules`), matrices unpopulated. Rides B2 + D9.
+    (d) LATENT: LeadCreationFormV2 declares `buyer_intent` TWICE in state init (L215, L223) -
+        last wins. One-line fix.
+    LESSON: backend seeding bypasses every app-level guard.
+B9. DOC VERIFY (from the Day-76 index): `Architecture_TwoLayer_LiveStateAndHistory.md` and
+    `Architecture_FinalProposalFirst_PhaseB.md` may be superseded by the honest ledger and the
+    V_latest cascade. Read and either re-date or archive.
 
-## C - DESIGN SESSIONS OWED (design-first, then build)
-C1. DASHBOARDS + REPORTS REDESIGN (dedicated session promised Day 65/67): GF-15 dashboards
-    "lists not analytics" -> charts/trends/actionables; GF-16 reports need date-range,
-    saved-report presets; GF-20 no calendar view (meetings/site visits/reminders).
-    Dashboard_Redesign_Spec.md exists as input.
-C2. SPA v2 TWO-FACES ("horse-rider", Day 70): compact tabular ceremony face + full ledger
-    face; folds in Stage-5-v4 Price Journey card (asking->offer->negotiated->final trail -
-    engine DELIVERED Day 66 via V_latest prefill, the display card never built) + deduction
-    display polish + GF-11 all-received computable amounts.
-C3. MONEY SMALLS (one cut): waived-with-date guard, gross-vs-net commission display check,
-    offer_valid_until surfacing + nag, GF-13 residuals (stray 0 / invoice panel zeros).
-C4. SETTINGS CONSOLIDATION + App.jsx shadow sweep items 3-6 (auth screens, UserManagement
-    wrapper, ChangePassword, SettingsTab migration) + the 9 shadow-component collisions
-    (Day-61 sweep, documented untouched) + two OpportunityDetail render sites check.
-C5. OPERATOR/SUPERADMIN DASHBOARD (Day 52 promise): users search/filter/pagination at scale,
-    company filter, operator console surface.
-C6. INTELLIGENCE LAYER design session (Day 52): Customer-360 AI + Employee-360 AI (dossier,
-    strengths/weaknesses, coach vs manager-eye views) + org-chart person-click -> Employee-360.
-C7. LEAD->ACCOUNT MODEL + CANONICAL IDENTITY (Day 48 stickies): Salesforce-pattern
-    lead-to-account conversion; govt-ID as canonical person key; AI dup-leads report + merge
-    tool; per-company email uniqueness. Pairs with C8.
-C8. PROPPULSE DEDUP dedicated session (Decision_Log: "biggest data risk").
-C9. QUOTE/PROPOSAL PATH B naming alignment (code says quote, data says proposal).
-C10. LEGACY EXCEL INTAKE pipeline (designed Day 48, never built) - broker onboarding needs it.
-C11. SYSTEMIC isStale() HELPER (Decision_Log "Monday post-tester") - may merge into B1
-     freshness work; decide during B1 design.
-C12. OPP LIST PRICE COLUMNS (Backlog doc): Budget + Current Price + Final side-by-side on the
-     opp list. Small; partially overlapped by Day-65 total-value pill. VERIFIED OPEN.
+## C - DESIGN SESSIONS OWED (design first, then build)
+C1. **BLOCK LEDGER PHASE** - post-reservation block money (instalments, DLD, SPA fees across N
+    children) using the 1-to-1 ledger grammar at block level. Design of record already written:
+    `Block_Ledger_Phase_Design.md` (BL-1..BL-4). Founder ruling: reuse the known screen, invent
+    no dialect. **This is the nearest-term design item.**
+C2. DASHBOARDS + REPORTS REDESIGN: dashboards are "lists not analytics" -> charts/trends/
+    actionables; reports need date-range + saved presets; no calendar view for scheduled
+    activities. Input: `Dashboard_Redesign_Spec.md`.
+C3. SPA v2 TWO-FACES ("horse-rider"): compact ceremony face + full ledger face. Folds in the
+    Price Journey card (engine shipped Day 66, display never built), deduction-display polish,
+    computable all-received amounts.
+C4. MONEY SMALLS (one cut): waived-with-date guard, gross-vs-net commission display check,
+    offer_valid_until surfacing + nag, invoice-panel zero residuals.
+C5. SETTINGS CONSOLIDATION + App.jsx shadow sweep (auth screens, UserManagement wrapper,
+    ChangePassword, SettingsTab migration, the 9 shadow-component collisions, two
+    OpportunityDetail render sites). Also: `CountryPicker.jsx` + `LeadPersonEditModal.jsx`
+    remain from the Day-40 orphan-suspect list - confirm dead or in use.
+C6. OPERATOR/SUPERADMIN DASHBOARD: users search/filter/pagination at scale, company filter,
+    operator console surface.
+C7. INTELLIGENCE LAYER: Customer-360 AI + Employee-360 AI (dossiers, coach vs manager-eye
+    views) + org-chart person-click -> Employee-360.
+C8. LEAD->ACCOUNT MODEL + CANONICAL IDENTITY: Salesforce-pattern promotion; govt-ID as
+    canonical person key; AI dup-leads report + merge tool; per-company email uniqueness.
+C9. PROPPULSE DEDUP ("biggest data risk" - Decision_Log).
+C10. QUOTE/PROPOSAL naming alignment (UI says Quote at lead stage, data says proposals).
+C11. LEGACY EXCEL INTAKE pipeline - doctrine written (`Implementation_Doctrine.md`), pipeline
+     never built. Broker onboarding needs it.
+C12. SYSTEMIC isStale() HELPER - stale computed 4 places, 2 different ways; 3 hard-code >=7 and
+     ignore the configured threshold. One shared helper.
+C13. BLOCK POLISH (from A): approval REFERENCE vs NOTE split · adopt-panel overflow · rich unit
+     picker with multi-select · calculator totals-on-top + workspace net-price dash ·
+     Cut 6a BOOKING CLOCK (nags, never auto-cancels) · clearance-at-the-door · block payment
+     LIFECYCLE (bounce/replace - today block money is recorded as fact, post-accounts).
+C14. OPP LIST PRICE COLUMNS: Budget + Price + Final side-by-side.
 
 ## D - POST-TESTER / PHASE 2
-D1. DEVELOPER PERSONA module (founder signal, loud): developer-as-user, approval flows in-app.
-    Stage-3 discount-authority wiring (discount_authority_pct from MA checked at discount time)
-    WAITS FOR THIS - founder ruling Day 75, not pending elsewhere.
-D2. Identity-model split (Architecture_Multi_Tenant_Identity_Model.md) - operator vs tenant.
-D3. Communications overhaul (Phase_2_Communications_Overhaul.md) - email/WhatsApp/sequences.
-D4. State management + realtime sync (Phase_2 doc) - supersedes/absorbs B1 pattern long-term.
-D5. Manager dashboard v2 + team views; commission PAYABLES/earnings views (own + team).
-D6. Leasing vertical resume (parked module) + leasing queue.
-D7. PM/maintenance module arc.
-D8. Roles arc: configurable roles UI (permission_sets machinery live), viewer role,
-    Executive/BI + group rollups (multi-company consolidation).
-D9. Full KYC v2: doc matrices per party type, AI extraction, hard gate at govt line,
-    expiry tracking.
-D10. Stage 7 Doomed-Opp detection + Stage 8 Document Fees (specs captured 11 May).
-D11. Rename decision (PropCRM name) + branding pass.
-D12. Handover-change audit trail; Upfront-merge decision; chips deep-link wiring (lead-KYC);
-     PDF hero-image CORS proxy; forgot-password own-domain sender; shortlist-engagement
-     tracking (architect homework Day 65).
-D13. AI Coach phase 2 (voice, deeper analytics) + AI-Extract v2 (learn from corrections).
+D1. DEVELOPER PERSONA module (founder signal loud): developer-as-user, approval flows in-app.
+    Stage-3 discount-authority wiring WAITS FOR THIS - founder ruling Day 75.
+D2. Identity-model split - operator vs tenant (`Architecture_Multi_Tenant_Identity_Model.md`).
+D3. Communications overhaul - email/WhatsApp/sequences.
+D4. Manager dashboard v2 + commission PAYABLES/earnings views (own + team).
+D5. Leasing vertical resume + leasing queue.
+D6. PM/maintenance module arc.
+D7. Roles arc: configurable-roles UI, useful viewer role, Executive/BI + group rollups.
+D8. Full KYC v2: doc matrices per buyer type, AI extraction, hard gate at the govt line.
+D9. Stage 7 Doomed-Opp + Stage 8 Document Fees (specs in archive).
+D10. Rename decision + branding pass.
+D11. Smalls: handover-change audit trail · Upfront-merge decision · chips deep-link wiring ·
+     PDF hero-image CORS proxy · own-domain email sender · shortlist-engagement tracking.
+D12. AI Coach phase 2 + AI-Extract v2.
 
-## CLOSED THIS SWEEP (evidence attached, ghosts buried)
-X1. CLEANUP_CRITICAL_MUST_DO - doc says CLOSED Day 72, orphans deleted, tree verified.
-X2. Deferred_Day39 Pack button - superseded: live "Share Pack" via propertyPackBus in
-    OpportunityDetail L1362. Verified by grep Day 75.
-X3. CURRENT_STATUS.md - RETIRED Day 75 (dated 12 May, pre-refactor, cites dead line numbers).
-    Stage-rename item superseded by Day-68 stage split. Save-Draft likely superseded by
-    honest-ledger rebuild (cheap verify during B2).
-X4. Stage-5-v4 core pain (SPA re-entry) - KILLED Day 66 (V_latest prefill verified live).
-    Display card folded into C2.
-X5. GF items resolved through Day 67 per capture doc; GF-01b/02-verify/10/11 residuals live
-    inside B2/C2/C3.
-
-## ADDED DAY 75 (A1 convergence read, founder-ratified)
-A13. BLOCK PAYMENT LIFECYCLE (banked, look at END): block payments are recorded as FACTS
-     (money arrived, split it) which matches practice - accounts dept clears funds BEFORE the
-     broker records. But 1-to-1 sales_payments carry a LIFECYCLE (status Pending/Received/
-     Bounced/Replaced, due date) and a block cheque recorded pre-clearance has no way to
-     bounce today. Founder: "generally after accounts have given, they move on - but good
-     point, mark it." Not a merge blocker.
-
-## B1 STATUS (Day 75 close)
-DONE: useFreshData hook (focus/visibility refetch, 10s throttle, hold guard, silentReload
-variant). Adopted: BlockWorkspace (w/ dialog hold), BlockDealsPage, Dashboard earnings,
-App.jsx L703 (opps/units/reservations), L247 (permission sets), L2141 (companies). Founder
-walked lead/opp forms - waves on every reopen, no crashes.
-OPEN - B1a THE MASTER LOAD (App.jsx L2160-2247): conversion CRASHED the app - the effect
-ENTANGLES the main data load with a Supabase realtime subscription (postgres_changes, line
-~2243); re-running it re-subscribes an already-subscribed channel = hard error. REVERTED
-same hour. FIX: split into two effects - load half (convert w/ silentReload, no dataLoading
-flash on focus) + subscribe half (mount-once). READ ALL 87 LINES FIRST.
-LESSON (banked): never convert an effect read only at its top and bottom - the crash lived
-in the middle. Anchor the WHOLE body or split before converting.
-
-## ADDED DAY 76 - BUYER_TYPE GAP (founder catch)
-FACT: every lead in the system has buyer_type NULL. Cause: all were seeded/inserted from the
-backend (via_app=0, seven share the Day-67 seed timestamp) - the form's required-field
-validation was never invoked. NOT a form bug; untested rather than broken.
-GAPS:
- (a) leads.buyer_type is NULLABLE in DB - "required" exists only in the form. Founder ruling:
-     double protection needed (form validates + DB constrains). Add NOT NULL after backfill,
-     or a CHECK, decided at clean-data round (B3).
- (b) VERIFY the form actually enforces it: + Add Lead with name only -> must refuse to save.
-     Untested to date.
- (c) CONSEQUENCE: buyer-type-driven KYC document matrices have never been exercised - the
-     plumbing exists (reference_buyer_type_rules, form reads it) but matrices are unpopulated
-     and no lead carries a type to drive them. Belongs to KYC v2 + the E2E round.
- (d) LATENT: LeadCreationFormV2 declares buyer_intent TWICE in state init (L215 and L223) -
-     last wins, silently overriding the default. One-line fix.
-LESSON: backend seeding bypasses every app-level guard. Seeds must go through the same
-validation the broker faces, or the guards stay unproven until testers find them.
+## CLOSED (evidence attached - never deleted)
+X1. CLEANUP_CRITICAL_MUST_DO - closed Day 72, orphans deleted, census-verified.
+X2. Day-39 Pack button - superseded by live "Share Pack" via propertyPackBus (OpportunityDetail
+    L1362). Verified by grep Day 75.
+X3. CURRENT_STATUS.md - RETIRED Day 75 (dated 12 May, cites dead line numbers). Archived Day 76.
+X4. Stage-5-v4 core pain (SPA price re-entry) - KILLED Day 66 by V_latest prefill, verified live.
+X5. GF items resolved through Day 67; residuals live inside B2/C3/C4.
+X6. **SECTION A - BLOCK VERTICAL** - merged Day 75, tag golden-block-vertical-complete.
+X7. **B1 DATA FRESHNESS** - merged Day 76, tag golden-data-freshness.
+X8. **DOCUMENTATION RESTRUCTURE** - Day 76: 137 docs -> 44 living + 93 archived; principles
+    ratified; document index built (Register item #23); two competing heads collapsed into one.
