@@ -114,7 +114,8 @@ Launch Mode) · `Opps_Journey_Redesign_Capture.md` (GF findings, money-tail, KYC
 `Phase_2_1_Lead_Ingestion_Design.md` · `Phase_2_2_Property_Detail_Pack_Design.md` ·
 `Phase_2_Identity_And_Settings_Design.md` · `PropPulse_Data_Model.md` ·
 `PropPulse_Complete_Documentation.md` · `Real_Estate_Workflow_Spec.md` ·
-`PropCRM_Workflow_Config_Design.md` · `Naming_Lead_Quote_vs_Opp_Proposal.md`
+`PropCRM_Workflow_Config_Design.md` · `Naming_Lead_Quote_vs_Opp_Proposal.md` ·
+`Title_Holders_Design_Capture.md` (in whose name - NOT built)
 
 ### DESIGN - specified, NOT yet built (each is a board item)
 `Phase_2_Communications_Overhaul.md` · `Phase_2_Lead_Lifecycle_Segmentation.md` ·

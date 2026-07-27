@@ -105,6 +105,11 @@ C13. BLOCK POLISH (from A): approval REFERENCE vs NOTE split · adopt-panel over
      Cut 6a BOOKING CLOCK (nags, never auto-cancels) · clearance-at-the-door · block payment
      LIFECYCLE (bounce/replace - today block money is recorded as fact, post-accounts).
 C14. OPP LIST PRICE COLUMNS: Budget + Price + Final side-by-side.
+C15. TITLE HOLDERS - "in whose name?" (`Title_Holders_Design_Capture.md`, Day 76). The app
+     cannot record a JOINT purchase - one lead = one buyer is assumed everywhere. Holders belong
+     to the OPPORTUNITY (same buyer holds different deals in different names). Founder HARD RULE:
+     every name on the SPA must have documents, no override - the govt line. Pairs with C8.
+     ⚠️ CANDIDATE FOR V1 - a broker cannot record a real joint purchase today.
 
 ## D - POST-TESTER / PHASE 2
 D1. DEVELOPER PERSONA module (founder signal loud): developer-as-user, approval flows in-app.
