@@ -1,291 +1,200 @@
-# PropCRM — Master Context & Takeover
+# PropCRM - MASTER CONTEXT (THE HEAD)
+**READ THIS FIRST. EVERY SESSION. BEFORE ANY WORK.**
+Last verified against repo: 27 Jul 2026 (Day 76) - HEAD 5704927
+Governed by: docs/DOCUMENTATION_PRINCIPLES.md (six rules, founder-ratified)
 
-**Living document. Read this FIRST every session.**
-Last updated: 20 Jun 2026 (evening) · Maintained by: Architect, per founder instruction
-Supersedes scattered/stale project files for "where we stand" and "what this product is."
-
-> Note on status: this is a living frame. Small or large changes will happen as outcomes
-> teach us — nothing here is a stone tablet. Amend it at each session change rather than
-> re-explaining context verbally.
-
----
-
-## 0. HOW TO USE THIS DOC
-- This is the single source of truth for product intent + current state.
-- The older `Phase_2_Backlog_Master_Doc.md` and assorted phase docs are reference history,
-  NOT current truth. Where they conflict with this doc or the repo, the REPO wins, then this doc.
-- Repo numbering of phases ≠ old master-doc numbering. They drifted. Trust commit messages.
+## THE THREE LIVING DOCUMENTS - one job each, no overlap
+| Document | Job | Discipline |
+|---|---|---|
+| **THIS DOC** | WHERE THINGS STAND + product frame + document index | REWRITTEN, never appended. Carries a "last verified" date. |
+| `MASTER_PENDING_BOARD.md` | WHAT IS OUTSTANDING, verified, ranked | Items move to CLOSED with evidence, never deleted |
+| `HANDOFF_CURRENT.md` | WHAT HAPPENED - the session log | APPENDED. History, not state. Not the head. |
+Everything else is a DESIGN doc (spec of record, referenced) or lives in `docs/archive/`.
 
 ---
 
-## 1. PRODUCT FRAME (the "why" — rarely changes)
+## 1. PRODUCT FRAME (the "why" - rarely changes)
 
-### The core problem we solve
-Brokers are **data-poor at the moment a buyer connects.** They don't have enough authentic
-information on hand to advise well. Everything in the product serves closing that gap.
+### The core problem
+Brokers are **data-poor at the moment a buyer connects.** They lack authentic information on
+hand to advise well. Everything in the product serves closing that gap.
 
-### PropPulse — the data engine
-PropPulse collects property intelligence by sniffing/aggregating from multiple sources, so the
-broker walks into the buyer conversation already informed.
-
-**Staging (deliberate):**
+### PropPulse - the data engine
+Aggregates property intelligence from multiple sources so the broker walks into the buyer
+conversation already informed.
 - **Today:** free, public-domain sources only.
-- **Post product-readiness + investment:** connect to government sites and paid authentic
-  feeds; authenticated data is uploaded into **PropPulse Inventory.**
-- Brokers then **enable the slices relevant to their organisation's areas of work.**
+- **Post-investment:** government sites + paid authentic feeds into PropPulse Inventory;
+  brokers enable the slices relevant to their areas.
+- **DO NOT MIS-STATE:** the ~20-developer figure is a development-tracking scope for build-phase
+  cost control. It is **not a product ceiling.** Forward intention is broad market coverage.
 
-**Forward intention — IMPORTANT framing (do not mis-state):**
-- The product is **NOT limited to ~20 developers.** That number is a *current
-  development-tracking scope* used to keep a tab on expenses during the build phase.
-- It is a **starting scope for development, explicitly not a product ceiling.**
-- The forward intention is **broad market coverage** once authenticated government and paid
-  sources come online. Never frame PropPulse as "we only cover 20 orgs."
-
-### Scope boundary (who the app is for)
-- The app today is for **broker companies / individual brokers & agents.**
-- The broker/community role is to **make the buyer and the developer meet.**
-- **Developer-side features are intentionally low-intensity.** Example: Discount recording
-  exists only to capture what discounts a developer gives, so final broker **commission** can
-  be computed correctly. It is developer discretion, not broker workflow. Do not over-invest
-  engineering effort there.
+### Scope boundary
+The app is for **broker companies / individual brokers & agents.** The broker's role is to make
+buyer and developer meet. **Developer-side features are intentionally low-intensity** (e.g.
+Discount recording exists only so commission computes correctly - developer discretion, not
+broker workflow). Do not over-invest engineering there.
 
 ### Positioning
-- The product is **AI-heavy** by design — AI is utilised throughout the app, and that is a
-  deliberate positioning angle, not incidental.
+**AI-heavy by design** - AI is used throughout the app as a deliberate positioning angle.
+
+### North star (founder)
+"A broker app, just recording, but depicting reality - the broker chases the buyer AND the
+developer till the deal closes; after closing, follow-up calls till handover."
 
 ---
 
-## 2. CURRENT TECHNICAL STATE (the "where" — update each session)
+## 2. VERIFIED STATE (measured from repo 27 Jul 2026 - NOT remembered)
 
 - **Repo:** `mah284-bit/prop-crm` · local `/d/prop-crm` (Windows MINGW64, CRLF)
-- **Branch:** `main` (production → prop-crm-two.vercel.app, auto-deploy)
-- **Latest commit:** `2a7f56b` (properties 400 fix)
-- **Golden / revert floor:** `pre-refactor-resume` (stamped this session, pushed)
-- **Prior golden:** `refactor-day40-complete`, `phase-2.7-complete-final`
-- **App.jsx:** ~3,681 lines (down from 6,708 pre-Day-40 refactor; the shrink held)
-- **Env health (this session):** clean tree, build green, dev server 200. PRE-OP verified.
+- **Branch:** `main` -> auto-deploys to prop-crm-two.vercel.app
+- **HEAD:** `5704927` · **1,459 commits** across **93 working days** (first commit 26 Mar 2026)
+- **App.jsx:** **2,514 lines** (was 17,300 pre-refactor; the shrink held)
+- **Structure:** 15 feature folders under `src/components/` + 26 helpers in `src/lib/`
+- **Golden tags:** golden-data-freshness (latest) · golden-block-vertical-complete ·
+  golden-block-vertical-cut6-complete · golden-pre-phase2-stage2 · golden-pre-bell ·
+  golden-2026-05-07
 
-### What is LIVE (verified from repo, not docs)
-- Phase 2.0 Realtime sync; Phase 2.1 Lead Ingestion + governance (pools, assignment, audit).
-- App-layer multi-tenant isolation (Stage 3a) + role_capabilities gating (Stage 4).
-- Day-40 normalisation: 11 inline modules extracted from App.jsx; `aiInvoke` → shared lib.
-- LeadDetail + OpportunityDetail extracted; Property Detail Pack (Project/Unit panels).
-- **Phase 2.5 Lead Lifecycle is LIVE** (not "future" as old docs claim): `lifecycle_stage` +
-  `buyer_intent` wired; `customers/CustomersPage.jsx` shows converted customers; intent
-  segmentation in Coach + LeadCreationFormV2.
-- Phase 2.7: ProposalFormModal (inline form removed; clean 2-column Lead Detail).
+### What is LIVE on production (verified)
+- **Sales vertical end-to-end:** lead -> quote -> opportunity -> proposal -> negotiation ->
+  Offer Accepted -> Reserved -> SPA Requirements -> SPA Signed -> Closed Won -> customer ->
+  commission invoice. Walked end-to-end multiple times.
+- **Block Sales vertical (COMPLETE):** create/adopt -> bidirectional distribution calculator ->
+  developer approval -> confirm (N children born) -> reservation intake with tranches ->
+  collection state (due/hold/accept-shortfall) -> settled gates. Merged Day 75.
+- **Capability-driven access control:** 19+ capabilities in `role_capabilities`, `canDo()` the
+  single check, RLS company-scoped, super_admin via `is_super_admin` flag only.
+- **Data freshness (B1):** `useFreshData` hook - refetch on focus/visibility, 10s throttle,
+  hold-during-dialog, silent variant (no loading flash). Master load split from realtime
+  subscription. Merged Day 76.
+- **Realtime:** Supabase subscriptions on leads/activities/opportunities (cross-tab verified).
+- **Also live:** KYC v1.1 (docs, expiry, gates), PropPulse, Commission Outstanding, Lead
+  Assignment + agent pools, Org Chart, Client-360, Launch Mode, Reports (role-gated),
+  auto-advance + lifecycle chain, duplicate-lead prevention, My Earnings.
 
----
-
-## 3. ACTIVE WORK — Refactor-Resume
-
-**Direction (locked):** finish the normalisation refactor. **No new features built inline in
-App.jsx.** Remaining inline/duplicated modules → own feature-folder components, one at a time.
-
-**Method (Day-40, keep using):**
-pre-op dep scan → ONE move → build/visual test → commit → next. No bulk.
-Verify which copy renders before deleting twins. Tag a revert floor before risky moves.
-
-**Helpers stay inline (decision):** tiny shared primitives (Av, Badge, Modal, Spinner, Btn,
-FF, G2/G3, RoleBadge, PwInput, Toast, etc.) are NOT extraction targets — high churn, low
-benefit, regression risk. Leave them.
-
-**Big inline modules = the real extraction queue (Sales-first):**
-- `AIAssistant` (App.jsx ~2182) — broker-facing, AI-heavy, demo-relevant → top candidate.
-- `PaymentPlanTemplates` (~1960)
-- `SetupWizard` (~2512)
-- `UserManagement` (~3042) — ⚠️ possible twin with already-extracted UsersTab; verify first.
-- Leasing modules (LeasingDashboard ~2747, LeasingChequeManager ~1632) — PARKED (leasing
-  out of current scope).
-
-**Completed operations this session:**
-- Op #1 ✅ `properties` 400 fix — removed invalid `company_id` filter on global table (`2a7f56b`).
-- Pre-cleanup ✅ QuickProposalsPanel dead-code strip, 163→43 lines (`98bb981`).
+### What is PARKED by decision
+- **Leasing vertical** - schema and some UI exist; sales-first is the ruling.
+- **Developer persona** - founder signal is loud; sequenced post-tester-review.
+- **Custom roles** - 7 roles + configurable capabilities is the ratified answer (Decision_Log).
 
 ---
 
-## 4. DEFERRED / PARKED (explicit — so nothing is silently forgotten)
+## 3. DOCUMENT INDEX (Register item #23 - the map. Nothing is findable without this.)
 
-- 🅿️ **Teething issues on the flows** — KNOWN, acknowledged by founder, **sealed by founder
-  decision.** Not to be discussed or fixed mid-refactor. Order: finish listed refactor work →
-  full app walkthrough together → THEN a dedicated teething-issues pass. Architect will not
-  drag the conversation toward these early.
-- 🅿️ **DiscountApprovals twin** — inline (App.jsx 1485) is live; `src/components/
-  DiscountApprovals.jsx` is an orphan. Unresolved. Low priority (developer-side record-keeping).
-  Resolve later, not now.
-- 🅿️ **projects / project_units company_id filters** (App.jsx ~3328-3329) — conditional on
-  `cid`; not confirmed safe to change. VERIFY against live schema before any edit.
-- 🅿️ **Leasing module** — parked entirely; sales flows only in current scope.
-- 🅿️ **RLS server-side audit** (`is_super_admin` bypass) — app-layer isolation is in; server
-  hardening flagged before scaling beyond pilot. In-scope only if an external brokerage onboards.
-- 🅿️ **Section C orphan deletes** (Day-40 list: old permissions tabs, old SettingsTab subtab,
-  CountryPicker, LeadPersonEditModal, top-of-file inline twins) — harmless dead code; later or never.
+### LIVING - state, must stay current
+| Doc | Holds |
+|---|---|
+| `PropCRM_Master_Context_and_Takeover.md` | THIS. Product frame, verified state, this index |
+| `MASTER_PENDING_BOARD.md` | Every outstanding item, verified, grouped A-D |
+| `HANDOFF_CURRENT.md` | Session log (history only - NOT the head) |
+| `DOCUMENTATION_PRINCIPLES.md` | The six rules governing all of the above |
 
----
+### GOVERNANCE - read before acting in these areas
+| Doc | Holds |
+|---|---|
+| `Decision_Log.md` | Settled decisions + rationale. **Never re-litigate what is in here** |
+| `Implementation_Doctrine.md` | P1-P3 client onboarding: bring their DATA not their PROCESS. Excel-template intake only. Scope tiers. The enforcement line |
+| `Go_Live_Readiness_Register.md` | 3 horizons to go-live: clean-slate reset spec (FK-verified, landmines caught), RLS audit method, backup/restore method, commission model, settings governance |
+| `DOCUMENT_REGISTER_Target.md` | The 24-doc target set a SaaS needs; what exists vs to-create |
+| `Access_Control_Configurable_Roles_Design.md` | The governance bible: PropCRM=enabler, customer owns config post-handover |
 
-## 5. PRODUCTION TARGET
-- **Sales production-ready on or before 30 Jun 2026** (founder-set).
-- Demo is founder-controlled and decoupled from this date (founder manages demo timing).
-- June 30 is a **finish-and-harden** goal, not a new-build goal — functionally Sales is largely there.
+### ARCHITECTURE - how it is built
+`Architecture_Multi_Tenant_Identity_Model.md` (platform vs tenant identity, the go-live split) ·
+`Access_Control_and_Multi_Tenant_Security_Spec.md` · `ACL_Capability_Architecture_Sketch.md` ·
+`Commission_Model_Architecture.md` (resolution hierarchy, visibility-as-capability, anti-miss gate) ·
+`Math_Flow_Schema_Design.md` · `Architecture_TwoLayer_LiveStateAndHistory.md` (VERIFY: may be
+superseded by honest-ledger) · `Architecture_FinalProposalFirst_PhaseB.md` (VERIFY: may be
+superseded by V_latest cascade)
 
----
+### DESIGN OF RECORD - built or building
+`Block_Sales_Design.md` (FULL AND FINAL for the vertical) · `Block_Sales_Cut7_Design.md` (money
+allocation + collection state) · `Block_Ledger_Phase_Design.md` (post-reservation money - NEXT) ·
+`Wilderness_Design_Evidence_Ceremony.md` (evidence model E1-E4, ceremony tiers, unit switch,
+Launch Mode) · `Opps_Journey_Redesign_Capture.md` (GF findings, money-tail, KYC v1) ·
+`Phase_2_1_Lead_Ingestion_Design.md` · `Phase_2_2_Property_Detail_Pack_Design.md` ·
+`Phase_2_Identity_And_Settings_Design.md` · `PropPulse_Data_Model.md` ·
+`PropPulse_Complete_Documentation.md` · `Real_Estate_Workflow_Spec.md` ·
+`PropCRM_Workflow_Config_Design.md` · `Naming_Lead_Quote_vs_Opp_Proposal.md`
 
-## 6. KEY IDENTIFIERS & OPS NOTES
-- `company_id` (Al Mansoori) = `c23a2320-1b35-4636-a840-532c247a6cf9`
-- Abid `user_id` = `fa0aae73-847a-4bdc-b4be-f4c0ebb80974`
-- Test users: Raja Shekhar (Al Mansoori admin); Roy James (Emirates Premium Realty,
-  company `e536de3f-0090-474e-8036-315e474174f1`).
-- Folder convention: `src/components/<feature>/` **all lowercase** (Vercel/Linux case-sensitive).
-- App.jsx top-level nav add = 4 edits (import, TABS, MODE_TABS sales+both, render handler).
-- PropPulse tables (`projects`, `project_units`, `properties`) are **GLOBAL** — never apply
-  `company_id` filters to them.
+### DESIGN - specified, NOT yet built (each is a board item)
+`Phase_2_Communications_Overhaul.md` · `Phase_2_Lead_Lifecycle_Segmentation.md` ·
+`Phase_2_Activity_Logging_Everywhere.md` · `Phase_2_Role_Based_Dashboard_Vision.md` ·
+`Phase_2_Proposal_Communication_Model.md` · `Phase_2_Reports_Strategy.md` ·
+`Phase_2_Coach_Actions_Design.md` · `Phase_2_Inline_Intelligence_Theme.md` ·
+`Phase_2_Commission_Invoice_Timing_Model.md` · `Phase_2_Unit_Entry_DataQuality_Design.md` ·
+`Phase_2_Self_Narrating_Proposals.md` · `Dashboard_Redesign_Spec.md`
 
----
+### USER-FACING
+`Tester_Guide.md` · `README.md` · `FOUNDER_CONTEXT.md`
 
-## 7. WORKING DYNAMIC
-- Founder Abid executes ALL terminal/git/SQL himself; never edits files directly in VS Code.
-- Architect (Claude) decides technical direction, hands exact commands.
-- Founder trusts architect on technicals; architect still defers to founder on
-  momentum/energy/scope and reads back understanding before acting.
-- Founder principles: "1 step forward, 2 steps back is bothering me" · "no half-hearted work
-  which spoils" · broken states never committed · each commit = revertable checkpoint.
-- File delivery: founder is on Claude desktop and CANNOT download. Deliver file content via
-  **quoted heredoc** (`<< 'EOF'`) which is safe for content with backticks/quotes.
-
----
-
-## 8. CHANGE LOG
-- 20 Jun 2026 (eve): Doc created. Product frame captured (PropPulse staging + forward
-  intention; "20 devs is not a ceiling" correction; broker-scope boundary; AI-heavy
-  positioning). Refactor-resume started: Op#1 properties-400 fixed. Teething backlog parked.
+### ARCHIVE - `docs/archive/` (93 files, 27 Jul)
+Session logs (Day_NN_*), dated handoffs, four investor-script versions, sprint plans,
+superseded status docs, completed phase records, resolved backlogs. **History, not truth.**
+Retrieve by path when needed; never treat as current.
 
 ---
 
-## SESSION ADDENDUM — 21 Jun 2026 (refactor-resume continued)
+## 4. WORKING DYNAMIC
 
-### Completed this session
-- Op: properties-400 fix (2a7f56b)
-- Proposal flow polish: dead-code strip, Screen 3 removed, modal widened 500->920,
-  picker row rebuilt (minWidth:0 fix) + enriched with view/floor/specs (conditional)
-- Lead Detail header cards aligned
-- EXTRACTION: AIAssistant -> src/components/ai/AIAssistant.jsx (d21b129).
-  Brought buildContext + writeBrokerCreatedLog along (self-contained). App.jsx -366 lines.
-- EXTRACTION: PaymentPlanTemplates -> src/components/payments/PaymentPlanTemplates.jsx
-  (aff6228). Local Spinner + can() from lib/permissions. App.jsx -221 lines.
-- App.jsx now ~3,095 lines (was 6,708 pre-Day-40; ~3,681 at session start).
+- **Founder Abid executes ALL terminal / git / SQL himself.** Never edits files in an editor.
+- **Architect decides technical direction and hands exact commands.** Founder rules on market,
+  workflow, wording, and what a broker actually needs - and those rulings win.
+- Founder cannot download files. Deliver content via **quoted heredoc** (`<< 'EOF'`) or Python
+  file-scripts. Long heredocs split on paste in MINGW64 - keep scripts small.
+- **The architect has NO MEMORY between sessions.** What the repo says IS what the architect
+  believes. This is why the six documentation rules exist.
 
-### PARKED items logged this session (do NOT action without founder ask)
-1. **Payment Plan Templates (`pay_plans` tab)** — deliberately HIDDEN from main nav.
-   Developer-side responsibility, not broker MVP workflow. Component built + extracted +
-   verified rendering, but kept hidden ON PURPOSE. Revisit POST-MVP (after couple-of-brokers
-   pilot) ONLY if there's an ask. (Reason recorded so it isn't re-dug.)
-2. **Hidden tabs generally** — pay_plans and other route-map-only tabs were parked for a
-   SINGLE consolidated pass at the END of the build, deliberately, to avoid piecemeal
-   revisiting. Do not expose hidden tabs one-by-one during refactor.
-3. **Lead-Proposal AI (Phase-2 thread)** — Lead-level proposals are intentionally ephemeral
-   (PDF-only, NOT in DB) to avoid junk-data bloat from unverified/repeat buyers; the friction
-   is a deliberate signal to drop tyre-kickers. Proper DB sales cycle starts at Opportunity.
-   Scope when its turn comes: (a) version the Sent-Proposals list + timestamps + sort
-   latest->oldest [connects to logged "v4 for AGR-10-06" label bug]; (b) AI caution/provoke
-   broker to decide on repeat-asking leads; (c) when buyer turns serious, broker picks unit
-   PDF(s) and promotes to Opportunity, AI extracting since not in DB. Surfaces in proposal-flow
-   UX pass, post-refactor.
-4. **AI call-path unification** — 4 files call AI directly (App via AIAssistant now extracted,
-   AIBubble, InventoryModule, LeasingModule) instead of shared lib/aiInvoke.js. AIAssistant's
-   path is /api/ai (Vercel serverless, key in env) — architecturally fine, just not unified.
-   Dedicated cleanup pass later; Leasing ones are parked scope anyway.
-5. **writeBrokerCreatedLog duplicated** — defined in OpportunityDetail.jsx AND now copied into
-   AIAssistant.jsx. Should be lifted to a shared lib (used by 4 callers). Cleanup pass later.
-6. **Proposal-flow debris** — orphan files from Phase 2.7's 25+ failed attempts: ProposalHome,
-   ProposalSent, ProposalTest, ConfirmProposal, PropertyTypeSelector, QuickProposalsPanel_ENDING_FINAL.js.
-   Verify-then-delete pass later. Plus DiscountApprovals inline-vs-file twin (still unresolved).
+### Founder principles (standing)
+"1 step forward, 2 steps back is bothering me" · "no half-hearted work which spoils" ·
+"every button has meaning, or it is demeaning" · "do not depend on my memory" ·
+broken states are never committed · each commit is a revertable checkpoint ·
+tag a golden checkpoint before anything risky.
 
-### Remaining big inline extraction candidates in App.jsx
-- SetupWizard (~admin-only, self-contained) — next likely target
-- UserManagement (check twin vs already-extracted UsersTab first)
-- Leasing modules (LeasingDashboard, LeasingChequeManager) — PARKED (leasing out of scope)
-- helpers (Av/Badge/Modal/Spinner/etc.) stay inline — not extraction targets
+### Engineering laws (paid for in blood)
+- **`python -c` is BANNED** - bash history expansion eats `!`. Python FILE-scripts only.
+- **Anchor law:** every file-script verifies its anchors and ABORTS before writing. Never
+  convert or wrap an effect read only at its top and bottom - the crash lives in the middle.
+- **Straight-test after every cut.** `npm run build` verifies syntax, NOT behaviour.
+- **Dev server restart + hard refresh after every cut.** A stale bundle has faked a data
+  corruption bug, a permissions bug, and a blank screen. When local behaves impossibly,
+  wipe `node_modules/.vite` or test on Vercel - **Vercel is truth.**
+- **Cold-Look Law:** read every screen as a first-time broker holding a real cheque BEFORE
+  proving the engine. A working engine behind an unreadable screen is the wrong order.
+- **Systemic over silo:** ask "can this live in a shared helper?" before patching one spot.
+- Feature folders are **all lowercase** (Vercel/Linux is case-sensitive).
+- Branch for risky work; merge only when whole; delete the branch after.
 
 ---
 
-## SESSION ADDENDUM — 21 Jun 2026 (evening: walkthrough + dashboard redesign)
+## 5. KEY IDENTIFIERS
 
-### Code shipped
-- ActivityLog crash FIXED (7f15e78): live src/components/sales/ActivityLog.jsx missing imports
-  ACT_TYPES, ACT_META, fmtDate. Orphan twin src/components/ActivityLog.jsx deleted.
-- DASHBOARD REDESIGN (1f0e935 + 16376ea): premium-dense. Slim navy greeting strip replaced
-  tall gradient hero. Above-fold cockpit row (Opportunities-by-Stage + Quick Actions + Recent
-  Activity). Kept Team Performance (role-gated, no-blanks). Cut Today-at-a-Glance band,
-  Won/Lost row, Quick Actions 5->3. Nav fixed: Active/Won/stage -> "opportunities" (was
-  reports/leads). Stat-card padding trimmed to fit one screen. Floor tag: pre-dashboard-redesign.
-
-### Full 14-screen walkthrough COMPLETE — details in docs/Walkthrough_Findings.md (Findings #1-#12)
-- #1 ActivityLog crash FIXED. #2/#3/#6 dashboard nav FIXED in redesign. #4/#5 wow-redesign +
-  role-no-blanks DONE.
-- #7 PropertyPackModal share button = intentional Phase 2.3 seam, NOT regression. Foundation
-  (getPropertyPackAssets resolver) built; SEND UI unbuilt. Founder recalls a WORKING picker on
-  ANOTHER surface (to locate). Park under Comms Overhaul.
-- #8 Users>Settings = old SettingsTab (app-config mode/currency/country), park for Unified
-  Settings consolidation. #9 Customers = Phase 2.5 lifecycle (works). #10 Commission empty =
-  test-data only.
-
-### MAJOR ARCHITECTURE captured (founder directives)
-- #11 HIERARCHICAL RLS / need-to-know: simple model = everything is a Company (company_id is
-  the foundation); individual = company-of-one (no separate type); optional group_id above
-  (null = standalone). DIG FOUND IT'S ALREADY SCAFFOLDED: groups table exists (id, name,
-  branch_visibility), companies.group_id nullable + code handles null, GroupBranchesSection.jsx
-  (settings) + GroupConsolidatedView component (group_view tab, super_admin) exist. Scope =
-  FINISH + ENFORCE not greenfield: wire group-scope into ~43 company_id queries (App.jsx) + 36
-  components; consume branch_visibility for per-level need-to-know; super_admin endgame =
-  setup/settings/first-user only, no CRM data (ties Multi_Tenant_Identity_Model.md). Founder's
-  mental model verified correct by the dig.
-- #12 FILTERED-LIST REDUNDANCY (design principle, app-wide): multiple buttons/cards opening the
-  same pre-filtered list = one feature in many costumes. An element earns its place only if it
-  shows info not otherwise visible OR goes somewhere not trivially reachable. List filters ARE
-  the feature. Apply app-wide in content/UX pass.
-
-### Method reinforced
-"One cut, one visual check" when edits touch a live screen (build-clean != renders-right).
-Mutual accountability active — founder holds architect to it.
+- Al Mansoori `company_id` = `c23a2320-1b35-4636-a840-532c247a6cf9`
+- Abid `user_id` = `fa0aae73-847a-4bdc-b4be-f4c0ebb80974` (super_admin, `is_super_admin=true`)
+- Test logins: `mah284@` (super_admin) · `testagent4@` (sales agent) · `testmgr@` (manager) ·
+  `testviewer@` (viewer) - all `@testmans1.ae`
+- **PropPulse tables are GLOBAL** - `projects`, `project_units`, `properties`, `pp_developers`.
+  NEVER apply a `company_id` filter to them.
+- App.jsx top-level nav addition = 4 edits: import, TABS array, MODE_TABS (sales + both),
+  render handler.
+- New capability = 3 steps: seed SQL + `ACTION_TO_CAPABILITY` map entry + the gate.
 
 ---
 
-## SESSION ADDENDUM — 21 Jun 2026 (evening: walkthrough + dashboard redesign)
+## 6. WHERE THE PROJECT IS HEADED
 
-### Code shipped
-- ActivityLog crash FIXED (7f15e78): live src/components/sales/ActivityLog.jsx missing imports
-  ACT_TYPES, ACT_META, fmtDate. Orphan twin src/components/ActivityLog.jsx deleted.
-- DASHBOARD REDESIGN (1f0e935 + 16376ea): premium-dense. Slim navy greeting strip replaced
-  tall gradient hero. Above-fold cockpit row (Opportunities-by-Stage + Quick Actions + Recent
-  Activity). Kept Team Performance (role-gated, no-blanks). Cut Today-at-a-Glance band,
-  Won/Lost row, Quick Actions 5->3. Nav fixed: Active/Won/stage -> "opportunities" (was
-  reports/leads). Stat-card padding trimmed to fit one screen. Floor tag: pre-dashboard-redesign.
+**Ratified plan (Day 68):** founder completes the app -> production cut -> 1 week pre-prod
+hardening -> 1 week findings/setup -> 2-day tester review -> close.
 
-### Full 14-screen walkthrough COMPLETE — details in docs/Walkthrough_Findings.md (Findings #1-#12)
-- #1 ActivityLog crash FIXED. #2/#3/#6 dashboard nav FIXED in redesign. #4/#5 wow-redesign +
-  role-no-blanks DONE.
-- #7 PropertyPackModal share button = intentional Phase 2.3 seam, NOT regression. Foundation
-  (getPropertyPackAssets resolver) built; SEND UI unbuilt. Founder recalls a WORKING picker on
-  ANOTHER surface (to locate). Park under Comms Overhaul.
-- #8 Users>Settings = old SettingsTab (app-config mode/currency/country), park for Unified
-  Settings consolidation. #9 Customers = Phase 2.5 lifecycle (works). #10 Commission empty =
-  test-data only.
+**Immediate:** `MASTER_PENDING_BOARD.md` section A (block finish) is CLOSED; section B
+(pre-prod hardening) is the live front, B1 data-freshness merged Day 76.
 
-### MAJOR ARCHITECTURE captured (founder directives)
-- #11 HIERARCHICAL RLS / need-to-know: simple model = everything is a Company (company_id is
-  the foundation); individual = company-of-one (no separate type); optional group_id above
-  (null = standalone). DIG FOUND IT'S ALREADY SCAFFOLDED: groups table exists (id, name,
-  branch_visibility), companies.group_id nullable + code handles null, GroupBranchesSection.jsx
-  (settings) + GroupConsolidatedView component (group_view tab, super_admin) exist. Scope =
-  FINISH + ENFORCE not greenfield: wire group-scope into ~43 company_id queries (App.jsx) + 36
-  components; consume branch_visibility for per-level need-to-know; super_admin endgame =
-  setup/settings/first-user only, no CRM data (ties Multi_Tenant_Identity_Model.md). Founder's
-  mental model verified correct by the dig.
-- #12 FILTERED-LIST REDUNDANCY (design principle, app-wide): multiple buttons/cards opening the
-  same pre-filtered list = one feature in many costumes. An element earns its place only if it
-  shows info not otherwise visible OR goes somewhere not trivially reachable. List filters ARE
-  the feature. Apply app-wide in content/UX pass.
+**Before any paying client:** `Go_Live_Readiness_Register.md` Horizon 2 - clean-slate reset
+rehearsed twice, RLS audit, backup/restore drill, identity split.
 
-### Method reinforced
-"One cut, one visual check" when edits touch a live screen (build-clean != renders-right).
-Mutual accountability active.
+**Vision (compass, not a build plan):** PropOS - a property-lifecycle operating system.
+Broker (live) -> Developer -> CAFM -> Construction, on ONE data spine. Multi-geography via
+per-market delta packs, never a forked core. Pitch the big vision, execute narrow.
+
+---
+
+*This document is REWRITTEN, never appended. If you are adding to the bottom, you are doing it
+wrong - update the section that is now untrue and re-date the header.*
