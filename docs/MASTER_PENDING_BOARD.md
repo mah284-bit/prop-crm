@@ -15,7 +15,16 @@ rebuild · A5 ✓ text · A12 ✓ merged + tagged · A14 ✓ calculator locked a
 overflow · A8 rich unit picker · A9 calculator totals-on-top · A10 Cut 6a booking clock ·
 A11 clearance-at-the-door · A13 block payment lifecycle.
 
-## B - PRE-PROD HARDENING (the live front)
+## TESTING DOCTRINE (founder ruling - governs the whole board)
+Unit-test every cut as it ships. **NO end-to-end round until development STOPS.** Running E2E
+on a moving app = walking the same ladder repeatedly, hitting issues caused by half-built
+features, re-testing what is about to change - the "1 step forward, 2 back" pattern the founder
+built this discipline to prevent.
+THREE E2E ROUNDS, in order: (1) when development closes · (2) with testers · (3) at pre-go-live.
+CONSEQUENCE: section B below is NOT the current front. It is the gate that opens when the build
+list (section C, v1 scope) is finished.
+
+## B - PRE-PROD HARDENING (NOT NOW - opens when development stops)
 B1. ✅ **CLOSED Day 76** - data freshness. `useFreshData` hook (focus/visibility refetch, 10s
     throttle, hold-during-dialog, silent variant) + master load SPLIT from realtime
     subscription. Adopted on BlockWorkspace, BlockDealsPage, Dashboard, and 4 App.jsx loads.
