@@ -87,6 +87,7 @@ developer till the deal closes; after closing, follow-up calls till handover."
 | `MASTER_PENDING_BOARD.md` | Every outstanding item, verified, grouped A-D |
 | `HANDOFF_CURRENT.md` | Session log (history only - NOT the head) |
 | `DOCUMENTATION_PRINCIPLES.md` | The six rules governing all of the above |
+| `FOUNDER_SESSION_PROCEDURE.md` | Abid's own session-start / session-close checklist |
 
 ### GOVERNANCE - read before acting in these areas
 | Doc | Holds |
