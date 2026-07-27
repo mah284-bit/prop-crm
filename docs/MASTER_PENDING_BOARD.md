@@ -1,3 +1,8 @@
+> **THIS IS THE WORK LIST - what is outstanding, verified.**
+> Head: `docs/PropCRM_Master_Context_and_Takeover.md` · Log: `docs/HANDOFF_CURRENT.md`
+> Go-live readiness lives in `docs/Go_Live_Readiness_Register.md` - NOT duplicated here.
+> Rule: nothing enters this board unverified against repo/DB.
+
 # MASTER PENDING BOARD
 Built Day 75 (26 Jul 2026), first hour. Swept: HANDOFF (54 markers) + GF capture + older strata
 (Deferred_Day39, Price_Columns, App_Normalisation, CLEANUP, Decision_Log, CURRENT_STATUS) +

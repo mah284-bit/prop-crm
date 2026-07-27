@@ -1,3 +1,9 @@
+> **THIS IS THE SESSION LOG - HISTORY, NOT STATE.**
+> Read `docs/PropCRM_Master_Context_and_Takeover.md` FIRST - that is the head.
+> Outstanding work lives in `docs/MASTER_PENDING_BOARD.md`.
+> This file is APPENDED at session close. Never treat an old entry as current truth.
+> Governed by docs/DOCUMENTATION_PRINCIPLES.md.
+
 # ============================================================
 # TOP DOCTRINE - DATA FRESHNESS (never bury this)
 # TRUST THE DB, NEVER PRIOR STATE. Components refetch on open/focus.
