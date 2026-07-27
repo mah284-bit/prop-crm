@@ -13,7 +13,7 @@ export function useFreshData(loadFn, deps = [], opts = {}) {
 
   useEffect(() => {
     lastRun.current = Date.now();
-    loadFn();
+    const cleanup = loadFn();
 
     const maybeReload = () => {
       if (holdRef.current) return;
@@ -28,6 +28,7 @@ export function useFreshData(loadFn, deps = [], opts = {}) {
     return () => {
       window.removeEventListener("focus", maybeReload);
       document.removeEventListener("visibilitychange", onVis);
+      if (typeof cleanup === "function") cleanup();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);

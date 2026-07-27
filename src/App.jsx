@@ -2158,13 +2158,13 @@ export default function App(){
   },[currentUser]);
 
 
-  useEffect(()=>{
+  useFreshData((silent)=>{
     if(!currentUser)return;
     let live = true;
     const safe=async(q)=>{ try{const r=await q;return{data:(r.data||[])};}catch(e){console.warn("Query error:",e);return{data:[]};} };
     const cid = activeCompanyId || currentUser.company_id || null;
     const load=async()=>{
-      setDataLoading(true);
+      if(!silent) setDataLoading(true);
       try{
         const[l,pr,a,u,d]=await Promise.all([
           safe(cid
@@ -2239,12 +2239,18 @@ export default function App(){
       if(live) setDataLoading(false);
     };
     load();
+    return()=>{ live=false; };
+  },[currentUser, activeCompanyId], { silentReload: true });
+
+  useEffect(()=>{
+    if(!currentUser)return;
+    const cid = activeCompanyId || currentUser.company_id || null;
     const ch=supabase.channel("v3-changes-"+cid)
       .on("postgres_changes",{event:"*",schema:"public",table:"leads"},p=>{if(p.eventType==="INSERT")setLeads(x=>x.some(r=>r.id===p.new.id)?x:[p.new,...x]);if(p.eventType==="UPDATE")setLeads(x=>x.map(l=>l.id===p.new.id?p.new:l));if(p.eventType==="DELETE")setLeads(x=>x.filter(l=>l.id!==p.old.id));})
       .on("postgres_changes",{event:"*",schema:"public",table:"activities"},p=>{if(p.eventType==="INSERT")setActivities(x=>x.some(r=>r.id===p.new.id)?x:[p.new,...x]);if(p.eventType==="UPDATE")setActivities(x=>x.map(a=>a.id===p.new.id?p.new:a));if(p.eventType==="DELETE")setActivities(x=>x.filter(a=>a.id!==p.old.id));})
       .on("postgres_changes",{event:"*",schema:"public",table:"opportunities"},p=>{if(p.eventType==="INSERT")setOpps(x=>x.some(r=>r.id===p.new.id)?x:[p.new,...x]);if(p.eventType==="UPDATE")setOpps(x=>x.map(o=>o.id===p.new.id?p.new:o));if(p.eventType==="DELETE")setOpps(x=>x.filter(o=>o.id!==p.old.id));})
       .subscribe();
-    return()=>{ live=false; supabase.removeChannel(ch); };
+    return()=>{ supabase.removeChannel(ch); };
   },[currentUser, activeCompanyId]);
 
   const handleLogin=user=>{
