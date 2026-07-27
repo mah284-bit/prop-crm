@@ -60,7 +60,18 @@ B9. DOC VERIFY (from the Day-76 index): `Architecture_TwoLayer_LiveStateAndHisto
     `Architecture_FinalProposalFirst_PhaseB.md` may be superseded by the honest ledger and the
     V_latest cascade. Read and either re-date or archive.
 
-## C - DESIGN SESSIONS OWED (design first, then build)
+## ⭐ V1 SCOPE - THE BUILD LIST (architect call Day 76, founder to ratify)
+"NO MORE DEVELOPMENT" needs a definition or it never arrives. THESE FIVE, then development
+STOPS and section B opens:
+  V1-1  C1  Block ledger phase - post-reservation block money (design already written)
+  V1-2  C13 Block polish + Cut 6a BOOKING CLOCK (the last unbuilt block seam)
+  V1-3  C4  Money smalls, one cut (waived guard, gross-vs-net, valid_until, invoice zeros)
+  V1-4  B5  KYC bucket PRIVATE + signed URLs (security, not polish - real exposure today)
+  V1-5  B8  buyer_type guard: form enforcement proven + DB constraint (double protection)
+EVERYTHING ELSE IN C AND D IS POST-TESTER. Not worse, not forgotten - just not what stands
+between here and a finished v1. Improvement is infinite; completion is a decision.
+
+## C - DESIGN SESSIONS OWED (v1 items marked above; rest is post-tester)
 C1. **BLOCK LEDGER PHASE** - post-reservation block money (instalments, DLD, SPA fees across N
     children) using the 1-to-1 ledger grammar at block level. Design of record already written:
     `Block_Ledger_Phase_Design.md` (BL-1..BL-4). Founder ruling: reuse the known screen, invent
