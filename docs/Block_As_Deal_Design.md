@@ -66,3 +66,51 @@ dead steps obvious within minutes.
 CONSEQUENCE: silo tests prove CORRECTNESS; only an UNINTERRUPTED walk exposes FEEL. There are
 probably more findings of this kind, and they will surface the same way - walk without stopping,
 note the friction, fix afterwards.
+
+## POST-RESERVATION CHANGE - THREE TIERS (ratified Day 77)
+Founder raised cancel-and-recreate for all post-reservation change. Architect challenged it
+against the Day-68 unit-switch ruling (re-point, do not close-and-clone: cloning breaks history,
+orphans payments, fakes Lost metrics). Founder accepted the challenge and asked for the best
+route. This is it.
+
+TIER 1 - COMPOSITION CHANGE (swap / drop / add a unit)
+Same buyer, same developer, adjusted arrangement. Use the machinery already built: DETACH (unit
+leaves, child survives standalone), DROP (child Closed Lost, unit freed), ADD (new line, needs
+next lock), UNIT SWITCH (re-point, terms reset, money stays). Mandatory reason, audit line,
+distribution goes to D(n+1). Money already collected STAYS on the block and re-allocates across
+the new composition.
+
+TIER 2 - TERMS CHANGE (plan, DLD, deeper discount)
+Developer-authority doctrine, already live: capture approval, then D(n+1) locks and re-prices
+pre-SPA children; contract-locked deals skipped by name. Money untouched - it was paid against
+the deal, not against a price.
+
+TIER 3 - THE ARRANGEMENT ENDS (cancel and recreate)
+Buyer walks, developer withdraws, or the deal is restructured so fundamentally the developer
+treats it as new. Block closes with reason; money recorded as refund/forfeit; a fresh block is
+created if the buyer returns.
+
+## THE LINE BETWEEN THEM: THE FORFEIT
+FOUNDER'S TEST, adopted as the rule: **if the DEVELOPER FORFEITS, the old arrangement is dead
+-> cancel. If not -> ceremony.**
+Clean because it is not our judgment call. The developer decides what is material enough to
+forfeit against, and the broker records it.
+
+## WHY CANCELLING IS NOT "PIPELINE POLLUTION" ON A BLOCK (founder correction, accepted)
+The architect objected that cancel-and-recreate produces a fake Closed Lost. Founder: on a BLOCK
+the whole organisation knows - 5,000,000 does not quietly vanish. A cancelled block SHOULD show
+in reports because it genuinely happened. The pollution argument applies to a broker quietly
+re-creating a 700K deal to tidy his numbers, not to this.
+
+## MONEY IS RECORDED, NEVER COMPUTED (founder)
+1. The DEVELOPER decides the forfeit amount. The broker cannot challenge it - he records it.
+2. Debit/credit lives at the developer's end. PropCRM records the movement, never calculates it.
+3. Consistent with the north star: "a broker app, just recording, but depicting reality."
+
+## SHAPE IT DEVELOPER-READY (founder: "not PropCRM - it is a BROKER PORTAL, developer coming")
+Today these are one-directional records: the broker types what the developer told him. When the
+developer persona lands, the SAME events become two-party: the developer records the forfeit and
+the broker sees it; debit/credit becomes a real movement on one spine.
+CONSEQUENCE FOR THE BUILD: model money events as EVENTS WITH AN AUTHOR, not as notes on a broker
+screen - so the developer module INHERITS them rather than replacing them. (The existing
+developer-approval capture - reference + proof + approver - is already the right shape.)
