@@ -122,7 +122,19 @@ const confirmBlock = async (b) => {
     if (!dl) { showToast("Lock a distribution first - confirmation births deals at D_latest prices", "error"); return; }
     const buyer = leads.find(x => x.id === b.lead_id);
     if (!buyer) { showToast("Buyer lead not found", "error"); return; }
-    const activeLines = (b.block_deal_units || []).filter(x => x.status === "proposed");
+    // IDEMPOTENCY GUARD (Day 77): NEVER trust the page's in-memory copy for a commitment.
+    // Root cause of the Khalid double-birth: b.block_deal_units was loaded at page render, so
+    // after a first confirm the stale copy still showed lines as "proposed" and a second click
+    // birthed the whole set again (six children on three units).
+    const { data: freshLines } = await supabase.from("block_deal_units")
+      .select("id, unit_id, unit_ref, list_price, status, child_opportunity_id")
+      .eq("block_deal_id", b.id);
+    const alreadyBorn = (freshLines || []).filter(x => x.child_opportunity_id);
+    if (alreadyBorn.length > 0) {
+      showToast("This block is already confirmed - " + alreadyBorn.length + " deals were born. Nothing to do.", "error");
+      return;
+    }
+    const activeLines = (freshLines || []).filter(x => x.status === "proposed");
     if (activeLines.length === 0) { showToast("No proposed lines to confirm", "error"); return; }
     if (!window.confirm("Confirm block " + b.title + "? This births " + activeLines.length + " deals at D" + dl.version + " prices and claims the units. This is the commitment moment.")) return;
     let born = 0;

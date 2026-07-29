@@ -79,3 +79,15 @@ produce the deal, not just record inputs.
 ALSO: the calculator is two things at once - a VIEWER of the locked version and a DRAFTING
 surface for the next - and nothing says which. Header says "D1 locked" while the terms sit
 editable. Needs an explicit viewing-vs-drafting state.
+
+## CONFIRMED ON THE LIVE WALK (Day 77) - THE FORM DOES TWO JOBS
+The "Record SPA Signing" dialog opens from the SPA REQUIREMENTS stage and is really the
+COLLECTION ledger (Bill / Collected / To collect, per-particular Received+Mode+Date, waive,
+variance, commission preview). Nothing has been signed at that point.
+Live numbers on SHI-13-09: Bill 383,899.98 . Collected 25,000 (reservation credited) . To
+collect 358,899.98 . First instalment 249,735.70 (10% of 2,497,357) . SPA fee 5,250 . DLD 4%
+99,894.28 . Oqood 4,020 . Outstanding to developer 2,472,357 . Commission preview 104,888.99.
+lib/dealBill.js computes the SAME figures - the engine is correct, only its TIMING is wrong.
+SPLIT NEEDED (matches the founder's Day-77 sticky): (1) COLLECTION ledger, born at reservation,
+lives through SPA Requirements, used continuously; (2) SPA SIGNING ceremony - reference, date,
+document upload - a separate, final act. Today one dialog does both, titled as the second.
