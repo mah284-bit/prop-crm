@@ -118,3 +118,30 @@ Typing a top-down block pct without pressing Suggest pro-rata does nothing visib
 broker thinks it broke (Cold-Look Law violation). FIX: when top-down box has a value that
 lines dont yet reflect, nudge - highlight/pulse the Suggest button or show hint (Press
 Suggest to apply X% to all lines). Silent box-vs-lines divergence is the trap. Small cut.
+
+## BLOCK TERMS ARE UNIFORM (founder ruling, Day 77) - the definition of a block
+QUESTION RAISED at BL-1: can unit A be 20/80 while unit B is 10/90?
+FOUNDER RULING: "if it is different, then the block concept does not have meaning."
+A block exists because ONE buyer negotiates ONE arrangement with ONE developer. Uniform terms
+are the DEFINITION, not a simplification.
+WHAT VARIES: the PRICE per unit (that is exactly what the distribution calculator is for -
+pro-rata or per-line discounts).
+WHAT DOES NOT: payment plan preset, DLD arrangement, fee structure. Set once at BLOCK level,
+inherited by every child - the same way net price flows down from D_latest.
+REVISIT TRIGGER: only if a real case comes back where terms genuinely differ per unit.
+Not building for a hypothetical.
+
+## GAP FOUND (Day 77) - BLOCK CHILDREN CARRY NO TERMS
+Verified on Khalid's block: all three children have current_payment_plan_preset = NULL,
+current_dld_payer = NULL, current_dld_split_pct = NULL. Only price and reservation_amount are set.
+CAUSE: a 1-to-1 deal gets plan + DLD from a PROPOSAL. A block child is born from the CALCULATOR,
+which sets price only. So the block money story stops at the reservation - which is exactly where
+it stops today.
+FIX (required before the block ledger phase can compute anything):
+ 1. Distribution calculator gains PAYMENT PLAN PRESET + DLD ARRANGEMENT (buyer / developer
+    absorbs / split X% / negotiated).
+ 2. They lock WITH the distribution - part of D_latest, versioned like everything else.
+ 3. Children are born carrying them, as they already carry their net price.
+ 4. Existing children backfill when the block's terms are first set.
+ 5. THEN dealBill() can compute each child's instalments, DLD, SPA fee and Oqood, and the block
+    ledger has something real to show.

@@ -58,7 +58,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
     const { data: lines } = await supabase.from("block_deal_units").select("*").eq("block_deal_id", block.id).order("created_at");
     const childIds = (lines || []).map(x => x.child_opportunity_id).filter(Boolean);
     let opps = [];
-    if (childIds.length) { const { data: od } = await supabase.from("opportunities").select("id, stage, status, current_agreed_price, budget, reservation_amount, reservation_date, lead_id, unit_id").in("id", childIds); opps = od || []; }
+    if (childIds.length) { const { data: od } = await supabase.from("opportunities").select("id, stage, status, current_agreed_price, budget, reservation_amount, reservation_date, lead_id, unit_id, current_payment_plan_preset, current_dld_payer, current_dld_split_pct").in("id", childIds); opps = od || []; }
     setChildRows((lines || []).map(ln => ({ line: ln, child: opps.find(o => o.id === ln.child_opportunity_id) || null })));
     const { data: allD } = await supabase.from("block_distributions").select("*").eq("block_deal_id", block.id).order("version", { ascending: false });
     setDHistory(allD || []);
