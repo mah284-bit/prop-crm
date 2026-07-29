@@ -1,6 +1,6 @@
 # PropCRM - MASTER CONTEXT (THE HEAD)
 **READ THIS FIRST. EVERY SESSION. BEFORE ANY WORK.**
-Last verified against repo: 27 Jul 2026 (Day 76) - HEAD 5704927
+Last verified against repo: 28 Jul 2026 (Day 77) - HEAD 91cb26b
 Governed by: docs/DOCUMENTATION_PRINCIPLES.md (six rules, founder-ratified)
 
 ## THE THREE LIVING DOCUMENTS - one job each, no overlap
@@ -186,8 +186,14 @@ tag a golden checkpoint before anything risky.
 **Ratified plan (Day 68):** founder completes the app -> production cut -> 1 week pre-prod
 hardening -> 1 week findings/setup -> 2-day tester review -> close.
 
-**Immediate:** `MASTER_PENDING_BOARD.md` section A (block finish) is CLOSED; section B
-(pre-prod hardening) is the live front, B1 data-freshness merged Day 76.
+**TESTING DOCTRINE (governs everything):** unit-test every cut; NO end-to-end round until
+development STOPS. Three E2E rounds: dev-close, testers, pre-go-live. Section B of the board is
+therefore NOT the current front - it is the gate that opens when the build list is finished.
+
+**Immediate:** V1 SCOPE is defined on the board - five items, then development stops:
+V1-1 block ledger phase (NEXT) · V1-2 block polish + booking clock · V1-3 money smalls ·
+V1-4 KYC bucket private · V1-5 buyer_type guard. OPEN QUESTION: is C15 (title holders / joint
+purchases) a sixth v1 item? Founder call pending.
 
 **Before any paying client:** `Go_Live_Readiness_Register.md` Horizon 2 - clean-slate reset
 rehearsed twice, RLS audit, backup/restore drill, identity split.
