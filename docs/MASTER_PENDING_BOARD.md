@@ -72,6 +72,15 @@ EVERYTHING ELSE IN C AND D IS POST-TESTER. Not worse, not forgotten - just not w
 between here and a finished v1. Improvement is infinite; completion is a decision.
 
 ## C - DESIGN SESSIONS OWED (v1 items marked above; rest is post-tester)
+C0. **BLOCK AS A FIRST-CLASS DEAL** (`Block_As_Deal_Design.md`, Day 77) - the block carries the
+    journey, activities, communications, next steps and money; the child opp becomes an execution
+    record (unit, price, SPA, DLD, commission) worked FROM the block. Today a 700K 1-to-1 has a
+    full deal life and a 5M block has status words - backwards. Includes: the three tiers of
+    post-reservation change with the FORFEIT as the line, money recorded never computed, and
+    developer-ready event shapes. **This supersedes C1 as the block's real scope.**
+C0b. **1-TO-1 FLOW SIMPLIFICATION** - merge the reservation ceremony with the ledger's birth
+    (kills two dead steps), enable partial receipts with a save-progress door, and print the
+    receipt: received / balance / due by. Changes the CERTIFIED money path - own cut, own test.
 C1. **BLOCK LEDGER PHASE** - post-reservation block money (instalments, DLD, SPA fees across N
     children) using the 1-to-1 ledger grammar at block level. Design of record already written:
     `Block_Ledger_Phase_Design.md` (BL-1..BL-4). Founder ruling: reuse the known screen, invent
