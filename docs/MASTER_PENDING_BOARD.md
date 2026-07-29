@@ -105,6 +105,16 @@ C13. BLOCK POLISH (from A): approval REFERENCE vs NOTE split · adopt-panel over
      Cut 6a BOOKING CLOCK (nags, never auto-cancels) · clearance-at-the-door · block payment
      LIFECYCLE (bounce/replace - today block money is recorded as fact, post-accounts).
 C14. OPP LIST PRICE COLUMNS: Budget + Price + Final side-by-side.
+C16. ⚠️ DLD VOCABULARY SPLIT (found Day 77 during BL-2). TWO dialects: proposal side uses
+     DLD_OPTIONS (buyer_pays / split_5050 / developer_pays / specific_amount); SPA-ledger side
+     uses dldPayer (buyer / developer / split / negotiated). THREE partial translations exist
+     (OpportunityDetail L4075 proposal->opp, L2590 opp->proposal, L1934/2591 share math) and
+     ONE IS BROKEN: L4075 tests for "developer_absorbs" which is NOT a real value - the constant
+     says "developer_pays" - so a developer-absorbs proposal silently maps to BUYER. Live bug in
+     the money path. Also: specific_amount is unhandled in the reverse map.
+     FIX: one canonical vocabulary + one mapping helper in lib. Own cut, own straight-test.
+     BLOCK DECISION (Day 77): the block stores the SPA-side values - what dealBill() consumes
+     and what the child opp columns hold. No third dialect.
 C15. TITLE HOLDERS - "in whose name?" (`Title_Holders_Design_Capture.md`, Day 76). The app
      cannot record a JOINT purchase - one lead = one buyer is assumed everywhere. Holders belong
      to the OPPORTUNITY (same buyer holds different deals in different names). Founder HARD RULE:
