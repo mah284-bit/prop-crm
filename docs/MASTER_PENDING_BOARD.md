@@ -223,3 +223,19 @@ FIX ORDER: (1) add block_deals.assigned_to (uuid -> profiles), backfill from cre
 (2) rewrite the five block RLS policies to mirror the opportunities policy - company scope PLUS
 the capability tiers; (3) surface owner in the Workspace header and allow reassignment.
 NOTE: super_admin stays wide open by design during build; stripped at pre-go-live hardening.
+
+## ADDED DAY 78 - DLD PCT HARD-CODED ACROSS 3 FILES (systemic, own cut)
+FIXED TODAY: SPA fee and Oqood now read the company policy (Settings > Buyer Fees -> feeSettings
+resolver -> ledger). PROVEN LIVE: SPA 6000 set in Settings appears as Expected 6,000.
+STILL HARD-CODED: DLD at 4%. Setting it to 5 in Settings changes nothing - the ledger still shows
+4% (234,574.96 on a 5,864,374 deal). Sites found: OpportunityDetail L925 (the ledger), L2348
+(Financials card), L3723 (property pack), L4420, L4654 (split calc), plus a hard-coded "(4%)"
+LABEL at L4738 and in the DLD button header. ALSO in ProposalBuilderDialog and ReportsModule.
+WHY NOT FIXED TODAY: patching one site makes surfaces DISAGREE (ledger 5%, Financials card 4%,
+side by side) - worse than consistent-but-wrong. Needs one systemic cut with companyFees plumbed
+into all three files, and its own straight-test across every surface.
+RISK TODAY IS LOW: DLD is a UAE GOVERNMENT rate - 4% for everyone. No brokerage varies it. This
+is correctness debt, not a live wound. (SPA fee was different: brokerages genuinely vary it,
+which is why that one was fixed today.)
+NOTE: same pattern elsewhere - property pack line 3723 does `sp.agency_fee_pct || 2` for agency
+fee: setting exists, constant used as fallback, label hard-coded "(2%)".
