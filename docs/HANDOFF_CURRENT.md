@@ -1157,3 +1157,40 @@ a company for nationality + Arabic name). NEW C15 TITLE HOLDERS: the app cannot 
 purchase - "in whose name?" is never asked. Holders belong to the OPPORTUNITY. Founder hard
 rule: every name on the SPA has documents, no override. OPEN: is C15 in v1?
 NEXT SESSION: read the head, then the board. V1-1 is the block ledger phase.
+
+## ── DAY 77 (29 Jul) — THE DAY THE BLOCK BECAME A DEAL ──
+BUILT: dealBill.js (pure per-particular bill derivation, one truth for both ledgers) · BLOCK
+TERMS on the distribution calculator (payment plan + DLD, uniform per founder ruling, versioned
+with D_n, hydrates on reopen) · adopt-panel filter fixed (was offering SPA-Signed and Closed-Lost
+deals) · adopt unit-ref now joined properly (was falling back to long titles and breaking layout)
+· confirm idempotency guard (root cause: the page's in-memory copy, not a fresh DB read - the
+Khalid six-children-on-three-units bug). Branch feature/block-ledger, NOT merged.
+FOUNDER RULINGS: block terms are UNIFORM - "if it is different, then the block concept does not
+have meaning" · blocks follow the SAME visibility ladder as 1-to-1 (agent/manager/group manager/
+viewer) · partial receipts ALLOWED so the broker carries follow-up responsibility · post-
+reservation change has THREE TIERS with THE FORFEIT as the line (developer forfeits -> cancel;
+otherwise ceremony) · money is RECORDED, never computed - the developer decides, the broker
+records · this is a BROKER PORTAL, developer portal to follow - shape money events with an author.
+THE BIG ONE: after an uninterrupted 1-to-1 walk, founder ruled the BLOCK IS A FIRST-CLASS DEAL.
+It carries the journey, activities, communications, next steps and money; the child opp becomes
+an execution record (unit, price, SPA, DLD, commission) worked FROM the block. A 700K 1-to-1 has
+a full deal life; a 5M block had status words. Backwards. Design of record:
+docs/Block_As_Deal_Design.md.
+ALSO RULED: merge the reservation ceremony with the LEDGER'S BIRTH - kills two dead steps
+("Advance to SPA Requirements" only recoloured buttons; the collection ledger lived inside a
+dialog named "Record SPA Signing"). Commercial reason: a printable RECEIPT at the reservation
+moment - received / balance / due by - in the buyer's hand while he is still in the room.
+METHOD FINDING: silo tests prove correctness; only an UNINTERRUPTED end-to-end walk exposes FEEL.
+Every earlier walk was broken by discussion, so the friction never accumulated. Expect more
+findings of this kind, the same way.
+FOUND + BOARDED, NOT FIXED: fees are HARD-CODED (5250/4020/4%) though designed as company
+settings - and the developer-override chain is broken (reads opp.developer_id, which does not
+exist) · DLD vocabulary split across two dialects with one broken mapping · money inputs have no
+thousands separators · block has no owner column · the pre-SPA ledger is a jsonb blob shaped by
+the form, not the data (reporting + audit consequence) · adopt-panel checkbox renders detached
+(C13-a, five cuts failed - inspect computed styles next).
+V1 GREW from five items to ten. Founder: testers are his to manage - build it RIGHT, in
+dependency order, not to a date.
+NEXT (architect order, founder deferred): (1) company fee settings + one resolver - unblocks both
+ledgers · (2) block owner column + visibility ladder · (3) C0b 1-to-1 flow simplification ·
+(4) C1 block ledger · (5) C0 block deal life.
