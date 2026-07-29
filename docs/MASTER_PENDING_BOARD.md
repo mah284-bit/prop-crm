@@ -201,6 +201,16 @@ Verified: all five block tables have RLS ON and scope correctly to the caller's 
 cross-tenant leak. But unlike leads/opps/activities (which also scope by see_own_data /
 downline), the block policies are company-wide ONLY. So ANY agent sees EVERY block in the
 company, with buyer names and money.
-Possibly correct by design - a block is a company-level commercial arrangement, not a personal
-book - but it was never ruled. FOUNDER RULING NEEDED: should a junior agent see the whole
-company's block pipeline?
+FOUNDER RULING (Day 77): BLOCKS FOLLOW THE SAME VISIBILITY LADDER AS 1-TO-1 DEALS.
+  Agent -> own blocks only · Sales Manager -> his team · Group Sales Manager -> his territories
+  (Sharjah, Dubai...) · Viewer (GM/executive) -> everything read-only · Admin/super_admin -> all.
+  Maps to the existing capability tiers: see_own_data -> see_branch_data (downline) ->
+  see_group_data. The Group-Sales-Manager tier needs the territory/branch structure that is
+  still unbuilt (parked Day 49).
+BLOCKER FOUND: block_deals HAS NO OWNER COLUMN. Only created_by - and authorship is not
+ownership (an admin creating a block for an agent would make it invisible to that agent, the
+same distinction opportunities solve with assigned_to vs created_by).
+FIX ORDER: (1) add block_deals.assigned_to (uuid -> profiles), backfill from created_by;
+(2) rewrite the five block RLS policies to mirror the opportunities policy - company scope PLUS
+the capability tiers; (3) surface owner in the Workspace header and allow reassignment.
+NOTE: super_admin stays wide open by design during build; stripped at pre-go-live hardening.
