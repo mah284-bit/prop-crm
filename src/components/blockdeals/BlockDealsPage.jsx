@@ -32,7 +32,7 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
       supabase.from("project_units").select("id, unit_ref, project_id, status").eq("status", "Available").order("unit_ref"),
       supabase.from("unit_sale_pricing").select("*"),
       supabase.from("pp_developers").select("id, name").order("name"),
-      supabase.from("opportunities").select("id, title, lead_id, unit_id, stage, budget, current_agreed_price").eq("status", "Active").is("block_deal_id", null),
+      supabase.from("opportunities").select("id, title, lead_id, unit_id, stage, budget, current_agreed_price, project_units(unit_ref)").eq("status", "Active").is("block_deal_id", null).not("stage", "in", "(Reserved,SPA Requirements,SPA Signed,Closed Won,Closed Lost)"),
       supabase.from("projects").select("id, developer"),
       supabase.from("block_deal_units").select("unit_id, status, block_deal_id").neq("status", "dropped"),
       supabase.from("opportunities").select("unit_id, stage, status").eq("status", "Active").not("unit_id", "is", null),
@@ -224,19 +224,17 @@ const confirmBlock = async (b) => {
                 <div style={{fontSize:12,fontWeight:700,color:"#92400E",marginBottom:6}}>ADOPT FROM EXISTING DEALS ({adoptPick.length} selected)</div>
                 <div style={{fontSize:11,color:"#B45309",marginBottom:8}}>This buyer has active deals. Select 2+ to convert them into a block (bulk terms set afterwards in the calculator). Or ignore and pick fresh units below.</div>
                 {/* adopt-row-fix */}
-                {buyerOpps.filter(o => o.lead_id === form.lead_id).map(o => { const uref = (o.title || "").match(/[A-Z]{2,4}-\d{2}-\d{2}/)?.[0] || (units.find(x => x.id === o.unit_id)?.unit_ref) || o.title; return (
-                  <label key={o.id} style={{/* adopt-row-v3 */display:"flex",gap:10,alignItems:"center",justifyContent:"flex-start",width:"100%",boxSizing:"border-box",padding:"7px 4px",fontSize:12,cursor:"pointer",borderBottom:"1px dashed #FDE68A",textAlign:"left"}}>
-                    <input type="checkbox" style={{flexShrink:0}} checked={adoptPick.includes(o.id)} onChange={e => setAdoptPick(p => e.target.checked ? [...p, o.id] : p.filter(x => x !== o.id))}/>
-                    <span style={{fontWeight:700,color:"#0F2540",whiteSpace:"nowrap"}}>{uref}</span>
-                    <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:10,background:"#F1F5F9",color:"#475569"}}>{o.stage}</span>
-                    <span style={{marginLeft:"auto",color:"#475569",fontWeight:600}}>{"AED " + Number(o.current_agreed_price || o.budget || 0).toLocaleString()}</span>
-                  </label>); })}
+                {buyerOpps.filter(o => o.lead_id === form.lead_id).map(o => { const uref = o.project_units?.unit_ref || (o.title || "").match(/[A-Z]{2,4}-\d{2}-\d{2}/)?.[0] || o.title; return (
+                  <div key={o.id} onClick={()=>setAdoptPick(p => p.includes(o.id) ? p.filter(x=>x!==o.id) : [...p, o.id])} style={{padding:"8px 6px",borderBottom:"1px dashed #FDE68A",cursor:"pointer",fontSize:12}}>
+                    <div style={{display:"block"}}><input type="checkbox" checked={adoptPick.includes(o.id)} readOnly style={{verticalAlign:"middle",margin:"0 6px 0 0"}} /> <b style={{color:"#0F2540"}}>{uref}</b> <span style={{color:"#64748B"}}>&middot; {o.stage}</span></div>
+                    <div style={{color:"#475569",fontWeight:600,paddingLeft:22}}>{"AED " + Number(o.current_agreed_price || o.budget || 0).toLocaleString()}</div>
+                    </div>); })}
               </div>
             )}
             <div style={{border:"1px solid #E8EDF4",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
               <div style={{fontSize:12,fontWeight:700,color:"#0F2540",marginBottom:8}}>UNIT LINES ({lines.length}) {String.fromCharCode(183)} {fmt(linesTotal)}</div>
               <div style={{display:"flex",gap:8,marginBottom:10}}>
-                <select value={unitPick} onChange={e=>{console.log("PICK fired:", e.target.value); setUnitPick(e.target.value);}} style={{flex:1,padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}><option value="">Pick a unit...</option>{units.filter(u=>!claimedUnitIds.has(u.id)).filter(u=>!lines.some(x=>x.unit_id===u.id)).filter(u=>{ if(!form.developer_name) return true; const pr = projects.find(x=>x.id===u.project_id); const norm = s => String(s||"").toLowerCase().split(" ")[0]; return pr && norm(pr.developer) === norm(form.developer_name); }).map(u=><option key={u.id} value={u.id}>{u.unit_ref} - {fmt(listPriceOf(u))}{softClaims[u.id] ? (" (in block: " + softClaims[u.id] + ")") : ""}</option>)}</select>
+                <select value={unitPick} onChange={e=>setUnitPick(e.target.value)} style={{flex:1,padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}><option value="">Pick a unit...</option>{units.filter(u=>!claimedUnitIds.has(u.id)).filter(u=>!lines.some(x=>x.unit_id===u.id)).filter(u=>{ if(!form.developer_name) return true; const pr = projects.find(x=>x.id===u.project_id); const norm = s => String(s||"").toLowerCase().split(" ")[0]; return pr && norm(pr.developer) === norm(form.developer_name); }).map(u=><option key={u.id} value={u.id}>{u.unit_ref} - {fmt(listPriceOf(u))}{softClaims[u.id] ? (" (in block: " + softClaims[u.id] + ")") : ""}</option>)}</select>
                 <button onClick={addLine} style={{padding:"8px 16px",borderRadius:7,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add</button>
               </div>
               {lines.map(x => (

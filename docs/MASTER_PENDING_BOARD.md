@@ -164,3 +164,16 @@ CLEANUP: soft-close the three phantom Offer-Accepted opps on EBT-08-04/09-05/10-
 ALSO SEEN: Chen Wei New Block 2 has collection_status=open and "Reservation Amt Expected: not
 set", yet all three children are already Reserved - a state the Day-76 gate now forbids. Legacy
 of pre-gate data; confirm no path can still produce it.
+
+## ADDED DAY 77 - ADOPT PANEL (partly fixed, one cosmetic mystery left)
+FIXED: (1) the filter offered deals it must refuse - SPA-Signed and Closed-Lost deals appeared
+as adoptable. Rule now: Active + not already in a block + stage NOT in Reserved/SPA Requirements/
+SPA Signed/Closed Won/Closed Lost. (2) unit ref came from a lookup in `units`, which only holds
+AVAILABLE units - so a claimed unit could never resolve and fell back to the long opp title,
+which with whiteSpace:nowrap pushed the row past the dialog edge. Now joined directly:
+opportunities.select(...project_units(unit_ref)). (3) row rebuilt as plain two-line block.
+STILL OPEN (cosmetic, C13-a): the checkbox renders detached from its row - floating centre-right
+on its own line - despite being an inline <input> immediately before the ref inside one block
+div. Survived five cuts (flex fixes, label->div, plain block rebuild). NOT in this file: suspect
+a GLOBAL input style or an ancestor rule. NEXT SESSION: inspect the input in DevTools Elements,
+read its computed styles, find the rule. Ten minutes with the right evidence; an hour without.
