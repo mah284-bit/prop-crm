@@ -52,18 +52,12 @@ export default function BuyerFeesSection({ currentUser, showToast, canEdit }) {
 
   if (loading) return <div style={{ color: "#94A3B8", fontSize: 13 }}>Loading fee policy...</div>;
 
-  const Row = ({ id, label, note, standard, suffix }) => (
-    <div style={{ marginBottom: 20 }}>
-      <label style={lbl}>{label}</label>
-      <input type="number" value={form[id]} disabled={!canEdit}
-        onChange={e => setForm(f => ({ ...f, [id]: e.target.value }))}
-        placeholder={"standard: " + standard} style={inp} />
-      {suffix && <span style={{ marginLeft: 8, fontSize: 13, color: "#64748B" }}>{suffix}</span>}
-      <div style={hint}>{note}</div>
-      {String(form[id]).trim() === "" &&
-        <div style={{ fontSize: 11, color: "#B45309", marginTop: 3 }}>Not set - using the standard {standard}</div>}
-    </div>
-  );
+  const rows = [
+    ["reservation", "Reservation fee", fmt(FALLBACK.reservationFee), "", "What the buyer pays to reserve a unit. A block expects this multiplied by the number of units."],
+    ["spa", "SPA fee", fmt(FALLBACK.spaFee), "", "Charged at SPA. Set your figure including any admin uplift."],
+    ["oqood", "Oqood fee", fmt(FALLBACK.oqoodFee), "", "Off-plan registration fee."],
+    ["dld", "DLD fee", FALLBACK.dldPct + "%", "% of the sale price", "Dubai Land Department transfer fee. Who pays it (buyer / developer / split) is decided per deal."],
+  ];
 
   return (
     <div style={{ background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 2px 8px rgba(15,37,64,0.06)" }}>
@@ -77,14 +71,18 @@ export default function BuyerFeesSection({ currentUser, showToast, canEdit }) {
         individual deal; this is the standard he starts from.
       </div>
 
-      <Row id="reservation" label="Reservation fee" standard={fmt(FALLBACK.reservationFee)}
-        note="What the buyer pays to reserve a unit. A block expects this multiplied by the number of units." />
-      <Row id="spa" label="SPA fee" standard={fmt(FALLBACK.spaFee)}
-        note="Charged at SPA. Set your figure including any admin uplift." />
-      <Row id="oqood" label="Oqood fee" standard={fmt(FALLBACK.oqoodFee)}
-        note="Off-plan registration fee." />
-      <Row id="dld" label="DLD fee" standard={FALLBACK.dldPct + "%"} suffix="% of the sale price"
-        note="Dubai Land Department transfer fee. Who pays it (buyer / developer / split) is decided per deal." />
+      {rows.map(([id, label, standard, suffix, note]) => (
+        <div key={id} style={{ marginBottom: 20 }}>
+          <label style={lbl}>{label}</label>
+          <input type="number" value={form[id]} disabled={!canEdit}
+            onChange={e => setForm(f => ({ ...f, [id]: e.target.value }))}
+            placeholder={"standard: " + standard} style={inp} />
+          {suffix && <span style={{ marginLeft: 8, fontSize: 13, color: "#64748B" }}>{suffix}</span>}
+          <div style={hint}>{note}</div>
+          {String(form[id]).trim() === "" &&
+            <div style={{ fontSize: 11, color: "#B45309", marginTop: 3 }}>Not set - using the standard {standard}</div>}
+        </div>
+      ))}
 
       {saved?.fees_updated_at &&
         <div style={{ fontSize: 11, color: "#94A3B8", marginBottom: 14 }}>
