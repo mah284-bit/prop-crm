@@ -114,3 +114,16 @@ the broker sees it; debit/credit becomes a real movement on one spine.
 CONSEQUENCE FOR THE BUILD: model money events as EVENTS WITH AN AUTHOR, not as notes on a broker
 screen - so the developer module INHERITS them rather than replacing them. (The existing
 developer-approval capture - reference + proof + approver - is already the right shape.)
+
+## THE RECEIPT (founder, Day 77) - THE COMMERCIAL REASON THE LEDGER IS BORN AT RESERVATION
+"They will give him exactly how much he has to pay from this step - we can print the receipt
+with balance amount to be paid within this time to proceed further."
+At the reservation moment the app already knows: RECEIVED (the fee), the FULL BILL (plan-derived
+first instalment + SPA fee + DLD + Oqood), the BALANCE, and the DEADLINE (the expiry the ceremony
+already computes). Today none of it assembles until someone opens the SPA dialog days later.
+A printable receipt at that moment - "Received AED 25,000 . Balance AED 358,900 . Due by
+05/08/2026" - turns a payment into a clear obligation with a date, in the buyer's hand, while he
+is still in the room. This is the commercial argument for ledger-at-reservation, beyond saving
+two clicks.
+BLOCK VERSION: the same receipt at block level - what the block owes across all units, what was
+received, what remains, by when.
