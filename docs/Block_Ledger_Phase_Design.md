@@ -88,6 +88,12 @@ Live numbers on SHI-13-09: Bill 383,899.98 . Collected 25,000 (reservation credi
 collect 358,899.98 . First instalment 249,735.70 (10% of 2,497,357) . SPA fee 5,250 . DLD 4%
 99,894.28 . Oqood 4,020 . Outstanding to developer 2,472,357 . Commission preview 104,888.99.
 lib/dealBill.js computes the SAME figures - the engine is correct, only its TIMING is wrong.
-SPLIT NEEDED (matches the founder's Day-77 sticky): (1) COLLECTION ledger, born at reservation,
-lives through SPA Requirements, used continuously; (2) SPA SIGNING ceremony - reference, date,
-document upload - a separate, final act. Today one dialog does both, titled as the second.
+CORRECTION (founder, Day 77): the button label "Advance to SPA Signed" at the SPA Requirements
+rung is simply a LABEL not updated after the stage-split process change - not a design fault.
+And opening the dialog writes NOTHING; it is read-only until Record SPA is pressed.
+THE REAL FINDING STANDS: the ledger EXISTS ONLY INSIDE THAT DIALOG. Open it and the numbers
+assemble from opp fields; close it and nothing persists - pp_sales_closures is empty. So the
+broker's collection state lives NOWHERE between visits. He cannot see what he is owed without
+opening a dialog named for an act he has not performed.
+FIX: persist the ledger from RESERVATION onward and surface Bill/Collected/To-collect on the
+deal itself. The SPA signing ceremony (reference, date, document) stays a separate final act.
