@@ -97,3 +97,17 @@ broker's collection state lives NOWHERE between visits. He cannot see what he is
 opening a dialog named for an act he has not performed.
 FIX: persist the ledger from RESERVATION onward and surface Bill/Collected/To-collect on the
 deal itself. The SPA signing ceremony (reference, date, document) stays a separate final act.
+
+## OPEN QUESTION (Day 77, founder - DISCUSS, do not build) - PARTIAL COLLECTION HAS NO SAVE DOOR
+OBSERVED: with 200,000 of 249,735.70 recorded against the first instalment, the only button is
+"Record SPA", which correctly refuses (variance 158,899.98 vs tolerance 3,839) and demands an
+approval note. So mid-collection progress has nowhere to be saved without attempting an act the
+broker is not performing.
+FOUNDER'S CORRECTION - do not conclude too fast: PropCRM is a BROKER system. The broker does not
+receive the money; the DEVELOPER does. The broker RECORDS what the developer confirms received.
+So the gate may be exactly right - he records the SPA only once the developer says the money is
+in - and a "save partial progress" door may be modelling something the broker never does.
+TO DISCUSS: does the broker track running partial receipts (developer confirms in instalments),
+or does he record once, when the developer confirms the collection is complete? The answer
+decides whether the ledger needs a save-progress door at all - and the same answer applies to
+the block ledger one level up.
