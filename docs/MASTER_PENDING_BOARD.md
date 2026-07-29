@@ -177,3 +177,30 @@ on its own line - despite being an inline <input> immediately before the ref ins
 div. Survived five cuts (flex fixes, label->div, plain block rebuild). NOT in this file: suspect
 a GLOBAL input style or an ancestor rule. NEXT SESSION: inspect the input in DevTools Elements,
 read its computed styles, find the rule. Ten minutes with the right evidence; an hour without.
+
+## ADDED DAY 77 - FEES ARE HARD-CODED, SHOULD BE COMPANY SETTINGS (v1 candidate)
+FOUNDER: "broker to broker they charge according to the govt fees they pay AND have a company
+admin cost - some increase the value of the govt fees as part of their admin charges. Giving
+them the freedom to set their policies" - this was designed and agreed; the constants are a
+regression from that intent.
+EVIDENCE: SPA fee 5250 and Oqood 4020 are HARD-CODED at OpportunityDetail L908/909 (and 4020
+again at L1935). DLD 4% is hard-coded in several places. The settings columns DO exist
+(companies.default_spa_fee / default_oqood_fee, pp_developers same) but:
+  (a) NOTHING WRITES THEM - there is no settings UI; they can only be set by SQL.
+  (b) THE READ CHAIN IS BROKEN - OpportunityDetail L737 overrides from pp_developers using
+      opp.developer_id, a column that DOES NOT EXIST on opportunities. So the developer tier
+      never fires and resolution silently stops at the company default (usually null) -> the
+      fallback constants are what brokers actually see.
+FIX: (1) settings UI for SPA fee, Oqood, DLD pct and any admin uplift, at COMPANY level;
+(2) fix the developer-override chain (find the real developer link); (3) ONE resolver in lib
+used by dealBill(), the 1-to-1 ledger and the block preview; (4) retire the hard-codes.
+V1 CANDIDATE: a brokerage that cannot set its own fees cannot use the app honestly.
+
+## ADDED DAY 77 - BLOCK VISIBILITY IS COMPANY-WIDE (founder observation, ruling needed)
+Verified: all five block tables have RLS ON and scope correctly to the caller's company - NO
+cross-tenant leak. But unlike leads/opps/activities (which also scope by see_own_data /
+downline), the block policies are company-wide ONLY. So ANY agent sees EVERY block in the
+company, with buyer names and money.
+Possibly correct by design - a block is a company-level commercial arrangement, not a personal
+book - but it was never ruled. FOUNDER RULING NEEDED: should a junior agent see the whole
+company's block pipeline?
