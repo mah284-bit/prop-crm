@@ -7,6 +7,7 @@ import { openPropertyPack } from "../property/propertyPackBus.js";
 import LogActivityModal from "../LogActivityModal.jsx";
 import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { supabase } from "../../lib/supabase.js";
+import { getFees, FALLBACK as FEE_FALLBACK } from "../../lib/feeSettings.js";
 import { aiInvoke } from '../../lib/aiInvoke.js';
 import { Modal } from "../../modules/shared/Modal.jsx";
 import { Btn } from "../../modules/shared/Btn.jsx";
@@ -158,6 +159,7 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   const [dashboardTab, setDashboardTab] = useState(null);
   const [stageGateForm, setStageGateForm] = useState({});
   const [spaMode, setSpaMode] = useState("detailed"); // quick|detailed
+  const [companyFees, setCompanyFees] = useState(null); // Day 78: the company fee POLICY
   // Stage 5 — SPA upload + pre-SPA payments + edit-price toggle
   const [spaUploading, setSpaUploading] = useState(false);
   const [spaUploadError, setSpaUploadError] = useState(null);
@@ -730,6 +732,8 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   useEffect(() => {
     if (showStageGate !== "SPA Signed") return;
     (async () => {
+      const fees = await getFees(currentUser.company_id);
+      setCompanyFees(fees);
       const { data: co } = await supabase.from("companies").select("spa_mode,default_spa_fee,default_oqood_fee").eq("id", currentUser.company_id).maybeSingle();
       if (co?.spa_mode) setSpaMode(co.spa_mode);
       let spaFee = co?.default_spa_fee, oqoodFee = co?.default_oqood_fee;
@@ -905,11 +909,13 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         const rrow = next.reservation_fee || { status: "pending", amount: "", date: "", notes: "" };
         next.reservation_fee = { ...rrow, expected_amount: Number(opp.reservation_amount) };
       }
-      seedRow("spa_fee", 5250);
-      seedRow("oqood_fee", 4020);
+      // Day 78: the COMPANY'S POLICY seeds these, not a constant. companyFees is loaded by the
+      // settings effect; the fallbacks apply only until it arrives (or if the company set nothing).
+      seedRow("spa_fee", companyFees?.spaFee ?? FEE_FALLBACK.spaFee);
+      seedRow("oqood_fee", companyFees?.oqoodFee ?? FEE_FALLBACK.oqoodFee);
       return next;
     });
-  }, [showStageGate, stageGateForm.final_price, stageGateForm.payment_plan_preset, opp.id]);
+  }, [showStageGate, stageGateForm.final_price, stageGateForm.payment_plan_preset, opp.id, companyFees]);
 
   // Phase 3b: auto-calc DLD fee row when final_price OR dldPayer changes
   useEffect(() => {

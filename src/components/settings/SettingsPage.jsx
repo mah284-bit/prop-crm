@@ -3,6 +3,8 @@ import AgentPoolsSection from "./AgentPoolsSection.jsx";
 import LeadRoutingRulesSection from "./LeadRoutingRulesSection.jsx";
 import GroupBranchesSection from "./GroupBranchesSection.jsx";
 import CommissionSettingsSection from "./CommissionSettingsSection.jsx";
+import BuyerFeesSection from "./BuyerFeesSection.jsx";
+import { canDo } from "../../lib/permissions.js";
 import AgentBracketsSection from "./AgentBracketsSection.jsx";
 import RoleCapabilitiesSection from "./RoleCapabilitiesSection.jsx";
 import AppConfigSection from "./AppConfigSection.jsx";
@@ -23,6 +25,7 @@ const SECTIONS = [
   { id: "group_branches", label: "Group & Branches", icon: "🏛️", description: "Your organisation structure — group and its branches" },
   { id: "agent_pools", label: "Agent Pools", icon: "👥", description: "Group agents for round-robin lead distribution" },
   { id: "lead_routing", label: "Lead Routing Rules", icon: "🎯", description: "Configure how pool-sourced leads flow" },
+  { id: "buyer_fees", label: "Buyer Fees", icon: "🏦", description: "Reservation, SPA, Oqood and DLD - what the buyer pays" },
   { id: "commission", label: "Commission Defaults", icon: "💼", description: "Company-level default commission rate" },
   { id: "agent_brackets", label: "Agentwise Commission Breakup", icon: "📊", description: "Per-agent commission rate that overrides the company standard" },
   { id: "role_capabilities", label: "Role Capabilities", icon: "🛡️", description: "Configure what each role can see and do" },
@@ -141,6 +144,13 @@ export default function SettingsPage({
             currentUser={currentUser}
             users={users}
             showToast={showToast}
+          />
+        )}
+        {activeSection === "buyer_fees" && (
+          <BuyerFeesSection
+            currentUser={currentUser}
+            showToast={showToast}
+            canEdit={canDo(currentUser, "manage_settings") || currentUser?.is_super_admin === true || ["admin","super_admin"].includes(currentUser?.role)}
           />
         )}
         {activeSection === "commission" && (

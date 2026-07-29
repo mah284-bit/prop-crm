@@ -111,3 +111,20 @@ TO DISCUSS: does the broker track running partial receipts (developer confirms i
 or does he record once, when the developer confirms the collection is complete? The answer
 decides whether the ledger needs a save-progress door at all - and the same answer applies to
 the block ledger one level up.
+
+## RULE (founder question, Day 78) - FEES ARE FROZEN AT THE RESERVATION MOMENT
+FOUNDER: "once the SPA fee is set and the reservation is made and you informed the buyer about
+the balance, it should not change - only for the new ones - otherwise there will be a dispute."
+CORRECT AND NOT YET GUARANTEED. Today: once a ledger is SAVED, expected amounts persist in
+pp_sales_closures.pre_spa_payments and reload from there. But a deal that is RESERVED and not
+yet ledger-saved recomputes from CURRENT settings on every open - so a policy change silently
+alters what an existing buyer was told.
+THE RULE: the fee policy in force AT RESERVATION is that deal's policy, permanently. Later
+policy changes apply only to deals reserved after them. If a deal's fees genuinely must change,
+that is an AMENDMENT with a reason - never a silent recalculation. Same principle as the locked
+distribution and the honest ledger: money agreed is money agreed.
+IMPLEMENTATION: this is another argument for the ledger being BORN AT RESERVATION - birth is
+what freezes the policy. Persist the resolved fees onto the deal (or its closure row) at the
+reservation ceremony; every later read uses the frozen copy, never the live settings.
+BLOCK: identical - the block's expected reservation and fee policy freeze when the block's
+collection opens.

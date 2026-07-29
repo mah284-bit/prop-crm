@@ -9,9 +9,12 @@
 //  2. spa_fee 5250 / oqood_fee 4020 were HARD-CODED at one site while another read them from
 //     company/developer settings. Settings win; the constants are last-resort fallbacks only.
 
-export const FALLBACK_SPA_FEE = 5250;
-export const FALLBACK_OQOOD_FEE = 4020;
-export const DLD_PCT = 4;
+// Fallbacks live in lib/feeSettings.js - the company's POLICY is the source of truth.
+// These re-exports exist only so older callers keep working; pass resolved fees instead.
+import { FALLBACK } from "./feeSettings.js";
+export const FALLBACK_SPA_FEE = FALLBACK.spaFee;
+export const FALLBACK_OQOOD_FEE = FALLBACK.oqoodFee;
+export const DLD_PCT = FALLBACK.dldPct;
 
 // "20/80" -> 20 · "50/50 PHP" -> 50 · "Custom"/unknown -> null
 export function planInitialPct(preset) {
@@ -31,17 +34,19 @@ export function dealBill({
   oqoodFee,
   dldPayer = "buyer",
   dldSplitPct = 50,
+  dldPct,
 } = {}) {
+  const DPCT = dldPct != null ? Number(dldPct) : FALLBACK.dldPct;
   const p = Number(price || 0);
   const pct = planInitialPct(planPreset);
-  const dldFull = r2(p * DLD_PCT / 100);
+  const dldFull = r2(p * DPCT / 100);
 
   let dldExpected = 0;
   let dldWaived = false;
   let dldNote = "";
   if (dldPayer === "buyer") {
     dldExpected = dldFull;
-    dldNote = "Expected from DLD payer: Buyer (" + DLD_PCT + "% of final price)";
+    dldNote = "Expected from DLD payer: Buyer (" + DPCT + "% of final price)";
   } else if (dldPayer === "developer") {
     dldWaived = true;
     dldNote = "Auto from DLD payer: Developer absorbs";
