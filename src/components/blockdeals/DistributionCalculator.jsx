@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase.js";
+import { PAYMENT_PLAN_PRESETS } from "../../modules/constants.js";
 
 export default function DistributionCalculator({ block, currentUser, showToast, onClose, onLocked }) {
   const [lines, setLines] = useState([]);
@@ -10,12 +11,23 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   const [availUnits, setAvailUnits] = useState([]);
   const [addUnitPick, setAddUnitPick] = useState("");
   const [loading, setLoading] = useState(true);
+  // Day 77: BLOCK TERMS - uniform across every child (founder ruling: differing terms = not a block).
+  // Stored on the DISTRIBUTION so they version with the price they were agreed alongside.
+  // Vocabulary = SPA-ledger side (buyer/developer/split/negotiated) - what dealBill consumes.
+  const [planPreset, setPlanPreset] = useState("");
+  const [dldPayer, setDldPayer] = useState("buyer");
+  const [dldSplitPct, setDldSplitPct] = useState("50");
 
   useEffect(() => { (async () => {
     const { data: units } = await supabase.from("block_deal_units").select("*").eq("block_deal_id", block.id).neq("status", "dropped").order("created_at");
     const { data: dists } = await supabase.from("block_distributions").select("*").eq("block_deal_id", block.id).order("version", { ascending: false }).limit(1);
     const last = dists && dists[0];
     setDLatest(last || null);
+    if (last) {
+      if (last.payment_plan_preset) setPlanPreset(last.payment_plan_preset);
+      if (last.dld_payer) setDldPayer(last.dld_payer);
+      if (last.dld_split_pct != null) setDldSplitPct(String(last.dld_split_pct));
+    }
     const allocOf = (uid) => { const a = (last?.allocations || []).find(x => x.unit_id === uid); return a || null; };
     const { data: pu } = await supabase.from("project_units").select("id, unit_ref, project_id, status").eq("status", "Available");
     const { data: pj } = await supabase.from("projects").select("id, developer");
@@ -121,6 +133,9 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
     const { error } = await supabase.from("block_distributions").insert({
       company_id: currentUser.company_id, block_deal_id: block.id, version,
       allocations, block_total: totList, discount_total: Math.round(totDisc * 100) / 100,
+      payment_plan_preset: planPreset || null,
+      dld_payer: dldPayer || null,
+      dld_split_pct: dldPayer === "split" ? (Number(dldSplitPct) || 50) : null,
       locked_at: new Date().toISOString(), created_by: currentUser.id,
     });
     if (error) { showToast(error.message, "error"); return; }
@@ -181,6 +196,35 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
           <button onClick={applyProRata} style={{padding:"8px 14px",borderRadius:7,border:topDownPending?"2px solid #D97706":"1px solid #0F2540",background:topDownPending?"#FFFBEB":"#fff",color:topDownPending?"#B45309":"#0F2540",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:topDownPending?"0 0 0 3px rgba(217,119,6,.15)":"none"}}>Suggest pro-rata {String.fromCharCode(8595)}</button>{topDownPending && <span style={{fontSize:11,fontWeight:600,color:"#B45309",marginLeft:2}}>{String.fromCharCode(8592)} press to apply {blockValue}{blockMode==="pct"?"%":" AED"} to all lines</span>}
           <div style={{flex:1,fontSize:11,color:"#94A3B8",paddingBottom:6}}>...or work bottom-up: edit any line below, block totals recompute live.</div>
         </div>
+        {lines.length > 0 && (
+        <div style={{background:'#FFFBEB',border:'1px solid #FDE68A',borderRadius:10,padding:'10px 14px',marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#92400E',marginBottom:2}}>BLOCK TERMS</div>
+          <div style={{fontSize:11,color:'#B45309',marginBottom:8}}>Same for every unit - one buyer, one developer, one arrangement. Price varies per unit; terms do not.</div>
+          <div style={{display:'flex',gap:14,alignItems:'flex-end',flexWrap:'wrap'}}>
+            <div>
+              <label style={{fontSize:10,fontWeight:700,color:'#64748B',display:'block',marginBottom:3,textTransform:'uppercase'}}>Payment plan</label>
+              <select value={planPreset} onChange={e=>setPlanPreset(e.target.value)} style={{padding:'7px 9px',border:'1px solid #D1D5DB',borderRadius:7,fontSize:13,minWidth:130}}>
+                <option value=''>- Select -</option>
+                {PAYMENT_PLAN_PRESETS.map(pp => <option key={pp.label} value={pp.label}>{pp.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{fontSize:10,fontWeight:700,color:'#64748B',display:'block',marginBottom:3,textTransform:'uppercase'}}>DLD fee (4%)</label>
+              <div style={{display:'flex',gap:5}}>
+                {[['buyer','Buyer pays'],['developer','Developer absorbs'],['split','Split'],['negotiated','Negotiated']].map(([v,lbl]) => (
+                  <button key={v} onClick={()=>setDldPayer(v)} style={{padding:'7px 11px',borderRadius:7,border:dldPayer===v?'none':'1px solid #D1D5DB',background:dldPayer===v?'#16A34A':'#fff',color:dldPayer===v?'#fff':'#475569',fontSize:12,fontWeight:600,cursor:'pointer'}}>{lbl}</button>
+                ))}
+              </div>
+            </div>
+            {dldPayer === 'split' && (
+              <div>
+                <label style={{fontSize:10,fontWeight:700,color:'#64748B',display:'block',marginBottom:3,textTransform:'uppercase'}}>Buyer share %</label>
+                <input type='number' value={dldSplitPct} onChange={e=>setDldSplitPct(e.target.value)} style={{padding:'7px 9px',border:'1px solid #D1D5DB',borderRadius:7,fontSize:13,width:80,textAlign:'right'}} />
+              </div>
+            )}
+          </div>
+        </div>
+        )}
         {loading ? <div style={{color:"#94A3B8",fontSize:13}}>Loading lines...</div> : (
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,marginBottom:12}}>
           <thead><tr style={{background:"#F8FAFC",color:"#475569"}}>

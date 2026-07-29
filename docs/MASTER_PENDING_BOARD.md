@@ -148,3 +148,19 @@ X6. **SECTION A - BLOCK VERTICAL** - merged Day 75, tag golden-block-vertical-co
 X7. **B1 DATA FRESHNESS** - merged Day 76, tag golden-data-freshness.
 X8. **DOCUMENTATION RESTRUCTURE** - Day 76: 137 docs -> 44 living + 93 archived; principles
     ratified; document index built (Register item #23); two competing heads collapsed into one.
+
+## ADDED DAY 77 - BLOCK CONFIRM HAS NO IDEMPOTENCY GUARD (verified defect)
+EVIDENCE: Khalid's block carries SIX children on three units - one set born 14:45 (Offer
+Accepted, orphaned) and one 14:48 (Reserved, the live set linked from block_deal_units).
+Confirm ran twice, three minutes apart, and nothing stopped the second birth. Founder confirms
+no 1-to-1 work has happened since block development began, so the duplicates are the block
+engine's own doing.
+IMPACT: a double-click or a slow response duplicates the entire child set. Phantom Active opps
+on already-Reserved units distort saturation counts, dashboards, and per-unit conflict checks.
+FIX (V1 candidate - the vertical is otherwise shipped): Confirm must refuse when the block
+already has children (or when block.status is already confirmed). Guard + a clear message.
+CLEANUP: soft-close the three phantom Offer-Accepted opps on EBT-08-04/09-05/10-06 created
+2026-07-25 14:45 - do it with the clean-data round, not piecemeal.
+ALSO SEEN: Chen Wei New Block 2 has collection_status=open and "Reservation Amt Expected: not
+set", yet all three children are already Reserved - a state the Day-76 gate now forbids. Legacy
+of pre-gate data; confirm no path can still produce it.
