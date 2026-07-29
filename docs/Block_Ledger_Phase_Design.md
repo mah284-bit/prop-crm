@@ -58,3 +58,24 @@ Open Calculator blocked with an explanatory toast when collection is settled/acc
 FULL: repricing after money = manager-gated ceremony with mandatory reason + audit, arrives
 with the ledger phase. Legitimate late-terms cases (developer-approved further discount,
 drop-out re-allocation) go through that ceremony, never the open door.
+
+## STICKY (founder, Day 77) - THE LEDGER IS BORN AT RESERVATION, NOT AT SPA
+Today the pre-SPA payments ledger only appears inside the SPA Signed dialog. Founder: it should
+be CREATED THE MOMENT the reservation is recorded, and used continuously from there - collect,
+collect, collect - until the money is complete; THEN document collection, THEN SPA clearance,
+THEN upload the executed SPA and close. The ledger is the collection instrument for the whole
+Reserved->SPA period, not a form that appears at the end. (Do not build now - sticky.)
+
+## WHAT THE BLOCK CALCULATOR IS MISSING (founder cold-look, Day 77)
+The 1-to-1 ledger answers "what does this buyer OWE and what has he PAID" - particulars in
+dirhams, totals, Bill/Collected/To-Collect. Terms produce readable CONSEQUENCES.
+The block calculator takes the same inputs (plan, DLD) and shows only price and discount - the
+consequence is invisible. Founder reading it cold could not tell what the buyer pays, what DLD
+amounts to, or whether the terms were locked or being drafted.
+FIX: once terms are set, show a BILL PREVIEW per unit and for the block, computed by
+lib/dealBill.js (already written, BL-1): first instalment (net x plan pct), DLD (4% split per
+arrangement), SPA fee, Oqood - and the block total due at reservation. Terms then visibly
+produce the deal, not just record inputs.
+ALSO: the calculator is two things at once - a VIEWER of the locked version and a DRAFTING
+surface for the next - and nothing says which. Header says "D1 locked" while the terms sit
+editable. Needs an explicit viewing-vs-drafting state.
