@@ -37,3 +37,13 @@ net/VAT/gross, the words "Tax Invoice"? (3) any commercial units in scope? (comm
 IS standard-rated 5% on the price - that would touch every money surface).
 SIZING: if VAT applies only to commission, NOTHING to build. If brokerage fees are VAT-rated or
 documents must be tax invoices, roughly half a day each. Commercial units in scope would be large.
+
+## HOW BIG IS THIS? (open, Day 79)
+Founder's recollection is that brokers may earn more from resale than from new sales. Unverified,
+but the mechanics are consistent with it: resale often pays commission from both sides and lands
+at transfer, whereas off-plan is paid once by the developer, sometimes in tranches.
+IF that holds, an off-plan-only CRM would be evaluated against work a brokerage earns less on -
+which is a positioning question as much as a build one.
+TO ESTABLISH BEFORE DECIDING: the real primary/secondary revenue split for the brokerages we are
+targeting. If the target segment is developer-aligned and primary-weighted, off-plan-only is a
+defensible specialism. If not, resale rises up the list.
