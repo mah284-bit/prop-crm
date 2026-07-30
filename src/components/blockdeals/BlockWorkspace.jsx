@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useFreshData } from "../../lib/useFreshData.js";
 import { supabase } from "../../lib/supabase.js";
+import { dealBill } from "../../lib/dealBill.js";
+import { getFees } from "../../lib/feeSettings.js";
 import BlockPaymentDialog from "./BlockPaymentDialog.jsx";
 import { lockBlockPayment, amendBlockPayment, acceptShortCollection } from "../../lib/lockBlockPayment.js";
 import { canDo } from "../../lib/permissions.js";
@@ -83,6 +85,41 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
 
   const buyer = leads.find(l => l.id === block.lead_id);
   const fmt = (n) => "AED " + Math.round(Number(n || 0)).toLocaleString();
+
+  // Day 79 (C1): THE BLOCK BILL. Founder ruling: money is recorded ONCE at block level and
+  // distributed - "the block is the meaning of record from one source and distribute". So the
+  // bill is dealBill() run PER CHILD and summed per particular. The per-unit split stays
+  // visible (the buyer's asset register) but is never the entry point.
+  const [blockFees, setBlockFees] = useState(null);
+  useEffect(() => { (async () => {
+    if (currentUser?.company_id) setBlockFees(await getFees(currentUser.company_id));
+  })(); }, [currentUser?.company_id]);
+
+  const blockBill = (() => {
+    if (!blockFees) return null;
+    const per = [];
+    const tot = { reservation: 0, initial: 0, spa: 0, dld: 0, oqood: 0 };
+    (childRows || []).forEach(({ line, child }) => {
+      if (!child || child.status === "Lost") return;
+      const b = dealBill({
+        price: Number(child.current_agreed_price || line.list_price || 0),
+        planPreset: child.current_payment_plan_preset,
+        reservationAmount: Number(child.reservation_amount || 0),
+        spaFee: blockFees.spaFee, oqoodFee: blockFees.oqoodFee,
+        dldPayer: child.current_dld_payer || "buyer",
+        dldSplitPct: child.current_dld_split_pct || 50,
+        dldPct: blockFees.dldPct,
+      });
+      per.push({ unit_ref: line.unit_ref, price: Number(child.current_agreed_price || 0), bill: b });
+      tot.reservation += b.reservation_fee.expected;
+      tot.initial += b.initial_advance.expected;
+      tot.spa += b.spa_fee.expected;
+      tot.dld += b.dld_fee.waived ? 0 : b.dld_fee.expected;
+      tot.oqood += b.oqood_fee.expected;
+    });
+    const grand = tot.reservation + tot.initial + tot.spa + tot.dld + tot.oqood;
+    return { per, tot, grand };
+  })();
   const statusColors = { draft:"#94A3B8", negotiating:"#D97706", approved:"#7C3AED", confirmed:"#16A34A", partially_dropped:"#DC2626", completed:"#0F2540", cancelled:"#64748B" };
   const sc = statusColors[block.status] || "#94A3B8";
 
@@ -154,10 +191,53 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
           {loading ? <div style={{color:"#94A3B8",fontSize:13}}>Loading...</div> : (
             <div>
               <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid #E8EDF4"}}>
-                {[["children","Deals"],["payments","Payments (" + payments.length + ")"],["terms","Terms history"],["activity","Activity"]].map(([id,label]) => (
+                {[["children","Deals"],["money","Money"],["payments","Payments (" + payments.length + ")"],["terms","Terms history"],["activity","Activity"]].map(([id,label]) => (
                   <button key={id} onClick={()=>setWsTab(id)} style={{padding:"7px 14px",border:"none",borderBottom:wsTab===id?"2px solid #0F2540":"2px solid transparent",background:"none",color:wsTab===id?"#0F2540":"#94A3B8",fontSize:12,fontWeight:700,cursor:"pointer"}}>{label}</button>
                 ))}
               </div>
+              {wsTab==="money" && (
+                !blockBill ? <div style={{color:"#94A3B8",fontSize:13}}>Loading fee policy...</div> : (
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:3}}>Block bill</div>
+                  <div style={{fontSize:11,color:"#94A3B8",marginBottom:10}}>What this block owes across all units. Money is recorded once at block level and distributed - the per-unit split is below.</div>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,marginBottom:14}}>
+                    <tbody>
+                      {[["Reservation",blockBill.tot.reservation],["First instalments (per plan)",blockBill.tot.initial],["SPA fees",blockBill.tot.spa],["DLD fees",blockBill.tot.dld],["Oqood fees",blockBill.tot.oqood]].map(([lbl,v]) => (
+                        <tr key={lbl} style={{borderBottom:"1px dashed #F1F5F9"}}>
+                          <td style={{padding:"7px 4px",color:"#475569"}}>{lbl}</td>
+                          <td style={{padding:"7px 4px",textAlign:"right",fontWeight:600,color:v>0?"#0F2540":"#CBD5E1"}}>{fmt(v)}</td>
+                        </tr>
+                      ))}
+                      <tr style={{borderTop:"2px solid #E8EDF4"}}>
+                        <td style={{padding:"9px 4px",fontWeight:800,color:"#0F2540"}}>Total bill</td>
+                        <td style={{padding:"9px 4px",textAlign:"right",fontWeight:800,color:"#0F2540"}}>{fmt(blockBill.grand)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:3}}>Per unit</div>
+                  <div style={{fontSize:11,color:"#94A3B8",marginBottom:8}}>Each unit carries its own cost basis - what the buyer needs when he sells, rents or transfers one.</div>
+                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                    <thead><tr style={{background:"#F8FAFC",color:"#475569"}}>
+                      <th style={{padding:"6px 8px",textAlign:"left"}}>Unit</th><th style={{padding:"6px 8px",textAlign:"right"}}>Net price</th>
+                      <th style={{padding:"6px 8px",textAlign:"right"}}>Instalment</th><th style={{padding:"6px 8px",textAlign:"right"}}>DLD</th>
+                      <th style={{padding:"6px 8px",textAlign:"right"}}>SPA</th><th style={{padding:"6px 8px",textAlign:"right"}}>Oqood</th>
+                    </tr></thead>
+                    <tbody>
+                      {blockBill.per.map(u => (
+                        <tr key={u.unit_ref} style={{borderBottom:"1px dashed #F1F5F9"}}>
+                          <td style={{padding:"7px 8px",fontWeight:700,color:"#0F2540"}}>{u.unit_ref}</td>
+                          <td style={{padding:"7px 8px",textAlign:"right"}}>{fmt(u.price)}</td>
+                          <td style={{padding:"7px 8px",textAlign:"right"}}>{fmt(u.bill.initial_advance.expected)}</td>
+                          <td style={{padding:"7px 8px",textAlign:"right"}}>{fmt(u.bill.dld_fee.waived ? 0 : u.bill.dld_fee.expected)}</td>
+                          <td style={{padding:"7px 8px",textAlign:"right"}}>{fmt(u.bill.spa_fee.expected)}</td>
+                          <td style={{padding:"7px 8px",textAlign:"right"}}>{fmt(u.bill.oqood_fee.expected)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                )
+              )}
               {wsTab==="children" && (<>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                 <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>Deals in this block ({childRows.length})</div>
