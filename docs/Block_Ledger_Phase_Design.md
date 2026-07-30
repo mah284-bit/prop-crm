@@ -128,3 +128,14 @@ what freezes the policy. Persist the resolved fees onto the deal (or its closure
 reservation ceremony; every later read uses the frozen copy, never the live settings.
 BLOCK: identical - the block's expected reservation and fee policy freeze when the block's
 collection opens.
+
+## REFINEMENT (Day 79) - WHAT FREEZES AND WHAT FOLLOWS
+The freeze rule needs a distinction, ruled with the founder:
+- **FEES FREEZE at reservation** - SPA fee, Oqood, DLD percentage. These come from COMPANY POLICY.
+  A brokerage changing its policy must never alter what an existing buyer was already told.
+- **PRICE-DERIVED AMOUNTS FOLLOW THE PRICE** - first instalment (plan % of price) and the DLD
+  amount (frozen pct x current price). A price change is a NEGOTIATED EVENT the buyer knows about
+  (a new proposal version), not silent policy drift. Different things.
+BACKGROUND: current_agreed_price already works this way - each proposal version sets it, V(n)
+supersedes V(n-1), and "final sale price" at SPA is simply the last agreed price. No separate
+final-price concept is needed (Day-66 V_latest cascade).
