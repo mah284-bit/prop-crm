@@ -184,3 +184,32 @@ FIX SHAPE: payments become ROWS (a payments table keyed to opportunity + particu
 jsonb becomes a derived view or is retired. Same conclusion as the Day-78 jsonb-vs-table question,
 now with a concrete consequence rather than a theoretical one. Each recorded payment then has its
 own receipt.
+
+## RULED (Day 79) - ONE BILL AT THE BLOCK, THE SPLIT VISIBLE PER UNIT
+FOUNDER: "if we put per record, imagine 15 units on a floor - cumbersome. The block is the meaning
+of record from ONE source and distribute."
+THE LEDGER: money is recorded ONCE at block level and allocated across children - the same engine
+already used for the reservation (block_payments + block_payment_allocations). The BILL is computed
+per particular, summed across children: instalments (plan pct x each net price), SPA fees (units x
+policy), DLD (pct x block value), Oqood (units x policy). dealBill() run per child and summed -
+same engine, same grammar as the 1-to-1.
+
+## THE BLOCK STATEMENT (founder requirement, Day 79) - THE BUYER NEEDS BOTH VIEWS
+"There should be a report showing the block first and then the split - collections information,
+everything from one place. If the buyer asks for the split we send it, because he should know his
+investment on each unit for either selling later, renting, or handing over to family."
+WHY THIS MATTERS: the buyer bought 15 units as ONE arrangement but will dispose of them ONE AT A
+TIME - sell 07-03, rent 08-04, transfer 09-05 to a son. For each he needs that unit's cost basis:
+net price, its share of DLD, its Oqood, its SPA fee. Without the split he holds a lump sum and no
+basis for a capital-gains position or a rental yield. The per-unit view is the buyer's ASSET
+REGISTER, not a nicety.
+SHAPE - one document, two sections:
+  1. THE BLOCK - total value, discount, collected, outstanding, by particular.
+  2. PER UNIT - each unit's net price, its share of every fee, what has been allocated to it,
+     its own balance.
+ARCHITECT CAVEAT (accepted): the split must print the RECORDED ALLOCATION, never a tidier
+pro-rata recomputed at print time. If a payment was split equally across children whose prices
+differ, unit A's share is what was ACTUALLY allocated - not its proportional share. Honest-ledger
+doctrine applied to a document: report what happened, not what looks neat.
+BUILD ORDER: (1) block bill engine - dealBill per child, summed. (2) block ledger screen - record
+once, allocate across children. (3) block statement PDF - both sections.
