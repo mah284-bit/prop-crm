@@ -145,3 +145,20 @@ LESSON: an ALL policy alongside a restrictive SELECT policy DEFEATS it. Never gr
 ladder is the point.
 VERIFIED LIVE: an agent who does not own the blocks now sees NONE (closes the Day-77 leak the
 founder found); his manager sees them via downline. Both tiers correct.
+
+## RULING REVERSED (Day 79) - DO NOT MERGE THE RESERVATION CEREMONY INTO THE LEDGER
+Day 77 proposed merging Record Reservation with the ledger's birth to kill two dead steps.
+FOUNDER PULLED BACK on Day 79 and the architect agrees. The merge is DROPPED.
+WHY: **the reservation is a CEREMONY; the ledger is an INSTRUMENT.** A ceremony is a moment - it
+claims a unit, starts a clock, commits money that is now forfeit-exposed. An instrument is a
+running record. Merging them makes the commitment feel like data entry and buries the thing that
+matters most. Two extra clicks is a smaller cost than a buried commitment.
+WHAT SURVIVES FROM C0b: the LEDGER IS STILL BORN AT RESERVATION (persisted then, not at the SPA
+dialog) - but the ceremony is untouched and the broker's flow does not change. Today a reserved
+deal has NO record of what is owed; that is the defect being fixed, nothing more.
+THE PRICE RULE (settled here):
+- RESERVATION AMOUNT: fixed. Never recalculates - it is a fee, not a percentage.
+- FEES (SPA / Oqood / DLD pct): frozen at reservation from company policy.
+- PRICE-DERIVED AMOUNTS (first instalment, DLD amount): follow the CURRENT AGREED PRICE. Not
+  over-engineering - a 10% instalment on a renegotiated price MUST move, or the ledger
+  contradicts the developer's payment plan.

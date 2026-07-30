@@ -1243,6 +1243,50 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           reservation_notes: stageGateForm.notes || null,
         }).eq("id", opp.id);
         onUpdated?.({ ...opp, stage: "Reserved", status: "Active", reservation_amount: Number(stageGateForm.reservation_fee), reservation_date: stageGateForm.reservation_date || new Date().toISOString().slice(0,10), reservation_method: stageGateForm.payment_method || "Cheque", reservation_cheque_no: stageGateForm.cheque_number || null, reservation_notes: stageGateForm.notes || null });
+        // Day 79 (C0b-1): THE LEDGER IS BORN HERE, not at the SPA dialog.
+        // Founder: the ledger is the collection instrument for the whole Reserved->SPA period.
+        // The fee policy of THIS MOMENT is frozen into the row; price-derived amounts follow the
+        // price later. Only creates the row if one does not exist - never overwrites collections.
+        try {
+          const { data: existing } = await supabase.from("pp_sales_closures")
+            .select("id").eq("opportunity_id", opp.id).maybeSingle();
+          if (!existing) {
+            const fees = await getFees(currentUser.company_id);
+            const resAmt = Number(stageGateForm.reservation_fee);
+            const price = Number(opp.current_agreed_price || 0);
+            const bill = dealBill({
+              price,
+              planPreset: opp.current_payment_plan_preset,
+              reservationAmount: resAmt,
+              spaFee: fees.spaFee,
+              oqoodFee: fees.oqoodFee,
+              dldPayer: opp.current_dld_payer || "buyer",
+              dldSplitPct: opp.current_dld_split_pct || 50,
+              dldPct: fees.dldPct,
+            });
+            const resDate = stageGateForm.reservation_date || new Date().toISOString().slice(0,10);
+            const row = (k, expected, extra) => ({ status: "pending", amount: "", date: "", notes: "", method: "", expected_amount: expected, ...(extra || {}) });
+            await supabase.from("pp_sales_closures").insert({
+              opportunity_id: opp.id,
+              company_id: currentUser.company_id,
+              final_sale_price: price,
+              pre_spa_payments: {
+                booking_fee:     row("booking_fee", null),
+                reservation_fee: { status: "received", amount: String(resAmt), date: resDate,
+                                   method: stageGateForm.payment_method || "", notes: "Recorded at reservation",
+                                   expected_amount: resAmt },
+                initial_advance: row("initial_advance", bill.initial_advance.expected, bill.initial_advance.pct ? { expected_percent: bill.initial_advance.pct } : null),
+                spa_fee:         row("spa_fee", bill.spa_fee.expected),
+                dld_fee:         bill.dld_fee.waived
+                                   ? { status: "waived", amount: "", date: "", notes: bill.dld_fee.note, method: "" }
+                                   : row("dld_fee", bill.dld_fee.expected, { notes: bill.dld_fee.note }),
+                oqood_fee:       row("oqood_fee", bill.oqood_fee.expected),
+                other_fees:      row("other_fees", null),
+              },
+              frozen_fee_policy: { spaFee: fees.spaFee, oqoodFee: fees.oqoodFee, dldPct: fees.dldPct, frozen_at: new Date().toISOString() },
+            });
+          }
+        } catch (e) { console.error("ledger birth:", e); }
       } catch (e) {
         console.error("Reservation capture exception:", e);
       }
