@@ -139,3 +139,30 @@ The freeze rule needs a distinction, ruled with the founder:
 BACKGROUND: current_agreed_price already works this way - each proposal version sets it, V(n)
 supersedes V(n-1), and "final sale price" at SPA is simply the last agreed price. No separate
 final-price concept is needed (Day-66 V_latest cascade).
+
+## RULED (Day 79) - THE LEDGER FOLLOWS THE PROPOSAL, NEVER THE NEGOTIATION
+FOUNDER: "though we have the negotiations, it is not directly applied - only noted for internal
+approvals. Using this print they will again have to resend a proposal, else the old prices stay."
+NEGOTIATION ROUNDS ARE INTERNAL: buyer asked 5%, developer countered 3% - logged, approval trail,
+NOTHING changes on the deal.
+THE PROPOSAL IS THE INSTRUMENT: only when a proposal is ISSUED do price, plan and DLD change.
+TRIGGER: a proposal saved on a deal at RESERVED OR LATER recomputes the stored ledger's
+PRICE-DERIVED rows (first instalment = plan pct x current price; DLD amount = frozen pct x
+current price). NEVER touched: the reservation (fixed fee), SPA/Oqood/DLD-pct (frozen policy),
+and any row already RECEIVED or WAIVED.
+NO ANNOUNCEMENT NEEDED: the proposal IS the communication to the buyer. The ledger recomputes
+silently and the receipt prints what is stored - so a receipt can never show a figure the buyer
+has not been sent. (Architect had proposed a "terms revised" banner; founder correctly called it
+over-thinking.)
+DEFECT THIS FIXES (seen live Day 79): Boris's deal went from 6,753,047 / 10-90 to 6,617,986 /
+50-50 via a new proposal, and the saved ledger still showed the OLD first instalment 675,304.70
+and DLD 270,121.88. seedRow skips any row that already has an expected_amount, so a saved ledger
+never recalculates.
+
+## BANKED, NOT NOW (founder suggestion, Day 79) - THE UNAPPLIED-NEGOTIATION NUDGE
+At the SPA gate, warn if negotiation rounds were logged AFTER the latest proposal: "3 rounds
+since the last proposal - has everything been applied?" Catches the gap between what was agreed
+and what was issued.
+ARCHITECT CALL - defer: a nag needs evidence before it earns its place, or brokers learn to click
+past it. Revisit after the tester round. The data already exists (round timestamps vs proposal
+timestamps), so it is computable whenever wanted.
