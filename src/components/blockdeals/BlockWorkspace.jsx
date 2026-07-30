@@ -17,6 +17,14 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
   const [locking, setLocking] = useState(false);
   const [payments, setPayments] = useState([]);
   const [payAllocs, setPayAllocs] = useState([]);
+  // Day 79: the block has an OWNER (assigned_to) which drives who can see it - show it.
+  const [owner, setOwner] = useState(null);
+  useEffect(() => { (async () => {
+    if (!block.assigned_to) { setOwner(null); return; }
+    const { data } = await supabase.from("profiles").select("id, full_name, email")
+      .eq("id", block.assigned_to).maybeSingle();
+    setOwner(data || null);
+  })(); }, [block.assigned_to]);
   const [editPay, setEditPay] = useState(null);
   const [expEdit, setExpEdit] = useState(false);
   const [expVal, setExpVal] = useState(block.reservation_expected != null ? String(block.reservation_expected) : "");
@@ -93,6 +101,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
               <div style={{fontSize:12,color:"#475569",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                 <strong style={{color:"#0F2540"}}>{buyer?.name || "-"}</strong>
                 {block.developer_name && <span>{String.fromCharCode(183)} {block.developer_name}</span>}
+                <span>{String.fromCharCode(183)} Owner: <strong style={{color:"#0F2540"}}>{owner?.full_name || owner?.email || "unassigned"}</strong></span>
               </div>
               {dLatest && (
                 <div style={{fontSize:12,color:"#475569",marginTop:4,display:"flex",gap:14,flexWrap:"wrap"}}>
