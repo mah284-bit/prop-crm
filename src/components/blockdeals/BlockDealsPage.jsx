@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useFreshData } from "../../lib/useFreshData.js";
 import { supabase } from "../../lib/supabase.js";
+import { getFees } from "../../lib/feeSettings.js";
 import DistributionCalculator from "./DistributionCalculator.jsx";
 import BlockWorkspace from "./BlockWorkspace.jsx";
 
@@ -19,7 +20,16 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   const [calcBlock, setCalcBlock] = useState(null);
   const [wsBlock, setWsBlock] = useState(null);
   const [form, setForm] = useState({ lead_id: "", title: "", developer_name: "", discount_mode: "pct", discount_value: "", reservation_expected: "" });
+  // Day 79: the company's reservation fee POLICY x number of units - computed, not typed.
+  // Founder ruling: "for this you have to sum or multiply with the number of units selected."
+  const [feePolicy, setFeePolicy] = useState(null);
+  useEffect(() => { (async () => {
+    if (currentUser?.company_id) setFeePolicy(await getFees(currentUser.company_id));
+  })(); }, [currentUser?.company_id]);
   const [lines, setLines] = useState([]);
+  // Day 79: company reservation policy x units. MUST sit after `lines` - const-before-init.
+  const suggestedReservation = feePolicy && lines.length
+    ? feePolicy.reservationFee * lines.length : 0;
   const [unitPick, setUnitPick] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -229,7 +239,13 @@ const confirmBlock = async (b) => {
                 <select value={form.developer_name} onChange={e=>setForm(f=>({...f,developer_name:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}><option value="">Select developer...</option>{developers.map(d=><option key={d.id} value={d.name}>{d.name}</option>)}</select></div>
               <div><label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4}}>RESERVATION AMT EXPECTED (AED)</label>
                 <input type="number" value={form.reservation_expected} onChange={e=>setForm(f=>({...f,reservation_expected:e.target.value}))} placeholder="e.g. 75000" style={{width:"100%",padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}/>
-                <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>What the buyer must pay to reserve these units. Discount is set later in the calculator.</div></div>
+                <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>What the buyer must pay to reserve these units. Discount is set later in the calculator.</div>
+                {suggestedReservation > 0 && Number(form.reservation_expected || 0) !== suggestedReservation && (
+                  <div style={{fontSize:11,marginTop:4}}>
+                    <span style={{color:"#B45309"}}>Company policy: {fmt(suggestedReservation)} ({lines.length} {lines.length===1?"unit":"units"} x {fmt(feePolicy.reservationFee)})</span>
+                    <button type="button" onClick={()=>setForm(f=>({...f,reservation_expected:String(suggestedReservation)}))} style={{marginLeft:8,padding:"2px 9px",borderRadius:6,border:"1px solid #B45309",background:"#fff",color:"#B45309",fontSize:11,fontWeight:700,cursor:"pointer"}}>use this</button>
+                  </div>
+                )}</div>
             </div>
             {form.lead_id && buyerOpps.filter(o => o.lead_id === form.lead_id).length > 0 && (
               <div style={{border:"1px solid #FDE68A",background:"#FFFBEB",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
