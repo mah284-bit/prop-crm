@@ -128,7 +128,8 @@ Launch Mode) · `Opps_Journey_Redesign_Capture.md` (GF findings, money-tail, KYC
 `Title_Holders_Design_Capture.md` (in whose name - NOT built) ·
 `Block_As_Deal_Design.md` (Day 77 - block is a first-class deal; three tiers of post-reservation change; the forfeit line; ledger at reservation) ·
 `Block_Ownership_Governance_Question.md` (Day 79 - cover vs reassign, whose commission, the gate as service instrument - OPEN, design owed) ·
-`Resale_Secondary_Market_Question.md` (Day 79 - the app is OFF-PLAN ONLY; resale is a second transaction type; plus the VAT items for the accountant - OPEN)
+`Resale_Secondary_Market_Question.md` (Day 79 - the app is OFF-PLAN ONLY; resale is a second transaction type; plus the VAT items for the accountant - OPEN) ·
+`Inventory_Completeness_Question.md` (Day 79 - PropPulse imports are inherently incomplete; the lost payment-plan templates - OPEN)
 
 ### DESIGN - specified, NOT yet built (each is a board item)
 `Phase_2_Communications_Overhaul.md` · `Phase_2_Lead_Lifecycle_Segmentation.md` ·

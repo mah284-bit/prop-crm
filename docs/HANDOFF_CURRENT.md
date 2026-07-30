@@ -1194,3 +1194,40 @@ dependency order, not to a date.
 NEXT (architect order, founder deferred): (1) company fee settings + one resolver - unblocks both
 ledgers · (2) block owner column + visibility ladder · (3) C0b 1-to-1 flow simplification ·
 (4) C1 block ledger · (5) C0 block deal life.
+
+## ── DAY 79 (30 Jul) — THE COLLECTION LEDGER + THREE SCOPE FINDS ──
+SHIPPED (branch feature/block-ledger, not merged):
+- BLOCK VISIBILITY LADDER: block_deals.assigned_to + RLS mirroring opportunities. VERIFIED LIVE -
+  an agent sees only his own blocks, his manager sees them via downline. Closes the Day-77 leak.
+  Owner shown in the Workspace header. TRAP CAUGHT: an ALL policy alongside a restrictive SELECT
+  policy DEFEATS it (Postgres RLS is permissive) - narrowed to INSERT/UPDATE/DELETE.
+- RESERVATION SUGGESTION: block creation suggests company reservation fee x units, with "use this".
+- C0b THE COLLECTION LEDGER: born AT RESERVATION with the fee policy FROZEN into the row; FOLLOWS
+  THE PROPOSAL from every entry point (lives in lib/createProposal.js) so price-derived rows
+  recompute while frozen fees and the reservation hold; Bill/Collected/To-collect strip on the deal;
+  branded RECEIPT PDF with the itemised balance to proceed; deal action renamed "Collect payments"
+  while money is outstanding. Verified end to end on a fresh specimen through a renegotiation.
+- C1 FIRST CUT: block bill engine (dealBill per child, summed) + Money tab showing the block bill
+  and the PER-UNIT cost basis.
+RULINGS: no ceremony/ledger merge - "the reservation is a CEREMONY, the ledger is an INSTRUMENT" ·
+fees FREEZE at reservation, price-derived amounts FOLLOW the price · the ledger follows the
+PROPOSAL, never the negotiation (rounds are internal) · one bill at BLOCK level, the split visible
+per unit - "record from one source and distribute" · the per-unit split is the buyer's ASSET
+REGISTER (he sells, rents or gifts units one at a time) and must print the RECORDED allocation,
+never a tidier pro-rata.
+THREE SCOPE FINDS, all captured, none built:
+1. RESALE - the app is OFF-PLAN ONLY. Resale is a second transaction type (a seller the app does
+   not model, no Oqood, mortgages, a different fee set). Founder: "if a broker cannot do resale,
+   why buy your software - HEAVY PUSHBACK." A positioning question, not a backlog item.
+2. VAT - commission is handled (5%, computed). Open for the accountant: are brokerage fees
+   VAT-rated? must the receipt be a valid TAX INVOICE (TRN, sequential number)? any commercial
+   units in scope?
+3. INVENTORY COMPLETENESS - PropPulse imports are inherently incomplete; an unpriced imported unit
+   would produce a silent zero bill. VERIFIED no live exposure (30 unpriced units are global
+   catalogue, never imported). Also recovered: two ORPHANED payment-plan-template tables, built
+   for developer custom plans and lost when no master doc kept them alive.
+ALSO BOARDED: the ledger stores TOTALS not payment EVENTS, so only the reservation can produce a
+receipt - blocks per-payment receipts in the collection phase.
+NEXT: BL-2 block ledger screen (record once, allocate across children). Prerequisite - existing
+blocks carry no payment plan, so a TERMS EDITOR is needed (option b: terms-only, price stays
+locked) or the Money tab shows zero instalments forever.
