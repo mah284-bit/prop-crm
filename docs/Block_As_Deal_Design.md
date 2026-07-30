@@ -127,3 +127,21 @@ is still in the room. This is the commercial argument for ledger-at-reservation,
 two clicks.
 BLOCK VERSION: the same receipt at block level - what the block owes across all units, what was
 received, what remains, by when.
+
+## SHIPPED (Day 79) - BLOCK VISIBILITY LADDER, LIVE-PROVEN
+block_deals.assigned_to added (uuid -> profiles), backfilled from created_by on all 8 existing
+blocks. RLS rewritten so blocks follow the SAME ladder as opportunities:
+  is_super_admin() OR (company_id = my_company_id() AND (
+    see_group_data OR (see_branch_data AND assigned_to IN my_downline()) OR
+    (see_own_data AND assigned_to = auth.uid())))
+Four policies on block_deals - SELECT (the ladder), INSERT (company), UPDATE (the ladder),
+DELETE (owner only). The children (block_deal_units, block_distributions, block_payments,
+block_payment_allocations) scope THROUGH the parent - "block_deal_id IN (SELECT id FROM
+block_deals)" - so they inherit the ladder automatically, one definition, no duplication.
+TRAP CAUGHT MID-CUT: the first version had a block_deals_write policy for ALL commands with only
+a company check. Postgres RLS is PERMISSIVE (OR), so that policy bypassed the select ladder
+entirely - every user in the company still saw every block. Narrowed to INSERT/UPDATE/DELETE.
+LESSON: an ALL policy alongside a restrictive SELECT policy DEFEATS it. Never grant ALL when a
+ladder is the point.
+VERIFIED LIVE: an agent who does not own the blocks now sees NONE (closes the Day-77 leak the
+founder found); his manager sees them via downline. Both tiers correct.
