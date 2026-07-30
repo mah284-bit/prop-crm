@@ -9,6 +9,7 @@ import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { supabase } from "../../lib/supabase.js";
 import { getFees, FALLBACK as FEE_FALLBACK } from "../../lib/feeSettings.js";
 import { dealBill } from "../../lib/dealBill.js";
+import { generateReceiptPDF } from "../../lib/generateReceiptPDF.js";
 import { aiInvoke } from '../../lib/aiInvoke.js';
 import { Modal } from "../../modules/shared/Modal.jsx";
 import { Btn } from "../../modules/shared/Btn.jsx";
@@ -1680,6 +1681,14 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                         <span style={{color:"#475569"}}>Collected <strong style={{color:"#166534"}}>{m(collectionState.collected)}</strong></span>
                         <span style={{color:"#475569"}}>To collect <strong style={{color:collectionState.toCollect > 0 ? "#B91C1C" : "#166534"}}>{m(collectionState.toCollect)}</strong></span>
                         {collectionState.toCollect <= 0 && <span style={{fontSize:11,fontWeight:700,color:"#166534"}}>fully collected</span>}
+                        {opp.reservation_amount > 0 && (
+                          <button onClick={async ()=>{
+                            const { data: cl } = await supabase.from("pp_sales_closures").select("pre_spa_payments").eq("opportunity_id", opp.id).maybeSingle();
+                            const { data: co } = await supabase.from("companies").select("name, brand_color, brand_accent").eq("id", currentUser.company_id).maybeSingle();
+                            const u = units?.find?.(x => x.id === opp.unit_id) || null;
+                            generateReceiptPDF({ lead: lead, opp: opp, unit: u, project: null, company: co, currentUser: currentUser, ledger: cl?.pre_spa_payments, expiresOn: opp.reservation_expires_on });
+                          }} style={{marginLeft:"auto",padding:"4px 12px",borderRadius:7,border:"1px solid #92400E",background:"#fff",color:"#92400E",fontSize:11,fontWeight:700,cursor:"pointer"}}>Receipt</button>
+                        )}
                       </div>
                     ); })()}
                     {opp.stage === "SPA Signed" && (() => {
