@@ -15,6 +15,15 @@ rebuild · A5 ✓ text · A12 ✓ merged + tagged · A14 ✓ calculator locked a
 overflow · A8 rich unit picker · A9 calculator totals-on-top · A10 Cut 6a booking clock ·
 A11 clearance-at-the-door · A13 block payment lifecycle.
 
+## SCOPE QUESTION - RESALE (Day 79, founder to decide) - READ BEFORE PLANNING GO-TO-MARKET
+The app models NEW OFF-PLAN RESIDENTIAL ONLY. Resale is a SECOND TRANSACTION TYPE: there is a
+SELLER the app does not model, no Oqood, no developer payment plan (often a mortgage instead),
+a different fee set (NOC, trustee, agency both sides), and a different VAT rule.
+FOUNDER: "if a broker company cannot do resale, why should I buy your software? HEAVY PUSHBACK."
+Most UAE brokerages transact both. Either resale ships before wide sale, or the pitch is
+deliberately positioned as a primary/off-plan specialist. NOT an engineering question alone.
+Doc: `Resale_Secondary_Market_Question.md` (also holds the open VAT items for the accountant).
+
 ## TESTING DOCTRINE (founder ruling - governs the whole board)
 Unit-test every cut as it ships. **NO end-to-end round until development STOPS.** Running E2E
 on a moving app = walking the same ladder repeatedly, hitting issues caused by half-built
