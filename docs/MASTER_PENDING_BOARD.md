@@ -78,6 +78,11 @@ C0. **BLOCK AS A FIRST-CLASS DEAL** (`Block_As_Deal_Design.md`, Day 77) - the bl
     full deal life and a 5M block has status words - backwards. Includes: the three tiers of
     post-reservation change with the FORFEIT as the line, money recorded never computed, and
     developer-ready event shapes. **This supersedes C1 as the block's real scope.**
+C0c. **BLOCK OWNERSHIP GOVERNANCE** (`Block_Ownership_Governance_Question.md`, Day 79) - the
+    visibility ladder and owner display are SHIPPED; the reassign control is deliberately NOT
+    built. Needs: COVER (temporary access, commission stays) vs REASSIGN (permanent, children
+    follow, mandatory reason, outgoing owner notified), and the unresolved core - WHOSE COMMISSION
+    when a block moves mid-deal. Do not build a reassign control before that rule is ruled.
 C0b. **1-TO-1 FLOW SIMPLIFICATION** - merge the reservation ceremony with the ledger's birth
     (kills two dead steps), enable partial receipts with a save-progress door, and print the
     receipt: received / balance / due by. Changes the CERTIFIED money path - own cut, own test.

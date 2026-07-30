@@ -116,7 +116,8 @@ Launch Mode) · `Opps_Journey_Redesign_Capture.md` (GF findings, money-tail, KYC
 `PropPulse_Complete_Documentation.md` · `Real_Estate_Workflow_Spec.md` ·
 `PropCRM_Workflow_Config_Design.md` · `Naming_Lead_Quote_vs_Opp_Proposal.md` ·
 `Title_Holders_Design_Capture.md` (in whose name - NOT built) ·
-`Block_As_Deal_Design.md` (Day 77 - block is a first-class deal; three tiers of post-reservation change; the forfeit line; ledger at reservation)
+`Block_As_Deal_Design.md` (Day 77 - block is a first-class deal; three tiers of post-reservation change; the forfeit line; ledger at reservation) ·
+`Block_Ownership_Governance_Question.md` (Day 79 - cover vs reassign, whose commission, the gate as service instrument - OPEN, design owed)
 
 ### DESIGN - specified, NOT yet built (each is a board item)
 `Phase_2_Communications_Overhaul.md` · `Phase_2_Lead_Lifecycle_Segmentation.md` ·
