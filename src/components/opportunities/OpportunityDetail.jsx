@@ -8,6 +8,7 @@ import LogActivityModal from "../LogActivityModal.jsx";
 import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { supabase } from "../../lib/supabase.js";
 import { getFees, FALLBACK as FEE_FALLBACK } from "../../lib/feeSettings.js";
+import { dealBill } from "../../lib/dealBill.js";
 import { aiInvoke } from '../../lib/aiInvoke.js';
 import { Modal } from "../../modules/shared/Modal.jsx";
 import { Btn } from "../../modules/shared/Btn.jsx";
@@ -1266,7 +1267,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
             });
             const resDate = stageGateForm.reservation_date || new Date().toISOString().slice(0,10);
             const row = (k, expected, extra) => ({ status: "pending", amount: "", date: "", notes: "", method: "", expected_amount: expected, ...(extra || {}) });
-            await supabase.from("pp_sales_closures").insert({
+            const { error: insErr } = await supabase.from("pp_sales_closures").insert({
               opportunity_id: opp.id,
               company_id: currentUser.company_id,
               final_sale_price: price,
@@ -1284,7 +1285,9 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
                 other_fees:      row("other_fees", null),
               },
               frozen_fee_policy: { spaFee: fees.spaFee, oqoodFee: fees.oqoodFee, dldPct: fees.dldPct, frozen_at: new Date().toISOString() },
-            });
+              created_by: currentUser.id,
+            }).select();
+            if (insErr) console.error("LEDGER BIRTH FAILED:", insErr.message, insErr.details, insErr.hint);
           }
         } catch (e) { console.error("ledger birth:", e); }
       } catch (e) {
