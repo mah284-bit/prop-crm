@@ -39,3 +39,13 @@ regex-parses "N/M" and returns null for Custom, so a custom-plan deal computes a
 Never surfaced because every test to date used a standard preset.
 NOT A BUG TODAY - a parked asset. Decide whether to revive the tables or give Custom real
 structure before any deal uses one.
+
+## VERIFIED (Day 79) - NO LIVE EXPOSURE TODAY
+Checked: 30 Available units have NO unit_sale_pricing row at all - these are GLOBAL PropPulse
+catalogue units that nobody has imported into a company working set, so they cannot be picked.
+Units that ARE imported and priced at zero: **0**.
+CONCLUSION: the completeness question is PREVENTIVE, not a live wound. The exposure would appear
+the first time a broker imports a unit and leaves it unpriced. Founder's own instinct located this
+correctly ("check if the company_id is attached, else it is PropPulse inventory yet none imported").
+STILL WORTH BUILDING before real brokers import at volume - an unpriced imported unit produces a
+silent zero bill.
