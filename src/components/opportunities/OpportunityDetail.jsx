@@ -1753,7 +1753,10 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                           {nextStageName&&nextStageName!=="Closed Won"&&nextStageName!=="Proposal Sent"&&(
                             <button onClick={()=>moveStage(nextStageName)}
                               style={{padding:"7px 14px",borderRadius:7,border:"none",background:m.c,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 6px rgba(0,0,0,.08)"}}>
-                              ✓ Advance to {nextStageName}
+                              {/* Day 79: name the ACT, not the destination. "Advance to SPA Signed"
+                                  while 3.5M is outstanding invites an act the gate will refuse. */}
+                              {(opp.stage === "SPA Requirements" && collectionState && collectionState.toCollect > 0)
+                                ? "Collect payments" : "\u2713 Advance to " + nextStageName}
                             </button>
                           )}
                           {nextStageName==="Proposal Sent"&&(

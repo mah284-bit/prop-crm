@@ -166,3 +166,21 @@ and what was issued.
 ARCHITECT CALL - defer: a nag needs evidence before it earns its place, or brokers learn to click
 past it. Revisit after the tester round. The data already exists (round timestamps vs proposal
 timestamps), so it is computable whenever wanted.
+
+## GAP FOUND (Day 79) - THE LEDGER STORES TOTALS, NOT PAYMENT EVENTS
+FOUNDER ASKED: if the buyer pays 20 and 5 is pending, will the receipt handle it?
+PARTLY. Outstanding per particular is correct (expected minus received), so the BALANCE on the
+receipt is right. But `pre_spa_payments` stores ONE amount per particular, not a LIST of payments.
+Two payments of 20,000 and 5,000 against one row collapse into 25,000 - no dates, no methods, no
+history. So the receipt's "RECEIVED WITH THANKS" band can only ever show the RESERVATION, because
+that is the only payment stored as a discrete event.
+CONSEQUENCE: you cannot issue a receipt for a payment the system never recorded as an event. A
+second receipt after a further 5,000 would still say "Received: AED 25,000".
+NOT AN ISSUE FOR THE RESERVATION - that is fully gated (Reserved is earned only on full
+collection; partials hold at Offer Accepted). It bites in the COLLECTION PHASE, where a 3.2M
+first instalment will arrive in several confirmed tranches - which is exactly the partial-receipt
+model the founder ruled FOR on Day 78.
+FIX SHAPE: payments become ROWS (a payments table keyed to opportunity + particular), and the
+jsonb becomes a derived view or is retired. Same conclusion as the Day-78 jsonb-vs-table question,
+now with a concrete consequence rather than a theoretical one. Each recorded payment then has its
+own receipt.
