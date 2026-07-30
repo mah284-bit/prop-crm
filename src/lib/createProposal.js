@@ -5,6 +5,7 @@
 // It does NOT generate PDFs, branding, activities, or reminders — those stay in the builder.
 // This is ONLY the defensive insert: route known-JSONB fields into structured_data, then insert.
 import { supabase } from "./supabase";
+import { dealBill } from "./dealBill.js";
 
 // Fields that may not exist as real columns (schema drift) — routed into structured_data.
 const KNOWN_JSONB_FIELDS = ["discounted_price", "lead_id", "payment_plan"];
@@ -19,7 +20,51 @@ export async function insertProposalRecord(fullPayload) {
     }
   });
   payload.structured_data = sd;
-  return await supabase.from("proposals").insert(payload).select().single();
+  const res = await supabase.from("proposals").insert(payload).select().single();
+  if (!res.error && payload.opportunity_id) {
+    await syncLedgerToProposal(payload.opportunity_id, sd);
+  }
+  return res;
+}
+
+// Day 79: THE LEDGER FOLLOWS THE PROPOSAL (founder ruling).
+// Negotiation rounds are internal and change nothing. A PROPOSAL is the instrument - it is what
+// the buyer is actually sent. So on a deal at Reserved or later, a new proposal recomputes the
+// stored ledger's PRICE-DERIVED rows. Lives HERE, beside the write, so every entry point
+// (opp page, Lead Detail, any future surface) behaves identically.
+// NEVER touched: the reservation (a fixed fee), SPA/Oqood/DLD-pct (frozen company policy at
+// reservation), and any row already RECEIVED or WAIVED.
+async function syncLedgerToProposal(oppId, sd) {
+  try {
+    const { data: opp } = await supabase.from("opportunities")
+      .select("stage, current_agreed_price, current_payment_plan_preset, current_dld_payer, current_dld_split_pct")
+      .eq("id", oppId).maybeSingle();
+    if (!opp || !["Reserved","SPA Requirements","SPA Signed"].includes(opp.stage)) return;
+    const { data: cl } = await supabase.from("pp_sales_closures")
+      .select("id, pre_spa_payments, frozen_fee_policy").eq("opportunity_id", oppId).maybeSingle();
+    if (!cl?.pre_spa_payments) return;
+    const price = Number(sd.discounted_price || sd.asking_price || opp.current_agreed_price || 0);
+    if (!price) return;
+    const plan = sd.payment_plan_preset || opp.current_payment_plan_preset;
+    const payer = sd.dld_handling === "split_5050" ? "split"
+                : sd.dld_handling === "developer_pays" ? "developer"
+                : sd.dld_handling ? "buyer" : (opp.current_dld_payer || "buyer");
+    const bill = dealBill({
+      price, planPreset: plan, dldPayer: payer,
+      dldSplitPct: opp.current_dld_split_pct || 50,
+      dldPct: cl.frozen_fee_policy?.dldPct,
+    });
+    const next = { ...cl.pre_spa_payments };
+    const bump = (k, expected, pct) => {
+      const r = next[k];
+      if (!r || r.status === "received" || r.status === "waived") return;
+      next[k] = { ...r, expected_amount: expected, ...(pct ? { expected_percent: pct } : {}) };
+    };
+    bump("initial_advance", bill.initial_advance.expected, bill.initial_advance.pct);
+    if (!bill.dld_fee.waived) bump("dld_fee", bill.dld_fee.expected);
+    await supabase.from("pp_sales_closures")
+      .update({ pre_spa_payments: next, final_sale_price: price }).eq("id", cl.id);
+  } catch (e) { console.error("ledger sync to proposal:", e); }
 }
 
 // Compute the next version number for an opportunity's proposals.
