@@ -161,6 +161,22 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   const [stageGateForm, setStageGateForm] = useState({});
   const [spaMode, setSpaMode] = useState("detailed"); // quick|detailed
   const [companyFees, setCompanyFees] = useState(null); // Day 78: the company fee POLICY
+  // Day 79 (C0b-2): the deal COLLECTION STATE, read from the stored ledger so the broker
+  // sees Bill / Collected / To collect without opening any dialog. One truth, two surfaces.
+  const [collectionState, setCollectionState] = useState(null);
+  useEffect(() => { (async () => {
+    if (!["Reserved","SPA Requirements","SPA Signed","Closed Won"].includes(opp.stage)) { setCollectionState(null); return; }
+    const { data } = await supabase.from("pp_sales_closures").select("pre_spa_payments").eq("opportunity_id", opp.id).maybeSingle();
+    const rows = data && data.pre_spa_payments;
+    if (!rows) { setCollectionState(null); return; }
+    let bill = 0, collected = 0;
+    Object.values(rows).forEach(r => {
+      if (!r || r.status === "waived") return;
+      bill += Number(r.expected_amount || 0);
+      collected += Number(r.amount || 0);
+    });
+    setCollectionState({ bill: bill, collected: collected, toCollect: Math.round((bill - collected) * 100) / 100 });
+  })(); }, [opp.id, opp.stage, showStageGate]);
   // Stage 5 — SPA upload + pre-SPA payments + edit-price toggle
   const [spaUploading, setSpaUploading] = useState(false);
   const [spaUploadError, setSpaUploadError] = useState(null);
@@ -1657,6 +1673,15 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                       </div>
                     )}
 
+                    {collectionState && collectionState.bill > 0 && (() => { const m = (n) => "AED " + Number(n||0).toLocaleString(); return (
+                      <div style={{display:"flex",gap:16,alignItems:"center",flexWrap:"wrap",background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:9,padding:"7px 13px",marginBottom:8,fontSize:12}}>
+                        <span style={{fontWeight:700,color:"#92400E"}}>Collection</span>
+                        <span style={{color:"#475569"}}>Bill <strong style={{color:"#0F2540"}}>{m(collectionState.bill)}</strong></span>
+                        <span style={{color:"#475569"}}>Collected <strong style={{color:"#166534"}}>{m(collectionState.collected)}</strong></span>
+                        <span style={{color:"#475569"}}>To collect <strong style={{color:collectionState.toCollect > 0 ? "#B91C1C" : "#166534"}}>{m(collectionState.toCollect)}</strong></span>
+                        {collectionState.toCollect <= 0 && <span style={{fontSize:11,fontWeight:700,color:"#166534"}}>fully collected</span>}
+                      </div>
+                    ); })()}
                     {opp.stage === "SPA Signed" && (() => {
                       const prep = opp.spa_prep || {};
                       const togglePrep = async (k, v) => {
