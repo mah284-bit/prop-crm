@@ -4,7 +4,7 @@
 > Rule: nothing enters this board unverified against repo/DB. REWRITTEN, not appended.
 
 # MASTER PENDING BOARD
-Last verified against repo: 28 Jul 2026 (Day 77) - HEAD 91cb26b
+Last verified against repo: 30 Jul 2026 (Day 79) - branch feature/block-ledger
 
 ## A - BLOCK VERTICAL — ✅ CLOSED (merged Day 75, tag golden-block-vertical-complete)
 A1 convergence ✓ (Particulars/Bill-Collected-ToCollect/Notes) · A2 ✓ NOT A BUG (gate correct;
@@ -244,3 +244,22 @@ is correctness debt, not a live wound. (SPA fee was different: brokerages genuin
 which is why that one was fixed today.)
 NOTE: same pattern elsewhere - property pack line 3723 does `sp.agency_fee_pct || 2` for agency
 fee: setting exists, constant used as fallback, label hard-coded "(2%)".
+
+## CLOSED DAYS 78-79 (evidence attached)
+X9. **COMPANY FEE POLICY** (Day 78) - Settings > Buyer Fees writes reservation / SPA / Oqood /
+    DLD-pct per company; lib/feeSettings.js resolves company setting -> fallback. SPA and Oqood
+    hard-codes retired. PROVEN LIVE: SPA set to 6000 in Settings appeared as Expected 6,000 on a
+    fresh deal's ledger. (DLD pct still hard-coded across 3 files - separate board item.)
+X10. **BLOCK VISIBILITY LADDER** (Day 79) - block_deals.assigned_to added and backfilled; RLS
+    rewritten to mirror the opportunities ladder (own / downline / group / super_admin). Four
+    policies, no ALL. VERIFIED LIVE: an agent who does not own the blocks sees none; his manager
+    sees them via downline. Closes the Day-77 leak. Owner shown in the Workspace header.
+X11. **C0b THE COLLECTION LEDGER** (Day 79) - the ledger is BORN AT RESERVATION with the company
+    fee policy FROZEN into the row; it FOLLOWS THE PROPOSAL (price-derived rows recompute, frozen
+    fees and the reservation hold) from every entry point via lib/createProposal.js;
+    Bill / Collected / To collect shown on the deal itself; branded RECEIPT PDF with the itemised
+    balance to proceed; the deal action reads "Collect payments" while money is outstanding.
+    VERIFIED LIVE end to end on a fresh specimen (Boris / DAM-14-10) including a renegotiation
+    from 10-90 at 6,753,047 to 50-50 at 6,550,456.
+    STILL OPEN FROM IT: the ledger stores TOTALS not payment EVENTS, so only the reservation can
+    produce a receipt - see the design doc.

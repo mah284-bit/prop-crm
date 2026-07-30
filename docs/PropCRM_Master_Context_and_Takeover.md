@@ -1,6 +1,6 @@
 # PropCRM - MASTER CONTEXT (THE HEAD)
 **READ THIS FIRST. EVERY SESSION. BEFORE ANY WORK.**
-Last verified against repo: 28 Jul 2026 (Day 77) - HEAD 91cb26b
+Last verified against repo: 30 Jul 2026 (Day 79) - branch feature/block-ledger @ 00760b7
 Governed by: docs/DOCUMENTATION_PRINCIPLES.md (six rules, founder-ratified)
 
 ## THE THREE LIVING DOCUMENTS - one job each, no overlap
@@ -67,6 +67,16 @@ developer till the deal closes; after closing, follow-up calls till handover."
   hold-during-dialog, silent variant (no loading flash). Master load split from realtime
   subscription. Merged Day 76.
 - **Realtime:** Supabase subscriptions on leads/activities/opportunities (cross-tab verified).
+- **Company fee policy (Day 78):** Settings > Buyer Fees writes reservation / SPA / Oqood / DLD-pct
+  per company; `lib/feeSettings.js` resolves company setting -> fallback. SPA and Oqood hard-codes
+  retired. (DLD pct still hard-coded in 3 files - boarded, low live risk.)
+- **Block visibility ladder (Day 79):** blocks follow the SAME ladder as opportunities via
+  block_deals.assigned_to. Agent sees own, manager sees downline - VERIFIED LIVE both tiers.
+  Owner shown in the Workspace header.
+- **The collection ledger (Day 79):** born AT RESERVATION with the fee policy FROZEN into the row;
+  follows the PROPOSAL (price-derived rows recompute, frozen fees hold) from every entry point via
+  lib/createProposal.js; Bill / Collected / To collect shown on the deal itself; branded RECEIPT
+  PDF with the itemised balance to proceed. All verified live end-to-end.
 - **Also live:** KYC v1.1 (docs, expiry, gates), PropPulse, Commission Outstanding, Lead
   Assignment + agent pools, Org Chart, Client-360, Launch Mode, Reports (role-gated),
   auto-advance + lifecycle chain, duplicate-lead prevention, My Earnings.
