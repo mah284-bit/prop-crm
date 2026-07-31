@@ -1,6 +1,6 @@
 # PropCRM - MASTER CONTEXT (THE HEAD)
 **READ THIS FIRST. EVERY SESSION. BEFORE ANY WORK.**
-Last verified against repo: 30 Jul 2026 (Day 79) - branch feature/block-ledger @ 00760b7
+Last verified against repo: 31 Jul 2026 (Day 80) - branch feature/block-ledger @ 38b0d95
 Governed by: docs/DOCUMENTATION_PRINCIPLES.md (six rules, founder-ratified)
 
 ## THE THREE LIVING DOCUMENTS - one job each, no overlap
@@ -73,6 +73,11 @@ developer till the deal closes; after closing, follow-up calls till handover."
 - **Block visibility ladder (Day 79):** blocks follow the SAME ladder as opportunities via
   block_deals.assigned_to. Agent sees own, manager sees downline - VERIFIED LIVE both tiers.
   Owner shown in the Workspace header.
+- **Block terms + collection ledger (Day 80):** terms editable after confirmation (owner or
+  manager, versioned as a new distribution, cascades to pre-SPA children, audited); the BLOCK
+  COLLECTION phase - one chunk recorded, allocated two-stage proportionally across particulars
+  then units; Money tab shows bill / collected / outstanding and each unit's paid; branded BLOCK
+  STATEMENT PDF. Verified to the fils across three payments.
 - **The collection ledger (Day 79):** born AT RESERVATION with the fee policy FROZEN into the row;
   follows the PROPOSAL (price-derived rows recompute, frozen fees hold) from every entry point via
   lib/createProposal.js; Bill / Collected / To collect shown on the deal itself; branded RECEIPT

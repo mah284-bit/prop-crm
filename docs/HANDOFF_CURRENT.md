@@ -1231,3 +1231,43 @@ receipt - blocks per-payment receipts in the collection phase.
 NEXT: BL-2 block ledger screen (record once, allocate across children). Prerequisite - existing
 blocks carry no payment plan, so a TERMS EDITOR is needed (option b: terms-only, price stays
 locked) or the Money tab shows zero instalments forever.
+
+## ── DAY 80 (31 Jul) — BL-2: THE BLOCK COLLECTION PHASE ──
+SHIPPED (branch feature/block-ledger, not merged):
+- BLOCK TERMS EDITOR: terms are editable after confirmation - the calculator lock protects PRICE
+  (money paid against it), terms are a separate concern. Writes a new distribution version,
+  cascades plan + DLD to PRE-SPA children only, audited. Gate started manager-only and was
+  LOOSENED to OWNER-OR-MANAGER: founder's reasoning is that block terms come FROM THE DEVELOPER -
+  the broker is RECORDING what was offered, not granting a concession, so an approval gate would
+  be theatre and would put the person WITHOUT the knowledge doing the entry.
+- AUDIT: every terms change writes an activity naming who set what and which version, deduped on
+  the block view (one act writes one row per child - each deal keeps its own history for detach).
+  Verified the OWNING AGENT sees his manager's change.
+- ACCEPT-SHORTFALL BUTTON now hides once the decision is made; the settled chip names WHO accepted
+  and WHEN. Founder ruling held: EVERY shortfall needs manager approval, however small - a
+  tolerance was built mid-cut and STRIPPED on that ruling.
+- BL-2 THE COLLECTION PHASE (the day's main work). Rebuilt after the founder rejected the first
+  model: the broker was being made to choose a PARTICULAR and read a per-unit split at the moment
+  he just wants to record money. New model - "a chunk arrives for the block; what it COVERS is
+  allocation, not data entry":
+    lib/allocateBlockPayment.js - two-stage PROPORTIONAL split, across particulars by outstanding,
+    then within each across units by outstanding. Equal-split would over-credit small units.
+    lib/recordBlockCollection.js - one bank line, one allocation row per (particular, unit).
+    BlockCollectionDialog - ONE amount, no particular chosen, allocation shown before recording,
+    "nothing to record" once fully collected.
+    Money tab - bill / collected / outstanding per particular, and each unit's PAID.
+    generateBlockStatement.js - the buyer's document: THE BLOCK, then PER UNIT (his asset register
+    for selling, renting or transferring one unit at a time).
+  VERIFIED TO THE FILS: three payments (500k, 400k, 379,950) on Chen Wei allocated across four
+  particulars and three units, ending exactly on the bill - per-unit paid 413,067 / 368,590 /
+  573,293 summing to 1,354,950. Second and third payments correctly worked off the REDUCED
+  outstanding, proving paidByParticular / paidByUnit.
+SCHEMA: block_payment_allocations.particular added (a single payment now spans several, so the
+parent's milestone can no longer describe it - post-reservation lines are milestone "Collection").
+METHOD NOTE: five surfaces (strip, two banners, table, sub-line) each assumed "reservation" and
+were patched one at a time as the founder caught them - the arithmetic branched on particular but
+the COPY did not. The rebuild removed the branch entirely.
+STILL OPEN: no REJECT path on the shortfall gate (accept or silence) · no materiality gate at the
+END of the collection phase - an outstanding 200 simply sits · shortfall rules still DIVERGE
+between block (every gap approved) and 1-to-1 (500 AED / 1% tolerance).
+NEXT: the reject path, or merge the branch to main.
