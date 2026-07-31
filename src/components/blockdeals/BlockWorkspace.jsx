@@ -371,7 +371,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                     <thead><tr style={{background:"#F8FAFC",color:"#475569"}}>
                       <th style={{padding:"6px 8px",textAlign:"left"}}>Unit</th><th style={{padding:"6px 8px",textAlign:"right"}}>Net price</th>
                       <th style={{padding:"6px 8px",textAlign:"right"}}>Instalment</th><th style={{padding:"6px 8px",textAlign:"right"}}>DLD</th>
-                      <th style={{padding:"6px 8px",textAlign:"right"}}>SPA</th><th style={{padding:"6px 8px",textAlign:"right"}}>Oqood</th>
+                      <th style={{padding:"6px 8px",textAlign:"right"}}>SPA</th><th style={{padding:"6px 8px",textAlign:"right"}}>Oqood</th><th style={{padding:"6px 8px",textAlign:"right"}}>Paid</th>
                     </tr></thead>
                     <tbody>
                       {blockBill.per.map(u => (
@@ -382,6 +382,14 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                           <td style={{padding:"7px 8px",textAlign:"right"}}>{fmt(u.bill.dld_fee.waived ? 0 : u.bill.dld_fee.expected)}</td>
                           <td style={{padding:"7px 8px",textAlign:"right"}}>{fmt(u.bill.spa_fee.expected)}</td>
                           <td style={{padding:"7px 8px",textAlign:"right"}}>{fmt(u.bill.oqood_fee.expected)}</td>
+                          {/* Day 80: what this unit HAS PAID - the buyer's actual cost basis, the
+                              number he needs when he sells, rents or transfers this unit. */}
+                          <td style={{padding:"7px 8px",textAlign:"right",fontWeight:700,color:"#166534"}}>{(() => {
+                            const res = Number((childRows.find(r => r.child?.id === u.child_id)?.child?.reservation_amount) || 0);
+                            const rest = (payAllocs||[]).filter(x => x.opportunity_id === u.child_id && x.particular && x.particular !== "reservation").reduce((t,x)=>t+Number(x.amount||0),0);
+                            const paid = res + rest;
+                            return paid > 0 ? fmt(paid) : "-";
+                          })()}</td>
                         </tr>
                       ))}
                     </tbody>
