@@ -214,6 +214,8 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
     return m;
   })();
 
+  const totGot = (childRows||[]).reduce((t,r)=>t+Number(r.child?.reservation_amount||0),0)
+    + Object.values(paidByParticular||{}).reduce((t,v)=>t+Number(v||0),0);
   const blockBill = (() => {
     if (!blockFees) return null;
     const per = [];
@@ -334,16 +336,32 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                   <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:3}}>Block bill</div>
                   <div style={{fontSize:11,color:"#94A3B8",marginBottom:10}}>What this block owes across all units. Money is recorded once at block level and distributed - the per-unit split is below.</div>
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,marginBottom:14}}>
+                    <thead><tr style={{background:"#F8FAFC",color:"#475569"}}>
+                      <th style={{padding:"6px 4px",textAlign:"left"}}>Particular</th>
+                      <th style={{padding:"6px 4px",textAlign:"right"}}>Bill</th>
+                      <th style={{padding:"6px 4px",textAlign:"right"}}>Collected</th>
+                      <th style={{padding:"6px 4px",textAlign:"right"}}>Outstanding</th>
+                    </tr></thead>
                     <tbody>
-                      {[["Reservation",blockBill.tot.reservation],["First instalments (per plan)",blockBill.tot.initial],["SPA fees",blockBill.tot.spa],["DLD fees",blockBill.tot.dld],["Oqood fees",blockBill.tot.oqood]].map(([lbl,v]) => (
+                      {/* Day 80: the bill alone told the broker what was owed and nothing of what
+                          had been paid. Collections now sit beside it, per particular. */}
+                      {[["Reservation",blockBill.tot.reservation,"reservation"],["First instalments (per plan)",blockBill.tot.initial,"initial_advance"],["SPA fees",blockBill.tot.spa,"spa_fee"],["DLD fees",blockBill.tot.dld,"dld_fee"],["Oqood fees",blockBill.tot.oqood,"oqood_fee"]].map(([lbl,v,key]) => {
+                        const got = key === "reservation"
+                          ? childRows.reduce((t,r)=>t+Number(r.child?.reservation_amount||0),0)
+                          : Number(paidByParticular[key] || 0);
+                        const left = Math.max(0, Number(v||0) - got);
+                        return (
                         <tr key={lbl} style={{borderBottom:"1px dashed #F1F5F9"}}>
                           <td style={{padding:"7px 4px",color:"#475569"}}>{lbl}</td>
                           <td style={{padding:"7px 4px",textAlign:"right",fontWeight:600,color:v>0?"#0F2540":"#CBD5E1"}}>{fmt(v)}</td>
-                        </tr>
-                      ))}
+                          <td style={{padding:"7px 4px",textAlign:"right",fontWeight:600,color:got>0?"#166534":"#CBD5E1"}}>{got>0?fmt(got):"-"}</td>
+                          <td style={{padding:"7px 4px",textAlign:"right",fontWeight:700,color:left>0.5?"#B91C1C":"#166534"}}>{Number(v||0)<=0 ? "-" : (left>0.5?fmt(left):"Nil " + String.fromCodePoint(0x2713))}</td>
+                        </tr>); })}
                       <tr style={{borderTop:"2px solid #E8EDF4"}}>
-                        <td style={{padding:"9px 4px",fontWeight:800,color:"#0F2540"}}>Total bill</td>
+                        <td style={{padding:"9px 4px",fontWeight:800,color:"#0F2540"}}>Total</td>
                         <td style={{padding:"9px 4px",textAlign:"right",fontWeight:800,color:"#0F2540"}}>{fmt(blockBill.grand)}</td>
+                        <td style={{padding:"9px 4px",textAlign:"right",fontWeight:800,color:"#166534"}}>{fmt(totGot)}</td>
+                        <td style={{padding:"9px 4px",textAlign:"right",fontWeight:800,color:(blockBill.grand-totGot)>0.5?"#B91C1C":"#166534"}}>{(blockBill.grand-totGot)>0.5?fmt(blockBill.grand-totGot):"Nil " + String.fromCodePoint(0x2713)}</td>
                       </tr>
                     </tbody>
                   </table>
