@@ -162,3 +162,17 @@ THE PRICE RULE (settled here):
 - PRICE-DERIVED AMOUNTS (first instalment, DLD amount): follow the CURRENT AGREED PRICE. Not
   over-engineering - a 10% instalment on a renegotiated price MUST move, or the ledger
   contradicts the developer's payment plan.
+
+## OPEN (Day 80) - WHO SETS BLOCK TERMS? MANAGER-ONLY FOR NOW
+As built: setting or changing block terms is MANAGER-TIER (approve_discount / manager roles).
+ARCHITECT'S REASON: terms change what every buyer owes - on Khalid's block, switching 20/80 to
+50/50 moved the bill from 980,406 to 2,451,014. Same authority class as approving a discount.
+FOUNDER'S COUNTER (Day 80, valid): the OWNING AGENT negotiated the block, speaks to the developer,
+and the terms ARE the deal he agreed. Making him ask a manager to record what he negotiated is the
+app second-guessing the person who did the work. And the manager is not in the conversation - he
+records what the agent tells him, which is a rubber stamp rather than oversight.
+MIDDLE POSITION (not built): the OWNER sets terms; a manager can also set them (for cover); every
+change is audited.
+DECISION: leave manager-gated and let TESTERS or a DEMO decide. A gate is easy to loosen with
+evidence and hard to re-tighten once brokers are used to the freedom. Safe to wait because every
+change now writes an activity - who, what, which version - visible to the owning agent.
