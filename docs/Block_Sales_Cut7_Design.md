@@ -152,3 +152,18 @@ ceremony (one wire -> N children -> stage gate), genuinely block-specific.
 SCOPE: this is the design of record for block money phase 2 (post-6a), NOT today's build.
 Today's A1 = small alignment only: Towards->Particulars, strip labels ->
 Bill (reservation)/Collected/To Collect, add Notes field.
+
+## GAP (Day 80, founder catch) - THE SHORTFALL GATE IS A ONE-WAY DOOR
+"Accept shortfall & close" appears for the manager, and there is NO WAY TO REJECT. Today he has
+two options: accept, or do nothing. If the difference is material - 20,000 short rather than 150 -
+he would want to REFUSE and tell the agent to collect it. There is no button for that, and no way
+to record that he looked and declined.
+WORSE, DOING NOTHING IS SILENT. The agent cannot tell whether the manager has not seen it or has
+decided against it. The deal simply sits.
+FIX SHAPE: a REJECT / SEND BACK path with a mandatory reason, logged and visible to the agent -
+"Manager declined: 20,000 is too large, collect before closing." Same governance grammar already
+used for force-reassign and lead release. Accept and reject should be the same ceremony with two
+outcomes, not one button and an absence.
+ALSO TO CHECK: Khalid's block header reads "Reservation settled (shortfall accepted)" AND the
+"Accept shortfall & close" button is still showing. Accepting twice should not be possible -
+verify the button hides once collection_status = accepted_short.

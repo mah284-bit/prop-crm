@@ -6,6 +6,7 @@ import { getFees } from "../../lib/feeSettings.js";
 import BlockPaymentDialog from "./BlockPaymentDialog.jsx";
 import { lockBlockPayment, amendBlockPayment, acceptShortCollection } from "../../lib/lockBlockPayment.js";
 import { canDo } from "../../lib/permissions.js";
+import BlockTermsForm from "./BlockTermsForm.jsx";
 
 export default function BlockWorkspace({ block, leads, currentUser, showToast, onClose, onOpenCalculator, onRecordApproval, onConfirm, onReload }) {
   const [dLatest, setDLatest] = useState(null);
@@ -90,6 +91,73 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
   // distributed - "the block is the meaning of record from one source and distribute". So the
   // bill is dealBill() run PER CHILD and summed per particular. The per-unit split stays
   // visible (the buyer's asset register) but is never the entry point.
+  // ─────────────────────────────────────────────────────────────────────────────
+  // BLOCK TERMS EDITOR (Day 80) - WHY THIS EXISTS, for anyone reading this cold.
+  //
+  // A block carries UNIFORM TERMS - one payment plan and one DLD arrangement for every unit -
+  // because that is what makes it a block (founder ruling Day 77: "if it is different, then the
+  // block concept does not have meaning"). Terms are set in the DISTRIBUTION CALCULATOR and
+  // versioned with the prices they were agreed alongside.
+  //
+  // THE PROBLEM THIS SOLVES: once money is collected the calculator LOCKS, because repricing a
+  // deal the buyer has already paid against would contradict a settled record. But that lock also
+  // sealed the TERMS, and terms legitimately change after confirmation - a developer revises the
+  // payment plan across a block, and the app had no way to record it. Blocks confirmed before the
+  // Day-77 terms work carry NO plan at all, so their instalments compute to zero.
+  //
+  // THE DISTINCTION: the lock protects PRICE (money already paid against it). TERMS are a separate
+  // concern - changing 20/80 to 50/50 does not alter what the buyer has paid, only what is due
+  // next. So this editor changes terms ONLY; prices are carried forward from D_latest untouched.
+  //
+  // It writes a NEW DISTRIBUTION VERSION so the change is versioned and audited exactly like a
+  // reprice, and pushes the plan onto PRE-SPA children only - a contract-locked deal is never
+  // touched. This is the founder's Tier-2 change (terms change -> new version -> re-price pre-SPA
+  // children), applied to terms instead of price.
+  // ─────────────────────────────────────────────────────────────────────────────
+  const [termsEdit, setTermsEdit] = useState(false);
+  const [termsPlan, setTermsPlan] = useState("");
+  const [termsDld, setTermsDld] = useState("buyer");
+  const [termsSplit, setTermsSplit] = useState("50");
+  const [termsSaving, setTermsSaving] = useState(false);
+  const canSetTerms = canDo(currentUser, "approve_discount") || currentUser?.is_super_admin === true || ["admin","super_admin","group_gm","sales_manager"].includes(currentUser?.role);
+
+  // Writes a NEW distribution version: D_latest's allocations (prices) carried forward UNCHANGED,
+  // only the terms differ. Then pushes the plan + DLD onto children that have not reached SPA.
+  const saveTerms = async () => {
+    if (!termsPlan) { showToast("Pick a payment plan", "error"); return; }
+    setTermsSaving(true);
+    try {
+      const version = (dLatest?.version || 0) + 1;
+      const { error } = await supabase.from("block_distributions").insert({
+        company_id: currentUser.company_id, block_deal_id: block.id, version,
+        allocations: dLatest?.allocations || [],
+        block_total: dLatest?.block_total || 0,
+        discount_total: dLatest?.discount_total || 0,
+        payment_plan_preset: termsPlan,
+        dld_payer: termsDld,
+        dld_split_pct: termsDld === "split" ? (Number(termsSplit) || 50) : null,
+        locked_at: new Date().toISOString(), created_by: currentUser.id,
+      });
+      if (error) { showToast(error.message, "error"); setTermsSaving(false); return; }
+      // Pre-SPA children only. A contract-locked deal keeps the terms it signed under.
+      const ids = (childRows || [])
+        .filter(r => r.child && !["SPA Signed","Closed Won","Closed Lost"].includes(r.child.stage))
+        .map(r => r.child.id);
+      if (ids.length) {
+        await supabase.from("opportunities").update({
+          current_payment_plan_preset: termsPlan,
+          current_dld_payer: termsDld,
+          current_dld_split_pct: termsDld === "split" ? (Number(termsSplit) || 50) : null,
+        }).in("id", ids);
+      }
+      showToast("Terms set as D" + version + " - applied to " + ids.length + " deal" + (ids.length === 1 ? "" : "s"), "success");
+      setTermsEdit(false);
+      setPayTick(t => t + 1);
+      onReload?.();
+    } catch (e) { showToast(String(e.message || e), "error"); }
+    setTermsSaving(false);
+  };
+
   const [blockFees, setBlockFees] = useState(null);
   useEffect(() => { (async () => {
     if (currentUser?.company_id) setBlockFees(await getFees(currentUser.company_id));
@@ -198,6 +266,20 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
               {wsTab==="money" && (
                 !blockBill ? <div style={{color:"#94A3B8",fontSize:13}}>Loading fee policy...</div> : (
                 <div>
+                  <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+                      <span style={{fontSize:11,fontWeight:700,color:"#92400E"}}>TERMS</span>
+                      {!termsEdit && canSetTerms && <button onClick={()=>{setTermsPlan(dLatest?.payment_plan_preset||"");setTermsDld(dLatest?.dld_payer||"buyer");setTermsSplit(String(dLatest?.dld_split_pct||50));setTermsEdit(true);}} style={{padding:"3px 10px",borderRadius:6,border:"1px solid #B45309",background:"#fff",color:"#B45309",fontSize:11,fontWeight:700,cursor:"pointer"}}>{dLatest?.payment_plan_preset ? "Change" : "Set terms"}</button>}
+                    </div>
+                    <div style={{fontSize:11,color:"#B45309",marginBottom:8}}>Same for every unit. A change writes a new version and applies to deals not yet at SPA - prices are not touched.</div>
+                    {termsEdit && <BlockTermsForm plan={termsPlan} setPlan={setTermsPlan} dld={termsDld} setDld={setTermsDld} saving={termsSaving} onSave={saveTerms} onCancel={()=>setTermsEdit(false)} />}
+                    {!termsEdit && (
+                      <div style={{fontSize:12,color:"#475569",display:"flex",gap:18,flexWrap:"wrap"}}>
+                        <span>Payment plan <strong style={{color:dLatest?.payment_plan_preset?"#0F2540":"#B91C1C"}}>{dLatest?.payment_plan_preset || "not set"}</strong></span>
+                        <span>DLD <strong style={{color:"#0F2540"}}>{dLatest?.dld_payer || "buyer"}</strong></span>
+                      </div>
+                    )}
+                  </div>
                   <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:3}}>Block bill</div>
                   <div style={{fontSize:11,color:"#94A3B8",marginBottom:10}}>What this block owes across all units. Money is recorded once at block level and distributed - the per-unit split is below.</div>
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,marginBottom:14}}>
