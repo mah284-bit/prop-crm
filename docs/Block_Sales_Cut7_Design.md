@@ -167,3 +167,19 @@ outcomes, not one button and an absence.
 ALSO TO CHECK: Khalid's block header reads "Reservation settled (shortfall accepted)" AND the
 "Accept shortfall & close" button is still showing. Accepting twice should not be possible -
 verify the button hides once collection_status = accepted_short.
+
+## OPEN (Day 80) - TWO SURFACES, TWO SHORTFALL RULES
+FOUNDER RULING (Day 80): EVERY shortfall needs manager approval, however small - "it is company
+money and the broker does not make that call unilaterally." The block now follows this: the Accept
+ceremony fires on any gap over 0.5 AED.
+BUT THE 1-TO-1 DOES NOT. The SPA close-gate (OpportunityDetail L5098-5103, Day-71 founder-ratified)
+reads companies.close_variance_tolerance_aed / _pct - defaults 500 AED / 1% - and lets anything
+inside that pass with NO approval at all. So a 400 AED gap closes silently on a 1-to-1 and demands
+a manager on a block.
+BOTH RULES WERE RATIFIED BY THE FOUNDER, on different days, for different surfaces. They now
+contradict. TO SETTLE: either the 1-to-1 tightens to "every shortfall approved", or the block
+adopts the company tolerance. Not an engineering choice - it is a policy one.
+NOTE: the tolerance columns have NO SETTINGS UI - same gap as the fees before Day 78. If tolerance
+survives, it belongs in Settings beside Buyer Fees.
+ALSO STILL OPEN: the shortfall gate has NO REJECT PATH. A manager can accept or do nothing; he
+cannot decline with a reason and send it back. Silence is indistinguishable from refusal.
