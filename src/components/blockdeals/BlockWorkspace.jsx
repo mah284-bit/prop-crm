@@ -134,7 +134,17 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
   const [termsDld, setTermsDld] = useState("buyer");
   const [termsSplit, setTermsSplit] = useState("50");
   const [termsSaving, setTermsSaving] = useState(false);
-  const canSetTerms = canDo(currentUser, "approve_discount") || currentUser?.is_super_admin === true || ["admin","super_admin","group_gm","sales_manager"].includes(currentUser?.role);
+  // Day 80 (revised): THE OWNER may set terms, as well as a manager.
+  // FOUNDER REASONING: block terms come FROM THE DEVELOPER. The broker is not granting a
+  // concession - he is RECORDING what the developer offered. Neither agent nor manager has
+  // authority over a developer's payment plan; a manager can only be INFORMED that it changed.
+  // So an approval gate here would be theatre, and it would put the person WITHOUT the knowledge
+  // (the manager was not in the negotiation) doing the data entry, or the agent waiting on him.
+  // Oversight comes from the AUDIT TRAIL, not from a queue - every change writes an activity
+  // naming who set what, visible to everyone on the block.
+  const canSetTerms = block.assigned_to === currentUser?.id
+    || canDo(currentUser, "approve_discount") || currentUser?.is_super_admin === true
+    || ["admin","super_admin","group_gm","sales_manager"].includes(currentUser?.role);
 
   // Writes a NEW distribution version: D_latest's allocations (prices) carried forward UNCHANGED,
   // only the terms differ. Then pushes the plan + DLD onto children that have not reached SPA.
@@ -204,7 +214,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
         dldSplitPct: child.current_dld_split_pct || 50,
         dldPct: blockFees.dldPct,
       });
-      per.push({ unit_ref: line.unit_ref, price: Number(child.current_agreed_price || 0), bill: b });
+      per.push({ unit_ref: line.unit_ref, child_id: child.id, price: Number(child.current_agreed_price || 0), bill: b });
       tot.reservation += b.reservation_fee.expected;
       tot.initial += b.initial_advance.expected;
       tot.spa += b.spa_fee.expected;
@@ -452,7 +462,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
           </div>
         </div>
       )}
-      {showPay && <BlockPaymentDialog key={editPay ? editPay.id : "new"} payment={editPay} priorAllocs={editPay ? payAllocs.filter(x=>x.block_payment_id===editPay.id) : []} block={block} childRows={childRows} currentUser={currentUser} showToast={showToast} onClose={()=>{setShowPay(false);setEditPay(null);}} onLock={async (bank, amendReason, allocs)=>{ if (locking) return; setLocking(true); const live = childRows.filter(r=>r.child && r.line.status!=="dropped"); const res = editPay ? await amendBlockPayment({ block, payment: editPay, bank, allocations: allocs, members: live, priorAllocs: payAllocs.filter(x=>x.block_payment_id===editPay.id), currentUser, reason: amendReason }) : await lockBlockPayment({ block, bank, allocations: allocs, members: live, currentUser }); setLocking(false); if (res.ok) { showToast(bank.milestone + " AED " + Math.round(Number(bank.amount)||0).toLocaleString() + " distributed to " + res.served + " deals", "success"); setShowPay(false); setEditPay(null); setPayTick(t=>t+1); onReload && onReload(); } else { showToast("Partial: " + res.served + " served. " + (res.failed||[]).join("; "), "error"); setPayTick(t=>t+1); } }} />}
+      {showPay && <BlockPaymentDialog key={editPay ? editPay.id : "new"} payment={editPay} priorAllocs={editPay ? payAllocs.filter(x=>x.block_payment_id===editPay.id) : []} block={block} childRows={childRows} blockBill={blockBill} priorPayments={payments} priorAllocsAll={payAllocs} currentUser={currentUser} showToast={showToast} onClose={()=>{setShowPay(false);setEditPay(null);}} onLock={async (bank, amendReason, allocs)=>{ if (locking) return; setLocking(true); const live = childRows.filter(r=>r.child && r.line.status!=="dropped"); const res = editPay ? await amendBlockPayment({ block, payment: editPay, bank, allocations: allocs, members: live, priorAllocs: payAllocs.filter(x=>x.block_payment_id===editPay.id), currentUser, reason: amendReason }) : await lockBlockPayment({ block, bank, allocations: allocs, members: live, currentUser }); setLocking(false); if (res.ok) { showToast(bank.milestone + " AED " + Math.round(Number(bank.amount)||0).toLocaleString() + " distributed to " + res.served + " deals", "success"); setShowPay(false); setEditPay(null); setPayTick(t=>t+1); onReload && onReload(); } else { showToast("Partial: " + res.served + " served. " + (res.failed||[]).join("; "), "error"); setPayTick(t=>t+1); } }} />}
     </div>
     </>
   );
