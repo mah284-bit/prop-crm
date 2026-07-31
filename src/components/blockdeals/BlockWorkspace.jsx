@@ -6,6 +6,7 @@ import { getFees } from "../../lib/feeSettings.js";
 import BlockPaymentDialog from "./BlockPaymentDialog.jsx";
 import BlockCollectionDialog from "./BlockCollectionDialog.jsx";
 import { recordBlockCollection } from "../../lib/recordBlockCollection.js";
+import { generateBlockStatement } from "../../lib/generateBlockStatement.js";
 import { lockBlockPayment, amendBlockPayment, acceptShortCollection } from "../../lib/lockBlockPayment.js";
 import { canDo } from "../../lib/permissions.js";
 import BlockTermsForm from "./BlockTermsForm.jsx";
@@ -333,7 +334,14 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                       </div>
                     )}
                   </div>
-                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:3}}>Block bill</div>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:3}}>
+                    <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>Block bill</div>
+                    {/* Day 80: the statement the BUYER receives - block first, then the split. */}
+                    <button onClick={async ()=>{
+                      const { data: co } = await supabase.from("companies").select("name, brand_color, brand_accent").eq("id", currentUser.company_id).maybeSingle();
+                      generateBlockStatement({ block, buyer, company: co, blockBill, paidByParticular, paidByUnit, childRows, dLatest });
+                    }} style={{marginLeft:"auto",padding:"4px 12px",borderRadius:7,border:"1px solid #92400E",background:"#fff",color:"#92400E",fontSize:11,fontWeight:700,cursor:"pointer"}}>Statement</button>
+                  </div>
                   <div style={{fontSize:11,color:"#94A3B8",marginBottom:10}}>What this block owes across all units. Money is recorded once at block level and distributed - the per-unit split is below.</div>
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:12,marginBottom:14}}>
                     <thead><tr style={{background:"#F8FAFC",color:"#475569"}}>
