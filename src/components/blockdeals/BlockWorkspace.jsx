@@ -4,6 +4,8 @@ import { supabase } from "../../lib/supabase.js";
 import { dealBill } from "../../lib/dealBill.js";
 import { getFees } from "../../lib/feeSettings.js";
 import BlockPaymentDialog from "./BlockPaymentDialog.jsx";
+import BlockCollectionDialog from "./BlockCollectionDialog.jsx";
+import { recordBlockCollection } from "../../lib/recordBlockCollection.js";
 import { lockBlockPayment, amendBlockPayment, acceptShortCollection } from "../../lib/lockBlockPayment.js";
 import { canDo } from "../../lib/permissions.js";
 import BlockTermsForm from "./BlockTermsForm.jsx";
@@ -198,6 +200,19 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
   useEffect(() => { (async () => {
     if (currentUser?.company_id) setBlockFees(await getFees(currentUser.company_id));
   })(); }, [currentUser?.company_id]);
+
+  // Day 80: what has already been collected, per particular and per (particular, unit).
+  // The allocator subtracts these so a second payment lands on what is still owed.
+  const paidByParticular = (() => {
+    const m = {};
+    (payAllocs || []).forEach(a2 => { if (a2.particular && a2.particular !== "reservation") m[a2.particular] = (m[a2.particular] || 0) + Number(a2.amount || 0); });
+    return m;
+  })();
+  const paidByUnit = (() => {
+    const m = {};
+    (payAllocs || []).forEach(a2 => { if (a2.particular && a2.particular !== "reservation") { const k = a2.particular + "|" + a2.opportunity_id; m[k] = (m[k] || 0) + Number(a2.amount || 0); } });
+    return m;
+  })();
 
   const blockBill = (() => {
     if (!blockFees) return null;
@@ -462,7 +477,21 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
           </div>
         </div>
       )}
-      {showPay && <BlockPaymentDialog key={editPay ? editPay.id : "new"} payment={editPay} priorAllocs={editPay ? payAllocs.filter(x=>x.block_payment_id===editPay.id) : []} block={block} childRows={childRows} blockBill={blockBill} priorPayments={payments} priorAllocsAll={payAllocs} currentUser={currentUser} showToast={showToast} onClose={()=>{setShowPay(false);setEditPay(null);}} onLock={async (bank, amendReason, allocs)=>{ if (locking) return; setLocking(true); const live = childRows.filter(r=>r.child && r.line.status!=="dropped"); const res = editPay ? await amendBlockPayment({ block, payment: editPay, bank, allocations: allocs, members: live, priorAllocs: payAllocs.filter(x=>x.block_payment_id===editPay.id), currentUser, reason: amendReason }) : await lockBlockPayment({ block, bank, allocations: allocs, members: live, currentUser }); setLocking(false); if (res.ok) { showToast(bank.milestone + " AED " + Math.round(Number(bank.amount)||0).toLocaleString() + " distributed to " + res.served + " deals", "success"); setShowPay(false); setEditPay(null); setPayTick(t=>t+1); onReload && onReload(); } else { showToast("Partial: " + res.served + " served. " + (res.failed||[]).join("; "), "error"); setPayTick(t=>t+1); } }} />}
+      {/* Day 80: TWO PHASES, TWO DIALOGS. Until the reservation is settled the certified
+          reservation ceremony runs (fixed fee, equal split, gated). After it, money arrives as a
+          CHUNK for the block and is allocated automatically - the broker chooses no particular
+          and types no per-unit figure. */}
+      {/* Switch on the ARITHMETIC, not the status flag. collection_status only advances when a
+          payment closes the balance through the reservation ceremony - a block whose money was
+          recorded before its expected amount was set reads "collected in full" while the flag
+          still says open. The reservation being fully collected is the honest test. */}
+      {showPay && (dueAmt > 0 && outstanding <= 0.5) && !editPay && <BlockCollectionDialog
+        block={block} blockBill={blockBill} paidByParticular={paidByParticular} paidByUnit={paidByUnit}
+        currentUser={currentUser} showToast={showToast} onClose={()=>setShowPay(false)}
+        onRecord={async (entry)=>{ const res = await recordBlockCollection({ block, entry, currentUser });
+          if (res.ok) { showToast("AED " + Math.round(entry.amount).toLocaleString() + " recorded and allocated", "success"); setShowPay(false); setPayTick(t=>t+1); onReload && onReload(); }
+          else showToast(res.error || "Could not record", "error"); }} />}
+      {showPay && !((dueAmt > 0 && outstanding <= 0.5) && !editPay) && <BlockPaymentDialog key={editPay ? editPay.id : "new"} payment={editPay} priorAllocs={editPay ? payAllocs.filter(x=>x.block_payment_id===editPay.id) : []} block={block} childRows={childRows} blockBill={blockBill} priorPayments={payments} priorAllocsAll={payAllocs} currentUser={currentUser} showToast={showToast} onClose={()=>{setShowPay(false);setEditPay(null);}} onLock={async (bank, amendReason, allocs)=>{ if (locking) return; setLocking(true); const live = childRows.filter(r=>r.child && r.line.status!=="dropped"); const res = editPay ? await amendBlockPayment({ block, payment: editPay, bank, allocations: allocs, members: live, priorAllocs: payAllocs.filter(x=>x.block_payment_id===editPay.id), currentUser, reason: amendReason }) : await lockBlockPayment({ block, bank, allocations: allocs, members: live, currentUser }); setLocking(false); if (res.ok) { showToast(bank.milestone + " AED " + Math.round(Number(bank.amount)||0).toLocaleString() + " distributed to " + res.served + " deals", "success"); setShowPay(false); setEditPay(null); setPayTick(t=>t+1); onReload && onReload(); } else { showToast("Partial: " + res.served + " served. " + (res.failed||[]).join("; "), "error"); setPayTick(t=>t+1); } }} />}
     </div>
     </>
   );
