@@ -28,6 +28,13 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
       .eq("id", block.assigned_to).maybeSingle();
     setOwner(data || null);
   })(); }, [block.assigned_to]);
+  // Day 80: a money decision must say WHO made it. "shortfall accepted" alone does not.
+  const [closer, setCloser] = useState(null);
+  useEffect(() => { (async () => {
+    if (!block.collection_closed_by) { setCloser(null); return; }
+    const { data } = await supabase.from("profiles").select("full_name, email").eq("id", block.collection_closed_by).maybeSingle();
+    setCloser(data ? (data.full_name || data.email) : null);
+  })(); }, [block.collection_closed_by]);
   const [editPay, setEditPay] = useState(null);
   const [expEdit, setExpEdit] = useState(false);
   const [expVal, setExpVal] = useState(block.reservation_expected != null ? String(block.reservation_expected) : "");
@@ -248,7 +255,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
               {block.developer_approved_at && <div style={{fontSize:11,color:"#7C3AED",marginTop:4}}>{String.fromCodePoint(0x2713)} Developer approved {String.fromCharCode(183)} ref {block.developer_approval_ref}{block.approved_by_name ? (" \u00b7 " + block.approved_by_name) : ""}</div>}
             </div>
             <div style={{display:"flex",gap:12,alignItems:"center"}}>
-              {dueAmt > 0 && outstanding > 0.5 && canDo(currentUser, "amend_payment") && (
+              {dueAmt > 0 && outstanding > 0.5 && !collectionClosed && canDo(currentUser, "amend_payment") && (
                 <button onClick={()=>setShowAccept(true)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"1px solid #B45309",background:"#fff",color:"#B45309",cursor:"pointer"}}>Accept shortfall {String.fromCharCode(38)} close</button>
               )}
               <div style={{textAlign:"right"}}>
@@ -268,7 +275,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
               {block.status==="negotiating" && <button onClick={()=>onRecordApproval && onRecordApproval(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"1px solid #B45309",background:"#fff",color:"#B45309",cursor:"pointer"}}>Record developer approval</button>}
               {block.status==="approved" && <button onClick={()=>onConfirm && onConfirm(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#16A34A",color:"#fff",cursor:"pointer"}}>Confirm block</button>}
               {["confirmed","partially_dropped","completed"].includes(block.status) && (collectionClosed
-                ? <span style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,background:"#E6F4EE",color:"#166534",border:"1px solid #A7D8C3"}}>Reservation settled {String.fromCodePoint(0x2713)}{block.collection_status==="accepted_short" ? " (shortfall accepted)" : ""}</span>
+                ? <span style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,background:"#E6F4EE",color:"#166534",border:"1px solid #A7D8C3"}}>Reservation settled {String.fromCodePoint(0x2713)}{block.collection_status==="accepted_short" ? " - shortfall accepted" : ""}{block.collection_status==="accepted_short" && closer ? " by " + closer : ""}{block.collection_closed_at ? ", " + new Date(block.collection_closed_at).toLocaleDateString("en-GB") : ""}</span>
                 : <button onClick={()=>setShowPay(true)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",cursor:"pointer"}}>Record payment</button>)}
               <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#94A3B8",cursor:"pointer"}}>{String.fromCharCode(215)}</button>
             </div>
