@@ -74,8 +74,16 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
     const { data: allD } = await supabase.from("block_distributions").select("*").eq("block_deal_id", block.id).order("version", { ascending: false });
     setDHistory(allD || []);
     if (childIds.length) {
-      const { data: acts } = await supabase.from("activities").select("*").in("opportunity_id", childIds).in("activity_subtype", ["block_adoption","block_reprice","block_conversion"]).order("created_at", { ascending: false });
-      setBlockActivity(acts || []);
+      const { data: acts } = await supabase.from("activities").select("*").in("opportunity_id", childIds).in("activity_subtype", ["block_adoption","block_reprice","block_conversion","block_terms"]).order("created_at", { ascending: false });
+      // One act on the block writes one activity PER CHILD (each deal keeps its own history,
+      // which matters if a unit is later detached). On the BLOCK view that reads as noise -
+      // three identical lines for one change - so collapse by note + timestamp for display only.
+      const seen = new Set();
+      setBlockActivity((acts || []).filter(a2 => {
+        const k = (a2.note || "") + "|" + String(a2.created_at || "").slice(0, 19);
+        if (seen.has(k)) return false;
+        seen.add(k); return true;
+      }));
     }
     const { data: pays } = await supabase.from("block_payments").select("*").eq("block_deal_id", block.id).order("created_at", { ascending: false });
     setPayments(pays || []);
@@ -149,6 +157,17 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
           current_dld_payer: termsDld,
           current_dld_split_pct: termsDld === "split" ? (Number(termsSplit) || 50) : null,
         }).in("id", ids);
+      }
+      // Day 80: LEAVE A TRACE. A manager can set terms on an agent's block - that changes what
+      // every buyer owes, so the owning agent must be able to see who changed what, and when.
+      if (ids.length) {
+        const note = "Block terms set to " + termsPlan + ", DLD " + termsDld + " (D" + version + ") by " + (currentUser.full_name || currentUser.email);
+        const { error: actErr } = await supabase.from("activities").insert(ids.map(oid => ({
+          company_id: currentUser.company_id, opportunity_id: oid,
+          type: "note", activity_subtype: "block_terms",
+          note: note, user_id: currentUser.id, user_name: currentUser.full_name || currentUser.email,
+        })));
+        if (actErr) console.error("TERMS ACTIVITY FAILED:", actErr.message, actErr.details, actErr.hint);
       }
       showToast("Terms set as D" + version + " - applied to " + ids.length + " deal" + (ids.length === 1 ? "" : "s"), "success");
       setTermsEdit(false);
