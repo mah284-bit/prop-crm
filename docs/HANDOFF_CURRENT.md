@@ -1271,3 +1271,40 @@ STILL OPEN: no REJECT path on the shortfall gate (accept or silence) · no mater
 END of the collection phase - an outstanding 200 simply sits · shortfall rules still DIVERGE
 between block (every gap approved) and 1-to-1 (500 AED / 1% tolerance).
 NEXT: the reject path, or merge the branch to main.
+
+## ── DAY 81 (1 Aug) — CLEAN SLATE, AND SIX REAL BUGS ──
+THE WIPE: block test data had become unusable - a 25,000 discrepancy traced to a child carrying a
+reservation from BEFORE it joined its block. Founder: "we should never do things on runaway data."
+All 8 blocks removed, 15 units freed, TWO ADOPTED 1-to-1 deals preserved by detaching first.
+Method and lesson in Go_Live_Readiness_Register.md - a DRY-RUN COUNT caught a delete that would
+have destroyed two real deals.
+SIX BUGS FOUND AND FIXED, all on the money path:
+1. Money tab read the reservation BILL from what children had PAID, so Bill always equalled
+   Collected and Outstanding always read Nil - contradicting the header.
+2. Creating a block failed RLS: the Day-79 ladder needs assigned_to = auth.uid() to SELECT and the
+   insert never set an owner, so the .select() after it failed. A latent bug the rewrite exposed.
+3. Block activities were INVISIBLE: activities RLS scoped only through opportunity_id / lead_id,
+   so a block event (neither) failed every branch. The audit wrote and nobody could read it.
+4. ACCEPT left no trace while DECLINE did - the feed showed refusals and not approvals.
+5. LOCK allowed a distribution with NO PAYMENT PLAN - children then computed a ZERO instalment.
+   On one specimen that hid 300,453 of a 380,584 bill and nothing said so. Now gated.
+6. CONFIRM BIRTHED CHILDREN WITHOUT TERMS - price copied from D_latest, plan and DLD not. Every
+   block confirmed before today was born term-less, understating its bill by ~76%. It only looked
+   right because "Set terms" cascades; birth never did.
+BUILT: the DECLINE path - a manager can now refuse a shortfall with a reason, recorded and visible
+to the owning agent. Before, silence was indistinguishable from refusal.
+BUILT: TERMS AT CREATION. Founder: "the purpose of the block is to treat, propose, collect as ONE
+line, and the benefit to the buyer is better discounts AND better payment plans" - so the plan is
+part of what is PROPOSED, not set later. Flows creation -> D1 -> children.
+PROVEN ON A CLEAN WALK (Block Test 3, as the AGENT): terms at creation carried all the way down
+with no manual step; reprice to 5.5% re-priced children and recomputed every derived figure;
+partial reservation 30,000 of 50,000; manager accepted the shortfall with a reason - audit written,
+collection closed, both units released to Reserved.
+STANDING THEME: the DATA was right and the SCREEN was behind, repeatedly - a deleted block still
+rendering, confirm not refreshing status, the settled chip not appearing after acceptance. All
+boarded. The setState-during-render warning (BlockDealsPage -> App) is the likely common cause and
+is the best next thing to chase.
+ALSO SEEN, NOT CHASED: Record payment opened the COLLECTION dialog on a block with 0 of 50,000
+collected (should have been the reservation ceremony) - stale childRows at that moment.
+KEPT AS A SPECIMEN: none - the wipe was total. Blocks now on the system are Block Test 1/2/3, all
+created today on clean data.
