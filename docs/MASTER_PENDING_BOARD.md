@@ -272,3 +272,14 @@ X11. **C0b THE COLLECTION LEDGER** (Day 79) - the ledger is BORN AT RESERVATION 
     from 10-90 at 6,753,047 to 50-50 at 6,550,456.
     STILL OPEN FROM IT: the ledger stores TOTALS not payment EVENTS, so only the reservation can
     produce a receipt - see the design doc.
+
+## KNOWN BAD SPECIMEN (Day 81) - "Fatima is buying 3 unit"
+Deliberately NOT cleaned. It is the only block showing what happens when money arrives against an
+UNDEFINED bill: 99,500 collected across two units, reservation_expected NEVER SET, one unit
+dropped (AGR-14-10 Closed Lost) so the block reads 3 lines but 2 live, and no payment plan.
+The Money tab reports this honestly - Reservation Bill AED 0 against Collected 99,500 - which is
+ugly and correct. Useful as a test of whether surfaces hide a mess or show it.
+TO VERIFY BEFORE GO-LIVE: no path can still produce this. The Day-74 gate should prevent a block
+reaching confirmed with children Reserved and no reservation expected. This is pre-gate data, but
+CONFIRM the gate holds.
+WILL BE WIPED by the B3 clean-data round.
