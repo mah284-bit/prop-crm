@@ -128,6 +128,11 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
     if (lines.length === 0) { showToast("No lines to distribute", "error"); return; }
     if (lines.some(x => Number(x.value) < 0)) { showToast("Negative discounts not allowed", "error"); return; }
     if (hasBlockTarget && Math.abs(remainder) > 1) { showToast("Remainder must reach zero before locking (AED " + Math.round(remainder).toLocaleString() + " unallocated)", "error"); return; }
+    // Day 81: NO LOCK WITHOUT A PAYMENT PLAN. A block locked with no plan births children that
+    // compute a ZERO first instalment - on the specimen that hid 300,453 of a 380,584 bill, and
+    // nothing anywhere said so. The plan is not optional decoration; it is what the money is
+    // derived from. Same discipline as remainder-must-reach-zero.
+    if (!planPreset) { showToast("Pick a payment plan before locking - the instalments are computed from it", "error"); return; }
     const version = (dLatest?.version || 0) + 1;
     const allocations = lines.map(x => ({ unit_id: x.unit_id, unit_ref: x.unit_ref, list_price: x.list_price, mode: x.mode, value: Number(x.value) || 0, discount: Math.round(discOf(x) * 100) / 100, net_price: Math.round(netOf(x) * 100) / 100 }));
     const { error } = await supabase.from("block_distributions").insert({
