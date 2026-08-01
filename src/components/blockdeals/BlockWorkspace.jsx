@@ -56,18 +56,18 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
     if (!acceptReason.trim()) return;
     setDeclining(true);
     try {
-      const ids = (childRows || []).filter(r => r.child).map(r => r.child.id);
+      // Day 81: a BLOCK event belongs to the BLOCK. It used to be written against each child
+      // opportunity, because activities had no block_deal_id - so a block with no children yet
+      // recorded NOTHING while the toast still said it had worked. Worse than the gap it replaced.
       const note = "Shortfall of " + fmt(outstanding) + " DECLINED by "
         + (currentUser.full_name || currentUser.email) + " - " + acceptReason.trim()
         + ". Collection stays open; the balance must be collected.";
-      if (ids.length) {
-        await supabase.from("activities").insert(ids.map(oid => ({
-          company_id: currentUser.company_id, opportunity_id: oid,
-          type: "note", activity_subtype: "block_terms",
-          note: note, user_id: currentUser.id,
-          user_name: currentUser.full_name || currentUser.email,
-        })));
-      }
+      const { error: aErr } = await supabase.from("activities").insert({
+        company_id: currentUser.company_id, block_deal_id: block.id,
+        type: "note", activity_subtype: "block_terms", note: note,
+        user_id: currentUser.id, user_name: currentUser.full_name || currentUser.email,
+      });
+      if (aErr) { showToast("Could not record the decision: " + aErr.message, "error"); setDeclining(false); return; }
       showToast("Shortfall declined - the agent will see the reason", "success");
       setShowAccept(false); setAcceptReason("");
       setPayTick(t => t + 1); onReload && onReload();
@@ -114,7 +114,10 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
     const { data: allD } = await supabase.from("block_distributions").select("*").eq("block_deal_id", block.id).order("version", { ascending: false });
     setDHistory(allD || []);
     if (childIds.length) {
-      const { data: acts } = await supabase.from("activities").select("*").in("opportunity_id", childIds).in("activity_subtype", ["block_adoption","block_reprice","block_conversion","block_terms"]).order("created_at", { ascending: false });
+      // Day 81: the feed is BLOCK events plus the child events born from block acts.
+      const { data: bActs } = await supabase.from("activities").select("*").eq("block_deal_id", block.id).order("created_at", { ascending: false });
+      const { data: cActs } = childIds.length ? await supabase.from("activities").select("*").in("opportunity_id", childIds).in("activity_subtype", ["block_adoption","block_reprice","block_conversion"]).order("created_at", { ascending: false }) : { data: [] };
+      const acts = [...(bActs||[]), ...(cActs||[])].sort((x,y)=> String(y.created_at||"").localeCompare(String(x.created_at||"")));
       // One act on the block writes one activity PER CHILD (each deal keeps its own history,
       // which matters if a unit is later detached). On the BLOCK view that reads as noise -
       // three identical lines for one change - so collapse by note + timestamp for display only.
@@ -210,15 +213,13 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
       }
       // Day 80: LEAVE A TRACE. A manager can set terms on an agent's block - that changes what
       // every buyer owes, so the owning agent must be able to see who changed what, and when.
-      if (ids.length) {
-        const note = "Block terms set to " + termsPlan + ", DLD " + termsDld + " (D" + version + ") by " + (currentUser.full_name || currentUser.email);
-        const { error: actErr } = await supabase.from("activities").insert(ids.map(oid => ({
-          company_id: currentUser.company_id, opportunity_id: oid,
-          type: "note", activity_subtype: "block_terms",
-          note: note, user_id: currentUser.id, user_name: currentUser.full_name || currentUser.email,
-        })));
-        if (actErr) console.error("TERMS ACTIVITY FAILED:", actErr.message, actErr.details, actErr.hint);
-      }
+      // Day 81: block-level event on the BLOCK, not replicated across children.
+      await supabase.from("activities").insert({
+        company_id: currentUser.company_id, block_deal_id: block.id,
+        type: "note", activity_subtype: "block_terms",
+        note: "Block terms set to " + termsPlan + ", DLD " + termsDld + " (D" + version + ") by " + (currentUser.full_name || currentUser.email),
+        user_id: currentUser.id, user_name: currentUser.full_name || currentUser.email,
+      });
       showToast("Terms set as D" + version + " - applied to " + ids.length + " deal" + (ids.length === 1 ? "" : "s"), "success");
       setTermsEdit(false);
       setPayTick(t => t + 1);

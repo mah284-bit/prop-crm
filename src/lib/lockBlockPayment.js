@@ -199,6 +199,20 @@ export async function acceptShortCollection({ block, members, currentUser, reaso
   }).eq("id", block.id);
   if (bErr) return { ok: false, error: bErr.message };
 
+  // Day 81: the ACCEPT must leave a trace too. The decline writes a block activity; without this
+  // the feed showed refusals and not approvals - and the approval is the more consequential act:
+  // it releases units on a manager's authority against money that never arrived.
+  await supabase.from("activities").insert({
+    company_id: block.company_id || currentUser?.company_id || null,
+    block_deal_id: block.id,
+    type: "note", activity_subtype: "block_terms",
+    note: "Shortfall of AED " + Math.round(Math.max(0, Number(due || 0) - Number(collected || 0))).toLocaleString()
+      + " ACCEPTED by " + (currentUser?.full_name || currentUser?.email || "-") + " - " + String(reason || "").trim()
+      + ". Collection closed on their authority; the shortfall is NOT recorded as received.",
+    user_id: currentUser?.id || null,
+    user_name: currentUser?.full_name || currentUser?.email || null,
+  });
+
   const failed = [];
   let moved = 0;
   for (const m of members) {

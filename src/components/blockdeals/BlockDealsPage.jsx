@@ -90,7 +90,11 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
     if (chosen.some(o => o.lead_id !== form.lead_id)) { showToast("All adopted deals must belong to the selected buyer", "error"); return; }
     const cid = currentUser.company_id;
     const { data: bd, error } = await supabase.from("block_deals").insert({
-      company_id: cid, lead_id: form.lead_id, title: form.title.trim(),
+      // Day 81: the OWNER must be set at creation. The Day-79 visibility ladder requires
+      // assigned_to = auth.uid() for an agent to SEE a block, so a block created with a null
+      // owner is invisible to its own creator - the .select() chained to the insert then fails,
+      // which Supabase reports as an RLS violation on the insert itself.
+      company_id: cid, assigned_to: currentUser.id, lead_id: form.lead_id, title: form.title.trim(),
       developer_name: form.developer_name || null, status: "negotiating", created_by: currentUser.id,
     }).select().single();
     if (error) { showToast(error.message, "error"); return; }
@@ -178,7 +182,11 @@ const confirmBlock = async (b) => {
     if (lines.length < 2) { showToast("A block needs at least 2 units", "error"); return; }
     const cid = currentUser.company_id;
     const { data: bd, error } = await supabase.from("block_deals").insert({
-      company_id: cid, lead_id: form.lead_id, title: form.title.trim(),
+      // Day 81: the OWNER must be set at creation. The Day-79 visibility ladder requires
+      // assigned_to = auth.uid() for an agent to SEE a block, so a block created with a null
+      // owner is invisible to its own creator - the .select() chained to the insert then fails,
+      // which Supabase reports as an RLS violation on the insert itself.
+      company_id: cid, assigned_to: currentUser.id, lead_id: form.lead_id, title: form.title.trim(),
       developer_name: form.developer_name || null,
       reservation_expected: form.reservation_expected ? Number(form.reservation_expected) : null,
       
