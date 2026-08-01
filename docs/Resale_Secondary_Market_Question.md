@@ -57,9 +57,8 @@ the founder will confirm.
    - HOLDS MONEY -> that is escrow, with liability attached, and a materially bigger build.
 2. **WHO PAYS THE BROKER?** Off-plan it is the developer. In a resale - buyer, seller, or both?
    Two-sided commission changes the commission model, not just the deal record.
-ARCHITECT'S WORKING ASSUMPTION (unverified): UAE resale typically settles by manager's cheques
-handed over at the TRUSTEE OFFICE on transfer day, so money would not flow through the broker at
-all. Do not build on this until confirmed.
+HOW RESALE MONEY ACTUALLY MOVES: NOT ESTABLISHED. To be confirmed by the founder from the market,
+not assumed here. Speculation in a design doc reads as fact six months later.
 
 ## WHAT IS STRUCTURALLY DIFFERENT (not just "some calculations change")
 - THERE IS A SELLER - a person, often the broker's own client. The app has one counterparty
