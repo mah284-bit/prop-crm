@@ -284,3 +284,26 @@ ACTION TAKEN 24 Jun: reverted the partial App.jsx silo edit (uncommitted; tag pr
 exists as belt-and-suspenders). Build systemically Monday.
 PRINCIPLE (founder, reinforced): prefer systemic corrections over silo edits — ask "can this live in a
 shared helper across all sub-modules?" BEFORE patching one spot.
+
+## BLOCK-SCOPED WIPE — EXECUTED 1 Aug 2026 (Day 81), Al Mansoori test tenant
+WHY: block test data had become unusable - a 25,000 discrepancy traced to a child carrying a
+reservation from BEFORE it joined its block, three phantom opportunities from a double-confirm,
+blocks confirmed with no reservation_expected. Founder: "we should never do things on runaway
+data - start fresh, else running round in circles."
+METHOD (dependency order, dry-run counted at every step):
+  1. DETACH the ADOPTED children first - deals that existed as 1-to-1 BEFORE joining a block
+     (identified by an activity_subtype='block_adoption' record). block_deal_id set to null;
+     they are NOT the block's to delete. Two survived: Chen Wei's SHI-05-01 and SHI-07-03.
+  2. FREE THE UNITS while the link still exists - project_units.status back to Available. This
+     must happen BEFORE deleting the children or there is no way left to find them.
+     (project_units is GLOBAL PropPulse - status only, NEVER delete.)
+  3. Child dependants: activities, pp_sales_closures, reminders, proposals.
+  4. Block money: block_payment_allocations, then block_payments.
+  5. Block structure: block_distributions, then block_deal_units.
+  6. The children (opportunities with a block_deal_id), then block_deals.
+RESULT: 8 blocks, 19 lines, 22 distributions, 9 payments, 51 allocations, 17 child opportunities
+and 52 activities removed. 15 units returned to Available. Two adopted 1-to-1 deals preserved.
+THE LESSON WORTH KEEPING: a DRY-RUN COUNT caught a delete that would have destroyed two real
+1-to-1 deals. The first CTE read block_deal_units (which still listed the adopted deals as lines)
+rather than the opportunity's own block_deal_id. The count came back 20 instead of 18 and stopped
+it. Never delete without counting first, and never trust a join to define ownership.
