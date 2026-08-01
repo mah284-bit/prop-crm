@@ -176,3 +176,38 @@ change is audited.
 DECISION: leave manager-gated and let TESTERS or a DEMO decide. A gate is easy to loosen with
 evidence and hard to re-tighten once brokers are used to the freedom. Safe to wait because every
 change now writes an activity - who, what, which version - visible to the owning agent.
+
+## WHAT IS ACTUALLY MISSING (founder, Day 81) - THE DEAL'S LIFE, NOT ITS ARITHMETIC
+Asked what a broker OPENS a block to do, the founder's answer reframed C0: "the MONEY is done, but
+the SALES FLOW is not included here." The block has arithmetic and no life - no journey, no
+conversation, no record of what passed between the parties.
+THREE DISTINCT THREADS. They are not one build, and separating them is the point:
+
+### THREAD 1 - THE SALES FLOW UP TO RESERVATION (buildable now; this is C0)
+"Sales flow and the in-out communication, and status up to reaching the Reservation remains
+unchanged" - i.e. the same ladder a 1-to-1 already has, simply ABSENT from the block: activities,
+communications, next steps, and a visible status.
+OPEN QUESTION BEFORE BUILDING: does a block have its OWN stages, or does it show where its
+CHILDREN stand? Day-77 ruling: block statuses (draft/negotiating/approved/confirmed) are SETUP
+states, not a deal journey - the deal lives in the children. So the block's "journey" is probably
+setup progress PLUS a roll-up of the children, not a nine-rung ladder of its own.
+
+### THREAD 2 - BUYER <-> DEVELOPER INTERACTIONS (never discussed, no design)
+"We have to see the interactions between the buyer and developers somewhere, which is not
+discussed till date." Today the developer appears only as a NAME on the block and an APPROVAL
+REFERENCE string. Nothing records what was asked, what was offered, when, or about which unit -
+and a block IS a negotiation with a developer. This is a genuine gap with no design behind it.
+
+### THREAD 3 - AFTER THE DEAL CONCLUDES (post-leasing)
+"Broker's recording is up to the deal conclusion - we need to see IF they continue to record
+payments till handover, but COMMUNICATION will continue." Two separate questions: does the money
+record run to handover, and does the relationship surface persist after Closed Won? Behind both
+sits the property-management arc, already written up and deliberately held until Leasing is
+complete - "to ensure we follow the same pattern as sales except for the document requirements
+and change in payment methods."
+
+## WHY CAPTURE ALL THREE BEFORE BUILDING ONE
+Founder: "this helps in making the pieces to ensure we have a bigger picture, so the silos we
+design will gel together." Building thread 1 without knowing threads 2 and 3 exist is how a
+surface ends up needing a second one bolted beside it - which is the "go there, come here, move
+there" problem the founder named on the same day.
