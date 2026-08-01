@@ -47,3 +47,26 @@ which is a positioning question as much as a build one.
 TO ESTABLISH BEFORE DECIDING: the real primary/secondary revenue split for the brokerages we are
 targeting. If the target segment is developer-aligned and primary-weighted, off-plan-only is a
 defensible specialism. If not, resale rises up the list.
+
+## THE TWO QUESTIONS THAT SHAPE THE BUILD (Day 80, founder to establish)
+Raised by the architect and deliberately NOT answered by assumption - this is market knowledge
+the founder will confirm.
+1. **DOES THE BROKER EVER HOLD MONEY IN A RESALE?** A deposit, an earnest payment - or does he
+   only ever WITNESS and RECORD transfers between buyer, seller and the trustee office?
+   - ONLY RECORDS -> the ledger model works largely as-is; the PARTIES change, not the mechanics.
+   - HOLDS MONEY -> that is escrow, with liability attached, and a materially bigger build.
+2. **WHO PAYS THE BROKER?** Off-plan it is the developer. In a resale - buyer, seller, or both?
+   Two-sided commission changes the commission model, not just the deal record.
+ARCHITECT'S WORKING ASSUMPTION (unverified): UAE resale typically settles by manager's cheques
+handed over at the TRUSTEE OFFICE on transfer day, so money would not flow through the broker at
+all. Do not build on this until confirmed.
+
+## WHAT IS STRUCTURALLY DIFFERENT (not just "some calculations change")
+- THERE IS A SELLER - a person, often the broker's own client. The app has one counterparty
+  (a developer). Two clients in one deal, possibly two commissions. Nothing models this.
+- NO DEVELOPER means no payment plan, no Oqood, no developer approval, no master-agreement rate -
+  half the money engine's inputs come from a party that does not exist in a resale.
+- THE MONEY FLOW REVERSES: buyer pays the SELLER, usually in one transfer, often with a MORTGAGE -
+  which introduces a bank, a valuation and a timeline the app has no concept of.
+- DIFFERENT FEES: NOC from the developer, trustee office fee, DLD 4% still, NO Oqood.
+CONCLUSION: a SECOND TRANSACTION TYPE, not a variant. Roughly a fortnight, not an afternoon.
