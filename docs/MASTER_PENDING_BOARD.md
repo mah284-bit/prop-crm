@@ -300,3 +300,19 @@ Something calls a parent setState during BlockDealsPage's RENDER rather than in 
 handler. Nothing visibly broken today, but this class of fault drops updates and produces stale
 screens - the symptom we have chased repeatedly on block surfaces.
 NOT chased when found (mid-test on a clean block). Locate via the React stack trace when picked up.
+
+## MUST-SHIP CANDIDATE (Day 81 close) - THE BLOCK STOPS AT RESERVED
+Everything proven on Day 80-81 ends at the RESERVATION. What comes after has never been walked for
+a block: the remaining collections through to SPA, and the CLOSURE of the block - won, or dead.
+FOUNDER: "we tested the Reservation only - we have to move the block to closure of the deal, or
+cancel, to close the sales cycle completely."
+UNANSWERED:
+- Does a block HAVE a closure, or is it finished when its last child resolves? Children each walk
+  their own ladder, so a block can hold one unit at SPA Signed and another dropped.
+- Can a block be CANCELLED wholesale, and what happens to children already at SPA?
+- Day-77 ruling "nothing auto-cancels, humans decide" applies - but there is no SURFACE for the
+  human to decide on.
+WHY MUST-SHIP: a broker who cannot close or cancel a block is STUCK. That is precisely the
+week-one test. Unlike most of today's captures, this one blocks work rather than annoying it.
+ORDER AGREED WITH FOUNDER: the remaining payments and the closure FIRST, then the board split -
+the sales cycle should be complete before deciding what ships.
