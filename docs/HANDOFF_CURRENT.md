@@ -1308,3 +1308,39 @@ ALSO SEEN, NOT CHASED: Record payment opened the COLLECTION dialog on a block wi
 collected (should have been the reservation ceremony) - stale childRows at that moment.
 KEPT AS A SPECIMEN: none - the wipe was total. Blocks now on the system are Block Test 1/2/3, all
 created today on clean data.
+
+## ── DAY 81 EVENING — THE DEVELOPER SIDE, AND THREE DESIGNS ──
+BUILT AND PROVEN: DEVELOPER QUESTIONS. A buyer asks something the broker cannot answer; he logs it
+against the deal or block with WHO he will ask and WHEN he needs it. It stands open. The developer
+replies and he records the answer with the channel. The deal then carries "buyer asked X,
+developer said Y on the 3rd" - what he needs when the buyer rings back a week later.
+New table developer_questions (RLS ladder: visible to whoever can see the subject; NO delete
+policy - an asked question is not erasable). New folder src/components/developer/.
+Mounted on the block Activity tab. PROVEN LIVE end to end on Block Test 3.
+FOUNDER'S GAP, felt for months and never raised: "interaction with the developer is missing for
+the deal - I thought the buyer side was more important." The app recorded OUTCOMES and never the
+WORK. A block IS a negotiation with a developer and none of it was anywhere.
+CONSTRAINT HELD: "not too many things like you have to run a CRM." No developer login, no approval
+chain, no status machine. One entity: an open question with an answer.
+STILL OPEN ON THIS FEATURE: blocks only (the component already takes oppId - 1-to-1 needs it too);
+the NUDGE is not built (an overdue question does not reach his reminders); managers cannot see
+open questions across the team.
+THREE DESIGNS CAPTURED, NOTHING BUILT:
+- `Developer_Interaction_Design.md` - the shape above, plus what the MANAGER gets: today the
+  broker's developer-side chasing is INVISIBLE, so "he is only talking to the buyer" is the
+  impression. Open questions with dates make the effort visible.
+- `AI_Briefing_Design.md` - the morning briefing. SQL computes the signals; AI reads ~15 lines of
+  structured facts and judges which three matter today. About $4-5/month for a 20-broker
+  brokerage. Founder's boundary, ratified: "NEVER on the money arithmetic - just the Midas touch,
+  it READS IN and tells the broker hey, you have something waiting." From his ERP years: "I cannot
+  fit a boxing glove inside the app which will punch you when you are doing wrong data entry."
+- `Context_Help_Design_Question.md` + `Documentation_Deliverables_Pending.md` - mechanism decided
+  early, content written last; developer/architect guides captured as headings only.
+- `Block_As_Deal_Design.md` gained THREE THREADS: the sales flow up to reservation (C0, buildable),
+  buyer<->developer interactions (now partly built), and what happens after the deal concludes
+  (post-leasing, property management).
+THE FOUNDER'S STANDING WORRY, recorded because it is legitimate: the list only grows. v1 was five
+items on Day 76 and is now roughly twelve. AGREED DISCIPLINE, not yet executed: split the board
+into MUST-SHIP and CAN-WAIT against one question - what would a tester hit in week one. Almost
+nothing captured today is on that list. RESALE is the only item that is a genuine demo-stopper.
+NEXT SESSION: that board split, before any more building.
