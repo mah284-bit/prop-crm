@@ -306,7 +306,13 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                   <span style={{fontWeight:700,color:outstanding>0.5?"#B91C1C":"#166534"}}>
                     Reservation Received {fmt(collected)} of {fmt(dueAmt)}
                   </span>
-                  {outstanding > 0.5
+                  {/* Day 81: once a manager has ACCEPTED a shortfall the units ARE released, so the
+                      red "held until collected fully" chip is a lie sitting beside the settled chip -
+                      a broker would chase a balance that has already been closed. The money is still
+                      short and we say so; what changed is that it is no longer holding anything. */}
+                  {outstanding > 0.5 && collectionClosed
+                    ? <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#FFFBEB",color:"#B45309",border:"1px solid #FCD34D"}}>Short by {fmt(outstanding)} {String.fromCharCode(183)} accepted, units released</span>
+                    : outstanding > 0.5
                     ? <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#FEF2F2",color:"#B91C1C",border:"1px solid #FCA5A5",animation:"blkPulse 2.4s ease-in-out infinite"}}>Outstanding {fmt(outstanding)} {String.fromCharCode(183)} RESERVATION of units held until collected fully</span>
                     : <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#E6F4EE",color:"#166534",border:"1px solid #A7D8C3"}}>Collected in full {String.fromCodePoint(0x2713)}</span>}
                 </div>
