@@ -1,6 +1,6 @@
 # PropCRM - MASTER CONTEXT (THE HEAD)
 **READ THIS FIRST. EVERY SESSION. BEFORE ANY WORK.**
-Last verified against repo: 1 Aug 2026 (Day 81) - main @ 8a68f89 (block work merged and live)
+Last verified against repo: 1 Aug 2026 (Day 81 evening) - main @ d466a9c
 Governed by: docs/DOCUMENTATION_PRINCIPLES.md (six rules, founder-ratified)
 
 ## THE THREE LIVING DOCUMENTS - one job each, no overlap
@@ -136,6 +136,8 @@ Launch Mode) · `Opps_Journey_Redesign_Capture.md` (GF findings, money-tail, KYC
 `Resale_Secondary_Market_Question.md` (Day 79 - the app is OFF-PLAN ONLY; resale is a second transaction type; plus the VAT items for the accountant - OPEN) ·
 `Inventory_Completeness_Question.md` (Day 79 - PropPulse imports are inherently incomplete; the lost payment-plan templates - OPEN) ·
 `Context_Help_Design_Question.md` (Day 81 - mechanism early, content last) ·
+`Developer_Interaction_Design.md` (Day 81 - open questions, answers, nudges; the developer side) ·
+`AI_Briefing_Design.md` (Day 81 - SQL calculates, AI reads and prioritises) ·
 `Documentation_Deliverables_Pending.md` (Day 81 - developer/architect guides, diagrams - headings only)
 
 ### DESIGN - specified, NOT yet built (each is a board item)
