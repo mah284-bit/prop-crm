@@ -44,6 +44,36 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
   const [expSaving, setExpSaving] = useState(false);
   const [showAccept, setShowAccept] = useState(false);
   const [acceptReason, setAcceptReason] = useState("");
+  // Day 81: THE MANAGER MUST BE ABLE TO SAY NO.
+  // Before this he had two options: accept the shortfall, or do nothing. Silence was
+  // indistinguishable from refusal - the agent could not tell whether his manager had not looked
+  // or had decided against it, and the deal simply sat. Declining is now a RECORDED ACT with a
+  // mandatory reason, visible to the owning agent, so he knows to go and collect.
+  // It does NOT change collection_status - the block stays open. A refusal is an EVENT, not a
+  // state; inventing a "declined" state would complicate the machine for no gain.
+  const [declining, setDeclining] = useState(false);
+  const doDecline = async () => {
+    if (!acceptReason.trim()) return;
+    setDeclining(true);
+    try {
+      const ids = (childRows || []).filter(r => r.child).map(r => r.child.id);
+      const note = "Shortfall of " + fmt(outstanding) + " DECLINED by "
+        + (currentUser.full_name || currentUser.email) + " - " + acceptReason.trim()
+        + ". Collection stays open; the balance must be collected.";
+      if (ids.length) {
+        await supabase.from("activities").insert(ids.map(oid => ({
+          company_id: currentUser.company_id, opportunity_id: oid,
+          type: "note", activity_subtype: "block_terms",
+          note: note, user_id: currentUser.id,
+          user_name: currentUser.full_name || currentUser.email,
+        })));
+      }
+      showToast("Shortfall declined - the agent will see the reason", "success");
+      setShowAccept(false); setAcceptReason("");
+      setPayTick(t => t + 1); onReload && onReload();
+    } catch (e) { showToast(String(e.message || e), "error"); }
+    setDeclining(false);
+  };
   const [accepting, setAccepting] = useState(false);
   const doAccept = async () => {
     if (accepting) return;
@@ -353,7 +383,11 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                     <tbody>
                       {/* Day 80: the bill alone told the broker what was owed and nothing of what
                           had been paid. Collections now sit beside it, per particular. */}
-                      {[["Reservation",blockBill.tot.reservation,"reservation"],["First instalments (per plan)",blockBill.tot.initial,"initial_advance"],["SPA fees",blockBill.tot.spa,"spa_fee"],["DLD fees",blockBill.tot.dld,"dld_fee"],["Oqood fees",blockBill.tot.oqood,"oqood_fee"]].map(([lbl,v,key]) => {
+                      {[/* Day 81: the reservation BILL is what the block EXPECTS, not what the children have paid.
+                          blockBill feeds each child's reservation_amount into dealBill as the expected, so Bill
+                          always equalled Collected and Outstanding always read Nil - the Money tab contradicted
+                          the header, which correctly showed the shortfall. */
+                        ["Reservation",Number(block.reservation_expected||0),"reservation"],["First instalments (per plan)",blockBill.tot.initial,"initial_advance"],["SPA fees",blockBill.tot.spa,"spa_fee"],["DLD fees",blockBill.tot.dld,"dld_fee"],["Oqood fees",blockBill.tot.oqood,"oqood_fee"]].map(([lbl,v,key]) => {
                         const got = key === "reservation"
                           ? childRows.reduce((t,r)=>t+Number(r.child?.reservation_amount||0),0)
                           : Number(paidByParticular[key] || 0);
@@ -495,7 +529,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
       {showAccept && (
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1350,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:14,width:520,maxWidth:"95vw",padding:"1.2rem 1.4rem"}}>
-            <div style={{fontSize:15,fontWeight:700,color:"#B45309",marginBottom:4}}>Accept the shortfall and close collection</div>
+            <div style={{fontSize:15,fontWeight:700,color:"#B45309",marginBottom:4}}>This block is short. What do you decide?</div>
             <div style={{fontSize:12,color:"#64748B",marginBottom:12}}>{block.title}</div>
             <div style={{display:"flex",gap:22,padding:"11px 13px",background:"#FFFBEB",border:"1px solid #FCD34D",borderRadius:9,marginBottom:12}}>
               <div><div style={{fontSize:9,fontWeight:700,color:"#64748B",textTransform:"uppercase"}}>Due</div><div style={{fontSize:14,fontWeight:800,color:"#0F2540"}}>{fmt(dueAmt)}</div></div>
@@ -503,10 +537,11 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
               <div><div style={{fontSize:9,fontWeight:700,color:"#64748B",textTransform:"uppercase"}}>Shortfall</div><div style={{fontSize:14,fontWeight:800,color:"#B91C1C"}}>{fmt(outstanding)}</div></div>
             </div>
             <div style={{fontSize:11,color:"#78716C",marginBottom:8}}>The shortfall is NOT recorded as received - the block keeps an honest record of what actually arrived. Accepting releases all units to Reserved on your authority.</div>
-            <input value={acceptReason} onChange={e=>setAcceptReason(e.target.value)} placeholder="Why is this shortfall accepted? (required)" style={{width:"100%",padding:"8px 10px",border:"1px solid #FCD34D",borderRadius:7,fontSize:12,boxSizing:"border-box",marginBottom:12}} />
+            <input value={acceptReason} onChange={e=>setAcceptReason(e.target.value)} placeholder="State your reason (required for either decision)" style={{width:"100%",padding:"8px 10px",border:"1px solid #FCD34D",borderRadius:7,fontSize:12,boxSizing:"border-box",marginBottom:12}} />
             <div style={{display:"flex",justifyContent:"flex-end",gap:9}}>
               <button onClick={()=>{setShowAccept(false);setAcceptReason("");}} style={{padding:"8px 16px",borderRadius:8,border:"1px solid #CBD5E1",background:"#fff",color:"#475569",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button disabled={!acceptReason.trim()||accepting} onClick={doAccept} style={{padding:"8px 18px",borderRadius:8,border:"none",background:acceptReason.trim()?"#B45309":"#CBD5E1",color:"#fff",fontSize:13,fontWeight:700,cursor:acceptReason.trim()?"pointer":"not-allowed"}}>Accept and close</button>
+              <button disabled={!acceptReason.trim()||declining||accepting} onClick={doDecline} style={{padding:"8px 18px",borderRadius:8,border:"1px solid #B91C1C",background:"#fff",color:"#B91C1C",fontSize:13,fontWeight:700,cursor:acceptReason.trim()?"pointer":"not-allowed"}}>{declining ? "..." : "Decline - collect the balance"}</button>
+              <button disabled={!acceptReason.trim()||accepting||declining} onClick={doAccept} style={{padding:"8px 18px",borderRadius:8,border:"none",background:acceptReason.trim()?"#B45309":"#CBD5E1",color:"#fff",fontSize:13,fontWeight:700,cursor:acceptReason.trim()?"pointer":"not-allowed"}}>Accept and close</button>
             </div>
           </div>
         </div>
