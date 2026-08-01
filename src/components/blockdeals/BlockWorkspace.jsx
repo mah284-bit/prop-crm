@@ -5,6 +5,7 @@ import { dealBill } from "../../lib/dealBill.js";
 import { getFees } from "../../lib/feeSettings.js";
 import BlockPaymentDialog from "./BlockPaymentDialog.jsx";
 import BlockCollectionDialog from "./BlockCollectionDialog.jsx";
+import DeveloperQuestions from "../developer/DeveloperQuestions.jsx";
 import { recordBlockCollection } from "../../lib/recordBlockCollection.js";
 import { generateBlockStatement } from "../../lib/generateBlockStatement.js";
 import { lockBlockPayment, amendBlockPayment, acceptShortCollection } from "../../lib/lockBlockPayment.js";
@@ -520,6 +521,10 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
               )}
               {wsTab==="activity" && (
                 <div>
+                  {/* Day 81: the developer side of THIS block - what the buyer asked that the
+                      broker could not answer, and what came back. The deal's LIFE, not its money. */}
+                  <DeveloperQuestions blockId={block.id} currentUser={currentUser} showToast={showToast} />
+                  <div style={{height:20}} />
                   <div style={{fontSize:13,fontWeight:700,color:"#0F2540",marginBottom:10}}>Block events ({blockActivity.length})</div>
                   {blockActivity.length===0 ? <div style={{color:"#94A3B8",fontSize:12}}>No block-level events yet.</div> :
                   <div style={{display:"flex",flexDirection:"column",gap:8}}>{blockActivity.map(a => (
