@@ -170,6 +170,13 @@ const confirmBlock = async (b) => {
         title: ln.unit_ref + " \u2014 " + buyer.name + " (block)",
         stage: "Offer Accepted", status: "Active", unit_id: ln.unit_id,
         budget: net, current_agreed_price: net,
+        // Day 81: BIRTH MUST CARRY THE TERMS. Confirm copied the price from D_latest but not the
+        // payment plan or DLD, so children were born with a null plan and their first instalment
+        // computed to ZERO - the block bill silently omitted the largest line. It only ever looked
+        // right because "Set terms" on the Money tab cascades; birth never did.
+        current_payment_plan_preset: dl.payment_plan_preset || null,
+        current_dld_payer: dl.dld_payer || null,
+        current_dld_split_pct: dl.dld_split_pct || null,
         block_deal_id: b.id, assigned_to: currentUser.id,
         notes: "Born from block deal " + b.title + " at D" + dl.version + (alloc ? " (" + (alloc.mode === "pct" ? alloc.value + "% off" : "AED " + Number(alloc.discount).toLocaleString() + " off") + ")" : ""),
         stage_updated_at: new Date().toISOString(),
