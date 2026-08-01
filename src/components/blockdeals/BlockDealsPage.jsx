@@ -72,18 +72,21 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   const listPriceOf = (u) => { const sp = pricing.find(s => s.unit_id === u?.id); return Number(sp?.asking_price ?? sp?.list_price ?? sp?.price ?? 0); };
 
   const addLine = () => {
-    setUnitPick(current => {
-      const u = units.find(x => x.id === current);
-      if (!u) { showToast("Pick a unit first", "error"); return current; }
-      if (claimedUnitIds.has(u.id)) { showToast(u.unit_ref + " is committed - active deal or confirmed block", "error"); return current; }
-      if (softClaims[u.id]) {
-        const other = blocks.find(x => x.title === softClaims[u.id]);
-        if (other && other.lead_id === form.lead_id) { showToast(u.unit_ref + " is already in this buyer" + String.fromCharCode(39) + "s block " + softClaims[u.id], "error"); return current; }
-        showToast("Note: " + u.unit_ref + " is also being negotiated in " + softClaims[u.id] + " - first to commit wins", "info");
-      }
-      setLines(ls => ls.some(x => x.unit_id === u.id) ? ls : [...ls, { unit_id: u.id, unit_ref: u.unit_ref, list_price: listPriceOf(u) }]);
-      return "";
-    });
+    // Day 81: this used to live inside a setUnitPick UPDATER, with three showToast calls and a
+    // nested setLines. React may run an updater DURING RENDER, so those toasts set state on App
+    // mid-render - "Cannot update a component (App) while rendering a different component
+    // (BlockDealsPage)". That is the likely root of the stale screens chased all day, and in
+    // StrictMode it can also fire a toast twice. Validate first, toast outside, then set state.
+    const u = units.find(x => x.id === unitPick);
+    if (!u) { showToast("Pick a unit first", "error"); return; }
+    if (claimedUnitIds.has(u.id)) { showToast(u.unit_ref + " is committed - active deal or confirmed block", "error"); return; }
+    if (softClaims[u.id]) {
+      const other = blocks.find(x => x.title === softClaims[u.id]);
+      if (other && other.lead_id === form.lead_id) { showToast(u.unit_ref + " is already in this buyer" + String.fromCharCode(39) + "s block " + softClaims[u.id], "error"); return; }
+      showToast("Note: " + u.unit_ref + " is also being negotiated in " + softClaims[u.id] + " - first to commit wins", "info");
+    }
+    setLines(ls => ls.some(x => x.unit_id === u.id) ? ls : [...ls, { unit_id: u.id, unit_ref: u.unit_ref, list_price: listPriceOf(u) }]);
+    setUnitPick("");
   };
 
   const removeLine = (uid) => setLines(ls => ls.filter(x => x.unit_id !== uid));
