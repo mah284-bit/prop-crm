@@ -283,3 +283,13 @@ TO VERIFY BEFORE GO-LIVE: no path can still produce this. The Day-74 gate should
 reaching confirmed with children Reserved and no reservation expected. This is pre-gate data, but
 CONFIRM the gate holds.
 WILL BE WIPED by the B3 clean-data round.
+
+## ADDED DAY 81 - THE APP DOES NOT HANDLE "THIS RECORD NO LONGER EXISTS"
+After the block wipe, an OPEN Block Workspace kept rendering a deleted block from component state -
+header, tabs, money strip, and a "Reservation settled" chip on a block with AED 0 collected and no
+database row at all. useFreshData refetches on focus, but a component holding a record that has
+been deleted has nothing to refetch TO, so it shows the last good copy indefinitely.
+RARE in normal single-user work; a TESTER with two tabs, or two users where one deletes, will hit
+it. FIX SHAPE: when a refetch returns no row for the open record, close the surface and say so -
+"this block no longer exists" - rather than continuing to render a ghost.
+Applies to any detail surface, not just blocks.
