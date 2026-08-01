@@ -1,6 +1,6 @@
 # PropCRM - MASTER CONTEXT (THE HEAD)
 **READ THIS FIRST. EVERY SESSION. BEFORE ANY WORK.**
-Last verified against repo: 31 Jul 2026 (Day 80) - branch feature/block-ledger @ 38b0d95
+Last verified against repo: 1 Aug 2026 (Day 81) - main @ 8a68f89 (block work merged and live)
 Governed by: docs/DOCUMENTATION_PRINCIPLES.md (six rules, founder-ratified)
 
 ## THE THREE LIVING DOCUMENTS - one job each, no overlap
