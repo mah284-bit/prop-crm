@@ -23,6 +23,12 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
     const { data: dists } = await supabase.from("block_distributions").select("*").eq("block_deal_id", block.id).order("version", { ascending: false }).limit(1);
     const last = dists && dists[0];
     setDLatest(last || null);
+    // Day 81: on a block with no distribution yet, seed the terms PROPOSED at creation.
+    // They become versioned the moment D1 locks.
+    if (!last) {
+      if (block.proposed_plan) setPlanPreset(block.proposed_plan);
+      if (block.proposed_dld) setDldPayer(block.proposed_dld);
+    }
     if (last) {
       if (last.payment_plan_preset) setPlanPreset(last.payment_plan_preset);
       if (last.dld_payer) setDldPayer(last.dld_payer);

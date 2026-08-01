@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useFreshData } from "../../lib/useFreshData.js";
 import { supabase } from "../../lib/supabase.js";
 import { getFees } from "../../lib/feeSettings.js";
+import { PAYMENT_PLAN_PRESETS } from "../../modules/constants.js";
 import DistributionCalculator from "./DistributionCalculator.jsx";
 import BlockWorkspace from "./BlockWorkspace.jsx";
 
@@ -19,7 +20,12 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   const [showCreate, setShowCreate] = useState(false);
   const [calcBlock, setCalcBlock] = useState(null);
   const [wsBlock, setWsBlock] = useState(null);
-  const [form, setForm] = useState({ lead_id: "", title: "", developer_name: "", discount_mode: "pct", discount_value: "", reservation_expected: "" });
+  // Day 81: PAYMENT TERMS BELONG AT CREATION.
+  // Founder: "the purpose of the block is to treat, propose, collect as ONE line, and the benefit
+  // to the buyer is better discounts AND better payment plans." So the plan is part of what is
+  // being PROPOSED, not an afterthought set later - and a block should never be composed without
+  // it. Locked onto D1 by the calculator; changeable there and in the Money tab afterwards.
+  const [form, setForm] = useState({ lead_id: "", title: "", developer_name: "", discount_mode: "pct", discount_value: "", reservation_expected: "", payment_plan_preset: "", dld_payer: "buyer" });
   // Day 79: the company's reservation fee POLICY x number of units - computed, not typed.
   // Founder ruling: "for this you have to sum or multiply with the number of units selected."
   const [feePolicy, setFeePolicy] = useState(null);
@@ -95,6 +101,10 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
       // owner is invisible to its own creator - the .select() chained to the insert then fails,
       // which Supabase reports as an RLS violation on the insert itself.
       company_id: cid, assigned_to: currentUser.id, lead_id: form.lead_id, title: form.title.trim(),
+      // Day 81: terms chosen at creation ride on the block until the calculator locks D1,
+      // which is where they become versioned alongside the price they were agreed with.
+      proposed_plan: form.payment_plan_preset || null,
+      proposed_dld: form.dld_payer || "buyer",
       developer_name: form.developer_name || null, status: "negotiating", created_by: currentUser.id,
     }).select().single();
     if (error) { showToast(error.message, "error"); return; }
@@ -187,6 +197,10 @@ const confirmBlock = async (b) => {
       // owner is invisible to its own creator - the .select() chained to the insert then fails,
       // which Supabase reports as an RLS violation on the insert itself.
       company_id: cid, assigned_to: currentUser.id, lead_id: form.lead_id, title: form.title.trim(),
+      // Day 81: terms chosen at creation ride on the block until the calculator locks D1,
+      // which is where they become versioned alongside the price they were agreed with.
+      proposed_plan: form.payment_plan_preset || null,
+      proposed_dld: form.dld_payer || "buyer",
       developer_name: form.developer_name || null,
       reservation_expected: form.reservation_expected ? Number(form.reservation_expected) : null,
       
@@ -248,6 +262,19 @@ const confirmBlock = async (b) => {
               <div><label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4}}>RESERVATION AMT EXPECTED (AED)</label>
                 <input type="number" value={form.reservation_expected} onChange={e=>setForm(f=>({...f,reservation_expected:e.target.value}))} placeholder="e.g. 75000" style={{width:"100%",padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}/>
                 <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>What the buyer must pay to reserve these units. Discount is set later in the calculator.</div>
+              </div>
+              <div><label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4}}>PAYMENT PLAN *</label>
+                <select value={form.payment_plan_preset} onChange={e=>setForm(f=>({...f,payment_plan_preset:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}>
+                  <option value="">Select plan...</option>
+                  {PAYMENT_PLAN_PRESETS.map(pp=><option key={pp.label} value={pp.label}>{pp.label}</option>)}
+                </select>
+                <div style={{fontSize:10,color:"#94A3B8",marginTop:3}}>Same for every unit - part of what the block offers. Instalments are computed from it.</div></div>
+              <div><label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4}}>DLD FEE</label>
+                <div style={{display:"flex",gap:5}}>
+                  {[["buyer","Buyer pays"],["developer","Developer absorbs"],["split","Split"],["negotiated","Negotiated"]].map(([v,lb])=>(
+                    <button key={v} type="button" onClick={()=>setForm(f=>({...f,dld_payer:v}))} style={{padding:"7px 10px",borderRadius:7,border:form.dld_payer===v?"none":"1px solid #D1D5DB",background:form.dld_payer===v?"#16A34A":"#fff",color:form.dld_payer===v?"#fff":"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>{lb}</button>
+                  ))}
+                </div>
                 {suggestedReservation > 0 && Number(form.reservation_expected || 0) !== suggestedReservation && (
                   <div style={{fontSize:11,marginTop:4}}>
                     <span style={{color:"#B45309"}}>Company policy: {fmt(suggestedReservation)} ({lines.length} {lines.length===1?"unit":"units"} x {fmt(feePolicy.reservationFee)})</span>

@@ -293,3 +293,10 @@ RARE in normal single-user work; a TESTER with two tabs, or two users where one 
 it. FIX SHAPE: when a refetch returns no row for the open record, close the surface and say so -
 "this block no longer exists" - rather than continuing to render a ghost.
 Applies to any detail surface, not just blocks.
+
+## ADDED DAY 81 - REACT WARNING: setState DURING RENDER (BlockDealsPage -> App)
+Console: "Cannot update a component (App) while rendering a different component (BlockDealsPage)."
+Something calls a parent setState during BlockDealsPage's RENDER rather than in an effect or a
+handler. Nothing visibly broken today, but this class of fault drops updates and produces stale
+screens - the symptom we have chased repeatedly on block surfaces.
+NOT chased when found (mid-test on a clean block). Locate via the React stack trace when picked up.
