@@ -10,6 +10,7 @@ import { supabase } from "../../lib/supabase.js";
 import { getFees, FALLBACK as FEE_FALLBACK } from "../../lib/feeSettings.js";
 import { dealBill } from "../../lib/dealBill.js";
 import { generateReceiptPDF } from "../../lib/generateReceiptPDF.js";
+import { rollUpBlockStatus } from "../../lib/rollUpBlockStatus.js";
 import { aiInvoke } from '../../lib/aiInvoke.js';
 import { Modal } from "../../modules/shared/Modal.jsx";
 import { Btn } from "../../modules/shared/Btn.jsx";
@@ -1112,6 +1113,12 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     }).eq("id",opp.id);
     if(error){showToast(error.message,"error");return;}
     onUpdated({...opp,stage:toStage,status:newStatus,...extra});
+    // Day 82: a BLOCK reflects where its children stand - it is never closed by hand.
+    // Fire and forget, exactly like the lifecycle update below: the block's derived status is a
+    // convenience and must NEVER be able to fail the child's real stage change.
+    if (opp.block_deal_id) {
+      rollUpBlockStatus(opp.block_deal_id).then(null, e => console.warn("Block roll-up failed:", e));
+    }
     // Phase 2.4: Auto-transition lead lifecycle to "customer" on Closed Won
     if (toStage === "Closed Won" && lead && lead.lifecycle_stage !== "customer") {
       supabase.from("leads").update({lifecycle_stage: "customer"}).eq("id", lead.id).then(null, e => console.warn("Lifecycle update failed:", e));

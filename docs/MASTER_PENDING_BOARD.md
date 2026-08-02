@@ -316,3 +316,14 @@ WHY MUST-SHIP: a broker who cannot close or cancel a block is STUCK. That is pre
 week-one test. Unlike most of today's captures, this one blocks work rather than annoying it.
 ORDER AGREED WITH FOUNDER: the remaining payments and the closure FIRST, then the board split -
 the sales cycle should be complete before deciding what ships.
+
+## ADDED DAY 82 - LOSS REASONS ARE NOT CAPTURED
+"Closed Lost" records THAT a deal died, never WHY. Founder: "it is important to know the actual
+action - buyer stopped communicating / informed as not interested / legal / failed negotiations /
+payment issues / clean close." Those are five or six DIFFERENT management responses and the
+reports cannot tell them apart; a manager sees a lost deal and cannot tell whether his broker was
+outbid, ghosted, or blocked by a bank.
+Applies to 1-to-1 deals AND to block children. Also feeds the block's derived status - a block
+where every unit was lost currently derives to "cancelled", which is the ARCHITECT'S derivation,
+not a founder ruling. With loss reasons captured, the block could say something truer.
+FOUNDER: "will see that at the end while doing the testing." Not scheduled.
