@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase.js";
+import { rollUpBlockStatus } from "../../lib/rollUpBlockStatus.js";
 import { PAYMENT_PLAN_PRESETS } from "../../modules/constants.js";
 
 export default function DistributionCalculator({ block, currentUser, showToast, onClose, onLocked }) {
@@ -111,7 +112,13 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
         await supabase.from("opportunities").update({ block_deal_id: null }).eq("id", child.id);
         await supabase.from("activities").insert({ opportunity_id: child.id, lead_id: child.lead_id, company_id: cid, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, stage_at_event: child.stage, activity_subtype: "block_detach", note: "DETACHED from block " + block.title + " (calculator). Reason: " + reason.trim() });
       } else {
-        await supabase.from("opportunities").update({ block_deal_id: null, stage: "Closed Lost", status: "Lost", lost_at: new Date().toISOString(), stage_updated_at: new Date().toISOString() }).eq("id", child.id);
+        // Day 82: a DROPPED child KEEPS its block_deal_id. It used to be cleared, which made the block
+        // forget a unit it once held - the roll-up reads children BY block_deal_id, so after dropping
+        // every unit a block had zero children and its status never derived to cancelled; it sat
+        // "confirmed" forever with nothing in it. A block that forgets what it lost cannot tell the
+        // story of what happened. DETACH is different and correctly clears the link: that deal
+        // genuinely leaves to stand alone.
+        await supabase.from("opportunities").update({ stage: "Closed Lost", status: "Lost", lost_at: new Date().toISOString(), stage_updated_at: new Date().toISOString() }).eq("id", child.id);
         if (!["SPA Signed","Closed Won"].includes(child.stage) && x.unit_id) await supabase.from("project_units").update({ status: "Available" }).eq("id", x.unit_id);
         await supabase.from("activities").insert({ opportunity_id: child.id, lead_id: child.lead_id, company_id: cid, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, stage_at_event: "Closed Lost", activity_subtype: "block_drop", note: "DROPPED from block " + block.title + " (calculator) -> Closed Lost, unit freed. Reason: " + reason.trim() });
       }
@@ -127,6 +134,9 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
         if (go) { setRemoveTarget(null); return; } // stay in calculator, don't close
       }
     }
+    // Day 82: a drop may have resolved the LAST live child - let the block settle its own status.
+    // Fire and forget: a derived convenience must never be able to fail the drop itself.
+    if (mode === "drop") rollUpBlockStatus(block.id).then(null, e => console.warn("Block roll-up failed:", e));
     onLocked && onLocked();
   };
 

@@ -44,6 +44,44 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
   const [expVal, setExpVal] = useState(block.reservation_expected != null ? String(block.reservation_expected) : "");
   const [expSaving, setExpSaving] = useState(false);
   const [showAccept, setShowAccept] = useState(false);
+  // Day 82: CANCEL is the one genuinely block-level ceremony. Everything else about a block's end
+  // is DERIVED - the closure ceremony is per child, and the block reflects where its children
+  // stand. But the arrangement dying wholesale is a human act: "nothing auto-cancels, humans
+  // decide" (Day 77). Dropping fifteen units one at a time to kill a block is not a decision,
+  // it is data entry.
+  const [cancelling, setCancelling] = useState(false);
+  const doCancelBlock = async () => {
+    const live = (childRows || []).filter(r => r.child && !["Closed Won","Closed Lost"].includes(r.child.stage));
+    const msg = "CANCEL " + block.title + "\n\n" + live.length + " live deal" + (live.length === 1 ? "" : "s")
+      + " will be closed lost and their units freed. Deals already at SPA Signed or Closed Won are NOT touched."
+      + "\n\nReason (audited, and shown to everyone on this block):";
+    const reason = window.prompt(msg);
+    if (reason === null || !reason.trim()) return;
+    setCancelling(true);
+    try {
+      for (const r of live) {
+        await supabase.from("opportunities").update({
+          stage: "Closed Lost", status: "Lost", lost_at: new Date().toISOString(),
+          stage_updated_at: new Date().toISOString(),
+        }).eq("id", r.child.id);
+        if (r.line?.id) await supabase.from("block_deal_units").update({
+          status: "dropped", status_reason: "block cancelled: " + reason.trim(),
+        }).eq("id", r.line.id);
+        if (r.child.unit_id) await supabase.from("project_units").update({ status: "Available" }).eq("id", r.child.unit_id);
+      }
+      await supabase.from("block_deals").update({ status: "cancelled" }).eq("id", block.id);
+      await supabase.from("activities").insert({
+        company_id: currentUser.company_id, block_deal_id: block.id,
+        type: "note", activity_subtype: "block_terms",
+        note: "BLOCK CANCELLED by " + (currentUser.full_name || currentUser.email) + " - " + reason.trim()
+          + ". " + live.length + " deal(s) closed lost, units freed.",
+        user_id: currentUser.id, user_name: currentUser.full_name || currentUser.email,
+      });
+      showToast("Block cancelled - " + live.length + " deal(s) closed, units freed", "success");
+      setPayTick(t => t + 1); onReload && onReload();
+    } catch (e) { showToast(String(e.message || e), "error"); }
+    setCancelling(false);
+  };
   const [acceptReason, setAcceptReason] = useState("");
   // Day 81: THE MANAGER MUST BE ABLE TO SAY NO.
   // Before this he had two options: accept the shortfall, or do nothing. Silence was
@@ -338,6 +376,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                   </div>
                 )}
               </div>
+              {["draft","negotiating","approved","confirmed","partially_dropped"].includes(block.status) && (canDo(currentUser, "approve_discount") || currentUser?.is_super_admin === true || ["admin","super_admin","group_gm","sales_manager"].includes(currentUser?.role)) && <button onClick={doCancelBlock} disabled={cancelling} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"1px solid #DC2626",background:"#fff",color:"#DC2626",cursor:"pointer"}}>{cancelling ? "Cancelling..." : "Cancel block"}</button>}
               {block.status==="negotiating" && <button onClick={()=>onRecordApproval && onRecordApproval(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"1px solid #B45309",background:"#fff",color:"#B45309",cursor:"pointer"}}>Record developer approval</button>}
               {block.status==="approved" && <button onClick={()=>onConfirm && onConfirm(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#16A34A",color:"#fff",cursor:"pointer"}}>Confirm block</button>}
               {["confirmed","partially_dropped","completed"].includes(block.status) && (collectionClosed
