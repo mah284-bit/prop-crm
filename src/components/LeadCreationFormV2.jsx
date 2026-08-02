@@ -212,7 +212,11 @@ export default function LeadCreationFormV2({ onSubmit, companyId, onCancel, onCr
     legal_name_ar: editLead?.legal_name_ar || "",
     nationality_iso2: editLead?.nationality_iso2 || "",
     lifecycle_stage: editLead?.lifecycle_stage || "raw",
-    buyer_intent: editLead?.buyer_intent || "Investor",
+    // Day 82: buyer_intent was declared TWICE in this state object - here as "Investor" and
+    // again eight lines below as "". The later one wins, so the form has always started EMPTY
+    // while this line said otherwise. Empty is the better default anyway: it makes the broker
+    // choose rather than labelling every new lead an investor. Dead line removed so the next
+    // reader is not misled.
     residence_iso2: editLead?.residence_iso2 || "",
     tax_residency_iso2: editLead?.tax_residency_iso2 || "",
     email: editLead?.email || "",

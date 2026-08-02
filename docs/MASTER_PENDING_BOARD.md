@@ -385,3 +385,19 @@ small pencil. Nothing invites the broker to act on it - and the developer asks f
 RESERVATION, not at SPA, so a broker who meets it first as a gate weeks later is being told late.
 Founder: "before the 360 view it looks like a button would be more prominent."
 BOTH ARE TESTER QUESTIONS, not blockers. Let them come back with it.
+
+## V1 STATUS — VERIFIED AGAINST THE CODE, DAY 82
+V1-1 Block ledger phase ....... DONE (Days 79-82: allocator, collection dialog, Money tab,
+                                statement PDF, closure roll-up, cancel ceremony)
+V1-2 Block polish + clock ..... PART. Polish done. The Cut-6a BOOKING CLOCK is NOT built.
+V1-3 Money smalls ............. NOT DONE (waived guard, gross-vs-net, valid_until, invoice zeros)
+V1-4 KYC private bucket ....... DONE Day 82 (documents bucket + signed URLs + orphan prevention)
+V1-5 buyer_type guard ......... DONE except (a). (b) form enforcement VERIFIED live - the form
+                                renders blank and refuses to pass until selected. (c) matrices are
+                                POPULATED - reference_buyer_type_rules holds 48 rows, not empty as
+                                the board claimed. (d) duplicate buyer_intent declaration removed.
+                                (a) NOT NULL constraint is BLOCKED until B3 backfills 12 NULL rows.
+REMAINING TO v1: the booking clock, and the money smalls. One and a half items.
+⚠️ LESSON: FOUR board entries today described code that had since changed - loss reasons, the drop
+ceremony, buyer-type matrices, form enforcement. The board grows stale faster than it grows long.
+Verify against the code before treating an entry as work.
