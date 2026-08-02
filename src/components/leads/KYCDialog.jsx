@@ -13,7 +13,7 @@ const DOCS = [
   { k: "proof_of_funds", l: "Proof of funds / source" },
 ];
 
-const isExpired = (d) => d?.url && d?.expiry && new Date(d.expiry) < new Date(new Date().toDateString());
+const isExpired = (d) => (d?.path || d?.url) && d?.expiry && new Date(d.expiry) < new Date(new Date().toDateString());
 
 export default function KYCDialog({ lead, currentUser, showToast, onClose, onSaved }) {
   const [status, setStatus] = useState(lead?.kyc_status || "not_started");
@@ -27,10 +27,17 @@ export default function KYCDialog({ lead, currentUser, showToast, onClose, onSav
     setUploading(k);
     try {
       const path = "kyc/" + (lead.company_id || "c") + "/" + lead.id + "/" + k + "_" + Date.now() + "_" + file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const { error: upErr } = await supabase.storage.from("propcrm-files").upload(path, file, { upsert: false });
+      // Day 82 SECURITY: identity documents go to the PRIVATE bucket. They were being written to
+      // propcrm-files, which is PUBLIC - the same bucket as brochures and unit images - and served
+      // by getPublicUrl. Passports and Emirates IDs were readable by anyone holding the link.
+      // The bucket cannot simply be flipped: brochures and images are MEANT to be public. So
+      // identity documents move to the private "documents" bucket and are signed on demand.
+      const { error: upErr } = await supabase.storage.from("documents").upload(path, file, { upsert: false });
       if (upErr) throw upErr;
-      const { data: { publicUrl } } = supabase.storage.from("propcrm-files").getPublicUrl(path);
-      const nextDocs = { ...docs, [k]: { url: publicUrl, uploaded_at: new Date().toISOString() } };
+      // Store the PATH, not a URL. A signed URL expires, so a stored one would rot; the path is
+      // permanent and is signed at view time. `url` is kept null so any old public URL still
+      // renders for documents uploaded before this change.
+      const nextDocs = { ...docs, [k]: { path: path, uploaded_at: new Date().toISOString() } };
       setDocs(nextDocs);
       const bump = status === "not_started";
       if (bump) setStatus("in_progress");
@@ -39,7 +46,10 @@ export default function KYCDialog({ lead, currentUser, showToast, onClose, onSav
     } catch (e) { showToast?.("Upload failed: " + (e.message || e), "error"); }
     setUploading(null);
   };
-  const missing = DOCS.filter(d => !docs[d.k]?.url).map(d => d.l);
+  // Day 82: a document is present if it has EITHER a path (private bucket, signed on demand)
+  // or a legacy url (uploaded before the move off the public bucket).
+  const has = (d0) => !!(d0 && (d0.path || d0.url));
+  const missing = DOCS.filter(d => !has(docs[d.k])).map(d => d.l);
   const expired = DOCS.filter(d => isExpired(docs[d.k])).map(d => d.l);
   const save = async () => {
     if (status === "verified" && (!docs.passport?.url || !docs.eid_visa?.url)) {
@@ -86,14 +96,21 @@ export default function KYCDialog({ lead, currentUser, showToast, onClose, onSav
         <div style={{fontSize:11,fontWeight:600,color:"#64748B",textTransform:"uppercase",letterSpacing:".5px",marginBottom:6}}>Documents collected</div>
         <div style={{display:"grid",gap:8,marginBottom:14}}>
           {DOCS.map(d => (
-            <div key={d.k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"8px 10px",border:"1px solid #E8EDF4",borderRadius:8,background: docs[d.k]?.url ? "#F0FDF4" : "#fff"}}>
+            <div key={d.k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,padding:"8px 10px",border:"1px solid #E8EDF4",borderRadius:8,background: has(docs[d.k]) ? "#F0FDF4" : "#fff"}}>
               <div style={{fontSize:13,color:"#0F2540",fontWeight:600,whiteSpace:"nowrap",textAlign:"left",flex:"1 1 auto"}}>{d.l}</div>
-              {docs[d.k]?.url ? (
+              {has(docs[d.k]) ? (
                 <div style={{display:"flex",alignItems:"center",gap:8,flex:"0 0 auto"}}>
                   <input type="date" title="Document expiry" value={docs[d.k].expiry || ""}
                     onChange={(e)=>{ const v=e.target.value; setDocs(x=>({ ...x, [d.k]: { ...x[d.k], expiry: v || undefined } })); }}
                     style={{fontSize:11,padding:"2px 6px",border: isExpired(docs[d.k]) ? "1.5px solid #C53030" : "1px solid #E2E8F0", borderRadius:6}} />
-                  <a href={docs[d.k].url} target="_blank" rel="noreferrer" style={{fontSize:12,color:"#1A5FA8",fontWeight:600}}>View</a>
+                  <button type="button" onClick={async ()=>{
+                    const d0 = docs[d.k];
+                    if (d0.path) {
+                      const { data, error } = await supabase.storage.from("documents").createSignedUrl(d0.path, 3600);
+                      if (error) { showToast?.("Could not open: " + error.message, "error"); return; }
+                      window.open(data.signedUrl, "_blank", "noreferrer");
+                    } else if (d0.url) { window.open(d0.url, "_blank", "noreferrer"); }
+                  }} style={{fontSize:12,color:"#1A5FA8",fontWeight:600,background:"none",border:"none",cursor:"pointer",padding:0}}>View</button>
                   <button onClick={()=>setDocs(x=>{const y={...x}; delete y[d.k]; return y;})} style={{fontSize:11,color:"#B83232",border:"none",background:"none",cursor:"pointer",fontWeight:600}}>remove</button>
                 </div>
               ) : (
