@@ -1581,6 +1581,25 @@ You will become the assigned agent.`);
                   if (!["Reserved","SPA Requirements","SPA Signed"].includes(opp.stage) || k === "verified") return null;
                   return <span style={{fontSize:9,fontWeight:700,padding:"1px 8px",borderRadius:20,background:"#FDF3DC",color:"#8A6200",textTransform:"none",letterSpacing:0}}>{"\u26a0 KYC incomplete \u00b7 "}{k.replace("_"," ")}</span>;
                 })()}
+                {(()=>{ /* Day 82: OFFER EXPIRY. It was captured at the Offer Accepted gate, stored,
+                    read back into the edit form - and displayed NOWHERE, so a broker could not see
+                    when his accepted offer lapsed. Four live deals were found with offers expired
+                    between 4 and 12 days, and nothing had ever said so.
+                    IT BELONGS IN THIS BAND, not lower down the page. Founder standing rule: anything
+                    that changes what a broker should DO goes in the TOP band where he looks first.
+                    Nothing auto-cancels - the app tells him, he decides. */
+                  if (!opp.offer_valid_until || ["Closed Won","Closed Lost"].includes(opp.stage)) return null;
+                  const d = new Date(String(opp.offer_valid_until).slice(0,10));
+                  if (isNaN(d)) return null;
+                  const days = Math.round((d - new Date(new Date().toDateString())) / 86400000);
+                  if (days > 7) return null;
+                  const nice = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+                  const late = days < 0;
+                  const txt = late ? ("\u26a0 Offer expired " + Math.abs(days) + (Math.abs(days)===1?" day":" days") + " ago \u00b7 " + nice)
+                    : days === 0 ? ("\u26a0 Offer expires TODAY \u00b7 " + nice)
+                    : ("\u26a0 Offer expires in " + days + (days===1?" day":" days") + " \u00b7 " + nice);
+                  return <span style={{fontSize:9,fontWeight:700,padding:"1px 8px",borderRadius:20,background:late?"#FEF2F2":"#FDF3DC",color:late?"#B91C1C":"#8A6200",textTransform:"none",letterSpacing:0,marginLeft:6}}>{txt}</span>;
+                })()}
                 {(()=>{ /* Terms Pending chip (Wilderness Part 2): money held without documented terms */
                   const termsCleared = !opp.current_agreed_price; if (!["Reserved","SPA Requirements","SPA Signed"].includes(opp.stage) || ((proposals || []).length > 0 && !termsCleared)) return null;
                   return opp.block_deal_id
@@ -1674,30 +1693,6 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                 const showSendProposal = canEdit && !["Closed Won","Closed Lost"].includes(opp.stage) && unit;
                 return(
                   <div style={{paddingTop:6,borderTop:"1px solid #F1F5F9"}}>
-                    {/* Day 82: THE OFFER EXPIRY WAS CAPTURED AND NEVER SHOWN.
-                        offer_valid_until is asked for at the Offer Accepted gate, stored, and read
-                        back into the edit form - but displayed NOWHERE. A broker could not see when
-                        his accepted offer lapsed, so an expired offer looked perfectly live.
-                        Nothing auto-cancels: the app tells him, he decides. */}
-                    {(() => {
-                      if (!opp.offer_valid_until) return null;
-                      if (["Closed Won","Closed Lost"].includes(opp.stage)) return null;
-                      const d = new Date(String(opp.offer_valid_until).slice(0,10));
-                      if (isNaN(d)) return null;
-                      const today = new Date(new Date().toDateString());
-                      const days = Math.round((d - today) / 86400000);
-                      const nice = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-                      let txt, bg, fg, br;
-                      if (days < 0) { txt = "Offer expired " + Math.abs(days) + (Math.abs(days) === 1 ? " day" : " days") + " ago \u00b7 " + nice; bg = "#FEF2F2"; fg = "#B91C1C"; br = "#FCA5A5"; }
-                      else if (days === 0) { txt = "Offer expires TODAY \u00b7 " + nice; bg = "#FEF2F2"; fg = "#B91C1C"; br = "#FCA5A5"; }
-                      else if (days <= 3) { txt = "Offer expires in " + days + (days === 1 ? " day" : " days") + " \u00b7 " + nice; bg = "#FFFBEB"; fg = "#B45309"; br = "#FCD34D"; }
-                      else { txt = "Offer valid until " + nice; bg = "#F8FAFC"; fg = "#475569"; br = "#E2E8F0"; }
-                      return (
-                        <div style={{marginBottom:5}}>
-                          <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:bg,color:fg,border:"1px solid "+br}}>{txt}</span>
-                        </div>
-                      );
-                    })()}
                     {/* Next-action hint */}
                     {nextActionLabel&&(
                       <div style={{fontSize:11,color:"#475569",marginBottom:5,fontStyle:"italic"}}>
