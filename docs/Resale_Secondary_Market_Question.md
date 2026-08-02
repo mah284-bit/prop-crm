@@ -69,3 +69,17 @@ not assumed here. Speculation in a design doc reads as fact six months later.
   which introduces a bank, a valuation and a timeline the app has no concept of.
 - DIFFERENT FEES: NOC from the developer, trustee office fee, DLD 4% still, NO Oqood.
 CONCLUSION: a SECOND TRANSACTION TYPE, not a variant. Roughly a fortnight, not an afternoon.
+
+## VAT — ANSWERED DAY 82 (public sources), TWO ITEMS STILL FOR THE ACCOUNTANT
+UAE standard, confirmed across several 2026 sources: 5% VAT applies to the brokerage COMMISSION,
+never to the property price. Commission 40,000 -> VAT 2,000 -> 42,000 payable to the agency. The
+brokerage must be VAT-REGISTERED and must issue a valid TAX INVOICE. The 4% DLD transfer fee is a
+government charge and is NOT subject to VAT.
+The app's arithmetic already matches this. The LABEL did not: "Net commission" named the
+commission-plus-VAT figure - the one thing that is not net, since the VAT is remitted. Corrected.
+STILL FOR THE ACCOUNTANT:
+1. TAX INVOICE COMPLIANCE - agents must issue VAT-compliant invoices. Does the app's commission
+   invoice carry the TRN, a sequential invoice number, and the required fields? Not checked.
+2. AGENT SPLITS - the market operates on brokerage splits (commonly 50-70% to the agent). The app
+   has NO agent-split model, so "what the agent takes home" is computed nowhere. Whether that
+   belongs in v1 is a founder call, not an accountant one.
