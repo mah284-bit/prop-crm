@@ -365,3 +365,13 @@ TWO WAYS TO SETTLE IT, not yet ruled:
      the drop.
 LEANING (a): a block that forgets a unit it once held cannot tell the story of what happened.
 DETACH is different and correctly clears it - the deal genuinely leaves to stand alone.
+
+## RULING (Day 82) - MONEY ON A CANCELLED BLOCK IS RECORDED, NEVER COMPUTED
+Founder: "money depends on so many factors - at what level, and what the law says and they have to
+follow. It is not as easy as we cancelled it in the app. If only the reservation is collected it
+will be the developer's policy that matters."
+So the app must NOT decide refund vs forfeit vs transfer. It varies by law, by developer policy,
+and by how far the deal had gone. THE FIX IS THEREFORE SMALL: the screen must stop showing "Nil"
+in green over money that is still unreconciled, and must offer a place to RECORD what was decided
+- refunded / forfeited / transferred - with a reason and a date. Three words and a note. No logic,
+no calculation, no rules engine.
