@@ -411,3 +411,12 @@ of nonsense. The same shape applies to the shortfall accept and the block cancel
 DO NOT TIGHTEN YET - this is a TESTER question. Whether brokers do this because the gate is wrong
 (asking at the wrong moment, for something they cannot supply yet) or because they are rushing
 tells you which fix is right. Tightening first would hide the signal.
+
+## NOTED DAY 82 (not scoped, not scheduled) - INVENTORY OWNERSHIP
+`project_units` is GLOBAL PropPulse data today - shared, tenant-unowned, a catalogue a broker READS.
+A developer module would make some of it AUTHORITATIVE and OWNED: which units may be sold, by whom,
+at what price, held how long, released to which broker. Those two models must be reconciled before
+either is extended. Recorded because it is a fact about TODAY'S architecture, not a future design.
+Founder's wider developer-side thinking (real approval workflows, document signing, handover as a
+ceremony with defects and corrections) was expressed in conversation and deliberately NOT written up
+- leasing and release come first.
