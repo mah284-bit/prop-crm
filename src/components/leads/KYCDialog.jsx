@@ -38,12 +38,24 @@ export default function KYCDialog({ lead, currentUser, showToast, onClose, onSav
       // permanent and is signed at view time. `url` is kept null so any old public URL still
       // renders for documents uploaded before this change.
       const nextDocs = { ...docs, [k]: { path: path, uploaded_at: new Date().toISOString() } };
+      // Day 82: NEVER LEAVE AN ORPHAN. The file lands in storage first; if the leads row then
+      // fails to record it, the document exists where nobody can reach it and the screen says
+      // nothing - a broker would believe the passport is on file when it is not. So the write is
+      // checked, and on failure the uploaded object is removed again.
       setDocs(nextDocs);
       const bump = status === "not_started";
       if (bump) setStatus("in_progress");
-      await supabase.from("leads").update(bump ? { kyc_docs: nextDocs, kyc_status: "in_progress" } : { kyc_docs: nextDocs }).eq("id", lead.id);
+      const { error: rowErr } = await supabase.from("leads").update(bump ? { kyc_docs: nextDocs, kyc_status: "in_progress" } : { kyc_docs: nextDocs }).eq("id", lead.id);
+      if (rowErr) {
+        await supabase.storage.from("documents").remove([path]);
+        setDocs(docs);
+        throw new Error("The file could not be recorded on the lead, so it was not kept: " + rowErr.message);
+      }
       onSaved?.(bump ? { kyc_docs: nextDocs, kyc_status: "in_progress" } : { kyc_docs: nextDocs });
-    } catch (e) { showToast?.("Upload failed: " + (e.message || e), "error"); }
+    } catch (e) {
+      console.error("KYC upload failed:", e);
+      showToast?.("Upload failed: " + (e.message || e), "error");
+    }
     setUploading(null);
   };
   // Day 82: a document is present if it has EITHER a path (private bucket, signed on demand)
