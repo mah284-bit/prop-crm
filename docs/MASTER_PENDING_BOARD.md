@@ -350,3 +350,18 @@ when a block dies with money collected, what does the broker RECORD - refund to 
 developer, transfer to another deal? The app must not decide; the developer decides and the broker
 records. But the screen must stop showing green over an open obligation.
 Founder deferred the ruling on Day 82: "I am not raising any point here, for now proceed."
+
+## ADDED DAY 82 - DROP CLEARS block_deal_id, SO THE ROLL-UP NEVER SEES THE CHILD
+The calculator's DROP sets the child to Closed Lost AND clears its block_deal_id, so the child
+leaves the block entirely. rollUpBlockStatus reads children BY block_deal_id - so after dropping
+every unit a block has zero children, the roll-up returns early, and the status never derives to
+cancelled. The block sits "confirmed" forever with nothing in it.
+(This is why the Day-82 roll-up test only worked when children were closed from Opportunities,
+where block_deal_id stayed intact.)
+TWO WAYS TO SETTLE IT, not yet ruled:
+ (a) DROP keeps block_deal_id and relies on stage = Closed Lost - the block remembers what it
+     lost, which is better for history and lets the roll-up work.
+ (b) DROP keeps clearing it, and the block's status is settled explicitly by whatever performs
+     the drop.
+LEANING (a): a block that forgets a unit it once held cannot tell the story of what happened.
+DETACH is different and correctly clears it - the deal genuinely leaves to stand alone.
