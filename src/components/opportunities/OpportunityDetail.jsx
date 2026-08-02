@@ -11,6 +11,7 @@ import { getFees, FALLBACK as FEE_FALLBACK } from "../../lib/feeSettings.js";
 import { dealBill } from "../../lib/dealBill.js";
 import { generateReceiptPDF } from "../../lib/generateReceiptPDF.js";
 import { rollUpBlockStatus } from "../../lib/rollUpBlockStatus.js";
+import DeveloperQuestions from "../developer/DeveloperQuestions.jsx";
 import { aiInvoke } from '../../lib/aiInvoke.js';
 import { Modal } from "../../modules/shared/Modal.jsx";
 import { Btn } from "../../modules/shared/Btn.jsx";
@@ -2918,6 +2919,12 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                 ) : dashboardTab === "log-activity" ? (
                   /* Log Activity Tab */
                   <div style={{padding:"4px 2px"}}>
+                    {/* Day 82: the developer side belongs on a 1-to-1 deal too, not only on blocks.
+                        Founder: "cannot have it differently in two cases - this is a common
+                        fitment." On a block the question is about the arrangement; here it is about
+                        this unit. Same table, either-or subject. */}
+                    <DeveloperQuestions oppId={opp.id} currentUser={currentUser} showToast={showToast} />
+                    <div style={{height:20}} />
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,paddingBottom:10,borderBottom:"2px solid #F1F5F9"}}>
                       <div style={{fontSize:16,fontWeight:700,color:"#0F2540",display:"flex",alignItems:"center",gap:8}}>
                         📋 Log Activity
