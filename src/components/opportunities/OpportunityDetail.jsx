@@ -4865,7 +4865,23 @@ onSelect={(unitId) => {
                             <td style={{padding:"6px 8px"}}><select disabled={waived || stageGateViewMode} value={item.method||""} onChange={e=>upd({method:e.target.value})} style={{padding:"4px 4px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:10}}><option value="">{"—"}</option><option>Cheque</option><option>Bank Transfer</option><option>Cash</option><option>Credit Card</option></select></td>
                             <td style={{padding:"6px 8px"}}><input type="date" disabled={waived || stageGateViewMode} value={item.date||""} onChange={e=>upd({date:e.target.value})} style={{padding:"4px 4px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:10}}/></td>
                             <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:diff>0?"#B45309":diff<0?"#B91C1C":"#94A3B8"}}>{diff ? ((diff>0?"+":"")+fmt2(Math.abs(diff)).replace("AED ","")+(diff<0?" short":" over")) : "—"}</td>
-                            <td style={{padding:"6px 8px"}}><button type="button" disabled={stageGateViewMode} onClick={()=>{ if(stageGateViewMode) return; upd({status:waived?"pending":"waived"}); }} style={{fontSize:9,padding:"2px 8px",borderRadius:10,border:"1px solid #D1D5DB",background:waived?"#EDE9FE":"#fff",color:waived?"#7C3AED":"#94A3B8",cursor:"pointer",fontWeight:700}}>{waived?"unwaive":"waive"}</button></td>
+                            <td style={{padding:"6px 8px"}}><button type="button" disabled={stageGateViewMode} onClick={()=>{ if(stageGateViewMode) return;
+                          // Day 82: waiving asks WHY, but does not demand it.
+                          // FOUNDER RULING: the DEVELOPER waives the fee; the broker RECORDS it. A
+                          // mandatory-reason ceremony would treat him as the decision-maker when he
+                          // is the scribe - the same reasoning that loosened the terms gate.
+                          // And these fees do not touch commission, which comes off the FINAL PRICE:
+                          // whether Oqood was waived or paid changes the buyer's bill, not what the
+                          // brokerage earns. So no gate, no manager, no mandatory field - just a
+                          // place to say who waived it, for the day the buyer asks.
+                          if (!waived) {
+                            const why = window.prompt("Waiving this row.\n\nWho waived it, and why? (optional - press OK to skip)");
+                            if (why === null) return;
+                            upd({ status: "waived", notes: why.trim() ? why.trim() : (it.notes || "") });
+                          } else {
+                            upd({ status: "pending" });
+                          }
+                        }} style={{fontSize:9,padding:"2px 8px",borderRadius:10,border:"1px solid #D1D5DB",background:waived?"#EDE9FE":"#fff",color:waived?"#7C3AED":"#94A3B8",cursor:"pointer",fontWeight:700}}>{waived?"unwaive":"waive"}</button></td>
                           </tr>
                         );
                       })}
