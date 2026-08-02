@@ -1674,6 +1674,30 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                 const showSendProposal = canEdit && !["Closed Won","Closed Lost"].includes(opp.stage) && unit;
                 return(
                   <div style={{paddingTop:6,borderTop:"1px solid #F1F5F9"}}>
+                    {/* Day 82: THE OFFER EXPIRY WAS CAPTURED AND NEVER SHOWN.
+                        offer_valid_until is asked for at the Offer Accepted gate, stored, and read
+                        back into the edit form - but displayed NOWHERE. A broker could not see when
+                        his accepted offer lapsed, so an expired offer looked perfectly live.
+                        Nothing auto-cancels: the app tells him, he decides. */}
+                    {(() => {
+                      if (!opp.offer_valid_until) return null;
+                      if (["Closed Won","Closed Lost"].includes(opp.stage)) return null;
+                      const d = new Date(String(opp.offer_valid_until).slice(0,10));
+                      if (isNaN(d)) return null;
+                      const today = new Date(new Date().toDateString());
+                      const days = Math.round((d - today) / 86400000);
+                      const nice = d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+                      let txt, bg, fg, br;
+                      if (days < 0) { txt = "Offer expired " + Math.abs(days) + (Math.abs(days) === 1 ? " day" : " days") + " ago \u00b7 " + nice; bg = "#FEF2F2"; fg = "#B91C1C"; br = "#FCA5A5"; }
+                      else if (days === 0) { txt = "Offer expires TODAY \u00b7 " + nice; bg = "#FEF2F2"; fg = "#B91C1C"; br = "#FCA5A5"; }
+                      else if (days <= 3) { txt = "Offer expires in " + days + (days === 1 ? " day" : " days") + " \u00b7 " + nice; bg = "#FFFBEB"; fg = "#B45309"; br = "#FCD34D"; }
+                      else { txt = "Offer valid until " + nice; bg = "#F8FAFC"; fg = "#475569"; br = "#E2E8F0"; }
+                      return (
+                        <div style={{marginBottom:5}}>
+                          <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:bg,color:fg,border:"1px solid "+br}}>{txt}</span>
+                        </div>
+                      );
+                    })()}
                     {/* Next-action hint */}
                     {nextActionLabel&&(
                       <div style={{fontSize:11,color:"#475569",marginBottom:5,fontStyle:"italic"}}>
