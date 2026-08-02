@@ -317,7 +317,17 @@ week-one test. Unlike most of today's captures, this one blocks work rather than
 ORDER AGREED WITH FOUNDER: the remaining payments and the closure FIRST, then the board split -
 the sales cycle should be complete before deciding what ships.
 
-## ADDED DAY 82 - LOSS REASONS ARE NOT CAPTURED
+## CORRECTED DAY 82 - LOSS REASONS DO EXIST (the entry below was WRONG)
+The architect boarded this without checking the app. The Close-as-Lost form ALREADY captures a
+mandatory Lost Reason from a picklist - Price too high / Bought elsewhere / No longer interested /
+Budget constraints / Project not suitable / No response / Other - plus free notes.
+WHAT MAY STILL BE MISSING, to judge during testing rather than assert now: the founder's own list
+included LEGAL, FAILED NEGOTIATIONS and PAYMENT ISSUES, which the picklist does not cover and
+which are not the same as "price too high" or "no response".
+LESSON: check the app before boarding a gap. The original (wrong) entry is kept below so the
+correction is visible rather than silently erased.
+
+## SUPERSEDED - ORIGINAL ENTRY (WRONG)
 "Closed Lost" records THAT a deal died, never WHY. Founder: "it is important to know the actual
 action - buyer stopped communicating / informed as not interested / legal / failed negotiations /
 payment issues / clean close." Those are five or six DIFFERENT management responses and the
