@@ -375,3 +375,13 @@ and by how far the deal had gone. THE FIX IS THEREFORE SMALL: the screen must st
 in green over money that is still unreconciled, and must offer a place to RECORD what was decided
 - refunded / forfeited / transferred - with a reason and a date. Three words and a note. No logic,
 no calculation, no rules engine.
+
+## ADDED DAY 82 - KYC STATUS IS INDEPENDENT OF KYC EVIDENCE
+The dialog lets a broker set "Docs Collected" or "Verified" with ZERO documents uploaded - status
+and evidence are separate fields with nothing tying them together. If the SPA gate checks
+kyc_status rather than the documents themselves, the gate is checking a CLAIM, not evidence.
+ALSO: on Lead Detail, KYC renders as a status LABEL among other chips ("KYC: Not started") with a
+small pencil. Nothing invites the broker to act on it - and the developer asks for KYC AT
+RESERVATION, not at SPA, so a broker who meets it first as a gate weeks later is being told late.
+Founder: "before the 360 view it looks like a button would be more prominent."
+BOTH ARE TESTER QUESTIONS, not blockers. Let them come back with it.
