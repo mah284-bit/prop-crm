@@ -337,3 +337,16 @@ Applies to 1-to-1 deals AND to block children. Also feeds the block's derived st
 where every unit was lost currently derives to "cancelled", which is the ARCHITECT'S derivation,
 not a founder ruling. With loss reasons captured, the block could say something truer.
 FOUNDER: "will see that at the end while doing the testing." Not scheduled.
+
+## ADDED DAY 82 - A CANCELLED BLOCK HOLDING MONEY SHOWS GREEN
+Proven live on Block Test 3: both units lost, block derived to cancelled, units correctly freed.
+But the Money tab reads "Total AED 0 - Collected AED 30,000 - Nil (tick)" IN GREEN, because with
+no units left the bill is zero and the arithmetic says nothing is owed. Meanwhile 30,000 of the
+buyer's money sits unreconciled.
+WHAT IT SHOULD SAY: cancelled, AED X received and unreconciled - refund, forfeit or transfer still
+to be recorded.
+THE RULING NOT YET TAKEN (this is the "developer forfeits" case from the Day-77 three tiers):
+when a block dies with money collected, what does the broker RECORD - refund to buyer, forfeit to
+developer, transfer to another deal? The app must not decide; the developer decides and the broker
+records. But the screen must stop showing green over an open obligation.
+Founder deferred the ruling on Day 82: "I am not raising any point here, for now proceed."
