@@ -307,3 +307,7 @@ THE LESSON WORTH KEEPING: a DRY-RUN COUNT caught a delete that would have destro
 1-to-1 deals. The first CTE read block_deal_units (which still listed the adopted deals as lines)
 rather than the opportunity's own block_deal_id. The count came back 20 instead of 18 and stopped
 it. Never delete without counting first, and never trust a join to define ownership.
+RESIDUE (Day 82): 13 test files remain under `propcrm-files/kyc/` across 4 old lead folders.
+NOTHING references them - both leads that had kyc_docs were cleared - and they are test uploads
+(screenshots, old proposal PDFs, a photo of a chair), not real identity documents. They are
+cleared by the B3 storage step. The CODE exposure is closed; this is residue, not risk.
