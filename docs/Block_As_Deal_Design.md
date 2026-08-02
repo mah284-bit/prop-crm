@@ -211,3 +211,26 @@ Founder: "this helps in making the pieces to ensure we have a bigger picture, so
 design will gel together." Building thread 1 without knowing threads 2 and 3 exist is how a
 surface ends up needing a second one bolted beside it - which is the "go there, come here, move
 there" problem the founder named on the same day.
+
+## RULING (Day 82) - HOW A BLOCK CLOSES
+FOUNDER: closure is a CEREMONY, not a toggle - "it is a step after all the amount is collected and
+the developer processes the SPA documentation, which takes time. The broker is informed with a
+copy of the SPA, and the close/won process is run."
+MARKET CHECK (Aug 2026): off-plan SPAs register through DLD's Oqood portal by provisional sale
+registration, and the buyer receives an OQOOD CERTIFICATE that becomes the title deed on
+completion. A certificate per unit means a registration per unit means AN SPA PER UNIT. No
+"group SPA" exists as a DLD product; multi-unit purchases are multiple contracts. This is
+consistent with the app already charging Oqood PER UNIT.
+THEREFORE:
+- **The closure ceremony is PER CHILD.** Each SPA copy arrives; that unit closes. The child
+  opportunity is the execution record - unit, price, SPA, DLD, commission - as already ruled.
+- **The block COMPLETES, it is not closed.** When the last child reaches Closed Won or Closed
+  Lost, the block is finished. Nobody marks it won by hand; a block marked Won with a unit still
+  at SPA Requirements would be a lie.
+- **CANCELLATION is the block-level ceremony.** The arrangement dying wholesale is a real human
+  act - "nothing auto-cancels, humans decide" (Day 77) - and it is the "developer forfeits,
+  cancel and recreate" case from the three tiers.
+FOUNDER'S NOTE ON SCOPE: "the broker arranges the sale; payments go directly to the developer and
+documentation is the developer's responsibility. The broker RECORDS it to raise the invoice - we
+have kept it here to be safe, and if not required we can detach it and just create the invoice."
+So document capture is a CONVENIENCE, not the broker's process. Keep it light.
