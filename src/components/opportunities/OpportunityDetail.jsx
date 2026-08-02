@@ -4655,6 +4655,26 @@ onSelect={(unitId) => {
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Final Agreed Price (AED) *</label>
                     <input type="number" placeholder="e.g. 2450000" value={stageGateForm.final_price||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
+                    {(() => {
+                      // Day 82: SHOW THE DIVERGENCE. This is the number COMMISSION is calculated
+                      // from, and it is typed by hand at the last gate. An editable final price is
+                      // RIGHT - the developer's SPA can legitimately differ from the last proposal
+                      // (a late adjustment, a rounding, a concession) and the broker must record
+                      // what the SPA actually says. What was missing is the COMPARISON: a
+                      // fat-fingered digit and a negotiated change looked identical.
+                      // Do not prevent, do not compute - show it and let him note why.
+                      const typed = Number(stageGateForm.final_price || 0);
+                      const agreed = Number(opp.current_agreed_price || 0);
+                      if (!typed || !agreed) return null;
+                      const diff = typed - agreed;
+                      if (Math.abs(diff) < 1) return null;
+                      const up = diff > 0;
+                      return (
+                        <div style={{marginTop:5,fontSize:11,fontWeight:600,color:"#B45309",background:"#FFFBEB",border:"1px solid #FCD34D",borderRadius:7,padding:"6px 9px"}}>
+                          {"\u26a0 This is AED " + Math.abs(diff).toLocaleString() + (up ? " ABOVE" : " BELOW") + " the agreed price of AED " + agreed.toLocaleString() + ". Commission is calculated on this figure - note why below if it is intentional."}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>SPA Signing Date *</label>
