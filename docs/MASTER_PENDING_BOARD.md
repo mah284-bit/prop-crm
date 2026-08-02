@@ -401,3 +401,13 @@ REMAINING TO v1: the booking clock, and the money smalls. One and a half items.
 ⚠️ LESSON: FOUR board entries today described code that had since changed - loss reasons, the drop
 ceremony, buyer-type matrices, form enforcement. The board grows stale faster than it grows long.
 Verify against the code before treating an entry as work.
+
+## ADDED DAY 82 - MANDATORY REASONS ARE BEING SATISFIED WITH NOISE
+One deal (Sara / SHI-14-10) carries THREE "KYC gate OVERRIDE at SPA Requirements - reason: ok"
+entries inside twenty minutes. Another carried six, with reasons "asdf", "as", "ok". The gate asks
+for a reason, accepts anything, and lets the deal through.
+A required field that accepts any characters is not a gate; it is a speed bump with an audit trail
+of nonsense. The same shape applies to the shortfall accept and the block cancel.
+DO NOT TIGHTEN YET - this is a TESTER question. Whether brokers do this because the gate is wrong
+(asking at the wrong moment, for something they cannot supply yet) or because they are rushing
+tells you which fix is right. Tightening first would hide the signal.
