@@ -5028,7 +5028,14 @@ onSelect={(unitId) => {
                             <span style={{fontWeight:700}}>AED {vat.toLocaleString()}</span>
                           </div>
                           <div style={{display:"flex",justifyContent:"space-between",paddingTop:6,borderTop:"1px dashed #D97706",fontWeight:800,fontSize:13}}>
-                            <span>Net commission:</span>
+                            {/* Day 82: this figure is commission PLUS VAT - what the developer is
+                                invoiced, not what the brokerage keeps. UAE standard confirmed: VAT is
+                                charged ON the commission (not the property price), the brokerage must
+                                be VAT-registered and issue a tax invoice, and it REMITS the VAT. So
+                                "net commission" named the one thing this number is not - a broker
+                                reading it would believe 246,303 was his brokerage's earning when the
+                                earning is 234,574 and the rest belongs to the FTA. */}
+                            <span>Total invoiced to developer:</span>
                             <span>AED {net.toLocaleString()}</span>
                           </div>
                         </div>
