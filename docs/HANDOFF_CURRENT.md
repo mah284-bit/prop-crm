@@ -1344,3 +1344,23 @@ items on Day 76 and is now roughly twelve. AGREED DISCIPLINE, not yet executed: 
 into MUST-SHIP and CAN-WAIT against one question - what would a tester hit in week one. Almost
 nothing captured today is on that list. RESALE is the only item that is a genuine demo-stopper.
 NEXT SESSION: that board split, before any more building.
+
+## ── DAY 82 (2 Aug) — THE BLOCK'S END, AND V1 MEASURED HONESTLY ──
+BLOCK CLOSURE ARC, now complete. RULING: closure is a ceremony but a PER-CHILD one - market check
+confirmed off-plan SPAs register per unit through DLD's Oqood portal, each unit getting its own
+certificate, so there is no group SPA. The block therefore has NO close button: it REFLECTS where
+its children stand. The one block-level ceremony is CANCELLATION.
+BUILT: rollUpBlockStatus - a resolved child settles its LINE, frees its UNIT, and the block derives
+completed / partially_dropped / cancelled. Found by testing: a cancelled block's units stayed
+BOOKED, holding inventory forever with nothing saying why.
+FIXED: DROP was clearing block_deal_id, so the block forgot units it once held and the roll-up
+could never see them. A block that forgets what it lost cannot tell the story.
+BUILT: CANCEL BLOCK - manager ceremony, live children closed, units freed, audited. Proven live.
+V1-4 DONE - KYC documents were uploading to propcrm-files, a PUBLIC bucket shared with brochures,
+served by getPublicUrl. Passports and Emirates IDs were readable by anyone with the link. Moved to
+the private `documents` bucket with signed URLs, matching the pattern Master Agreements and SPA
+documents already used. Also: an upload that fails to record now REMOVES the file rather than
+leaving an orphan nobody can reach.
+V1-5 DONE except the NOT NULL constraint (blocked on the B3 backfill of 12 NULLs). Form
+enforcement VERIFIED live; buyer-type matrices found POPULATED (48 rows), not empty as boarded;
+the duplicate buyer_intent declaration removed.
