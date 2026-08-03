@@ -72,7 +72,12 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
             }
           }
           if (opp.master_agreement_id) {
-            const { data: ma } = await supabase.from("master_agreements").select("title, agreement_number, default_commission_pct").eq("id", opp.master_agreement_id).single();
+            // Day 83: this queried a table called "master_agreements" which does not exist - the table is
+            // pp_master_agreements - and asked for "title" and "agreement_number", which are
+            // agreement_title and internal_reference. Three wrong names in one query, so the lookup
+            // always failed and the invoice could never show WHICH agreement it was raised under.
+            // .single() throws on no row, so this also broke the document modal silently.
+            const { data: ma } = await supabase.from("pp_master_agreements").select("agreement_title, internal_reference, default_commission_pct").eq("id", opp.master_agreement_id).maybeSingle();
             particulars.agreement = ma || null;
           }
         }
