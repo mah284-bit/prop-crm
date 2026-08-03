@@ -586,3 +586,26 @@ PROVEN LIVE after the fix: proposal 'developer_pays' now sets the deal to 'devel
 set 'buyer'.
 ⚠️ THE ENTRY THAT FOUND THIS WAS WRITTEN ON DAY 77 AND SAT UNREAD FOR SIX DAYS. The board was
 being appended to and never read back. That is the argument for the audit, not for more building.
+
+## ═══ BOARD AUDIT — DAY 83 ═══
+The founder called this: read the board and mark it, rather than keep appending to it. Every
+entry checked against the CODE, not against memory.
+
+RESULT: of the entries audited, **five described work already done** - loss reasons, the drop
+ceremony, the buyer-type matrices, form enforcement, and KYC on Lead Detail. Two more had been
+half-fixed and never marked. The board was carrying ghosts, which is precisely why the list FELT
+like it only grew: nothing ever left it.
+
+⚠️ AND ONE ENTRY WAS A LIVE MONEY BUG THAT HAD SAT UNREAD FOR SIX DAYS.
+C16, written Day 77: two sites tested for a DLD value that does not exist in the picklist. A
+proposal where the DEVELOPER absorbs the DLD silently billed the BUYER - on the document sent to
+him and in the deal's ledger. On a 5.8M deal, 234,575 AED wrongly charged. Fixed and proven live
+Day 83. It was found by READING the board, not by building.
+
+**THE RULE THAT FOLLOWS: read the board BEFORE starting work, not after finishing it.**
+An entry written and never read back is worse than no entry - it creates the belief that something
+is being tracked while nothing is watching it.
+
+SUGGESTED CADENCE: a full audit pass at the start of any week, and a re-read of the dated
+additions before choosing what to build. Both are cheap. This one took under two hours and found
+more than a day of building would have.
