@@ -452,3 +452,19 @@ FOUNDER'S CONTEXT: "there is nothing permanent, it is sharp and keeps moving. If
 more time - because it is a block, stakes are high and it might need time." So whatever is chosen
 must accommodate a legitimate extension, not just punish delay.
 FOUNDER DEFERRED: "let me think through clearly and come back on it." NOT BUILT EITHER WAY.
+
+## ADDED DAY 83 - THE REVENUE REPORT COMPUTES COMMISSION AT A FLAT 4%
+`ReportsModule.jsx:373` - `const comm = o.final_price * 0.04` - for EVERY won deal, regardless of
+what was actually agreed with that developer.
+The app already models the truth: `pp_commissions` is a RATE CARD (developer, project, rate_pct,
+bonus_pct, valid_from/until, registered_broker_only). Emaar may pay 3% on one project and 5% on
+another; the report says 4% for all of them. That is not a display inconsistency - it is REVENUE
+reported on a number nobody agreed to.
+WHY IT IS NOT A ONE-LINE FIX: there is no table of commission EARNED per deal. The report
+recomputes because there is nothing to sum. The proper fix joins each won deal to its project's
+rate card - and that raises questions only the founder can answer:
+ - What is shown when a project has NO rate card? Zero, blank, or a flagged estimate?
+ - What when the card EXPIRED before the deal closed - the card at closing date, or the latest?
+ - `registered_broker_only` - does it change the rate, or the eligibility?
+ - Does BONUS_PCT belong in the headline figure or beside it?
+NEEDS ITS OWN CUT. Do not fold into a fee-consistency pass.
