@@ -103,7 +103,11 @@ WHAT NOW STANDS BEFORE TESTERS is not feature work: the pre-tester list, B3 clea
 walkthroughs, and the founder's open claim/confirm ruling.
 
 ## C - DESIGN SESSIONS OWED (v1 items marked above; rest is post-tester)
-C0. **BLOCK AS A FIRST-CLASS DEAL** (`Block_As_Deal_Design.md`, Day 77) - the block carries the
+C0. ⚠️ **PART BUILT Days 77-83** - the block now carries ACTIVITIES (with its own
+    block_deal_id on activities, and an RLS branch so they are readable), DEVELOPER QUESTIONS,
+    the full MONEY phase, CLOSURE by roll-up and a CANCEL ceremony. STILL MISSING: the journey
+    and next-steps - the founder's "go there do it, come here do this, move there do this".
+    ORIGINAL: **BLOCK AS A FIRST-CLASS DEAL** (`Block_As_Deal_Design.md`, Day 77) - the block carries the
     journey, activities, communications, next steps and money; the child opp becomes an execution
     record (unit, price, SPA, DLD, commission) worked FROM the block. Today a 700K 1-to-1 has a
     full deal life and a 5M block has status words - backwards. Includes: the three tiers of
@@ -114,10 +118,14 @@ C0c. **BLOCK OWNERSHIP GOVERNANCE** (`Block_Ownership_Governance_Question.md`, D
     built. Needs: COVER (temporary access, commission stays) vs REASSIGN (permanent, children
     follow, mandatory reason, outgoing owner notified), and the unresolved core - WHOSE COMMISSION
     when a block moves mid-deal. Do not build a reassign control before that rule is ruled.
-C0b. **1-TO-1 FLOW SIMPLIFICATION** - merge the reservation ceremony with the ledger's birth
+C0b. ⚠️ **SUPERSEDED BY A FOUNDER RULING (Day 77)** - do NOT build this as written. The ruling
+     was the opposite: "DO NOT merge the reservation ceremony with the ledger. The reservation is
+     a CEREMONY; the ledger is an INSTRUMENT." The receipt half WAS built (Day 79,
+     generateReceiptPDF.js - received / balance / expiry / branded). Kept so the reversal is
+     visible rather than silently erased. ORIGINAL TEXT: **1-TO-1 FLOW SIMPLIFICATION** - merge the reservation ceremony with the ledger's birth
     (kills two dead steps), enable partial receipts with a save-progress door, and print the
     receipt: received / balance / due by. Changes the CERTIFIED money path - own cut, own test.
-C1. **BLOCK LEDGER PHASE** - post-reservation block money (instalments, DLD, SPA fees across N
+C1. ✅ **CLOSED Days 79-82** - see V1-1. ORIGINAL: **BLOCK LEDGER PHASE** - post-reservation block money (instalments, DLD, SPA fees across N
     children) using the 1-to-1 ledger grammar at block level. Design of record already written:
     `Block_Ledger_Phase_Design.md` (BL-1..BL-4). Founder ruling: reuse the known screen, invent
     no dialect. **This is the nearest-term design item.**
@@ -127,8 +135,12 @@ C2. DASHBOARDS + REPORTS REDESIGN: dashboards are "lists not analytics" -> chart
 C3. SPA v2 TWO-FACES ("horse-rider"): compact ceremony face + full ledger face. Folds in the
     Price Journey card (engine shipped Day 66, display never built), deduction-display polish,
     computable all-received amounts.
-C4. MONEY SMALLS (one cut): waived-with-date guard, gross-vs-net commission display check,
-    offer_valid_until surfacing + nag, invoice-panel zero residuals.
+C4. ⚠️ **THREE OF FOUR CLOSED Day 82** - waived guard (an optional who-and-why prompt, not a
+    ceremony: the DEVELOPER waives, the broker records) · gross-vs-net (the label said "Net
+    commission" over commission PLUS VAT, which is what the developer is invoiced, not what the
+    brokerage keeps) · offer_valid_until (captured for months, displayed NOWHERE - four live deals
+    carried offers expired 4-12 days with nothing saying so).
+    STILL OPEN: invoice-panel zero residuals.
 C5. SETTINGS CONSOLIDATION + App.jsx shadow sweep (auth screens, UserManagement wrapper,
     ChangePassword, SettingsTab migration, the 9 shadow-component collisions, two
     OpportunityDetail render sites). Also: `CountryPicker.jsx` + `LeadPersonEditModal.jsx`
@@ -147,7 +159,10 @@ C12. SYSTEMIC isStale() HELPER - stale computed 4 places, 2 different ways; 3 ha
      ignore the configured threshold. One shared helper.
 C13. BLOCK POLISH (from A): approval REFERENCE vs NOTE split · adopt-panel overflow · rich unit
      picker with multi-select · calculator totals-on-top + workspace net-price dash ·
-     Cut 6a BOOKING CLOCK (nags, never auto-cancels) · clearance-at-the-door · block payment
+     ✅ Cut 6a BOOKING CLOCK - BUILT Day 83. Note the board said "nags, never auto-cancels";
+     the founder ruled otherwise and correctly: the hold RELEASES automatically, because that is
+     the DEVELOPER'S rule taking effect, not the app deciding. The DEAL survives; only the
+     inventory hold ends. · clearance-at-the-door · block payment
      LIFECYCLE (bounce/replace - today block money is recorded as fact, post-accounts).
 C14. OPP LIST PRICE COLUMNS: Budget + Price + Final side-by-side.
 C16. ⚠️ DLD VOCABULARY SPLIT (found Day 77 during BL-2). TWO dialects: proposal side uses
