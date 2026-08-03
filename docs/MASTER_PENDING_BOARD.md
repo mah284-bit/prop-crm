@@ -468,3 +468,28 @@ rate card - and that raises questions only the founder can answer:
  - `registered_broker_only` - does it change the rate, or the eligibility?
  - Does BONUS_PCT belong in the headline figure or beside it?
 NEEDS ITS OWN CUT. Do not fold into a fee-consistency pass.
+
+## ⭐ THE PRE-TESTER LINE (drawn Day 83, founder-agreed)
+FOUNDER: "testers is when I call them - let us complete it so we do not have to call them twice
+for the same, just the delta." Correct: testers are limited goodwill, not a limitless resource.
+BUT "complete" needed a definition or it moves again. TWO READINGS:
+ (a) Clear the whole board including sections B and C - that is weeks, and section D was always
+     post-tester by design.
+ (b) Clear what a TESTER WOULD ENCOUNTER. Taken.
+SOME BOARD ITEMS EXIST TO BE ANSWERED **BY** TESTING and must NOT be pre-built: whether the
+mandatory-reason gates are being satisfied with noise because they ask at the wrong moment, whether
+KYC belongs earlier in the journey, whether the booking clock should cover post-reservation money.
+Building an answer before the evidence arrives is guessing.
+
+### PRE-TESTER LIST (finite, in order)
+1. Invoice-panel zero residuals (last C4 item)
+2. The flat-4% revenue report - it should read the invoice's own commission_net
+3. `commission_net` holds GROSS + VAT - board the naming, correct the DISPLAYS
+4. Show the master agreement on the invoice document (the lookup now works; nothing renders it)
+5. Cancelled block holding money reads "Nil" in green over unreconciled money
+6. Stale-record ghost - a deleted record keeps rendering from component state
+7. Unit picker needs search (unusable past ~20 units)
+8. Nudge for open developer questions - nothing tells the broker one is due
+9. Adopt panel checkbox alignment (cosmetic, has resisted five attempts)
+THEN: the founder's claim/confirm ruling · B3 clean data (unblocks buyer_type NOT NULL) · the two
+walkthroughs · THEN call the testers.
