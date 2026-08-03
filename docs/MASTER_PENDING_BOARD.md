@@ -209,7 +209,12 @@ X7. **B1 DATA FRESHNESS** - merged Day 76, tag golden-data-freshness.
 X8. **DOCUMENTATION RESTRUCTURE** - Day 76: 137 docs -> 44 living + 93 archived; principles
     ratified; document index built (Register item #23); two competing heads collapsed into one.
 
-## ADDED DAY 77 - BLOCK CONFIRM HAS NO IDEMPOTENCY GUARD (verified defect)
+## ✅ CLOSED DAY 82 - BLOCK CONFIRM IDEMPOTENCY GUARD
+Built Day 77, PROVEN Day 82: a second Confirm on Block Test 1 was refused and no duplicate
+children were born. The guard reads the children FRESH from the database rather than trusting the
+page's in-memory copy - which was the original cause. THE UI STILL LOOKS STALE after a refusal
+(status and button do not refresh), which invites a third press. Boarded separately.
+ORIGINAL ENTRY: **BLOCK CONFIRM HAS NO IDEMPOTENCY GUARD**
 EVIDENCE: Khalid's block carries SIX children on three units - one set born 14:45 (Offer
 Accepted, orphaned) and one 14:48 (Reserved, the live set linked from block_deal_units).
 Confirm ran twice, three minutes apart, and nothing stopped the second birth. Founder confirms
@@ -238,7 +243,13 @@ div. Survived five cuts (flex fixes, label->div, plain block rebuild). NOT in th
 a GLOBAL input style or an ancestor rule. NEXT SESSION: inspect the input in DevTools Elements,
 read its computed styles, find the rule. Ten minutes with the right evidence; an hour without.
 
-## ADDED DAY 77 - FEES ARE HARD-CODED, SHOULD BE COMPANY SETTINGS (v1 candidate)
+## ✅ CLOSED DAY 78 - FEES ARE COMPANY SETTINGS
+`src/lib/feeSettings.js` resolves company setting then fallback; `companies.default_reservation_fee`
+and `default_dld_pct` added; Buyer Fees section shipped in Settings. PROVEN: SPA fee set to 6,000
+appeared as Expected 6,000 on a fresh deal's ledger. ⚠️ Day 83 found the setting was only HALF
+honoured - ten display sites still had the numbers typed in, one showing an SPA fee of 5,250 while
+the Money tab read 6,000 on the SAME DEAL. Now all read one source.
+ORIGINAL: **FEES ARE HARD-CODED, SHOULD BE COMPANY SETTINGS**
 FOUNDER: "broker to broker they charge according to the govt fees they pay AND have a company
 admin cost - some increase the value of the govt fees as part of their admin charges. Giving
 them the freedom to set their policies" - this was designed and agreed; the constants are a
@@ -256,7 +267,13 @@ FIX: (1) settings UI for SPA fee, Oqood, DLD pct and any admin uplift, at COMPAN
 used by dealBill(), the 1-to-1 ledger and the block preview; (4) retire the hard-codes.
 V1 CANDIDATE: a brokerage that cannot set its own fees cannot use the app honestly.
 
-## ADDED DAY 77 - BLOCK VISIBILITY IS COMPANY-WIDE (founder observation, ruling needed)
+## ✅ CLOSED DAY 79 - BLOCK VISIBILITY LADDER
+`block_deals.assigned_to` added and backfilled; RLS rewritten to the full ladder (group / branch
+downline / own). VERIFIED LIVE: an agent sees no blocks he does not own; his manager sees them via
+downline. TRAP BANKED: an `ALL` policy alongside a restrictive SELECT DEFEATS it - Postgres RLS is
+permissive, so the policies OR together. ⚠️ Day 83 found the sibling bug: block CREATION then
+failed RLS because the insert never set an owner, making a new block invisible to its own creator.
+ORIGINAL: **BLOCK VISIBILITY IS COMPANY-WIDE**
 Verified: all five block tables have RLS ON and scope correctly to the caller's company - NO
 cross-tenant leak. But unlike leads/opps/activities (which also scope by see_own_data /
 downline), the block policies are company-wide ONLY. So ANY agent sees EVERY block in the
@@ -275,7 +292,12 @@ FIX ORDER: (1) add block_deals.assigned_to (uuid -> profiles), backfill from cre
 the capability tiers; (3) surface owner in the Workspace header and allow reassignment.
 NOTE: super_admin stays wide open by design during build; stripped at pre-go-live hardening.
 
-## ADDED DAY 78 - DLD PCT HARD-CODED ACROSS 3 FILES (systemic, own cut)
+## ✅ CLOSED DAY 83 - DLD PCT HARD-CODED (and it was worse than three files)
+The board said three files. It was TEN SITES across three files, plus an SPA fee of 5,250 and an
+Oqood of 4,020 typed inline - and the PROPOSAL BUILDER computed its own DLD rate, so a document
+sent to a buyer could state a rate the app would not then bill. All now read one resolver:
+frozen policy where the deal has one, company setting otherwise, declared fallback last.
+ORIGINAL: **DLD PCT HARD-CODED ACROSS 3 FILES**
 FIXED TODAY: SPA fee and Oqood now read the company policy (Settings > Buyer Fees -> feeSettings
 resolver -> ledger). PROVEN LIVE: SPA 6000 set in Settings appears as Expected 6,000.
 STILL HARD-CODED: DLD at 4%. Setting it to 5 in Settings changes nothing - the ledger still shows
