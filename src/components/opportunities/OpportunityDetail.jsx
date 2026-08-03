@@ -4221,7 +4221,7 @@ onSelect={(unitId) => {
             const _pterms = propRow?.structured_data || {};
             onUpdated({...opp, proposal_sent_at: new Date().toISOString(),
               current_agreed_price: _pterms.discounted_price || _pterms.asking_price || opp.current_agreed_price,
-              current_dld_payer: _pterms.dld_handling === "split_5050" ? "split" : (_pterms.dld_handling === "developer_absorbs" ? "developer" : (_pterms.dld_handling ? "buyer" : opp.current_dld_payer)),
+              current_dld_payer: _pterms.dld_handling === "split_5050" ? "split" : (_pterms.dld_handling === "developer_pays" ? "developer" : (_pterms.dld_handling ? "buyer" : opp.current_dld_payer)),
             });
             setShowProposalDialog(false);
             if(coachReturn){setDashboardTab("coach");setCoachReturn(false);}

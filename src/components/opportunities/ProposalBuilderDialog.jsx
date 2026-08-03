@@ -674,7 +674,11 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       } else if (dldHandling === 'split_5050') {
         _dldPayer = 'split';
         _dldSplitPct = 50;
-      } else if (dldHandling === 'developer_absorbs') {
+      // Day 83 LIVE MONEY BUG: this tested 'developer_absorbs', which is NOT in DLD_OPTIONS -
+      // the constant is 'developer_pays', labelled "Developer absorbs full DLD". The test never
+      // matched, so a proposal where the DEVELOPER absorbs DLD fell through and billed the BUYER.
+      // On a 5.8M deal that is 234,575 wrongly charged, on the document sent to him.
+      } else if (dldHandling === 'developer_pays') {
         _dldPayer = 'developer';
       } else if (dldHandling === 'specific_amount_waived' || dldHandling === 'specific_amount') {
         _dldPayer = 'negotiated';

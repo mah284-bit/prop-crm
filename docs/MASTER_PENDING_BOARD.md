@@ -493,3 +493,11 @@ Building an answer before the evidence arrives is guessing.
 9. Adopt panel checkbox alignment (cosmetic, has resisted five attempts)
 THEN: the founder's claim/confirm ruling · B3 clean data (unblocks buyer_type NOT NULL) · the two
 walkthroughs · THEN call the testers.
+
+## ADDED DAY 83 - THE OPPORTUNITY LIST DOES NOT SHOW WHICH DEALS ARE BLOCK CHILDREN
+A block child and a standalone deal look identical in the list, yet they behave differently: the
+child's terms are locked at the block, its what's-next line is suppressed, and its money flows
+through the block ledger. A broker opening one and expecting normal controls will be confused -
+the founder confused himself while picking a deal to test on.
+Cheap: a chip on the row. block_deal_id is already on the opportunity.
+PRE-TESTER LIST - this is the kind of thing a tester hits in the first hour.
