@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useFreshData } from "../../lib/useFreshData.js";
 import { supabase } from "../../lib/supabase.js";
 import { getFees } from "../../lib/feeSettings.js";
-import { startBookingClock } from "../../lib/bookingClock.js";
+import { startBookingClock, releaseBookingHold } from "../../lib/bookingClock.js";
 import { PAYMENT_PLAN_PRESETS } from "../../modules/constants.js";
 import DistributionCalculator from "./DistributionCalculator.jsx";
 import BlockWorkspace from "./BlockWorkspace.jsx";
@@ -54,6 +54,26 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
       supabase.from("block_deal_units").select("unit_id, status, block_deal_id").neq("status", "dropped"),
       supabase.from("opportunities").select("unit_id, stage, status").eq("status", "Active").not("unit_id", "is", null),
     ]);
+    // Day 83: SWEEP LAPSED HOLDS. There is no scheduler, so "automatic" means WHEN SOMEONE LOOKS -
+    // a hold that lapsed Tuesday releases when a broker opens this list on Thursday. That is honest
+    // as long as the RECORD says so, which is why the reason carries BOTH dates: nobody should
+    // later think the app sat on it deliberately.
+    // Only blocks this user can already see (RLS), only units still Booked, never a unit whose deal
+    // has advanced past Offer Accepted - that ground is paid for.
+    (async () => {
+      const now = Date.now();
+      for (const blk of (b.data || [])) {
+        if (!blk.hold_expires_at || blk.hold_released_at) continue;
+        if (["cancelled","completed"].includes(blk.status)) continue;
+        if (new Date(blk.hold_expires_at).getTime() > now) continue;
+        const lapsed = new Date(blk.hold_expires_at).toLocaleDateString("en-GB");
+        const seen = new Date().toLocaleDateString("en-GB");
+        await releaseBookingHold({
+          block: blk, currentUser,
+          reason: "Hold window expired " + lapsed + " without the reservation being collected; released " + seen + " when next seen.",
+        });
+      }
+    })();
     setBlocks(b.data || []); setLeads(l.data || []); setUnits(u.data || []); setPricing(sp.data || []); setDevelopers(dv.data || []); setProjects(pj.data || []); setBuyerOpps(op.data || []);
     const blockById = {}; (b.data || []).forEach(x => { blockById[x.id] = x; });
     const hard = new Set((ao.data || []).map(x => x.unit_id).filter(Boolean));
