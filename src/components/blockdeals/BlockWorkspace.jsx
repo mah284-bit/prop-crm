@@ -350,7 +350,13 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                       red "held until collected fully" chip is a lie sitting beside the settled chip -
                       a broker would chase a balance that has already been closed. The money is still
                       short and we say so; what changed is that it is no longer holding anything. */}
-                  {outstanding > 0.5 && collectionClosed
+                  {/* Day 83: once the HOLD is released the units are no longer held, so "RESERVATION of units
+                      held until collected fully" becomes a second lie on the same header - the same
+                      class as the accepted-shortfall contradiction fixed on Day 82. The money is
+                      still outstanding and we say so; what changed is that it no longer holds anything. */}
+                  {outstanding > 0.5 && block.hold_released_at && !collectionClosed
+                    ? <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#FFFBEB",color:"#B45309",border:"1px solid #FCD34D"}}>Outstanding {fmt(outstanding)} {String.fromCharCode(183)} units released, no longer held</span>
+                    : outstanding > 0.5 && collectionClosed
                     ? <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#FFFBEB",color:"#B45309",border:"1px solid #FCD34D"}}>Short by {fmt(outstanding)} {String.fromCharCode(183)} accepted, units released</span>
                     : outstanding > 0.5
                     ? <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#FEF2F2",color:"#B91C1C",border:"1px solid #FCA5A5",animation:"blkPulse 2.4s ease-in-out infinite"}}>Outstanding {fmt(outstanding)} {String.fromCharCode(183)} RESERVATION of units held until collected fully</span>
