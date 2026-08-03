@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useFreshData } from "../../lib/useFreshData.js";
 import { supabase } from "../../lib/supabase.js";
 import { getFees } from "../../lib/feeSettings.js";
+import { startBookingClock } from "../../lib/bookingClock.js";
 import { PAYMENT_PLAN_PRESETS } from "../../modules/constants.js";
 import DistributionCalculator from "./DistributionCalculator.jsx";
 import BlockWorkspace from "./BlockWorkspace.jsx";
@@ -192,6 +193,12 @@ const confirmBlock = async (b) => {
     }
     if (born === 0) { showToast("No deals were born - block NOT confirmed. Check the errors above.", "error"); load(); return; }
     await supabase.from("block_deals").update({ status: "confirmed", updated_at: new Date().toISOString() }).eq("id", b.id);
+    // Day 83: CONFIRMATION STARTS THE CLOCK. This is the moment the units are claimed, so this is
+    // when the promise begins - the hold is bought with a deadline rather than held for free.
+    // Fire and forget: the clock is a governance layer over the confirm, never a way to fail it.
+    startBookingClock({ block: b, currentUser }).then(r => {
+      if (r && r.ok) showToast("Units held until " + new Date(r.expires_at).toLocaleDateString("en-GB") + " - collect the reservation before then", "info");
+    }, e => console.warn("Booking clock not started:", e));
     showToast(born + " deals born at Offer Accepted from " + b.title + " - Terms Pending, units claimed", "success");
     load();
   };

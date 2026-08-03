@@ -8,6 +8,7 @@ import BlockCollectionDialog from "./BlockCollectionDialog.jsx";
 import DeveloperQuestions from "../developer/DeveloperQuestions.jsx";
 import { recordBlockCollection } from "../../lib/recordBlockCollection.js";
 import { generateBlockStatement } from "../../lib/generateBlockStatement.js";
+import { readBookingClock, releaseBookingHold } from "../../lib/bookingClock.js";
 import { lockBlockPayment, amendBlockPayment, acceptShortCollection } from "../../lib/lockBlockPayment.js";
 import { canDo } from "../../lib/permissions.js";
 import BlockTermsForm from "./BlockTermsForm.jsx";
@@ -356,6 +357,27 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                     : <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#E6F4EE",color:"#166534",border:"1px solid #A7D8C3"}}>Collected in full {String.fromCodePoint(0x2713)}</span>}
                 </div>
               )}
+              {(() => {
+                // Day 83: THE BOOKING CLOCK, shown where the broker looks first. The hold was bought
+                // with a deadline; if the reservation is not collected the units go back to the pool
+                // and another broker can sell them. Discovering that three days late loses a deal
+                // that a phone call could have saved.
+                const c = readBookingClock(block, collectionClosed || (dueAmt > 0 && outstanding <= 0.5));
+                if (!c) return null;
+                if (c.state === "released") {
+                  return <div style={{fontSize:11,color:"#64748B",marginTop:4}}>{"\u26a0 Booking hold released " + new Date(c.released_at).toLocaleDateString("en-GB") + (c.reason ? " \u00b7 " + c.reason : "")}</div>;
+                }
+                const lapsed = c.state === "lapsed";
+                const urgent = c.state === "urgent";
+                const txt = lapsed ? ("\u26a0 Hold LAPSED " + c.nice + " \u00b7 units may be released")
+                  : urgent ? ("\u26a0 Hold expires in " + Math.max(0, c.hours) + "h \u00b7 " + c.nice + " \u00b7 collect the reservation")
+                  : ("Units held until " + c.nice + " \u00b7 " + c.days + " day" + (c.days === 1 ? "" : "s") + " to collect");
+                return (
+                  <div style={{marginTop:4}}>
+                    <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:lapsed?"#FEF2F2":urgent?"#FFFBEB":"#F8FAFC",color:lapsed?"#B91C1C":urgent?"#B45309":"#475569",border:"1px solid "+(lapsed?"#FCA5A5":urgent?"#FCD34D":"#E2E8F0")}}>{txt}</span>
+                  </div>
+                );
+              })()}
               {block.developer_approved_at && <div style={{fontSize:11,color:"#7C3AED",marginTop:4}}>{String.fromCodePoint(0x2713)} Developer approved {String.fromCharCode(183)} ref {block.developer_approval_ref}{block.approved_by_name ? (" \u00b7 " + block.approved_by_name) : ""}</div>}
             </div>
             <div style={{display:"flex",gap:12,alignItems:"center"}}>

@@ -420,3 +420,16 @@ either is extended. Recorded because it is a fact about TODAY'S architecture, no
 Founder's wider developer-side thinking (real approval workflows, document signing, handover as a
 ceremony with defects and corrections) was expressed in conversation and deliberately NOT written up
 - leasing and release come first.
+
+## ADDED DAY 83 - THE CLOCK MAY BE AN OUTSTANDING-BALANCE FEATURE, NOT A RESERVATION ONE
+The booking clock as built covers the RESERVATION: the units are held N days and released if it is
+not collected. Founder's observation: "the rest of the cash also has to have this - cannot wait
+forever, same rule applies." Money outstanding after the reservation - first instalment, fees -
+cannot sit indefinitely either, and while a balance stands it should keep flashing.
+IF THAT IS RIGHT, the clock is really an OUTSTANDING-BALANCE feature and the reservation is simply
+its first instance: "units held until X" while the reservation is open, then "AED Y outstanding
+since Z" once it is not.
+DELIBERATELY NOT DESIGNED YET - founder: "let the SPA tests happen, then we come back to this."
+The answer should come from walking a deal, not from a whiteboard.
+ALSO NOTED: the unit picker on block creation is a plain dropdown with no search. Fine at 8 units,
+unusable at 200.
