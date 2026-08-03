@@ -433,3 +433,22 @@ DELIBERATELY NOT DESIGNED YET - founder: "let the SPA tests happen, then we come
 The answer should come from walking a deal, not from a whiteboard.
 ALSO NOTED: the unit picker on block creation is a plain dropdown with no search. Fine at 8 units,
 unusable at 200.
+
+## OPEN RULING (Day 83) - WHEN IS A UNIT ACTUALLY CLAIMED, AND WHEN MAY A BLOCK CONFIRM?
+FOUNDER'S CATCH: units are only set to Booked at CONFIRM. Between creation and confirm - the
+calculator, developer approval, negotiation, which can take days - the units are NOT claimed. The
+Day-74 design calls them "soft claims" and warns on collision, but warn-only means the loss still
+happens: another broker takes one, and this block's owner finds out at confirm.
+TWO CANDIDATE FIXES, both with costs:
+ (a) BOOK AT CREATION. Closes the window. But a broker could then hold ten units by STARTING a
+     block and never confirming - the freeze-the-book abuse, moved earlier. If taken, THE CLOCK
+     MUST START AT CREATION TOO: an unconfirmed block does not make the hold free.
+ (b) DO NOT CONFIRM UNTIL THE RESERVATION IS PAID. Founder: "the rule of law in the app will be do
+     not confirm till the buyer comes and pays money to reserve during confirm." This is the
+     STRONGER rule - it makes the clock almost unnecessary, because nothing is held on a promise.
+     Cost: the app currently births children AT confirm, so nothing exists to collect against until
+     after it. The sequence would have to change.
+FOUNDER'S CONTEXT: "there is nothing permanent, it is sharp and keeps moving. If the buyer requests
+more time - because it is a block, stakes are high and it might need time." So whatever is chosen
+must accommodate a legitimate extension, not just punish delay.
+FOUNDER DEFERRED: "let me think through clearly and come back on it." NOT BUILT EITHER WAY.

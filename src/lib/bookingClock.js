@@ -34,6 +34,11 @@ function addWorkingDays(from, days) {
   }
   // If it still lands on a weekend (days = 0 edge), roll forward.
   while (d.getDay() === 6 || d.getDay() === 0) d.setTime(d.getTime() + DAY_MS);
+  // Day 83: LAND ON END OF DAY, DUBAI TIME. Without this the deadline inherits the HOUR of the
+  // confirm - a block confirmed at 6am expired at 6am, and a broker reading "held until 10 Aug"
+  // could lose the units mid-morning while he was still arranging the cheque. "Until the 10th"
+  // must mean the END of the 10th. 19:59:59 UTC is 23:59:59 GST (UTC+4, no daylight saving).
+  d.setUTCHours(19, 59, 59, 0);
   return d;
 }
 
