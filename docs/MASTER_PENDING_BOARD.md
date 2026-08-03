@@ -501,3 +501,29 @@ through the block ledger. A broker opening one and expecting normal controls wil
 the founder confused himself while picking a deal to test on.
 Cheap: a chip on the row. block_deal_id is already on the opportunity.
 PRE-TESTER LIST - this is the kind of thing a tester hits in the first hour.
+
+## ADDED DAY 83 - THE PROPOSAL PDF DOES NOT STATE THE DLD ARRANGEMENT
+The generated proposal shows asking price, discount, final price and payment plan - and NOT who
+pays the DLD fee. On a 611,220 deal that is 24,449 the buyer is bound by and cannot see on the
+document he is sent. The builder captures it; the PDF prints nothing.
+FOUNDER NOTE: the proposal PDF was built fast during the hero-docs push and "deviated - lost about
+it, moved away, not documented." Worth reading generateProposalPDF.js against what the builder
+captures - DLD may not be the only term collected and never printed.
+ALSO: the DLD arrangement is not on the opportunity HEADER either, only in the Money panel, so a
+broker on the phone cannot see a money term he is being asked about.
+
+## ADDED DAY 83 - SENDING A PROPOSAL TAKES 15-20 SECONDS
+Long enough that a broker clicks again thinking it failed. Likely PDF generation plus storage
+upload happening inline before the dialog closes. Check whether the upload can follow the DB write
+rather than block it, and whether a double-submit guard exists - without one, an impatient second
+click may create two versions.
+
+## CLOSED DAY 83 - C16 DLD VOCABULARY: THE LIVE MONEY BUG IS FIXED
+Two sites tested for 'developer_absorbs', which is NOT a value in DLD_OPTIONS - the constant is
+'developer_pays', labelled "Developer absorbs full DLD". The test never matched, so a proposal
+where the DEVELOPER absorbs the DLD fell through and billed the BUYER, both on the document sent
+to him and in the deal's ledger. On a 5.8M deal that is 234,575 wrongly charged.
+PROVEN LIVE after the fix: proposal 'developer_pays' now sets the deal to 'developer'. Before, it
+set 'buyer'.
+⚠️ THE ENTRY THAT FOUND THIS WAS WRITTEN ON DAY 77 AND SAT UNREAD FOR SIX DAYS. The board was
+being appended to and never read back. That is the argument for the audit, not for more building.
