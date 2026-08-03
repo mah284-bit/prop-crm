@@ -164,12 +164,34 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   const [stageGateForm, setStageGateForm] = useState({});
   const [spaMode, setSpaMode] = useState("detailed"); // quick|detailed
   const [companyFees, setCompanyFees] = useState(null); // Day 78: the company fee POLICY
+
   // Day 79 (C0b-2): the deal COLLECTION STATE, read from the stored ledger so the broker
   // sees Bill / Collected / To collect without opening any dialog. One truth, two surfaces.
+  const [frozenPolicy, setFrozenPolicy] = useState(null);
   const [collectionState, setCollectionState] = useState(null);
+
+  // Day 83: ONE PLACE THE FEES COME FROM.
+  // Four display sites were hard-coding DLD at 4%, and one had "+ 5250 + 4020" INLINE - an SPA fee
+  // of 5,250 while the Money tab computed 6,000 from the company setting. The same deal showed two
+  // different SPA fees on two panels. That is the arithmetic disagreeing with itself.
+  // Founder: "this affects our arithmetic, which is very important. If it slips out, one day the
+  // whole system will collapse when someone without the knowledge moves or removes it."
+  // FROZEN FIRST: a deal that has a frozen_fee_policy was priced under the policy of its
+  // reservation moment and must not silently reprice when the company changes a setting (Day-78
+  // freeze rule). Company setting next. Fallback constants last, and only as a floor.
+  const dealFees = (() => {
+    const frozen = frozenPolicy || null;
+    return {
+      dldPct:   Number(frozen?.dldPct   ?? companyFees?.dldPct   ?? FEE_FALLBACK.dldPct),
+      spaFee:   Number(frozen?.spaFee   ?? companyFees?.spaFee   ?? FEE_FALLBACK.spaFee),
+      oqoodFee: Number(frozen?.oqoodFee ?? companyFees?.oqoodFee ?? FEE_FALLBACK.oqoodFee),
+    };
+  })();
+
   useEffect(() => { (async () => {
     if (!["Reserved","SPA Requirements","SPA Signed","Closed Won"].includes(opp.stage)) { setCollectionState(null); return; }
-    const { data } = await supabase.from("pp_sales_closures").select("pre_spa_payments").eq("opportunity_id", opp.id).maybeSingle();
+    const { data } = await supabase.from("pp_sales_closures").select("pre_spa_payments, frozen_fee_policy").eq("opportunity_id", opp.id).maybeSingle();
+    setFrozenPolicy(data?.frozen_fee_policy || null);
     const rows = data && data.pre_spa_payments;
     if (!rows) { setCollectionState(null); return; }
     let bill = 0, collected = 0;
@@ -942,7 +964,8 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     if (showStageGate !== "SPA Signed") return;
     const price = Number(stageGateForm.final_price || 0);
     if (!price) return;
-    const dldAmount = Math.round(price * 0.04 * 100) / 100;
+    // Day 83: no bare rate on the money path - see dealFees.
+    const dldAmount = Math.round(price * (dealFees.dldPct / 100) * 100) / 100;
     setPrePaymentsState(p => {
       const next = {...p};
       // Don't override if broker already manually set this row (no override of explicit user action)
@@ -2045,11 +2068,11 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                           const proposalUnits = (sd.proposal_units && sd.proposal_units.length>0) ? sd.proposal_units : [];
                           const firstUnit = proposalUnits[0] || {};
                           const netPrice = Number(sd.total_value || firstUnit.discounted_price || 0);
-                          const dldPct = 4;
+                          const dldPct = dealFees.dldPct; // Day 83: was hard-coded 4
                           const dldFee = Math.round(netPrice * dldPct/100);
                           const dldPayer = sd.dld_handling;
                           const buyerDldShare = dldPayer === "buyer_pays" ? dldFee : dldPayer === "developer_pays" ? 0 : dldFee/2;
-                          const oqoodFee = 4020;
+                          const oqoodFee = dealFees.oqoodFee; // Day 83: was hard-coded 4020
                           const bookingFee = Math.round(netPrice * 0.10);
                           const linkedUnit2 = (units||[]).find(u => u.id === opp.unit_id);
                           const sqft = linkedUnit2?.size_sqft || 0;
@@ -2456,8 +2479,11 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                                   <div style={{fontSize:14,fontWeight:700,color:"#0F2540"}}>AED {Number(initialAdvance).toLocaleString()}</div>
                                   <div style={{fontSize:10,color:"#64748B",marginTop:2}}>Due at SPA signing</div>
                                   {["Reserved","SPA Requirements","SPA Signed","Closed Won"].includes(opp.stage) && finalPrice > 0 && (() => {
-                                const dldAmt = (opp.current_dld_payer === "developer") ? 0 : Math.round(finalPrice * 0.04 * ((opp.current_dld_payer === "split") ? ((opp.current_dld_split_pct || 50) / 100) : 1));
-                                const bill = (initialAdvance || 0) + dldAmt + 5250 + 4020;
+                                // Day 83: this line carried THREE bare numbers - DLD 4%, an SPA fee of 5250, and Oqood 4020.
+                                // The SPA fee disagreed with the Money tab, which read 6000 from the company
+                                // setting: the same deal showed two different SPA fees on two panels.
+                                const dldAmt = (opp.current_dld_payer === "developer") ? 0 : Math.round(finalPrice * (dealFees.dldPct / 100) * ((opp.current_dld_payer === "split") ? ((opp.current_dld_split_pct || 50) / 100) : 1));
+                                const bill = (initialAdvance || 0) + dldAmt + dealFees.spaFee + dealFees.oqoodFee;
                                 const credits = (Number(opp.reservation_amount) || 0) + (Number(opp.booking_amount) || 0);
                                 return (
                                   <div style={{padding:"10px 12px",background:"#FFFBEB",borderRadius:7,border:"1.5px solid #FCD34D",gridColumn:"span 2"}}>
@@ -2702,7 +2728,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                     const proposalUnits = (sd.proposal_units && sd.proposal_units.length>0) ? sd.proposal_units : [];
                     const firstUnit = proposalUnits[0] || {};
                     const netPrice = Number(sd.total_value || firstUnit.discounted_price || opp.current_agreed_price || 0);
-                    const dldPct = 4;
+                    const dldPct = dealFees.dldPct; // Day 83: was hard-coded 4
                     const dldFee = Math.round(netPrice * dldPct/100);
                     const dldPayer = sd.dld_handling || (opp.current_dld_payer === "buyer" ? "buyer_pays" : opp.current_dld_payer === "developer" ? "developer_pays" : opp.current_dld_payer === "split" ? "split" : null);
                     const buyerDldShare = dldPayer === "buyer_pays" ? dldFee : dldPayer === "developer_pays" ? 0 : Math.round(dldFee/2);
@@ -2710,7 +2736,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                                        dldPayer === "developer_pays" ? "Developer absorbs" :
                                        dldPayer === "split" ? "Split 50/50" :
                                        "Negotiated";
-                    const oqoodFee = 4020;
+                    const oqoodFee = dealFees.oqoodFee; // Day 83: was hard-coded 4020
                     // Booking 10% of net (typical for off-plan)
                     const bookingFee = Math.round(netPrice * 0.10);
                     // Initial advance from payment plan preset
@@ -3801,7 +3827,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                             ["DLD Fee (4%)",`AED ${Math.round(sp.asking_price*(sp.dld_fee_pct||4)/100).toLocaleString()}`],
                             ["Agency Fee",`AED ${Math.round(sp.asking_price*(sp.agency_fee_pct||2)/100).toLocaleString()}`],
                             ["OQOOD","AED 4,020"],
-                            ["Total Upfront",`AED ${(Math.round(sp.asking_price*((sp.booking_pct||10)+(sp.dld_fee_pct||4)+(sp.agency_fee_pct||2))/100)+4020).toLocaleString()}`],
+                            ["Total Upfront",`AED ${(Math.round(sp.asking_price*((sp.booking_pct||10)+(sp.dld_fee_pct||4)+(sp.agency_fee_pct||2))/100)+dealFees.oqoodFee).toLocaleString()}`],
                           ].map(([l,v])=>(
                             <div key={l}>
                               <div style={{fontSize:9,color:"rgba(255,255,255,.4)",textTransform:"uppercase",letterSpacing:".5px"}}>{l}</div>
@@ -3837,7 +3863,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                         <div style={{display:"flex",gap:16,flexWrap:"wrap"}}>
                           {[
                             ["Sale Price",`AED ${Number(sp.asking_price).toLocaleString()}`],
-                            ["DLD Fee (4%)",`AED ${Math.round(sp.asking_price*0.04).toLocaleString()}`],
+                            [`DLD Fee (${dealFees.dldPct}%)`,`AED ${Math.round(sp.asking_price*(dealFees.dldPct/100)).toLocaleString()}`],
                             ["Agency Fee (2%)",`AED ${Math.round(sp.asking_price*(sp.agency_fee_pct||2)/100).toLocaleString()}`],
                             ["Trustee + NOC","≈ AED 6,000"],
                             ["Total Cost",`AED ${(Math.round(sp.asking_price*1.06)+6000).toLocaleString()}`],
@@ -4534,7 +4560,7 @@ onSelect={(unitId) => {
                   const planPct = PLAN_INITIAL_PCT[opp.current_payment_plan_preset] || null;
                   const initialAdvance = planPct ? Math.round(price * planPct / 100) : 0;
                   // DLD calculation - buyer's share
-                  const dldTotal = Math.round(price * 0.04);
+                  const dldTotal = Math.round(price * (dealFees.dldPct / 100)); // Day 83: was 0.04
                   let buyerDldShare = 0;
                   if (opp.current_dld_payer === "buyer") {
                     buyerDldShare = dldTotal;
@@ -4788,7 +4814,7 @@ onSelect={(unitId) => {
                   {/* Phase 3b Split: percentage input when Split is selected */}
                   {dldPayer === "split" && (() => {
                     const price = Number(stageGateForm.final_price || 0);
-                    const dldTotal = price * 0.04;
+                    const dldTotal = price * (dealFees.dldPct / 100); // Day 83: was 0.04
                     const buyerPct = Number(dldSplitPct) || 50;
                     const buyerAmt = Math.round(dldTotal * (buyerPct/100) * 100) / 100;
                     const devAmt = Math.round((dldTotal - buyerAmt) * 100) / 100;

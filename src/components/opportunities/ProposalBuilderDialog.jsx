@@ -10,9 +10,20 @@ import { aiInvoke } from '../../lib/aiInvoke.js';
 import { urlToBase64 } from "../../lib/imageToBase64.js";
 import { generateProposalPDF } from "../../lib/generateProposalPDF.js";
 import { uploadProposalPDF } from "../../lib/uploadProposalPDF.js";
+import { getFees, FALLBACK as FEE_FALLBACK } from "../../lib/feeSettings.js";
 import { insertProposalRecord } from "../../lib/createProposal";
 
 function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, currentUser, lastProposal, onClose, onSaved, showToast }) {
+  // Day 83: the company's fee policy, loaded once. Until now this dialog computed DLD from a bare
+  // 0.04 while the deal ledger read the company setting - a proposal could reach a buyer stating a
+  // different rate from the one the app would then bill him. Falls back to the declared constants
+  // so a slow load never produces a zero on a document.
+  const [propFees, setPropFees] = useState(FEE_FALLBACK);
+  useEffect(() => { (async () => {
+    if (!currentUser?.company_id) return;
+    try { const f = await getFees(currentUser.company_id); if (f) setPropFees(f); }
+    catch (e) { console.warn("Fee policy not loaded for the proposal:", e); }
+  })(); }, [currentUser?.company_id]);
   /* draggable-sendproposal */ const { ref: dragRef, posStyle, handleProps } = useDraggable({ open: true });
   // 21 May 2026 Phase B: Pre-fill from V_latest when broker clicks Edit
   // Pre-fill: discount, plan, DLD, service charge, proposal units
@@ -670,9 +681,13 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       }
       const _agreedPrice = Number(primaryUnit.discounted_price || primaryUnit.asking_price || 0);
       if (_dldPayer === 'buyer') {
-        _dldAmount = Math.round(_agreedPrice * 0.04 * 100) / 100;
+        // Day 83: the PROPOSAL is a document sent to a BUYER. If it computes DLD from a constant
+        // while the deal's ledger reads the company setting, the buyer receives a paper that
+        // disagrees with the app. Fees at proposal time are the CURRENT company policy - the
+        // freeze happens later, at reservation, because the proposal IS the moment terms are set.
+        _dldAmount = Math.round(_agreedPrice * (propFees.dldPct / 100) * 100) / 100;
       } else if (_dldPayer === 'split') {
-        _dldAmount = Math.round(_agreedPrice * 0.04 * 0.5 * 100) / 100;
+        _dldAmount = Math.round(_agreedPrice * (propFees.dldPct / 100) * 0.5 * 100) / 100;
       } else if (_dldPayer === 'developer') {
         _dldAmount = 0;
       } else if (_dldPayer === 'negotiated' && dldCustomAmount) {
