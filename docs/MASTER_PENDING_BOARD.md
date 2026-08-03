@@ -51,25 +51,31 @@ B3. **CLEAN-DATA ROUND** - wipe test mess, seed fresh demo data. Method + FK-ver
     owner-mismatch archaeology.
     ⚠️ SEEDS MUST GO THROUGH THE APP'S OWN VALIDATION, not raw SQL - see B8.
 B4. NEGATIVE-TESTING workstream - app-wide round.
-B5. KYC minimum for prod: PRIVATE bucket + signed URLs (bucket is PUBLIC today - real
-    exposure). Full KYC v2 lives in D.
+B5. ✅ **CLOSED Day 82** - KYC now writes to the PRIVATE `documents` bucket and is signed on
+    demand (3600s), matching Master Agreements and SPA documents. Storage keeps the PATH, not a
+    URL - a signed URL expires and a stored one would rot. An upload that fails to record now
+    REMOVES the file rather than leaving an orphan. Residue: 13 test files remain under
+    propcrm-files/kyc/, referenced by nothing, cleared by B3. Full KYC v2 still in D.
 B8. **BUYER_TYPE GAP** (founder catch Day 76): every lead has buyer_type NULL because all were
     seeded from the backend (via_app=0) - the form's required-field validation was never
     invoked. NOT a form bug; untested rather than broken.
     (a) `leads.buyer_type` is NULLABLE in DB - "required" exists only in the form. Founder
         ruling: DOUBLE PROTECTION (form validates + DB constrains). Add NOT NULL after backfill
         during B3.
-    (b) VERIFY the form enforces it: + Add Lead with name only must REFUSE to save.
-    (c) CONSEQUENCE: buyer-type-driven KYC document matrices have never been exercised -
-        plumbing exists (`reference_buyer_type_rules`), matrices unpopulated. Rides B2 + D9.
-    (d) LATENT: LeadCreationFormV2 declares `buyer_intent` TWICE in state init (L215, L223) -
-        last wins. One-line fix.
+    (b) ✅ **VERIFIED Day 82** - the form renders the field blank and refuses to pass until it
+        is selected. Enforcement works; it had simply never been exercised.
+    (c) ✅ **CORRECTED Day 82** - the matrices are NOT unpopulated. `reference_buyer_type_rules`
+        holds 48 rows and the form computes required documents live from the buyer type. The
+        board was wrong. What remains is EXERCISING them through a real deal - rides B2.
+    (d) ✅ **FIXED Day 82** - the duplicate declaration is gone. The later one won, so the form
+        had always started EMPTY while the earlier line claimed "Investor". Empty is the better
+        default: it makes the broker choose.
     LESSON: backend seeding bypasses every app-level guard.
 B9. DOC VERIFY (from the Day-76 index): `Architecture_TwoLayer_LiveStateAndHistory.md` and
     `Architecture_FinalProposalFirst_PhaseB.md` may be superseded by the honest ledger and the
     V_latest cascade. Read and either re-date or archive.
 
-## ⭐ V1 SCOPE - THE BUILD LIST (architect call Day 76, founder to ratify)
+## ⭐ V1 SCOPE - **COMPLETE, Day 83** (list drawn Day 76)
 "NO MORE DEVELOPMENT" needs a definition or it never arrives. THESE FIVE, then development
 STOPS and section B opens:
   V1-1  C1  Block ledger phase - post-reservation block money (design already written)
@@ -79,6 +85,22 @@ STOPS and section B opens:
   V1-5  B8  buyer_type guard: form enforcement proven + DB constraint (double protection)
 EVERYTHING ELSE IN C AND D IS POST-TESTER. Not worse, not forgotten - just not what stands
 between here and a finished v1. Improvement is infinite; completion is a decision.
+
+### ✅ CLOSED DAY 83 - ALL FIVE
+V1-1 Block ledger .......... Days 79-82. Two-stage proportional allocator, collection dialog,
+                             Money tab, statement PDF, closure roll-up, cancel ceremony. Verified
+                             to the fils across three payments.
+V1-2 Polish + clock ........ Day 83. The booking clock: stamped at confirm, weekend-aware, lands
+                             end-of-day Dubai, four display states, swept when the list loads.
+V1-3 Money smalls .......... Day 82. Offer expiry surfaced (captured for months, shown nowhere -
+                             four live deals had lapsed offers and nothing said so), waive note,
+                             final-price divergence notice, commission label corrected.
+                             OPEN: invoice-panel zero residuals only.
+V1-4 KYC private bucket .... Day 82. See B5.
+V1-5 buyer_type guard ...... Day 82. See B8. Only (a), the NOT NULL constraint, remains - blocked
+                             on the B3 backfill, not on building.
+WHAT NOW STANDS BEFORE TESTERS is not feature work: the pre-tester list, B3 clean data, the two
+walkthroughs, and the founder's open claim/confirm ruling.
 
 ## C - DESIGN SESSIONS OWED (v1 items marked above; rest is post-tester)
 C0. **BLOCK AS A FIRST-CLASS DEAL** (`Block_As_Deal_Design.md`, Day 77) - the block carries the
