@@ -643,3 +643,14 @@ so nothing surfaces. LESSON: the defensive `safe()` wrapper is what hid this - i
 into silence.
 NEXT STEP FOR WHOEVER PICKS THIS UP: Network tab filtered to `pp_commission`, hard refresh, open
 Reports. Status and body settle it in one look. Do not theorise further - four theories were wrong.
+
+## ADDED DAY 84 - HISTORIC DEALS CARRY THE WRONG COMMISSION RATE (founder ruling needed)
+Fixed forward on Day 84: all four creation doors now resolve the agreed rate. But every deal
+created BEFORE that carries the company default instead - 4% where Aldar agreed 4.5% and DAMAC 5%.
+Some already have invoices raised against the wrong figure.
+Correcting them is a BUSINESS decision, not a code one: re-issuing an invoice to a developer at a
+higher rate is a conversation with that developer, not a database update. The app should not decide
+it. Two candidate positions, founder to rule: (a) correct only invoices still in DRAFT and leave
+issued ones as history, or (b) leave all of it and start clean from the fix.
+NOTE: this is test data today, so the immediate exposure is nil - but the same query is the
+GO-LIVE CHECK for any tenant onboarded before Day 84.
