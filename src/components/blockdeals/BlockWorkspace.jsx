@@ -478,7 +478,20 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                         <td style={{padding:"9px 4px",fontWeight:800,color:"#0F2540"}}>Total</td>
                         <td style={{padding:"9px 4px",textAlign:"right",fontWeight:800,color:"#0F2540"}}>{fmt(blockBill.grand)}</td>
                         <td style={{padding:"9px 4px",textAlign:"right",fontWeight:800,color:"#166534"}}>{fmt(totGot)}</td>
-                        <td style={{padding:"9px 4px",textAlign:"right",fontWeight:800,color:(blockBill.grand-totGot)>0.5?"#B91C1C":"#166534"}}>{(blockBill.grand-totGot)>0.5?fmt(blockBill.grand-totGot):"Nil " + String.fromCodePoint(0x2713)}</td>
+                        {(() => {
+                          // Day 84: a CANCELLED block whose units were released has a bill of zero,
+                          // so this read "Nil" in GREEN over money the buyer had actually paid -
+                          // 30,000 sitting unreconciled while the screen said nothing was owed.
+                          // FOUNDER RULING (Day 82): the app must NOT decide refund vs forfeit vs
+                          // transfer - that is law and the developer's policy, and it varies. It
+                          // must simply stop showing green over an open obligation.
+                          const left = blockBill.grand - totGot;
+                          const dead = ["cancelled","completed"].includes(block.status);
+                          if (dead && totGot > 0.5 && left <= 0.5) {
+                            return <td style={{padding:"9px 4px",textAlign:"right",fontWeight:800,color:"#B45309"}}>{fmt(totGot)} received {String.fromCharCode(183)} unreconciled</td>;
+                          }
+                          return <td style={{padding:"9px 4px",textAlign:"right",fontWeight:800,color:left>0.5?"#B91C1C":"#166534"}}>{left>0.5?fmt(left):"Nil " + String.fromCodePoint(0x2713)}</td>;
+                        })()}
                       </tr>
                     </tbody>
                   </table>
