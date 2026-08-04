@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { canDo } from "../lib/permissions.js";
+import { Spinner } from "../modules/shared/Spinner.jsx";  // Day 84: used at line ~483, never imported - and there are THREE Spinner definitions in this codebase (App.jsx, PaymentPlanTemplates, modules/shared). The shared one is the right home.
 // Phase F hotfix — OPP_STAGES was being referenced but not defined here, causing
 // 'ReferenceError: OPP_STAGES is not defined' when the pipeline report renders.
 // Defining locally to keep this file self-contained. Long-term, all shared
@@ -32,7 +33,11 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
     }
     setLoading(true);
     try {
-      const safe = q => q.catch(()=>({data:[]}));
+      // Day 84: a Supabase query BUILDER is not a promise - it has no .catch() until it is awaited
+      // or .then()'d. safe() assumed one, so the profiles query at line 43 threw, Promise.all
+      // rejected, and NOTHING this module fetches ever loaded. It looked fine only because most
+      // reports read globalOpps (a prop) rather than data.*. Broken long before today.
+      const safe = q => Promise.resolve(q).then(r => r, () => ({ data: [] }));
       const cid = currentUser.company_id || localStorage.getItem("propccrm_company_id") || null;
       const byco = (tbl, extra="") => {
         let q = supabase.from(tbl).select(extra||"*");
@@ -70,9 +75,10 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
         leases:  (leases.data||[]).length>0 ? leases.data : (leasingData?.leases||[]),
         tenants: (tenants.data||[]).length>0 ? tenants.data : (leasingData?.tenants||[]),
         payments:(payments.data||[]).length>0 ? payments.data : (leasingData?.payments||[]),
-        cheques: cheques.data||[],
+        // Day 84: `cheques` was referenced here and NEVER declared - no such query exists in the
+        // Promise.all above. It threw on every load. Removed; nothing reads data.cheques.
       });
-    } catch(e) { showToast("Error loading report data","error"); }
+    } catch(e) { console.error("REPORTS loadData failed:", e); showToast("Error loading report data","error"); }
     setLoading(false);
   },[]);
 
