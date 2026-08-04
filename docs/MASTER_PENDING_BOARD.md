@@ -654,3 +654,18 @@ it. Two candidate positions, founder to rule: (a) correct only invoices still in
 issued ones as history, or (b) leave all of it and start clean from the fix.
 NOTE: this is test data today, so the immediate exposure is nil - but the same query is the
 GO-LIVE CHECK for any tenant onboarded before Day 84.
+
+## ADDED DAY 84 - THE UNIT PICKER SHOULD BE SHARED, AND IT CARRIES DOCTRINE
+CreateOpportunityDialog has a RICH picker: search across ref / project / bedrooms / view, project
+pills, bedroom pills, show-reserved toggle, result counts, price on every row for budget matching,
+and a Property Pack button.
+It also carries the CLAIM LADDER: a BOOKED-BY-BLOCK unit is HARD-REFUSED with an explanation of
+when it releases; a Reserved/Sold unit warns about double-booking before it can be chosen.
+Block creation and the calculator use a PLAIN DROPDOWN - unusable past ~20 units, and every
+brokerage has hundreds.
+⚠️ DO NOT LIFT IT WHOLESALE. The conflict rules were written for 1-TO-1 selection: "Booked by a
+block" means something different when you are BUILDING that block. Extraction needs a parameter -
+picking FOR A DEAL vs picking FOR A BLOCK - or the block form will refuse units for reasons that
+do not apply to it. That makes this a DESIGNED cut, not a mechanical one.
+A plain text filter was tried on Day 84 and REVERTED: a box labelled "Filter..." tells a broker
+nothing about what it matches, and a half-good filter is worse than none.
