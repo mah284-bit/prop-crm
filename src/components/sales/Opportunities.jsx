@@ -306,14 +306,14 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
                     {lead?.name || "—"}
                   </div>
                   <div style={{fontSize:11,color:"#64748B",marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                    {[unit?.unit_ref, proj?.name].filter(Boolean).join(" · ") || (lead?.phone || "no unit")}
                     {/* Day 84: a block child and a standalone deal looked IDENTICAL here, yet they
                         behave differently - the child's terms are locked at the block, its
                         what's-next line is suppressed, and its money flows through the block
                         ledger. A broker opening one and expecting normal controls finds half of
                         them missing and does not know why. The founder confused himself with this
                         while picking a deal to test on. */}
-                    {o.block_deal_id && <span style={{marginLeft:6,display:"inline-block",fontSize:9,fontWeight:700,padding:"1px 6px",borderRadius:8,background:"#EEF2FF",color:"#4338CA",letterSpacing:".3px"}}>BLOCK</span>}
+                    <span style={{marginRight:6,display:"inline-block",fontSize:9,fontWeight:800,padding:"2px 7px",borderRadius:8,background:o.block_deal_id?"#FFEDD5":"#F1F5F9",color:o.block_deal_id?"#9A3412":"#94A3B8",border:"1px solid "+(o.block_deal_id?"#FB923C":"#E2E8F0"),letterSpacing:".3px"}}>{o.block_deal_id ? "BLOCK" : "1-TO-1"}</span>
+                    {[unit?.unit_ref, proj?.name].filter(Boolean).join(" · ") || (lead?.phone || "no unit")}
                   </div>
                 </div>
                 <div>
