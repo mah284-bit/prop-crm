@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase.js";
+import UnitPicker from "../shared/UnitPicker.jsx";
 import { rollUpBlockStatus } from "../../lib/rollUpBlockStatus.js";
 import { PAYMENT_PLAN_PRESETS } from "../../modules/constants.js";
 
@@ -270,10 +271,17 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
         </table>)}
         <div style={{display:"flex",gap:8,alignItems:"center",margin:"10px 0 4px 0",padding:"8px 10px",background:"#F8FAFC",border:"1px dashed #CBD5E1",borderRadius:8}}>
           <span style={{fontSize:11,fontWeight:700,color:"#64748B"}}>+ Add unit:</span>
-          <select value={addUnitPick} onChange={e=>setAddUnitPick(e.target.value)} style={{flex:1,padding:"6px 8px",border:"1px solid #D1D5DB",borderRadius:6,fontSize:12}}>
-            <option value="">Pick an available unit...</option>
-            {availUnits.map(u => <option key={u.id} value={u.id}>{u.unit_ref} - {fmt(u.list_price)}</option>)}
-          </select>
+          {/* Day 84: the shared picker. availUnits is already scoped to what this block may take,
+              so no claim exemption is needed - but it carries list_price inline rather than a
+              pricing table, so one is synthesised for the picker. */}
+          <div style={{flex:1}}><UnitPicker
+            units={availUnits}
+            projects={[]}
+            salePricing={availUnits.map(u => ({ unit_id: u.id, asking_price: u.list_price }))}
+            value={addUnitPick}
+            onChange={(id)=>setAddUnitPick(id)}
+            placeholder="Pick an available unit - click to search"
+          /></div>
           <button type="button" onClick={addUnitLine} style={{fontSize:12,fontWeight:700,padding:"6px 14px",borderRadius:7,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",cursor:"pointer"}}>Add</button>
         </div>
         <div style={{display:"flex",gap:18,alignItems:"center",background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"10px 16px",marginBottom:14,fontSize:12}}>
