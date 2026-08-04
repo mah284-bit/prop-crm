@@ -1364,3 +1364,48 @@ leaving an orphan nobody can reach.
 V1-5 DONE except the NOT NULL constraint (blocked on the B3 backfill of 12 NULLs). Form
 enforcement VERIFIED live; buyer-type matrices found POPULATED (48 rows), not empty as boarded;
 the duplicate buyer_intent declaration removed.
+
+## ── DAY 84 (4 Aug) — THE BOARD AUDIT, AND THE COMMISSION RATE ──
+THE AUDIT the founder called for: read the board and MARK it, rather than keep appending. Every
+entry checked against the CODE. Five described work already done; two more were half-fixed and
+never marked. That is why the list FELT like it only grew - nothing ever left it.
+⚠️ AND ONE ENTRY WAS A LIVE MONEY BUG THAT HAD SAT UNREAD FOR SIX DAYS. C16, written Day 77: two
+sites tested for 'developer_absorbs', a value not in DLD_OPTIONS - the constant is 'developer_pays'
+labelled "Developer absorbs full DLD". The test never matched, so a proposal where the DEVELOPER
+absorbs the DLD silently billed the BUYER, on the document sent to him and in the deal's ledger.
+On a 5.8M deal, 234,575 wrongly charged. Fixed and proven live.
+THE RULE: read the board BEFORE starting work, not after finishing it.
+
+FIXED TODAY, all on the money path:
+- PROPOSAL PDF omitted the DLD arrangement AND the service-charge waiver - terms the buyer is bound
+  by and could not see, while the app's own viewer showed them. Now printed, every option stating
+  what HE pays. Layout derived from the box count so the next term will not break it.
+- REPORTS MODULE HAD NEVER LOADED ITS OWN DATA. safe() assumed a Supabase builder was a promise
+  (it has no .catch() until awaited), so Promise.all rejected on every mount. Behind that:
+  an undeclared `cheques` variable and a missing Spinner import, both unreachable until now.
+  It looked fine only because most reports read a prop rather than fetched data.
+- The investor report computed commission at a FLAT 4% and carried a hard-coded "Realization Rate
+  95%" neither founder nor architect could define. Both gone; it reads the real invoices now.
+
+⭐ THE DAY'S LARGEST FIND — THE COMMISSION RATE WAS NEVER READ FOR AGENT-CREATED DEALS.
+An AGENT creates the deal and sends the proposal; a manager approves. But RLS on
+pp_master_agreements deliberately excludes agents - that table holds discount authority, payment
+triggers and signed contracts a broker should not see. So the lookup silently returned nothing and
+the rate fell to the COMPANY DEFAULT: 4% where Aldar agreed 4.5% and DAMAC 5%. About 7,300
+understated on a 1.46M Aldar deal, on the brokerage's OWN revenue.
+NEITHER LAYER WAS WRONG. The permission is right; the lookup was right; they could not both be
+true as built. FIX: get_commission_rate(project, company) - SECURITY DEFINER, returns ONLY the
+number. Contract stays private, arithmetic becomes correct.
+Wired into ALL FOUR creation doors: CreateOpportunityDialog, block confirm (a five-unit block
+birthed five rate-less deals at once), LeadDetail, and LaunchMode (which creates at RESERVED).
+Also removed a competing company-default fallback that OVERWROTE the resolved rate - two writers
+on one field. Proven live: same buyer, same developer, old deal 4.00, new deal 4.50.
+BOARDED NOT DECIDED: historic deals carry the wrong rate and some invoices are already raised.
+Re-issuing to a developer at a higher rate is a conversation, not a database update.
+
+⚠️ STANDING LESSON - THREE SILENT CATCHES COST HOURS TODAY. The KYC upload swallowed its error;
+ReportsModule's catch showed a toast and never logged; safe() turned a failure into an empty array.
+Each turned a five-second diagnosis into an hour. A catch that hides the error is not defensive.
+ALSO: an hour went into a chip that was correct all along - clipped by a cell's overflow:hidden.
+When the code is right and the data is right, look at what is DRAWING it.
+NEXT: the pre-tester list, B3 clean data, the two walkthroughs.
