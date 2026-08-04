@@ -186,6 +186,15 @@ const confirmBlock = async (b) => {
     if (activeLines.length === 0) { showToast("No proposed lines to confirm", "error"); return; }
     if (!window.confirm("Confirm block " + b.title + "? This births " + activeLines.length + " deals at D" + dl.version + " prices and claims the units. This is the commitment moment.")) return;
     let born = 0;
+    // Day 84: resolved ONCE for the block - every unit shares a project and so a developer.
+    let blockCommissionPct = null;
+    try {
+      const firstUnit = (units || []).find(u => u.id === activeLines[0]?.unit_id);
+      if (firstUnit?.project_id) {
+        const { data: r } = await supabase.rpc("get_commission_rate", { p_project_id: firstUnit.project_id, p_company_id: currentUser.company_id });
+        if (r != null) blockCommissionPct = Number(r);
+      }
+    } catch (e) { console.warn("Block commission rate lookup failed:", e); }
     for (const ln of activeLines) {
       const alloc = (dl.allocations || []).find(x => x.unit_id === ln.unit_id);
       const net = alloc ? alloc.net_price : Number(ln.list_price || 0);
@@ -194,6 +203,11 @@ const confirmBlock = async (b) => {
         title: ln.unit_ref + " \u2014 " + buyer.name + " (block)",
         stage: "Offer Accepted", status: "Active", unit_id: ln.unit_id,
         budget: net, current_agreed_price: net,
+        // Day 84: BIRTH MUST ALSO CARRY THE COMMISSION RATE. An agent cannot read
+        // pp_master_agreements (RLS - it holds discount authority and signed contracts), so every
+        // child was born with a null rate and the invoice later fell to the company default: 4%
+        // where Aldar agreed 4.5%. A five-unit block birthed FIVE deals priced wrong at once.
+        commission_pct: blockCommissionPct,
         // Day 81: BIRTH MUST CARRY THE TERMS. Confirm copied the price from D_latest but not the
         // payment plan or DLD, so children were born with a null plan and their first instalment
         // computed to ZERO - the block bill silently omitted the largest line. It only ever looked

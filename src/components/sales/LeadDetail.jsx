@@ -300,6 +300,17 @@ function Leads({ Av, Badge, Empty, Modal, Spinner, CreateOpportunityDialog, LogA
         current_values_updated_at: new Date().toISOString(),
         current_values_updated_by: currentUser.id,
       };
+      // Day 84: the agreed COMMISSION RATE. An agent cannot read pp_master_agreements (RLS - it
+      // holds discount authority and signed contracts), so a deal born here carried no rate and
+      // the invoice later fell to the company default: 4% where Aldar agreed 4.5%.
+      // get_commission_rate() is SECURITY DEFINER and returns only the number.
+      try {
+        const _u = (units || []).find(u => u.id === payload.unit_id);
+        if (_u?.project_id) {
+          const { data: _r } = await supabase.rpc("get_commission_rate", { p_project_id: _u.project_id, p_company_id: currentUser.company_id });
+          if (_r != null) payload.commission_pct = Number(_r);
+        }
+      } catch (e) { console.warn("Commission rate lookup failed:", e); }
       const{data,error}=await supabase.from("opportunities").insert(payload).select().single();
       if(error)throw error;
       setOpps(p=>{const n=[data,...p];setGlobalOpps(n);return n;});

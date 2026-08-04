@@ -79,7 +79,6 @@ export default function CreateOpportunityDialog({ leads, setLeads, units, projec
         // against the function OWNER, not the caller, so it returned null and matched nothing.
         const { data: rate, error: rErr } = await supabase.rpc("get_commission_rate", { p_project_id: unit.project_id, p_company_id: currentUser.company_id });
         if (rErr) console.warn("Commission rate RPC error:", rErr.message);
-        console.log("COMMISSION RATE RESOLVED:", rate);
         if (!cancelled && rate != null && !commissionUserOverride) {
           setOppForm(f => ({ ...f, commission_pct: String(rate) }));
         }

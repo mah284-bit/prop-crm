@@ -54,7 +54,18 @@ export default function LaunchMode({ currentUser, showToast }) {
       const { data: um } = await supabase.from("project_units").select("id,status").eq("unit_ref", r.unit_ref_text.trim().toUpperCase()).maybeSingle();
       if (um && um.status === "Available") unitId = um.id;
     }
-    const { data: opp, error: oe } = await supabase.from("opportunities").insert({ company_id: currentUser.company_id, lead_id: leadId, title: (r.unit_ref_text || "Launch") + " — " + r.buyer_name, stage: "Reserved", status: "Active", unit_id: unitId, budget: r.quoted_price || null, assigned_to: currentUser.id, notes: "Born from launch event (" + (activeEvent?.name || "") + "). " + (r.note || ""), stage_updated_at: new Date().toISOString() }).select().single();
+    // Day 84: the agreed COMMISSION RATE. Launch mode creates deals at RESERVED directly - real
+    // money deals - and an agent cannot read pp_master_agreements (RLS), so they were born with no
+    // rate and the invoice later fell to the company default: 4% where Aldar agreed 4.5%.
+    let _launchPct = null;
+    try {
+      const { data: _pu } = await supabase.from("project_units").select("project_id").eq("id", unitId).maybeSingle();
+      if (_pu?.project_id) {
+        const { data: _r } = await supabase.rpc("get_commission_rate", { p_project_id: _pu.project_id, p_company_id: currentUser.company_id });
+        if (_r != null) _launchPct = Number(_r);
+      }
+    } catch (e) { console.warn("Launch commission rate lookup failed:", e); }
+    const { data: opp, error: oe } = await supabase.from("opportunities").insert({ commission_pct: _launchPct, company_id: currentUser.company_id, lead_id: leadId, title: (r.unit_ref_text || "Launch") + " — " + r.buyer_name, stage: "Reserved", status: "Active", unit_id: unitId, budget: r.quoted_price || null, assigned_to: currentUser.id, notes: "Born from launch event (" + (activeEvent?.name || "") + "). " + (r.note || ""), stage_updated_at: new Date().toISOString() }).select().single();
     if (oe) { showToast("Opp create failed: " + oe.message, "error"); return; }
     if (unitId) await supabase.from("project_units").update({ status: "Reserved" }).eq("id", unitId);
     await supabase.from("activities").insert({ opportunity_id: opp.id, lead_id: leadId, company_id: currentUser.company_id, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, lead_name: r.buyer_name, stage_at_event: "Reserved", activity_subtype: "launch_conversion", note: "LAUNCH CONVERSION: captured at " + (activeEvent?.name || "launch") + (r.unit_ref_text ? " · unit " + r.unit_ref_text + (unitId ? " (matched inventory)" : " (NO inventory match - assign unit manually)") : "") + (r.quoted_price ? " · quoted AED " + Number(r.quoted_price).toLocaleString() : "") });
