@@ -167,6 +167,16 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
 
   // Day 79 (C0b-2): the deal COLLECTION STATE, read from the stored ledger so the broker
   // sees Bill / Collected / To collect without opening any dialog. One truth, two surfaces.
+  // Day 84: OPEN DEVELOPER QUESTIONS. Built Day 81 but they sat silently - nothing told the broker
+  // one was due, and nothing told his manager it had been waiting. The founder's point was that
+  // this is EVIDENCE: "the manager knows the broker is not just talking to the buyer but following
+  // up also." Evidence in a tab nobody opens is not evidence.
+  const [openDevQs, setOpenDevQs] = useState([]);
+  useEffect(() => { (async () => {
+    const { data } = await supabase.from("developer_questions")
+      .select("id, needed_by, question").eq("opportunity_id", opp.id).is("answered_at", null);
+    setOpenDevQs(data || []);
+  })(); }, [opp.id]);
   const [frozenPolicy, setFrozenPolicy] = useState(null);
   const [collectionState, setCollectionState] = useState(null);
 
@@ -285,7 +295,15 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   const [payForm,    setPayForm]    = useState({milestone:"Booking Deposit",amount:"",percentage:"",due_date:"",payment_type:"Cheque",cheque_number:"",cheque_date:"",bank_name:"",status:"Pending",notes:"",cheque_file_url:""});
   const [emailForm,  setEmailForm]  = useState({to:"",subject:"",body:""});
   const [editPayment,setEditPayment]= useState(null);
-  const canEdit  = canDo(currentUser,"write");
+  // Day 84: A CANCELLED RECORD IS VIEW-ONLY, EVERYWHERE.
+  // Founder: "wherever you navigate you only get to see, not do any action." A proposal is a
+  // PROMISE OF GOODS AT A PRICE - issuing one from a dead deal is functionally risky - and the
+  // same holds for recording money against it, waiving a fee on it, or amending its terms.
+  // The record exists to answer WHY it was closed, and because a buyer with a history of
+  // cancellations is leverage in the next negotiation. That only works if it stays intact.
+  // CLOSED WON is deliberately NOT locked: commission collection and handover run for months
+  // after closing, and that is real work.
+  const canEdit  = canDo(currentUser,"write") && opp.stage !== "Closed Lost";
   const [tookOwnership, setTookOwnership] = useState(false);
   const [showReassign, setShowReassign] = useState(false);
   const [reassignForm, setReassignForm] = useState({assigned_to:"", reason:""});
@@ -1622,6 +1640,16 @@ You will become the assigned agent.`);
                   const txt = late ? ("\u26a0 Offer expired " + Math.abs(days) + (Math.abs(days)===1?" day":" days") + " ago \u00b7 " + nice)
                     : days === 0 ? ("\u26a0 Offer expires TODAY \u00b7 " + nice)
                     : ("\u26a0 Offer expires in " + days + (days===1?" day":" days") + " \u00b7 " + nice);
+                  return <span style={{fontSize:9,fontWeight:700,padding:"1px 8px",borderRadius:20,background:late?"#FEF2F2":"#FDF3DC",color:late?"#B91C1C":"#8A6200",textTransform:"none",letterSpacing:0,marginLeft:6}}>{txt}</span>;
+                })()}
+                {(()=>{ /* Day 84: open developer questions - amber while waiting, red once overdue. */
+                  if (!openDevQs.length) return null;
+                  const today = new Date(new Date().toDateString());
+                  const late = openDevQs.filter(q => q.needed_by && new Date(q.needed_by) < today).length;
+                  const n = openDevQs.length;
+                  const txt = late
+                    ? ("\u26a0 " + late + " developer question" + (late===1?"":"s") + " OVERDUE")
+                    : ("\u26a0 " + n + " question" + (n===1?"":"s") + " waiting on the developer");
                   return <span style={{fontSize:9,fontWeight:700,padding:"1px 8px",borderRadius:20,background:late?"#FEF2F2":"#FDF3DC",color:late?"#B91C1C":"#8A6200",textTransform:"none",letterSpacing:0,marginLeft:6}}>{txt}</span>;
                 })()}
                 {(()=>{ /* Terms Pending chip (Wilderness Part 2): money held without documented terms */
