@@ -391,7 +391,15 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
         const wonDeals = oppsData.filter(o => o.status==="Won");
         const invByOpp = {};
         (data.commInv||[]).forEach(ci => { if (ci.opportunity_id) invByOpp[ci.opportunity_id] = ci; });
-        const devName = (o) => o.developer_name || (data.projects||[]).find(p => p.id === o.project_id)?.developer_name || "\u2014";
+        // Day 84: neither name is a column on the opportunity. The BUYER comes from leads, the
+        // DEVELOPER through the unit's project - a report that says "not invoiced" against a blank
+        // buyer and a blank developer tells an executive nothing he can act on.
+        const leadName = (o) => (data.leads||[]).find(l => l.id === o.lead_id)?.name || "\u2014";
+        const devName = (o) => {
+          const u = (data.units||[]).find(x => x.id === o.unit_id);
+          const pr = u ? (data.projects||[]).find(x => x.id === u.project_id) : null;
+          return pr?.developer_name || pr?.developer || "\u2014";
+        };
         const money = (n) => "AED " + Math.round(Number(n)||0).toLocaleString();
         let invoiced = 0, received = 0, missing = 0, missingCount = 0;
         const rowFor = (o) => {
@@ -401,7 +409,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
           if (ci) { invoiced += gross; received += got; }
           else { missingCount++; missing += Number(o.final_price||0); }
           return [
-            o.title||"\u2014", o.lead_name||"\u2014", devName(o),
+            o.title||"\u2014", leadName(o), devName(o),
             money(o.final_price),
             ci ? money(gross) : "not invoiced",
             ci ? money(got) : "\u2014",

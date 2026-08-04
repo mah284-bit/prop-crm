@@ -66,6 +66,24 @@ export default function CreateOpportunityDialog({ leads, setLeads, units, projec
       const unit = (units || []).find(u => u.id === oppForm.unit_id);
       if (!unit?.project_id) return;
       const project = (projects || []).find(p => p.id === unit.project_id);
+      // Day 84: THE RATE COMES FROM A SERVER-SIDE FUNCTION, not from reading the agreement.
+      // An AGENT creates the deal and sends the proposal, but cannot read pp_master_agreements -
+      // that table holds discount authority, payment triggers and signed documents a broker should
+      // not see, and the RLS is deliberate. So this lookup silently returned nothing for every
+      // agent-created deal and fell back to the company default: 4% where Aldar agreed 4.5% and
+      // DAMAC 5%. About 7,300 understated per Aldar deal, on the brokerage's own revenue.
+      // get_commission_rate() is SECURITY DEFINER and returns ONLY the number. Contract private,
+      // arithmetic correct.
+      try {
+        // Company passed explicitly: inside a SECURITY DEFINER function my_company_id() resolves
+        // against the function OWNER, not the caller, so it returned null and matched nothing.
+        const { data: rate, error: rErr } = await supabase.rpc("get_commission_rate", { p_project_id: unit.project_id, p_company_id: currentUser.company_id });
+        if (rErr) console.warn("Commission rate RPC error:", rErr.message);
+        console.log("COMMISSION RATE RESOLVED:", rate);
+        if (!cancelled && rate != null && !commissionUserOverride) {
+          setOppForm(f => ({ ...f, commission_pct: String(rate) }));
+        }
+      } catch (e) { console.warn("Commission rate lookup failed:", e); }
       if (!project?.pp_developer_id) {
         setMasterAgreement(null);
         return;
@@ -96,24 +114,11 @@ export default function CreateOpportunityDialog({ leads, setLeads, units, projec
             }));
           }
         } else {
-          // No Master Agreement — fall back to company default commission % (Layer A tier 3)
+          // Day 84: the company-default fallback lived here and OVERWROTE the rate the RPC had
+          // just resolved. For an agent the agreement query always returns nothing (RLS), so this
+          // branch always ran and 4.5 became 4.00 on every agent-created deal.
+          // get_commission_rate() already coalesces to the company default - ONE writer, not two.
           setMasterAgreement(null);
-          if (!commissionUserOverride) {
-            let companyDefault = "";
-            try {
-              const { data: co } = await supabase
-                .from("companies")
-                .select("default_commission_pct")
-                .eq("id", currentUser.company_id)
-                .maybeSingle();
-              if (!cancelled && co?.default_commission_pct != null) {
-                companyDefault = String(co.default_commission_pct);
-              }
-            } catch (e) { /* fallback stays blank, broker can enter manually */ }
-            if (!cancelled) {
-              setOppForm(f => ({ ...f, commission_pct: companyDefault, master_agreement_id: null }));
-            }
-          }
         }
       } catch (err) {
         console.error("Master agreement lookup failed:", err);
