@@ -1035,7 +1035,7 @@ const TABS=[
   {id:"lead_queue",label:"Lead Assignment", icon:"📋", app:"sales", roles:["super_admin","admin","sales_manager"]},
   {id:"company_config", platformOnly:true, label:"Company Config", icon:"🌍", app:"sales", roles:["super_admin"]}, // ← NEW
   {id:"customers",label:"Customers", icon:"🤝", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
-  {id:"commission_outstanding",label:"Commission Outstanding", icon:"💰", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
+  {id:"commission_outstanding",label:"Commission Outstanding", icon:"💰", app:"sales", roles:["super_admin","admin","sales_manager"]},  // Day 84: NOT sales_agent - the brokerage commission is not an agent's business
   // 21 May 2026: Hide Group View for Phase 1 demo (placeholder "Planned for MVP Phase")
   // Re-enable in Phase 2 when parent-subsidiary aggregation is built
   {id:"group_view", label:"Group View",    icon:"🏛", app:"sales",   roles:["super_admin"], platformOnly:true},

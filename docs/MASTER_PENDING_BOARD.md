@@ -609,3 +609,23 @@ is being tracked while nothing is watching it.
 SUGGESTED CADENCE: a full audit pass at the start of any week, and a re-read of the dated
 additions before choosing what to build. Both are cheap. This one took under two hours and found
 more than a day of building would have.
+
+## ADDED DAY 84 - WHO SEES THE BROKERAGE'S COMMISSION? (company setting, not a product decision)
+STATE TODAY, and it is now INCONSISTENT: the "Commission Outstanding" nav item was gated to
+manager-and-above (Day 84) while the COMMISSION INVOICE PANEL on the deal page is still visible to
+the owning agent. The same number is hidden in one place and shown in another.
+FOUNDER: it was left visible deliberately - "we had kept it as viewable and want to keep it that
+way, but it is a bit controversial, and we should think how to handle this, probably through the
+company setting." That later never came. It is now.
+WHY IT IS A SETTING AND NOT A RULING: this is a CULTURE decision, not a product one.
+ FOR showing it: the agent closed the deal; seeing what it earned is motivating, and hiding it
+ looks like the firm has something to conceal.
+ AGAINST: an agent who knows the brokerage bills 64,786 on his sale may resent his split, quote it
+ to a buyer, or carry it to a competitor as leverage.
+Different brokerages feel genuinely differently about this and neither is wrong. So:
+ SETTING: "Show brokerage commission to agents" - DEFAULT ON, because that is today's behaviour
+ and flipping it silently would surprise the founder's own tenant.
+ WHEN BUILT: the nav gate and the deal panel must read the SAME setting. Today they disagree.
+SEPARATE AND PROBABLY YES: should an agent see HIS OWN commission - what he earns after the split?
+That is a different number from the brokerage's invoice. `pp_commission_invoices` already carries
+agent_commission, agent_split_mode and company_net, so the data exists.

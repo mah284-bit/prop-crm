@@ -39,7 +39,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
         if(cid) q = q.eq("company_id", cid);
         return q;
       };
-      const [leads,acts,users,units,projs,sp,lp,leases,tenants,payments,leaseOpps,leasePay] = await Promise.all([
+      const [leads,acts,users,units,projs,sp,lp,leases,tenants,payments,leaseOpps,leasePay,commInv] = await Promise.all([
         safe(byco("leads").order("created_at",{ascending:false})),
         safe(byco("activities")),
         safe(cid ? supabase.from("profiles").select("id,full_name,role,email").eq("company_id",cid) : supabase.from("profiles").select("id,full_name,role,email")),
@@ -52,6 +52,10 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
         safe(byco("rent_payments").order("due_date")),
         safe(byco("lease_opportunities")),
         safe(supabase.from("lease_payments").select("*").eq("company_id",cid||"").order("due_date")),
+        // Day 84: the commission invoices. The investor report was computing commission as
+        // final_price * 0.04 for EVERY won deal - a rate nobody agreed to. The truth already
+        // exists per deal: commission_pct frozen at the opportunity, gross, VAT and received.
+        safe(byco("pp_commission_invoices")),
       ]);
       setData({
         leads:   leads.data||[],   activities: acts.data||[],
@@ -59,6 +63,7 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
         users:   (users.data||[]).length>0 ? users.data : (preloadedUsers||[]),
         units:   (units.data||[]).length>0 ? units.data : (preloadedUnits||[]),
         leaseOpps: leaseOpps.data||[], leasePay: leasePay?.data||[],
+        commInv: commInv?.data||[],
         projects:(projs.data||[]).length>0 ? projs.data : (preloadedProjects||[]),
         salePricing:(sp.data||[]).length>0 ? sp.data : (preloadedSalePricing||[]),
         leasePricing:(lp.data||[]).length>0 ? lp.data : (preloadedLeasePricing||[]),
@@ -366,27 +371,55 @@ function ReportsModule({ currentUser, showToast, globalOpps=[], leads=[], activi
       label:"Investor Quarterly Review", icon:"📈",
       description:"Portfolio summary, returns analysis, market trends",
       generate: () => {
+        // Day 84: this report used to compute commission as final_price * 0.04 for every won
+        // deal - a rate nobody agreed to - and carried a hard-coded "Realization Rate 95%" that
+        // neither the founder nor the architect could define. A metric on an investor report that
+        // nobody can define should not be there. Both gone.
+        // The truth already exists per deal in pp_commission_invoices: the rate frozen at the
+        // opportunity, gross, VAT, and what has actually been RECEIVED.
+        // FOUNDER RULING: 1-to-1 deals first, BLOCK deals grouped beneath - "clear demarcation is
+        // better, because blocks are rare". Each unit of a block is its own SPA and its own
+        // commission, so a block is several rows, not one; grouping shows the arrangement without
+        // pretending it is a single sale.
         const oppsData = globalOpps.length>0 ? globalOpps : (data.opps||[]);
         const wonDeals = oppsData.filter(o => o.status==="Won");
+        const invByOpp = {};
+        (data.commInv||[]).forEach(ci => { if (ci.opportunity_id) invByOpp[ci.opportunity_id] = ci; });
+        const devName = (o) => o.developer_name || (data.projects||[]).find(p => p.id === o.project_id)?.developer_name || "\u2014";
+        const money = (n) => "AED " + Math.round(Number(n)||0).toLocaleString();
+        let invoiced = 0, received = 0, missing = 0, missingCount = 0;
+        const rowFor = (o) => {
+          const ci = invByOpp[o.id];
+          const gross = ci ? Number(ci.commission_gross||0) : 0;
+          const got = ci ? Number(ci.amount_received||0) : 0;
+          if (ci) { invoiced += gross; received += got; }
+          else { missingCount++; missing += Number(o.final_price||0); }
+          return [
+            o.title||"\u2014", o.lead_name||"\u2014", devName(o),
+            money(o.final_price),
+            ci ? money(gross) : "not invoiced",
+            ci ? money(got) : "\u2014",
+            fmtD(o.stage_updated_at||o.created_at),
+          ];
+        };
+        const singles = wonDeals.filter(o => !o.block_deal_id);
+        const blockKids = wonDeals.filter(o => o.block_deal_id);
+        const rows = singles.map(rowFor);
+        if (blockKids.length) {
+          rows.push(["\u2014 BLOCK DEALS \u2014","","","","","",""]);
+          blockKids.forEach(o => rows.push(rowFor(o)));
+        }
         const totalRevenue = wonDeals.reduce((a,o) => a + (o.final_price||0), 0);
-        const totalCommission = wonDeals.reduce((a,o) => {
-          const comm = o.final_price ? o.final_price * 0.04 : 0;
-          return a + comm;
-        }, 0);
-        const rows = wonDeals.map(o => [
-          o.title||"—", o.lead_name||"—",
-          `AED ${Number(o.final_price||0).toLocaleString()}`,
-          `AED ${Math.round((o.final_price||0)*0.04).toLocaleString()}`,
-          fmtD(o.stage_updated_at||o.created_at),
-        ]);
         const summary = [
-          ["📦 Units Sold",wonDeals.length],
-          ["💰 Total Revenue",`AED ${(totalRevenue/1e6).toFixed(2)}M`],
-          ["💸 Commission Earned",`AED ${(totalCommission/1e3).toFixed(0)}K`],
-          ["📊 Realization Rate","95%"],
+          ["\ud83d\udce6 Units Sold", wonDeals.length + (blockKids.length ? " (" + blockKids.length + " in blocks)" : "")],
+          ["\ud83d\udcb0 Total Revenue", money(totalRevenue)],
+          ["\ud83e\uddfe Commission Invoiced", money(invoiced)],
+          ["\u26a0\ufe0f Not Invoiced", missingCount ? (missingCount + " deal(s) \u00b7 " + money(missing) + " of sales") : "none"],
+          ["\u2705 Commission Received", money(received)],
+          ["\ud83d\udcc9 Still to collect", money(invoiced - received)],
         ];
         return {
-          headers:["Deal","Buyer","Sale Price","Commission","Closed"],
+          headers:["Deal","Buyer","Developer","Sale Price","Invoiced","Received","Closed"],
           rows, summary, summaryHeaders:["Metric","Value"],
         };
       }
