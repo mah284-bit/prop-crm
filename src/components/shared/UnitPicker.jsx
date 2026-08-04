@@ -43,7 +43,8 @@ export default function UnitPicker({
   useEffect(() => {
     if (!open || !rootRef.current) return;
     const t = setTimeout(() => {
-      try { rootRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {}
+      try { const panel = rootRef.current.querySelector("[data-picker-panel]");
+        (panel || rootRef.current).scrollIntoView({ behavior: "smooth", block: "end" }); } catch (e) {}
     }, 30);
     return () => clearTimeout(t);
   }, [open]);
@@ -242,6 +243,7 @@ export default function UnitPicker({
 
       {open && (
         <div
+          data-picker-panel
           style={{
             position: "absolute",
             top: "calc(100% + 4px)",
@@ -253,6 +255,7 @@ export default function UnitPicker({
             boxShadow: "0 14px 32px rgba(15,37,64,.15)",
             zIndex: 50,
             maxHeight: 380,
+            // marker so the open panel can be scrolled fully into view, not just the field
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
