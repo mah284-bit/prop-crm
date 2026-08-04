@@ -1409,3 +1409,30 @@ Each turned a five-second diagnosis into an hour. A catch that hides the error i
 ALSO: an hour went into a chip that was correct all along - clipped by a cell's overflow:hidden.
 When the code is right and the data is right, look at what is DRAWING it.
 NEXT: the pre-tester list, B3 clean data, the two walkthroughs.
+
+## ── DAY 84 EVENING — CANCELLED RECORDS, AND THE SHARED UNIT PICKER ──
+A CANCELLED BLOCK holding money no longer reads "Nil" in green: it says what was received and that
+it is unreconciled. The app still does NOT decide refund vs forfeit - that is law and developer
+policy - it simply stops showing green over an open obligation.
+A CANCELLED DEAL IS VIEW-ONLY EVERYWHERE. Founder: "wherever you navigate you only get to see, not
+do any action." A proposal is a PROMISE OF GOODS AT A PRICE and must not issue from a dead record;
+the same holds for recording money against it or waiving a fee on it. Closed WON is deliberately
+left open - commission collection and handover run for months after closing.
+Cancelled records stay READABLE because a buyer with a history of cancellations is leverage in the
+next negotiation.
+DEVELOPER-QUESTION NUDGE: an open question now shows in the deal's warning band, red once past its
+needed-by date, and stays quiet on terminal stages.
+
+⭐ THE SHARED UNIT PICKER. Block creation and the calculator used a plain <select> - unusable past
+about twenty units, and every brokerage has hundreds. The architect proposed boarding it as too
+risky to extract; THE FOUNDER PUSHED, and was right: reading the code showed the picker CARRIES
+DOCTRINE - the Day-74 claim ladder lives in it (booked-by-block hard-refused with an explanation of
+when it releases, reserved warns about double-booking). That made sharing it MORE important, not
+less: doctrine in two places drifts, as DLD and the fee constants both proved this same day.
+FOUNDER'S DESIGN, and it was better than the architect's: the CALLER pre-filters. The picker does
+not need to understand blocks or developers - it receives the units it may show. So block creation
+passes units already narrowed to the selected developer, and the project pills then show only that
+developer's projects. ONE DEVELOPER, ANY NUMBER OF PROJECTS - which is how an investor actually
+buys: two from one tower, four from another.
+Extracted to src/components/shared/UnitPicker.jsx, wired to the CERTIFIED deal path first to prove
+no regression, then to block creation and the calculator. 196 lines left CreateOpportunityDialog.
