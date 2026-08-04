@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 // Day 84: THE SHARED UNIT PICKER.
 //
@@ -37,6 +37,16 @@ export default function UnitPicker({
   placeholder = "\u2014 No unit linked yet \u2014 click to search \ud83d\udd0d",
 }) {
   const [open, setOpen] = useState(false);
+  // Day 84: the panel opens BELOW the field, and inside an already-scrolled modal it can fall off
+  // the bottom - the broker has to scroll to find what he just opened. Bring it into view.
+  const rootRef = useRef(null);
+  useEffect(() => {
+    if (!open || !rootRef.current) return;
+    const t = setTimeout(() => {
+      try { rootRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" }); } catch (e) {}
+    }, 30);
+    return () => clearTimeout(t);
+  }, [open]);
   const [search, setSearch] = useState("");
   const [projFilter, setProjFilter] = useState("All");
   const [bedFilter, setBedFilter] = useState("All");
@@ -133,7 +143,7 @@ export default function UnitPicker({
   };
 
   return (
-    <div style={{ position: "relative" }}>
+    <div ref={rootRef} style={{ position: "relative" }}>
       <div
         onClick={() => setOpen((o) => !o)}
         style={{

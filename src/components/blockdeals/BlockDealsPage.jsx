@@ -6,6 +6,7 @@ import { startBookingClock, releaseBookingHold } from "../../lib/bookingClock.js
 import { PAYMENT_PLAN_PRESETS } from "../../modules/constants.js";
 import DistributionCalculator from "./DistributionCalculator.jsx";
 import BlockWorkspace from "./BlockWorkspace.jsx";
+import UnitPicker from "../shared/UnitPicker.jsx";
 
 export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   const [blocks, setBlocks] = useState([]);
@@ -348,7 +349,12 @@ const confirmBlock = async (b) => {
             <div style={{border:"1px solid #E8EDF4",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
               <div style={{fontSize:12,fontWeight:700,color:"#0F2540",marginBottom:8}}>UNIT LINES ({lines.length}) {String.fromCharCode(183)} {fmt(linesTotal)}</div>
               <div style={{display:"flex",gap:8,marginBottom:10}}>
-                <select value={unitPick} onChange={e=>setUnitPick(e.target.value)} style={{flex:1,padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}><option value="">Pick a unit...</option>{units.filter(u=>!claimedUnitIds.has(u.id)).filter(u=>!lines.some(x=>x.unit_id===u.id)).filter(u=>{ if(!form.developer_name) return true; const pr = projects.find(x=>x.id===u.project_id); const norm = s => String(s||"").toLowerCase().split(" ")[0]; return pr && norm(pr.developer) === norm(form.developer_name); }).map(u=><option key={u.id} value={u.id}>{u.unit_ref} - {fmt(listPriceOf(u))}{softClaims[u.id] ? (" (in block: " + softClaims[u.id] + ")") : ""}</option>)}</select>
+                <div style={{flex:1}}><UnitPicker
+                  units={units.filter(u=>!claimedUnitIds.has(u.id)).filter(u=>!lines.some(x=>x.unit_id===u.id)).filter(u=>{ if(!form.developer_name) return true; const pr = projects.find(x=>x.id===u.project_id); const norm = s2 => String(s2||"").toLowerCase().split(" ")[0]; return pr && norm(pr.developer) === norm(form.developer_name); })}
+                  projects={projects} salePricing={pricing}
+                  value={unitPick} onChange={(id)=>setUnitPick(id)}
+                  placeholder={form.developer_name ? ("Pick a " + form.developer_name + " unit - click to search") : "Pick a unit - click to search"}
+                /></div>
                 <button onClick={addLine} style={{padding:"8px 16px",borderRadius:7,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add</button>
               </div>
               {lines.map(x => (
