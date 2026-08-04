@@ -10,6 +10,10 @@ export async function generateProposalPDF({
   proposalUnits,
   selectedPaymentPlan,
   validityDays,
+  dldHandling,
+  dldCustomAmount,
+  serviceChargePreset,
+  serviceChargeCustom,
   unit,
   project,
   currentUser,
@@ -164,6 +168,31 @@ export async function generateProposalPDF({
     { title: 'Discount', value: proposalUnits[0]?.discount_pct ? `${proposalUnits[0].discount_pct}%` : '0%' },
     { title: 'Final Price', value: proposalUnits[0]?.discounted_price ? `AED ${Number(proposalUnits[0].discounted_price).toLocaleString()}` : 'N/A' },
     { title: 'Payment Plan', value: selectedPaymentPlan || 'N/A' },
+    // Day 84: DLD and the service-charge waiver were AGREED in the proposal builder and never
+    // printed. On a 611,220 deal the DLD alone is 24,449 the buyer is bound by and could not see
+    // on the document he was sent - while the app's own viewer showed it correctly. The buyer's
+    // copy was the only place it was missing.
+    // The AMOUNT is shown, not just the label: a buyer told "developer absorbs" does not know what
+    // he has been saved; told "AED 24,449" he does, and a concession he can measure is worth more.
+    // Absent terms read "To be discussed" - the same honesty the quick quote already uses for the
+    // payment plan, rather than silence a buyer could read as agreement.
+    { title: 'DLD Fee (4%)', value: (() => {
+        const price = Number(proposalUnits[0]?.discounted_price || proposalUnits[0]?.asking_price || 0);
+        const full = Math.round(price * 0.04);
+        const aed = (n) => 'AED ' + Number(n).toLocaleString();
+        if (!dldHandling) return 'To be discussed';
+        if (dldHandling === 'buyer_pays')      return 'Buyer pays \u00b7 ' + aed(full);
+        if (dldHandling === 'developer_pays')  return 'Developer absorbs \u00b7 ' + aed(full) + ' saved';
+        if (dldHandling === 'split_5050')      return '50/50 split \u00b7 you pay ' + aed(Math.round(full/2));
+        if (dldHandling === 'specific_amount') return dldCustomAmount ? (aed(dldCustomAmount) + ' waived \u00b7 you pay ' + aed(Math.max(0, full - Number(dldCustomAmount)))) : 'Specific amount waived';
+        return 'To be discussed';
+      })() },
+    { title: 'Service Charge', value: (() => {
+        if (!serviceChargePreset || serviceChargePreset === 'none') return 'Standard - no waiver';
+        if (serviceChargePreset === 'custom') return serviceChargeCustom || 'Custom waiver';
+        const m = { '6_months': '6 months waived', '1_year': '1 year waived', '2_years': '2 years waived' };
+        return m[serviceChargePreset] || serviceChargePreset;
+      })() },
   ];
 
   for (let i = 0; i < boxes.length; i++) {
@@ -187,7 +216,11 @@ export async function generateProposalPDF({
     doc.text(boxes[i].value, boxX + 4, boxY + 18);
   }
 
-  yPos += 60;
+  // Day 84: was a hard-coded 60 - two rows of boxes at 32mm plus a margin. Adding DLD and
+  // Service Charge made it THREE rows, so the validity line drew 32mm too high and landed
+  // INSIDE the grid, between Payment Plan and DLD. Derived from the box count now, so the
+  // next term added will not break the layout again.
+  yPos += Math.ceil(boxes.length / 2) * 32 - 4;
 
   // Validity
   if (yPos > pageHeight - 40) {
