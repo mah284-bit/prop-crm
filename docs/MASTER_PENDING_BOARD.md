@@ -629,3 +629,17 @@ Different brokerages feel genuinely differently about this and neither is wrong.
 SEPARATE AND PROBABLY YES: should an agent see HIS OWN commission - what he earns after the split?
 That is a different number from the brokerage's invoice. `pp_commission_invoices` already carries
 agent_commission, agent_split_mode and company_net, so the data exists.
+
+## ADDED DAY 84 - THE REVENUE REPORT SHOWS "NOT INVOICED" ON DEALS THAT ARE INVOICED
+The report was rebuilt to read pp_commission_invoices instead of computing commission at a flat 4%
+(and the fabricated "Realization Rate 95%" was removed). The STRUCTURE is right - Developer column,
+Invoiced / Received, blocks in their own section, Not-Invoiced count.
+BUT both won deals show "not invoiced" while SQL confirms each HAS an invoice.
+RULED OUT: the fetch exists in loadData's Promise.all; loadData IS called from a useEffect; RLS
+should pass for a sales_manager (can_see_brokerage_commission() allows the role, and the capability
+is granted to sales_manager); Arun's profile row is correct.
+NOT YET CHECKED: whether the request actually fires, and what it returns. safe() swallows the error
+so nothing surfaces. LESSON: the defensive `safe()` wrapper is what hid this - it turns a failure
+into silence.
+NEXT STEP FOR WHOEVER PICKS THIS UP: Network tab filtered to `pp_commission`, hard refresh, open
+Reports. Status and body settle it in one look. Do not theorise further - four theories were wrong.
