@@ -2280,7 +2280,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                                   <tr key={r.id} style={{background:isLatest?"#FAFBFE":"#fff",borderBottom:"1px solid #F1F5F9"}}>
                                     <td style={{padding:"9px 10px",fontWeight:700,color:"#0F2540"}}>
                                       R{roundNumber}
-                                      {isLatest && <span style={{fontSize:8,padding:"1px 5px",background:"#ECFDF5",color:"#065F46",borderRadius:3,fontWeight:700,marginLeft:5}}>LATEST</span>}{p.structured_data?.post_reservation && <span title={(p.structured_data||{}).post_reservation_reason||""} style={{fontSize:8,padding:"1px 5px",background:"#FEF2F2",color:"#B91C1C",borderRadius:3,fontWeight:700,marginLeft:4}}>{"\u26a0 post-res"}</span>}
+                                      {isLatest && <span style={{fontSize:8,padding:"1px 5px",background:"#ECFDF5",color:"#065F46",borderRadius:3,fontWeight:700,marginLeft:5}}>LATEST</span>}{r.structured_data?.post_reservation && <span title={(r.structured_data||{}).post_reservation_reason||""} style={{fontSize:8,padding:"1px 5px",background:"#FEF2F2",color:"#B91C1C",borderRadius:3,fontWeight:700,marginLeft:4}}>{"\u26a0 post-res"}</span>}
                                     </td>
                                     <td style={{padding:"9px 10px",color:"#64748B"}}>{dateLabel}</td>
                                     <td style={{padding:"9px 10px"}}>

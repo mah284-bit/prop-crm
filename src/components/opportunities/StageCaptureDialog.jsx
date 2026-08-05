@@ -2,6 +2,13 @@ import { ASKS_GRID_OPTIONS } from "./ActivitiesList.jsx";
 import { buildIcsEvent } from "../../lib/utils.js";
 import React, { useState, useEffect } from 'react';
 import { supabase } from "../../lib/supabase.js";
+
+// Day 85: stages that legitimately REPEAT. A deal has many negotiation rounds, many site visits,
+// many contacts. The stage-equality guard below was added 16 May against DOUBLE SUBMITS, but it
+// cannot tell a second click from a SECOND ROUND - so a broker could record round one and never
+// round two: the dialog returned BEFORE writing and the round was lost. The 60-second identical-
+// activity check further down is the right guard for double clicks.
+const REPEATABLE_STAGES = ["Negotiation", "Site Visit", "Contacted"];
 import { Modal } from "../../modules/shared/Modal.jsx";
 import { Btn } from "../../modules/shared/Btn.jsx";
 import { FF } from "../../modules/shared/FormComponents.jsx";
@@ -94,7 +101,7 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
     // 16 May 2026: Idempotency check - prevent duplicate stage advances
     // (Bug: 2 identical activities created when user clicks Save twice
     //  after first save succeeded but UI didn't refresh fast enough)
-    if (opp.stage === toStage) {
+    if (opp.stage === toStage && !REPEATABLE_STAGES.includes(toStage)) {
       showToast(`Already at ${toStage} stage`, "info");
       return;
     }
@@ -122,7 +129,7 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
     // 16 May 2026: Idempotency check - prevent duplicate stage advances
     // (Bug: 2 identical activities created when user clicks Save twice
     //  after first save succeeded but UI didn't refresh fast enough)
-    if (opp.stage === toStage) {
+    if (opp.stage === toStage && !REPEATABLE_STAGES.includes(toStage)) {
       showToast(`Already at ${toStage} stage`, "info");
       return;
     }
@@ -696,7 +703,7 @@ function StageCaptureDialog({ open, opp, lead, fromStage, toStage, currentUser, 
           </button>
           <button onClick={handleSave} disabled={saving}
             style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#94A3B8":"#0F2540",color:"#fff",fontSize:13,fontWeight:700,cursor:saving?"not-allowed":"pointer"}}>
-            {saving ? "Saving…" : `✓ Save & Advance to ${toStage}`}
+            {saving ? "Saving…" : (opp.stage === toStage ? "✓ Save this round" : `✓ Save & Advance to ${toStage}`)}
           </button>
         </div>
       </div>

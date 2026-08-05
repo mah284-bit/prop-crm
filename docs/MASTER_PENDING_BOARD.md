@@ -696,3 +696,27 @@ GO-LIVE CLEANUP, not urgent - but check for FK children before deleting any of t
 4. The quote PDF says "To be discussed" for plan and DLD. If promotion applies standards, the
    quote should SHOW those standards rather than a blank.
 5. LEAD CREATION could use a REFERENCE field (the firm's own number for this contact).
+
+## ADDED DAY 85 - THE PIECES DO NOT MARRY, AND THE COACH CANNOT SEE MOST OF THEM
+FOUNDER'S WORRY, and it is well-founded: "this whole thing is not marrying, it is loose - somewhere
+a broker sees a deal and takes a call whether the buyer is SERIOUSLY INTERESTED OR JUST PLAYING."
+That judgement lives ACROSS the pieces: three rounds of asks with no movement on price, two
+developer questions unanswered, a proposal sent eleven days ago with no reply. Any one is nothing;
+together they are a verdict.
+TODAY the pieces are sound but SEPARATE. Negotiations record asks. Proposals record offers.
+Developer questions record what was asked of the developer. Activities record calls. All hang off
+opportunity_id in the database - so this is a PRESENTATION gap, not a data one. But presentation is
+what gets shown to a brokerage, so the gap is real where it matters.
+⚠️ AND THE COACH CANNOT HELP: buildContext(leads, units, projects, salePricing, leasePricing,
+activities, currentUser) - it is given NO proposals, NO negotiation rounds, NO developer questions.
+It advises without the story, which is why it reads thin. Widening buildContext is a small change;
+the data is one join away.
+TWO PIECES OF WORK, in this order:
+ 1. ASKS vs OUTCOMES - a table showing what was asked across all rounds and what was actually
+    granted. Derivable today: asks from each round's ticked boxes, outcomes from comparing proposal
+    versions. "DLD help asked twice, never granted" is the kind of line a broker needs before his
+    next call with the developer.
+ 2. THE DEAL STORY - one surface assembling rounds, proposals, questions and activities in order,
+    so the buyer can be READ rather than reconstructed from four tabs.
+DELIBERATELY NOT DESIGNED YET: finish the six-deal walkthrough first. It will show where the seams
+are worst, and the design will be better for having watched all six than one.
