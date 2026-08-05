@@ -48,6 +48,10 @@ export async function lockBlockPayment({ block, bank, allocations, members, curr
         opportunity_id: a.opportunity_id,
         company_id: companyId,
         amount: Number(a.amount) || 0,
+        // Day 85: the RESERVATION path never set `particular`, so every reservation allocation
+        // ever written carried null while the post-reservation collector (recordBlockCollection)
+        // set it properly. The Money tab groups by particular. Backfilled on Day 85.
+        particular: "reservation",
         created_by: currentUser?.id || null,
       });
       if (aErr) throw aErr;
@@ -146,6 +150,10 @@ export async function amendBlockPayment({ block, payment, bank, allocations, mem
           opportunity_id: oppId,
           company_id: companyId,
           amount: now,
+          // Day 85: the AMEND path rewrites allocations, so without this the fix above would undo
+          // itself the first time a reservation payment was corrected. Create and amend write the
+          // same rows; both must set it.
+          particular: "reservation",
           created_by: currentUser?.id || null,
         });
         if (aErr) throw aErr;
