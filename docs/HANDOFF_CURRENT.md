@@ -1480,3 +1480,31 @@ ALSO SIZED: D7 roles arc is HALF BUILT - capabilities are already per-company da
 grid; only custom roles are missing, and the database names roles in just two functions and three
 policies. Roughly a day, not a rebuild. Next major target after the walkthrough.
 NEXT: the block walkthrough. The 1-to-1 path is proven; blocks carry the harder money mechanics.
+
+## ── DAY 85 EVENING — THE BLOCK WALK ──
+Block created, distributed at 5% pro-rata, developer-approved, confirmed. THREE FIXES FROM DAYS 81,
+83 AND 84 PROVEN AT ONCE: children born carrying plan and DLD; each carrying 4.50% from the
+commission RPC, its first real exercise; the booking clock stamped 12 Aug at 23:59:59 Dubai, five
+working days out with the weekend skipped.
+THE ALLOCATOR IS EXACT. The reservation split EQUALLY - each unit owes a flat 25,000. The 402,415
+instalment payment split PROPORTIONALLY on DLD and instalment but EQUALLY on SPA and Oqood: twelve
+allocation rows summing to within one fils. Nobody told it to distinguish; it follows from what
+each unit owes.
+FIXED: block reservation allocations never carried their `particular` - null on every row ever
+written, because the reservation path did not set it while the post-reservation collector did.
+Create AND amend paths both fixed, existing rows backfilled. The display read through it, so this
+was untidy rather than broken.
+BUILT: a block can now be DELETED before confirmation, guarded on the LINES not on status - if any
+child was ever born it refuses and must be cancelled instead.
+⭐ THE FINDING THAT STOPPED THE WALK: A BLOCK CHILD HAS NO CLOSURE ROW. It never goes through the
+reservation ceremony - it is born at Offer Accepted and roll-up moves it to Reserved - so no
+pp_sales_closures row exists. Consequences seen live: no frozen fee policy, so the deal states an
+SPA fee of 5,250 while the block shows 6,000 for the same unit; and no ledger, so the bill panel
+reads "25,002 already credited" when the block has allocated 163,436 to that unit. Both wrong, in
+opposite directions. ARCHITECT'S CALL: roll-up should CREATE the closure row. One shape fed from
+two paths, rather than teaching every money panel to handle two shapes forever.
+⚠️ AND A RULING IS NEEDED FIRST: after reservation, does collection stay at BLOCK level or move
+PER CHILD? The app allows both and neither knows about the other.
+ALSO CAPTURED: a block never sends the buyer a PROPOSAL at all - units are claimed and 75,000
+demanded against nothing on paper. And TWO LISTS, NOT ONE: what stops a tester (briefable) versus
+what loses a DEMO (not briefable) - resale being the largest of the second kind.
