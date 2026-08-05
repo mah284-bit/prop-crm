@@ -763,3 +763,10 @@ ROUGHLY A DAY. Not a rebuild.
 see_brokerage_commission and nothing else. That is an accountant in everything but name.
 SEQUENCE: after the walkthrough. The walk may surface capability gaps that would otherwise be
 designed blind.
+   D7b. RIDES THE ROLES WORK: a DRAFT commission invoice's rate cannot be corrected anywhere - not
+   in CommissionOutstanding (read-only) and not on the deal. A negotiated rate missed at creation
+   is discovered by the manager at the invoice and cannot be fixed. RULING: edit the PERCENTAGE,
+   never a typed amount - a percentage on a known price is checkable at reconciliation, a typed
+   figure is not. Draft editable with a MANDATORY REASON written to an activity (who, from, to,
+   why); ISSUED frozen, corrected by credit note. THE REASON IS INTERNAL - it must never appear on
+   the developer's invoice. Who may edit is `manage_commissions`, which is why this rides D7.
