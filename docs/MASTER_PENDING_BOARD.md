@@ -770,3 +770,34 @@ designed blind.
    figure is not. Draft editable with a MANDATORY REASON written to an activity (who, from, to,
    why); ISSUED frozen, corrected by credit note. THE REASON IS INTERNAL - it must never appear on
    the developer's invoice. Who may edit is `manage_commissions`, which is why this rides D7.
+
+## ⭐ ADDED DAY 85 - SPA SIGNED HAS NO CEREMONY OF ITS OWN: IT REOPENS THE COLLECTION FORM
+FOUNDER, after three days of saying it in different words: "the tab header is saying something and
+doing something." Here is the root of it.
+At SPA REQUIREMENTS the broker presses "Collect payments" and gets the collection form. Correct.
+At SPA SIGNED he presses the stage button and gets THE SAME FORM AGAIN - the same editable money
+rows, plus a document upload and a final price. So SPA Signed is collection reopened, not a
+signing ceremony. CONSEQUENCES, all found on the Day-85 walkthrough:
+ - To attach the signed SPA a broker must press AMEND, which unlocks the ENTIRE money record -
+   on a deal whose commission invoice has already been raised on those figures.
+ - The form opens in VIEW MODE and the upload area keeps its pointer cursor and its inviting
+   "Click to upload" text, so it looks like the one live control on a dead form. The founder lost
+   twenty minutes to it, and he built this.
+ - The error "SPA document must be uploaded before closing as Won" names a requirement but not
+   where to satisfy it.
+WHAT SPA SIGNED SHOULD BE: signing date, SPA/Oqood reference, the signed document, final price -
+and the collection shown READ-ONLY beneath as evidence, not as fields. Collection stays at SPA
+Requirements, where the Save-payments button now lives.
+This dissolves three findings at once. It is a real cut - splitting one form into two ceremonies -
+and it should be built fresh, not at the end of a long session.
+
+## ⭐ THE PATTERN BEHIND SIX FINDINGS: THE LABEL DOES NOT MATCH THE SURFACE
+Not six bugs - one fault, six times. The words were not updated when the thing beneath them changed.
+ "Money" tab -> heading reads Financials · "Record SPA Signing" -> a collection form ·
+ "Save & Advance to Negotiation" -> when already AT Negotiation · "Net commission" -> gross PLUS
+ VAT · "Nil check" -> on a cancelled block holding 30,000 · "SPA fee 5,250" -> total computed on
+ 6,000.
+WHY IT MATTERS MORE THAN ANY ONE OF THEM: a broker who learns the labels lie stops reading them -
+and then the warnings that DO matter get ignored too.
+STANDING RULE: when a surface changes, the words above it change with it. Check the label in the
+same cut, not the next one.
