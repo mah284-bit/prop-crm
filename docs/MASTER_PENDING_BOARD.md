@@ -801,3 +801,15 @@ WHY IT MATTERS MORE THAN ANY ONE OF THEM: a broker who learns the labels lie sto
 and then the warnings that DO matter get ignored too.
 STANDING RULE: when a surface changes, the words above it change with it. Check the label in the
 same cut, not the next one.
+   AND FOLD IN THE SPA PREPARATION CHIPS. There is a real four-item checklist - docs complete,
+   signature ready, buyer attends / signs remotely, SPA uploaded - rendered as a quiet dashed panel
+   on the deal page, and it GATES Closed Won. The founder walked eight stages and never saw it,
+   then met it as a blocker at the very end. Two faults:
+    (a) WRONG PLACE. Those are preparations for the SIGNING APPOINTMENT, not conditions of closing.
+        By Closed Won the SPA is signed, the money collected, the invoice raised - asking "are the
+        docs complete?" is asking about an event that already happened. They belong AT SPA SIGNED,
+        which is exactly the ceremony this entry says is missing.
+    (b) NOTHING ASKS. A quiet panel competing with a full deal page loses. FOUNDER: "chips are
+        looking good, I liked it, but it will definitely be lost in the flow of work - unless
+        pushed, the broker keeps ignoring and moving. We both developed it and still ignored it."
+   If an answer matters enough to gate a close, the ceremony must ASK for it.
