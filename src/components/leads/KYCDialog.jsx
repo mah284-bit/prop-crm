@@ -64,7 +64,11 @@ export default function KYCDialog({ lead, currentUser, showToast, onClose, onSav
   const missing = DOCS.filter(d => !has(docs[d.k])).map(d => d.l);
   const expired = DOCS.filter(d => isExpired(docs[d.k])).map(d => d.l);
   const save = async () => {
-    if (status === "verified" && (!docs.passport?.url || !docs.eid_visa?.url)) {
+    // Day 85: this read .url, so it refused to verify a lead whose documents were all uploaded.
+    // Day 82 moved KYC to the private bucket and storage became a PATH, not a url - three read
+    // sites were updated (has, isExpired, the View button) and THIS ONE WAS MISSED. It only
+    // surfaced when someone first tried to VERIFY a lead, which nobody had until the walkthrough.
+    if (status === "verified" && (!has(docs.passport) || !has(docs.eid_visa))) {
       showToast?.("Verified requires Passport + Emirates ID/Visa uploaded", "error"); return;
     }
     if (status === "verified" && (isExpired(docs.passport) || isExpired(docs.eid_visa))) {
