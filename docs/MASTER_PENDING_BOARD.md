@@ -936,3 +936,14 @@ CONSEQUENCE: the board needs TWO readings, and they overlap but are not the same
    nothing writes to it).
 BEFORE ANY DEMO, read the board through the SECOND lens. The first list is what to build next; the
 second is what to have an answer for.
+
+## ADDED DAY 85 - THE SOFT-CLAIM LABEL SHOULD TELL ANOTHER BROKER WHAT HE IS WALKING INTO
+A draft block holds a SOFT claim: the unit stays Available and the picker shows "(in block: X)".
+FOUNDER: that names the block but does not tell the other broker what it MEANS. "Held for a block
+sale" is language brokers already understand - a block takes time, the block buyer has priority,
+and pushing a single deal on that unit is likely wasted effort. He would choose another unit
+himself, which is the honest outcome: not refused, just informed.
+⚠️ BUT IT MUST NOT OVERSTATE. "Held for a block sale" on a draft nobody has approved would freeze
+inventory SOCIALLY where it cannot freeze it technically - the freeze-the-book abuse arriving by
+the back door. So: "in a block being negotiated" while draft, "held for a block sale" once the
+developer has approved.
