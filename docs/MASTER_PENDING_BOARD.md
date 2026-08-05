@@ -739,3 +739,27 @@ silence: an outstanding balance with no payment recorded for N days, on a deal t
 moving. Same shape as the developer-questions nudge.
 "Money arrived" is not a statement a broker should accept - full or partial must be established.
 The app should make the unanswered question visible rather than let it sit.
+
+## ⭐ D7 ROLES ARC - HALF BUILT, AND SMALLER THAN FEARED (sized Day 85, next major target)
+FOUNDER'S TWO REQUIREMENTS, from a four-hour session that was never documented: (1) roles must be
+MANAGED, not hard-coded; (2) CUSTOM roles with granted access. He remembered the requirements; the
+design was lost. This entry replaces the one line D7 had carried.
+✅ (1) IS DONE. `role_capabilities` holds 22 capabilities per company, and
+`RoleCapabilitiesSection.jsx` is a working per-company grid - a tenant can already decide their
+sales manager does not approve discounts. canDo() reads it. NOTE: `see_own_commission` exists as a
+capability, which answers the Day-84 "should an agent see his own split" question - already
+modelled, never surfaced.
+❌ (2) IS NOT. `ROLES` is a fixed array of seven in code (RoleCapabilitiesSection.jsx line 4).
+MEASURED SIZE - the database is barely hard-coded, which is the good news:
+  - TWO functions name roles: can_view_master_agreements(), can_see_brokerage_commission().
+    Both sit beside a has_capability() check in the policy and could simply BE that check - the
+    capabilities (view_master_agreements, see_brokerage_commission) already exist and are granted.
+  - THREE policies name roles: agent_pools_update, agent_pool_members_delete,
+    invoices_update_same_company.
+  - FRONT END is the larger half: nav items carry `roles:[...]` lists rather than capabilities,
+    and the ROLES array must come from a table.
+ROUGHLY A DAY. Not a rebuild.
+⚠️ AND IT SOLVES THE ACCOUNTANT PROBLEM without a new role: grant a role manage_commissions +
+see_brokerage_commission and nothing else. That is an accountant in everything but name.
+SEQUENCE: after the walkthrough. The walk may surface capability gaps that would otherwise be
+designed blind.
