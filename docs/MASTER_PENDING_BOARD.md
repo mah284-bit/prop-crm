@@ -813,3 +813,16 @@ same cut, not the next one.
         looking good, I liked it, but it will definitely be lost in the flow of work - unless
         pushed, the broker keeps ignoring and moving. We both developed it and still ignored it."
    If an answer matters enough to gate a close, the ceremony must ASK for it.
+
+## ADDED DAY 85 - A DRAFT BLOCK IS A TRAP: NO DELETE, NO EDIT, NO UNIT CHANGE
+Found on the block walkthrough. A block in DRAFT - before confirmation, before any child is born,
+before any money - cannot be deleted, its developer cannot be changed, and its unit lines cannot be
+swapped or removed. The broker picks the wrong developer and is left with a permanent dead block
+holding SOFT CLAIMS on those units. They accumulate, and each one blocks inventory.
+⚠️ IT CONTRADICTS THE APP'S OWN LOGIC: a CONFIRMED block can be cancelled with a proper ceremony -
+reason, children dropped, units freed. The DRAFT, which is the least committed state of all, has no
+exit whatsoever.
+FIX SHAPE: a draft block (status draft, no children born, no payments) should be DELETABLE outright
+- it is not a record of anything that happened. Unit lines should be removable while draft. Whether
+the developer can be changed is a smaller question: changing it invalidates every line, so the
+honest answer may be "delete and start again" rather than an edit.
