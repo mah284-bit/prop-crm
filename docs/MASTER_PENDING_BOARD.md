@@ -842,3 +842,7 @@ honest answer may be "delete and start again" rather than an edit.
    the right figure was. pp_master_agreements already holds the commission rate, discount authority
    and payment terms per developer - a reservation standard belongs beside them, resolved the same
    way as commission: agreement first, company default second.
+   FOUNDER'S RULING (Day 85): ONE PLACE, COMPUTED, EDITABLE. The reservation is asked for on the
+   CREATION form and again on the block HEADER - two entry points for one number, which is how they
+   drift. It should be computed (units x the developer's standard), shown with its working, and
+   editable in ONE place only. Remove the other.
