@@ -2527,7 +2527,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                                 return (
                                   <div style={{padding:"10px 12px",background:"#FFFBEB",borderRadius:7,border:"1.5px solid #FCD34D",gridColumn:"span 2"}}>
                                     <div style={{fontSize:9,color:"#92400E",textTransform:"uppercase",letterSpacing:".4px",marginBottom:4}}>{"\ud83e\uddfe Buyers bill to SPA (est.)"}</div>
-                                    <div style={{fontSize:10,color:"#78716C"}}>First instalment {initialAdvance ? "AED " + Number(initialAdvance).toLocaleString() : "\u2014"} + DLD {dldAmt ? "AED " + dldAmt.toLocaleString() : "\u2014"} + SPA fee AED 5,250 + Oqood AED 4,020</div>
+                                    <div style={{fontSize:10,color:"#78716C"}}>First instalment {initialAdvance ? "AED " + Number(initialAdvance).toLocaleString() : "\u2014"} + DLD {dldAmt ? "AED " + dldAmt.toLocaleString() : "\u2014"} + SPA fee AED {dealFees.spaFee.toLocaleString()} + Oqood AED {dealFees.oqoodFee.toLocaleString()}</div>
                                     <div style={{fontSize:14,fontWeight:800,color:"#92400E",marginTop:3}}>AED {bill.toLocaleString()}{credits > 0 ? <span style={{fontSize:10,fontWeight:600,color:"#16A34A"}}>{" \u00b7 AED " + credits.toLocaleString() + " already credited"}</span> : null}</div>
                                   </div>
                                 );
