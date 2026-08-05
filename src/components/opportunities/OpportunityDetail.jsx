@@ -1321,14 +1321,25 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
             const fees = await getFees(currentUser.company_id);
             const resAmt = Number(stageGateForm.reservation_fee);
             const price = Number(opp.current_agreed_price || 0);
+            // Day 85: READ THE DEAL FRESH. The terms cascade onto the opportunity when a proposal
+            // is sent - but `opp` here is the component's in-memory copy, which can still hold the
+            // PRE-proposal values if the broker reserves moments after sending. On the walkthrough
+            // that produced a ledger with initial_advance = 0 while the deal carried 10/90: the
+            // buyer's bill was short by 62,751, the entire first instalment, and the Collection
+            // strip told the broker to chase 22,570 instead of 85,321.
+            // Same lesson as the Day-77 confirm guard: trust the database, not the page.
+            const { data: _fresh } = await supabase
+              .from("opportunities")
+              .select("current_payment_plan_preset, current_dld_payer, current_dld_split_pct, current_agreed_price")
+              .eq("id", opp.id).maybeSingle();
             const bill = dealBill({
               price,
-              planPreset: opp.current_payment_plan_preset,
+              planPreset: (_fresh?.current_payment_plan_preset) || opp.current_payment_plan_preset,
               reservationAmount: resAmt,
               spaFee: fees.spaFee,
               oqoodFee: fees.oqoodFee,
-              dldPayer: opp.current_dld_payer || "buyer",
-              dldSplitPct: opp.current_dld_split_pct || 50,
+              dldPayer: (_fresh?.current_dld_payer) || opp.current_dld_payer || "buyer",
+              dldSplitPct: (_fresh?.current_dld_split_pct) || opp.current_dld_split_pct || 50,
               dldPct: fees.dldPct,
             });
             const resDate = stageGateForm.reservation_date || new Date().toISOString().slice(0,10);
