@@ -887,3 +887,25 @@ however small while a 1-to-1 allowed 500 / 1%. Two surfaces, two rules, is a mem
 broker. SAME RULE BOTH SURFACES: flat AED tolerance, beyond it a manager rules with a reason.
 AND THE WORDING SHOULD SAY WHAT IT MEANS: "within bank-charge tolerance", not "shortfall accepted" -
 so a manager reading the record knows nothing was conceded.
+
+## ⭐ ADDED DAY 85 - A BLOCK CHILD HAS NO CLOSURE ROW: THE TWO LEDGERS NEVER MEET
+Found by walking a block child into the 1-to-1 ladder - a seam NEVER TESTED. Days 79-83 verified
+every block piece in isolation (allocator to the fils, statement PDF, closure roll-up) and the
+1-to-1 ladder was walked on Day 85. Nobody had walked ONE INTO THE OTHER.
+ROOT CAUSE, one not two: a block child never goes through the RESERVATION CEREMONY. It is born at
+Offer Accepted and roll-up moves it to Reserved when the block's reservation settles - so no
+pp_sales_closures row is ever created. Consequences on AGR-08-04, live:
+ - NO FROZEN FEE POLICY, so dealFees falls through to the declared constant: the deal states an SPA
+   fee of 5,250 while the block's own Money tab shows 6,000 for the same unit. The panel COMPUTES
+   with 5,250 too, so the bill is understated by 750.
+ - NO COLLECTION LEDGER, so the bill panel sees only opp.reservation_amount. It reads "AED 25,002
+   already credited" when the block has actually allocated 163,436 to this unit across four
+   particulars. A broker reads: owes 203,400, paid 25,002. The truth is: owes 204,150, paid 163,436.
+   BOTH WRONG, IN OPPOSITE DIRECTIONS.
+⭐ ARCHITECT'S CALL: ROLL-UP SHOULD CREATE THE CLOSURE ROW, seeded from the block's terms and
+frozen fees, and credited with what the block has already allocated to that child.
+WHY NOT THE ALTERNATIVE - teaching every 1-to-1 money panel to also read block allocations - that
+means every future money surface must handle two shapes forever, which is exactly how the DLD
+vocabulary split into two dialects and stayed wrong for six days. ONE SHAPE, FED FROM TWO PATHS.
+⚠️ RISK TO HANDLE: double counting. The closure row becomes the DISPLAY; block_payment_allocations
+stays the AUDIT TRAIL. They must not both be summed.
