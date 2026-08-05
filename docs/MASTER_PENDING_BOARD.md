@@ -683,3 +683,16 @@ Company, Test Brokerage Z, Test Company - 16-06-2026 - alongside Al Mansoori Pro
 None hold real client data. A production database should not carry "Test Brokerage Z", and a
 super-admin company list full of test rows looks unfinished to anyone being shown the product.
 GO-LIVE CLEANUP, not urgent - but check for FK children before deleting any of them.
+
+## ADDED DAY 85 - FOUND WHILE SEEDING (B3 walkthrough)
+1. ⚠️ PROMOTED QUOTE CARRIES NO TERMS. A quote pushed to an opportunity creates V1 with plan and
+   DLD BLANK - the deal row reads "Plan - / DLD -". Founder had understood promotion "picks the
+   standards and applies"; it does not. Same shape as the Day-81 block-confirm bug: BIRTH NOT
+   CARRYING TERMS. Everything downstream then computes from nothing.
+2. VIEW QUOTES has no counter. A broker cannot see how many quotes he has sent without opening
+   Activity - so he sends duplicates.
+3. SEND QUOTE should confirm the selected unit (ref is enough) before sending, and show the
+   payment terms it will use.
+4. The quote PDF says "To be discussed" for plan and DLD. If promotion applies standards, the
+   quote should SHOW those standards rather than a blank.
+5. LEAD CREATION could use a REFERENCE field (the firm's own number for this contact).
