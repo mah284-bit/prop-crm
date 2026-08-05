@@ -720,3 +720,22 @@ TWO PIECES OF WORK, in this order:
     so the buyer can be READ rather than reconstructed from four tabs.
 DELIBERATELY NOT DESIGNED YET: finish the six-deal walkthrough first. It will show where the seams
 are worst, and the design will be better for having watched all six than one.
+
+## ADDED DAY 85 - THE 1-TO-1 HAS NO PAYMENT ALLOCATOR (blocks do)
+A broker holding a 35,500 transfer statement must work out by hand which of seven rows it covers.
+The BLOCK vertical solved this on Day 80: one amount in, allocated proportionally across
+particulars and units, broker never chooses. The simpler case still has none.
+SHAPE: record the payment as a FACT first (amount, date, reference), then allocate - with a
+proportional split SUGGESTED and overridable. Suggested, not dictated: on a block the split is
+arithmetic; here the developer may say "this clears the DLD and Oqood", and the broker records
+what he was told.
+
+## ADDED DAY 85 - NOTHING FLAGS DEVELOPER SILENCE, AND THE BROKER CARRIES THE LOSS
+FOUNDER: "if tomorrow the developer stops the process and does not inform the broker, the deal
+slips - who is at loss?" The broker. The developer has his money either way; the broker's
+commission depends on completion and he finds out last.
+The app records what the broker was TOLD. It cannot see what he was not told - but it CAN see the
+silence: an outstanding balance with no payment recorded for N days, on a deal that should be
+moving. Same shape as the developer-questions nudge.
+"Money arrived" is not a statement a broker should accept - full or partial must be established.
+The app should make the unanswered question visible rather than let it sit.

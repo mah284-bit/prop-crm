@@ -5334,6 +5334,21 @@ onSelect={(unitId) => {
                     color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
                   {stageGateViewMode ? ((opp.stage === "Closed Won" || opp.stage === "Closed Lost") ? "🔒 View only" : "\u270f Amend") : showStageGate==="Closed Lost"?"✗ Close as Lost":showStageGate==="Closed Won"?"🏆 Close as Won":showStageGate==="Reserved"?"🔒 Confirm Reservation":showStageGate==="SPA Signed"?"📄 Record SPA":"✅ Record Offer"}
                 </button>
+                {!stageGateViewMode && showStageGate === "SPA Signed" && (
+                  <button onClick={async () => {
+                    try {
+                      const { error } = await supabase.from("pp_sales_closures")
+                        .update({ pre_spa_payments: prePaymentsState })
+                        .eq("opportunity_id", opp.id);
+                      if (error) throw error;
+                      showToast("Payments recorded - the SPA is not signed", "success");
+                      setShowStageGate(null);
+                    } catch (e) { showToast("Could not save: " + (e.message || e), "error"); }
+                  }}
+                  style={{padding:"8px 20px",borderRadius:8,border:"1.5px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:13,fontWeight:700,cursor:"pointer",marginLeft:8}}>
+                    Save payments
+                  </button>
+                )}
               </div>
             </div>
           </div>
