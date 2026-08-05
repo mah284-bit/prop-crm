@@ -846,3 +846,27 @@ honest answer may be "delete and start again" rather than an edit.
    CREATION form and again on the block HEADER - two entry points for one number, which is how they
    drift. It should be computed (units x the developer's standard), shown with its working, and
    editable in ONE place only. Remove the other.
+
+## ADDED DAY 85 - THE CONFIRM BUTTON REMAINS ON A CONFIRMED BLOCK (stale, corrects on reload)
+The header still offers "Confirm block" after confirmation until the page is reopened. The Day-77
+IDEMPOTENCY GUARD does refuse a second press - it reads the children fresh - so nothing breaks, but
+the control should not be there to press. Same class as the label-vs-surface pattern and the Day-82
+note that the UI "looks stale after a refusal, which invites a third press".
+FOUNDER: it should be greyed unless a unit is being added or removed - which is itself unbuilt for
+a CONFIRMED block, and correctly so: removing a unit then means DROPPING A LIVE CHILD DEAL, which
+is a ceremony, not an edit. Before confirmation the calculator already has per-line "remove".
+
+## ⭐ ADDED DAY 85 - A BLOCK NEVER SENDS THE BUYER A PROPOSAL
+FOUNDER, at the moment of confirming: "we are only running behind money here - we have not sent the
+proposal to the buyer, on what basis are we asking for reservation money?"
+He is right and it is a hole. On a 1-TO-1 the proposal is the spine: V1, V2, V3, change chips,
+supersession, a PDF the buyer holds. On a BLOCK there is NO PROPOSAL AT ALL. The distribution is
+locked, the developer approves, units are claimed, a five-day clock starts and 75,000 is demanded -
+and the buyer has received NOTHING stating what he is buying, at what price, on what terms.
+The block STATEMENT PDF exists but it is a statement of what is OWED, not an OFFER.
+Same class as the proposal PDF omitting DLD: the buyer is bound by terms he cannot see.
+⚠️ OPEN DESIGN QUESTION, founder to rule: ONE proposal covering all units - which is what the
+investor actually negotiated - or ONE PER UNIT, which is what he ultimately signs? The block's own
+doctrine says terms are uniform and price varies per unit, which argues for one document with a
+per-unit schedule. And it should supersede like a 1-to-1 proposal does, because a block gets
+renegotiated too.
