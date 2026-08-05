@@ -917,3 +917,22 @@ stays the AUDIT TRAIL. They must not both be summed.
    block paid on its behalf or the broker will ask the buyer for money he has already given.
    BLOCK WALK STOPPED HERE (Day 85) - pushing a structurally incomplete child further would only
    produce symptoms of a cause already identified.
+
+## ⭐ TWO LISTS, NOT ONE: WHAT STOPS A TESTER vs WHAT LOSES A DEMO (founder, Day 85)
+"Testing is one thing - I can tell them straight, it is not there, test it as built. A DEMO I
+cannot."
+A TESTER can be briefed: "the unit swap is not built, ignore it." He is helping, and a known gap
+costs nothing. A BROKERAGE OWNER WATCHING A DEMO asks "what if my buyer wants a different unit?"
+and "not built yet" is the answer that loses the room. He is not helping - he is deciding whether
+to buy.
+CONSEQUENCE: the board needs TWO readings, and they overlap but are not the same.
+ - WHAT STOPS A TESTER: things that block work. The block child's missing closure row. The SPA
+   ceremony reopening collections. A draft block that cannot be deleted.
+ - WHAT LOSES A DEMO: things a buyer will ASK ABOUT, whether or not they block anything.
+   ⚠️ RESALE is the largest and it is still unanswered - "if a broker company cannot do resale, why
+   should I buy your software?" (see the SCOPE QUESTION at the top of this board).
+   Then: no proposal to the buyer on a block · no unit swap after confirmation · nothing is ever
+   SENT from the app (proposals generate a PDF and stop; the communications table exists and
+   nothing writes to it).
+BEFORE ANY DEMO, read the board through the SECOND lens. The first list is what to build next; the
+second is what to have an answer for.

@@ -405,6 +405,29 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                 )}
               </div>
               {["draft","negotiating","approved","confirmed","partially_dropped"].includes(block.status) && (canDo(currentUser, "approve_discount") || currentUser?.is_super_admin === true || ["admin","super_admin","group_gm","sales_manager"].includes(currentUser?.role)) && <button onClick={doCancelBlock} disabled={cancelling} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"1px solid #DC2626",background:"#fff",color:"#DC2626",cursor:"pointer"}}>{cancelling ? "Cancelling..." : "Cancel block"}</button>}
+              {block.status==="draft" && <button onClick={async ()=>{
+                // Day 85: A DRAFT BLOCK WAS A TRAP. Before confirmation, before any child is born,
+                // before any money - it could not be deleted, its developer could not be changed
+                // and its units could not be swapped. A broker who picked the wrong developer was
+                // left with a permanent dead block holding soft claims on those units, and they
+                // accumulate. Meanwhile a CONFIRMED block - far more committed - can be cancelled.
+                // Guarded on the LINES, not on status alone: if any child was ever born this is a
+                // cancel ceremony, not a delete.
+                const { data: kids } = await supabase.from("block_deal_units")
+                  .select("id, child_opportunity_id").eq("block_deal_id", block.id);
+                if ((kids||[]).some(k => k.child_opportunity_id)) {
+                  showToast("This block has deals behind it - cancel it instead of deleting", "error"); return;
+                }
+                if (!window.confirm("Delete this draft block and release its " + (kids||[]).length + " unit line(s)?\n\nNothing has been confirmed and no deal exists, so nothing is lost.")) return;
+                try {
+                  await supabase.from("block_distributions").delete().eq("block_deal_id", block.id);
+                  await supabase.from("block_deal_units").delete().eq("block_deal_id", block.id);
+                  const { error } = await supabase.from("block_deals").delete().eq("id", block.id);
+                  if (error) throw error;
+                  showToast("Draft block deleted", "success");
+                  onClose && onClose();
+                } catch (e) { showToast("Could not delete: " + (e.message||e), "error"); }
+              }} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"1px solid #DC2626",background:"#fff",color:"#DC2626",cursor:"pointer"}}>Delete draft</button>}
               {block.status==="negotiating" && <button onClick={()=>onRecordApproval && onRecordApproval(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"1px solid #B45309",background:"#fff",color:"#B45309",cursor:"pointer"}}>Record developer approval</button>}
               {block.status==="approved" && <button onClick={()=>onConfirm && onConfirm(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#16A34A",color:"#fff",cursor:"pointer"}}>Confirm block</button>}
               {["confirmed","partially_dropped","completed"].includes(block.status) && (collectionClosed
