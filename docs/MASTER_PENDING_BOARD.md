@@ -826,3 +826,12 @@ FIX SHAPE: a draft block (status draft, no children born, no payments) should be
 - it is not a record of anything that happened. Unit lines should be removable while draft. Whether
 the developer can be changed is a smaller question: changing it invalidates every line, so the
 honest answer may be "delete and start again" rather than an edit.
+   AND THE HEADER'S RESERVATION FIELD IS BLANK, NOT SUGGESTED. "Reservation Amt Expected - Not set,
+   click to set" asks the broker to type a number the app already knows: company standard x number
+   of units (25,000 x 3 = 75,000 on the Day-85 walkthrough block). FOUNDER: "if I put it there it
+   is going to be wrong - it should look around and calculate and put it."
+   It should PRE-FILL and SHOW ITS WORKING ("3 units x AED 25,000 company standard"), overwritable
+   when the developer demands more. On a ten-unit block, arithmetic in the broker's head against a
+   half-remembered policy is where errors come from.
+   AND THE DEVIATION MUST BE VISIBLE: if he overwrites it DOWNWARD, nothing says so today - the
+   same gap as the reservation shortfall on a 1-to-1.
