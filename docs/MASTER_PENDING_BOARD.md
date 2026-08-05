@@ -909,3 +909,11 @@ means every future money surface must handle two shapes forever, which is exactl
 vocabulary split into two dialects and stayed wrong for six days. ONE SHAPE, FED FROM TWO PATHS.
 ⚠️ RISK TO HANDLE: double counting. The closure row becomes the DISPLAY; block_payment_allocations
 stays the AUDIT TRAIL. They must not both be summed.
+   ⚠️ AND THE RULING THAT SHAPES THE FIX, founder to make: AFTER RESERVATION, DOES COLLECTION STAY
+   AT BLOCK LEVEL OR MOVE PER CHILD? Both are defensible and the app currently allows both without
+   either knowing about the other. On the Day-85 walk 402,415 was collected in ONE block payment
+   across three children - so a child arrives at SPA Requirements already substantially paid, BY
+   THE BLOCK, and has no way to know it. Whichever way this is ruled, the child must see what the
+   block paid on its behalf or the broker will ask the buyer for money he has already given.
+   BLOCK WALK STOPPED HERE (Day 85) - pushing a structurally incomplete child further would only
+   produce symptoms of a cause already identified.
