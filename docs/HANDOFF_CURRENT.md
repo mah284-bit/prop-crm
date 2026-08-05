@@ -1436,3 +1436,47 @@ developer's projects. ONE DEVELOPER, ANY NUMBER OF PROJECTS - which is how an in
 buys: two from one tower, four from another.
 Extracted to src/components/shared/UnitPicker.jsx, wired to the CERTIFIED deal path first to prove
 no regression, then to block creation and the calculator. 196 lines left CreateOpportunityDialog.
+
+## ── DAY 85 — B3 CLEAN DATA, AND THE FIRST FULL LADDER WALKED ──
+B3 DONE. All transactional data wiped for Al Mansoori; structure, inventory and master agreements
+preserved; 80 units freed. TWO LESSONS: several block child tables carry NO company_id, so the
+register's spec - which scopes everything by company - fails on them; delete through the PARENT.
+And batched deletes ROLL BACK as a unit, so one FK error silently undoes the statements before it.
+One statement at a time.
+B8(a) CLOSED: buyer_type NOT NULL applied. Blocked not by Al Mansoori but by three null rows in
+another TEST tenant - the constraint is database-wide, so one tenant's gap blocks every tenant.
+DEAL 1 WALKED END TO END on clean data: lead - quick quote - promoted to opp - site visit - two
+negotiation rounds - revised proposal - offer accepted - reserved - collection - SPA signed -
+closed won - commission invoice. Unit went to Sold.
+⭐ THE COMMISSION CHAIN IS PROVEN: 4.50% resolved at creation via the Day-84 RPC, carried through
+six stages, invoiced at 28,238.04. Before that fix this deal would have billed 4% - 3,138 short.
+FIXED ON THE WALK, all first-encounter defects that survived because nobody had walked this far:
+ - The NEGOTIATIONS TAB CRASHED the whole deal page - a `p` where the map variable was `r`,
+   unreachable until a negotiation round existed.
+ - A SECOND NEGOTIATION ROUND WAS REFUSED AND LOST. A 16-May double-submit guard could not tell a
+   second click from a second round, and returned BEFORE writing.
+ - RESERVATION BORE A LEDGER WITH NO FIRST INSTALMENT. The component's in-memory `opp` was behind
+   the database, so the bill was short by 62,751 and the strip told the broker to chase 22,570
+   instead of 85,321. Now reads the deal FRESH before computing.
+ - THE KYC VERIFY GUARD read .url after Day 82 moved storage to .path, so it refused to verify a
+   lead whose documents were all present. Fourth site of that change; three were updated.
+ - The buyer's-bill DESCRIPTION still stated the old hard-coded fees while the total used the
+   settings - they disagreed by 750.
+ - SAVE PAYMENTS added: a part payment is NOT a variance, and recording one should not require
+   signing an SPA.
+⭐ TWO STRUCTURAL FINDINGS, both on the board in full:
+ 1. SPA SIGNED HAS NO CEREMONY OF ITS OWN - it reopens the COLLECTION form. So attaching the signed
+    SPA means pressing Amend, which unlocks the entire money record on a deal whose commission
+    invoice is already raised. And the four-item SPA-preparation checklist (docs, signature, buyer
+    attends or signs remotely, upload) sits in a quiet dashed panel, gates Closed Won, and was
+    never noticed across eight stages - then met as a blocker at the end.
+ 2. THE LABEL DOES NOT MATCH THE SURFACE - one fault, six times. "Money" tab reading Financials,
+    "Record SPA Signing" being a collection form, "Save & Advance to Negotiation" when already at
+    Negotiation, "Net commission" meaning gross plus VAT, "Nil" over 30,000 unreconciled, "SPA fee
+    5,250" beside a total computed on 6,000. FOUNDER, who had been saying this for three days
+    before it was heard: "the tab header is saying something and doing something."
+    STANDING RULE: when a surface changes, the words above it change in the same cut.
+ALSO SIZED: D7 roles arc is HALF BUILT - capabilities are already per-company data with a settings
+grid; only custom roles are missing, and the database names roles in just two functions and three
+policies. Roughly a day, not a rebuild. Next major target after the walkthrough.
+NEXT: the block walkthrough. The 1-to-1 path is proven; blocks carry the harder money mechanics.
