@@ -835,3 +835,10 @@ honest answer may be "delete and start again" rather than an edit.
    half-remembered policy is where errors come from.
    AND THE DEVIATION MUST BE VISIBLE: if he overwrites it DOWNWARD, nothing says so today - the
    same gap as the reservation shortfall on a 1-to-1.
+   AND THE STANDARD SHOULD BE PER DEVELOPER, NOT PER COMPANY. FOUNDER: "if he is working only with
+   one developer fine - he will work with multiple. It is not good to give a memory test."
+   A broker running Emaar, Aldar, DAMAC and Sobha in one week cannot hold four reservation figures
+   in his head, so today he overwrites the single company default constantly and nothing knows what
+   the right figure was. pp_master_agreements already holds the commission rate, discount authority
+   and payment terms per developer - a reservation standard belongs beside them, resolved the same
+   way as commission: agreement first, company default second.
