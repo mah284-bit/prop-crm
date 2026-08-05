@@ -4,7 +4,9 @@
 > Rule: nothing enters this board unverified against repo/DB. REWRITTEN, not appended.
 
 # MASTER PENDING BOARD
-Last verified against repo: 30 Jul 2026 (Day 79) - branch feature/block-ledger
+Last verified against repo: 4 Aug 2026 (Day 84) - main @ 16200de. FULL AUDIT done Day 84:
+every entry checked against the CODE. V1 CLOSED Day 83, so section B is now OPEN - B3 clean data,
+then B2 end-to-end. That is the current front.
 
 ## A - BLOCK VERTICAL — ✅ CLOSED (merged Day 75, tag golden-block-vertical-complete)
 A1 convergence ✓ (Particulars/Bill-Collected-ToCollect/Notes) · A2 ✓ NOT A BUG (gate correct;
@@ -59,7 +61,11 @@ B5. ✅ **CLOSED Day 82** - KYC now writes to the PRIVATE `documents` bucket and
 B8. **BUYER_TYPE GAP** (founder catch Day 76): every lead has buyer_type NULL because all were
     seeded from the backend (via_app=0) - the form's required-field validation was never
     invoked. NOT a form bug; untested rather than broken.
-    (a) `leads.buyer_type` is NULLABLE in DB - "required" exists only in the form. Founder
+    (a) ✅ **CLOSED Day 85** - NOT NULL applied after the B3 wipe left the table empty. It was
+        blocked not by Al Mansoori's backfill but by THREE null rows in another TEST tenant
+        (Emirates Premium Realty) - the constraint is database-wide, so one tenant's gap blocks
+        every tenant. Those were cleared; no real client data was touched.
+        ORIGINAL: `leads.buyer_type` is NULLABLE in DB - "required" exists only in the form. Founder
         ruling: DOUBLE PROTECTION (form validates + DB constrains). Add NOT NULL after backfill
         during B3.
     (b) ✅ **VERIFIED Day 82** - the form renders the field blank and refuses to pass until it
@@ -669,3 +675,11 @@ picking FOR A DEAL vs picking FOR A BLOCK - or the block form will refuse units 
 do not apply to it. That makes this a DESIGNED cut, not a mechanical one.
 A plain text filter was tried on Day 84 and REVERTED: a box labelled "Filter..." tells a broker
 nothing about what it matches, and a half-good filter is worse than none.
+
+
+## ADDED DAY 85 - SIX TEST TENANTS SIT IN THE PRODUCTION DATABASE
+companies holds: Emirates Premium Realty, Sole Broker Test, Gulf Leasing Solutions, Default
+Company, Test Brokerage Z, Test Company - 16-06-2026 - alongside Al Mansoori Properties.
+None hold real client data. A production database should not carry "Test Brokerage Z", and a
+super-admin company list full of test rows looks unfinished to anyone being shown the product.
+GO-LIVE CLEANUP, not urgent - but check for FK children before deleting any of them.
