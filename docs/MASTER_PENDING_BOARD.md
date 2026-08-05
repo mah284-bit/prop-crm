@@ -870,3 +870,20 @@ investor actually negotiated - or ONE PER UNIT, which is what he ultimately sign
 doctrine says terms are uniform and price varies per unit, which argues for one document with a
 per-unit schedule. And it should supersede like a 1-to-1 proposal does, because a block gets
 renegotiated too.
+
+## RULING (Day 85) - THE SHORTFALL TOLERANCE EXISTS FOR BANK CHARGES, AND SHOULD BE FLAT
+FOUNDER, on why a small gap is not a shortfall: "whenever you get your money in corporate there are
+bank charges which will be deducted - many people make noise but you have to absorb it. Accounts
+have a way to adjust their books, but you cannot say received 100%."
+So the tolerance is not LENIENCY, it is ACCURACY. A buyer wires 25,000, the correspondent bank
+takes 75, and 24,925 lands. Nobody underpaid.
+CONSEQUENCE: the tolerance should be a FLAT AED figure, not a percentage. Bank charges are roughly
+fixed (50-200 AED) whether the transfer is 25,000 or 600,000 - so 1% of a 643,441 BLOCK bill waves
+through 6,434, which is not a bank charge. Founder allows around 0.5% as a guide, "and even if it
+is more than that, sometimes you have to find out and forgo" - which is exactly the case a HUMAN
+should rule on, not a threshold.
+⚠️ THIS SUPERSEDES THE DAY-80 DIVERGENCE. That ruling said a block demands approval for EVERY gap
+however small while a 1-to-1 allowed 500 / 1%. Two surfaces, two rules, is a memory test for the
+broker. SAME RULE BOTH SURFACES: flat AED tolerance, beyond it a manager rules with a reason.
+AND THE WORDING SHOULD SAY WHAT IT MEANS: "within bank-charge tolerance", not "shortfall accepted" -
+so a manager reading the record knows nothing was conceded.
