@@ -4835,12 +4835,20 @@ onSelect={(unitId) => {
                         ["split", "Split", "#3B82F6"]
                       ].map(([val, lbl, color]) => (
                         <button key={val} type="button"
+                          disabled={moneyLocked}
+                          title={moneyLocked ? "DLD comes from the block's terms - same for every unit" : undefined}
                           onClick={async ()=>{
+                            if (moneyLocked) return;
                             setDldPayer(val);
                             // Persist to opp
                             if (opp.id) {
-                              await supabase.from("opportunities").update({dld_payer: val}).eq("id", opp.id);
-                              onUpdated?.({...opp, dld_payer: val});
+                              // Day 86: this wrote `dld_payer` while EVERY money computation reads
+                              // `current_dld_payer` - dealBill, the ledger, the allocator, the
+                              // Upfront panel. So the button turned green and the bill did not
+                              // move. A broker changing who pays the DLD at this gate believed it
+                              // had worked. Two columns exist; only current_* is load-bearing.
+                              await supabase.from("opportunities").update({current_dld_payer: val}).eq("id", opp.id);
+                              onUpdated?.({...opp, current_dld_payer: val});
                             }
                           }}
                           style={{
@@ -5346,7 +5354,9 @@ onSelect={(unitId) => {
                     color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
                   {stageGateViewMode ? ((opp.stage === "Closed Won" || opp.stage === "Closed Lost") ? "🔒 View only" : "\u270f Amend") : showStageGate==="Closed Lost"?"✗ Close as Lost":showStageGate==="Closed Won"?"🏆 Close as Won":showStageGate==="Reserved"?"🔒 Confirm Reservation":showStageGate==="SPA Signed"?"📄 Record SPA":"✅ Record Offer"}
                 </button>
-                {!stageGateViewMode && showStageGate === "SPA Signed" && (
+                {/* Day 86: hidden on a BLOCK CHILD - its money table is read-only because collection
+                    happens at the block, so there is nothing here to save. */}
+                {!stageGateViewMode && !moneyLocked && showStageGate === "SPA Signed" && (
                   <button onClick={async () => {
                     try {
                       const { error } = await supabase.from("pp_sales_closures")
