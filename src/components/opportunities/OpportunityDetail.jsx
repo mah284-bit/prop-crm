@@ -177,6 +177,13 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
       .select("id, needed_by, question").eq("opportunity_id", opp.id).is("answered_at", null);
     setOpenDevQs(data || []);
   })(); }, [opp.id]);
+  // Day 86: MONEY FOR A BLOCK CHILD IS COLLECTED AT THE BLOCK. Founder's sealed ruling: "payments
+  // block, SPA line-wise - no two things in that decision." Fifteen units means fifteen entries
+  // otherwise, and the allocator exists precisely to avoid that. If a broker recorded money here
+  // instead, the block's Money tab would not know and the two views would diverge.
+  // The table stays VISIBLE - he must still see what is owed and what the block has paid. Only
+  // the RECORDING moves. On a 1-to-1 this is false and nothing changes.
+  const moneyLocked = !!opp.block_deal_id;
   const [frozenPolicy, setFrozenPolicy] = useState(null);
   const [collectionState, setCollectionState] = useState(null);
 
@@ -4918,6 +4925,11 @@ onSelect={(unitId) => {
                     </button>
                   </div>
 
+                  {moneyLocked && (
+                    <div style={{margin:"0 0 10px",padding:"9px 12px",background:"#EEF2FF",border:"1.5px solid #C7D2FE",borderRadius:8,fontSize:11,fontWeight:600,color:"#3730A3"}}>
+                      {"\ud83e\uddf1 This unit belongs to a block. MONEY IS RECORDED AT THE BLOCK and distributed across its units - one entry, not one per unit. What is shown below is this unit's own share, read-only."}
+                    </div>
+                  )}
                   {/* LEDGER TABLE v2 (founder spec Day 69): Particulars | Expected | Received | Mode | Date | Diff */}
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                     <thead>
@@ -4953,11 +4965,11 @@ onSelect={(unitId) => {
                           <tr key={key} style={{borderBottom:"1px dashed #E2E8F0",opacity:waived?0.5:1}}>
                             <td style={{padding:"6px 8px",fontWeight:600,color:"#0F2540"}}>{label}{isCreditFee && <div style={{fontSize:9,color:"#0369A1",fontWeight:500}}>credits toward initial advance</div>}{waived && <div style={{fontSize:9,color:"#7C3AED",fontWeight:700}}>WAIVED</div>}</td>
                             <td style={{padding:"6px 8px",textAlign:"right",color:"#065F46",fontWeight:600}}>{expected ? fmt2(expected) : "—"}</td>
-                            <td style={{padding:"6px 8px",textAlign:"right"}}><input type="number" disabled={waived || stageGateViewMode} value={item.amount||""} onChange={e=>upd({amount:e.target.value, status: Number(e.target.value)>0?"received":"pending", date: (Number(e.target.value)>0 && !item.date) ? new Date().toISOString().slice(0,10) : item.date})} placeholder="0" style={{width:100,padding:"4px 6px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:11,textAlign:"right"}}/></td>
-                            <td style={{padding:"6px 8px"}}><select disabled={waived || stageGateViewMode} value={item.method||""} onChange={e=>upd({method:e.target.value})} style={{padding:"4px 4px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:10}}><option value="">{"—"}</option><option>Cheque</option><option>Bank Transfer</option><option>Cash</option><option>Credit Card</option></select></td>
-                            <td style={{padding:"6px 8px"}}><input type="date" disabled={waived || stageGateViewMode} value={item.date||""} onChange={e=>upd({date:e.target.value})} style={{padding:"4px 4px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:10}}/></td>
+                            <td style={{padding:"6px 8px",textAlign:"right"}}><input type="number" disabled={waived || stageGateViewMode || moneyLocked} value={item.amount||""} onChange={e=>upd({amount:e.target.value, status: Number(e.target.value)>0?"received":"pending", date: (Number(e.target.value)>0 && !item.date) ? new Date().toISOString().slice(0,10) : item.date})} placeholder="0" style={{width:100,padding:"4px 6px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:11,textAlign:"right"}}/></td>
+                            <td style={{padding:"6px 8px"}}><select disabled={waived || stageGateViewMode || moneyLocked} value={item.method||""} onChange={e=>upd({method:e.target.value})} style={{padding:"4px 4px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:10}}><option value="">{"—"}</option><option>Cheque</option><option>Bank Transfer</option><option>Cash</option><option>Credit Card</option></select></td>
+                            <td style={{padding:"6px 8px"}}><input type="date" disabled={waived || stageGateViewMode || moneyLocked} value={item.date||""} onChange={e=>upd({date:e.target.value})} style={{padding:"4px 4px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:10}}/></td>
                             <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:diff>0?"#B45309":diff<0?"#B91C1C":"#94A3B8"}}>{diff ? ((diff>0?"+":"")+fmt2(Math.abs(diff)).replace("AED ","")+(diff<0?" short":" over")) : "—"}</td>
-                            <td style={{padding:"6px 8px"}}><button type="button" disabled={stageGateViewMode} onClick={()=>{ if(stageGateViewMode) return;
+                            <td style={{padding:"6px 8px"}}><button type="button" disabled={stageGateViewMode || moneyLocked} onClick={()=>{ if(stageGateViewMode || moneyLocked) return;
                           // Day 82: waiving asks WHY, but does not demand it.
                           // FOUNDER RULING: the DEVELOPER waives the fee; the broker RECORDS it. A
                           // mandatory-reason ceremony would treat him as the decision-maker when he
