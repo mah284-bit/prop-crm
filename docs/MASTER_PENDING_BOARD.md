@@ -982,3 +982,25 @@ it is fifteen. Payments have to flow through from the block."
    were signed. BUT THE WORK SHOULD BE DONE ONCE: a BULK SPA ENTRY that writes per-child records -
    one screen, one signing date, one reference series, fifteen rows. Same shape as the money
    allocator: enter once, distribute properly. The record stays true; the tedium goes.
+
+## ⭐ ADDED DAY 86 - THE BUYER IS NOT ALWAYS THE OWNER (C15 arrives with a concrete case)
+The app collapses two roles into one lead_id: the BUYER, who negotiates and pays, and the OWNER,
+whose name goes on the SPA and the title. Usually the same person. Often not:
+ - a man buys in his wife's name
+ - a father buys three units for three children - THREE DIFFERENT OWNERS IN ONE BLOCK
+ - a company buys for employees and deducts from salary
+FOUNDER'S DESIGN, and it is better than bolting a field onto the SPA ceremony:
+ 1. SET THE PEOPLE UP BEFORE THE DEAL. The owner is a real person record, not a name typed at the
+    SPA door.
+ 2. ASK AT BLOCK CREATION: "will all units be in one name?" YES - nothing changes. NO - assign an
+    owner per unit line, there and then, while the arrangement is being shaped.
+ 3. The child deal then POINTS AT ITS OWN OWNER.
+WHY CREATION AND NOT SIGNING: the broker already knows. A father buying for three children knows
+their names before he confirms - not at the SPA door six weeks later. And it defuses the silent
+killer: discovering at signing that unit two needs the son's name and the son has no KYC. Asked at
+creation, there are WEEKS to collect documents.
+⚠️ THE COST IS REAL: those names become PERSON RECORDS, because of the founder's Day-76 hard rule -
+"every name on the SPA must have documents, no override, the govt line." So "assign a name" means
+"create a person", not a text field. That is the honest price and it is why C15 was never small.
+⚠️ NOT ALREADY BUILT: `lead_persons` exists but it is a COMMUNICATION channel - who to call - not
+an ownership model. Do not mistake one for the other.
