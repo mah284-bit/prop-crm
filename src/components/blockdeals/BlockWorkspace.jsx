@@ -432,7 +432,13 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
               {block.status==="approved" && <button onClick={()=>onConfirm && onConfirm(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#16A34A",color:"#fff",cursor:"pointer"}}>Confirm block</button>}
               {["confirmed","partially_dropped","completed"].includes(block.status) && (collectionClosed
                 ? <span style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,background:"#E6F4EE",color:"#166534",border:"1px solid #A7D8C3"}}>Reservation settled {String.fromCodePoint(0x2713)}{block.collection_status==="accepted_short" ? " - shortfall accepted" : ""}{block.collection_status==="accepted_short" && closer ? " by " + closer : ""}{block.collection_closed_at ? ", " + new Date(block.collection_closed_at).toLocaleDateString("en-GB") : ""}</span>
-                : <button onClick={()=>setShowPay(true)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",cursor:"pointer"}}>Record payment</button>)}
+                : null)}
+              {/* Day 86: the settled chip REPLACED this button, so once the reservation closed there
+                  was no door to the POST-RESERVATION collection phase at all - the instalments, SPA
+                  fees, DLD and Oqood built on Day 80 were reachable only by collecting them BEFORE
+                  the reservation settled. The chip states a fact; the button is a separate act. */}
+              {["confirmed","partially_dropped","completed"].includes(block.status) &&
+                <button onClick={()=>setShowPay(true)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",cursor:"pointer"}}>Record payment</button>}
               <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#94A3B8",cursor:"pointer"}}>{String.fromCharCode(215)}</button>
             </div>
           </div>
