@@ -1,5 +1,6 @@
 import { supabase } from "./supabase.js";
 import { birthChildClosure } from "./birthChildClosure.js";
+import { postAllocationsToChild } from "./postAllocationsToChild.js";
 
 // Cut 7-3: lock a block payment and distribute it to member deals.
 // All-or-nothing in spirit: the bank line is written first, then each member is
@@ -76,6 +77,11 @@ export async function lockBlockPayment({ block, bank, allocations, members, curr
         // record - so its own screens compute from constants and cannot see what the block has
         // already paid on its behalf. Fire and forget: the ledger is a consequence of the payment,
         // never a way to fail it.
+        // Day 86: post into an EXISTING ledger. birthChildClosure only fires the first time; a
+        // later reservation payment on a child that already has a ledger must still land in it.
+        postAllocationsToChild(a.opportunity_id)
+          .then(r => { if (r && !r.ok) console.warn("Child ledger not updated:", r.error); },
+                e => console.warn("Child ledger not updated:", e));
         if (completesReservation && child && child.stage === "Offer Accepted") {
           birthChildClosure({ child, block, companyId, currentUser })
             .then(r => { if (r && !r.ok) console.warn("Child ledger not created:", r.error); },

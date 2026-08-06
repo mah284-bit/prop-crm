@@ -1,4 +1,5 @@
 import { supabase } from "./supabase.js";
+import { postAllocationsToChild } from "./postAllocationsToChild.js";
 
 // Day 80: record a post-reservation CHUNK for a block.
 // One bank line, then one allocation row per (particular, unit) from the allocator's plan.
@@ -31,6 +32,15 @@ export async function recordBlockCollection({ block, entry, currentUser }) {
   if (rows.length) {
     const { error: allocErr } = await supabase.from("block_payment_allocations").insert(rows);
     if (allocErr) return { ok: false, error: "Payment recorded but allocation failed: " + allocErr.message };
+    // Day 86: POST INTO EACH CHILD'S LEDGER. The allocations are the audit trail; the child's own
+    // screens read pp_sales_closures. Without this a block payment of 707,269 landed, every
+    // allocation was written, and the child's bill still said 492,091 outstanding.
+    // Cumulative and idempotent - see postAllocationsToChild.
+    const touched = Array.from(new Set(rows.map(r => r.opportunity_id).filter(Boolean)));
+    for (const oid of touched) {
+      const r = await postAllocationsToChild(oid);
+      if (r && !r.ok) console.warn("Child ledger not updated for", oid, r.error);
+    }
   }
   return { ok: true, payment: pay, allocated: rows.length };
 }
