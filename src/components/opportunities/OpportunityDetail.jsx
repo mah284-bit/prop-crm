@@ -743,6 +743,38 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     }
     if ((toStage === "Reserved" || toStage === "SPA Requirements") && !(await proposalGate(toStage))) return;
     if ((toStage === "Reserved" || toStage === "SPA Requirements" || toStage === "SPA Signed") && !(await kycGate(toStage))) return;
+    // Day 86: A BLOCK CHILD PROCEEDS TO SPA ONLY WHEN THE WHOLE BLOCK IS COLLECTED.
+    // Not per unit. The buyer sends ONE lump for the arrangement; the allocator splits it for
+    // accounting so each unit has a cost basis, but the money was never AGAINST a unit. And the
+    // developer gave the bulk discount BECAUSE it is a bulk purchase - a buyer who paid for one
+    // unit and stalled on the rest was never entitled to it.
+    // The broker cannot resolve a block shortfall from here anyway: the money is not his to
+    // collect on this screen. Refusing with a clear pointer beats a form he can do nothing with.
+    if (toStage === "SPA Signed" && opp.block_deal_id) {
+      // collection_status tracks the RESERVATION only - it read "satisfied" on a block still owing
+      // 492,091. Sum the CHILDREN'S LEDGERS instead: every child now has a closure row (Day 86),
+      // so expected-minus-received across them is the block's true position. No new field to drift.
+      const { data: blk } = await supabase.from("block_deals")
+        .select("title").eq("id", opp.block_deal_id).maybeSingle();
+      const { data: sibs } = await supabase.from("opportunities")
+        .select("id").eq("block_deal_id", opp.block_deal_id);
+      const ids = (sibs || []).map(x => x.id);
+      let owed = 0;
+      if (ids.length) {
+        const { data: rows } = await supabase.from("pp_sales_closures")
+          .select("pre_spa_payments").in("opportunity_id", ids);
+        (rows || []).forEach(r => {
+          Object.values(r.pre_spa_payments || {}).forEach(it => {
+            if (!it || it.status === "waived") return;
+            owed += Math.max(0, (Number(it.expected_amount) || 0) - (Number(it.amount) || 0));
+          });
+        });
+      }
+      if (owed > 1) {
+        showToast("The block \"" + (blk?.title || "") + "\" still owes AED " + Math.round(owed).toLocaleString() + " across its units. Record the balance on the block before recording an SPA.", "warning");
+        return;
+      }
+    }
     // ISSUE D guard duplication — block at moveStage entry too
     // (Dialogs like Capture Contact bypass commitStageMove, so guard
     //  has to be here before any dialog opens)
