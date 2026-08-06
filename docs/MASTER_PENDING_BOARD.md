@@ -1027,3 +1027,16 @@ Arithmetically the net is positive; practically the buyer still owes an SPA fee 
 that the developer will ask for. Another instance of the LABEL-vs-SURFACE pattern.
 FIX SHAPE: "Complete" only when every row is settled or waived. Otherwise show the net AND the
 count - "net +29,284 · 3 items unpaid" - so nobody reads a green word over an open obligation.
+
+## CLARIFIED (Day 86) - SPA SIGNED IS A REAL STAGE, AND THE GATE AT CLOSED WON IS CORRECT
+The architect questioned whether SPA Signed deserves its own stage. IT DOES. Founder:
+ - SPA SIGNED = the BUYER has signed. That is a proof point.
+ - THEN A WAIT: the countersigned document travels between the parties BY POST, not email.
+ - CLOSED WON = the broker holds the EXECUTED document.
+So a deal genuinely SITS at SPA Signed, for as long as the post takes. The stage exists for that
+gap, and the Closed Won gate demanding the SPA document is asking the right question - "has the
+executed copy arrived?" - not being over-strict as the architect suggested on Day 85.
+⚠️ ONE QUESTION LEFT, and it is a money question: the COMMISSION INVOICE is created at SPA Signed,
+when the buyer has signed but the document is not yet executed. IF the developer becomes liable
+only on EXECUTION, the invoice is raised early and "Total Invoiced" on Commission Outstanding
+overstates what is actually claimable. Founder to confirm when liability starts.
