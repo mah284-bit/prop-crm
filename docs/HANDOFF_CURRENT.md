@@ -1508,3 +1508,43 @@ PER CHILD? The app allows both and neither knows about the other.
 ALSO CAPTURED: a block never sends the buyer a PROPOSAL at all - units are claimed and 75,000
 demanded against nothing on paper. And TWO LISTS, NOT ONE: what stops a tester (briefable) versus
 what loses a DEMO (not briefable) - resale being the largest of the second kind.
+
+## ── DAY 86 — THE BLOCK MONEY PATH CLOSED END TO END ──
+RULING FIRST: money arrives at BOTH levels because that is how buyers pay - "it is a limitation of
+the card, I will pay this, bring a cheque later", and on a block it may come in tranches. ONE
+LEDGER PER CHILD, TWO SOURCES. Block allocations are the AUDIT TRAIL; the closure row is the
+BALANCE, derived from it, never summed beside it.
+BUILT: `birthChildClosure` - a block child now gets its pp_sales_closures row when the reservation
+completes, seeded from the block's terms with the fee policy frozen and the block's allocations
+credited. `postAllocationsToChild` - later block payments post into that same row, cumulative and
+idempotent, carrying the date the money was RECEIVED rather than posted.
+PROVEN LIVE on a fresh block: 50,000 reservation then 1,381,643 collected, both children's ledgers
+filled to the dirham - 232,588.50 and 739,984.93 instalment, 93,035.40 and 295,993.97 DLD.
+ENFORCED, per the founder's sealed ruling "payments block, SPA line-wise": on a BLOCK CHILD the
+money table, the waive buttons, Save payments, the DLD radios and the FINAL PRICE are all locked -
+the price comes from the block's locked distribution. And no child may record an SPA until the
+WHOLE BLOCK is collected, computed by summing the children's ledgers rather than reading
+collection_status, which tracks only the reservation.
+FIXED ALSO: the "Reservation settled" chip had REPLACED the Record payment button, so once the
+reservation closed there was no door to the post-reservation collection phase at all - the Day-80
+instalments, SPA fees, DLD and Oqood were reachable only by collecting them BEFORE settlement.
+And the DLD radio on the SPA gate wrote `dld_payer` while every money computation reads
+`current_dld_payer`: the button turned green and the bill did not move.
+The block calculator's discount now caps at 100% - 50,000 typed into a percentage field produced a
+net price of MINUS 1.8 billion and the app computed it without complaint.
+⭐ AND THE FIND THAT WAS ON NOBODY'S LIST: src/lib/supabase.js loaded the client from
+https://esm.sh AT RUNTIME while @supabase/supabase-js sat installed in package.json and unused. So
+every tenant's app depended on a third-party CDN staying up - and mid-session esm.sh returned 404
+for a sub-dependency and the WHOLE APP STOPPED LOADING. Nothing in the codebase was wrong; someone
+else's server was. Now bundled. It was invisible until the CDN happened to fail while we were
+working; it could as easily have failed during a demo.
+RULINGS SETTLED TODAY: money at the block, SPA per child - and the reason is the SIGNATORY, not
+registration: a father buying for three children means three different owners in one block. THE
+SPONSOR PAYS, THE OWNER HOLDS TITLE, and the app records both (C15 now has a concrete case and a
+design). A block child proceeds only when the WHOLE block is collected - the allocator splits for
+accounting, but the money was never against one unit, and the bulk discount was granted for the
+bulk purchase.
+NEXT: the Day-86 findings still open - the Payment Summary contradicting the table above it, the
+block header reporting only the reservation on a fully collected block, currency formatting on
+numeric fields, whether amending a payment leaves a trail. Then the 1-to-1 SPA ceremony and a block
+child walked through to Won.
