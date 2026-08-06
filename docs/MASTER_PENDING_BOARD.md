@@ -1004,3 +1004,17 @@ creation, there are WEEKS to collect documents.
 "create a person", not a text field. That is the honest price and it is why C15 was never small.
 ⚠️ NOT ALREADY BUILT: `lead_persons` exists but it is a COMMUNICATION channel - who to call - not
 an ownership model. Do not mistake one for the other.
+   ⭐ THE DEMO ANSWER, founder's framing and better than the architect's: "One cheque, one entry -
+   we distribute it. But the SPA is per unit because DLD registers per unit, and because the OWNERS
+   MAY DIFFER. The money comes from the SPONSOR; the title goes to the OWNER. Two different facts,
+   both recorded." That makes it a FEATURE, not a limitation - and a challenger would have to argue
+   that DLD does not register per unit, which is false (researched Day 82). SPONSOR is the right
+   word: a company, a parent, a husband. Someone pays, someone owns.
+   ⭐ AND WHEN SOMEONE SAYS "USE AI, AUTOMATE THE REPETITION": AI can FILL fifteen forms from one
+   input - that is the bulk-entry cut. It cannot SIGN fifteen contracts, and it must not DECIDE
+   whose name goes on unit three. If it guesses wrong the unit registers in the wrong name at DLD
+   and unwinding that costs months.
+   THE GENERAL DEFENCE: this app uses AI for SUGGESTION - proposal terms, coaching, unit matching.
+   It uses DETERMINISTIC RULES for money and titles, because a wrong number or a wrong name is not
+   a bad suggestion, it is a legal problem. The app is deliberately not clever where being wrong is
+   expensive.
