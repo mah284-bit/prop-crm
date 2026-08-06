@@ -38,7 +38,7 @@ export async function recordBlockCollection({ block, entry, currentUser }) {
     // Cumulative and idempotent - see postAllocationsToChild.
     const touched = Array.from(new Set(rows.map(r => r.opportunity_id).filter(Boolean)));
     for (const oid of touched) {
-      const r = await postAllocationsToChild(oid);
+      const r = await postAllocationsToChild(oid, entry.receivedOn || null);
       if (r && !r.ok) console.warn("Child ledger not updated for", oid, r.error);
     }
   }

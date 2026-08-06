@@ -4765,7 +4765,13 @@ onSelect={(unitId) => {
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Final Agreed Price (AED) *</label>
-                    <input type="number" placeholder="e.g. 2450000" value={stageGateForm.final_price||""} onChange={e=>setStageGateForm(f=>({...f,final_price:e.target.value}))}/>
+                    <input type="number" placeholder="e.g. 2450000" disabled={moneyLocked} title={moneyLocked ? "Price comes from the block's locked distribution" : undefined} value={stageGateForm.final_price||""} onChange={e=>{ if (moneyLocked) return; setStageGateForm(f=>({...f,final_price:e.target.value})); }}/>
+                    {/* Day 86: on a BLOCK CHILD the price is already distributed and LOCKED at the
+                        block - editing it per unit would contradict the locked distribution, and
+                        the block bill, the allocations and every child ledger are computed from it.
+                        On a 1-to-1 it stays editable: the developer's SPA can legitimately differ
+                        from the last proposal, and the divergence notice above handles that. */}
+                    {moneyLocked && <div style={{marginTop:4,fontSize:10,color:"#64748B"}}>{"\ud83e\uddf1 From the block's locked distribution"}</div>}
                     {(() => {
                       // Day 82: SHOW THE DIVERGENCE. This is the number COMMISSION is calculated
                       // from, and it is typed by hand at the last gate. An editable final price is

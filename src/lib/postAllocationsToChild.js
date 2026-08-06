@@ -16,7 +16,10 @@ import { supabase } from "./supabase.js";
 // and an amended allocation corrects itself on the next post. The allocations remain the AUDIT
 // TRAIL; the closure row is the BALANCE, derived from it rather than accumulated beside it.
 
-export async function postAllocationsToChild(oppId) {
+// Day 86: the RECEIVED DATE must be the date the money ARRIVED, not the date the app posted it.
+// A payment received on 1 August and recorded on the 6th showed the 6th in the child's ledger -
+// the sort of thing an accountant catches and a broker cannot explain.
+export async function postAllocationsToChild(oppId, receivedDate) {
   if (!oppId) return { ok: false, error: "no opportunity" };
   try {
     const { data: closure } = await supabase
@@ -60,7 +63,7 @@ export async function postAllocationsToChild(oppId) {
         ...pre[key],
         amount: String(amount),
         status: amount > 0 ? "received" : (pre[key].status || "pending"),
-        date: pre[key].date || new Date().toISOString().slice(0, 10),
+        date: pre[key].date || receivedDate || new Date().toISOString().slice(0, 10),
         method: pre[key].method || "Block allocation",
         notes: pre[key].notes || "Credited from block-level payments",
       };

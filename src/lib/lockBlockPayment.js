@@ -79,7 +79,7 @@ export async function lockBlockPayment({ block, bank, allocations, members, curr
         // never a way to fail it.
         // Day 86: post into an EXISTING ledger. birthChildClosure only fires the first time; a
         // later reservation payment on a child that already has a ledger must still land in it.
-        postAllocationsToChild(a.opportunity_id)
+        postAllocationsToChild(a.opportunity_id, bank?.received_date || null)
           .then(r => { if (r && !r.ok) console.warn("Child ledger not updated:", r.error); },
                 e => console.warn("Child ledger not updated:", e));
         if (completesReservation && child && child.stage === "Offer Accepted") {
