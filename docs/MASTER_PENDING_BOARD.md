@@ -1054,3 +1054,15 @@ collected, and create a new block with the money carried across - credit/debit h
 firm's own accounts. No new machinery until a real case demands it.
 DEFERRED, and it is different machinery: a developer granting a staged concession - "I will reduce
 some after a period."
+
+## ADDED DAY 86 - THE BLOCK HEADER REPORTS ONLY THE RESERVATION
+On a fully collected block the header reads "Reservation Received AED 50,000 of AED 50,000 -
+Collected in full" while the block has actually collected AED 1,431,643. True but tiny: a broker
+glancing at the header cannot tell the block is paid, and must open the Money tab to find out.
+The "Reservation settled ✓" chip sitting beside a "Record payment" button compounds it - the chip
+describes one bill, the button opens another, and nothing says the second is done.
+FIX SHAPE: once the whole bill is in, the headline should be the WHOLE BILL - "Fully collected -
+AED 1,431,643 of AED 1,431,643 ✓" - with the reservation as a detail rather than the headline.
+While money is outstanding it should name what is outstanding, across both bills.
+ALSO: the header does not refresh after a collection is recorded - close and reopen shows it. The
+stale-render pattern again.
