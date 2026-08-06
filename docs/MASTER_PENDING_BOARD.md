@@ -963,3 +963,22 @@ a child's own collection credits it directly. One ledger per child, two sources,
 the other.
 ⚠️ DOUBLE-COUNTING GUARD: block_payment_allocations is the AUDIT TRAIL, the closure row is the
 BALANCE. Never sum both.
+
+## ⭐ RULING (Day 86) - MONEY FLOWS FROM THE BLOCK; THE SPA IS PER CHILD; BOTH ARE ENTERED ONCE
+FOUNDER: "for block payments coming in bulk, entering 1-to-1 is a pain - today we have two, really
+it is fifteen. Payments have to flow through from the block."
+ - MONEY: recorded at BLOCK level and allocated. Fifteen entries per payment is unusable, and the
+   allocator already exists. The child's ledger (born Day 86) receives from above.
+ - THE SPA: PER CHILD, and the deciding reason is not registration but the SIGNATORY. Founder's two
+   cases: (1) a company buying to lease or forward-sell - one owner across every unit, SPAs
+   identical in substance; (2) a father buying for his children, or a company for its employees -
+   EACH SPA CARRIES A DIFFERENT OWNER. The second case makes per-child unavoidable.
+   ⚠️ AND IT IS NOT MODELLED: the app assumes one buyer per deal. A block child whose OWNER differs
+   from the block's buyer has nowhere to record that - the TITLE HOLDERS question (C15) arriving
+   from a new direction, and now with a concrete case behind it.
+ - THE CHALLENGE, and the answer: "if it is one owner, why can I not close the SPA from the block?"
+   Because DLD issues ONE SPA PER UNIT - researched Day 82, each unit gets its own Oqood
+   certificate and no group SPA exists as a DLD product. The app records fifteen because fifteen
+   were signed. BUT THE WORK SHOULD BE DONE ONCE: a BULK SPA ENTRY that writes per-child records -
+   one screen, one signing date, one reference series, fifteen rows. Same shape as the money
+   allocator: enter once, distribute properly. The record stays true; the tedium goes.
