@@ -1852,7 +1852,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                               {/* Day 79: name the ACT, not the destination. "Advance to SPA Signed"
                                   while 3.5M is outstanding invites an act the gate will refuse. */}
                               {(opp.stage === "SPA Requirements" && collectionState && collectionState.toCollect > 0)
-                                ? (moneyLocked ? "\u2713 Record SPA" : "Collect payments") : "\u2713 Advance to " + nextStageName}
+                                ? "Collect payments" : "\u2713 Advance to " + nextStageName}
                             </button>
                           )}
                           {nextStageName==="Proposal Sent"&&(
