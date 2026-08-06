@@ -212,7 +212,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
             <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4}}>TOP-DOWN: BLOCK DISCOUNT</label>
             <div style={{display:"flex",gap:6}}>
               <select value={blockMode} onChange={e=>setBlockMode(e.target.value)} style={{padding:"7px 8px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}><option value="pct">%</option><option value="flat">AED</option></select>
-              <input type="number" value={blockValue} onChange={e=>setBlockValue(e.target.value)} placeholder="0" style={{width:130,padding:"7px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}/>
+              <input type="number" value={blockValue} onChange={e=>{ const v = e.target.value; setBlockValue(blockMode === "pct" && Number(v) > 100 ? "100" : v); }} placeholder="0" style={{width:130,padding:"7px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}/>
             </div>
           </div>
           <button onClick={applyProRata} style={{padding:"8px 14px",borderRadius:7,border:topDownPending?"2px solid #D97706":"1px solid #0F2540",background:topDownPending?"#FFFBEB":"#fff",color:topDownPending?"#B45309":"#0F2540",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:topDownPending?"0 0 0 3px rgba(217,119,6,.15)":"none"}}>Suggest pro-rata {String.fromCharCode(8595)}</button>{topDownPending && <span style={{fontSize:11,fontWeight:600,color:"#B45309",marginLeft:2}}>{String.fromCharCode(8592)} press to apply {blockValue}{blockMode==="pct"?"%":" AED"} to all lines</span>}
@@ -263,7 +263,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
               <td style={{padding:"7px 8px",fontWeight:700,color:"#0F2540"}}>{x.unit_ref}</td>
               <td style={{padding:"7px 8px",textAlign:"right",color:"#475569"}}>{fmt(x.list_price)}</td>
               <td style={{padding:"7px 8px",textAlign:"center"}}><select value={x.mode} onChange={e=>updLine(x.unit_id,{mode:e.target.value})} style={{padding:"4px 6px",border:"1px solid #D1D5DB",borderRadius:6,fontSize:11}}><option value="pct">%</option><option value="flat">AED</option></select></td>
-              <td style={{padding:"7px 8px",textAlign:"right"}}><input type="number" value={x.value} onChange={e=>updLine(x.unit_id,{value:e.target.value})} placeholder="0" style={{width:110,padding:"5px 8px",border:"1px solid #D1D5DB",borderRadius:6,fontSize:12,textAlign:"right"}}/></td>
+              <td style={{padding:"7px 8px",textAlign:"right"}}><input type="number" value={x.value} onChange={e=>{ const v = e.target.value; updLine(x.unit_id,{value: x.mode === "pct" && Number(v) > 100 ? "100" : v}); }} placeholder="0" style={{width:110,padding:"5px 8px",border:"1px solid #D1D5DB",borderRadius:6,fontSize:12,textAlign:"right"}}/></td>
               <td style={{padding:"7px 8px",textAlign:"right",color:"#B45309",fontWeight:600}}>{fmt(discOf(x))}</td>
               <td style={{padding:"7px 8px",textAlign:"right",color:"#166534",fontWeight:700}}>{fmt(netOf(x))}</td>
               <td style={{padding:"7px 8px",textAlign:"right"}}><button type="button" onClick={()=>{ if(!x.child_opportunity_id){ doRemove(x); } else { setRemoveTarget(x); } }} style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,border:"1px solid #FCA5A5",background:"#fff",color:"#DC2626",cursor:"pointer"}}>remove</button></td>
