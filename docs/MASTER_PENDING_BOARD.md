@@ -1040,3 +1040,17 @@ executed copy arrived?" - not being over-strict as the architect suggested on Da
 when the buyer has signed but the document is not yet executed. IF the developer becomes liable
 only on EXECUTION, the invoice is raised early and "Total Invoiced" on Commission Outstanding
 overstates what is actually claimable. Founder to confirm when liability starts.
+
+## RULING (Day 86) - A BLOCK CHILD PROCEEDS TO SPA ONLY WHEN THE WHOLE BLOCK IS COLLECTED
+Not per unit. FOUNDER: "collection is one full bulk payment - how will we decipher what the payment
+is for? That is the reason we have the block sales process." The allocator splits it for ACCOUNTING,
+so each unit has a cost basis, but the money was never AGAINST a particular unit. "06-02 is paid" is
+an artefact of the split, not a fact about what the buyer paid.
+AND THE STRONGER ARGUMENT: the developer gave a bulk discount BECAUSE it is a bulk purchase. A buyer
+who paid for one unit and stalled on the rest would not be entitled to the block discount at all.
+The concession and the payment are the same bargain.
+INTERIM POSITION for a block that goes wrong mid-way: CANCEL IT, having recorded every penny
+collected, and create a new block with the money carried across - credit/debit handled in the
+firm's own accounts. No new machinery until a real case demands it.
+DEFERRED, and it is different machinery: a developer granting a staged concession - "I will reduce
+some after a period."
