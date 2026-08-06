@@ -76,6 +76,12 @@ export async function birthChildClosure({ child, block, companyId, currentUser }
     const { error } = await supabase.from("pp_sales_closures").insert({
       opportunity_id: child.id,
       company_id: companyId,
+      // NOT NULL on this table. On a 1-to-1 the row is born at SPA SIGNED and carries the final
+      // agreed price; here it is born at RESERVED, before any SPA exists. The honest value is the
+      // child's NET PRICE FROM THE BLOCK DISTRIBUTION - what the buyer has agreed to pay for this
+      // unit. It is overwritten by the SPA ceremony if the final price differs, and that
+      // divergence is already flagged there.
+      final_sale_price: price,
       pre_spa_payments: {
         booking_fee:     row(null),
         reservation_fee: received("reservation", bill.reservation_fee.expected),

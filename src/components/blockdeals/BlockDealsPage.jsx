@@ -227,7 +227,10 @@ const confirmBlock = async (b) => {
       born++;
     }
     if (born === 0) { showToast("No deals were born - block NOT confirmed. Check the errors above.", "error"); load(); return; }
-    await supabase.from("block_deals").update({ status: "confirmed", updated_at: new Date().toISOString() }).eq("id", b.id);
+    // Day 86: this update was UNCHECKED. On the walkthrough it failed silently - children born,
+    // lines confirmed, units Booked, the clock stamped - and the block still read "approved".
+    const { error: stErr } = await supabase.from("block_deals").update({ status: "confirmed", updated_at: new Date().toISOString() }).eq("id", b.id);
+    if (stErr) { console.error("Block status not set:", stErr); showToast("Deals were born but the block status did not update: " + stErr.message, "error"); }
     // Day 83: CONFIRMATION STARTS THE CLOCK. This is the moment the units are claimed, so this is
     // when the promise begins - the hold is bought with a deadline rather than held for free.
     // Fire and forget: the clock is a governance layer over the confirm, never a way to fail it.
