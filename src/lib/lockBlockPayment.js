@@ -1,4 +1,5 @@
 import { supabase } from "./supabase.js";
+import { birthChildClosure } from "./birthChildClosure.js";
 
 // Cut 7-3: lock a block payment and distribute it to member deals.
 // All-or-nothing in spirit: the bank line is written first, then each member is
@@ -69,6 +70,16 @@ export async function lockBlockPayment({ block, bank, allocations, members, curr
         if (oErr) throw oErr;
         if (completesReservation && child && child.stage === "Offer Accepted" && child.unit_id) {
           await supabase.from("project_units").update({ status: "Reserved" }).eq("id", child.unit_id);
+        }
+        // Day 86: BIRTH THE CHILD'S LEDGER at the moment it becomes Reserved. Without this the
+        // child has no pp_sales_closures row at all - no frozen fee policy and no collection
+        // record - so its own screens compute from constants and cannot see what the block has
+        // already paid on its behalf. Fire and forget: the ledger is a consequence of the payment,
+        // never a way to fail it.
+        if (completesReservation && child && child.stage === "Offer Accepted") {
+          birthChildClosure({ child, block, companyId, currentUser })
+            .then(r => { if (r && !r.ok) console.warn("Child ledger not created:", r.error); },
+                  e => console.warn("Child ledger not created:", e));
         }
       }
 
@@ -234,6 +245,11 @@ export async function acceptShortCollection({ block, members, currentUser, reaso
         if (child.unit_id) {
           await supabase.from("project_units").update({ status: "Reserved" }).eq("id", child.unit_id);
         }
+        // Day 86: the AMEND path advances children too, so it must birth the ledger as well - the
+        // same split that left `particular` null on this file yesterday. Two writers, one shape.
+        birthChildClosure({ child, block, companyId, currentUser })
+          .then(r => { if (r && !r.ok) console.warn("Child ledger not created:", r.error); },
+                e => console.warn("Child ledger not created:", e));
         moved += 1;
       }
       await supabase.from("activities").insert({
