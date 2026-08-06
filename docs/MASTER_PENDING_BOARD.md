@@ -1018,3 +1018,12 @@ an ownership model. Do not mistake one for the other.
    It uses DETERMINISTIC RULES for money and titles, because a wrong number or a wrong name is not
    a bad suggestion, it is a legal problem. The app is deliberately not clever where being wrong is
    expensive.
+
+## ADDED DAY 86 - "TO COLLECT: COMPLETE" WITH THREE ITEMS PENDING
+The Payment Summary nets an OVER-payment on one row against SHORTFALLS on others and declares the
+collection complete. Seen live: first instalment +62,950 over, SPA fee 5,766 short, DLD 23,879
+short - and the summary read "To Collect: Complete" with "Pending items: 3" directly beneath it.
+Arithmetically the net is positive; practically the buyer still owes an SPA fee and a DLD share
+that the developer will ask for. Another instance of the LABEL-vs-SURFACE pattern.
+FIX SHAPE: "Complete" only when every row is settled or waived. Otherwise show the net AND the
+count - "net +29,284 · 3 items unpaid" - so nobody reads a green word over an open obligation.
