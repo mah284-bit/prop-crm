@@ -947,3 +947,19 @@ himself, which is the honest outcome: not refused, just informed.
 inventory SOCIALLY where it cannot freeze it technically - the freeze-the-book abuse arriving by
 the back door. So: "in a block being negotiated" while draft, "held for a block sale" once the
 developer has approved.
+
+## ⭐ RULING (Day 86) - MONEY ARRIVES AT BOTH LEVELS, AND THE CHILD'S LEDGER MUST SEE BOTH
+The open question from Day 85 - after reservation, does collection stay at BLOCK level or move PER
+CHILD - is answered: BOTH, because that is how buyers actually pay.
+FOUNDER: "there are people who will say it is a limitation of the card, I will pay this, bring a
+cheque or cash later - you cannot stop that. And when we are talking about a block it is a lot of
+money, sometimes it comes in two instalments. That is the reason it is there."
+So neither level is the "right" one. Money arrives, and it may be against the BLOCK or against ONE
+UNIT. The app must record what arrived and work out what it covers.
+⭐ THE FIX, SHARPENED: roll-up CREATES the child's pp_sales_closures row (seeded from the block's
+terms and frozen fees, credited with what the block has already allocated). Thereafter BOTH sources
+post into that one row - a block payment allocates across children and credits each child's ledger;
+a child's own collection credits it directly. One ledger per child, two sources, neither blind to
+the other.
+⚠️ DOUBLE-COUNTING GUARD: block_payment_allocations is the AUDIT TRAIL, the closure row is the
+BALANCE. Never sum both.
