@@ -31,6 +31,9 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
       .select("*").eq("block_deal_id", block.id).order("version", { ascending: false });
     setBlockProposals(data || []);
   })(); }, [block?.id, sendingProposal]);
+  // Day 87: the chain is now draft -> negotiating -> approved -> ACCEPTED -> confirmed. Confirm
+  // moved off `approved` because developer approval is not the buyer's agreement: a block was
+  // claiming units on an offer the buyer had never accepted.
   const [showPay, setShowPay] = useState(false);
   const [payTick, setPayTick] = useState(0);
   const [locking, setLocking] = useState(false);
@@ -440,7 +443,32 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                 } catch (e) { showToast("Could not delete: " + (e.message||e), "error"); }
               }} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"1px solid #DC2626",background:"#fff",color:"#DC2626",cursor:"pointer"}}>Delete block</button>}
               {block.status==="negotiating" && <button onClick={()=>onRecordApproval && onRecordApproval(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"1px solid #B45309",background:"#fff",color:"#B45309",cursor:"pointer"}}>Record developer approval</button>}
-              {block.status==="approved" && <button onClick={()=>onConfirm && onConfirm(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#16A34A",color:"#fff",cursor:"pointer"}}>Confirm block</button>}
+              {/* Day 87: ACCEPTANCE IS A STATUS, NOT A BUTTON PER VERSION. Founder: "at V10 I move to
+                  accepted - I can send 100 proposals, I cannot have a button on every save." The
+                  1-to-1 does exactly this: proposals accumulate as history and the DEAL moves to
+                  Offer Accepted. The accepted version is implicitly the latest, the same assumption
+                  the 1-to-1 makes. Until now a block claimed units, started a clock and demanded a
+                  reservation on an offer nobody had agreed to. */}
+              {["negotiating","approved"].includes(block.status) && blockProposals.length > 0 && !block.accepted_at && <button onClick={async ()=>{
+                const latest = blockProposals[0];
+                if (!window.confirm("Record that the buyer has accepted?\n\nHe is accepting V" + latest.version + " - " + fmt(latest.structured_data?.total_value || 0) + " across " + (latest.structured_data?.unit_count || 0) + " unit(s).")) return;
+                try {
+                  const { error } = await supabase.from("block_deals").update({
+                    status: "accepted", accepted_at: new Date().toISOString(),
+                    accepted_by: currentUser?.id || null, accepted_proposal_id: latest.id,
+                  }).eq("id", block.id);
+                  if (error) throw error;
+                  await supabase.from("activities").insert({
+                    company_id: block.company_id || currentUser?.company_id || null,
+                    block_deal_id: block.id, type: "note", activity_subtype: "block_terms",
+                    note: "BUYER ACCEPTED proposal V" + latest.version + " - " + fmt(latest.structured_data?.total_value || 0) + " across " + (latest.structured_data?.unit_count || 0) + " unit(s). The block may now be confirmed.",
+                    user_id: currentUser?.id || null, user_name: currentUser?.full_name || currentUser?.email || "system",
+                  });
+                  showToast("Buyer accepted V" + latest.version, "success");
+                  onReload && onReload();
+                } catch (e) { showToast("Could not record: " + (e.message||e), "error"); }
+              }} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#7C3AED",color:"#fff",cursor:"pointer"}}>Buyer accepted</button>}
+              {block.status==="accepted" && <button onClick={()=>onConfirm && onConfirm(block)} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:"#16A34A",color:"#fff",cursor:"pointer"}}>Confirm block</button>}
               {["confirmed","partially_dropped","completed"].includes(block.status) && (collectionClosed
                 ? <span style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,background:"#E6F4EE",color:"#166534",border:"1px solid #A7D8C3"}}>Reservation settled {String.fromCodePoint(0x2713)}{block.collection_status==="accepted_short" ? " - shortfall accepted" : ""}{block.collection_status==="accepted_short" && closer ? " by " + closer : ""}{block.collection_closed_at ? ", " + new Date(block.collection_closed_at).toLocaleDateString("en-GB") : ""}</span>
                 : null)}
