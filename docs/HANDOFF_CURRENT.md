@@ -1594,3 +1594,17 @@ FIXED ON THE WALK:
 STILL OPEN: no PDF for a block proposal - "sent" is notional until there is a document. The header
 is crowded with six buttons. The wording still leaks D and V at the broker. The type filter on the
 opportunity list renders but does not respond.
+⭐ AND THE PDF, so "sent" stops being notional. A block proposal now produces a document: branded
+banner, buyer and developer, plan and DLD, list -> block discount -> total payable, a PER-UNIT
+SCHEDULE and the reservation figure. Rendered from the SENT VERSION's structured_data, never the
+live calculator, so reprinting an old offer shows what was actually offered.
+WHAT THE BUYER SEES AND DOES NOT: per-unit NET prices, one block discount figure - not the split
+between units, which invites an argument about which unit got what when the concession was for the
+block as a whole. No commission, no approval reference, nothing internal.
+AND "WHAT YOU PAY BEFORE THE SPA" - instalment, DLD share, SPA fee, Oqood, total. FOUNDER: "if you
+do not put it in the proposal there will be arguments - you never told me about all this." Computed
+at TODAY's rates with a disclaimer rather than frozen: government fees are the government's, and
+claiming to fix them would be a certainty the broker does not have.
+FOUND WHILE BUILDING IT: unit descriptions came out BLANK, because the caller passes availUnits
+which EXCLUDES units already in the block - so a buyer received "EBT-07-03 - AED 1,414,581" with no
+idea whether it was a studio or a four-bedroom. Now fetched rather than depended upon.
