@@ -1128,3 +1128,10 @@ a broker earned by holding back. discount_authority_pct, bonus_commission_pct an
 all sit on pp_master_agreements, unfilled. CHEAP FIRST STEP: show the authority beside the discount
 in the calculator - "5% of 10% available". A per-deal bonus control already exists on the manager's
 view; the full incentive model waits until the flow is complete.
+
+## ADDED DAY 87 - THE OPPORTUNITY LIST NEEDS A BLOCK / 1-TO-1 FILTER
+The BLOCK / 1-TO-1 chip (Day 84) tells a broker what a row IS, but he still cannot ISOLATE one kind.
+On a list of 11 that is a minor annoyance; on a real book it means scanning. FOUNDER: "two more
+filters here for block and 1-to-1, or one dropdown to select - easy."
+Cheap: block_deal_id is already on the opportunity and already read for the chip. It sits beside the
+existing stage tabs.
