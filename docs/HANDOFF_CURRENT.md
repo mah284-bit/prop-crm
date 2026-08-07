@@ -1548,3 +1548,49 @@ NEXT: the Day-86 findings still open - the Payment Summary contradicting the tab
 block header reporting only the reservation on a fully collected block, currency formatting on
 numeric fields, whether amending a payment leaves a trail. Then the 1-to-1 SPA ceremony and a block
 child walked through to Won.
+
+## ── DAY 87 — THE BLOCK PROPOSAL, AND THE FLOW SIMPLIFIED BY THE FOUNDER ──
+THE GAP CLOSED: a block used to reach Closed Won with NOTHING the buyer had agreed to in writing.
+It now has the same grammar as a 1-to-1 - versioned offers, supersession, acceptance - with one
+source of truth: THE DISTRIBUTION STAYS MASTER and each offer is rendered from it.
+⭐ AND THE DESIGN WAS THE FOUNDER'S, THREE TIMES OVER. The architect built a two-button flow (lock,
+then send), approval recorded per version, and an authority gate. Each was questioned, each was
+wrong:
+ - TWO BUTTONS became ONE. "When I click the button it saves the record and sends the proposal at
+   the same time - why set first and then send?" There was no reason: the lock existed first and
+   the send was bolted beside it. History, not design.
+ - APPROVAL PER VERSION became ONE APPROVAL. "The negotiation happens at the developer's office -
+   they play within it." Recording it on every version was bureaucracy.
+ - ACCEPTANCE PER ROW became ONE ACT. "At V10 I move to accepted - I can send 100 proposals, I
+   cannot have a button on every save." Settled by WALKING THE 1-TO-1, which shows proposals as a
+   COUNT and acceptance as a stage move.
+THE CALCULATOR NOW HAS THREE STATES, and this too was the founder's: "everything is frozen after
+the first proposal is sent - a button to edit the offer, or move to accepted." It is not a scratch
+pad once an offer exists; what it shows IS the live offer.
+  no offer sent -> editable, one Send button
+  offer sent    -> FROZEN. Edit the offer / Offer accepted
+  accepted      -> FROZEN. Reopen negotiation, MANAGER ONLY, with a reason
+  money in      -> the existing settlement lock holds
+AN IDENTICAL REPEAT IS REFUSED - nothing saved, nothing sent. Any real change (price, plan, DLD,
+units) sends. The first offer always sends. Resending an unchanged offer is the PDF's job, not a
+new version's.
+FIXED ON THE WALK:
+ - REMOVING A LINE COMMITTED IMMEDIATELY. A broker who pressed remove to look at something and then
+   pressed Cancel had already lost the line WITH ITS DISCOUNT, and no way back. Every other edit
+   lived in form state; only remove wrote straight through. It now joins them, with a confirmation
+   first - founder: "it is a warning for making a mistake; even after that you proceed, so the app
+   does not take responsibility." A line WITH a child keeps the drop ceremony: dropping a live deal
+   is not a form edit.
+ - A UNIT JOINING A BLOCK ARRIVED AT 0%, so adding one to a 5.5% block silently dropped the block
+   total to 2.04%. It now inherits the block rate.
+ - THE BLOCK RATE RESET TO 0 on every open, which is WHY the inheritance had nothing to read. The
+   founder's fix, and better than the architect's line-scanning: THE BLOCK RECORDS ITS CURRENT
+   OFFER - current_proposal_id and current_discount_pct, written by the send. One field, one
+   writer, one moment. It also removes an inference: "the latest proposal" was derived from
+   status != superseded, so a half-failed send would leave two live offers or none.
+ - The tab's send button referenced `lines` and `units`, which exist only in the calculator - two
+   doors to one act, and the second one crashed. The send lives in the calculator; the tab is
+   history.
+STILL OPEN: no PDF for a block proposal - "sent" is notional until there is a document. The header
+is crowded with six buttons. The wording still leaks D and V at the broker. The type filter on the
+opportunity list renders but does not respond.
