@@ -18,10 +18,14 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   // and presses send again gets V2 rendered from the SAME numbers - two versions of one offer, and
   // an awkward thing to explain to a buyer holding both. If the terms have moved, lock D2 first.
   const [sentFromD, setSentFromD] = useState([]);
+  const [lastSent, setLastSent] = useState(null);
   useEffect(() => { (async () => {
     if (!block?.id) return;
     const { data } = await supabase.from("proposals").select("structured_data").eq("block_deal_id", block.id);
     setSentFromD((data || []).map(r => r.structured_data?.block_distribution_version).filter(v => v != null));
+    const rows = (data || []).map(r => r.structured_data).filter(Boolean);
+    const newest = rows.sort((x, y) => (y.block_distribution_version || 0) - (x.block_distribution_version || 0))[0];
+    setLastSent(newest ? { total: newest.total_value, plan: newest.payment_plan, dld: newest.dld_handling, units: newest.unit_count } : null);
   })(); }, [block?.id, sendingProp]);
   // Day 87: THE SEND BELONGS BESIDE THE DECISION. Lock and send were two acts for one intention -
   // a broker could lock D2 and forget to tell the buyer, leaving the block's terms ahead of what
@@ -318,6 +322,14 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
               The counter shows what has already gone out: ten offers with no acceptance is a signal
               the broker should see before adding an eleventh. */}
           <button disabled={sendingProp} onClick={async ()=>{
+            // Day 87: refuse an IDENTICAL repeat - nothing saved, nothing sent. Any real change
+            // (price, plan, DLD, units) sends. The first offer always sends: nothing to compare to.
+            if (lastSent && Math.abs(Number(lastSent.total || 0) - totNet) < 0.5 &&
+                (lastSent.plan || "") === (planPreset || "") && (lastSent.dld || "") === (dldPayer || "") &&
+                Number(lastSent.units || 0) === lines.length) {
+              showToast("Nothing has changed since the last offer. Change something, or resend the PDF from Proposals.", "warning");
+              return;
+            }
             setSendingProp(true);
             const locked = await lockDistribution();
             if (!locked) { setSendingProp(false); return; }
