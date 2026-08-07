@@ -1142,3 +1142,19 @@ existing stage tabs.
    So something is INTERCEPTING the control rather than the logic being wrong - the same shape as
    the Day-85 KYC upload that looked live and was not. NEXT STEP: try keyboard arrows on it; if the
    value changes that way the click is being overlaid.
+
+## ⭐ DESIGN (Day 87) - BLOCK ACCEPTANCE IS A STATUS, NOT A BUTTON PER VERSION
+Settled by walking the 1-to-1. The architect proposed an "Accepted" control on each proposal row;
+THE FOUNDER WAS RIGHT AND THAT IS WRONG: "at V10 I move to accepted - I can send 100 proposals,
+I cannot have a button on every save."
+HOW THE 1-TO-1 ACTUALLY WORKS: proposals accumulate as HISTORY - V1, V2, superseded, the journey
+shows "Quoted (n)" as a COUNT. Acceptance is a STAGE MOVE on the deal, one act on the parent
+record, whenever the buyer says yes and whichever version it was.
+⭐ SO THE BLOCK MIRRORS IT WITH A STATUS: `accepted`, sitting between `approved` and `confirmed`.
+ - ONE header button, "Buyer accepted", live once at least one proposal exists.
+ - It stamps the date and the version that was live at that moment - the accepted version is
+   implicitly the LATEST, the same assumption the 1-to-1 makes. No selection, no per-row control.
+ - CONFIRM IS GATED ON IT. Today a block claims units, starts a clock and demands a reservation on
+   an offer nobody has agreed to.
+ALSO NOTED while walking the 1-to-1: "Build proposal" and "send" are ONE act there too - status is
+SENT on save, and the button becomes "+ Send Revised" afterwards. The block already matches.
