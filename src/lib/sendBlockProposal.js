@@ -75,10 +75,12 @@ export async function sendBlockProposal({ block, distribution, lines, units, cur
         .eq("status", "active").order("created_at", { ascending: false }).limit(1);
       if (ma && ma.length) authority = ma[0].discount_authority_pct;
     } catch (e) { /* no agreement readable - do not block the send */ }
-    if (authority != null && discPct > Number(authority) + 0.001 && !String(approvedBy || "").trim()) {
-      return { ok: false, needsApproval: true, authority: Number(authority), discountPct: Number(discPct.toFixed(2)),
-        error: "This is " + discPct.toFixed(2) + "% against an authority of " + authority + "%. Name who at the developer approved it." };
-    }
+    // Day 87: THE AUTHORITY GATE IS GONE. Founder: "one approval from the developer is good
+    // enough - they play within it." The negotiation happens at the developer's office, so a broker
+    // is not inventing discounts version by version; he gets an approval and works inside it.
+    // Recording it on every version was bureaucracy, and with nothing passing approvedBy the gate
+    // would have blocked the send outright. The block header's single Record developer approval
+    // remains the gate. The authority is still STAMPED below, for the record.
     const totalList = unitRows.reduce((s, r) => s + r.asking_price, 0);
     const totalNet = unitRows.reduce((s, r) => s + r.discounted_price, 0);
 

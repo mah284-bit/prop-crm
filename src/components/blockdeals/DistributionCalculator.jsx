@@ -27,30 +27,6 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   // a broker could lock D2 and forget to tell the buyer, leaving the block's terms ahead of what
   // the buyer knows. This always renders the distribution he is standing in. Same helper as the
   // Proposals tab; second entry point, no rework of the lock.
-  const sendThisDistribution = async () => {
-    if (!dLatest) return;
-    setSendingProp(true);
-    try {
-      const who = window.prompt("Who at the developer approved this discount? (optional if within your authority)");
-      if (who === null) { setSendingProp(false); return; }
-      const ref = who.trim() ? (window.prompt("Approval reference - email, call, meeting note:") || "") : "";
-      const args = { block, distribution: dLatest, lines: dLatest.allocations || [], units: availUnits, currentUser };
-      let r = await sendBlockProposal({ ...args, approvedBy: who.trim() || null, approvalRef: ref.trim() || null });
-      if (r.needsApproval) {
-        const forced = window.prompt(r.error + "\n\nName who approved it:");
-        if (!forced || !forced.trim()) { showToast("Not sent - this discount needs the developer approval", "warning"); setSendingProp(false); return; }
-        const fref = window.prompt("Approval reference:") || "";
-        r = await sendBlockProposal({ ...args, approvedBy: forced.trim(), approvalRef: fref.trim() || null });
-      }
-      showToast(r.ok ? ("Proposal V" + r.version + " created - see Proposals") : (r.error || "Could not send"), r.ok ? "success" : "error");
-      // Day 87: CARRY HIM TO WHAT HE JUST MADE. The form looked identical after sending, so a
-      // broker could not tell it had worked and would press again - creating a duplicate offer
-      // from the same distribution. Close the calculator and land on the Proposals tab, which is
-      // the app's own grammar: the 1-to-1 builder closes and shows the proposal on the deal.
-      if (r.ok) { onLocked && onLocked("proposals"); onClose && onClose(); }
-    } catch (e) { showToast("Could not send: " + (e.message || e), "error"); }
-    setSendingProp(false);
-  };
   const [loading, setLoading] = useState(true);
   // Day 77: BLOCK TERMS - uniform across every child (founder ruling: differing terms = not a block).
   // Stored on the DISTRIBUTION so they version with the price they were agreed alongside.
@@ -181,32 +157,34 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   };
 
   const lockDistribution = async () => {
-    if (lines.length === 0) { showToast("No lines to distribute", "error"); return; }
-    if (lines.some(x => Number(x.value) < 0)) { showToast("Negative discounts not allowed", "error"); return; }
+    if (lines.length === 0) { showToast("No lines to distribute", "error"); return false; }
+    if (lines.some(x => Number(x.value) < 0)) { showToast("Negative discounts not allowed", "error"); return false; }
     if (hasBlockTarget && Math.abs(remainder) > 1) { showToast("Remainder must reach zero before locking (AED " + Math.round(remainder).toLocaleString() + " unallocated)", "error"); return; }
     // Day 81: NO LOCK WITHOUT A PAYMENT PLAN. A block locked with no plan births children that
     // compute a ZERO first instalment - on the specimen that hid 300,453 of a 380,584 bill, and
     // nothing anywhere said so. The plan is not optional decoration; it is what the money is
     // derived from. Same discipline as remainder-must-reach-zero.
-    if (!planPreset) { showToast("Pick a payment plan before locking - the instalments are computed from it", "error"); return; }
+    if (!planPreset) { showToast("Pick a payment plan before locking - the instalments are computed from it", "error"); return false; }
     const version = (dLatest?.version || 0) + 1;
     const allocations = lines.map(x => ({ unit_id: x.unit_id, unit_ref: x.unit_ref, list_price: x.list_price, mode: x.mode, value: Number(x.value) || 0, discount: Math.round(discOf(x) * 100) / 100, net_price: Math.round(netOf(x) * 100) / 100 }));
-    const { error } = await supabase.from("block_distributions").insert({
+    // Day 87: return the inserted row - the single Send button needs it immediately, and dLatest
+    // will not have refreshed within the same tick.
+    const { data: inserted, error } = await supabase.from("block_distributions").insert({
       company_id: currentUser.company_id, block_deal_id: block.id, version,
       allocations, block_total: totList, discount_total: Math.round(totDisc * 100) / 100,
       payment_plan_preset: planPreset || null,
       dld_payer: dldPayer || null,
       dld_split_pct: dldPayer === "split" ? (Number(dldSplitPct) || 50) : null,
       locked_at: new Date().toISOString(), created_by: currentUser.id,
-    });
-    if (error) { showToast(error.message, "error"); return; }
+    }).select().single();
+    if (error) { showToast(error.message, "error"); return false; }
     const keepStatus = ["approved","confirmed","partially_dropped","completed"].includes(block.status) ? block.status : "negotiating";
     const { error: e2 } = await supabase.from("block_deals").update({
       discount_mode: hasBlockTarget ? blockMode : "flat",
       discount_value: hasBlockTarget ? (Number(blockValue) || 0) : Math.round(totDisc * 100) / 100,
       status: keepStatus, updated_at: new Date().toISOString(),
     }).eq("id", block.id);
-    if (e2) { showToast(e2.message, "error"); return; }
+    if (e2) { showToast(e2.message, "error"); return false; }
     // REPRICE existing children - only when the developer has approved, only pre-SPA deals
     const { data: liveLines } = await supabase.from("block_deal_units").select("id, unit_ref, unit_id, child_opportunity_id").eq("block_deal_id", block.id).neq("status", "dropped");
     const withChildren = (liveLines || []).filter(x => x.child_opportunity_id);
@@ -231,9 +209,11 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
         else if (skipped.length) showToast("No repricing - all deals are contract-locked: " + skipped.join(", "), "info");
       }
     }
-    showToast("Distribution D" + version + " locked", "success");
+    // Day 87: the CALLER closes, not this. The single Send button locks then sends, and closing
+    // here would unmount the component before the send ran. It also no longer announces the lock -
+    // the broker pressed "send an offer", so the toast that matters is the one about the offer.
     onLocked?.();
-    onClose?.();
+    return inserted;
   };
 
   const fmt = (n) => "AED " + Math.round(Number(n || 0)).toLocaleString();
@@ -331,11 +311,23 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
         </div>
         <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
           <button onClick={onClose} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",color:"#475569"}}>Cancel</button>
-          <button onClick={lockDistribution} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{String.fromCodePoint(0x1F512)} Lock Distribution D{(dLatest?.version || 0) + 1}</button>
-          {dLatest && <button disabled={sendingProp || sentFromD.includes(dLatest.version)} onClick={sendThisDistribution}
-            style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:13,fontWeight:600,cursor:"pointer",marginLeft:8}}>
-            {sendingProp ? "Sending..." : (sentFromD.includes(dLatest.version) ? ("\u2713 V sent from D" + dLatest.version) : ("Send D" + dLatest.version + " to the buyer"))}
-          </button>}
+          {/* Day 87: ONE BUTTON. Lock and send were two acts because the lock existed first and
+              the send was bolted beside it - history, not design. Founder: "when I click the button
+              it will save the record and send the proposal at the same time - why set first and
+              then send?" No good reason. It writes the distribution AND creates the proposal.
+              The counter shows what has already gone out: ten offers with no acceptance is a signal
+              the broker should see before adding an eleventh. */}
+          <button disabled={sendingProp} onClick={async ()=>{
+            setSendingProp(true);
+            const locked = await lockDistribution();
+            if (!locked) { setSendingProp(false); return; }
+            const r = await sendBlockProposal({ block, distribution: locked, lines: locked.allocations || [], units: availUnits, currentUser });
+            setSendingProp(false);
+            if (r.ok) { showToast("Offer sent to the buyer - version " + r.version, "success"); onClose?.(); }
+            else showToast(r.error || "Could not send", "error");
+          }} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
+            {sendingProp ? "Sending..." : (sentFromD.length ? ("Send a revised offer \u00b7 " + sentFromD.length + " already sent") : "Send this offer to the buyer")}
+          </button>
         </div>
       </div>
       {removeTarget && (
