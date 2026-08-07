@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase.js";
+import { sendBlockProposal } from "../../lib/sendBlockProposal.js";
 import UnitPicker from "../shared/UnitPicker.jsx";
 import { rollUpBlockStatus } from "../../lib/rollUpBlockStatus.js";
 import { PAYMENT_PLAN_PRESETS } from "../../modules/constants.js";
@@ -12,6 +13,30 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   const [removeTarget, setRemoveTarget] = useState(null);
   const [availUnits, setAvailUnits] = useState([]);
   const [addUnitPick, setAddUnitPick] = useState("");
+  const [sendingProp, setSendingProp] = useState(false);
+  // Day 87: THE SEND BELONGS BESIDE THE DECISION. Lock and send were two acts for one intention -
+  // a broker could lock D2 and forget to tell the buyer, leaving the block's terms ahead of what
+  // the buyer knows. This always renders the distribution he is standing in. Same helper as the
+  // Proposals tab; second entry point, no rework of the lock.
+  const sendThisDistribution = async () => {
+    if (!dLatest) return;
+    setSendingProp(true);
+    try {
+      const who = window.prompt("Who at the developer approved this discount? (optional if within your authority)");
+      if (who === null) { setSendingProp(false); return; }
+      const ref = who.trim() ? (window.prompt("Approval reference - email, call, meeting note:") || "") : "";
+      const args = { block, distribution: dLatest, lines: dLatest.allocations || [], units: availUnits, currentUser };
+      let r = await sendBlockProposal({ ...args, approvedBy: who.trim() || null, approvalRef: ref.trim() || null });
+      if (r.needsApproval) {
+        const forced = window.prompt(r.error + "\n\nName who approved it:");
+        if (!forced || !forced.trim()) { showToast("Not sent - this discount needs the developer approval", "warning"); setSendingProp(false); return; }
+        const fref = window.prompt("Approval reference:") || "";
+        r = await sendBlockProposal({ ...args, approvedBy: forced.trim(), approvalRef: fref.trim() || null });
+      }
+      showToast(r.ok ? ("Proposal V" + r.version + " sent to the buyer") : (r.error || "Could not send"), r.ok ? "success" : "error");
+    } catch (e) { showToast("Could not send: " + (e.message || e), "error"); }
+    setSendingProp(false);
+  };
   const [loading, setLoading] = useState(true);
   // Day 77: BLOCK TERMS - uniform across every child (founder ruling: differing terms = not a block).
   // Stored on the DISTRIBUTION so they version with the price they were agreed alongside.
@@ -293,6 +318,10 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
         <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
           <button onClick={onClose} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",color:"#475569"}}>Cancel</button>
           <button onClick={lockDistribution} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{String.fromCodePoint(0x1F512)} Lock Distribution D{(dLatest?.version || 0) + 1}</button>
+          {dLatest && <button disabled={sendingProp} onClick={sendThisDistribution}
+            style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:13,fontWeight:600,cursor:"pointer",marginLeft:8}}>
+            {sendingProp ? "Sending..." : "Send D" + dLatest.version + " to the buyer"}
+          </button>}
         </div>
       </div>
       {removeTarget && (
