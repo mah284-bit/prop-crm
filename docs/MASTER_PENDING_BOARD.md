@@ -1158,3 +1158,15 @@ record, whenever the buyer says yes and whichever version it was.
    an offer nobody has agreed to.
 ALSO NOTED while walking the 1-to-1: "Build proposal" and "send" are ONE act there too - status is
 SENT on save, and the button becomes "+ Send Revised" afterwards. The block already matches.
+
+## ADDED DAY 87 - ADMIN AND TRUSTEE FEES ARE HARD-CODED, NOT SETTINGS
+Every opportunity is created with `current_admin_fee: 580` and `current_trustee_fee: 4200`, typed
+into the code. Company settings hold SPA, Oqood, DLD% and the reservation - not these two. So a
+tenant whose DLD trustee charges differently, or whose developer adds an admin charge, cannot say
+so. Same class as the Day-83 fee sweep, and missed by it because these live on the OPPORTUNITY
+insert rather than in a fee resolver.
+FOUNDER: a DEVELOPER ADMIN CHARGE may also apply and is not modelled at all - "I always added this
+as 0", so it has never been visible.
+FIX SHAPE: both belong in Buyer Fees beside the others, resolved through feeSettings.js like the
+rest. And the buyer-facing proposal should show them, because "you never told me about this" is the
+argument they cause.

@@ -6,6 +6,7 @@ import { getFees } from "../../lib/feeSettings.js";
 import BlockPaymentDialog from "./BlockPaymentDialog.jsx";
 import BlockCollectionDialog from "./BlockCollectionDialog.jsx";
 import { sendBlockProposal } from "../../lib/sendBlockProposal.js";
+import { generateBlockProposal } from "../../lib/generateBlockProposal.js";
 import DeveloperQuestions from "../developer/DeveloperQuestions.jsx";
 import { recordBlockCollection } from "../../lib/recordBlockCollection.js";
 import { generateBlockStatement } from "../../lib/generateBlockStatement.js";
@@ -661,6 +662,16 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                           <td style={{padding:"7px 8px",textAlign:"right",fontWeight:700}}>{fmt(sd.total_value || 0)}</td>
                           <td style={{padding:"7px 8px",color:"#64748B"}}>D{sd.block_distribution_version ?? "?"}</td>
                           <td style={{padding:"7px 8px",fontSize:10,fontWeight:700,color:live?"#166534":"#94A3B8"}}>{(pr.status||"sent").toUpperCase()}</td>
+                          {/* Day 87: until now "sent" was NOTIONAL - the offer existed as a row and
+                              the buyer had nothing to hold. Works on superseded versions too: a
+                              broker must be able to reprint what he sent three weeks ago. */}
+                          <td style={{padding:"7px 8px"}}><button onClick={async ()=>{
+                            try {
+                              const { data: co } = await supabase.from("companies").select("name, brand_color, brand_accent").eq("id", currentUser.company_id).maybeSingle();
+                              const blob = generateBlockProposal({ proposal: pr, block, buyer, company: co });
+                              window.open(URL.createObjectURL(blob), "_blank");
+                            } catch (e) { showToast("Could not build the PDF: " + (e.message||e), "error"); }
+                          }} style={{padding:"3px 9px",borderRadius:6,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:10,fontWeight:700,cursor:"pointer"}}>PDF</button></td>
                         </tr>); })}</tbody>
                     </table>
                   )}
