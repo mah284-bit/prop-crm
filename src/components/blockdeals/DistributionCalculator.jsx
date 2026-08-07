@@ -14,6 +14,15 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   const [availUnits, setAvailUnits] = useState([]);
   const [addUnitPick, setAddUnitPick] = useState("");
   const [sendingProp, setSendingProp] = useState(false);
+  // Day 87: ONE VERSION PER DISTRIBUTION. Without this a broker who reopens the calculator on D1
+  // and presses send again gets V2 rendered from the SAME numbers - two versions of one offer, and
+  // an awkward thing to explain to a buyer holding both. If the terms have moved, lock D2 first.
+  const [sentFromD, setSentFromD] = useState([]);
+  useEffect(() => { (async () => {
+    if (!block?.id) return;
+    const { data } = await supabase.from("proposals").select("structured_data").eq("block_deal_id", block.id);
+    setSentFromD((data || []).map(r => r.structured_data?.block_distribution_version).filter(v => v != null));
+  })(); }, [block?.id, sendingProp]);
   // Day 87: THE SEND BELONGS BESIDE THE DECISION. Lock and send were two acts for one intention -
   // a broker could lock D2 and forget to tell the buyer, leaving the block's terms ahead of what
   // the buyer knows. This always renders the distribution he is standing in. Same helper as the
@@ -33,7 +42,12 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
         const fref = window.prompt("Approval reference:") || "";
         r = await sendBlockProposal({ ...args, approvedBy: forced.trim(), approvalRef: fref.trim() || null });
       }
-      showToast(r.ok ? ("Proposal V" + r.version + " sent to the buyer") : (r.error || "Could not send"), r.ok ? "success" : "error");
+      showToast(r.ok ? ("Proposal V" + r.version + " created - see Proposals") : (r.error || "Could not send"), r.ok ? "success" : "error");
+      // Day 87: CARRY HIM TO WHAT HE JUST MADE. The form looked identical after sending, so a
+      // broker could not tell it had worked and would press again - creating a duplicate offer
+      // from the same distribution. Close the calculator and land on the Proposals tab, which is
+      // the app's own grammar: the 1-to-1 builder closes and shows the proposal on the deal.
+      if (r.ok) { onLocked && onLocked("proposals"); onClose && onClose(); }
     } catch (e) { showToast("Could not send: " + (e.message || e), "error"); }
     setSendingProp(false);
   };
@@ -318,9 +332,9 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
         <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
           <button onClick={onClose} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",color:"#475569"}}>Cancel</button>
           <button onClick={lockDistribution} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{String.fromCodePoint(0x1F512)} Lock Distribution D{(dLatest?.version || 0) + 1}</button>
-          {dLatest && <button disabled={sendingProp} onClick={sendThisDistribution}
+          {dLatest && <button disabled={sendingProp || sentFromD.includes(dLatest.version)} onClick={sendThisDistribution}
             style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:13,fontWeight:600,cursor:"pointer",marginLeft:8}}>
-            {sendingProp ? "Sending..." : "Send D" + dLatest.version + " to the buyer"}
+            {sendingProp ? "Sending..." : (sentFromD.includes(dLatest.version) ? ("\u2713 V sent from D" + dLatest.version) : ("Send D" + dLatest.version + " to the buyer"))}
           </button>}
         </div>
       </div>
