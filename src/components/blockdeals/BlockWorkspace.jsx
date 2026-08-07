@@ -652,27 +652,12 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                 <div>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
                     <div style={{fontSize:11,color:"#64748B"}}>What the BUYER has been sent. Each version is rendered from the locked distribution - the distribution stays master, so the two can never drift.</div>
-                    <button disabled={!dLatest || sendingProposal} onClick={async ()=>{
-                      setSendingProposal(true);
-                      // Day 87: approval is recorded ON THE VERSION. Always offered, mandatory only
-                      // when the discount exceeds the developer's authority - the send returns
-                      // needsApproval and we ask, rather than demanding it every time.
-                      let who = window.prompt("Who at the developer approved this discount? (optional if within your authority)");
-                      if (who === null) { setSendingProposal(false); return; }
-                      let ref = who.trim() ? (window.prompt("Approval reference - email, call, meeting note:") || "") : "";
-                      let r = await sendBlockProposal({ block, distribution: dLatest, lines, units, currentUser, approvedBy: who.trim() || null, approvalRef: ref.trim() || null });
-                      if (r.needsApproval) {
-                        const forced = window.prompt(r.error + "\n\nName who approved it:");
-                        if (!forced || !forced.trim()) { setSendingProposal(false); showToast("Not sent - this discount needs the developer's approval", "warning"); return; }
-                        const fref = window.prompt("Approval reference:") || "";
-                        r = await sendBlockProposal({ block, distribution: dLatest, lines, units, currentUser, approvedBy: forced.trim(), approvalRef: fref.trim() || null });
-                      }
-                      setSendingProposal(false);
-                      if (r.ok) { showToast("Proposal V" + r.version + " sent to the buyer", "success"); onReload && onReload(); }
-                      else showToast(r.error || "Could not send", "error");
-                    }} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:dLatest?"#0F2540":"#CBD5E0",color:"#fff",cursor:dLatest?"pointer":"not-allowed"}}>
-                      {sendingProposal ? "Sending..." : (blockProposals.length ? "Send revised" : "Send proposal")}
-                    </button>
+                    {/* Day 87: the send lives in the CALCULATOR, beside the lock - founder's ruling
+                        that the act belongs next to the decision it depends on. This tab is HISTORY.
+                        It briefly had its own send button and it referenced `lines` and `units`,
+                        which exist only in the calculator - two doors to one act, and the second
+                        one crashed. */}
+                    <span style={{fontSize:11,color:"#94A3B8"}}>Send from the calculator, where the distribution is locked.</span>
                   </div>
                   {!dLatest && <div style={{fontSize:11,color:"#B45309",background:"#FFFBEB",border:"1px solid #FCD34D",borderRadius:7,padding:"8px 10px",marginBottom:10}}>Lock a distribution in the calculator first - the proposal is rendered from it.</div>}
                   {blockProposals.length === 0 ? (
