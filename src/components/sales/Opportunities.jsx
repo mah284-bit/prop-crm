@@ -16,6 +16,7 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
   // Filters
   const [search, setSearch] = useState("");
   const [fStage, setFStage] = useState("All");
+  const [fType, setFType] = useState("All");
   const [fOwner, setFOwner] = useState("All"); // "All" | "Mine" | userId
 
   // Deep-link: if initialFilter says open a specific opp, do it
@@ -99,6 +100,9 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
     if (!canSeeAll) rows = rows.filter(o => o.assigned_to === currentUser.id);
     // Stage filter
     if (fStage !== "All") rows = rows.filter(o => o.stage === fStage);
+    // Day 87: isolate one kind - the chip says what a row IS, this filters to it.
+    if (fType === "Block") rows = rows.filter(o => !!o.block_deal_id);
+    else if (fType === "1-to-1") rows = rows.filter(o => !o.block_deal_id);
     // Owner filter
     if (fOwner === "Mine") rows = rows.filter(o => o.assigned_to === currentUser.id);
     else if (fOwner !== "All") rows = rows.filter(o => o.assigned_to === fOwner);
@@ -123,7 +127,7 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
       const bt = b.stage_updated_at ? new Date(b.stage_updated_at).getTime() : 0;
       return bt - at;
     });
-  }, [opps, fStage, fOwner, search, leadById, unitById, projectById, currentUser.id]);
+  }, [opps, fStage, fType, fOwner, search, leadById, unitById, projectById, currentUser.id]);
 
   // Stage counts (for chip badges)
   const stageCounts = useMemo(()=>{
@@ -239,6 +243,14 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
         )}
       </div>
 
+      <div style={{display:"flex",gap:8,marginBottom:10}}>
+        <select value={fType} onChange={e=>setFType(e.target.value)}
+          style={{padding:"7px 11px",borderRadius:8,border:"1.5px solid #E2E8F0",fontSize:12,fontWeight:600,color:"#0F2540",background:"#fff",cursor:"pointer",outline:"none"}}>
+          <option value="All">All types</option>
+          <option value="1-to-1">1-to-1 only</option>
+          <option value="Block">Block only</option>
+        </select>
+      </div>
       {/* Stage filter chips */}
       <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:14}}>
         <button onClick={()=>setFStage("All")}
