@@ -1066,3 +1066,13 @@ AED 1,431,643 of AED 1,431,643 ✓" - with the reservation as a detail rather th
 While money is outstanding it should name what is outstanding, across both bills.
 ALSO: the header does not refresh after a collection is recorded - close and reopen shows it. The
 stale-render pattern again.
+   ⭐ AND THE ROOT CAUSE, founder Day 87: "the same form moves and various actions are taken, hence
+   it is carrying forward the legacy." ONE FORM SERVES FIVE GATES - Offer Accepted, Reserved, SPA
+   Signed, Closed Won, Closed Lost. Every addition was made for ONE gate and inherited by the rest.
+   That is not five bugs, it is one structural fact producing symptoms:
+    - a COLLECTION table appearing at a SIGNING ceremony
+    - QUICK-FILL DATE, built for one case, applying everywhere
+    - DLD radios on a form where terms should not change
+    - the heading reading "Record SPA Signing" when the button said "Collect payments"
+   The form cannot be reasoned about because it serves five masters. THAT is the argument for the
+   split - not tidiness.
