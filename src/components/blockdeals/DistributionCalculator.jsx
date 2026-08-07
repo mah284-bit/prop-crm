@@ -108,10 +108,17 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
       // fell from 5.5% to 2.04% with nothing saying so. Founder: "it always shows 0, never saves the
       // 5.5% we had already given." The rate is derivable: every line in the last distribution
       // carries its own percentage, and on a uniform block they agree.
-      const pcts = (last.allocations || []).filter(x => x.mode === "pct").map(x => Number(x.value) || 0);
-      if (pcts.length && pcts.every(v => Math.abs(v - pcts[0]) < 0.001)) {
+      // Day 87: the block RECORDS its current rate, written by the send. Read it first - one field,
+      // one writer, no inference. The line scan below stays as a fallback for blocks that predate it.
+      if (block.current_discount_pct != null) {
         setBlockMode("pct");
-        setBlockValue(String(pcts[0]));
+        setBlockValue(String(block.current_discount_pct));
+      } else {
+        const pcts = (last.allocations || []).filter(x => x.mode === "pct").map(x => Number(x.value) || 0);
+        if (pcts.length && pcts.every(v => Math.abs(v - pcts[0]) < 0.001)) {
+          setBlockMode("pct");
+          setBlockValue(String(pcts[0]));
+        }
       }
       if (last.payment_plan_preset) setPlanPreset(last.payment_plan_preset);
       if (last.dld_payer) setDldPayer(last.dld_payer);

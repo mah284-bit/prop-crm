@@ -116,6 +116,15 @@ export async function sendBlockProposal({ block, distribution, lines, units, cur
 
     const res = await insertProposalRecord(payload);
     if (res.error) return { ok: false, error: res.error.message };
+    // Day 87: THE BLOCK HOLDS ITS CURRENT OFFER. Founder: "we remember it this way." Two problems
+    // it solves at once. First, the calculator's top-down field reset to 0 on every open, so a
+    // broker had to re-enter a rate he had already given - and might mistype it. Second, "the
+    // latest proposal" was INFERRED from status != superseded; if a send half-failed there would be
+    // two live offers or none, and nothing authoritative to ask. One field, one writer, one moment.
+    await supabase.from("block_deals").update({
+      current_proposal_id: res.data?.id || null,
+      current_discount_pct: payload.structured_data.block_discount_pct,
+    }).eq("id", block.id);
 
     await supabase.from("activities").insert({
       company_id: companyId,
