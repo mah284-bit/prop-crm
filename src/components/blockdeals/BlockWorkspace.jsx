@@ -626,7 +626,19 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                     <div style={{fontSize:11,color:"#64748B"}}>What the BUYER has been sent. Each version is rendered from the locked distribution - the distribution stays master, so the two can never drift.</div>
                     <button disabled={!dLatest || sendingProposal} onClick={async ()=>{
                       setSendingProposal(true);
-                      const r = await sendBlockProposal({ block, distribution: dLatest, lines, units, currentUser });
+                      // Day 87: approval is recorded ON THE VERSION. Always offered, mandatory only
+                      // when the discount exceeds the developer's authority - the send returns
+                      // needsApproval and we ask, rather than demanding it every time.
+                      let who = window.prompt("Who at the developer approved this discount? (optional if within your authority)");
+                      if (who === null) { setSendingProposal(false); return; }
+                      let ref = who.trim() ? (window.prompt("Approval reference - email, call, meeting note:") || "") : "";
+                      let r = await sendBlockProposal({ block, distribution: dLatest, lines, units, currentUser, approvedBy: who.trim() || null, approvalRef: ref.trim() || null });
+                      if (r.needsApproval) {
+                        const forced = window.prompt(r.error + "\n\nName who approved it:");
+                        if (!forced || !forced.trim()) { setSendingProposal(false); showToast("Not sent - this discount needs the developer's approval", "warning"); return; }
+                        const fref = window.prompt("Approval reference:") || "";
+                        r = await sendBlockProposal({ block, distribution: dLatest, lines, units, currentUser, approvedBy: forced.trim(), approvalRef: fref.trim() || null });
+                      }
                       setSendingProposal(false);
                       if (r.ok) { showToast("Proposal V" + r.version + " sent to the buyer", "success"); onReload && onReload(); }
                       else showToast(r.error || "Could not send", "error");

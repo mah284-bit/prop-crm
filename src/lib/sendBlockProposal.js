@@ -17,7 +17,13 @@ import { insertProposalRecord } from "./createProposal.js";
 // From the buyer's side it behaves exactly like a 1-to-1: he receives V1, then V2, and the block
 // runs on the latest version. One document, per-unit schedule.
 
-export async function sendBlockProposal({ block, distribution, lines, units, currentUser, notes }) {
+// Day 87: APPROVAL BELONGS ON THE VERSION. Each version records who at the developer approved
+// THAT discount - a block-level field goes stale the moment D2 raises it. And the threshold comes
+// from the master agreement's DISCOUNT AUTHORITY, which was captured on the agreement form and
+// read nowhere until now: within it, approval is optional but recordable; above it, mandatory.
+// FOUNDER: "the broker cannot take a decision on behalf of the developer - if the developer
+// refuses, the deal is dusted."
+export async function sendBlockProposal({ block, distribution, lines, units, currentUser, notes, approvedBy, approvalRef }) {
   if (!block?.id) return { ok: false, error: "no block" };
   if (!distribution) return { ok: false, error: "Lock a distribution first - the proposal is rendered from it" };
   const companyId = block.company_id || currentUser?.company_id || null;
@@ -56,6 +62,23 @@ export async function sendBlockProposal({ block, distribution, lines, units, cur
       };
     });
 
+    const totalList0 = unitRows.reduce((s, r) => s + r.asking_price, 0);
+    const totalNet0 = unitRows.reduce((s, r) => s + r.discounted_price, 0);
+    const discPct = totalList0 ? ((totalList0 - totalNet0) / totalList0) * 100 : 0;
+    // The authority for THIS developer. Null means no agreement on file - then nothing is enforced,
+    // because a threshold nobody set cannot be exceeded.
+    let authority = null;
+    try {
+      const { data: ma } = await supabase.from("pp_master_agreements")
+        .select("discount_authority_pct")
+        .eq("company_id", companyId).eq("developer_id", block.pp_developer_id || block.developer_id)
+        .eq("status", "active").order("created_at", { ascending: false }).limit(1);
+      if (ma && ma.length) authority = ma[0].discount_authority_pct;
+    } catch (e) { /* no agreement readable - do not block the send */ }
+    if (authority != null && discPct > Number(authority) + 0.001 && !String(approvedBy || "").trim()) {
+      return { ok: false, needsApproval: true, authority: Number(authority), discountPct: Number(discPct.toFixed(2)),
+        error: "This is " + discPct.toFixed(2) + "% against an authority of " + authority + "%. Name who at the developer approved it." };
+    }
     const totalList = unitRows.reduce((s, r) => s + r.asking_price, 0);
     const totalNet = unitRows.reduce((s, r) => s + r.discounted_price, 0);
 
@@ -83,6 +106,9 @@ export async function sendBlockProposal({ block, distribution, lines, units, cur
         dld_split_pct: distribution.dld_split_pct ?? null,
         reservation_expected: Number(block.reservation_expected) || null,
         notes: notes || null,
+        approved_by: approvedBy || null,
+        approval_ref: approvalRef || null,
+        discount_authority_pct: authority,
       },
     };
 
