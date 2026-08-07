@@ -28,6 +28,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   //   offer sent     -> FROZEN, two buttons: Edit the offer / Offer accepted
   //   accepted       -> FROZEN, manager may Reopen negotiation with a reason
   //   money in       -> the existing settlement lock holds and nothing here applies
+  const [removedLineIds, setRemovedLineIds] = useState([]);
   const [editingOffer, setEditingOffer] = useState(false);
   const onAccept = async () => {
     const { data: props } = await supabase.from("proposals").select("id, version, structured_data")
@@ -102,6 +103,16 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
       if (block.proposed_dld) setDldPayer(block.proposed_dld);
     }
     if (last) {
+      // Day 87: RESTORE THE BLOCK RATE. The top-down field reset to 0 on every open, so the block
+      // percentage was never in scope - a unit added later joined at 0% and the block total silently
+      // fell from 5.5% to 2.04% with nothing saying so. Founder: "it always shows 0, never saves the
+      // 5.5% we had already given." The rate is derivable: every line in the last distribution
+      // carries its own percentage, and on a uniform block they agree.
+      const pcts = (last.allocations || []).filter(x => x.mode === "pct").map(x => Number(x.value) || 0);
+      if (pcts.length && pcts.every(v => Math.abs(v - pcts[0]) < 0.001)) {
+        setBlockMode("pct");
+        setBlockValue(String(pcts[0]));
+      }
       if (last.payment_plan_preset) setPlanPreset(last.payment_plan_preset);
       if (last.dld_payer) setDldPayer(last.dld_payer);
       if (last.dld_split_pct != null) setDldSplitPct(String(last.dld_split_pct));
@@ -158,7 +169,12 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
     if (lines.some(x => x.unit_id === u.id)) { showToast("Already in the block", "error"); return; }
     const { data: newLine, error } = await supabase.from("block_deal_units").insert({ company_id: currentUser.company_id, block_deal_id: block.id, unit_id: u.id, unit_ref: u.unit_ref, list_price: u.list_price, status: "proposed" }).select().single();
     if (error) { showToast(error.message, "error"); return; }
-    setLines(ls => [...ls, { line_id: newLine.id, child_opportunity_id: null, unit_id: u.id, unit_ref: u.unit_ref, list_price: u.list_price, mode: "pct", value: "" }]);
+    // Day 87: A UNIT JOINING A BLOCK INHERITS THE BLOCK RATE. It used to arrive at 0%, so adding one
+    // to a 5.5% block dropped the block total to 2.04% - and the broker had to remember to press
+    // pro-rata to put it right. Founder: it should recalibrate without that click. A bespoke block
+    // (no single rate) leaves it blank, which is honest.
+    const inherit = (blockMode === "pct" && Number(blockValue) > 0) ? String(blockValue) : "";
+    setLines(ls => [...ls, { line_id: newLine.id, child_opportunity_id: null, unit_id: u.id, unit_ref: u.unit_ref, list_price: u.list_price, mode: "pct", value: inherit }]);
     setAvailUnits(av => av.filter(a => a.id !== u.id));
     setAddUnitPick("");
     showToast(u.unit_ref + " added - set its discount and lock to birth the deal", "success");
@@ -167,7 +183,17 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   const doRemove = async (x, mode) => {
     // unborn line (no child + no persisted line_id) -> silent local delete
     if (!x.child_opportunity_id) {
-      if (x.line_id) { await supabase.from("block_deal_units").update({ status: "dropped", status_reason: "removed in calculator (unborn line)", updated_at: new Date().toISOString() }).eq("id", x.line_id); }
+      // Day 87: ASK FIRST. No audited reason - this line was never a deal - but a confirmation, so
+      // removing it is deliberate. Founder: "it is a warning for making a mistake; even after that
+      // you proceed, so the app does not take responsibility."
+      if (!window.confirm("Remove " + x.unit_ref + " from this block?\n\nIts discount goes with it. Nothing is written until you send the offer.")) { setRemoveTarget(null); return; }
+      // Day 87: DO NOT COMMIT. This wrote the drop IMMEDIATELY, so a broker who pressed remove to
+      // look at something and then pressed Cancel had already lost the line - with its discount -
+      // and no way back. Every other edit here lives in form state until the offer is sent; only
+      // remove wrote straight through. It now joins them: the id is held and the lock does the
+      // deleting. A line WITH a child keeps the ceremony below - dropping a live deal is not a
+      // form edit.
+      if (x.line_id) setRemovedLineIds(ids => ids.includes(x.line_id) ? ids : [...ids, x.line_id]);
       setLines(ls => ls.filter(y => y.unit_id !== x.unit_id));
       setRemoveTarget(null);
       showToast(x.unit_ref + " removed from the block", "success");
@@ -220,6 +246,12 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
     // nothing anywhere said so. The plan is not optional decoration; it is what the money is
     // derived from. Same discipline as remainder-must-reach-zero.
     if (!planPreset) { showToast("Pick a payment plan before locking - the instalments are computed from it", "error"); return false; }
+    // Day 87: commit the removals now, not when the button was pressed.
+    if (removedLineIds.length) {
+      await supabase.from("block_deal_units")
+        .update({ status: "dropped", status_reason: "removed in calculator before the offer was sent", updated_at: new Date().toISOString() })
+        .in("id", removedLineIds);
+    }
     const version = (dLatest?.version || 0) + 1;
     const allocations = lines.map(x => ({ unit_id: x.unit_id, unit_ref: x.unit_ref, list_price: x.list_price, mode: x.mode, value: Number(x.value) || 0, discount: Math.round(discOf(x) * 100) / 100, net_price: Math.round(netOf(x) * 100) / 100 }));
     // Day 87: return the inserted row - the single Send button needs it immediately, and dLatest
