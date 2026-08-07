@@ -1076,3 +1076,23 @@ stale-render pattern again.
     - the heading reading "Record SPA Signing" when the button said "Collect payments"
    The form cannot be reasoned about because it serves five masters. THAT is the argument for the
    split - not tidiness.
+
+## OPEN QUESTION (Day 87) - SHOULD COMMISSION WAIT ON A SIGNING THE BROKER DOES NOT CONTROL?
+FOUNDER: "all the payments have been made and it is only the signing ceremony - should the broker
+wait 15-20 days because both buyer and developer are delaying? It is not his mistake."
+Same question as Day 86 from the other side: WHEN DOES THE DEVELOPER BECOME LIABLE - on the buyer's
+signature or the executed SPA? The payment TRIGGER field on pp_master_agreements already exists for
+exactly this (SPA Executed / First Payment Received / Full Payment Received / Custom), so the
+answer may be in the firm's own agreements.
+LEFT ALONE per the founder: one commission invoice PER UNIT on a block. Wait for a broker reaction.
+
+## ⭐ DESIGN (Day 87) - THE BLOCK PROPOSAL IS RENDERED FROM THE LOCKED DISTRIBUTION
+The block never sends the buyer anything (Day 85). It needs the same grammar the 1-to-1 has - V1
+goes out, the investor pushes back, V2 supersedes - BUT WITH ONE SOURCE OF TRUTH.
+⭐ THE DISTRIBUTION STAYS MASTER. It is already versioned (D1, D2), already carries the terms,
+already births the children, and the developer approves it. So a block proposal is RENDERED FROM
+D_latest, not typed independently: lock D1 -> generate V1; renegotiate -> D2 -> V2.
+WHY NOT LET THE PROPOSAL LEAD: two version histories (D and V) would drift apart, which is the
+exact fault behind a week of findings - two sources for one number.
+FROM THE BUYER'S SIDE it behaves like a 1-to-1: he receives V1, then V2, and the deal runs on the
+latest ACCEPTED version. One document, per-unit schedule.
