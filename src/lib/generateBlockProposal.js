@@ -15,7 +15,7 @@ import jsPDF from "jspdf";
 // Rendered from the SENT VERSION's structured_data - never from the live calculator - so what is
 // printed is exactly what was offered, even after the terms have moved on.
 
-export function generateBlockProposal({ proposal, block, buyer, company }) {
+export function generateBlockProposal({ proposal, block, buyer, company, fees }) {
   const sd = proposal?.structured_data || {};
   const doc = new jsPDF("p", "mm", "a4");
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -129,6 +129,46 @@ export function generateBlockProposal({ proposal, block, buyer, company }) {
   doc.line(margin, y, pageWidth - margin, y);
   y += 8;
 
+  // Day 87: WHAT HE ACTUALLY PAYS BEFORE THE SPA. The total above is the unit prices; a buyer
+  // reading only that is surprised later by DLD, Oqood and the SPA fee. FOUNDER: "if you do not put
+  // it in the proposal there will be arguments - you never told me about all this."
+  // Computed at TODAY's rates, not frozen: government fees are the government's, and the
+  // disclaimer below says so. Freezing them would claim a certainty the broker does not have.
+  if (fees) {
+    const planPct = Number(String(sd.payment_plan || "").split("/")[0]) || 0;
+    const net = Number(sd.total_value || 0);
+    const units = (sd.proposal_units || []).length || 1;
+    const instal = planPct ? Math.round(net * planPct / 100) : 0;
+    const dldFull = Math.round(net * (Number(fees.dldPct) || 4) / 100);
+    const dldShare = sd.dld_handling === "developer_pays" || sd.dld_handling === "developer" ? 0
+      : (sd.dld_handling === "split_5050" || sd.dld_handling === "split") ? Math.round(dldFull / 2) : dldFull;
+    const spa = Math.round((Number(fees.spaFee) || 0) * units);
+    const oq = Math.round((Number(fees.oqoodFee) || 0) * units);
+    const rows = [
+      [planPct ? "First instalment (" + planPct + "% of the price)" : "First instalment", instal],
+      ["DLD registration" + (dldShare && dldShare < dldFull ? " (your half)" : ""), dldShare],
+      ["SPA fee (" + units + " unit" + (units === 1 ? "" : "s") + ")", spa],
+      ["Oqood registration (" + units + " unit" + (units === 1 ? "" : "s") + ")", oq],
+    ].filter(r => r[1] > 0);
+    if (rows.length) {
+      if (y > 210) { doc.addPage(); y = 24; }
+      doc.setFontSize(11); doc.setFont(undefined, "bold"); doc.setTextColor(30,30,30);
+      doc.text("What you pay before the SPA", margin, y); y += 7;
+      doc.setFontSize(9); doc.setFont(undefined, "normal");
+      let sum = 0;
+      rows.forEach(([label, amt]) => {
+        sum += amt;
+        doc.setTextColor(90,90,90); doc.text(label, margin + 3, y);
+        doc.setTextColor(30,30,30); doc.text(aed(amt), pageWidth - margin - 3, y, { align: "right" });
+        y += 6;
+      });
+      doc.setDrawColor(220,226,233); doc.line(margin, y - 2, pageWidth - margin, y - 2); y += 4;
+      doc.setFont(undefined, "bold"); doc.setFontSize(10);
+      doc.text("Total before the SPA", margin + 3, y);
+      doc.text(aed(sum), pageWidth - margin - 3, y, { align: "right" });
+      y += 9;
+    }
+  }
   if (sd.reservation_expected) {
     doc.setFontSize(10);
     doc.setFont(undefined, "bold");
@@ -145,6 +185,8 @@ export function generateBlockProposal({ proposal, block, buyer, company }) {
     "Each unit is registered individually with the Dubai Land Department and carries its own SPA and",
     "Oqood certificate.",
     "This proposal supersedes any earlier version and is subject to the developer's confirmation.",
+    "Government and registration fees are indicative and apply at the rate in force on the date the",
+    "deal is confirmed.",
   ];
   terms.forEach((t) => { doc.text(t, margin, y); y += 5; });
 

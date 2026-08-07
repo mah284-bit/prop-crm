@@ -668,7 +668,8 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                           <td style={{padding:"7px 8px"}}><button onClick={async ()=>{
                             try {
                               const { data: co } = await supabase.from("companies").select("name, brand_color, brand_accent").eq("id", currentUser.company_id).maybeSingle();
-                              const blob = generateBlockProposal({ proposal: pr, block, buyer, company: co });
+                              const f = await getFees(currentUser.company_id);
+                              const blob = generateBlockProposal({ proposal: pr, block, buyer, company: co, fees: f });
                               window.open(URL.createObjectURL(blob), "_blank");
                             } catch (e) { showToast("Could not build the PDF: " + (e.message||e), "error"); }
                           }} style={{padding:"3px 9px",borderRadius:6,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:10,fontWeight:700,cursor:"pointer"}}>PDF</button></td>
