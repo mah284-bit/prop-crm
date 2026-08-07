@@ -1135,3 +1135,10 @@ On a list of 11 that is a minor annoyance; on a real book it means scanning. FOU
 filters here for block and 1-to-1, or one dropdown to select - easy."
 Cheap: block_deal_id is already on the opportunity and already read for the chip. It sits beside the
 existing stage tabs.
+   ⚠️ BUILT DAY 87 AND IT DOES NOT RESPOND. The select renders (cursor changes to a hand) but
+   clicking opens nothing and the count stays at 11 of 11. Code verified correct end to end: state
+   at line 19, onChange at 247, filter inside the `visible` memo at 103-105, fType in the memo's
+   dependency array. Console clean, Vite cache cleared, hard refreshed.
+   So something is INTERCEPTING the control rather than the logic being wrong - the same shape as
+   the Day-85 KYC upload that looked live and was not. NEXT STEP: try keyboard arrows on it; if the
+   value changes that way the click is being overlaid.
