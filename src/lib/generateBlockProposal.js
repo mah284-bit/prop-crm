@@ -112,8 +112,10 @@ export function generateBlockProposal({ proposal, block, buyer, company, fees })
     if (y > 250) { doc.addPage(); y = 24; }
     const desc = [
       u.bedrooms === 0 ? "Studio" : u.bedrooms ? u.bedrooms + "BR" : null,
+      u.sub_type || null,
       u.size_sqft ? u.size_sqft + " sqft" : null,
-    ].filter(Boolean).join(" · ");
+      u.view || null,
+    ].filter(Boolean).join(" \u00b7 ");
     doc.setFont(undefined, "bold");
     doc.text(String(u.unit_ref || "-"), margin + 3, y);
     doc.setFont(undefined, "normal");

@@ -48,14 +48,27 @@ export async function sendBlockProposal({ block, distribution, lines, units, cur
     }
 
     const allocs = distribution.allocations || [];
+    // Day 87: FETCH THE UNIT DETAIL. The caller passes availUnits, which EXCLUDES units already in
+    // the block - so the lookup found nothing and the buyer received a document listing
+    // "EBT-07-03 - AED 1,414,581" with no idea whether it is a studio or a four-bedroom. On a 3.8M
+    // offer that is not a detail. Read them rather than depend on what happens to be in scope.
+    const unitIds = allocs.map(a2 => a2.unit_id).filter(Boolean);
+    let detail = {};
+    if (unitIds.length) {
+      const { data: pu } = await supabase.from("project_units")
+        .select("id, unit_ref, bedrooms, size_sqft, view, sub_type").in("id", unitIds);
+      (pu || []).forEach(u => { detail[u.id] = u; });
+    }
     const unitRows = allocs.map((a) => {
       const line = (lines || []).find((l) => l.unit_id === a.unit_id);
-      const unit = (units || []).find((u) => u.id === a.unit_id);
+      const unit = detail[a.unit_id] || (units || []).find((u) => u.id === a.unit_id);
       return {
         unit_id: a.unit_id,
         unit_ref: line?.unit_ref || unit?.unit_ref || "",
         bedrooms: unit?.bedrooms ?? null,
         size_sqft: unit?.size_sqft ?? null,
+        view: unit?.view ?? null,
+        sub_type: unit?.sub_type ?? null,
         asking_price: Number(a.list_price) || 0,
         discount_pct: Number(a.discount_pct) || 0,
         discounted_price: Number(a.net_price) || 0,
