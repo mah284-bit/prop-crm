@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase.js";
+import { canDo } from "../../lib/permissions.js";
 import { sendBlockProposal } from "../../lib/sendBlockProposal.js";
 import UnitPicker from "../shared/UnitPicker.jsx";
 import { rollUpBlockStatus } from "../../lib/rollUpBlockStatus.js";
@@ -19,6 +20,56 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   // an awkward thing to explain to a buyer holding both. If the terms have moved, lock D2 first.
   const [sentFromD, setSentFromD] = useState([]);
   const [lastSent, setLastSent] = useState(null);
+  // Day 87: THREE STATES. Founder: "everything is frozen after the first proposal is sent - a
+  // button to edit the offer, or move to accepted." The calculator is not a scratch pad once an
+  // offer exists; what it shows IS the live offer, and editable prices beside an accept button
+  // invite a fat-finger. Editing is a deliberate act.
+  //   no offer sent  -> editable, one Send button
+  //   offer sent     -> FROZEN, two buttons: Edit the offer / Offer accepted
+  //   accepted       -> FROZEN, manager may Reopen negotiation with a reason
+  //   money in       -> the existing settlement lock holds and nothing here applies
+  const [editingOffer, setEditingOffer] = useState(false);
+  const onAccept = async () => {
+    const { data: props } = await supabase.from("proposals").select("id, version, structured_data")
+      .eq("block_deal_id", block.id).order("version", { ascending: false }).limit(1);
+    const latest = (props || [])[0];
+    if (!latest) { showToast("Nothing has been offered yet", "error"); return; }
+    if (!window.confirm("Record that the buyer has accepted?\n\nHe is accepting version " + latest.version + " - AED " + Math.round(latest.structured_data?.total_value || 0).toLocaleString() + " across " + (latest.structured_data?.unit_count || 0) + " unit(s).")) return;
+    const { error } = await supabase.from("block_deals").update({
+      status: "accepted", accepted_at: new Date().toISOString(),
+      accepted_by: currentUser?.id || null, accepted_proposal_id: latest.id,
+    }).eq("id", block.id);
+    if (error) { showToast(error.message, "error"); return; }
+    await supabase.from("activities").insert({
+      company_id: currentUser.company_id, block_deal_id: block.id, type: "note",
+      activity_subtype: "block_terms",
+      note: "BUYER ACCEPTED version " + latest.version + " - AED " + Math.round(latest.structured_data?.total_value || 0).toLocaleString() + ". The block may now be confirmed.",
+      user_id: currentUser?.id || null, user_name: currentUser?.full_name || null,
+    });
+    showToast("Offer accepted - the block may now be confirmed", "success");
+    onLocked?.(); onClose?.();
+  };
+  // Manager only. Settled things reopen with a ceremony, never silently - the same rule as the
+  // accepted shortfall and the block cancel. Founder: "always at manager level to unfreeze and
+  // hand it back to the broker."
+  const onReopen = async () => {
+    const why = window.prompt("Reopening a negotiation the buyer had accepted.\n\nWhy? (recorded)");
+    if (!why || !why.trim()) return;
+    const { error } = await supabase.from("block_deals").update({
+      status: "negotiating", accepted_at: null, accepted_by: null, accepted_proposal_id: null,
+    }).eq("id", block.id);
+    if (error) { showToast(error.message, "error"); return; }
+    await supabase.from("activities").insert({
+      company_id: currentUser.company_id, block_deal_id: block.id, type: "note",
+      activity_subtype: "block_terms",
+      note: "ACCEPTANCE REOPENED by " + (currentUser?.full_name || "a manager") + " - " + why.trim() + " The buyer had accepted; negotiation is live again.",
+      user_id: currentUser?.id || null, user_name: currentUser?.full_name || null,
+    });
+    showToast("Negotiation reopened", "success");
+    onLocked?.(); onClose?.();
+  };
+  const isAccepted = !!block.accepted_at;
+  const frozen = (sentFromD.length > 0 && !editingOffer) || isAccepted;
   useEffect(() => { (async () => {
     if (!block?.id) return;
     const { data } = await supabase.from("proposals").select("structured_data").eq("block_deal_id", block.id);
@@ -235,7 +286,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
             <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4}}>TOP-DOWN: BLOCK DISCOUNT</label>
             <div style={{display:"flex",gap:6}}>
               <select value={blockMode} onChange={e=>setBlockMode(e.target.value)} style={{padding:"7px 8px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}><option value="pct">%</option><option value="flat">AED</option></select>
-              <input type="number" value={blockValue} onChange={e=>{ const v = e.target.value; setBlockValue(blockMode === "pct" && Number(v) > 100 ? "100" : v); }} placeholder="0" style={{width:130,padding:"7px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}/>
+              <input type="number" disabled={frozen} value={blockValue} onChange={e=>{ const v = e.target.value; setBlockValue(blockMode === "pct" && Number(v) > 100 ? "100" : v); }} placeholder="0" style={{width:130,padding:"7px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}/>
             </div>
           </div>
           <button onClick={applyProRata} style={{padding:"8px 14px",borderRadius:7,border:topDownPending?"2px solid #D97706":"1px solid #0F2540",background:topDownPending?"#FFFBEB":"#fff",color:topDownPending?"#B45309":"#0F2540",fontSize:12,fontWeight:700,cursor:"pointer",boxShadow:topDownPending?"0 0 0 3px rgba(217,119,6,.15)":"none"}}>Suggest pro-rata {String.fromCharCode(8595)}</button>{topDownPending && <span style={{fontSize:11,fontWeight:600,color:"#B45309",marginLeft:2}}>{String.fromCharCode(8592)} press to apply {blockValue}{blockMode==="pct"?"%":" AED"} to all lines</span>}
@@ -248,7 +299,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
           <div style={{display:'flex',gap:14,alignItems:'flex-end',flexWrap:'wrap'}}>
             <div>
               <label style={{fontSize:10,fontWeight:700,color:'#64748B',display:'block',marginBottom:3,textTransform:'uppercase'}}>Payment plan</label>
-              <select value={planPreset} onChange={e=>setPlanPreset(e.target.value)} style={{padding:'7px 9px',border:'1px solid #D1D5DB',borderRadius:7,fontSize:13,minWidth:130}}>
+              <select disabled={frozen} value={planPreset} onChange={e=>setPlanPreset(e.target.value)} style={{padding:'7px 9px',border:'1px solid #D1D5DB',borderRadius:7,fontSize:13,minWidth:130}}>
                 <option value=''>- Select -</option>
                 {PAYMENT_PLAN_PRESETS.map(pp => <option key={pp.label} value={pp.label}>{pp.label}</option>)}
               </select>
@@ -257,7 +308,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
               <label style={{fontSize:10,fontWeight:700,color:'#64748B',display:'block',marginBottom:3,textTransform:'uppercase'}}>DLD fee (4%)</label>
               <div style={{display:'flex',gap:5}}>
                 {[['buyer','Buyer pays'],['developer','Developer absorbs'],['split','Split'],['negotiated','Negotiated']].map(([v,lbl]) => (
-                  <button key={v} onClick={()=>setDldPayer(v)} style={{padding:'7px 11px',borderRadius:7,border:dldPayer===v?'none':'1px solid #D1D5DB',background:dldPayer===v?'#16A34A':'#fff',color:dldPayer===v?'#fff':'#475569',fontSize:12,fontWeight:600,cursor:'pointer'}}>{lbl}</button>
+                  <button key={v} disabled={frozen} onClick={()=>{ if(frozen) return; setDldPayer(v); }} style={{padding:'7px 11px',borderRadius:7,border:dldPayer===v?'none':'1px solid #D1D5DB',background:dldPayer===v?'#16A34A':'#fff',color:dldPayer===v?'#fff':'#475569',fontSize:12,fontWeight:600,cursor:'pointer'}}>{lbl}</button>
                 ))}
               </div>
             </div>
@@ -286,10 +337,10 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
               <td style={{padding:"7px 8px",fontWeight:700,color:"#0F2540"}}>{x.unit_ref}</td>
               <td style={{padding:"7px 8px",textAlign:"right",color:"#475569"}}>{fmt(x.list_price)}</td>
               <td style={{padding:"7px 8px",textAlign:"center"}}><select value={x.mode} onChange={e=>updLine(x.unit_id,{mode:e.target.value})} style={{padding:"4px 6px",border:"1px solid #D1D5DB",borderRadius:6,fontSize:11}}><option value="pct">%</option><option value="flat">AED</option></select></td>
-              <td style={{padding:"7px 8px",textAlign:"right"}}><input type="number" value={x.value} onChange={e=>{ const v = e.target.value; updLine(x.unit_id,{value: x.mode === "pct" && Number(v) > 100 ? "100" : v}); }} placeholder="0" style={{width:110,padding:"5px 8px",border:"1px solid #D1D5DB",borderRadius:6,fontSize:12,textAlign:"right"}}/></td>
+              <td style={{padding:"7px 8px",textAlign:"right"}}><input type="number" disabled={frozen} value={x.value} onChange={e=>{ const v = e.target.value; updLine(x.unit_id,{value: x.mode === "pct" && Number(v) > 100 ? "100" : v}); }} placeholder="0" style={{width:110,padding:"5px 8px",border:"1px solid #D1D5DB",borderRadius:6,fontSize:12,textAlign:"right"}}/></td>
               <td style={{padding:"7px 8px",textAlign:"right",color:"#B45309",fontWeight:600}}>{fmt(discOf(x))}</td>
               <td style={{padding:"7px 8px",textAlign:"right",color:"#166534",fontWeight:700}}>{fmt(netOf(x))}</td>
-              <td style={{padding:"7px 8px",textAlign:"right"}}><button type="button" onClick={()=>{ if(!x.child_opportunity_id){ doRemove(x); } else { setRemoveTarget(x); } }} style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,border:"1px solid #FCA5A5",background:"#fff",color:"#DC2626",cursor:"pointer"}}>remove</button></td>
+              <td style={{padding:"7px 8px",textAlign:"right"}}><button type="button" disabled={frozen} onClick={()=>{ if(frozen) return; if(!x.child_opportunity_id){ doRemove(x); } else { setRemoveTarget(x); } }} style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,border:"1px solid #FCA5A5",background:"#fff",color:"#DC2626",cursor:"pointer"}}>remove</button></td>
             </tr>))}</tbody>
         </table>)}
         <div style={{display:"flex",gap:8,alignItems:"center",margin:"10px 0 4px 0",padding:"8px 10px",background:"#F8FAFC",border:"1px dashed #CBD5E1",borderRadius:8}}>
@@ -305,7 +356,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
             onChange={(id)=>setAddUnitPick(id)}
             placeholder="Pick an available unit - click to search"
           /></div>
-          <button type="button" onClick={addUnitLine} style={{fontSize:12,fontWeight:700,padding:"6px 14px",borderRadius:7,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",cursor:"pointer"}}>Add</button>
+          <button type="button" disabled={frozen} onClick={()=>{ if(frozen) return; addUnitLine(); }} style={{fontSize:12,fontWeight:700,padding:"6px 14px",borderRadius:7,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",cursor:"pointer"}}>Add</button>
         </div>
         <div style={{display:"flex",gap:18,alignItems:"center",background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"10px 16px",marginBottom:14,fontSize:12}}>
           <div><span style={{color:"#92400E",fontWeight:600}}>Block list:</span> <strong>{fmt(totList)}</strong></div>
@@ -321,6 +372,16 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
               then send?" No good reason. It writes the distribution AND creates the proposal.
               The counter shows what has already gone out: ten offers with no acceptance is a signal
               the broker should see before adding an eleventh. */}
+          {isAccepted ? (
+            canDo(currentUser, "amend_payment")
+              ? <button onClick={onReopen} style={{padding:"8px 18px",borderRadius:8,border:"1px solid #B45309",background:"#fff",color:"#B45309",fontSize:13,fontWeight:600,cursor:"pointer"}}>Reopen negotiation</button>
+              : <span style={{fontSize:12,fontWeight:700,color:"#166534"}}>Offer accepted - manager only to reopen</span>
+          ) : frozen ? (
+            <>
+              <button onClick={()=>setEditingOffer(true)} style={{padding:"8px 18px",borderRadius:8,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:13,fontWeight:600,cursor:"pointer"}}>Edit the offer</button>
+              <button onClick={onAccept} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#16A34A",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",marginLeft:8}}>Offer accepted</button>
+            </>
+          ) : (
           <button disabled={sendingProp} onClick={async ()=>{
             // Day 87: refuse an IDENTICAL repeat - nothing saved, nothing sent. Any real change
             // (price, plan, DLD, units) sends. The first offer always sends: nothing to compare to.
@@ -340,6 +401,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
           }} style={{padding:"8px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>
             {sendingProp ? "Sending..." : (sentFromD.length ? ("Send a revised offer \u00b7 " + sentFromD.length + " already sent") : "Send this offer to the buyer")}
           </button>
+          )}
         </div>
       </div>
       {removeTarget && (
