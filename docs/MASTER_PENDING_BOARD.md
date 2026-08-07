@@ -1096,3 +1096,35 @@ WHY NOT LET THE PROPOSAL LEAD: two version histories (D and V) would drift apart
 exact fault behind a week of findings - two sources for one number.
 FROM THE BUYER'S SIDE it behaves like a 1-to-1: he receives V1, then V2, and the deal runs on the
 latest ACCEPTED version. One document, per-unit schedule.
+
+## ⭐ DESIGN (Day 87) - THE BLOCK PROPOSAL FLOW, SETTLED
+FOUNDER'S GOVERNING RULE: the block behaves like a 1-to-1 in EVERYTHING EXCEPT COLLECTION - "the
+communication to the buyer in the block process remains the same, no change." One cheque,
+distributed; everything else mirrors the deal.
+THE PROPOSAL IS THE SHORTLIST. There is no separate document: V1 shows the units AND the price, the
+buyer reacts - too expensive, wrong floor, want a bigger one - site visits happen, and V2 carries
+the NEW SET at the NEW PRICE. It repeats until he accepts. After acceptance money starts and
+changes should be minimal.
+⭐ APPROVAL BELONGS ON THE VERSION, NOT THE BLOCK. Each version records who at the developer
+approved THAT discount. Today approval is a single block-level field, so locking D2 at a higher
+discount leaves the old approval standing unchallenged. FOUNDER: "the broker cannot take a decision
+on behalf of the developer - if the developer refuses, the deal is dusted; he will not take the
+risk." The negotiation happens AT THE DEVELOPER'S OFFICE, to put the pressure where it belongs.
+⚠️ ARCHITECT PROPOSED AN "INDICATIVE, NOT YET APPROVED" ESCAPE AND WAS WRONG - a broker must not put
+an unbacked number in a buyer's hands. THE RULE uses what the master agreement already holds:
+DISCOUNT AUTHORITY.
+⚠️ ARCHITECT'S REFINEMENT, founder-agreed: "within authority, send freely" is technically right but
+commercially misleading. A broker often goes to the developer's office EVEN WITHIN his authority -
+because he wants the developer INVESTED in the buyer's demand rather than deciding alone. So the
+approval field is ALWAYS PRESENT and ALWAYS RECORDABLE; it is MANDATORY only above authority. One
+who went is not prevented from recording it; one who did not is not blocked.
+STILL TO BUILD: (1) approval fields on send, per version · (2) BUYER ACCEPTED - one button on the
+latest version; nothing today records the version the buyer agreed to, so a block confirms on
+nothing · (3) test whether units can change between D versions, not just discounts.
+⚠️ AND THE GAME NOT YET MODELLED: the discount is a LEVER THE BROKER TRADES AGAINST HIS OWN
+COMMISSION. Founder: "the developer says I will give you 10% - if you close at 5 I will give you an
+extra 2%." The app tracks what discount was GIVEN, never what was AVAILABLE, so it cannot show what
+a broker earned by holding back. discount_authority_pct, bonus_commission_pct and bonus_threshold
+all sit on pp_master_agreements, unfilled. CHEAP FIRST STEP: show the authority beside the discount
+in the calculator - "5% of 10% available". A per-deal bonus control already exists on the manager's
+view; the full incentive model waits until the flow is complete.

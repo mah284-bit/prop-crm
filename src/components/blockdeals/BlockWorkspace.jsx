@@ -5,6 +5,7 @@ import { dealBill } from "../../lib/dealBill.js";
 import { getFees } from "../../lib/feeSettings.js";
 import BlockPaymentDialog from "./BlockPaymentDialog.jsx";
 import BlockCollectionDialog from "./BlockCollectionDialog.jsx";
+import { sendBlockProposal } from "../../lib/sendBlockProposal.js";
 import DeveloperQuestions from "../developer/DeveloperQuestions.jsx";
 import { recordBlockCollection } from "../../lib/recordBlockCollection.js";
 import { generateBlockStatement } from "../../lib/generateBlockStatement.js";
@@ -20,6 +21,16 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
   const [dHistory, setDHistory] = useState([]);
   const [blockActivity, setBlockActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Day 87: the block's own proposal history. Until now a block reached Closed Won with nothing
+  // the buyer had ever agreed to in writing - no document, no version, no acceptance.
+  const [blockProposals, setBlockProposals] = useState([]);
+  const [sendingProposal, setSendingProposal] = useState(false);
+  useEffect(() => { (async () => {
+    if (!block?.id) return;
+    const { data } = await supabase.from("proposals")
+      .select("*").eq("block_deal_id", block.id).order("version", { ascending: false });
+    setBlockProposals(data || []);
+  })(); }, [block?.id, sendingProposal]);
   const [showPay, setShowPay] = useState(false);
   const [payTick, setPayTick] = useState(0);
   const [locking, setLocking] = useState(false);
@@ -447,7 +458,7 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
           {loading ? <div style={{color:"#94A3B8",fontSize:13}}>Loading...</div> : (
             <div>
               <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:"1px solid #E8EDF4"}}>
-                {[["children","Deals"],["money","Money"],["payments","Payments (" + payments.length + ")"],["terms","Terms history"],["activity","Activity"]].map(([id,label]) => (
+                {[["children","Deals"],["proposals","Proposals (" + blockProposals.length + ")"],["money","Money"],["payments","Payments (" + payments.length + ")"],["terms","Terms history"],["activity","Activity"]].map(([id,label]) => (
                   <button key={id} onClick={()=>setWsTab(id)} style={{padding:"7px 14px",border:"none",borderBottom:wsTab===id?"2px solid #0F2540":"2px solid transparent",background:"none",color:wsTab===id?"#0F2540":"#94A3B8",fontSize:12,fontWeight:700,cursor:"pointer"}}>{label}</button>
                 ))}
               </div>
@@ -607,6 +618,45 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                       </tr>); })}</tbody>
                   </table>}
                   {payments.some(p=>p.notes) && <div style={{fontSize:11,color:"#94A3B8",marginTop:9}}>Amendment reasons are stored on each payment and logged on every affected deal.</div>}
+                </div>
+              )}
+              {wsTab==="proposals" && (
+                <div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                    <div style={{fontSize:11,color:"#64748B"}}>What the BUYER has been sent. Each version is rendered from the locked distribution - the distribution stays master, so the two can never drift.</div>
+                    <button disabled={!dLatest || sendingProposal} onClick={async ()=>{
+                      setSendingProposal(true);
+                      const r = await sendBlockProposal({ block, distribution: dLatest, lines, units, currentUser });
+                      setSendingProposal(false);
+                      if (r.ok) { showToast("Proposal V" + r.version + " sent to the buyer", "success"); onReload && onReload(); }
+                      else showToast(r.error || "Could not send", "error");
+                    }} style={{fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:8,border:"none",background:dLatest?"#0F2540":"#CBD5E0",color:"#fff",cursor:dLatest?"pointer":"not-allowed"}}>
+                      {sendingProposal ? "Sending..." : (blockProposals.length ? "Send revised" : "Send proposal")}
+                    </button>
+                  </div>
+                  {!dLatest && <div style={{fontSize:11,color:"#B45309",background:"#FFFBEB",border:"1px solid #FCD34D",borderRadius:7,padding:"8px 10px",marginBottom:10}}>Lock a distribution in the calculator first - the proposal is rendered from it.</div>}
+                  {blockProposals.length === 0 ? (
+                    <div style={{padding:"18px",textAlign:"center",color:"#94A3B8",fontSize:12}}>Nothing sent yet. The buyer has not received anything in writing.</div>
+                  ) : (
+                    <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
+                      <thead><tr style={{background:"#F8FAFC",textAlign:"left",color:"#64748B"}}>
+                        <th style={{padding:"7px 8px"}}>V#</th><th style={{padding:"7px 8px"}}>Sent</th>
+                        <th style={{padding:"7px 8px"}}>Units</th><th style={{padding:"7px 8px",textAlign:"right"}}>Discount</th>
+                        <th style={{padding:"7px 8px",textAlign:"right"}}>Total</th><th style={{padding:"7px 8px"}}>From</th>
+                        <th style={{padding:"7px 8px"}}>Status</th>
+                      </tr></thead>
+                      <tbody>{blockProposals.map(pr => { const sd = pr.structured_data || {}; const live = pr.status !== "superseded"; return (
+                        <tr key={pr.id} style={{borderBottom:"1px solid #F1F5F9",opacity:live?1:0.55}}>
+                          <td style={{padding:"7px 8px",fontWeight:700,color:"#0F2540"}}>V{pr.version}{live && <span style={{fontSize:8,marginLeft:5,padding:"1px 5px",borderRadius:3,background:"#ECFDF5",color:"#065F46",fontWeight:700}}>LATEST</span>}</td>
+                          <td style={{padding:"7px 8px",color:"#64748B"}}>{pr.sent_at ? new Date(pr.sent_at).toLocaleDateString("en-GB") : "-"}</td>
+                          <td style={{padding:"7px 8px"}}>{sd.unit_count || "-"}</td>
+                          <td style={{padding:"7px 8px",textAlign:"right"}}>{sd.block_discount_pct ? sd.block_discount_pct + "%" : "-"}</td>
+                          <td style={{padding:"7px 8px",textAlign:"right",fontWeight:700}}>{fmt(sd.total_value || 0)}</td>
+                          <td style={{padding:"7px 8px",color:"#64748B"}}>D{sd.block_distribution_version ?? "?"}</td>
+                          <td style={{padding:"7px 8px",fontSize:10,fontWeight:700,color:live?"#166534":"#94A3B8"}}>{(pr.status||"sent").toUpperCase()}</td>
+                        </tr>); })}</tbody>
+                    </table>
+                  )}
                 </div>
               )}
               {wsTab==="terms" && (
