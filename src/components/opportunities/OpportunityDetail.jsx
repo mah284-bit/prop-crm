@@ -817,7 +817,12 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     if(GATED_STAGES.includes(toStage)) {
       setStageGateForm({});
       setStageGateViewMode(false);
-      setShowStageGate(toStage);
+      // Day 88: collecting money is not signing an SPA. If he is still AT SPA Requirements with
+      // money outstanding, open the COLLECTION gate and leave the stage alone. Advancing to SPA
+      // Signed stays a separate, deliberate act for the day the buyer actually signs.
+      const collectingOnly = toStage === "SPA Signed" && opp.stage === "SPA Requirements"
+        && collectionState && collectionState.toCollect > 0;
+      setShowStageGate(collectingOnly ? "SPA Requirements" : toStage);
       return;
     }
     await commitStageMove(toStage, {});
@@ -4488,6 +4493,9 @@ onSelect={(unitId) => {
                   {showStageGate==="Offer Accepted"&&"✅ Record Offer Accepted"}
                   {showStageGate==="Reserved"&&"🔒 Record Reservation"}
                   {showStageGate==="SPA Signed"&&"📄 Record SPA Signing"}
+                  {/* Day 88: the heading names what he is DOING. He pressed Collect payments; a
+                      form headed "Record SPA Signing" is the label-vs-surface fault at its source. */}
+                  {showStageGate==="SPA Requirements"&&"💰 Collect payments"}
                   {showStageGate === "SPA Signed" && <span style={{marginLeft:10,display:"inline-flex",gap:4}}><button onClick={()=>setSpaMode("quick")} style={{fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:14,cursor:"pointer",border:"1.5px solid "+(spaMode==="quick"?"#0F2540":"#E2E8F0"),background:spaMode==="quick"?"#0F2540":"#fff",color:spaMode==="quick"?"#fff":"#64748B"}}>{"\u26a1 Quick"}</button><button onClick={()=>setSpaMode("detailed")} style={{fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:14,cursor:"pointer",border:"1.5px solid "+(spaMode==="detailed"?"#0F2540":"#E2E8F0"),background:spaMode==="detailed"?"#0F2540":"#fff",color:spaMode==="detailed"?"#fff":"#64748B"}}>{"\ud83d\udccb Detailed"}</button></span>}
                   {showStageGate==="Closed Won"&&"🏆 Close as Won"}
                   {showStageGate==="Closed Lost"&&"❌ Close as Lost"}
@@ -4761,7 +4769,15 @@ onSelect={(unitId) => {
               </>)}
 
               {/* SPA SIGNED fields */}
-              {showStageGate==="SPA Signed"&&(<>
+              {/* Day 88: THE FORM WAS NAMED BY THE DESTINATION, NOT BY WHERE HE IS. At SPA
+                  Requirements the button targets SPA Signed, so pressing "Collect payments" opened
+                  a form headed "Record SPA Signing" with a final price, a signing date and a
+                  document upload - a ceremony for a signing that had not happened. That is the root
+                  of a week of findings. This fragment now serves TWO gates: "SPA Requirements"
+                  (collection only) and "SPA Signed" (the ceremony, collection beneath as evidence).
+                  Hidden, not greyed - greyed fields read as live. */}
+              {(showStageGate==="SPA Signed"||showStageGate==="SPA Requirements")&&(<>
+                {showStageGate==="SPA Signed"&&(<>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Final Agreed Price (AED) *</label>
@@ -4844,6 +4860,7 @@ onSelect={(unitId) => {
                     💡 Enter the amount + date in "Initial advance" row of Pre-SPA Payments below
                   </div>
                 </div>)}
+                </>)}
 
                 {/* Pre-SPA payment confirmations - 3-state model (pending / received / waived) */}
                 {spaMode === "detailed" && (/* Pre-SPA gated */<div style={{padding:"12px 14px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:8}}>
