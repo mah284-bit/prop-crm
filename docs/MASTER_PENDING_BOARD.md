@@ -1170,3 +1170,13 @@ as 0", so it has never been visible.
 FIX SHAPE: both belong in Buyer Fees beside the others, resolved through feeSettings.js like the
 rest. And the buyer-facing proposal should show them, because "you never told me about this" is the
 argument they cause.
+
+## IN PROGRESS DAY 88 - THE SPA CEREMONY SPLIT (mostly done, one piece left)
+ROOT CAUSE FOUND AND FIXED: the gate form was named by the DESTINATION, not by where the broker is.
+At SPA Requirements the button targets SPA Signed, so pressing "Collect payments" opened a form
+headed "Record SPA Signing" with a final price, a signing date and a document upload - a ceremony
+for a signing that had not happened. That is the root of a week of findings.
+DONE: a "SPA Requirements" gate now opens for collection, the signing fields are HIDDEN there (not
+greyed - greyed reads as live), and the heading says "Collect payments".
+⚠️ LEFT TO DO: the FOOTER BUTTONS on the collection gate still offer "Record SPA". It should offer
+Save payments only - he is not signing anything. One small cut.
