@@ -5411,6 +5411,17 @@ onSelect={(unitId) => {
                   // called commitStageMove("SPA Requirements") - a move to the stage he is already
                   // at, writing a stage-change activity for something that did not happen.
                   if (showStageGate === "SPA Requirements") {
+                    // Day 88: A PAYMENT WITHOUT A MODE CANNOT BE RECONCILED. The form let 50,000 be
+                    // saved with method:"" - an amount and a date and no cheque, transfer or cash.
+                    // Refused rather than defaulted: defaulting to Bank Transfer would write a fact
+                    // nobody stated, and on a money record that is worse than an empty field.
+                    const noMode = Object.entries(prePaymentsState || {})
+                      .filter(([, v]) => v && Number(v.amount || 0) > 0 && !String(v.method || "").trim())
+                      .map(([k]) => k.replace(/_/g, " "));
+                    if (noMode.length) {
+                      showToast("How was this paid? Add a mode for: " + noMode.join(", "), "error");
+                      return;
+                    }
                     try {
                       const { error } = await supabase.from("pp_sales_closures")
                         .update({ pre_spa_payments: prePaymentsState })
