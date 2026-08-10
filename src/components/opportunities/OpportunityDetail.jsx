@@ -855,7 +855,11 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     })();
   }, [showStageGate]);
   useEffect(() => {
-    if ((showStageGate !== "SPA Signed" && showStageGate !== "Closed Won") || !opp.id) return;
+    // Day 88: the new COLLECTION gate must load the ledger too. Without this it opened with every
+    // Expected blank while the database held real figures - and worse, Save writes
+    // `pre_spa_payments: prePaymentsState`, so saving would have overwritten a good ledger with an
+    // empty one. A new gate name that skips the loader is a data-loss path, not a display bug.
+    if ((showStageGate !== "SPA Signed" && showStageGate !== "SPA Requirements" && showStageGate !== "Closed Won") || !opp.id) return;
     (async () => {
       try {
         const { data: closure } = await supabase
