@@ -5402,12 +5402,27 @@ onSelect={(unitId) => {
                       console.error("Price override audit log exception:", e);
                     }
                   }
+                  // Day 88: THE COLLECTION GATE DOES NOT MOVE THE STAGE. He pressed Collect
+                  // payments; recording money is not advancing a deal. Without this the submit
+                  // called commitStageMove("SPA Requirements") - a move to the stage he is already
+                  // at, writing a stage-change activity for something that did not happen.
+                  if (showStageGate === "SPA Requirements") {
+                    try {
+                      const { error } = await supabase.from("pp_sales_closures")
+                        .update({ pre_spa_payments: prePaymentsState })
+                        .eq("opportunity_id", opp.id);
+                      if (error) throw error;
+                      showToast("Payments recorded", "success");
+                      setShowStageGate(null);
+                    } catch (e) { showToast("Could not save: " + (e.message || e), "error"); }
+                    return;
+                  }
                   await commitStageMove(showStageGate, extraData);
                 }}
                   style={{padding:"8px 20px",borderRadius:8,border:"none",
                     background:showStageGate==="Closed Lost"?"#B83232":showStageGate==="Closed Won"?"#1A7F5A":"#0F2540",
                     color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
-                  {stageGateViewMode ? ((opp.stage === "Closed Won" || opp.stage === "Closed Lost") ? "🔒 View only" : "\u270f Amend") : showStageGate==="Closed Lost"?"✗ Close as Lost":showStageGate==="Closed Won"?"🏆 Close as Won":showStageGate==="Reserved"?"🔒 Confirm Reservation":showStageGate==="SPA Signed"?"📄 Record SPA":"✅ Record Offer"}
+                  {stageGateViewMode ? ((opp.stage === "Closed Won" || opp.stage === "Closed Lost") ? "🔒 View only" : "\u270f Amend") : showStageGate==="Closed Lost"?"✗ Close as Lost":showStageGate==="Closed Won"?"🏆 Close as Won":showStageGate==="Reserved"?"🔒 Confirm Reservation":showStageGate==="SPA Signed"?"📄 Record SPA":showStageGate==="SPA Requirements"?"💰 Save payments":"✅ Record Offer"}
                 </button>
                 {/* Day 86: hidden on a BLOCK CHILD - its money table is read-only because collection
                     happens at the block, so there is nothing here to save. */}
