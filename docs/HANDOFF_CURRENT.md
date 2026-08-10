@@ -1608,3 +1608,33 @@ claiming to fix them would be a certainty the broker does not have.
 FOUND WHILE BUILDING IT: unit descriptions came out BLANK, because the caller passes availUnits
 which EXCLUDES units already in the block - so a buyer received "EBT-07-03 - AED 1,414,581" with no
 idea whether it was a studio or a four-bedroom. Now fetched rather than depended upon.
+
+## ── DAY 88 — THE ROOT CAUSE BEHIND A WEEK OF FINDINGS ──
+⭐ THE GATE FORM WAS NAMED BY THE DESTINATION, NOT BY WHERE THE BROKER IS. At SPA Requirements the
+advance button targets SPA Signed, and the dialog is titled by the TARGET - so pressing "Collect
+payments" opened a form headed "Record SPA Signing", carrying a final price, a signing date, an SPA
+reference and a document upload. A ceremony for a signing that had not happened.
+That single line explains most of the week: the collection table appearing at a signing, the
+heading naming the wrong act, quick-fill date applying everywhere, and the document upload that
+could only be reached by pressing Amend - which unlocked the whole money record on a deal whose
+commission invoice was already raised.
+FIXED: a "SPA Requirements" gate now opens when he is AT SPA Requirements with money outstanding.
+The signing fields are HIDDEN there - hidden rather than greyed, because greyed fields read as live
+and cost the founder twenty minutes twice in one week. The heading says "Collect payments", the
+footer says "Save payments", and saving RECORDS THE MONEY WITHOUT MOVING THE STAGE. Advancing to
+SPA Signed stays a separate, deliberate act for the day the buyer actually signs.
+⚠️ THE SIGNING SIDE IS PROVEN - a block child was taken through SPA Signed with its document
+uploaded. THE COLLECTION GATE HAS NEVER BEEN OPENED. It is coded and committed but untested, and
+that is the FIRST THING TO DO on the next session: a 1-to-1 at SPA Requirements with money
+outstanding should give a form headed "Collect payments" with no signing fields, and saving should
+leave the stage where it is.
+LESSON FROM THE CUT ITSELF: four anchor attempts failed on this file before one landed. A 5,000-
+line JSX tree cannot be edited by pattern-matching on indentation - the successful method was to
+READ the region first, then search for the open and close BY CONTENT with a verified bracket, and
+abort rather than guess. Every failed attempt aborted safely; nothing was corrupted. Also caught by
+a grep rather than the build: setCollectionTick did not exist, and Vite does not fail on an
+undefined identifier - it would have thrown the moment Save was pressed.
+STILL OPEN: the type filter on the opportunity list renders but does not respond · the block header
+carries six buttons · the wording still leaks D and V at the broker · admin (580) and trustee
+(4,200) fees are hard-coded, and a developer admin charge is not modelled at all · the block header
+reports only the reservation on a fully collected block.
