@@ -1180,3 +1180,27 @@ DONE: a "SPA Requirements" gate now opens for collection, the signing fields are
 greyed - greyed reads as live), and the heading says "Collect payments".
 ⚠️ LEFT TO DO: the FOOTER BUTTONS on the collection gate still offer "Record SPA". It should offer
 Save payments only - he is not signing anything. One small cut.
+
+## ⭐ ADDED DAY 88 - THE 1-TO-1 LEDGER HAS NO PAYMENT TRAIL, AND THAT IS THE LOOSEST PART OF THE
+## MONEY PATH
+FOUNDER: "if he changes 50k to 25k by mistake and saves, what happens?" It is OVERWRITTEN SILENTLY.
+The save does `.update({ pre_spa_payments: prePaymentsState })` - the whole object replaced. Nothing
+records that it was ever 50,000.
+⚠️ THE BLOCK DOES THIS PROPERLY and the contrast is stark: every block payment is a ROW in
+block_payments with amount, mode, reference, date and who recorded it; allocations hang off it;
+amending is manager-gated and the original survives. The 1-to-1 has ONE JSON FIELD PER PARTICULAR,
+overwritten. Three cheques against a first instalment become a single number, and a mistyped
+correction erases the original with no trace.
+HOW IT HAPPENED: the Day-69 honest ledger was designed for CLARITY - expected vs received, one line
+each - and that was right for the DISPLAY. But the display model became the STORAGE model, and a
+money record needs a trail.
+⭐ THE FIX: a payments table on the 1-to-1 mirroring block_payments. Each payment is a row; the
+ledger becomes the SUM, derived rather than typed. Same shape as the Day-86 ruling - the trail is
+the truth, the balance is derived from it.
+HONEST SIZING: a table, a recording dialog, a migration of existing figures, and every panel that
+reads pre_spa_payments. Half a day at least. NEXT MAJOR CUT after the current walkthrough.
+SMALLER, AND RELATED: the form saves a payment with `method: ""` - an amount and a date but no mode,
+which cannot be reconciled against a bank statement. Require it when the amount is positive.
+ALSO ON THE COLLECTION GATE, cosmetic: the DLD radios and "quick-fill date for all received items"
+still render there and belong to neither collection nor this stage, and the Notes placeholder still
+reads "conditions or notes on the SPA" on a form that is not about the SPA.
