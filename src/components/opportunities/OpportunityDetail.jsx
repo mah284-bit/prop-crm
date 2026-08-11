@@ -37,6 +37,7 @@ import { analyzeUnitSaturation } from "../../lib/unitSaturationAnalyzer.js";
 import UnitSaturationWarning from "./UnitSaturationWarning.jsx";
 import UnitSaturationInline from "./UnitSaturationInline.jsx";
 import RecordPaymentDialog from "./RecordPaymentDialog.jsx";
+import PaymentHistory from "./PaymentHistory.jsx";
 
 // Stage 6 -- single source of commission resolution (used by BOTH the live display and the
 // invoice freeze at SPA-Signed, so frozen numbers exactly match what the SM saw at close).
@@ -225,6 +226,7 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   const [spaUploadError, setSpaUploadError] = useState(null);
   // Stage 5 v2 — 3-state model: pending | received | waived
   const [payFor, setPayFor] = useState(null);
+  const [paymentTick, setPaymentTick] = useState(0);
   const [prePaymentsState, setPrePaymentsState] = useState({
     booking_fee:     { status: "pending", amount: "", date: "", notes: "" },
     reservation_fee: { status: "pending", amount: "", date: "", notes: "" },
@@ -5093,6 +5095,15 @@ onSelect={(unitId) => {
                       })()}
                     </tbody>
                   </table>
+                  {/* Day 89: the six payments behind one figure. Collapsed - it is evidence, not the
+                      main view - and the same rows a buyer-facing statement will read. */}
+                  <PaymentHistory opp={opp} currentUser={currentUser} showToast={showToast} tick={paymentTick}
+                    onChanged={async ()=>{
+                      setPaymentTick(t => t + 1);
+                      const { data: c } = await supabase.from("pp_sales_closures")
+                        .select("pre_spa_payments").eq("opportunity_id", opp.id).maybeSingle();
+                      if (c?.pre_spa_payments) setPrePaymentsState(c.pre_spa_payments);
+                    }} />
 
                   {/* Phase C / Gate 7 (11 May 2026): Initial advance credit calculation note */}
                   {(() => {
@@ -5468,6 +5479,7 @@ onSelect={(unitId) => {
                     const { data: c } = await supabase.from("pp_sales_closures")
                       .select("pre_spa_payments").eq("opportunity_id", opp.id).maybeSingle();
                     if (c?.pre_spa_payments) setPrePaymentsState(c.pre_spa_payments);
+                    setPaymentTick(t => t + 1);
                   }} />}
                 {!stageGateViewMode && !moneyLocked && showStageGate === "SPA Signed" && (
                   <button onClick={async () => {
