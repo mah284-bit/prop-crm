@@ -1638,3 +1638,34 @@ STILL OPEN: the type filter on the opportunity list renders but does not respond
 carries six buttons · the wording still leaks D and V at the broker · admin (580) and trustee
 (4,200) fees are hard-coded, and a developer admin charge is not modelled at all · the block header
 reports only the reservation on a fully collected block.
+
+## ── DAY 89 — THE 1-TO-1 GETS A PAYMENT TRAIL ──
+THE HOLE, found at the end of Day 88. FOUNDER: "if he changes 50k to 25k by mistake and saves, what
+happens?" It was overwritten silently. The deal's money lived in ONE JSON FIELD PER PARTICULAR on
+pp_sales_closures and every save replaced the whole object - so three cheques against a first
+instalment became one number, and a mistyped correction erased the original with no trace. The
+BLOCK had always done this properly: a row per payment with amount, mode, reference and date.
+⭐ BUILT: `pp_payments`, mirroring block_payments. THE ROWS ARE THE TRUTH, THE LEDGER IS THE SUM -
+pre_spa_payments is no longer typed into, it is DERIVED after every write, so the two cannot
+disagree. Nothing else changed: every panel that read the ledger keeps reading it and now finds a
+figure that is always the sum of real payments.
+MIGRATED: 28 existing figures became rows, verified count-for-count before anything read from them.
+Without that first, the first sync would have zeroed every ledger in the database.
+THE LEDGER CELLS ARE NOW READ-ONLY. A "+" on each row opens a dialog for ONE payment against THAT
+particular - the particular is passed in, never chosen, so money cannot be filed against the wrong
+line the way a dropdown would allow. Amount, mode, reference, date: everything the broker was TOLD
+by the developer or the bank, nothing computed or defaulted except today's date.
+⭐ TWO KINDS OF MONEY, TWO RULES ON OVERPAYMENT, and the founder settled it:
+ - FLAT FEES (reservation, booking) - once settled the "+" DISAPPEARS. "We only come here BECAUSE
+   the reservation is fully paid; any amount collected here is other than reservation." An excess
+   there is a misclick, and a confirmation just lets it through when he taps OK out of habit.
+ - COMPUTED FEES (instalment, DLD, SPA, Oqood) - percentages, so small differences are normal:
+   bank charges, rounding on a 4% DLD. Warn only beyond 500 AED. Never refuse: the app records what
+   arrived.
+ALSO: every payment writes an ACTIVITY, so the deal's timeline now carries the money trail. A
+PAYMENT HISTORY sits under the ledger, collapsed, with a manager-gated VOID - voiding, not deleting,
+because a payment recorded in error is a fact about the record. The row stays with a reason and the
+ledger re-derives without it. PROVEN LIVE: deleting a row re-derived the reservation from Mixed back
+to Credit Card and 25,025 back to 25,000.
+NEXT, and the founder's own words: "a report which can be sent if the buyer asks" - a buyer-facing
+payment statement PDF, reading these same rows.
