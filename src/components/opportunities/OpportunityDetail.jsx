@@ -5042,7 +5042,13 @@ onSelect={(unitId) => {
                                   against THIS particular, so it cannot be filed against the wrong
                                   line the way a dropdown could. */}
                               <span style={{fontWeight:600,color:Number(item.amount)>0?"#0F2540":"#94A3B8"}}>{Number(item.amount)>0 ? fmt2(Number(item.amount)).replace("AED ","") : "-"}</span>
+                              {/* Day 89: A SETTLED FLAT FEE OFFERS NOTHING. Founder: "we only come here BECAUSE the
+                                  reservation is fully paid - any amount collected here is other than
+                                  reservation." So the + on a settled reservation or booking fee is not a
+                                  warning case, it is a row that is finished. Refusing beats confirming: a
+                                  broker taps OK out of habit, and the misclick lands anyway. */}
                               {!waived && !stageGateViewMode && !moneyLocked &&
+                               !(["reservation_fee","booking_fee"].includes(key) && expected > 0 && Number(item.amount||0) >= expected - 0.5) &&
                                 <button type="button" onClick={()=>setPayFor({ key, label, expected, paid: Number(item.amount) || 0 })} title={"Record a payment against " + label}
                                   style={{marginLeft:6,padding:"2px 7px",borderRadius:5,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:11,fontWeight:700,cursor:"pointer"}}>+</button>}
                             </td>
