@@ -36,6 +36,7 @@ import ProposalBuilderDialog from "./ProposalBuilderDialog.jsx";
 import { analyzeUnitSaturation } from "../../lib/unitSaturationAnalyzer.js";
 import UnitSaturationWarning from "./UnitSaturationWarning.jsx";
 import UnitSaturationInline from "./UnitSaturationInline.jsx";
+import RecordPaymentDialog from "./RecordPaymentDialog.jsx";
 
 // Stage 6 -- single source of commission resolution (used by BOTH the live display and the
 // invoice freeze at SPA-Signed, so frozen numbers exactly match what the SM saw at close).
@@ -223,6 +224,7 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   const [spaUploading, setSpaUploading] = useState(false);
   const [spaUploadError, setSpaUploadError] = useState(null);
   // Stage 5 v2 — 3-state model: pending | received | waived
+  const [payFor, setPayFor] = useState(null);
   const [prePaymentsState, setPrePaymentsState] = useState({
     booking_fee:     { status: "pending", amount: "", date: "", notes: "" },
     reservation_fee: { status: "pending", amount: "", date: "", notes: "" },
@@ -5032,9 +5034,20 @@ onSelect={(unitId) => {
                           <tr key={key} style={{borderBottom:"1px dashed #E2E8F0",opacity:waived?0.5:1}}>
                             <td style={{padding:"6px 8px",fontWeight:600,color:"#0F2540"}}>{label}{isCreditFee && <div style={{fontSize:9,color:"#0369A1",fontWeight:500}}>credits toward initial advance</div>}{waived && <div style={{fontSize:9,color:"#7C3AED",fontWeight:700}}>WAIVED</div>}</td>
                             <td style={{padding:"6px 8px",textAlign:"right",color:"#065F46",fontWeight:600}}>{expected ? fmt2(expected) : "—"}</td>
-                            <td style={{padding:"6px 8px",textAlign:"right"}}><input type="number" disabled={waived || stageGateViewMode || moneyLocked} value={item.amount||""} onChange={e=>upd({amount:e.target.value, status: Number(e.target.value)>0?"received":"pending", date: (Number(e.target.value)>0 && !item.date) ? new Date().toISOString().slice(0,10) : item.date})} placeholder="0" style={{width:100,padding:"4px 6px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:11,textAlign:"right"}}/></td>
-                            <td style={{padding:"6px 8px"}}><select disabled={waived || stageGateViewMode || moneyLocked} value={item.method||""} onChange={e=>upd({method:e.target.value})} style={{padding:"4px 4px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:10}}><option value="">{"—"}</option><option>Cheque</option><option>Bank Transfer</option><option>Cash</option><option>Credit Card</option></select></td>
-                            <td style={{padding:"6px 8px"}}><input type="date" disabled={waived || stageGateViewMode || moneyLocked} value={item.date||""} onChange={e=>upd({date:e.target.value})} style={{padding:"4px 4px",border:"1px solid #D1D5DB",borderRadius:5,fontSize:10}}/></td>
+                            <td style={{padding:"6px 8px",textAlign:"right"}}>
+                              {/* Day 89: THE RECEIVED FIGURE IS NO LONGER TYPED. It is the SUM of real
+                                  payment rows, so a mistyped correction can no longer erase what was
+                                  actually paid - and three cheques against one instalment are three
+                                  records rather than one number. The + records another payment
+                                  against THIS particular, so it cannot be filed against the wrong
+                                  line the way a dropdown could. */}
+                              <span style={{fontWeight:600,color:Number(item.amount)>0?"#0F2540":"#94A3B8"}}>{Number(item.amount)>0 ? fmt2(Number(item.amount)).replace("AED ","") : "-"}</span>
+                              {!waived && !stageGateViewMode && !moneyLocked &&
+                                <button type="button" onClick={()=>setPayFor({ key, label })} title={"Record a payment against " + label}
+                                  style={{marginLeft:6,padding:"2px 7px",borderRadius:5,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:11,fontWeight:700,cursor:"pointer"}}>+</button>}
+                            </td>
+                            <td style={{padding:"6px 8px",fontSize:10,color:"#64748B"}}>{item.method || "—"}</td>
+                            <td style={{padding:"6px 8px",fontSize:10,color:"#64748B"}}>{item.date ? new Date(item.date).toLocaleDateString("en-GB") : "—"}</td>
                             <td style={{padding:"6px 8px",textAlign:"right",fontWeight:700,color:diff>0?"#B45309":diff<0?"#B91C1C":"#94A3B8"}}>{diff ? ((diff>0?"+":"")+fmt2(Math.abs(diff)).replace("AED ","")+(diff<0?" short":" over")) : "—"}</td>
                             <td style={{padding:"6px 8px"}}><button type="button" disabled={stageGateViewMode || moneyLocked} onClick={()=>{ if(stageGateViewMode || moneyLocked) return;
                           // Day 82: waiving asks WHY, but does not demand it.
@@ -5441,6 +5454,14 @@ onSelect={(unitId) => {
                 </button>
                 {/* Day 86: hidden on a BLOCK CHILD - its money table is read-only because collection
                     happens at the block, so there is nothing here to save. */}
+                {payFor && <RecordPaymentDialog opp={opp} particular={payFor.key} label={payFor.label}
+                  currentUser={currentUser} showToast={showToast} onClose={()=>setPayFor(null)}
+                  onSaved={async ()=>{
+                    // The ledger is re-derived by recordPayment; reload it so the table shows the sum.
+                    const { data: c } = await supabase.from("pp_sales_closures")
+                      .select("pre_spa_payments").eq("opportunity_id", opp.id).maybeSingle();
+                    if (c?.pre_spa_payments) setPrePaymentsState(c.pre_spa_payments);
+                  }} />}
                 {!stageGateViewMode && !moneyLocked && showStageGate === "SPA Signed" && (
                   <button onClick={async () => {
                     try {
