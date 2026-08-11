@@ -10,6 +10,7 @@ import { supabase } from "../../lib/supabase.js";
 import { getFees, FALLBACK as FEE_FALLBACK } from "../../lib/feeSettings.js";
 import { dealBill } from "../../lib/dealBill.js";
 import { generateReceiptPDF } from "../../lib/generateReceiptPDF.js";
+import { generatePaymentStatement } from "../../lib/generatePaymentStatement.js";
 import { rollUpBlockStatus } from "../../lib/rollUpBlockStatus.js";
 import DeveloperQuestions from "../developer/DeveloperQuestions.jsx";
 import { aiInvoke } from '../../lib/aiInvoke.js';
@@ -1829,7 +1830,20 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                             const u = units?.find?.(x => x.id === opp.unit_id) || null;
                             generateReceiptPDF({ lead: lead, opp: opp, unit: u, project: null, company: co, currentUser: currentUser, ledger: cl?.pre_spa_payments, expiresOn: opp.reservation_expires_on });
                           }} style={{marginLeft:"auto",padding:"4px 12px",borderRadius:7,border:"1px solid #92400E",background:"#fff",color:"#92400E",fontSize:11,fontWeight:700,cursor:"pointer"}}>Receipt</button>
-                        )}
+)}
+                        {/* Day 89: the statement a buyer asks for - every payment in date order so he
+                            can match each line against his own bank record, then what is still due.
+                            Reads pp_payments directly, so it can never disagree with the ledger. */}
+                        <button onClick={async ()=>{
+                          try {
+                            const { data: co } = await supabase.from("companies").select("name, brand_color").eq("id", currentUser.company_id).maybeSingle();
+                            const { data: pays } = await supabase.from("pp_payments").select("*").eq("opportunity_id", opp.id);
+                            const { data: cl } = await supabase.from("pp_sales_closures").select("pre_spa_payments").eq("opportunity_id", opp.id).maybeSingle();
+                            const u = units?.find?.(x => x.id === opp.unit_id) || null;
+                            const blob = generatePaymentStatement({ opp, buyer: lead, unit: u, company: co, payments: pays || [], ledger: cl?.pre_spa_payments || {} });
+                            window.open(URL.createObjectURL(blob), "_blank");
+                          } catch (e) { showToast("Could not build the statement: " + (e.message||e), "error"); }
+                        }} style={{padding:"4px 12px",borderRadius:7,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:11,fontWeight:700,cursor:"pointer",marginLeft:6}}>Statement</button>
                       </div>
                     ); })()}
                     {opp.stage === "SPA Signed" && (() => {
