@@ -13,7 +13,18 @@ import { recordPayment } from "../../lib/recordPayment.js";
 
 const MODES = ["Cheque", "Bank Transfer", "Cash", "Credit Card", "Card Machine"];
 
-export default function RecordPaymentDialog({ opp, particular, label, currentUser, showToast, onClose, onSaved }) {
+// Day 89: TWO KINDS OF MONEY, TWO RULES ON OVERPAYMENT.
+//  - FLAT FEES (reservation, booking) are fixed figures the developer named. Nobody sends more than
+//    a reservation, so an excess is almost always a MISCLICK on the wrong row. Warn firmly.
+//  - COMPUTED FEES (instalment, DLD, SPA, Oqood) come off percentages, so small differences are
+//    NORMAL - bank charges, rounding on a 4% DLD, the developer's own rounding. Warn only when it is
+//    MATERIALLY over. Founder's own tolerance reasoning from Day 86: a bank-charge-sized difference
+//    is not a variance, it is arithmetic.
+// Never REFUSE either: the app records what arrived. A buyer who sent 25,500 sent 25,500.
+const FLAT = ["reservation_fee", "booking_fee"];
+const TOLERANCE = 500;
+
+export default function RecordPaymentDialog({ opp, particular, label, expected, alreadyPaid, currentUser, showToast, onClose, onSaved }) {
   const [amount, setAmount] = useState("");
   const [mode, setMode] = useState("");
   const [reference, setReference] = useState("");
@@ -22,6 +33,18 @@ export default function RecordPaymentDialog({ opp, particular, label, currentUse
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
+    const exp = Number(expected || 0);
+    const paid = Number(alreadyPaid || 0);
+    const after = paid + (Number(amount) || 0);
+    if (exp > 0 && after > exp) {
+      const over = after - exp;
+      const flat = FLAT.includes(particular);
+      if (flat) {
+        if (!window.confirm(label + " is already fully paid - " + paid.toLocaleString() + " of " + exp.toLocaleString() + ".\n\nThis would put it AED " + Math.round(over).toLocaleString() + " over. Is this meant for another line?")) return;
+      } else if (over > TOLERANCE) {
+        if (!window.confirm("This puts " + label + " AED " + Math.round(over).toLocaleString() + " over the expected " + exp.toLocaleString() + ".\n\nRecord it anyway?")) return;
+      }
+    }
     setSaving(true);
     const r = await recordPayment({
       opp, particular, amount, mode, reference, receivedDate, notes, currentUser,

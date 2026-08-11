@@ -5043,7 +5043,7 @@ onSelect={(unitId) => {
                                   line the way a dropdown could. */}
                               <span style={{fontWeight:600,color:Number(item.amount)>0?"#0F2540":"#94A3B8"}}>{Number(item.amount)>0 ? fmt2(Number(item.amount)).replace("AED ","") : "-"}</span>
                               {!waived && !stageGateViewMode && !moneyLocked &&
-                                <button type="button" onClick={()=>setPayFor({ key, label })} title={"Record a payment against " + label}
+                                <button type="button" onClick={()=>setPayFor({ key, label, expected, paid: Number(item.amount) || 0 })} title={"Record a payment against " + label}
                                   style={{marginLeft:6,padding:"2px 7px",borderRadius:5,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:11,fontWeight:700,cursor:"pointer"}}>+</button>}
                             </td>
                             <td style={{padding:"6px 8px",fontSize:10,color:"#64748B"}}>{item.method || "—"}</td>
@@ -5455,6 +5455,7 @@ onSelect={(unitId) => {
                 {/* Day 86: hidden on a BLOCK CHILD - its money table is read-only because collection
                     happens at the block, so there is nothing here to save. */}
                 {payFor && <RecordPaymentDialog opp={opp} particular={payFor.key} label={payFor.label}
+                  expected={payFor.expected} alreadyPaid={payFor.paid}
                   currentUser={currentUser} showToast={showToast} onClose={()=>setPayFor(null)}
                   onSaved={async ()=>{
                     // The ledger is re-derived by recordPayment; reload it so the table shows the sum.
