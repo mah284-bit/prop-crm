@@ -33,6 +33,11 @@ export default function RecordPaymentDialog({ opp, particular, label, expected, 
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
+    // Day 89: VALIDATE BEFORE WARNING. It asked the broker to confirm an overpayment and only then
+    // told him the mode was missing - two dialogs to reach a refusal the first field could have
+    // given him.
+    if (!(Number(amount) > 0)) { showToast("Enter an amount", "error"); return; }
+    if (!String(mode || "").trim()) { showToast("How was this paid? A mode is required", "error"); return; }
     const exp = Number(expected || 0);
     const paid = Number(alreadyPaid || 0);
     const after = paid + (Number(amount) || 0);
