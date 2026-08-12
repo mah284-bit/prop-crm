@@ -381,8 +381,12 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                       // nothing said what happened next or where. FOUNDER: "if the money is the end of
                       // the block, give an appropriate message to say now the SPA is unit-wise, select
                       // the unit and move forward." One line that reads the state.
-                      const billTotal = Number(blockBill?.total?.bill || 0);
-                      const billPaid = Number(blockBill?.total?.collected || 0);
+                      // blockBill returns { per, tot, grand } - `grand` is the whole bill. The
+                      // collected side comes from paidByParticular, the same source the Money tab
+                      // sums. Reading a key that does not exist would have shown "collected in full"
+                      // on a block still owing - a false all-clear on the money path.
+                      const billTotal = Number(blockBill?.grand || 0);
+                      const billPaid = Object.values(paidByParticular || {}).reduce((x, v) => x + Number(v || 0), 0);
                       const left = billTotal - billPaid;
                       const kids = (childRows || []).filter(r => r.child);
                       const won = kids.filter(r => r.child.stage === "Closed Won").length;
