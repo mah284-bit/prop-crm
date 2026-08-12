@@ -375,7 +375,23 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                     ? <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#FFFBEB",color:"#B45309",border:"1px solid #FCD34D"}}>Short by {fmt(outstanding)} {String.fromCharCode(183)} accepted, units released</span>
                     : outstanding > 0.5
                     ? <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#FEF2F2",color:"#B91C1C",border:"1px solid #FCA5A5",animation:"blkPulse 2.4s ease-in-out infinite"}}>Outstanding {fmt(outstanding)} {String.fromCharCode(183)} RESERVATION of units held until collected fully</span>
-                    : <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#E6F4EE",color:"#166534",border:"1px solid #A7D8C3"}}>Collected in full {String.fromCodePoint(0x2713)}</span>}
+                    : (() => {
+                      // Day 89: THE HEADER WENT QUIET. "Collected in full" described the RESERVATION -
+                      // 50,000 on a block that had actually taken 1,431,643 - and once it settled
+                      // nothing said what happened next or where. FOUNDER: "if the money is the end of
+                      // the block, give an appropriate message to say now the SPA is unit-wise, select
+                      // the unit and move forward." One line that reads the state.
+                      const billTotal = Number(blockBill?.total?.bill || 0);
+                      const billPaid = Number(blockBill?.total?.collected || 0);
+                      const left = billTotal - billPaid;
+                      const kids = (childRows || []).filter(r => r.child);
+                      const won = kids.filter(r => r.child.stage === "Closed Won").length;
+                      if (kids.length && won === kids.length)
+                        return <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#E6F4EE",color:"#166534",border:"1px solid #A7D8C3"}}>Block complete {String.fromCodePoint(0x2713)} {String.fromCharCode(183)} all {kids.length} units sold</span>;
+                      if (billTotal > 0 && left > 0.5)
+                        return <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#FFFBEB",color:"#B45309",border:"1px solid #FCD34D"}}>Reservation settled {String.fromCharCode(183)} {fmt(left)} still to collect across the block</span>;
+                      return <span style={{fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:10,background:"#E6F4EE",color:"#166534",border:"1px solid #A7D8C3"}}>Collected in full {String.fromCodePoint(0x2713)} {String.fromCharCode(183)} each unit's SPA is recorded on its own deal{won ? " (" + won + " of " + kids.length + " sold)" : ""}</span>;
+                    })()}
                 </div>
               )}
               {(() => {
