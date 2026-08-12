@@ -1217,3 +1217,8 @@ AND ON THE PAYMENT STATEMENT, both small and buyer-facing:
  - An overpaid line reads "Due 98,821 · Paid 104,279 · Settled". Better: "Settled - 5,458 in
    credit", so the document answers the question it otherwise invites.
  - Rows WRAP when a reference is long; dates and descriptions run together. Widen or truncate.
+   ⚠️ CORRECTION (same day): generateReceiptPDF is FINE - it reads company.name and
+   company.brand_color like every other document. The PropCRM branding is only in the DEAD
+   printReceipt, which nothing calls, so no buyer has ever received it. The architect read the dead
+   function and assumed the live one shared its fault. The remaining action is smaller than boarded:
+   DELETE printReceipt. Nothing else to fix here.
