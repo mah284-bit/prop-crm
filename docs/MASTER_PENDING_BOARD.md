@@ -1222,3 +1222,23 @@ AND ON THE PAYMENT STATEMENT, both small and buyer-facing:
    printReceipt, which nothing calls, so no buyer has ever received it. The architect read the dead
    function and assumed the live one shared its fault. The remaining action is smaller than boarded:
    DELETE printReceipt. Nothing else to fix here.
+
+## ⭐ ADDED DAY 89 - "BUYERS BILL TO SPA" COUNTS ONLY THE RESERVATION, ON BOTH VERTICALS
+The Financials panel reads "AED 335,644 · AED 25,000 already credited" while the Collection strip
+directly above it says 360,643.90 COLLECTED. Same deal, same screen, two answers - and the panel is
+the one a broker quotes from, so he would chase money the buyer has already paid.
+CAUSE: the panel reads `opp.reservation_amount` instead of the ledger. It predates the ledger and
+was never rewired.
+SEEN ON BOTH: the 1-to-1 (129,279 collected, panel says 25,000) and a block child (360,643 collected,
+panel says 25,000). Not a block problem - a panel problem.
+FIX: read pre_spa_payments, which is now the sum of real payment rows and cannot drift.
+
+## ADDED DAY 89 - THE AGENT SEES BROKERAGE COMMISSION IN THREE PLACES
+Not one leak but three, and `see_brokerage_commission` is not read at any of them:
+ 1. The SPA gate's "Your Commission Preview" - rate, VAT, total invoiced to the developer.
+ 2. The manager's split breakdown (agent base / company keeps) - correct there, but the capability
+    is not what gates it.
+ 3. The deal's Financials panel - "Commission Invoice · Net Commission · Outstanding".
+A sales agent on a 2.3M deal can read the brokerage's whole commission position. Whether he should
+is the founder's call; that it happens without any capability check is not a design decision, it is
+an omission.
