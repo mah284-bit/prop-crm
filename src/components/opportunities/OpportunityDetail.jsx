@@ -1484,25 +1484,6 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     setSaving(false);
   };
 
-  const printReceipt=(pay)=>{
-    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
-    <style>body{font-family:Arial,sans-serif;max-width:420px;margin:40px auto}
-    .hdr{background:#1E3A5F;color:#fff;padding:20px;border-radius:8px 8px 0 0;text-align:center}
-    .logo{font-size:20px;font-weight:700;color:#C9A84C}.bdy{border:1px solid #E2E8F0;border-top:none;padding:20px;border-radius:0 0 8px 8px}
-    .amt{font-size:30px;font-weight:700;color:#0F2540;text-align:center;padding:16px 0;border-bottom:2px solid #E2E8F0;margin-bottom:16px}
-    .row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F0F2F5;font-size:13px}
-    .stamp{border:3px solid #1A7F5A;color:#1A7F5A;padding:6px 16px;border-radius:6px;font-size:14px;font-weight:700;display:inline-block;margin:12px auto;transform:rotate(-5deg)}
-    </style></head><body>
-    <div class="hdr"><div class="logo">◆ PropCRM</div><div style="font-size:13px;opacity:.7">Payment Receipt</div></div>
-    <div class="bdy">
-      <div class="amt">AED ${Number(pay.amount).toLocaleString()}</div>
-      ${[["Client",lead.name],["Opportunity",opp.title||unit?.unit_ref||"—"],["Milestone",pay.milestone],["Type",pay.payment_type],pay.cheque_number&&["Cheque No.",pay.cheque_number],pay.bank_name&&["Bank",pay.bank_name],["Status",pay.status],["Date",new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})]].filter(Boolean).map(([l,v])=>`<div class="row"><span style="color:#718096">${l}</span><span style="font-weight:600">${v}</span></div>`).join("")}
-      ${pay.cheque_file_url?`<img src="${pay.cheque_file_url}" style="width:100%;margin-top:12px;border-radius:6px;border:1px solid #E2E8F0"/>`:""}
-      <div style="text-align:center"><div class="stamp">${pay.status==="Cleared"?"✓ CLEARED":"✓ RECEIVED"}</div></div>
-    </div></body></html>`;
-    const w=window.open("","_blank","width=500,height=700");
-    if(w){w.document.write(html);w.document.close();setTimeout(()=>w.print(),500);}
-  };
 
   const totalPaid = payments.filter(p=>["Cleared","Received","Deposited"].includes(p.status)).reduce((s,p)=>s+(p.amount||0),0);
   const totalDue  = payments.reduce((s,p)=>s+(p.amount||0),0);
