@@ -1204,3 +1204,16 @@ which cannot be reconciled against a bank statement. Require it when the amount 
 ALSO ON THE COLLECTION GATE, cosmetic: the DLD radios and "quick-fill date for all received items"
 still render there and belong to neither collection nor this stage, and the Notes placeholder still
 reads "conditions or notes on the SPA" on a form that is not about the SPA.
+
+## ADDED DAY 89 - THE RECEIPT IS BRANDED "PropCRM", NOT THE COMPANY
+generateReceiptPDF carries a hard-coded navy-and-gold PropCRM header, while every other document -
+proposal, block statement, block proposal, payment statement - reads company.name and
+company.brand_color. This is a WHITE-LABEL product and a receipt carrying the product's name to a
+brokerage's client is wrong.
+ALSO: printReceipt (OpportunityDetail ~1486) is DEAD - defined, never called, 40+ lines of inline
+HTML with the same PropCRM branding. Remove it rather than leave a second receipt path for someone
+to wire up by mistake.
+AND ON THE PAYMENT STATEMENT, both small and buyer-facing:
+ - An overpaid line reads "Due 98,821 · Paid 104,279 · Settled". Better: "Settled - 5,458 in
+   credit", so the document answers the question it otherwise invites.
+ - Rows WRAP when a reference is long; dates and descriptions run together. Widen or truncate.
