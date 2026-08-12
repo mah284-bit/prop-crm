@@ -386,7 +386,10 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                       // sums. Reading a key that does not exist would have shown "collected in full"
                       // on a block still owing - a false all-clear on the money path.
                       const billTotal = Number(blockBill?.grand || 0);
-                      const billPaid = Object.values(paidByParticular || {}).reduce((x, v) => x + Number(v || 0), 0);
+                      // paidByParticular EXCLUDES the reservation - summing it alone would have
+                      // understated by 50,000 and shown money outstanding on a settled block.
+                      // totGot is the honest total: reservations plus every allocation.
+                      const billPaid = Number(totGot || 0);
                       const left = billTotal - billPaid;
                       const kids = (childRows || []).filter(r => r.child);
                       const won = kids.filter(r => r.child.stage === "Closed Won").length;
