@@ -1669,3 +1669,28 @@ ledger re-derives without it. PROVEN LIVE: deleting a row re-derived the reserva
 to Credit Card and 25,025 back to 25,000.
 NEXT, and the founder's own words: "a report which can be sent if the buyer asks" - a buyer-facing
 payment statement PDF, reading these same rows.
+LATER ON DAY 89 - THE STATEMENT, AND THE HEADER THAT WENT QUIET.
+⭐ A BUYER-FACING PAYMENT STATEMENT, reading the payment rows built this morning: every payment in
+date order with how it was paid and its reference, so the buyer can match each line against his own
+bank record, then "Where it stands" - due, paid, outstanding per particular. Voided payments are
+excluded; a buyer's statement shows what he PAID, not what was recorded in error. It stops at the
+pre-SPA bill: what remains on the price afterwards is the developer's payment plan.
+⭐ THE BLOCK HEADER NOW READS ITS WHOLE STATE. "Collected in full" used to describe the RESERVATION -
+50,000 on a block that had taken 1,431,643 - and once it settled nothing said what happened next.
+FOUNDER: "if the money is the end of the block, give an appropriate message to say now the SPA is
+unit-wise." It now says: money outstanding -> "AED X still to collect across the block"; fully
+collected -> "each unit's SPA is recorded on its own deal (n of m sold)"; all children won ->
+"Block complete". PROVEN LIVE on Vinayak Block 1: "Reservation settled - AED 191,026 still to
+collect across the block."
+THREE ANCHOR MISSES ON blockBill's SHAPE before that worked: it returns { per, tot, grand }, not
+{ total: { bill, collected } }, and paidByParticular EXCLUDES the reservation. Reading a key that
+does not exist would have shown "collected in full" on a block still owing - a false all-clear on
+the money path, caught by checking the shape rather than trusting a clean build.
+REMOVED: printReceipt, dead and carrying hard-coded "PropCRM" branding a buyer should never see.
+The LIVE receipt was fine all along - the architect read the dead one and assumed the live one
+shared its fault. Correction boarded the same day.
+FOUND AND BOARDED: "Buyers bill to SPA" counts only the reservation on BOTH verticals - 25,000
+credited where the strip above says 360,643 collected, so a broker would chase money already paid ·
+brokerage commission is visible to a sales agent in THREE places with no capability check · five
+block children predate the closure-row fix and have no ledger, which is a real upgrade case even
+though this database gets wiped.
