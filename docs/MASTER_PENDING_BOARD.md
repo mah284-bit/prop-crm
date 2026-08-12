@@ -1242,3 +1242,14 @@ Not one leak but three, and `see_brokerage_commission` is not read at any of the
 A sales agent on a 2.3M deal can read the brokerage's whole commission position. Whether he should
 is the founder's call; that it happens without any capability check is not a design decision, it is
 an omission.
+
+## ADDED DAY 89 - FIVE BLOCK CHILDREN HAVE NO CLOSURE ROW (pre-Day-86 blocks)
+birthChildClosure fires when a block's RESERVATION COMPLETES. Blocks whose reservation settled
+BEFORE it was built have children with no ledger at all: they read the fallback SPA fee of 5,250
+instead of the company's 6,000, and the collection gate would open with every Expected blank.
+Five on this database - the Sara and Vinayak block children. Test data, so nothing to rescue here.
+⚠️ BUT THE PATTERN IS REAL FOR AN UPGRADE. Any tenant who confirmed a block before this ships has
+the same gap, and it is silent - the deal looks normal until someone opens its money.
+FIX SHAPE: a one-off backfill calling the same helper for every block child at Reserved or beyond
+with no closure row. It already reads the block's allocations, so it would credit them correctly.
+Cheap, and it belongs in the go-live checklist rather than the app.
