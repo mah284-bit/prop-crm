@@ -311,3 +311,22 @@ RESIDUE (Day 82): 13 test files remain under `propcrm-files/kyc/` across 4 old l
 NOTHING references them - both leads that had kyc_docs were cleared - and they are test uploads
 (screenshots, old proposal PDFs, a photo of a chair), not real identity documents. They are
 cleared by the B3 storage step. The CODE exposure is closed; this is residue, not risk.
+
+## DATA WIPE - ORDER CORRECTED (Day 90)
+The B3 spec predates three things added this week and hit two FK walls. Working order:
+  1. update block_deals set current_proposal_id = null, accepted_proposal_id = null;  <- Day 87 columns
+  2. delete from pp_payments;                    <- Day 89 table
+  3. delete from block_payment_allocations;
+  4. delete from block_payments;
+  5. delete from block_distributions;
+  6. delete from pp_commission_invoices;
+  7. delete from pp_sales_closures;
+  8. delete from proposals;
+  9. delete from activities;
+ 10. delete from block_deal_units;
+ 11. delete from opportunities;    <- BEFORE block_deals: opportunities.block_deal_id references it
+ 12. delete from block_deals;
+ 13. delete from leads;
+ 14. update project_units set status='Available' where status in ('Booked','Reserved','Sold');
+ONE STATEMENT AT A TIME - a batch rolls back as a unit, so one FK error undoes the successful
+statements before it (Day 85).
