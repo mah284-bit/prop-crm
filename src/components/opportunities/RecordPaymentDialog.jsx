@@ -47,7 +47,16 @@ export default function RecordPaymentDialog({ opp, particular, label, expected, 
       if (flat) {
         if (!window.confirm(label + " is already fully paid - " + paid.toLocaleString() + " of " + exp.toLocaleString() + ".\n\nThis would put it AED " + Math.round(over).toLocaleString() + " over. Is this meant for another line?")) return;
       } else if (over > TOLERANCE) {
-        if (!window.confirm("This puts " + label + " AED " + Math.round(over).toLocaleString() + " over the expected " + exp.toLocaleString() + ".\n\nRecord it anyway?")) return;
+        // Day 90: REFUSED, not confirmed. FOUNDER: "the entry itself should not happen if there is
+        // more money - he has to manually distribute it to the max." Money beyond what a line owes
+        // belongs somewhere else, and letting it land here makes the per-line record meaningless.
+        // Within tolerance still passes: a bank charge is arithmetic, not a decision.
+        // NOT AUTOMATED, deliberately: the block allocator spreads a payment because there is no
+        // per-unit instruction. Here the developer usually SAYS what a payment is against, so the
+        // broker knows and the app would only be guessing over him.
+        showToast(label + " only owes AED " + Math.round(exp - paid).toLocaleString() +
+          ". Record that here and put the rest against the line it belongs to.", "error");
+        return;
       }
     }
     setSaving(true);
