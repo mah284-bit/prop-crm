@@ -1328,3 +1328,24 @@ the buyer ATTEND or sign REMOTELY (one deal, one method), moved into the SPA Sig
 it is decided.
 ⚠️ NOT YET SEEN LIVE: the question renders only when RECORDING the signature. The deal it was tested
 on had already signed, so it never appeared. Confirm on a deal reaching SPA Signed fresh.
+
+## ⭐ AI AGENTS - THE PARTNER ASKED, AND THE GROUNDWORK IS ALREADY THERE (Day 90)
+He asked whether we had built agents. The founder dodged, correctly: what exists is AI ASSISTANCE,
+not agents. Ai Mansoor answers when asked, PropPulse collects with web search, the Coach advises
+when a deal is opened. All REACTIVE.
+⭐ AN AGENT ACTS WITHOUT BEING ASKED - and the app already knows everything one would need:
+ - days in stage, so it knows what has gone quiet
+ - developer questions with needed_by, so it knows what is overdue
+ - the booking clock, so it knows what is about to lapse
+ - variance on every ledger line, so it knows who owes what
+ - every activity, so it knows when a buyer was last contacted
+SO IT NEEDS THREE THINGS, none of them intelligence: a SCHEDULE that runs nightly rather than when
+a page opens · a RULE SET ("ten days at Negotiation with no contact" is a query) · a DRAFTING step,
+which the app already does for proposals.
+HONEST SIZING: the first agent is about two days. A nightly sweep, a rules table, drafts landing in
+Next Steps.
+⚠️ THE HARD PART IS NOT BUILDING IT - it is deciding WHAT AN AGENT MAY DO ALONE. Draft and wait, or
+send? On a buyer-facing message that is a founder ruling, not an engineering choice.
+AND THE HONEST DEMO ANSWER meanwhile: "AI throughout - a concierge over your data, automated
+inventory collection, deal coaching. What we have deliberately not done is let AI act on money or
+titles. Autonomous agents are the next layer, and the groundwork is there."
