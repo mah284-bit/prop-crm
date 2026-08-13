@@ -403,7 +403,8 @@ where every unit was lost currently derives to "cancelled", which is the ARCHITE
 not a founder ruling. With loss reasons captured, the block could say something truer.
 FOUNDER: "will see that at the end while doing the testing." Not scheduled.
 
-## ADDED DAY 82 - A CANCELLED BLOCK HOLDING MONEY SHOWS GREEN
+## ✅ DONE - ADDED DAY 82 - A CANCELLED BLOCK HOLDING MONEY SHOWS GREEN
+Built Day 84: a cancelled block holding money reads amber - 'AED X received, unreconciled'.
 Proven live on Block Test 3: both units lost, block derived to cancelled, units correctly freed.
 But the Money tab reads "Total AED 0 - Collected AED 30,000 - Nil (tick)" IN GREEN, because with
 no units left the bill is zero and the arithmetic says nothing is owed. Meanwhile 30,000 of the
@@ -518,7 +519,8 @@ more time - because it is a block, stakes are high and it might need time." So w
 must accommodate a legitimate extension, not just punish delay.
 FOUNDER DEFERRED: "let me think through clearly and come back on it." NOT BUILT EITHER WAY.
 
-## ADDED DAY 83 - THE REVENUE REPORT COMPUTES COMMISSION AT A FLAT 4%
+## ✅ DONE - ADDED DAY 83 - THE REVENUE REPORT COMPUTES COMMISSION AT A FLAT 4%
+Built Day 84: the revenue report reads pp_commission_invoices instead of computing at a flat 4%.
 `ReportsModule.jsx:373` - `const comm = o.final_price * 0.04` - for EVERY won deal, regardless of
 what was actually agreed with that developer.
 The app already models the truth: `pp_commissions` is a RATE CARD (developer, project, rate_pct,
@@ -559,7 +561,8 @@ Building an answer before the evidence arrives is guessing.
 THEN: the founder's claim/confirm ruling · B3 clean data (unblocks buyer_type NOT NULL) · the two
 walkthroughs · THEN call the testers.
 
-## ADDED DAY 83 - THE OPPORTUNITY LIST DOES NOT SHOW WHICH DEALS ARE BLOCK CHILDREN
+## ✅ DONE - ADDED DAY 83 - THE OPPORTUNITY LIST DOES NOT SHOW WHICH DEALS ARE BLOCK CHILDREN
+Built Day 84: the BLOCK / 1-TO-1 chip, placed before the unit reference so a long project name cannot clip it.
 A block child and a standalone deal look identical in the list, yet they behave differently: the
 child's terms are locked at the block, its what's-next line is suppressed, and its money flows
 through the block ledger. A broker opening one and expecting normal controls will be confused -
@@ -567,7 +570,8 @@ the founder confused himself while picking a deal to test on.
 Cheap: a chip on the row. block_deal_id is already on the opportunity.
 PRE-TESTER LIST - this is the kind of thing a tester hits in the first hour.
 
-## ADDED DAY 83 - THE PROPOSAL PDF DOES NOT STATE THE DLD ARRANGEMENT
+## ✅ DONE - ADDED DAY 83 - THE PROPOSAL PDF DOES NOT STATE THE DLD ARRANGEMENT
+Built Day 84: the proposal PDF prints the DLD arrangement; six boxes, laid out from the box count.
 The generated proposal shows asking price, discount, final price and payment plan - and NOT who
 pays the DLD fee. On a 611,220 deal that is 24,449 the buyer is bound by and cannot see on the
 document he is sent. The builder captures it; the PDF prints nothing.
@@ -661,7 +665,8 @@ issued ones as history, or (b) leave all of it and start clean from the fix.
 NOTE: this is test data today, so the immediate exposure is nil - but the same query is the
 GO-LIVE CHECK for any tenant onboarded before Day 84.
 
-## ADDED DAY 84 - THE UNIT PICKER SHOULD BE SHARED, AND IT CARRIES DOCTRINE
+## ✅ DONE - ADDED DAY 84 - THE UNIT PICKER SHOULD BE SHARED, AND IT CARRIES DOCTRINE
+Built Day 84: src/components/shared/UnitPicker.jsx - the claim ladder lives in one place now.
 CreateOpportunityDialog has a RICH picker: search across ref / project / bedrooms / view, project
 pills, bedroom pills, show-reserved toggle, result counts, price on every row for budget matching,
 and a Property Pack button.
@@ -771,7 +776,8 @@ designed blind.
    why); ISSUED frozen, corrected by credit note. THE REASON IS INTERNAL - it must never appear on
    the developer's invoice. Who may edit is `manage_commissions`, which is why this rides D7.
 
-## ⭐ ADDED DAY 85 - SPA SIGNED HAS NO CEREMONY OF ITS OWN: IT REOPENS THE COLLECTION FORM
+## ✅ DONE - ⭐ ADDED DAY 85 - SPA SIGNED HAS NO CEREMONY OF ITS OWN: IT REOPENS THE COLLECTION FORM
+Built Day 88: the gate is named by where he IS. Collecting opens a collection-only form with the signing fields hidden.
 FOUNDER, after three days of saying it in different words: "the tab header is saying something and
 doing something." Here is the root of it.
 At SPA REQUIREMENTS the broker presses "Collect payments" and gets the collection form. Correct.
@@ -1177,7 +1183,8 @@ FIX SHAPE: both belong in Buyer Fees beside the others, resolved through feeSett
 rest. And the buyer-facing proposal should show them, because "you never told me about this" is the
 argument they cause.
 
-## IN PROGRESS DAY 88 - THE SPA CEREMONY SPLIT (mostly done, one piece left)
+## ✅ DONE - IN PROGRESS DAY 88 - THE SPA CEREMONY SPLIT (mostly done, one piece left)
+Completed Day 88: the footer says Save payments and saving records money without moving the stage.
 ROOT CAUSE FOUND AND FIXED: the gate form was named by the DESTINATION, not by where the broker is.
 At SPA Requirements the button targets SPA Signed, so pressing "Collect payments" opened a form
 headed "Record SPA Signing" with a final price, a signing date and a document upload - a ceremony
@@ -1212,7 +1219,8 @@ ALSO ON THE COLLECTION GATE, cosmetic: the DLD radios and "quick-fill date for a
 still render there and belong to neither collection nor this stage, and the Notes placeholder still
 reads "conditions or notes on the SPA" on a form that is not about the SPA.
 
-## ADDED DAY 89 - THE RECEIPT IS BRANDED "PropCRM", NOT THE COMPANY
+## ✅ DONE - ADDED DAY 89 - THE RECEIPT IS BRANDED "PropCRM", NOT THE COMPANY
+Closed Day 90: the LIVE receipt was properly branded all along; the dead printReceipt carrying PropCRM was deleted.
 generateReceiptPDF carries a hard-coded navy-and-gold PropCRM header, while every other document -
 proposal, block statement, block proposal, payment statement - reads company.name and
 company.brand_color. This is a WHITE-LABEL product and a receipt carrying the product's name to a
@@ -1241,7 +1249,8 @@ SEEN ON BOTH: the 1-to-1 (129,279 collected, panel says 25,000) and a block chil
 panel says 25,000). Not a block problem - a panel problem.
 FIX: read pre_spa_payments, which is now the sum of real payment rows and cannot drift.
 
-## ADDED DAY 89 - THE AGENT SEES BROKERAGE COMMISSION IN THREE PLACES
+## ✅ DONE - ADDED DAY 89 - THE AGENT SEES BROKERAGE COMMISSION IN THREE PLACES
+Closed Day 90: not a defect - the gate IS read. Every role simply has see_brokerage_commission granted. A settings decision.
 Not one leak but three, and `see_brokerage_commission` is not read at any of them:
  1. The SPA gate's "Your Commission Preview" - rate, VAT, total invoiced to the developer.
  2. The manager's split breakdown (agent base / company keeps) - correct there, but the capability
