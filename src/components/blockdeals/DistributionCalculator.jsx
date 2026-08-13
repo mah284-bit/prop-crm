@@ -299,7 +299,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
           await supabase.from("activities").insert({ opportunity_id: child.id, company_id: currentUser.company_id, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, stage_at_event: child.stage, activity_subtype: "block_reprice", note: "BLOCK REPRICE (D" + version + ", developer-approved): AED " + before.toLocaleString() + " -> AED " + Number(alloc.net_price).toLocaleString() });
           done++;
         }
-        if (done > 0) showToast(done + " deal(s) repriced at D" + version + (skipped.length ? " - skipped (contract locked): " + skipped.join(", ") : ""), "success");
+        if (done > 0) showToast(done + " deal(s) repriced at offer " + version + (skipped.length ? " - skipped (contract locked): " + skipped.join(", ") : ""), "success");
         else if (skipped.length) showToast("No repricing - all deals are contract-locked: " + skipped.join(", "), "info");
       }
     }
@@ -319,7 +319,7 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
           <div style={{fontSize:15,fontWeight:700,color:"#0F2540"}}>{String.fromCodePoint(0x1F9EE)} Distribution Calculator {String.fromCharCode(183)} {block.title}</div>
           <button onClick={onClose} style={{background:"none",border:"none",fontSize:22,color:"#94A3B8",cursor:"pointer"}}>{String.fromCharCode(215)}</button>
         </div>
-        <div style={{fontSize:11,color:"#64748B",marginBottom:12}}>{dLatest ? ("Current: D" + dLatest.version + " locked " + new Date(dLatest.locked_at).toLocaleDateString("en-GB")) : "No distribution yet - this lock creates D1"}{String.fromCharCode(46)} Every lock is a new version - the record shows how each number arrived.</div>
+        <div style={{fontSize:11,color:"#64748B",marginBottom:12}}>{dLatest ? ("Offer " + dLatest.version + " \u00b7 set " + new Date(dLatest.locked_at).toLocaleDateString("en-GB")) : "Nothing offered yet - sending creates the first offer"}{String.fromCharCode(46)} Every offer is kept, so the record shows how each number arrived.</div>
         <div style={{display:"flex",gap:10,alignItems:"flex-end",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:10,padding:"10px 14px",marginBottom:12}}>
           <div>
             <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4}}>TOP-DOWN: BLOCK DISCOUNT</label>

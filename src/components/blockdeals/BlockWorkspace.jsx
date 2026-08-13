@@ -671,19 +671,19 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                   ) : (
                     <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
                       <thead><tr style={{background:"#F8FAFC",textAlign:"left",color:"#64748B"}}>
-                        <th style={{padding:"7px 8px"}}>V#</th><th style={{padding:"7px 8px"}}>Sent</th>
+                        <th style={{padding:"7px 8px"}}>Offer</th><th style={{padding:"7px 8px"}}>Sent</th>
                         <th style={{padding:"7px 8px"}}>Units</th><th style={{padding:"7px 8px",textAlign:"right"}}>Discount</th>
-                        <th style={{padding:"7px 8px",textAlign:"right"}}>Total</th><th style={{padding:"7px 8px"}}>From</th>
+                        <th style={{padding:"7px 8px",textAlign:"right"}}>Total</th>
                         <th style={{padding:"7px 8px"}}>Status</th>
                       </tr></thead>
                       <tbody>{blockProposals.map(pr => { const sd = pr.structured_data || {}; const live = pr.status !== "superseded"; return (
                         <tr key={pr.id} style={{borderBottom:"1px solid #F1F5F9",opacity:live?1:0.55}}>
-                          <td style={{padding:"7px 8px",fontWeight:700,color:"#0F2540"}}>V{pr.version}{live && <span style={{fontSize:8,marginLeft:5,padding:"1px 5px",borderRadius:3,background:"#ECFDF5",color:"#065F46",fontWeight:700}}>LATEST</span>}</td>
+                          <td style={{padding:"7px 8px",fontWeight:700,color:"#0F2540"}}>Offer {pr.version}{live && <span style={{fontSize:8,marginLeft:5,padding:"1px 5px",borderRadius:3,background:"#ECFDF5",color:"#065F46",fontWeight:700}}>LATEST</span>}</td>
                           <td style={{padding:"7px 8px",color:"#64748B"}}>{pr.sent_at ? new Date(pr.sent_at).toLocaleDateString("en-GB") : "-"}</td>
                           <td style={{padding:"7px 8px"}}>{sd.unit_count || "-"}</td>
                           <td style={{padding:"7px 8px",textAlign:"right"}}>{sd.block_discount_pct ? sd.block_discount_pct + "%" : "-"}</td>
                           <td style={{padding:"7px 8px",textAlign:"right",fontWeight:700}}>{fmt(sd.total_value || 0)}</td>
-                          <td style={{padding:"7px 8px",color:"#64748B"}}>D{sd.block_distribution_version ?? "?"}</td>
+                          
                           <td style={{padding:"7px 8px",fontSize:10,fontWeight:700,color:live?"#166534":"#94A3B8"}}>{(pr.status||"sent").toUpperCase()}</td>
                           {/* Day 87: until now "sent" was NOTIONAL - the offer existed as a row and
                               the buyer had nothing to hold. Works on superseded versions too: a
