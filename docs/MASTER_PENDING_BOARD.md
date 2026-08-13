@@ -1368,3 +1368,8 @@ titles. Autonomous agents are the next layer, and the groundwork is there."
    appointment nobody confirmed, the seller who went quiet for three weeks. Exactly what the booking
    clock, the silence nudge and the variance discipline already do for off-plan.
    ASK THE CONTACT: not "how does resale work" but "WHAT GOES WRONG, AND WHERE DO YOU LOSE DEALS?"
+   ⭐ THEIR OWN WORDS, and they belong in the PPT: "NO PAIN NO GAIN" and "MONEY DOESN'T GROW ON
+   TREES - you have to work for it."
+   AGREE WITH IT, then turn it: the app does not remove the work, it makes sure the work is not
+   WASTED. A broker who chases an NOC for three weeks and then loses the deal because the trustee
+   appointment lapsed got the pain without the gain. That is the sale.
