@@ -189,6 +189,9 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   // the RECORDING moves. On a 1-to-1 this is false and nothing changes.
   const moneyLocked = !!opp.block_deal_id;
   const [frozenPolicy, setFrozenPolicy] = useState(null);
+  // Day 90: declared HERE, above the collection effect that reads it - it was below, and the whole
+  // deal page threw "Cannot access 'paymentTick' before initialization" on open.
+  const [paymentTick, setPaymentTick] = useState(0);
   const [collectionState, setCollectionState] = useState(null);
 
   // Day 83: ONE PLACE THE FEES COME FROM.
@@ -232,7 +235,6 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   const [spaUploadError, setSpaUploadError] = useState(null);
   // Stage 5 v2 — 3-state model: pending | received | waived
   const [payFor, setPayFor] = useState(null);
-  const [paymentTick, setPaymentTick] = useState(0);
   const [prePaymentsState, setPrePaymentsState] = useState({
     booking_fee:     { status: "pending", amount: "", date: "", notes: "" },
     reservation_fee: { status: "pending", amount: "", date: "", notes: "" },
