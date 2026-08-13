@@ -1359,3 +1359,12 @@ titles. Autonomous agents are the next layer, and the groundwork is there."
    payment plan - a SELLER instead of a developer, an NOC, and a transfer at the trustee office.
    FIRST STEP is not code: the partner has someone who does resale daily. Walk the process with him
    before designing a ladder for it.
+   ⭐ AND THE PITCH THAT FOLLOWS, founder Day 90: one group calls resale a pain, today's larger group
+   says "that is where the money is" - and both are right. It is messier (no developer, a seller who
+   changes his mind, an NOC, a mortgage, a trustee appointment either party can miss) AND it pays
+   from both sides on a property that is real now, not in three years.
+   SO WE ARE NOT SELLING RELIEF FROM EFFORT - "where there is money people do not mind the extra
+   effort." We are selling NOT LOSING DEALS TO THE MESS: the NOC that expired unnoticed, the
+   appointment nobody confirmed, the seller who went quiet for three weeks. Exactly what the booking
+   clock, the silence nudge and the variance discipline already do for off-plan.
+   ASK THE CONTACT: not "how does resale work" but "WHAT GOES WRONG, AND WHERE DO YOU LOSE DEALS?"
