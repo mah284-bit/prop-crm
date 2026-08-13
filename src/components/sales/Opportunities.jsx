@@ -241,16 +241,17 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
           {(users||[]).map(u => <option key={u.id} value={u.id}>{u.full_name}</option>)}
         </select>
         )}
-      </div>
-
-      <div style={{display:"flex",gap:8,marginBottom:10}}>
+        {/* Outside the canSeeAllOwners gate: an agent filters his own book too. Day 90: it sat in a
+            row of its own below the owner filter, unlabelled - two stray
+            dropdowns with nothing saying what either did. Same row, same styling, named. */}
         <select value={fType} onChange={e=>setFType(e.target.value)}
-          style={{padding:"7px 11px",borderRadius:8,border:"1.5px solid #E2E8F0",fontSize:12,fontWeight:600,color:"#0F2540",background:"#fff",cursor:"pointer",outline:"none"}}>
-          <option value="All">All types</option>
-          <option value="1-to-1">1-to-1 only</option>
-          <option value="Block">Block only</option>
+          style={{padding:"8px 12px",borderRadius:8,border:"1.5px solid #E2E8F0",fontSize:12,fontWeight:600,color:"#0F2540",background:"#fff",cursor:"pointer",outline:"none"}}>
+          <option value="All">{"\ud83c\udfe0 All deal types"}</option>
+          <option value="1-to-1">{"\ud83c\udfe0 1-to-1 only"}</option>
+          <option value="Block">{"\ud83e\uddf1 Block only"}</option>
         </select>
       </div>
+
       {/* Stage filter chips */}
       <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:14}}>
         <button onClick={()=>setFStage("All")}
