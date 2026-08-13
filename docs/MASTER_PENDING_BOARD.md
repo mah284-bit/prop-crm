@@ -1253,3 +1253,20 @@ the same gap, and it is silent - the deal looks normal until someone opens its m
 FIX SHAPE: a one-off backfill calling the same helper for every block child at Reserved or beyond
 with no closure row. It already reads the block's allocations, so it would credit them correctly.
 Cheap, and it belongs in the go-live checklist rather than the app.
+
+## ⚠️ ADDED DAY 90 - A BLOCK CHILD'S LEDGER NOW HAS TWO WRITERS
+Day 89's migration read every pp_sales_closures row and made a pp_payments row per funded
+particular - INCLUDING block children, which got five rows each carrying "Block allocation" as the
+mode. Correct as history, but it leaves a block child's ledger with TWO writers:
+ - postAllocationsToChild (Day 86) writes pre_spa_payments DIRECTLY from block_payment_allocations
+ - syncLedgerFromPayments (Day 89) DERIVES pre_spa_payments from pp_payments rows
+Both target the same field. Today they agree because the migration copied one into the other, but a
+FUTURE block payment would post through the first while the second could re-derive without it - or
+the two could double-count.
+⚠️ THIS IS THE EXACT FAULT THE WEEK HAS BEEN SPENT REMOVING: two sources for one number.
+LIKELY ANSWER: a block payment should create pp_payments rows like everything else, and
+postAllocationsToChild should stop writing the ledger - one writer, one derivation. But that needs
+walking rather than reasoning about.
+PARKED BY THE FOUNDER: the database will be wiped before go-live, so nothing here needs rescuing.
+TEST IT PROPERLY on clean data - a fresh 1-to-1 and a fresh block, walked end to end, watching
+whether a block-level payment lands once or twice in a child's ledger.
