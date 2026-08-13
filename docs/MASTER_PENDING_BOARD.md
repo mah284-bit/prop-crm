@@ -1279,3 +1279,12 @@ whether a block-level payment lands once or twice in a child's ledger.
    Settings -> Role Capabilities is where it is answered.
    The architect assumed an omission twice today and was wrong both times - the live receipt was
    properly branded, and this gate was properly read. CHECK BEFORE BOARDING A FAULT.
+   ⚠️ CORRECTION AND CLOSED (Day 90): THE TYPE FILTER WAS NEVER BROKEN. The first test hit a stale
+   bundle. Afterwards it sat in a row of its own below the owner filter, unlabelled - two stray
+   dropdowns with nothing saying what either did - so it read as dead. Moved into the same row,
+   same styling, named "All deal types / 1-to-1 only / Block only".
+   AND A REAL FAULT UNDERNEATH IT: the stage chips counted the UNFILTERED list, so with "Block only"
+   selected the row still read "Reserved 5" when only 3 of those were block deals - numbers
+   disagreeing with the list directly beneath them. The "All 12" chip did the same and competed with
+   the header's own count, which is what made the whole row look broken. Both now respect the type
+   filter, and the chip reads "All stages" so two different filters stop both saying "All".
