@@ -848,7 +848,8 @@ honest answer may be "delete and start again" rather than an edit.
    drift. It should be computed (units x the developer's standard), shown with its working, and
    editable in ONE place only. Remove the other.
 
-## ADDED DAY 85 - THE CONFIRM BUTTON REMAINS ON A CONFIRMED BLOCK (stale, corrects on reload)
+## ✅ DONE - ADDED DAY 85 - THE CONFIRM BUTTON REMAINS ON A CONFIRMED BLOCK (stale, corrects on reload)
+Superseded Day 87: confirm shows only on `accepted`, so the stale state cannot arise.
 The header still offers "Confirm block" after confirmation until the page is reopened. The Day-77
 IDEMPOTENCY GUARD does refuse a second press - it reads the children fresh - so nothing breaks, but
 the control should not be there to press. Same class as the label-vs-surface pattern and the Day-82
