@@ -1373,3 +1373,20 @@ titles. Autonomous agents are the next layer, and the groundwork is there."
    AGREE WITH IT, then turn it: the app does not remove the work, it makes sure the work is not
    WASTED. A broker who chases an NOC for three weeks and then loses the deal because the trustee
    appointment lapsed got the pain without the gain. That is the sale.
+
+## ANSWERS GIVEN AT THE PARTNER MEETING (Day 90) - WORTH KEEPING, THEY WILL BE ASKED AGAIN
+Their technical man probed two things:
+ 1. CAN IT MOVE to the customer's own PostgreSQL on OCI / AWS? Founder said yes, and he is right.
+    We are already ON Postgres - Supabase IS Postgres - so the schema, the data and the RLS all
+    travel: RLS is a Postgres feature, not a Supabase one, and that is the hard part already solved.
+    WHAT DOES NOT TRAVEL: auth, storage and the client library. That is the real work, and it is
+    weeks rather than days. Say "yes, and here is what it involves" rather than just yes.
+ 2. IS THERE A MOBILE APP? Founder: needs revenue first. Correct answer.
+WHY ONLY OFF-PLAN - the four reasons given, and the fourth is the one that landed:
+ (a) test the waters before committing everything · (b) cannot develop verticals in parallel
+ without mix-ups, which is why leasing stopped · (c) a product this big invites "too much" as a
+ response · (d) ⭐ IT DOES NOT END HERE - maintenance, construction, contractors all talking from
+ one place: PROPERTY OS. That framing impressed them, and it explains the sequencing rather than
+ defending it.
+TO CHECK: the Property OS story is believed to be in the docs already - find it and see whether it
+predates or postdates this meeting.
