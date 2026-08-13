@@ -1316,3 +1316,15 @@ about what the code already did. TEST BOTH on clean data:
    `accepted`, and acceptance requires a sent offer.
  - 1-TO-1: create one, try to reach Reserved with no proposal. proposalGate exists at moveStage for
    Reserved and SPA Requirements; whether it refuses or merely warns is unverified.
+
+## ✅ DONE (Day 90) - THE SPA PREPARATION CHECKLIST IS GONE
+Four chips in a quiet dashed panel that gated Closed Won and that NOTHING ELSE IN THE APP READ. The
+founder walked eight stages without seeing it, then met it as a blocker at the end. Three of the
+four were his own say-so - "docs complete", "signature ready", "SPA uploaded" are assertions nobody
+verifies, ticked to unlock a button.
+WHAT REPLACED IT: the close now checks the EXECUTED DOCUMENT directly, with a manager override and a
+recorded reason - a deal can be done while the paper is in transit. And the one real question, did
+the buyer ATTEND or sign REMOTELY (one deal, one method), moved into the SPA Signed ceremony where
+it is decided.
+⚠️ NOT YET SEEN LIVE: the question renders only when RECORDING the signature. The deal it was tested
+on had already signed, so it never appeared. Confirm on a deal reaching SPA Signed fresh.
