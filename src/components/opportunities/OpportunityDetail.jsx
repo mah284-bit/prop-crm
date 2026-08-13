@@ -1237,6 +1237,17 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     // Bug C fix (12 May 2026): use upsert so re-edits work (was silently failing on duplicate)
     if (toStage === "SPA Signed" && (stageGateForm.final_price || opp.current_agreed_price || opp.budget)) {
       try {
+        // Day 90: the signing METHOD lives on the opportunity (spa_prep), not on the closure -
+        // so it is written here rather than folded into the upsert below. Without this the
+        // ceremony would ask the question and lose the answer: the panel that used to write
+        // spa_prep is gone. Third control this week that looked live and wrote nowhere.
+        if (stageGateForm.buyer_mode !== undefined) {
+          try {
+            await supabase.from("opportunities")
+              .update({ spa_prep: { ...(opp.spa_prep || {}), buyer_mode: stageGateForm.buyer_mode } })
+              .eq("id", opp.id);
+          } catch (e) { console.error("buyer_mode:", e); }
+        }
         const { error: closErr } = await supabase
           .from("pp_sales_closures")
           .upsert({
@@ -1425,17 +1436,33 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       }
     }
 
+    // Day 90: THE CHECKLIST GATED THE CLOSE AND NOTHING ELSE READ IT. Four chips in a quiet panel
+    // the founder never saw across eight stages, then met as a blocker at the very end - and three
+    // of them were the broker's own say-so: "docs complete", "signature ready", "SPA uploaded" are
+    // assertions nobody verifies, ticked to unlock a button. The one that mattered - did the buyer
+    // ATTEND or sign REMOTELY - is a real arrangement, and it now belongs to the SIGNING ceremony
+    // where it is decided rather than to a panel hoping to be noticed.
+    // What remains gated at the close is the EXECUTED DOCUMENT - checked DIRECTLY rather than
+    // trusted from a tick. Founder, Day 87: Closed Won means the broker HOLDS the countersigned
+    // copy, which travels by post; asking for it is the right question at the right moment.
+    // A manager may still close without it, with a reason, because a deal can be genuinely done
+    // while the paper is in transit.
     if (toStage === "Closed Won" && opp.stage === "SPA Signed") {
-      const _pp = opp.spa_prep || {};
-      const _missing = [];
-      if (!_pp.docs_complete) _missing.push("docs");
-      if (!_pp.signature_ready) _missing.push("signature");
-      if (!_pp.buyer_mode) _missing.push("buyer attend/remote");
-      if (!_pp.spa_uploaded) _missing.push("SPA upload");
-      if (_missing.length > 0) {
-        const pr = window.prompt("SPA preparation incomplete: " + _missing.join(", ") + ".\n\nBest: complete the checklist on the deal first.\nTo close anyway: type the reason (audited):");
-        if (pr === null || !pr.trim()) return;
-        try { await supabase.from("activities").insert({ opportunity_id: opp.id, lead_id: opp.lead_id, company_id: opp.company_id || currentUser.company_id || null, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, stage_at_event: "Closed Won", activity_subtype: "prep_override", note: "PREP OVERRIDE at close: missing " + _missing.join(", ") + " - reason: " + pr.trim() }); } catch (e) { console.error("prep audit:", e); }
+      const { data: _cl } = await supabase.from("pp_sales_closures")
+        .select("spa_document_path").eq("opportunity_id", opp.id).maybeSingle();
+      if (!_cl?.spa_document_path) {
+        const why = window.prompt("No signed SPA is on file for this deal.\n\nClosing as Won means the executed copy is in hand. To close anyway, say why (recorded):");
+        if (why === null || !why.trim()) return;
+        try {
+          await supabase.from("activities").insert({
+            opportunity_id: opp.id, lead_id: opp.lead_id,
+            company_id: opp.company_id || currentUser.company_id || null,
+            type: "Note", status: "completed", user_id: currentUser.id,
+            user_name: currentUser.full_name || null, stage_at_event: "Closed Won",
+            activity_subtype: "spa_doc_override",
+            note: "CLOSED WON WITHOUT A SIGNED SPA ON FILE - reason: " + why.trim(),
+          });
+        } catch (e) { console.error("spa doc audit:", e); }
       }
     }
     if(toStage==="Closed Won"&&opp.unit_id)
@@ -1827,29 +1854,14 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                         }} style={{padding:"4px 12px",borderRadius:7,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:11,fontWeight:700,cursor:"pointer",marginLeft:6}}>Statement</button>
                       </div>
                     ); })()}
-                    {opp.stage === "SPA Signed" && (() => {
-                      const prep = opp.spa_prep || {};
-                      const togglePrep = async (k, v) => {
-                        const next = { ...prep, [k]: v };
-                        try { await supabase.from("opportunities").update({ spa_prep: next }).eq("id", opp.id); onUpdated?.({ ...opp, spa_prep: next }); } catch (e) { showToast("Prep save failed: " + e.message, "error"); }
-                      };
-                      const chip = (k, label) => { const on = !!prep[k]; return <button key={k} type="button" onClick={() => togglePrep(k, !on)} style={{padding:"4px 10px",borderRadius:14,border:"1.5px solid " + (on ? "#16A34A" : "#E2E8F0"),background:on ? "#DCFCE7" : "#fff",color:on ? "#166534" : "#94A3B8",fontSize:10,fontWeight:700,cursor:"pointer"}}>{(on ? "\u2713 " : "") + label}</button>; };
-                      return (
-                        <div style={{margin:"4px 0 8px",padding:"8px 10px",background:"#FAFBFE",border:"1px dashed #C7D2E5",borderRadius:10}}>
-                          <div style={{fontSize:9,fontWeight:700,color:"#7C3AED",textTransform:"uppercase",letterSpacing:".6px",marginBottom:5}}>SPA preparation</div>
-                          <div style={{display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-                            {chip("docs_complete", "Docs complete")}
-                            {chip("signature_ready", "Signature ready")}
-                            <span style={{display:"inline-flex",gap:4,alignItems:"center"}}>
-                              <span style={{fontSize:9,color:"#94A3B8",fontWeight:700}}>BUYER:</span>
-                              <button type="button" onClick={() => togglePrep("buyer_mode", prep.buyer_mode === "attend" ? null : "attend")} style={{padding:"4px 10px",borderRadius:14,border:"1.5px solid " + (prep.buyer_mode === "attend" ? "#0F2540" : "#E2E8F0"),background:prep.buyer_mode === "attend" ? "#0F2540" : "#fff",color:prep.buyer_mode === "attend" ? "#fff" : "#94A3B8",fontSize:10,fontWeight:700,cursor:"pointer"}}>Attends</button>
-                              <button type="button" onClick={() => togglePrep("buyer_mode", prep.buyer_mode === "remote" ? null : "remote")} style={{padding:"4px 10px",borderRadius:14,border:"1.5px solid " + (prep.buyer_mode === "remote" ? "#0F2540" : "#E2E8F0"),background:prep.buyer_mode === "remote" ? "#0F2540" : "#fff",color:prep.buyer_mode === "remote" ? "#fff" : "#94A3B8",fontSize:10,fontWeight:700,cursor:"pointer"}}>Signs remotely</button>
-                            </span>
-                            {chip("spa_uploaded", "SPA uploaded")}
-                          </div>
-                        </div>
-                      );
-                    })()}
+                    {/* Day 90: THE SPA-PREPARATION PANEL IS GONE. Four chips in a quiet dashed box
+                        that gated Closed Won and that nothing else in the app read. The founder
+                        walked eight stages without seeing it, then met it as a blocker at the end -
+                        and three of the four were his own say-so: "docs complete", "signature
+                        ready", "SPA uploaded" are assertions nobody verifies, ticked to unlock a
+                        button. The close now checks the EXECUTED DOCUMENT directly instead.
+                        The one real question - did the buyer ATTEND or sign REMOTELY, one deal one
+                        method - moved into the SPA Signed ceremony, where it is decided. */}
                     {/* Two clearly separated zones: ACTIVITY (left) and STAGE (right) */}
                     <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-start"}}>
 
@@ -4825,6 +4837,18 @@ onSelect={(unitId) => {
                     <input type="date" value={stageGateForm.spa_date||new Date().toISOString().slice(0,10)} onChange={e=>setStageGateForm(f=>({...f,spa_date:e.target.value}))}/>
                   </div>
                   <div>
+                    {/* Day 90: the one question worth keeping from the old preparation panel, asked
+                        where it is decided. One deal, one method. */}
+                    <div style={{gridColumn:"span 2",marginBottom:4}}>
+                      <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>How did the buyer sign?</label>
+                      <div style={{display:"flex",gap:6}}>
+                        {[["attend","Attended in person"],["remote","Signed remotely"]].map(([v,lbl]) => {
+                          const on = (stageGateForm.buyer_mode ?? opp.spa_prep?.buyer_mode) === v;
+                          return <button key={v} type="button" onClick={()=>setStageGateForm(f=>({...f,buyer_mode: on ? null : v}))}
+                            style={{padding:"6px 13px",borderRadius:8,border:"1.5px solid " + (on ? "#0F2540" : "#E2E8F0"),background:on ? "#0F2540" : "#fff",color:on ? "#fff" : "#64748B",fontSize:12,fontWeight:600,cursor:"pointer"}}>{lbl}</button>;
+                        })}
+                      </div>
+                    </div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>SPA / Oqood Reference</label>
                     <input type="text" placeholder="e.g. DLD-2026-12345" value={stageGateForm.spa_ref||""} onChange={e=>setStageGateForm(f=>({...f,spa_ref:e.target.value}))}/>
                   </div>
