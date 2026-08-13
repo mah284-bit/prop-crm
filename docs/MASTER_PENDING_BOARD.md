@@ -1270,3 +1270,12 @@ walking rather than reasoning about.
 PARKED BY THE FOUNDER: the database will be wiped before go-live, so nothing here needs rescuing.
 TEST IT PROPERLY on clean data - a fresh 1-to-1 and a fresh block, walked end to end, watching
 whether a block-level payment lands once or twice in a child's ledger.
+   ⚠️ CORRECTION (Day 90): NOT A BUG. `see_brokerage_commission` IS read - App.jsx gates the whole
+   Commission Outstanding module on it, CreateOpportunityDialog checks it, and OpportunityDetail
+   resolves a canSeeCommission state from it. The reason a sales agent sees commission is that
+   EVERY ROLE HAS THE CAPABILITY GRANTED in role_capabilities - including `viewer`.
+   So this is a CONFIGURATION decision, not a defect, and it belongs to the founder: should a
+   viewer see the brokerage's commission position? A leasing agent on a sales deal? The grid in
+   Settings -> Role Capabilities is where it is answered.
+   The architect assumed an omission twice today and was wrong both times - the live receipt was
+   properly branded, and this gate was properly read. CHECK BEFORE BOARDING A FAULT.
