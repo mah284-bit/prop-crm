@@ -814,7 +814,8 @@ same cut, not the next one.
         pushed, the broker keeps ignoring and moving. We both developed it and still ignored it."
    If an answer matters enough to gate a close, the ceremony must ASK for it.
 
-## ADDED DAY 85 - A DRAFT BLOCK IS A TRAP: NO DELETE, NO EDIT, NO UNIT CHANGE
+## ✅ DONE - ADDED DAY 85 - A DRAFT BLOCK IS A TRAP: NO DELETE, NO EDIT, NO UNIT CHANGE
+Built Day 85: deletable before confirmation, guarded on the lines rather than on status.
 Found on the block walkthrough. A block in DRAFT - before confirmation, before any child is born,
 before any money - cannot be deleted, its developer cannot be changed, and its unit lines cannot be
 swapped or removed. The broker picks the wrong developer and is left with a permanent dead block
@@ -856,7 +857,8 @@ FOUNDER: it should be greyed unless a unit is being added or removed - which is 
 a CONFIRMED block, and correctly so: removing a unit then means DROPPING A LIVE CHILD DEAL, which
 is a ceremony, not an edit. Before confirmation the calculator already has per-line "remove".
 
-## ⭐ ADDED DAY 85 - A BLOCK NEVER SENDS THE BUYER A PROPOSAL
+## ✅ DONE - ⭐ ADDED DAY 85 - A BLOCK NEVER SENDS THE BUYER A PROPOSAL
+Built Day 87: versioned offers rendered from the locked distribution, a PDF, and buyer acceptance gating confirm.
 FOUNDER, at the moment of confirming: "we are only running behind money here - we have not sent the
 proposal to the buyer, on what basis are we asking for reservation money?"
 He is right and it is a hole. On a 1-TO-1 the proposal is the spine: V1, V2, V3, change chips,
@@ -888,7 +890,8 @@ broker. SAME RULE BOTH SURFACES: flat AED tolerance, beyond it a manager rules w
 AND THE WORDING SHOULD SAY WHAT IT MEANS: "within bank-charge tolerance", not "shortfall accepted" -
 so a manager reading the record knows nothing was conceded.
 
-## ⭐ ADDED DAY 85 - A BLOCK CHILD HAS NO CLOSURE ROW: THE TWO LEDGERS NEVER MEET
+## ✅ DONE - ⭐ ADDED DAY 85 - A BLOCK CHILD HAS NO CLOSURE ROW: THE TWO LEDGERS NEVER MEET
+Built Day 86: birthChildClosure creates it when the reservation completes; postAllocationsToChild keeps it in step.
 Found by walking a block child into the 1-to-1 ladder - a seam NEVER TESTED. Days 79-83 verified
 every block piece in isolation (allocator to the fils, statement PDF, closure roll-up) and the
 1-to-1 ladder was walked on Day 85. Nobody had walked ONE INTO THE OTHER.
@@ -1055,7 +1058,8 @@ firm's own accounts. No new machinery until a real case demands it.
 DEFERRED, and it is different machinery: a developer granting a staged concession - "I will reduce
 some after a period."
 
-## ADDED DAY 86 - THE BLOCK HEADER REPORTS ONLY THE RESERVATION
+## ✅ DONE - ADDED DAY 86 - THE BLOCK HEADER REPORTS ONLY THE RESERVATION
+Built Day 89: the header reads its whole state - outstanding, collected in full with the SPA pointer, or block complete.
 On a fully collected block the header reads "Reservation Received AED 50,000 of AED 50,000 -
 Collected in full" while the block has actually collected AED 1,431,643. True but tiny: a broker
 glancing at the header cannot tell the block is paid, and must open the Money tab to find out.
@@ -1129,7 +1133,8 @@ all sit on pp_master_agreements, unfilled. CHEAP FIRST STEP: show the authority 
 in the calculator - "5% of 10% available". A per-deal bonus control already exists on the manager's
 view; the full incentive model waits until the flow is complete.
 
-## ADDED DAY 87 - THE OPPORTUNITY LIST NEEDS A BLOCK / 1-TO-1 FILTER
+## ✅ DONE - ADDED DAY 87 - THE OPPORTUNITY LIST NEEDS A BLOCK / 1-TO-1 FILTER
+Built Day 87, tidied Day 90: same row as the owner filter, labelled, and the stage chips now respect it.
 The BLOCK / 1-TO-1 chip (Day 84) tells a broker what a row IS, but he still cannot ISOLATE one kind.
 On a list of 11 that is a minor annoyance; on a real book it means scanning. FOUNDER: "two more
 filters here for block and 1-to-1, or one dropdown to select - easy."
@@ -1181,7 +1186,8 @@ greyed - greyed reads as live), and the heading says "Collect payments".
 ⚠️ LEFT TO DO: the FOOTER BUTTONS on the collection gate still offer "Record SPA". It should offer
 Save payments only - he is not signing anything. One small cut.
 
-## ⭐ ADDED DAY 88 - THE 1-TO-1 LEDGER HAS NO PAYMENT TRAIL, AND THAT IS THE LOOSEST PART OF THE
+## ✅ DONE - ⭐ ADDED DAY 88 - THE 1-TO-1 LEDGER HAS NO PAYMENT TRAIL, AND THAT IS THE LOOSEST PART OF THE
+Built Day 89: pp_payments, one row per payment, the ledger derived from the sum. History and a manager-gated void on screen.
 ## MONEY PATH
 FOUNDER: "if he changes 50k to 25k by mistake and saves, what happens?" It is OVERWRITTEN SILENTLY.
 The save does `.update({ pre_spa_payments: prePaymentsState })` - the whole object replaced. Nothing
@@ -1223,7 +1229,8 @@ AND ON THE PAYMENT STATEMENT, both small and buyer-facing:
    function and assumed the live one shared its fault. The remaining action is smaller than boarded:
    DELETE printReceipt. Nothing else to fix here.
 
-## ⭐ ADDED DAY 89 - "BUYERS BILL TO SPA" COUNTS ONLY THE RESERVATION, ON BOTH VERTICALS
+## ✅ DONE - ⭐ ADDED DAY 89 - "BUYERS BILL TO SPA" COUNTS ONLY THE RESERVATION, ON BOTH VERTICALS
+Fixed Day 90: it reads collectionState.collected, the same figure the Collection strip shows.
 The Financials panel reads "AED 335,644 · AED 25,000 already credited" while the Collection strip
 directly above it says 360,643.90 COLLECTED. Same deal, same screen, two answers - and the panel is
 the one a broker quotes from, so he would chase money the buyer has already paid.
