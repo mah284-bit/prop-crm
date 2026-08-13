@@ -39,6 +39,7 @@ import UnitSaturationWarning from "./UnitSaturationWarning.jsx";
 import UnitSaturationInline from "./UnitSaturationInline.jsx";
 import RecordPaymentDialog from "./RecordPaymentDialog.jsx";
 import PaymentHistory from "./PaymentHistory.jsx";
+import { recordPayment } from "../../lib/recordPayment.js";
 
 // Stage 6 -- single source of commission resolution (used by BOTH the live display and the
 // invoice freeze at SPA-Signed, so frozen numbers exactly match what the SM saw at close).
@@ -1373,6 +1374,20 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           reservation_cheque_no: stageGateForm.cheque_number || null,
           reservation_notes: stageGateForm.notes || null,
         }).eq("id", opp.id);
+        // Day 90: THE RESERVATION BECOMES A PAYMENT ROW LIKE EVERY OTHER PAYMENT.
+        // It was the last money in the app written straight into the ledger, so nothing could
+        // re-derive it - and on a clean walk it VANISHED the moment anything rewrote the ledger.
+        // Every dirham is now a row; the ledger is purely derived. One writer, one truth.
+        try {
+          await recordPayment({
+            opp, particular: "reservation_fee",
+            amount: Number(stageGateForm.reservation_fee),
+            mode: stageGateForm.payment_method || "Cheque",
+            reference: stageGateForm.cheque_number || null,
+            receivedDate: stageGateForm.reservation_date || new Date().toISOString().slice(0,10),
+            notes: stageGateForm.notes || null, currentUser,
+          });
+        } catch (e) { console.error("reservation payment row:", e); }
         onUpdated?.({ ...opp, stage: "Reserved", status: "Active", reservation_amount: Number(stageGateForm.reservation_fee), reservation_date: stageGateForm.reservation_date || new Date().toISOString().slice(0,10), reservation_method: stageGateForm.payment_method || "Cheque", reservation_cheque_no: stageGateForm.cheque_number || null, reservation_notes: stageGateForm.notes || null });
         // Day 79 (C0b-1): THE LEDGER IS BORN HERE, not at the SPA dialog.
         // Founder: the ledger is the collection instrument for the whole Reserved->SPA period.
@@ -5479,14 +5494,15 @@ onSelect={(unitId) => {
                       showToast("How was this paid? Add a mode for: " + noMode.join(", "), "error");
                       return;
                     }
-                    try {
-                      const { error } = await supabase.from("pp_sales_closures")
-                        .update({ pre_spa_payments: prePaymentsState })
-                        .eq("opportunity_id", opp.id);
-                      if (error) throw error;
-                      showToast("Payments recorded", "success");
-                      setShowStageGate(null);
-                    } catch (e) { showToast("Could not save: " + (e.message || e), "error"); }
+                    // Day 90: SAVE NO LONGER WRITES THE LEDGER, AND THAT IS THE POINT.
+                    // Since Day 89 pre_spa_payments is DERIVED from pp_payments rows. Writing the
+                    // form's copy back over it can only destroy: on a clean walk it erased a 25,000
+                    // reservation, because the reservation ceremony still writes the ledger
+                    // DIRECTLY and never made a payment row, so nothing could re-derive it.
+                    // Money is recorded by the + on each line, which writes a row and re-derives.
+                    // There is nothing left for this button to save.
+                    showToast("Payments are recorded on each line - nothing further to save", "info");
+                    setShowStageGate(null);
                     return;
                   }
                   await commitStageMove(showStageGate, extraData);
