@@ -222,7 +222,11 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
       collected += Number(r.amount || 0);
     });
     setCollectionState({ bill: bill, collected: collected, toCollect: Math.round((bill - collected) * 100) / 100 });
-  })(); }, [opp.id, opp.stage, showStageGate]);
+  // Day 90: recompute when a PAYMENT is recorded, not only when the gate opens or closes. Money
+  // now arrives through the + on each line, which touches neither opp.stage nor showStageGate - so
+  // the strip sat stale behind an open dialog showing 25,000 while 120,523 was in. A broker who
+  // records money and still sees the old figure records it twice.
+  })(); }, [opp.id, opp.stage, showStageGate, paymentTick]);
   // Stage 5 — SPA upload + pre-SPA payments + edit-price toggle
   const [spaUploading, setSpaUploading] = useState(false);
   const [spaUploadError, setSpaUploadError] = useState(null);
