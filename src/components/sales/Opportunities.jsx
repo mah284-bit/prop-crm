@@ -130,11 +130,17 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
   }, [opps, fStage, fType, fOwner, search, leadById, unitById, projectById, currentUser.id]);
 
   // Stage counts (for chip badges)
+  // Day 90: THE CHIPS COUNTED THE UNFILTERED LIST. With "Block only" selected the row still read
+  // "Reserved 5" when only 3 of those were block deals - numbers that disagreed with the list
+  // beneath them. They respect the TYPE filter but not the STAGE one, so "Reserved 5" means "5
+  // reserved among the deal types you are viewing" whichever chip is active.
   const stageCounts = useMemo(()=>{
     const c = {};
-    (opps||[]).forEach(o => { if(o?.stage) c[o.stage] = (c[o.stage]||0)+1; });
+    (opps||[])
+      .filter(o => fType === "All" ? true : fType === "Block" ? !!o.block_deal_id : !o.block_deal_id)
+      .forEach(o => { if(o?.stage) c[o.stage] = (c[o.stage]||0)+1; });
     return c;
-  }, [opps]);
+  }, [opps, fType]);
 
   const fmtAed = (n) => n ? `AED ${Number(n).toLocaleString()}` : "—";
   const fmtRelative = (iso) => {
@@ -256,7 +262,10 @@ function Opportunities({onActivityLog, leads, setLeads, opps, setOpps, units, pr
       <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:14}}>
         <button onClick={()=>setFStage("All")}
           style={{padding:"5px 12px",borderRadius:16,border:`1.5px solid ${fStage==="All"?"#0F2540":"#E2E8F0"}`,background:fStage==="All"?"#0F2540":"#fff",color:fStage==="All"?"#fff":"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>
-          All <span style={{opacity:.7,marginLeft:4}}>{(opps||[]).length}</span>
+          {/* Day 90: it read "All 12" from the UNFILTERED list, so with "Block only" selected it
+              still said 12 while the list showed 6 - and "All" appeared twice on one screen meaning
+              two different things. It clears the STAGE filter; the dropdown filters TYPE. */}
+          All stages <span style={{opacity:.7,marginLeft:4}}>{(opps||[]).filter(o => fType==="All" ? true : fType==="Block" ? !!o.block_deal_id : !o.block_deal_id).length}</span>
         </button>
         {STAGES.map(s => {
           const sel = fStage === s;
