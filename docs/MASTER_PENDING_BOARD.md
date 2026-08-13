@@ -1288,3 +1288,14 @@ whether a block-level payment lands once or twice in a child's ledger.
    disagreeing with the list directly beneath them. The "All 12" chip did the same and competed with
    the header's own count, which is what made the whole row look broken. Both now respect the type
    filter, and the chip reads "All stages" so two different filters stop both saying "All".
+
+## TO VERIFY ON CLEAN DATA (Day 90) - DO THE GATES ACTUALLY HOLD?
+The founder asked how so many deals closed without a formal proposal. Answer: those records predate
+the gates - the block ACCEPTANCE gate was built Day 87, after Vinayak and Raees were confirmed - and
+gates can be overridden (a KYC override is on the Vinayak deal's timeline).
+⚠️ BUT THIS IS THE ARCHITECT'S READING OF THE CODE, NOT A VERIFIED FACT. He was wrong twice on Day 90
+about what the code already did. TEST BOTH on clean data:
+ - BLOCK: create one, try to confirm without sending an offer. Should refuse - confirm requires
+   `accepted`, and acceptance requires a sent offer.
+ - 1-TO-1: create one, try to reach Reserved with no proposal. proposalGate exists at moveStage for
+   Reserved and SPA Requirements; whether it refuses or merely warns is unverified.
