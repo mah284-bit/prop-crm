@@ -1349,3 +1349,13 @@ send? On a buyer-facing message that is a founder ruling, not an engineering cho
 AND THE HONEST DEMO ANSWER meanwhile: "AI throughout - a concierge over your data, automated
 inventory collection, deal coaching. What we have deliberately not done is let AI act on money or
 titles. Autonomous agents are the next layer, and the groundwork is there."
+   ⭐ AND IT IS SMALLER THAN IT SOUNDS: the groundwork is already there. `companies.business_type`
+   is a live column (text) driving the "Sales Only" badge in the header - the vertical switch was
+   built and survives. BASIC LEASING FORMS were also developed some time back.
+   SO THE SHAPE IS: the company enables which verticals it does (sales / leasing / resale / any
+   combination), and each DEAL declares which it is - a company toggle is a setting, a per-deal type
+   is a field that chooses the ladder, the fees and the ceremonies.
+   ⚠️ RESALE IS THE ONLY GENUINELY NEW VERTICAL, and it differs in kind: no developer, no Oqood, no
+   payment plan - a SELLER instead of a developer, an NOC, and a transfer at the trustee office.
+   FIRST STEP is not code: the partner has someone who does resale daily. Walk the process with him
+   before designing a ladder for it.
