@@ -1437,3 +1437,20 @@ the broker knows better than the app - back-dating is legitimate and common (the
 days after the signing), so WARN AND ALLOW rather than refuse.
 ⚠️ AND THE DEFAULTS FEED IT: the signing date and the payment received-on both pre-fill with TODAY,
 and a pre-filled field gets accepted. Leaving them blank would make him state the real date.
+
+## ⭐ IN PROGRESS DAY 91 - PAYMENTS STAGE UNTIL SAVE, AND THE ROW GOES BACK TO BEING EDITABLE
+DONE AND TESTED: each payment is now STAGED in memory rather than written on the spot. FOUNDER: "the
+cancel button is dummy - nothing is happening, because you are already saving at line level. If the
+data is in memory till the button, push to save, or cancel behaviour comes after."
+ - the + stages; the row shows the amount in amber as "pending"
+ - Save payments writes them all through recordPayment - a row, an activity, a re-derived ledger each
+ - Cancel warns ("2 payments have not been saved - discard?") and genuinely discards. PROVEN LIVE.
+ - the dialog now shows the BALANCE on the line, not the expected total, and REFUSES more than it
+   plus tolerance - staged entries count as paid, so he cannot overpay across two entries either
+⚠️ STILL TO DO, and the founder is right: THE DIALOG-PER-ROW IS TOO SLOW. Five clicks for one
+payment - type, mode, date, Record, repeat - and twenty-five actions on a five-line collection.
+"Simple having columns and enter full payment against each field saves time."
+THE REWORK: put the amount, mode and date back IN THE ROW, typing straight into the table. Staging
+makes that safe now - it was moved to a dialog when every keystroke wrote. Keep the balance check on
+blur. Save writes everything staged; Cancel discards. The + becomes an optional "add detail" for a
+reference, or goes.
