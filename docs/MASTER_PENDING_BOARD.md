@@ -1454,3 +1454,12 @@ THE REWORK: put the amount, mode and date back IN THE ROW, typing straight into 
 makes that safe now - it was moved to a dialog when every keystroke wrote. Keep the balance check on
 blur. Save writes everything staged; Cancel discards. The + becomes an optional "add detail" for a
 reference, or goes.
+   ⚠️ AND A SEPARATION WORTH HOLDING (founder, Day 91): in SALES the broker OWES AND HOLDS NOTHING -
+   the money is the buyer's, paid to the developer, and the app records it passing through. That
+   changes under PROPERTY MANAGEMENT, where rent is collected on an owner's behalf, deposits are
+   held and maintenance is paid out: then the brokerage genuinely holds other people's money, which
+   is a different ledger with different obligations. It belongs with the RESALE AND RENTALS design,
+   not with the sales ledger.
+   The `other_fees` row already accepts an amount with no expected figure, so a developer admin
+   charge the buyer happens to pay can be recorded for tracking without the app pretending it knew
+   the sum was due. Nothing to build there.
