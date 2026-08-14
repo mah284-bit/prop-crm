@@ -1825,7 +1825,13 @@ You will become the assigned agent.`);
 if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bill lives here - collect toward zero variance", "info"); } else {                               showToast(`${s} details are captured in the activity log below`, "info"); }
                             }
                           } else if (canAction) {
-                            moveStage(s);
+                            // Day 91: THE JOURNEY NO LONGER ADVANCES. Clicking the next stage here opened
+                            // its gate directly - so after recording an SPA, a click near the journey
+                            // opened the NEXT ceremony, and it read as one dialog looping with no exit.
+                            // FOUNDER: "it should end there and not open other forms - please make one
+                            // place." Advancing belongs to the Deal actions button. Clicking a COMPLETED
+                            // stage still opens its record read-only, which is useful.
+                            showToast("Use the button under Deal actions to advance - the journey shows where the deal is.", "info");
                           }
                         }}
                         title={isDone ? (GATED_STAGES.includes(s) ? `Click to view/edit ${s} details` : "Details in activity log") : (canAction?"Click to move to this stage":isOwner?"":"You are not the assigned agent — reassign first")}
