@@ -245,6 +245,13 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   const priceLocked = Number(collectionState?.collected || 0) > 0
     && Number(opp.current_agreed_price || opp.final_price || 0) > 0;
   const [showLedgerDetail, setShowLedgerDetail] = useState(false);
+  // Day 91: PAYMENTS ARE STAGED, NOT WRITTEN ON THE SPOT. FOUNDER: "the cancel button is dummy -
+  // nothing is happening, because you are already saving at line level. If the data is in memory
+  // till the button, push to save, or cancel behaviour comes after."
+  // He is right, and it is the same fault as everywhere else this week: a control that promises
+  // something it cannot deliver. He pressed Cancel to restart after a mistake and found two payments
+  // already recorded. Now the + stages, Save writes them all, and Cancel genuinely discards.
+  const [staged, setStaged] = useState([]);
   const [payFor, setPayFor] = useState(null);
   const [prePaymentsState, setPrePaymentsState] = useState({
     booking_fee:     { status: "pending", amount: "", date: "", notes: "" },
@@ -5130,7 +5137,14 @@ onSelect={(unitId) => {
                                   records rather than one number. The + records another payment
                                   against THIS particular, so it cannot be filed against the wrong
                                   line the way a dropdown could. */}
-                              <span style={{fontWeight:600,color:Number(item.amount)>0?"#0F2540":"#94A3B8"}}>{Number(item.amount)>0 ? fmt2(Number(item.amount)).replace("AED ","") : "-"}</span>
+                              {(() => {
+                                const pend = staged.filter(x=>x.particular===key).reduce((t,x)=>t+Number(x.amount||0),0);
+                                const done = Number(item.amount) || 0;
+                                return (<>
+                                  <span style={{fontWeight:600,color:done>0?"#0F2540":"#94A3B8"}}>{done>0 ? fmt2(done).replace("AED ","") : "-"}</span>
+                                  {pend > 0 && <span title="staged - not saved yet" style={{marginLeft:5,fontSize:10,fontWeight:700,color:"#B45309"}}>{"+" + fmt2(pend).replace("AED ","") + " pending"}</span>}
+                                </>);
+                              })()}
                               {/* Day 89: A SETTLED FLAT FEE OFFERS NOTHING. Founder: "we only come here BECAUSE the
                                   reservation is fully paid - any amount collected here is other than
                                   reservation." So the + on a settled reservation or booking fee is not a
@@ -5138,7 +5152,10 @@ onSelect={(unitId) => {
                                   broker taps OK out of habit, and the misclick lands anyway. */}
                               {!waived && !stageGateViewMode && !moneyLocked &&
                                !(["reservation_fee","booking_fee"].includes(key) && expected > 0 && Number(item.amount||0) >= expected - 0.5) &&
-                                <button type="button" onClick={()=>setPayFor({ key, label, expected, paid: Number(item.amount) || 0 })} title={"Record a payment against " + label}
+                                <button type="button" onClick={()=>setPayFor({ key, label, expected,
+                                  // staged payments count as already paid, so he cannot overpay a
+                                  // line across two entries before either is written
+                                  paid: (Number(item.amount) || 0) + staged.filter(x=>x.particular===key).reduce((t,x)=>t+Number(x.amount||0),0) })} title={"Record a payment against " + label}
                                   style={{marginLeft:6,padding:"2px 7px",borderRadius:5,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:11,fontWeight:700,cursor:"pointer"}}>+</button>}
                             </td>
                             <td style={{padding:"6px 8px",fontSize:10,color:"#64748B"}}>{item.method || "—"}</td>
@@ -5390,7 +5407,14 @@ onSelect={(unitId) => {
               )}
               {/* Action buttons */}
               <div style={{display:"flex",gap:10,justifyContent:"flex-end",paddingTop:8,borderTop:"1px solid #F1F5F9"}}>
-                <button onClick={()=>setShowStageGate(null)}
+                <button onClick={()=>{
+                    // Day 91: and NOW Cancel means it. Staged payments are discarded, and he is told
+                    // how many rather than losing them silently.
+                    if (staged.length && !window.confirm(staged.length + " payment(s) have not been saved.\n\nCancel and discard them?")) return;
+                    setStaged([]);
+                    setShowStageGate(null);
+                  }}
+                  data-cancel-gate
                   style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #E2E8F0",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer",color:"#475569"}}>
                   Cancel
                 </button>
@@ -5563,6 +5587,29 @@ onSelect={(unitId) => {
                       showToast("How was this paid? Add a mode for: " + noMode.join(", "), "error");
                       return;
                     }
+                    // Day 91: THIS is where staged payments become facts. Each + held its entry in
+                    // memory; Save writes them all, in order, through the same helper that records a
+                    // single payment - so each becomes a row, an activity, and a re-derived ledger.
+                    if (staged.length) {
+                      let failed = [];
+                      for (const st of staged) {
+                        const r = await recordPayment({
+                          opp, particular: st.particular, amount: st.amount, mode: st.mode,
+                          reference: st.reference, receivedDate: st.receivedDate, notes: st.notes,
+                          currentUser,
+                        });
+                        if (!r?.ok) failed.push(st.label + " (" + r?.error + ")");
+                      }
+                      setStaged([]);
+                      const { data: c2 } = await supabase.from("pp_sales_closures")
+                        .select("pre_spa_payments").eq("opportunity_id", opp.id).maybeSingle();
+                      if (c2?.pre_spa_payments) setPrePaymentsState(c2.pre_spa_payments);
+                      setPaymentTick(t => t + 1);
+                      if (failed.length) { showToast("Some payments did not record: " + failed.join(", "), "error"); return; }
+                      showToast(staged.length + " payment(s) recorded", "success");
+                      setShowStageGate(null);
+                      return;
+                    }
                     // Day 90: SAVE NO LONGER WRITES THE LEDGER, AND THAT IS THE POINT.
                     // Since Day 89 pre_spa_payments is DERIVED from pp_payments rows. Writing the
                     // form's copy back over it can only destroy: on a clean walk it erased a 25,000
@@ -5586,12 +5633,10 @@ onSelect={(unitId) => {
                 {payFor && <RecordPaymentDialog opp={opp} particular={payFor.key} label={payFor.label}
                   expected={payFor.expected} alreadyPaid={payFor.paid}
                   currentUser={currentUser} showToast={showToast} onClose={()=>setPayFor(null)}
-                  onSaved={async ()=>{
-                    // The ledger is re-derived by recordPayment; reload it so the table shows the sum.
-                    const { data: c } = await supabase.from("pp_sales_closures")
-                      .select("pre_spa_payments").eq("opportunity_id", opp.id).maybeSingle();
-                    if (c?.pre_spa_payments) setPrePaymentsState(c.pre_spa_payments);
-                    setPaymentTick(t => t + 1);
+                  staged={staged}
+                  onSaved={(entry)=>{
+                    // Day 91: held here until Save payments. Nothing is written yet.
+                    setStaged(list => [...list, entry]);
                   }} />}
                 {/* Day 91: REMOVED. Three buttons at the foot of the signing ceremony - Cancel,
                     Record SPA, Save payments - and the founder asked which one he was meant to press.

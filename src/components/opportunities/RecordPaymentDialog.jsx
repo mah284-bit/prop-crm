@@ -84,11 +84,19 @@ export default function RecordPaymentDialog({ opp, particular, label, expected, 
         return;
       }
     }
-    setSaving(true);
-    const r = await recordPayment({
-      opp, particular, amount, mode, reference, receivedDate, notes, currentUser,
+    // Day 91: STAGE IT, DO NOT WRITE IT. The parent holds it until Save payments, so Cancel means
+    // what it says. Nothing reaches pp_payments from here.
+    onSaved && onSaved({
+      particular, label,
+      amount: Number(amount) || 0,
+      mode, reference: reference || null,
+      receivedDate: receivedDate || new Date().toISOString().slice(0, 10),
+      notes: notes || null,
     });
-    setSaving(false);
+    showToast("Added - press Save payments to record it", "info");
+    onClose && onClose();
+    return;
+    const r = { ok: true };
     if (!r.ok) { showToast(r.error || "Could not record", "error"); return; }
     if (r.warning) showToast(r.warning, "warning");
     else showToast("AED " + Number(amount).toLocaleString() + " recorded against " + label, "success");
