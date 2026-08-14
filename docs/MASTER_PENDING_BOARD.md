@@ -1463,3 +1463,19 @@ reference, or goes.
    The `other_fees` row already accepts an amount with no expected figure, so a developer admin
    charge the buyer happens to pay can be recorded for tracking without the app pretending it knew
    the sum was due. Nothing to build there.
+
+## ⭐⭐ THE LINE FOR SALES (Day 91, founder-agreed) - THREE THINGS, AND NOTHING ELSE
+The board has 77 entries and no definition of done, which is why sales feels endless. It is not:
+both verticals walk end to end, the money path has a full trail, and today's findings were a
+duplicate guard and a column header. THREE THINGS MUST BE TRUE before a tester uses it unsupervised:
+ 1. NO GATE REFUSES SILENTLY - the in-app dialog replacing window.prompt. A tester who hits a dead
+    button assumes the app is broken and stops. Half a day.
+ 2. THE BLOCK CHILD'S TWO WRITERS RESOLVED - money could double-count or diverge, untested on clean
+    data.
+ 3. ONE CLEAN WALK OF EACH VERTICAL by the founder - not to find bugs, to confirm nothing blocks.
+⚠️ EXPLICITLY NOT ON THE LINE: wording and labels (a tester reports those - that is what they are
+for) · statement formatting · the overpaid line reading Settled · admin and trustee fees hard-coded
+· anything marked "design" or "ruling needed" · RESALE, which is a separate vertical, not a sales
+gap.
+FOUNDER: "I don't want to look back on sales and move with resale and leasing." After this line,
+sales is DONE.
