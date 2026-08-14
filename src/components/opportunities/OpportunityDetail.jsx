@@ -5057,16 +5057,18 @@ onSelect={(unitId) => {
                       At SPA Signed it collapses to one line; the breakdown is a click away.
                       At SPA Requirements nothing changes - that IS where money is collected. */}
                   {showStageGate === "SPA Signed" && !showLedgerDetail && (() => {
+                    // fmt2 is declared inside the table body below, so it is not in scope up here.
+                    const money = (n) => "AED " + Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
                     const exp = Object.values(prePaymentsState||{}).reduce((t,r)=>t+((r&&r.status!=="waived")?(Number(r.expected_amount)||0):0),0);
                     const got = Object.values(prePaymentsState||{}).reduce((t,r)=>t+((r&&r.status!=="waived")?(Number(r.amount)||0):0),0);
                     const left = exp - got;
                     return (
                       <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",padding:"10px 13px",background:left>0.5?"#FFFBEB":"#ECFDF5",border:"1.5px solid "+(left>0.5?"#FCD34D":"#A7D8C3"),borderRadius:9,marginBottom:10}}>
                         <span style={{fontSize:11,fontWeight:700,color:left>0.5?"#92400E":"#166534",textTransform:"uppercase",letterSpacing:".5px"}}>Money collected</span>
-                        <span style={{fontSize:14,fontWeight:800,color:"#0F2540"}}>{fmt2(got)}</span>
-                        <span style={{fontSize:12,color:"#64748B"}}>{"of " + fmt2(exp)}</span>
+                        <span style={{fontSize:14,fontWeight:800,color:"#0F2540"}}>{money(got)}</span>
+                        <span style={{fontSize:12,color:"#64748B"}}>{"of " + money(exp)}</span>
                         {left > 0.5
-                          ? <span style={{fontSize:12,fontWeight:700,color:"#B91C1C"}}>{fmt2(left) + " outstanding"}</span>
+                          ? <span style={{fontSize:12,fontWeight:700,color:"#B91C1C"}}>{money(left) + " outstanding"}</span>
                           : <span style={{fontSize:12,fontWeight:700,color:"#166534"}}>fully collected {String.fromCodePoint(0x2713)}</span>}
                         <button type="button" onClick={()=>setShowLedgerDetail(true)} style={{marginLeft:"auto",padding:"4px 11px",borderRadius:7,border:"1px solid #CBD5E0",background:"#fff",color:"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>Show the breakdown</button>
                       </div>
