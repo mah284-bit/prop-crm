@@ -38,6 +38,7 @@ import { analyzeUnitSaturation } from "../../lib/unitSaturationAnalyzer.js";
 import UnitSaturationWarning from "./UnitSaturationWarning.jsx";
 import UnitSaturationInline from "./UnitSaturationInline.jsx";
 import RecordPaymentDialog from "./RecordPaymentDialog.jsx";
+import RecordDealPaymentDialog from "./RecordDealPaymentDialog.jsx";
 import PaymentHistory from "./PaymentHistory.jsx";
 import { recordPayment } from "../../lib/recordPayment.js";
 import { askReason } from "../../lib/askReason.js";
@@ -252,6 +253,7 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   // something it cannot deliver. He pressed Cancel to restart after a mistake and found two payments
   // already recorded. Now the + stages, Save writes them all, and Cancel genuinely discards.
   const [staged, setStaged] = useState([]);
+  const [showMoneyIn, setShowMoneyIn] = useState(false);
   const [payFor, setPayFor] = useState(null);
   const [prePaymentsState, setPrePaymentsState] = useState({
     booking_fee:     { status: "pending", amount: "", date: "", notes: "" },
@@ -5094,6 +5096,15 @@ onSelect={(unitId) => {
                       </div>
                     );
                   })()}
+                  {!moneyLocked && !stageGateViewMode && showStageGate === "SPA Requirements" && (
+                    <div style={{marginBottom:10}}>
+                      <button type="button" onClick={()=>setShowMoneyIn(true)}
+                        style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+                        {"\ud83d\udcb0 Money received"}
+                      </button>
+                      <span style={{marginLeft:10,fontSize:11,color:"#64748B"}}>Record what arrived once - it is applied across what is owed.</span>
+                    </div>
+                  )}
                   {/* LEDGER TABLE v2 (founder spec Day 69): Particulars | Expected | Received | Mode | Date | Diff */}
                   {!(showStageGate === "SPA Signed" && !showLedgerDetail) && (
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
@@ -5630,6 +5641,11 @@ onSelect={(unitId) => {
                 </button>
                 {/* Day 86: hidden on a BLOCK CHILD - its money table is read-only because collection
                     happens at the block, so there is nothing here to save. */}
+                {/* Day 91: ONE PAYMENT IN, ALLOCATED ACROSS THE LINES. Founder: "nobody will send a
+                    cheque for a, then b, then c." The per-row dialog cost five clicks a line. */}
+                {showMoneyIn && <RecordDealPaymentDialog opp={opp} ledger={prePaymentsState} staged={staged}
+                  currentUser={currentUser} showToast={showToast} onClose={()=>setShowMoneyIn(false)}
+                  onStage={(entry)=>setStaged(list => [...list, entry])} />}
                 {payFor && <RecordPaymentDialog opp={opp} particular={payFor.key} label={payFor.label}
                   expected={payFor.expected} alreadyPaid={payFor.paid}
                   currentUser={currentUser} showToast={showToast} onClose={()=>setPayFor(null)}
