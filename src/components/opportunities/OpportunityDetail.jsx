@@ -5127,6 +5127,8 @@ onSelect={(unitId) => {
                       <tr style={{background:"#F1F5F9",color:"#475569",textAlign:"left"}}>
                         <th style={{padding:"6px 8px",fontWeight:700,width:"26%"}}>Particulars</th>
                         <th style={{padding:"6px 8px",fontWeight:700,textAlign:"right",width:"15%"}}>Expected</th>
+                        {/* Day 91: staged money gets its own column - founder: "why show it red, why not its own field, so he sees the calculations left and right and either saves or cancels." */}
+                        <th style={{padding:"6px 8px",fontWeight:700,textAlign:"right",width:"12%"}}>Pending</th>
                         <th style={{padding:"6px 8px",fontWeight:700,textAlign:"right",width:"15%"}}>Received</th>
                         <th style={{padding:"6px 8px",fontWeight:700}}>Mode</th>
                         <th style={{padding:"6px 8px",fontWeight:700}}>Date</th>
@@ -5142,7 +5144,7 @@ onSelect={(unitId) => {
                         ["spa_fee", "SPA fee", false],
                         ["dld_fee", "DLD fee (4%)", false],
                         ["oqood_fee", "Oqood fee", false],
-                        ["other_fees", "Other developer fees", false]
+                        ["other_fees", "Developer admin fee", false]
                       ].map(([key, label, isCreditFee]) => {
                         const item = prePaymentsState[key] || { status:"pending", amount:"", date:"", notes:"" };
                         const status = item.status || "pending";
@@ -5163,14 +5165,14 @@ onSelect={(unitId) => {
                                   records rather than one number. The + records another payment
                                   against THIS particular, so it cannot be filed against the wrong
                                   line the way a dropdown could. */}
-                              {(() => {
-                                const pend = staged.filter(x=>x.particular===key).reduce((t,x)=>t+Number(x.amount||0),0);
-                                const done = Number(item.amount) || 0;
-                                return (<>
-                                  <span style={{fontWeight:600,color:done>0?"#0F2540":"#94A3B8"}}>{done>0 ? fmt2(done).replace("AED ","") : "-"}</span>
-                                  {pend > 0 && <span title="staged - not saved yet" style={{marginLeft:5,fontSize:10,fontWeight:700,color:"#B45309"}}>{"+" + fmt2(pend).replace("AED ","") + " pending"}</span>}
-                                </>);
-                              })()}
+                              {(() => { const done = Number(item.amount) || 0;
+                                return <span style={{fontWeight:600,color:done>0?"#0F2540":"#94A3B8"}}>{done>0 ? fmt2(done).replace("AED ","") : "-"}</span>; })()}
+                            </td>
+                            <td style={{padding:"6px 8px",textAlign:"right"}}>
+                              {(() => { const pend = staged.filter(x=>x.particular===key).reduce((t,x)=>t+Number(x.amount||0),0);
+                                return pend > 0
+                                  ? <span title="not saved yet" style={{fontWeight:700,color:"#B45309"}}>{fmt2(pend).replace("AED ","")}</span>
+                                  : <span style={{color:"#CBD5E0"}}>-</span>; })()}
                               {/* Day 89: A SETTLED FLAT FEE OFFERS NOTHING. Founder: "we only come here BECAUSE the
                                   reservation is fully paid - any amount collected here is other than
                                   reservation." So the + on a settled reservation or booking fee is not a
