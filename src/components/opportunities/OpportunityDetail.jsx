@@ -5127,9 +5127,11 @@ onSelect={(unitId) => {
                       <tr style={{background:"#F1F5F9",color:"#475569",textAlign:"left"}}>
                         <th style={{padding:"6px 8px",fontWeight:700,width:"26%"}}>Particulars</th>
                         <th style={{padding:"6px 8px",fontWeight:700,textAlign:"right",width:"15%"}}>Expected</th>
-                        {/* Day 91: staged money gets its own column - founder: "why show it red, why not its own field, so he sees the calculations left and right and either saves or cancels." */}
-                        <th style={{padding:"6px 8px",fontWeight:700,textAlign:"right",width:"12%"}}>Pending</th>
                         <th style={{padding:"6px 8px",fontWeight:700,textAlign:"right",width:"15%"}}>Received</th>
+                        {/* Day 91: staged money gets its own column, to the RIGHT of Received - founder:
+                            "why show it red, why not its own field, so he sees the calculations left and
+                            right and either saves or cancels." */}
+                        <th style={{padding:"6px 8px",fontWeight:700,textAlign:"right",width:"12%"}}>Pending</th>
                         <th style={{padding:"6px 8px",fontWeight:700}}>Mode</th>
                         <th style={{padding:"6px 8px",fontWeight:700}}>Date</th>
                         <th style={{padding:"6px 8px",fontWeight:700,textAlign:"right"}}>Variance</th>
