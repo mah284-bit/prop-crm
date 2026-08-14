@@ -1694,3 +1694,41 @@ credited where the strip above says 360,643 collected, so a broker would chase m
 brokerage commission is visible to a sales agent in THREE places with no capability check · five
 block children predate the closure-row fix and have no ledger, which is a real upgrade case even
 though this database gets wiped.
+
+## ── DAY 90 — THE RESERVATION WAS THE LAST MONEY THAT COULD VANISH, AND A PARTNER RESET THE ROADMAP ──
+⭐ FOUND ON A CLEAN WALK, hours before a demo: 25,000 of reservation money DISAPPEARED from the
+ledger on pressing Save. Two faults compounding. The RESERVATION CEREMONY never made a payment row -
+it was the last money written straight into pre_spa_payments, so once Day 89 made the ledger
+DERIVED, nothing could re-derive it. And the COLLECTION GATE'S SAVE wrote the ledger back, harmless
+while it was typed and destructive once it was derived.
+BOTH FIXED and proven end to end: the reservation is now a pp_payments row like every other payment,
+and Save writes nothing at all. The collection strip also recomputed only when the gate opened or
+closed, so it sat stale showing 25,000 while 120,523 was in - it follows the payments now.
+EARLIER THE SAME DAY: the SPA-preparation checklist removed (four chips nothing else read, replaced
+by a direct check of the executed document); the buyer's bill now reads what was actually collected;
+the type filter and stage chips made honest; D and V replaced with "offer" on the block screens.
+⚠️ THREE BOARDED "FAULTS" TURNED OUT TO BE CORRECT CODE - the receipt branding, the commission gate,
+a duplicate button. The board carries entries written from suspicion; a walkthrough closes more of
+them than reading ever will.
+⚠️ UNFIXED AND A DEMO RISK: browser dialog suppression makes every prompt-based gate refuse
+silently. It bit three times in one day.
+⭐⭐ AND THEN THE DAY TURNED. The database was wiped and reseeded for a demo (6 leads, 5 deals across
+the pipeline, 110 units repriced - every unit had a NULL price, which would have refused every deal
+creation). The demo held up. Then a THREE-HOUR PARTNER MEETING with people willing to sell it, and
+the roadmap changed:
+ 1. A PPT ON KEY DIFFERENTIATORS versus the known solutions. First deliverable.
+ 2. ⭐ RESALE AND LEASING, AS FAST AS POSSIBLE - which settles the Day-79 scope question that had sat
+    open since June. The answer is NOT "ship off-plan only". And he has SOMEONE WHO DOES RESALE
+    DAILY; walk the process with him before designing a ladder.
+ 3. More AI - unspecified, press for where.
+ 4. The chatbot they asked about turned out to be alive and current: "Ai Mansoor", reading today's
+    data. It had simply not been opened in three months.
+⭐ THE PITCH, IN THEIR OWN WORDS: "NO PAIN NO GAIN" and "MONEY DOESN'T GROW ON TREES". One group
+calls resale a pain; this group said "that is where the money is" - and both are right. So we are
+not selling relief from effort. We are selling NOT LOSING DEALS TO THE MESS: the NOC that expired
+unnoticed, the trustee appointment nobody confirmed. A broker who chases for three weeks and loses
+the deal got the pain without the gain.
+ALSO ESTABLISHED: companies.business_type already exists and drives the "Sales Only" badge - the
+vertical switch survives, and basic leasing forms were built long ago. RESALE IS THE ONLY GENUINELY
+NEW VERTICAL: no developer, no Oqood, no payment plan - a SELLER, an NOC, and a transfer at the
+trustee office.
