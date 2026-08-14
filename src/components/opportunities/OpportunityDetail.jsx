@@ -4867,7 +4867,10 @@ onSelect={(unitId) => {
                   </div>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>SPA Signing Date *</label>
-                    <input type="date" value={stageGateForm.spa_date||new Date().toISOString().slice(0,10)} onChange={e=>setStageGateForm(f=>({...f,spa_date:e.target.value}))}/>
+                    {/* Day 91: NO LONGER DEFAULTS TO TODAY. The data entry happens days after the signing -
+                        Friday's signing recorded on Monday took Monday's date, and a pre-filled field
+                        gets accepted. He knows when the buyer signed; the app does not. */}
+                    <input type="date" value={stageGateForm.spa_date||""} onChange={e=>setStageGateForm(f=>({...f,spa_date:e.target.value}))}/>
                   </div>
                   <div>
                     {/* Day 90: the one question worth keeping from the old preparation panel, asked
@@ -5397,6 +5400,16 @@ onSelect={(unitId) => {
                   // 19 May 2026 Issue 4: Gate advance on "all amounts collected" checkbox
                   // Offer Accepted - no required fields, price comes from inventory
                   if(showStageGate==="Reserved"&&!stageGateForm.reservation_fee){showToast("Reservation fee is required","error");return;}
+                  // Day 91: a date the deal could not have had. Warn and allow - back-dating is
+                  // legitimate; a date before the deal existed, or in the future, is not.
+                  if (showStageGate === "SPA Signed" && stageGateForm.spa_date) {
+                    const today = new Date().toISOString().slice(0,10);
+                    const born = String(opp.created_at || "").slice(0,10);
+                    let w = null;
+                    if (stageGateForm.spa_date > today) w = "That signing date is in the future.";
+                    else if (born && stageGateForm.spa_date < born) w = "That is before this deal existed (" + new Date(born).toLocaleDateString("en-GB") + ").";
+                    if (w && !window.confirm(w + "\n\nRecord it with this date anyway?")) return;
+                  }
                   if(showStageGate==="SPA Signed"&&!stageGateForm.final_price){showToast("Final price is required","error");return;}
                   // STAGE GATE 5 (11 May 2026): Reserved -> SPA Signed requires booking + reservation
                   // Per founder spec: "If not collected together 1&2, cannot proceed further"

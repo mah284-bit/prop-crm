@@ -32,12 +32,28 @@ export default function RecordPaymentDialog({ opp, particular, label, expected, 
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // Day 91: DATE SANITY. There were no date checks anywhere - an SPA created on the 14th accepted a
+  // signing date of the 12th without a murmur. WARN AND ALLOW rather than refuse: back-dating is
+  // legitimate and common, because the data entry happens days after the money arrives. What is not
+  // legitimate is a date the deal could not have had.
+  const dateWarning = () => {
+    const d = receivedDate;
+    if (!d) return null;
+    const today = new Date().toISOString().slice(0, 10);
+    if (d > today) return "That date is in the future.";
+    const born = String(opp?.created_at || "").slice(0, 10);
+    if (born && d < born) return "That is before this deal existed (" + new Date(born).toLocaleDateString("en-GB") + ").";
+    return null;
+  };
+
   const save = async () => {
     // Day 89: VALIDATE BEFORE WARNING. It asked the broker to confirm an overpayment and only then
     // told him the mode was missing - two dialogs to reach a refusal the first field could have
     // given him.
     if (!(Number(amount) > 0)) { showToast("Enter an amount", "error"); return; }
     if (!String(mode || "").trim()) { showToast("How was this paid? A mode is required", "error"); return; }
+    const dw = dateWarning();
+    if (dw && !window.confirm(dw + "\n\nRecord it with this date anyway?")) return;
     const exp = Number(expected || 0);
     const paid = Number(alreadyPaid || 0);
     const after = paid + (Number(amount) || 0);
