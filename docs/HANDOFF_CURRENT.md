@@ -1732,3 +1732,40 @@ ALSO ESTABLISHED: companies.business_type already exists and drives the "Sales O
 vertical switch survives, and basic leasing forms were built long ago. RESALE IS THE ONLY GENUINELY
 NEW VERTICAL: no developer, no Oqood, no payment plan - a SELLER, an NOC, and a transfer at the
 trustee office.
+
+## ── DAY 91 — ONE PAYMENT IN, AND CANCEL FINALLY MEANS CANCEL ──
+⭐ THE BIG CHANGE, and it was the founder's: "there are four payments - nobody will transfer or send
+a cheque for a, then b, then c. Why not like block payment: one entry, amount received, distribute."
+So the deal now has an ALLOCATOR, the block's Stage 1 with no Stage 2: one amount, one mode, one
+reference, one date, spread PROPORTIONALLY across what each line still owes. Same doctrine as the
+block and for its reason - the developer receives money against the account, not earmarked, so
+proportional keeps every line advancing rather than declaring one settled arbitrarily. The split is
+shown and EDITABLE before it is staged: the app proposes, the broker decides.
+⭐ AND PAYMENTS NOW STAGE UNTIL SAVE. FOUNDER: "the cancel button is dummy - nothing is happening,
+because you are already saving at line level. If the data is in memory till the button, push to
+save, or cancel behaviour comes after." He pressed Cancel to restart after a mistake and found two
+payments already written. Now the entry stages, Save writes them all, and Cancel genuinely discards
+with a count. PROVEN LIVE.
+STAGED MONEY GOT ITS OWN COLUMN - "why show it red, why not its own field, so he sees the
+calculations left and right" - and the per-row + is gone: one door for money.
+ALSO BUILT: the FINAL PRICE LOCKS once money is collected - the instalment is 10% of it and the DLD
+4%, so changing it moves every expectation underneath money that has arrived. "Not after
+collections - else who changed, why changed, and auditing becomes out of control." A late concession
+is a discount, not a price edit. It only locks when a price EXISTS, or a deal that reached SPA
+Signed without one could never record it.
+THE COLLECTION STRIP NOW RESPECTS THE TOLERANCE. Both gates already read
+close_variance_tolerance_aed; the strip did not, so a deal a few hundred short still showed a
+balance and the button stayed on Collect payments - the gates would have passed him and he could not
+reach them. A bank-charge-sized difference is arithmetic, not a shortfall.
+⚠️ AND A RULING WORTH KEEPING: beyond tolerance, do not gate - RECORD. FOUNDER: "the developer gave
+the tolerance but cleared it for 600 when it was 500 - so they record the developer's behaviour.
+Gates or no gates is not important, because this is a BROKER app: he is only recording what the
+developer informed him." Nobody in the brokerage had a choice, so a manager approving is theatre.
+What matters is the pattern, over time, per developer.
+⚠️ TWO FAULTS OF MY OWN MAKING, both from cutting at speed: the DEAL JOURNEY was advancing stages, so
+each click opened the next ceremony and it read as one form looping with no exit - the founder called
+the flow crazy and he was right. The journey shortcut is DELIBERATE and stays, but only BELOW the
+money stages; from SPA Requirements onward advancing goes through Deal actions alone. And the date
+guard was added TWICE in one sitting, so the same date was confirmed twice - a script whose first
+run I assumed had failed.
+LESSON: when a paste breaks mid-script, CHECK WHETHER IT LANDED before re-running.
