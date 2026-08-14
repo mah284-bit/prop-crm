@@ -5401,6 +5401,19 @@ onSelect={(unitId) => {
                   // Offer Accepted - no required fields, price comes from inventory
                   if(showStageGate==="Reserved"&&!stageGateForm.reservation_fee){showToast("Reservation fee is required","error");return;}
                   // Day 91: a date the deal could not have had. Warn and allow - back-dating is
+                  // legitimate because the data entry happens days after the signing; a date before
+                  // the deal existed, or in the future, is not. An SPA created on the 14th accepted
+                  // the 12th without a murmur before this.
+                  if (showStageGate === "SPA Signed") {
+                    if (!stageGateForm.spa_date) { showToast("When did the buyer sign? The date is required", "error"); return; }
+                    const today = new Date().toISOString().slice(0,10);
+                    const born = String(opp.created_at || "").slice(0,10);
+                    let w = null;
+                    if (stageGateForm.spa_date > today) w = "That signing date is in the future.";
+                    else if (born && stageGateForm.spa_date < born) w = "That is before this deal existed (" + new Date(born).toLocaleDateString("en-GB") + ").";
+                    if (w && !window.confirm(w + "\n\nRecord it with this date anyway?")) return;
+                  }
+                  // Day 91: a date the deal could not have had. Warn and allow - back-dating is
                   // legitimate; a date before the deal existed, or in the future, is not.
                   if (showStageGate === "SPA Signed" && stageGateForm.spa_date) {
                     const today = new Date().toISOString().slice(0,10);
