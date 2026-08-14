@@ -240,7 +240,10 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   // arrived - settled lines become short or over, and the commission shifts. FOUNDER: "not after
   // collections - else who changed, why changed, and auditing becomes out of control."
   // A late concession is not a price edit; it is a discount or a waiver, recorded as such.
-  const priceLocked = Number(collectionState?.collected || 0) > 0;
+  // ...but only when a price is ALREADY RECORDED. Locking a blank field would leave a deal that
+  // reached SPA Signed without one unable to record it at all - unfinishable.
+  const priceLocked = Number(collectionState?.collected || 0) > 0
+    && Number(opp.current_agreed_price || opp.final_price || 0) > 0;
   const [showLedgerDetail, setShowLedgerDetail] = useState(false);
   const [payFor, setPayFor] = useState(null);
   const [prePaymentsState, setPrePaymentsState] = useState({
