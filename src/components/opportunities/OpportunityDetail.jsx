@@ -235,6 +235,12 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   const [spaUploading, setSpaUploading] = useState(false);
   const [spaUploadError, setSpaUploadError] = useState(null);
   // Stage 5 v2 — 3-state model: pending | received | waived
+  // Day 91: THE PRICE LOCKS ONCE MONEY IS COLLECTED. The first instalment is 10% OF IT and the DLD
+  // is 4% OF IT, so changing it moves every expected amount underneath money that has already
+  // arrived - settled lines become short or over, and the commission shifts. FOUNDER: "not after
+  // collections - else who changed, why changed, and auditing becomes out of control."
+  // A late concession is not a price edit; it is a discount or a waiver, recorded as such.
+  const priceLocked = Number(collectionState?.collected || 0) > 0;
   const [showLedgerDetail, setShowLedgerDetail] = useState(false);
   const [payFor, setPayFor] = useState(null);
   const [prePaymentsState, setPrePaymentsState] = useState({
@@ -4827,12 +4833,13 @@ onSelect={(unitId) => {
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                   <div>
                     <label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Final Agreed Price (AED) *</label>
-                    <input type="number" placeholder="e.g. 2450000" disabled={moneyLocked} title={moneyLocked ? "Price comes from the block's locked distribution" : undefined} value={stageGateForm.final_price||""} onChange={e=>{ if (moneyLocked) return; setStageGateForm(f=>({...f,final_price:e.target.value})); }}/>
+                    <input type="number" placeholder="e.g. 2450000" disabled={moneyLocked || priceLocked} title={moneyLocked ? "Price comes from the block's locked distribution" : undefined} value={stageGateForm.final_price||""} onChange={e=>{ if (moneyLocked) return; setStageGateForm(f=>({...f,final_price:e.target.value})); }}/>
                     {/* Day 86: on a BLOCK CHILD the price is already distributed and LOCKED at the
                         block - editing it per unit would contradict the locked distribution, and
                         the block bill, the allocations and every child ledger are computed from it.
                         On a 1-to-1 it stays editable: the developer's SPA can legitimately differ
                         from the last proposal, and the divergence notice above handles that. */}
+                    {!moneyLocked && priceLocked && <div style={{marginTop:4,fontSize:10,fontWeight:600,color:"#B45309"}}>{"\ud83d\udd12 Locked - money has been collected against this price. A late concession is recorded as a discount, not a price change."}</div>}
                     {moneyLocked && <div style={{marginTop:4,fontSize:10,color:"#64748B"}}>{"\ud83e\uddf1 From the block's locked distribution"}</div>}
                     {(() => {
                       // Day 82: SHOW THE DIVERGENCE. This is the number COMMISSION is calculated
