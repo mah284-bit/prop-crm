@@ -1424,3 +1424,16 @@ rules - else who changed, why changed, and auditing becomes out of control."
    moving with no explanation.
 ⚠️ WHAT MUST NEVER HAPPEN: silent recalculation of settled lines. Money that arrived is a FACT; an
 expectation moving underneath it is a variance to explain, not to erase.
+
+## ADDED DAY 91 - NO DATE VALIDATION ANYWHERE
+An SPA created on the 14th accepted a signing date of the 12th, and nothing objected. There are no
+date checks in the app at all. The cases that matter:
+ - a SIGNING DATE BEFORE THE RESERVATION - impossible, the deal did not exist
+ - a date IN THE FUTURE - he has not signed yet
+ - a PAYMENT RECEIVED before the deal was created
+Each produces a record that cannot be reconciled against a bank statement or a DLD filing.
+THE RULE: a date may not precede the deal's own history, and may not be in the future. Beyond that
+the broker knows better than the app - back-dating is legitimate and common (the data entry happens
+days after the signing), so WARN AND ALLOW rather than refuse.
+⚠️ AND THE DEFAULTS FEED IT: the signing date and the payment received-on both pre-fill with TODAY,
+and a pre-filled field gets accepted. Leaving them blank would make him state the real date.
