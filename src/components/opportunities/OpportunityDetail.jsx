@@ -235,6 +235,7 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   const [spaUploading, setSpaUploading] = useState(false);
   const [spaUploadError, setSpaUploadError] = useState(null);
   // Stage 5 v2 — 3-state model: pending | received | waived
+  const [showLedgerDetail, setShowLedgerDetail] = useState(false);
   const [payFor, setPayFor] = useState(null);
   const [prePaymentsState, setPrePaymentsState] = useState({
     booking_fee:     { status: "pending", amount: "", date: "", notes: "" },
@@ -5050,7 +5051,29 @@ onSelect={(unitId) => {
                       {"\ud83e\uddf1 This unit belongs to a block. MONEY IS RECORDED AT THE BLOCK and distributed across its units - one entry, not one per unit. What is shown below is this unit's own share, read-only."}
                     </div>
                   )}
+                  {/* Day 91: AT THE SIGNING, THE MONEY IS EVIDENCE - NOT A SECOND COLLECTION SCREEN.
+                      A seven-row editable table with + buttons made the SPA ceremony read as another
+                      payment form and buried the signing fields above it. Founder raised it twice.
+                      At SPA Signed it collapses to one line; the breakdown is a click away.
+                      At SPA Requirements nothing changes - that IS where money is collected. */}
+                  {showStageGate === "SPA Signed" && !showLedgerDetail && (() => {
+                    const exp = Object.values(prePaymentsState||{}).reduce((t,r)=>t+((r&&r.status!=="waived")?(Number(r.expected_amount)||0):0),0);
+                    const got = Object.values(prePaymentsState||{}).reduce((t,r)=>t+((r&&r.status!=="waived")?(Number(r.amount)||0):0),0);
+                    const left = exp - got;
+                    return (
+                      <div style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",padding:"10px 13px",background:left>0.5?"#FFFBEB":"#ECFDF5",border:"1.5px solid "+(left>0.5?"#FCD34D":"#A7D8C3"),borderRadius:9,marginBottom:10}}>
+                        <span style={{fontSize:11,fontWeight:700,color:left>0.5?"#92400E":"#166534",textTransform:"uppercase",letterSpacing:".5px"}}>Money collected</span>
+                        <span style={{fontSize:14,fontWeight:800,color:"#0F2540"}}>{fmt2(got)}</span>
+                        <span style={{fontSize:12,color:"#64748B"}}>{"of " + fmt2(exp)}</span>
+                        {left > 0.5
+                          ? <span style={{fontSize:12,fontWeight:700,color:"#B91C1C"}}>{fmt2(left) + " outstanding"}</span>
+                          : <span style={{fontSize:12,fontWeight:700,color:"#166534"}}>fully collected {String.fromCodePoint(0x2713)}</span>}
+                        <button type="button" onClick={()=>setShowLedgerDetail(true)} style={{marginLeft:"auto",padding:"4px 11px",borderRadius:7,border:"1px solid #CBD5E0",background:"#fff",color:"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>Show the breakdown</button>
+                      </div>
+                    );
+                  })()}
                   {/* LEDGER TABLE v2 (founder spec Day 69): Particulars | Expected | Received | Mode | Date | Diff */}
+                  {!(showStageGate === "SPA Signed" && !showLedgerDetail) && (
                   <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
                     <thead>
                       <tr style={{background:"#F1F5F9",color:"#475569",textAlign:"left"}}>
@@ -5144,6 +5167,7 @@ onSelect={(unitId) => {
                       })()}
                     </tbody>
                   </table>
+                  )}
                   {/* Day 89: the six payments behind one figure. Collapsed - it is evidence, not the
                       main view - and the same rows a buyer-facing statement will read. */}
                   <PaymentHistory opp={opp} currentUser={currentUser} showToast={showToast} tick={paymentTick}
@@ -5531,21 +5555,11 @@ onSelect={(unitId) => {
                     if (c?.pre_spa_payments) setPrePaymentsState(c.pre_spa_payments);
                     setPaymentTick(t => t + 1);
                   }} />}
-                {!stageGateViewMode && !moneyLocked && showStageGate === "SPA Signed" && (
-                  <button onClick={async () => {
-                    try {
-                      const { error } = await supabase.from("pp_sales_closures")
-                        .update({ pre_spa_payments: prePaymentsState })
-                        .eq("opportunity_id", opp.id);
-                      if (error) throw error;
-                      showToast("Payments recorded - the SPA is not signed", "success");
-                      setShowStageGate(null);
-                    } catch (e) { showToast("Could not save: " + (e.message || e), "error"); }
-                  }}
-                  style={{padding:"8px 20px",borderRadius:8,border:"1.5px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:13,fontWeight:700,cursor:"pointer",marginLeft:8}}>
-                    Save payments
-                  </button>
-                )}
+                {/* Day 91: REMOVED. Three buttons at the foot of the signing ceremony - Cancel,
+                    Record SPA, Save payments - and the founder asked which one he was meant to press.
+                    Save payments belongs to the COLLECTION gate; by SPA Signed the money is in and the
+                    table is evidence. Worse, it wrote pre_spa_payments back - the exact destructive
+                    path removed on Day 90, when it erased a 25,000 reservation. One act here. */}
               </div>
             </div>
           </div>
