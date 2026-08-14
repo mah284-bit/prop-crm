@@ -5176,13 +5176,10 @@ onSelect={(unitId) => {
                                   reservation." So the + on a settled reservation or booking fee is not a
                                   warning case, it is a row that is finished. Refusing beats confirming: a
                                   broker taps OK out of habit, and the misclick lands anyway. */}
-                              {!waived && !stageGateViewMode && !moneyLocked &&
-                               !(["reservation_fee","booking_fee"].includes(key) && expected > 0 && Number(item.amount||0) >= expected - 0.5) &&
-                                <button type="button" onClick={()=>setPayFor({ key, label, expected,
-                                  // staged payments count as already paid, so he cannot overpay a
-                                  // line across two entries before either is written
-                                  paid: (Number(item.amount) || 0) + staged.filter(x=>x.particular===key).reduce((t,x)=>t+Number(x.amount||0),0) })} title={"Record a payment against " + label}
-                                  style={{marginLeft:6,padding:"2px 7px",borderRadius:5,border:"1px solid #0F2540",background:"#fff",color:"#0F2540",fontSize:11,fontWeight:700,cursor:"pointer"}}>+</button>}
+                              {/* Day 91: THE PER-ROW + IS GONE. Money arrives as ONE payment and is
+                                  allocated across the lines - two doors to one act is exactly what we
+                                  have been removing everywhere else. Founder: "nobody will transfer or
+                                  send a cheque for a, then b, then c." */}
                             </td>
                             <td style={{padding:"6px 8px",fontSize:10,color:"#64748B"}}>{item.method || "—"}</td>
                             <td style={{padding:"6px 8px",fontSize:10,color:"#64748B"}}>{item.date ? new Date(item.date).toLocaleDateString("en-GB") : "—"}</td>
