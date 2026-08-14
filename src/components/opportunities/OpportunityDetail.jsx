@@ -226,7 +226,19 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
       bill += Number(r.expected_amount || 0);
       collected += Number(r.amount || 0);
     });
-    setCollectionState({ bill: bill, collected: collected, toCollect: Math.round((bill - collected) * 100) / 100 });
+    // Day 91: THE STRIP MUST RESPECT THE TOLERANCE. Both gates already read
+    // close_variance_tolerance_aed; the strip did not, so a deal 450 short still read "To collect"
+    // and the button stayed on Collect payments - the gates would have passed him and he could not
+    // reach them. A bank-charge-sized difference is arithmetic, not a shortfall.
+    const _gap = Math.round((bill - collected) * 100) / 100;
+    let _tolA = 500;
+    try {
+      const { data: _co } = await supabase.from("companies")
+        .select("close_variance_tolerance_aed").eq("id", currentUser.company_id).maybeSingle();
+      if (_co) _tolA = Number(_co.close_variance_tolerance_aed) || 500;
+    } catch (e) {}
+    setCollectionState({ bill: bill, collected: collected, toCollect: _gap,
+      withinTolerance: _gap > 0 && _gap <= _tolA, tolerance: _tolA });
   // Day 90: recompute when a PAYMENT is recorded, not only when the gate opens or closes. Money
   // now arrives through the + on each line, which touches neither opp.stage nor showStageGate - so
   // the strip sat stale behind an open dialog showing 25,000 while 120,523 was in. A broker who
@@ -853,7 +865,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       // money outstanding, open the COLLECTION gate and leave the stage alone. Advancing to SPA
       // Signed stays a separate, deliberate act for the day the buyer actually signs.
       const collectingOnly = toStage === "SPA Signed" && opp.stage === "SPA Requirements"
-        && collectionState && collectionState.toCollect > 0;
+        && collectionState && collectionState.toCollect > 0 && !collectionState.withinTolerance;
       setShowStageGate(collectingOnly ? "SPA Requirements" : toStage);
       return;
     }
@@ -1872,6 +1884,9 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                         <span style={{color:"#475569"}}>Collected <strong style={{color:"#166534"}}>{m(collectionState.collected)}</strong></span>
                         <span style={{color:"#475569"}}>To collect <strong style={{color:collectionState.toCollect > 0 ? "#B91C1C" : "#166534"}}>{m(collectionState.toCollect)}</strong></span>
                         {collectionState.toCollect <= 0 && <span style={{fontSize:11,fontWeight:700,color:"#166534"}}>fully collected</span>}
+                        {/* Day 91: within the firm's tolerance is not a shortfall - it is bank charges.
+                            Say so plainly rather than showing a balance he cannot collect. */}
+                        {collectionState.withinTolerance && <span style={{fontSize:11,fontWeight:700,color:"#166534"}}>{"fully collected \u00b7 " + m(collectionState.toCollect) + " within tolerance"}</span>}
                         {opp.reservation_amount > 0 && (
                           <button onClick={async ()=>{
                             const { data: cl } = await supabase.from("pp_sales_closures").select("pre_spa_payments").eq("opportunity_id", opp.id).maybeSingle();
@@ -1944,7 +1959,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                               style={{padding:"7px 14px",borderRadius:7,border:"none",background:m.c,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,boxShadow:"0 2px 6px rgba(0,0,0,.08)"}}>
                               {/* Day 79: name the ACT, not the destination. "Advance to SPA Signed"
                                   while 3.5M is outstanding invites an act the gate will refuse. */}
-                              {(opp.stage === "SPA Requirements" && collectionState && collectionState.toCollect > 0)
+                              {(opp.stage === "SPA Requirements" && collectionState && collectionState.toCollect > 0 && !collectionState.withinTolerance)
                                 ? "Collect payments" : "\u2713 Advance to " + nextStageName}
                             </button>
                           )}
