@@ -1831,7 +1831,16 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                             // FOUNDER: "it should end there and not open other forms - please make one
                             // place." Advancing belongs to the Deal actions button. Clicking a COMPLETED
                             // stage still opens its record read-only, which is useful.
-                            showToast("Use the button under Deal actions to advance - the journey shows where the deal is.", "info");
+// FOUNDER (Day 91): the journey shortcut is DELIBERATE - a broker adopting a deal that is
+                            // already advanced should not have to walk every stage. But once MONEY IS
+                            // INVOLVED the ceremonies matter, so from SPA Requirements onward advancing
+                            // goes through the Deal actions button only. Before that, the journey is a
+                            // shortcut; after it, it is a record.
+                            if (["SPA Requirements","SPA Signed","Closed Won"].includes(s)) {
+                              showToast("Use the button under Deal actions from here - the money stages have their own ceremonies.", "info");
+                            } else {
+                              moveStage(s);
+                            }
                           }
                         }}
                         title={isDone ? (GATED_STAGES.includes(s) ? `Click to view/edit ${s} details` : "Details in activity log") : (canAction?"Click to move to this stage":isOwner?"":"You are not the assigned agent — reassign first")}
