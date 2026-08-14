@@ -57,9 +57,18 @@ export default function RecordPaymentDialog({ opp, particular, label, expected, 
     const exp = Number(expected || 0);
     const paid = Number(alreadyPaid || 0);
     const after = paid + (Number(amount) || 0);
+    // Day 91: REFUSE BEYOND THE BALANCE, WHATEVER THE PARTICULAR. Founder: "when you have received,
+    // you do the maths - expected minus received - and next time it should show only the balance and
+    // not allow more than the accepted difference in any case." The confirm-and-proceed path let a
+    // wrong figure become a fact that could not then be corrected.
     if (exp > 0 && after > exp) {
       const over = after - exp;
       const flat = FLAT.includes(particular);
+      if (!flat && over > TOLERANCE) {
+        showToast(label + " only owes AED " + Math.max(0, exp - paid).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) +
+          ". Record that here and put the rest against the line it belongs to.", "error");
+        return;
+      }
       if (flat) {
         if (!window.confirm(label + " is already fully paid - " + paid.toLocaleString() + " of " + exp.toLocaleString() + ".\n\nThis would put it AED " + Math.round(over).toLocaleString() + " over. Is this meant for another line?")) return;
       } else if (over > TOLERANCE) {
@@ -97,9 +106,18 @@ export default function RecordPaymentDialog({ opp, particular, label, expected, 
           <div style={{ fontSize: 15, fontWeight: 700, color: "#0F2540" }}>Record a payment</div>
           <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, color: "#94A3B8", cursor: "pointer" }}>&times;</button>
         </div>
-        <div style={{ fontSize: 12, color: "#64748B", marginBottom: 14 }}>
+        <div style={{ fontSize: 12, color: "#64748B", marginBottom: 4 }}>
           Against <strong style={{ color: "#0F2540" }}>{label}</strong> &middot; {opp?.title || ""}
         </div>
+        {/* Day 91: SHOW THE BALANCE, NOT THE EXPECTED TOTAL. The broker had to subtract in his head -
+            "expected 412,510, received 400,000, so what do I type?" - and the app knows the answer. */}
+        {Number(expected || 0) > 0 && (
+          <div style={{ fontSize: 12, marginBottom: 14, padding: "7px 10px", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 7 }}>
+            <span style={{ color: "#64748B" }}>Still owed on this line: </span>
+            <strong style={{ color: "#0F2540" }}>{"AED " + Math.max(0, Number(expected || 0) - Number(alreadyPaid || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+            <span style={{ color: "#94A3B8" }}>{"  (" + Number(alreadyPaid || 0).toLocaleString() + " of " + Number(expected || 0).toLocaleString() + " in)"}</span>
+          </div>
+        )}
 
         <label style={L}>Amount received (AED) *</label>
         <input type="number" autoFocus value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" style={F} />
