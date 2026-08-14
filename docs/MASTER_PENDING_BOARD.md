@@ -1390,3 +1390,20 @@ WHY ONLY OFF-PLAN - the four reasons given, and the fourth is the one that lande
  defending it.
 TO CHECK: the Property OS story is believed to be in the docs already - find it and see whether it
 predates or postdates this meeting.
+
+## ⭐ REPLACE window.prompt WITH A REAL DIALOG (Day 91 - the cheap half is done, the proper half is not)
+DONE: askReason() wraps every gate prompt so a refusal is never silent. A cancel says "nothing was
+changed"; a prompt that returns in under 50ms was never shown to a human, so it says the browser has
+blocked the app's dialogs and to reload. Applied to the four gates that stop work in
+OpportunityDetail - evidence, KYC, the SPA document, the signing variance.
+⚠️ NOT DONE, AND IT MATTERS FOR A DEMO: it is still a NATIVE PROMPT. It renders as "localhost says"
+in a grey browser box - it does not look like part of the app, and it can still be suppressed.
+FOUNDER: "is there a way we can show it as part of the app, with a colourful screen?"
+THE PROPER FIX: one shared in-app dialog - same panel style as RecordPaymentDialog - with a title,
+the explanation, the deal's context, a reason field, Cancel and Confirm. Branded, and IMMUNE to
+browser suppression because no browser dialog is involved.
+⚠️ THE COST IS REAL AND IT IS NOT A SUBSTITUTION: window.prompt is SYNCHRONOUS - execution stops and
+waits - while a React dialog is not. Every one of the 14 call sites has to be restructured around a
+callback or a promise, not just have its function name swapped. HALF A DAY.
+14 sites across: BlockDealsPage, BlockWorkspace, DistributionCalculator, OpportunityDetail,
+PaymentHistory, ProposalBuilderDialog.
