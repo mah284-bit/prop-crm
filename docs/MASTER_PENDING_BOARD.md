@@ -1407,3 +1407,20 @@ waits - while a React dialog is not. Every one of the 14 call sites has to be re
 callback or a promise, not just have its function name swapped. HALF A DAY.
 14 sites across: BlockDealsPage, BlockWorkspace, DistributionCalculator, OpportunityDetail,
 PaymentHistory, ProposalBuilderDialog.
+
+## ⭐ RULING (Day 91) - THE FINAL PRICE LOCKS ONCE MONEY IS COLLECTED
+Today the price is freely editable at the signing gate. But the first instalment is 10% OF IT and
+the DLD is 4% OF IT, and both may already be collected - so changing it moves every expected amount
+underneath money that has already arrived, turning settled lines short or over and shifting the
+commission.
+FOUNDER: "not after collections. Till then maybe a flat 5k or 10k may be asked, but we have to put
+rules - else who changed, why changed, and auditing becomes out of control."
+⭐ THE RULE:
+ - BEFORE ANY MONEY: the price is free to change. Nothing depends on it yet.
+ - ONCE ANY MONEY IS COLLECTED: LOCKED. Same discipline as the block calculator after settlement,
+   a settled reservation offering no +, and an issued invoice freezing.
+ - A LATE CONCESSION (the 5-10k asked at the end) is NOT a price edit. It is its own thing - a
+   discount or a waiver recorded as such, so the record says what happened instead of a number
+   moving with no explanation.
+⚠️ WHAT MUST NEVER HAPPEN: silent recalculation of settled lines. Money that arrived is a FACT; an
+expectation moving underneath it is a variance to explain, not to erase.
