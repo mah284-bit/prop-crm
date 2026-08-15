@@ -1595,3 +1595,22 @@ number it.
    may be test-data churn - but CONFIRM ON CLEAN DATA whether an invoice inherits the developer from
    the unit's project, and whether a deal can reach Closed Won with no developer at all. If it can,
    the rate on that deal came from a fallback and nobody was told.
+
+## ⭐ ADDED DAY 92 - THE MONEY THAT ARRIVED HAS NOWHERE TO BE SEEN, AND NEITHER DOES THE AGENT'S SHARE
+Two gaps, both surfaced by walking the bulk settle:
+ 1. A SETTLED INVOICE DISAPPEARS. Once paid it drops off the dashboard, which is built around what
+    is OWED. So "did Aldar pay AMP-2026-0001, and when?" has no answer on screen. What is needed is
+    a RECEIPTS VIEW - what came in, from whom, when, against which invoices. That is the
+    reconciliation an accountant does against the bank statement, and today it cannot be done.
+ 2. ⭐ THE AGENT'S SHARE IS COMPUTED AND NEVER SHOWN. agent_commission and company_net are on every
+    invoice, and nothing surfaces them. An agent cannot see what he has earned; a manager cannot see
+    what is due to be paid out. FOUNDER: "another report for managers and accounts to showcase the
+    payments to the brokers."
+    ⚠️ THIS IS THE GROUP-3 USER from the same conversation: the individual working through a
+    brokerage, whose question is not "what does the developer owe" but "WHAT DOES THE BROKERAGE OWE
+    ME."
+ONE PIECE, TWO HALVES: a RECEIPTS & PAYOUTS view - money in from developers, money out to agents.
+The data exists on pp_commission_invoices already; this is reporting, not engine work.
+ALSO NOTED: Manage (per invoice) and Settle (per developer) are two doors to recording a payment,
+and the founder nearly used the wrong one. KEEP BOTH - Manage also carries Dispute, which has no
+other home - but the usage pattern should make Settle the obvious path when a developer pays.
