@@ -1507,3 +1507,20 @@ reach it because moneyLocked hides the money entry.
 PROVEN ON CLEAN DATA: a 150,000 block payment landed 51,657.43 and 48,445.71 in the two children's
 ledgers, matching their allocations EXACTLY, and pp_payments held ZERO rows for either child.
 ITEM 2 OF THE LINE IS CLOSED.
+
+## ⭐ ADDED DAY 92 - THE DEVELOPER ADMIN FEE IS A REAL FEE AND HAS NO MODEL
+Confirmed in the code: dealBill has `other_fees: { expected: 0 }` - hard-coded to zero. Nothing
+computes it, no setting feeds it, and the block bill has no `other` total at all. So the line takes
+money but never states what is owed, and yesterday's 2,500 on the 1-to-1 was the architect setting
+expected_amount directly in SQL - it would vanish on any recompute.
+⭐ FOUNDER'S RULING (Day 92): PER UNIT, as in the 1-to-1, and PER DEVELOPER - "it may change
+regularly." SAME PATTERN ON BOTH VERTICALS.
+THE SHAPE:
+ - a field on pp_master_agreements, per developer - not company settings, because each developer
+   sets his own charge and it moves
+ - dealBill computes it; feeSettings resolves it with the FROZEN POLICY WINNING (Day-78 rule). The
+   freeze matters more here than anywhere, precisely because it changes: a developer raising the
+   charge must not reprice deals already reserved
+ - both verticals get an other_fees EXPECTATION; the block bill totals it per unit
+SIZING: about two hours - the fee resolver has three layers and both verticals read it.
+NOT ON THE LINE FOR SALES. A real gap, but it does not block a tester. Take it after.
