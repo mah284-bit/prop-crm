@@ -98,7 +98,8 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
       const { data, error: dbErr } = await supabase
         .from("pp_commission_invoices")
         .select(`
-          id, opportunity_id, sales_closure_id, developer_id, master_agreement_id,
+          id, company_id, opportunity_id, sales_closure_id, developer_id, master_agreement_id,
+          agent_id, agent_commission, company_net,
           sale_price, commission_pct, commission_gross, vat_pct, vat_amount, commission_net,
           invoice_number, invoice_date, invoice_status, amount_received, last_payment_date,
           disputed_reason, notes, created_at, updated_at
