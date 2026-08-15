@@ -1769,3 +1769,53 @@ money stages; from SPA Requirements onward advancing goes through Deal actions a
 guard was added TWICE in one sitting, so the same date was confirmed twice - a script whose first
 run I assumed had failed.
 LESSON: when a paste breaks mid-script, CHECK WHETHER IT LANDED before re-running.
+
+## ── DAY 92 — THE BROKER'S OWN STORY, AND THE LINE IS DONE ──
+FOUNDER, mid-morning: "the buyer side story ended - for a broker it is not. The COMMISSION story,
+for which I as a broker BROKE my head." Every walk had stopped at Closed Won, so NOTHING past
+`draft` had ever run. It does now, end to end.
+⭐ WALKED AND PROVEN: draft raised at SPA Signed, one per unit on a block · rate per developer from
+the master agreement · ISSUE assigns a number and a due date · PARTIAL and FULL receipt · aging,
+realization and per-developer outstanding all moving correctly.
+⭐ BUILT ON TOP OF IT:
+ - THE INVOICE NUMBER IS SUGGESTED IN SEQUENCE (AMP-2026-0001) with a unique index behind it and the
+   field still editable. Three kinds of user, one answer: an established brokerage records their
+   ERP's reference; a small licensed broker has no accounting system and needs the app to number it.
+ - BULK SETTLEMENT PER DEVELOPER - "the settling might come not invoice to invoice but as bulk."
+   One transfer, allocated OLDEST FIRST and adjustable. ⭐ A DIFFERENT DOCTRINE FROM THE DEAL LEDGER,
+   deliberately: a deal's particulars are one debt in instalments so proportional keeps them level,
+   but INVOICES ARE SEPARATE DEBTS WITH THEIR OWN AGES - spreading proportionally would leave every
+   one partly paid and permanently ageing, which is the thing the module exists to prevent.
+ - COMMISSION RECEIPTS ARE ROWS. amount_received was one figure and one date, so an invoice paid in
+   three tranches lost the first two. pp_commission_receipts, batch_id for a bulk transfer, and the
+   invoice DERIVED from the rows. Both doors - Manage and Settle - write the same way.
+ - RECEIPTS & PAYOUTS: what came in from developers, and what each agent has earned, split between
+   money actually received and money still with the developer.
+⭐⭐ AND THE LINE FOR SALES IS DONE - all three, plus what the walking found:
+ 1. NO GATE REFUSES SILENTLY. AskDialog: an in-app dialog with a title, the figures, the honest
+    alternative, and a reason field that blocks Confirm until filled. No browser box, no "localhost
+    says", and NO BROWSER SETTING CAN SILENCE IT - the fault that cost half an hour on Day 90 and hit
+    three gates in one day cannot happen. Ten gates converted across the deal ladder and the block.
+ 2. THE TWO WRITERS: not a fault, and now proven. postAllocationsToChild and syncLedgerFromPayments
+    never run on the same deal. A 150,000 block payment landed in both children's ledgers matching
+    their allocations exactly, with ZERO pp_payments rows for either.
+ 3. BOTH VERTICALS WALKED END TO END on clean data, commission included.
+⚠️ FOUND BY WALKING, and none of it by reading:
+ - THE `accepted` STATUS WAS NEVER IN THE DATABASE CONSTRAINT. Built Day 87, gated Confirm on it,
+   and every attempt was rejected at the write. NO BLOCK HAD EVER REACHED IT.
+ - THE BLOCK BILL UNDERSTATED BY THE WHOLE RESERVATION until it was collected - 305,004 shown on a
+   block owing 355,004, because it read the child's ACTUAL reservation rather than the block's
+   EXPECTED one.
+ - A BLOCK CHILD'S PROPOSALS TAB IS EMPTY, so it reads as though no terms were agreed. The block's
+   accepted offer IS the agreement; it is simply not surfaced where the question is asked.
+ - ⚠️ A DEAL INVOICED AT A GUESSED RATE, TO NOBODY, IN SILENCE. Two deals reached Closed Won and
+   computed 4% with no developer and no master agreement, because their PROJECT had no developer
+   set. Data, not code - but the silence was the fault, and the broker is now told at SPA Signed.
+   One invoice had NO UNIT AT ALL, which means no project, no developer and no basis for the
+   commission whatsoever. Nothing required a unit.
+ - THE INVOICE'S TRN AND BANK DETAILS WERE HARD-CODED PLACEHOLDERS on a document that leaves the
+   building. They read from the company now, and an unset TRN says "not a valid tax invoice" rather
+   than printing something plausible - a fake IBAN is worse than a blank one, because a developer
+   might try to pay it.
+ - A NEW NAV TAB PASSES THREE GATES and MODE_TABS is the silent one - absent from it, a tab renders
+   nowhere with no error at all.
