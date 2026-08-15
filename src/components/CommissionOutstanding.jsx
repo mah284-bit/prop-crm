@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import SettleDeveloperDialog from "./SettleDeveloperDialog.jsx";
+import { recordCommissionReceipt } from "../lib/recordCommissionReceipt.js";
 import { supabase } from "../lib/supabase";
 
 /**
@@ -188,24 +189,17 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
         showToast("Payment date required", "error");
         return;
       }
-      const newReceived = Number(invoice.amount_received || 0) + amt;
-      const net = Number(invoice.commission_net);
-      let newStatus = invoice.invoice_status;
-      if (newReceived >= net - 0.01) newStatus = "paid";
-      else if (newReceived > 0) newStatus = "partially_paid";
-
+      // Day 92: THE RECEIPT IS A ROW, AND amount_received IS DERIVED FROM THE ROWS.
+      // This used to add to the total and write it back, so an invoice paid in three tranches kept
+      // one figure and one date - the first two payments existed nowhere and could not be
+      // reconciled against a bank statement. Both doors, Manage and Settle, now write the same way.
       try {
-        const { error: updErr } = await supabase
-          .from("pp_commission_invoices")
-          .update({
-            amount_received: newReceived,
-            ...(paymentModal.followNote?.trim() ? { notes: paymentModal.followNote.trim() } : {}),
-            last_payment_date: date,
-            invoice_status: newStatus,
-            updated_by: currentUser.id,
-          })
-          .eq("id", invoice.id);
-        if (updErr) throw updErr;
+        const r = await recordCommissionReceipt({
+          invoice, amount: amt, receivedDate: date,
+          notes: paymentModal.followNote?.trim() || null, currentUser,
+        });
+        if (!r.ok) throw new Error(r.error);
+        const newStatus = r.status;
         showToast(
           newStatus === "paid"
             ? `✅ Fully paid! AED ${amt.toLocaleString()} received`
@@ -672,20 +666,19 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
             // Day 92: each line goes through the SAME receipt write as a single payment, so statuses
             // and aging update exactly as they do there rather than through a second path that could
             // drift from it.
+            // Day 92: one transfer, one BATCH - each invoice gets its own receipt row sharing the
+            // batch id, so "Aldar paid 500,000 on 15 Aug" and "which invoices did it clear?" are
+            // both answerable from the rows. The invoice totals derive; nothing is typed.
+            const batchId = crypto.randomUUID();
             let failed = [];
             for (const r of rows) {
               const inv = invoices.find(x => x.id === r.id);
               if (!inv) continue;
-              const received = Number(inv.amount_received || 0) + Number(r.amount || 0);
-              const net = Number(inv.commission_net || 0);
-              const { error } = await supabase.from("pp_commission_invoices").update({
-                amount_received: received,
-                last_payment_date: date,
-                invoice_status: received >= net - 0.5 ? "paid" : "partially_paid",
-                notes: reference ? ((inv.notes ? inv.notes + " | " : "") + "Settled in bulk, ref " + reference) : inv.notes,
-                updated_by: currentUser.id,
-              }).eq("id", r.id);
-              if (error) failed.push(r.number);
+              const res = await recordCommissionReceipt({
+                invoice: inv, amount: r.amount, receivedDate: date,
+                reference: reference || null, batchId, currentUser,
+              });
+              if (!res.ok) failed.push(r.number);
             }
             setSettleModal(null);
             await loadInvoices();
