@@ -1567,3 +1567,26 @@ THE QUESTION, PRECISELY:
  - WHAT DOCUMENT authorises the signatory - board resolution, POA, trade licence?
  - WHAT MUST THE APP RECORD to support registration without a return trip?
 The three-role model stands regardless: it is how the deal is actually worked.
+
+## ✅ WALKED DAY 92 - THE COMMISSION STORY IS COMPLETE, AND IT HAD NEVER BEEN TESTED
+FOUNDER: "the buyer side story ended - for a broker it is not. The COMMISSION story, for which I as
+a broker BROKE my head." Every walk had stopped at Closed Won, so nothing past `draft` had ever run.
+IT ALL WORKS: draft raised at SPA Signed, one per unit on a block (correct - each unit registers
+separately) · rate resolved per developer from the master agreement, 4.5% Aldar and 4% DAMAC · VAT
+computed · the agent/company split computed · ISSUE assigns a number and a 60-day due date ·
+PARTIAL and FULL receipt both recorded · aging, realization rate and per-developer outstanding all
+moved correctly · Manage disappears when nothing is left to manage.
+BUILT TODAY: the invoice number is SUGGESTED IN SEQUENCE (AMP-2026-0001) rather than invented by the
+broker, with a unique index behind it and the field still editable - an established brokerage
+records their ERP's reference, a small licensed broker has no accounting system and needs the app to
+number it.
+
+## ⚠️ ADDED DAY 92 - THREE THINGS THE COMMISSION WALK EXPOSED
+ 1. ⭐ DEVELOPERS SETTLE IN BULK. One transfer covers several invoices, and Record Payment takes one
+    invoice at a time - so 500,000 for eight deals means eight dialogs and the broker splitting it
+    himself. SAME PATTERN AS THE DEAL LEDGER (Day 91): one payment in, allocated across what is
+    owed, oldest first or proportionally, adjustable. Natural next piece.
+ 2. THE BANK DETAILS AND TRN ARE PLACEHOLDERS - "IBAN: AE00 0000 0000..." and a masked TRN on a
+    document that LEAVES THE BUILDING. Real company settings needed before an invoice is sent.
+ 3. "(Unlinked)" - one invoice has no developer, so there is nobody to bill. The deal reached
+    Closed Won without a developer link and nothing objected.
