@@ -386,7 +386,7 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
 
   // Action button selector based on status
   const actionForInvoice = (inv) => {
-    if (inv.invoice_status === "draft") return { label:"Issue", action:() => setIssueModal({ invoice: inv, number:"", date: new Date().toISOString().slice(0,10) }) };
+    if (inv.invoice_status === "draft") return { label:"Issue", action: async () => setIssueModal({ invoice: inv, number: await nextInvoiceNumber(), date: new Date().toISOString().slice(0,10) }) };
     if (inv.invoice_status === "issued" || inv.invoice_status === "partially_paid")
       return { label:"Manage", action:() => setPaymentModal({ invoice: inv, amount:"", date: new Date().toISOString().slice(0,10), action:"payment", reason:"" }) };
     return { label:"View", action:() => showToast(`Status: ${inv.invoice_status}`, "info") };
@@ -633,7 +633,7 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
                   {/* actions */}
                   <div style={{display:"flex",justifyContent:"flex-end",gap:8,padding:"14px 26px",borderTop:"1px solid #E8EDF4",background:"#FAFBFE"}}>
                     <button onClick={()=>window.print()} style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",color:"#475569"}}>🖨 Print</button>
-                    {inv.invoice_status==="draft" && <button onClick={()=>{setDocModal(null);setIssueModal({invoice:inv,number:"",date:new Date().toISOString().slice(0,10)});}} style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>📤 Issue & Send to Developer</button>}
+                    {inv.invoice_status==="draft" && <button onClick={async ()=>{setDocModal(null);setIssueModal({invoice:inv,number: await nextInvoiceNumber(),date:new Date().toISOString().slice(0,10)});}} style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>📤 Issue & Send to Developer</button>}
                     {inv.invoice_status!=="draft" && <button onClick={()=>setDocModal(null)} style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>Close</button>}
                   </div>
                 </div>
