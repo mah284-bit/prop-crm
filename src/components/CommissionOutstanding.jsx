@@ -27,6 +27,17 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
   // Modal states
   const [issueModal, setIssueModal] = useState(null); // {invoice, number, date}
   const [settleModal, setSettleModal] = useState(null); // {developer_id, developer_name, outstanding}
+  // Day 92: the invoice's letterhead, bank details and TRN come from the COMPANY, not from
+  // hard-coded placeholders. An unset field says so rather than printing something plausible.
+  const [companyInfo, setCompanyInfo] = useState(null);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("companies")
+        .select("name, trn, bank_name, bank_account_name, bank_iban, bank_swift, invoice_terms_days, invoice_footer_note")
+        .eq("id", currentUser.company_id).maybeSingle();
+      setCompanyInfo(data || null);
+    })();
+  }, [currentUser.company_id]);
   const [paymentModal, setPaymentModal] = useState(null); // {invoice, amount, date, action}
   /* invoice-document */ const [docModal, setDocModal] = useState(null); // {invoice, particulars|null, loading}
 
@@ -576,7 +587,15 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"20px 26px",borderBottom:"2px solid #0F2540"}}>
                     <div>
                       <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:800,color:"#0F2540"}}>{currentUser?.company_name||"Al Mansoori Properties"}</div>
-                      <div style={{fontSize:11,color:"#64748B",marginTop:2}}>UAE Real Estate Brokerage · TRN: 100xxxxxxxxxxxx3</div>
+                      {/* Day 92: the TRN was a HARD-CODED PLACEHOLDER on a document that leaves the building.
+                          A UAE tax invoice is not valid without one, so an unset TRN says so plainly
+                          rather than printing something that looks real. */}
+                      <div style={{fontSize:11,color:"#64748B",marginTop:2}}>
+                        UAE Real Estate Brokerage
+                        {companyInfo?.trn
+                          ? " \u00b7 TRN: " + companyInfo.trn
+                          : <span style={{color:"#B91C1C",fontWeight:700}}>{" \u00b7 TRN NOT SET - not a valid tax invoice"}</span>}
+                      </div>
                       <div style={{fontSize:11,color:"#64748B"}}>Dubai, United Arab Emirates</div>
                     </div>
                     <div style={{textAlign:"right"}}>
@@ -632,7 +651,12 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
                     {/* bank + terms */}
                     <div style={{background:"#F7F9FC",borderRadius:8,padding:"12px 14px",fontSize:11,color:"#64748B",marginBottom:8}}>
                       <div style={{fontWeight:700,color:"#0F2540",marginBottom:4}}>Payment Details</div>
-                      <div>Bank: Emirates NBD · A/C Name: {currentUser?.company_name||"Al Mansoori Properties"} · IBAN: AE00 0000 0000 0000 0000 000</div>
+                      {/* A PLAUSIBLE FAKE IBAN IS WORSE THAN A BLANK ONE - a developer might try to pay it. */}
+                      <div>
+                        {companyInfo?.bank_iban
+                          ? ("Bank: " + (companyInfo.bank_name || "-") + " \u00b7 A/C Name: " + (companyInfo.bank_account_name || companyInfo.name || "-") + " \u00b7 IBAN: " + companyInfo.bank_iban)
+                          : <span style={{color:"#B91C1C",fontWeight:700}}>Bank details not set - add them in Settings before sending this invoice</span>}
+                      </div>
                       <div style={{marginTop:4}}>Terms: Net commission due within 60 days of SPA signing. Please quote the invoice number with payment.</div>
                     </div>
                   </div>
