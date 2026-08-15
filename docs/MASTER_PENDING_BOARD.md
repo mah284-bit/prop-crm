@@ -1590,3 +1590,8 @@ number it.
     document that LEAVES THE BUILDING. Real company settings needed before an invoice is sent.
  3. "(Unlinked)" - one invoice has no developer, so there is nobody to bill. The deal reached
     Closed Won without a developer link and nothing objected.
+   ⚠️ ON "(Unlinked)": one invoice has no developer, so there is nobody to bill and the commission
+   rate cannot have come from a master agreement. Seen on a deal created during heavy testing, so it
+   may be test-data churn - but CONFIRM ON CLEAN DATA whether an invoice inherits the developer from
+   the unit's project, and whether a deal can reach Closed Won with no developer at all. If it can,
+   the rate on that deal came from a fallback and nobody was told.
