@@ -312,7 +312,13 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
       const b = dealBill({
         price: Number(child.current_agreed_price || line.list_price || 0),
         planPreset: child.current_payment_plan_preset,
-        reservationAmount: Number(child.reservation_amount || 0),
+        // Day 92: child.reservation_amount is only filled WHEN THE RESERVATION IS RECORDED, so
+        // before collection tot.reservation was zero and the block bill understated by the whole
+        // reservation - 305,004 shown on a block that owed 355,004. A broker reading it before
+        // collecting would quote the buyer a figure 50,000 light. Fall back to the block's own
+        // expected per-unit reservation until the child has an actual.
+        reservationAmount: Number(child.reservation_amount || 0)
+          || (Number(block.reservation_expected || 0) / Math.max(1, (childRows || []).filter(r => r.child && r.child.status !== "Lost").length)),
         spaFee: blockFees.spaFee, oqoodFee: blockFees.oqoodFee,
         dldPayer: child.current_dld_payer || "buyer",
         dldSplitPct: child.current_dld_split_pct || 50,
