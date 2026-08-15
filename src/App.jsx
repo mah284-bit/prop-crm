@@ -36,6 +36,7 @@ import LaunchMode from './components/launch/LaunchMode.jsx';
 import ActivityLog from './components/sales/ActivityLog.jsx';
 import PropertyMaster from './components/inventory/PropertyMaster.jsx';
 import CommissionOutstanding from './components/CommissionOutstanding.jsx';
+import ReceiptsAndPayouts from './components/ReceiptsAndPayouts.jsx';
 import PropertyPackModal from './components/property/PropertyPackModal.jsx';
 import CompaniesModule from './components/CompaniesModule.jsx';
 import PermissionSetsModule from './components/PermissionSetsModule.jsx';
@@ -1035,7 +1036,10 @@ const TABS=[
   {id:"lead_queue",label:"Lead Assignment", icon:"📋", app:"sales", roles:["super_admin","admin","sales_manager"]},
   {id:"company_config", platformOnly:true, label:"Company Config", icon:"🌍", app:"sales", roles:["super_admin"]}, // ← NEW
   {id:"customers",label:"Customers", icon:"🤝", app:"sales", roles:["super_admin","admin","sales_manager","sales_agent"]},
-  {id:"commission_outstanding",label:"Commission Outstanding", icon:"💰", app:"sales", roles:["super_admin","admin","sales_manager"]},  // Day 84: NOT sales_agent - the brokerage commission is not an agent's business
+  {id:"commission_outstanding",label:"Commission Outstanding", icon:"💰", app:"sales", roles:["super_admin","admin","sales_manager"]},
+  // Day 92: what CAME IN, and what is owed OUT. The dashboard above is built around what is owed,
+  // so a settled invoice drops off it entirely and cannot be reconciled against a bank statement.
+  {id:"receipts_payouts",label:"Receipts & Payouts", icon:"🧾", app:"sales", roles:["super_admin","admin","sales_manager"]},  // Day 84: NOT sales_agent - the brokerage commission is not an agent's business
   // 21 May 2026: Hide Group View for Phase 1 demo (placeholder "Planned for MVP Phase")
   // Re-enable in Phase 2 when parent-subsidiary aggregation is built
   {id:"group_view", label:"Group View",    icon:"🏛", app:"sales",   roles:["super_admin"], platformOnly:true},
@@ -1065,6 +1069,7 @@ const TAB_CAPABILITY = {
   settings:"manage_settings", l_permsets:"manage_settings",
   master_agreements:"view_master_agreements",
   commission_outstanding:"see_brokerage_commission",
+  receipts_payouts:"see_brokerage_commission",
   lead_queue:"assign_leads",
   org_chart:"assign_leads",
   proppulse:"use_proppulse", l_proppulse:"use_proppulse",
@@ -2447,6 +2452,7 @@ export default function App(){
           {tab==="company_config" && <CompanyConfigPage appConfig={appConfig} onConfigChange={setAppConfig} showToast={showToast}/>}
           {tab==="lead_queue" && <LeadQueuePage currentUser={currentUser} users={users} showToast={showToast} onNavigateToLead={(leadId)=>{const l=leads.find(x=>x.id===leadId); if(l){setSelLead(l);setView("lead");setTab("leads");}}}/>}
           {tab==="customers" && <CustomersPage leads={leads} currentUser={currentUser} showToast={showToast} onNavigateToLead={(leadId)=>{const l=leads.find(x=>x.id===leadId); if(l){setSelLead(l);setView("lead");setTab("leads");}}}/>}
+          {tab==="receipts_payouts" && (hasCapability("see_brokerage_commission") ? <ReceiptsAndPayouts currentUser={currentUser} showToast={showToast}/> : <div style={{padding:"20px"}}><p>You do not have permission to view commission data.</p></div>)}
           {tab==="commission_outstanding" && (hasCapability("see_brokerage_commission") ? <CommissionOutstanding currentUser={currentUser} showToast={showToast} developers={[]}/>: <div style={{padding:"20px"}}><p>⚠️ You do not have permission to view commission data.</p></div>)}
           {tab==="proppulse" && <PropPulse currentUser={currentUser} showToast={showToast}/>}
           {tab==="launch" && <LaunchMode currentUser={currentUser} showToast={showToast}/>}
