@@ -1633,3 +1633,17 @@ itself · the NAV capability map · and MODE_TABS at App.jsx:154, an EXPLICIT LI
 the console.
 Worth knowing before the next tab is added - it also explains why a manager's menu looks shorter
 than the TABS array suggests.
+
+## ⚠️ FOUND DAY 92 - A DEAL CAN INVOICE AT A GUESSED RATE, TO NOBODY, IN SILENCE
+Two Six Senses deals reached Closed Won, raised commission invoices and computed 4% of the sale
+price - with NO DEVELOPER on the invoice and NO MASTER AGREEMENT behind the rate. The dashboard
+showed them as "(Unlinked)" and nothing else said a word.
+THE CAUSE WAS DATA, NOT CODE: the invoice resolves its developer through master agreement first,
+then unit -> project -> pp_developer_id (GF-19). Both chains were intact; the PROJECT simply had no
+developer set. Linked to Select Group and the existing invoices back-filled.
+⚠️ BUT THE SILENCE WAS THE FAULT. A broker would have sent an invoice quoting a rate the developer
+never agreed, addressed to nobody, and found out in a dispute months later. FIXED: at SPA Signed he
+is now told when the invoice has no developer to bill, and when the rate is the company default
+because no master agreement exists.
+⚠️ STILL OPEN: nothing stops a PROJECT being created without a developer, and nothing flags it on the
+inventory screen. The invoice is the last place that gap should surface.
