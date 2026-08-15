@@ -1479,3 +1479,13 @@ for) · statement formatting · the overpaid line reading Settled · admin and t
 gap.
 FOUNDER: "I don't want to look back on sales and move with resale and leasing." After this line,
 sales is DONE.
+
+## ⚠️ FOUND DAY 92 - THE `accepted` STATUS WAS NEVER ADDED TO THE DATABASE CONSTRAINT
+Day 87 built buyer acceptance and gated Confirm on it. The CODE set status='accepted'; the CHECK
+CONSTRAINT on block_deals still listed only seven values, so every attempt was rejected by the
+database. NO BLOCK HAS EVER REACHED `accepted` since it was built - the gate worked in the UI and
+failed at the write, and nothing surfaced it because the walk stopped before that point.
+FIXED: the constraint now includes it.
+⚠️ THE LESSON, and it is general: a new status in code needs the constraint extended in the same
+cut. Worth checking the OTHER enums and checks touched since Day 85 - opportunities.stage,
+proposals.status, pp_payments.status - for the same gap.
