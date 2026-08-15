@@ -44,7 +44,9 @@ export default function ReceiptsAndPayouts({ currentUser, showToast }) {
           supabase.from("pp_commission_invoices")
             .select("id, opportunity_id, developer_id, invoice_number, invoice_status, commission_net, amount_received, agent_id, agent_commission, company_net, sale_price")
             .eq("company_id", currentUser.company_id),
-          supabase.from("pp_developers").select("id, name").eq("company_id", currentUser.company_id),
+          // Day 92: developers are a SHARED master list, not per-company - filtering by company_id
+          // returned nothing and every receipt read "(no developer)".
+          supabase.from("pp_developers").select("id, name"),
           supabase.from("profiles").select("id, full_name").eq("company_id", currentUser.company_id),
         ]);
         setReceipts(rRes.data || []);
