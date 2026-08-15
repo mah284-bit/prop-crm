@@ -1535,3 +1535,12 @@ SMALL, and it belongs with the DEVELOPER ADMIN FEE work: both are per-developer 
 default from the master agreement rather than be typed.
 ⚠️ RELATED, ALREADY BOARDED: the reservation standard sits company-wide rather than per developer
 (Day 88). Doing these three together is one cut, not three.
+
+## ADDED DAY 92 - A BLOCK CHILD'S PROPOSALS TAB IS EMPTY, SO IT LOOKS LIKE NOTHING WAS AGREED
+The block sends versioned proposals and the buyer accepts one - that IS the agreement, and the
+child's terms are rendered from the locked distribution behind it. But the CHILD's Proposals tab
+shows nothing, so a broker opening it concludes the deal reached Reserved with no agreed terms.
+The founder hit exactly this and said "this can happen to anyone."
+FIX: show the BLOCK'S ACCEPTED PROPOSAL on the child, read-only, with a line saying where it came
+from - "Terms from 1st Block - Corporate, offer 2, accepted 15 Aug." The record exists; it is simply
+not surfaced where the question is asked.
