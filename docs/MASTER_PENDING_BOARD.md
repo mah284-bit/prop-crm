@@ -1524,3 +1524,14 @@ THE SHAPE:
  - both verticals get an other_fees EXPECTATION; the block bill totals it per unit
 SIZING: about two hours - the fee resolver has three layers and both verticals read it.
 NOT ON THE LINE FOR SALES. A real gap, but it does not block a tester. Take it after.
+
+## ADDED DAY 92 - THE BLOCK ASKS FOR THE RESERVATION MANUALLY, THOUGH A STANDARD EXISTS
+FOUNDER: "since the per-unit reservation fee is already coming from the settings, this should also
+be read and calculated from there - in the first confirmation we are entering it manually."
+pp_master_agreements carries a reservation standard, and the block's confirmation asks for a figure
+with no default. It should PRE-FILL from the standard and stay overridable - the developer may agree
+something different for a bulk purchase, which is the whole point of a block.
+SMALL, and it belongs with the DEVELOPER ADMIN FEE work: both are per-developer figures that should
+default from the master agreement rather than be typed.
+⚠️ RELATED, ALREADY BOARDED: the reservation standard sits company-wide rather than per developer
+(Day 88). Doing these three together is one cut, not three.
