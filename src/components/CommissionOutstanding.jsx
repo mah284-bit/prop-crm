@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import SettleDeveloperDialog from "./SettleDeveloperDialog.jsx";
 import { supabase } from "../lib/supabase";
 
 /**
@@ -24,6 +25,7 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
 
   // Modal states
   const [issueModal, setIssueModal] = useState(null); // {invoice, number, date}
+  const [settleModal, setSettleModal] = useState(null); // {developer_id, developer_name, outstanding}
   const [paymentModal, setPaymentModal] = useState(null); // {invoice, amount, date, action}
   /* invoice-document */ const [docModal, setDocModal] = useState(null); // {invoice, particulars|null, loading}
 
@@ -466,11 +468,18 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
               ) : (
                 <div style={{display:"flex", flexDirection:"column", gap:6}}>
                   {byDeveloper.map(d => (
-                    <div key={d.developer_id} style={{display:"grid", gridTemplateColumns:"1fr 60px 130px 70px", gap:8, alignItems:"center", padding:"8px 10px", background:"#F8FAFC", borderRadius:8}}>
+                    <div key={d.developer_id} style={{display:"grid", gridTemplateColumns:"1fr 60px 130px 70px", gap:8, alignItems:"center", padding:"8px 10px", background:"#F8FAFC", borderRadius:8, marginBottom:6}}>
                       <div style={{fontSize:13, fontWeight:600, color:"#0F2540"}}>{d.developer_name}</div>
                       <div style={{fontSize:11, color:"#718096", textAlign:"center"}}>{d.count} deal{d.count===1?"":"s"}</div>
                       <div style={{fontSize:13, fontWeight:700, color:"#92400E", textAlign:"right"}}>{fmtAED(d.outstanding)}</div>
                       <div style={{fontSize:11, color: d.oldestDays > 60 ? "#991B1B" : d.oldestDays > 30 ? "#92400E" : "#718096", textAlign:"right"}}>{d.oldestDays}d</div>
+                      {/* Day 92: A DEVELOPER SETTLES IN BULK - one transfer covering several
+                          invoices. Record Payment takes one invoice at a time, so 500,000 for eight
+                          deals meant eight dialogs and the broker splitting it in his head. */}
+                      <button onClick={()=>setSettleModal({ developer_id: d.developer_id, developer_name: d.developer_name, outstanding: d.outstanding })}
+                        style={{gridColumn:"1 / -1", marginTop:6, padding:"5px 11px", borderRadius:7, border:"1px solid #0F2540", background:"#fff", color:"#0F2540", fontSize:11, fontWeight:700, cursor:"pointer"}}>
+                        {d.developer_name + " paid \u2014 settle across " + d.count + " invoice" + (d.count===1?"":"s")}
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -648,6 +657,40 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
       )}
 
       {/* ISSUE INVOICE MODAL */}
+      {settleModal && (
+        <SettleDeveloperDialog
+          developerName={settleModal.developer_name}
+          invoices={invoices.filter(i => (i.developer_id || "unlinked") === settleModal.developer_id
+            && i.invoice_status !== "paid" && i.invoice_status !== "written_off"
+            && i.invoice_status !== "draft")}
+          showToast={showToast}
+          onClose={()=>setSettleModal(null)}
+          onSettle={async (rows, date, reference) => {
+            // Day 92: each line goes through the SAME receipt write as a single payment, so statuses
+            // and aging update exactly as they do there rather than through a second path that could
+            // drift from it.
+            let failed = [];
+            for (const r of rows) {
+              const inv = invoices.find(x => x.id === r.id);
+              if (!inv) continue;
+              const received = Number(inv.amount_received || 0) + Number(r.amount || 0);
+              const net = Number(inv.commission_net || 0);
+              const { error } = await supabase.from("pp_commission_invoices").update({
+                amount_received: received,
+                last_payment_date: date,
+                invoice_status: received >= net - 0.5 ? "paid" : "partially_paid",
+                notes: reference ? ((inv.notes ? inv.notes + " | " : "") + "Settled in bulk, ref " + reference) : inv.notes,
+                updated_by: currentUser.id,
+              }).eq("id", r.id);
+              if (error) failed.push(r.number);
+            }
+            setSettleModal(null);
+            await loadInvoices();
+            if (failed.length) { showToast("Some invoices did not update: " + failed.join(", "), "error"); return; }
+            showToast(rows.length + " invoice(s) settled", "success");
+          }}
+        />
+      )}
       {issueModal && (
         <div onClick={()=>setIssueModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
           <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:12,padding:"22px 24px",maxWidth:480,width:"100%",boxShadow:"0 20px 50px rgba(0,0,0,.15)"}}>
