@@ -42,6 +42,7 @@ import RecordDealPaymentDialog from "./RecordDealPaymentDialog.jsx";
 import PaymentHistory from "./PaymentHistory.jsx";
 import { recordPayment } from "../../lib/recordPayment.js";
 import { askReason } from "../../lib/askReason.js";
+import { useAsk } from "../shared/AskDialog.jsx";
 
 // Stage 6 -- single source of commission resolution (used by BOTH the live display and the
 // invoice freeze at SPA-Signed, so frozen numbers exactly match what the SM saw at close).
@@ -193,6 +194,7 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
   const [frozenPolicy, setFrozenPolicy] = useState(null);
   // Day 90: declared HERE, above the collection effect that reads it - it was below, and the whole
   // deal page threw "Cannot access 'paymentTick' before initialization" on open.
+  const ask = useAsk();  // Day 92: in-app gates - no browser box, and it cannot be silenced
   const [paymentTick, setPaymentTick] = useState(0);
   const [collectionState, setCollectionState] = useState(null);
 
@@ -744,7 +746,15 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
     // Reserve/SPA with ZERO sent proposals = taking money with no paper trail (RERA risk).
     if (!["Reserved", "SPA Requirements", "SPA Signed"].includes(toStage)) return true;
     if ((proposals || []).length > 0) return true;
-    const reason = askReason("Evidence gate: no proposal has been sent on this deal.\n\n" + toStage + " means money/contract - the buyer should have documented terms first.\n\nBest: Cancel and send a proposal.\nTo override: type the REASON for proceeding without one:", showToast);
+    const reason = await ask({
+      title: "No proposal has been sent on this deal",
+      body: toStage + " means money and contract - the buyer should have documented terms before either.",
+      best: "Cancel and send a proposal first.",
+      tone: "warning",
+      needsReason: true,
+      reasonLabel: "Why proceed without one?",
+      confirmLabel: "Proceed anyway",
+    });
     if (reason === null || !reason.trim()) return false;
     await supabase.from("activities").insert({
       opportunity_id: opp.id, lead_id: opp.lead_id, company_id: opp.company_id || currentUser.company_id || null,
@@ -767,7 +777,17 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       const ok = need === "in_progress" ? (["in_progress","verified"].includes(k) && !idExpired) : (k === "verified" && !idExpired);
       if (ok) return true;
       const label = need === "verified" ? "Verified" : "Docs Collected";
-      const reason = askReason("KYC gate: " + (l?.name || "buyer") + " is '" + k.replace("_"," ") + "' but " + toStage + " expects at least '" + label + "'.\n\nBest: Cancel and update KYC from the lead page.\nTo override: type the REASON for proceeding without KYC (e.g. docs promised at signing):", showToast);
+      const reason = await ask({
+        title: "KYC is not complete for " + (l?.name || "this buyer"),
+        body: toStage + " expects KYC to be at least '" + label + "'. It is currently '" + k.replace("_", " ") + "'.",
+        detail: idExpired ? "An identity document on file has expired." : undefined,
+        best: "Cancel and update KYC from the lead page.",
+        tone: "warning",
+        needsReason: true,
+        reasonLabel: "Why proceed without it?",
+        placeholder: "e.g. documents promised at signing",
+        confirmLabel: "Proceed anyway",
+      });
       if (reason === null || !reason.trim()) return false;
       await supabase.from("activities").insert({
         opportunity_id: opp.id, lead_id: opp.lead_id, company_id: opp.company_id || currentUser.company_id || null,
@@ -1516,7 +1536,16 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       const { data: _cl } = await supabase.from("pp_sales_closures")
         .select("spa_document_path").eq("opportunity_id", opp.id).maybeSingle();
       if (!_cl?.spa_document_path) {
-        const why = askReason("No signed SPA is on file for this deal.\n\nClosing as Won means the executed copy is in hand. To close anyway, say why (recorded):", showToast);
+        const why = await ask({
+          title: "No signed SPA is on file",
+          body: "Closing as Won means the executed copy is in hand. The countersigned document travels by post, so a deal can be genuinely done while the paper is in transit - but the record should say so.",
+          best: "Cancel and upload the signed SPA from the SPA Signed record.",
+          tone: "warning",
+          needsReason: true,
+          reasonLabel: "Why close without it?",
+          placeholder: "e.g. countersigned copy in transit from the developer",
+          confirmLabel: "Close as Won anyway",
+        });
         if (why === null || !why.trim()) return;
         try {
           await supabase.from("activities").insert({
@@ -5528,7 +5557,16 @@ onSelect={(unitId) => {
                     try { const { data: _co2 } = await supabase.from("companies").select("close_variance_tolerance_aed, close_variance_tolerance_pct").eq("id", currentUser.company_id).maybeSingle(); if (_co2) { _tolA2 = Number(_co2.close_variance_tolerance_aed) || 500; _tolP2 = Number(_co2.close_variance_tolerance_pct) || 1; } } catch (e) {}
                     const _tol2 = Math.max(_tolA2, _exp * _tolP2 / 100);
                     if (_var < 0 && Math.abs(_var) > _tol2) {
-                      const vr = askReason("Variance at signing: AED " + Math.abs(_var).toLocaleString() + " short (tolerance AED " + Math.round(_tol2).toLocaleString() + ", " + _pend + " pending).\n\nBest: collect or waive the rows first.\nTo record the SPA anyway: enter approval / follow-up note (who approved, what is the plan):", showToast);
+                      const vr = await ask({
+                        title: "The money is short at signing",
+                        body: "This deal is being signed with money still outstanding. The record should say who agreed to that and what the plan is.",
+                        detail: "AED " + Math.abs(_var).toLocaleString() + " short \u00b7 tolerance AED " + Math.round(_tol2).toLocaleString() + " \u00b7 " + _pend + " item(s) still pending",
+                        best: "Collect the balance, or waive the rows that will not be paid.",
+                        tone: "warning",
+                        needsReason: true,
+                        reasonLabel: "Who approved it, and what is the plan?",
+                        confirmLabel: "Record the SPA anyway",
+                      });
                       if (vr === null || !vr.trim()) return;
                       try { await supabase.from("activities").insert({ opportunity_id: opp.id, lead_id: opp.lead_id, company_id: opp.company_id || currentUser.company_id || null, type: "Note", status: "completed", user_id: currentUser.id, user_name: currentUser.full_name || null, lead_name: lead?.name || null, stage_at_event: "SPA Signed", activity_subtype: "variance_override", note: "VARIANCE OVERRIDE at SPA signing: AED " + Math.abs(_var).toLocaleString() + " uncollected across " + _pend + " pending rows - reason: " + vr.trim() }); } catch (e) { console.error("variance audit:", e); }
                     }
