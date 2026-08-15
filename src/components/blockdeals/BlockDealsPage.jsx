@@ -7,8 +7,10 @@ import { PAYMENT_PLAN_PRESETS } from "../../modules/constants.js";
 import DistributionCalculator from "./DistributionCalculator.jsx";
 import BlockWorkspace from "./BlockWorkspace.jsx";
 import UnitPicker from "../shared/UnitPicker.jsx";
+import { useAsk } from "../shared/AskDialog.jsx";
 
 export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
+  const ask = useAsk();  // Day 92: in-app gates
   const [blocks, setBlocks] = useState([]);
   const [leads, setLeads] = useState([]);
   const [units, setUnits] = useState([]);
@@ -150,9 +152,22 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   };
 
     const recordApproval = async (b) => {
-    const ref = window.prompt("DEVELOPER APPROVAL for " + b.title + "\n\nThe developer has agreed to the block terms. Enter their approval reference (email ref, letter no, approval code):");
+    const ref = await ask({
+      title: "Developer approval for " + b.title,
+      body: "The developer has agreed to the block terms. Record their approval reference so the record shows what was agreed and by whom.",
+      needsReason: true,
+      reasonLabel: "Approval reference",
+      placeholder: "email ref, letter no, approval code",
+      confirmLabel: "Record the approval",
+    });
     if (ref === null || !ref.trim()) return;
-    const who = window.prompt("Who approved it at the developer (name / desk)?");
+    const who = await ask({
+      title: "Who approved it?",
+      body: "The name or desk at the developer who gave the approval.",
+      needsReason: true,
+      reasonLabel: "Name / desk",
+      confirmLabel: "Save",
+    });
     if (who === null) return;
     const { error } = await supabase.from("block_deals").update({
       developer_approved_at: new Date().toISOString(),
@@ -185,7 +200,13 @@ const confirmBlock = async (b) => {
     }
     const activeLines = (freshLines || []).filter(x => x.status === "proposed");
     if (activeLines.length === 0) { showToast("No proposed lines to confirm", "error"); return; }
-    if (!window.confirm("Confirm block " + b.title + "? This births " + activeLines.length + " deals at D" + dl.version + " prices and claims the units. This is the commitment moment.")) return;
+    if (!(await ask({
+      title: "Confirm " + b.title + "?",
+      body: "This is the commitment moment. It creates the deals and claims the units against the buyer.",
+      detail: activeLines.length + " deal(s) born at offer " + dl.version + " prices",
+      confirmLabel: "Confirm the block",
+      cancelLabel: "Not yet",
+    }))) return;
     let born = 0;
     // Day 84: resolved ONCE for the block - every unit shares a project and so a developer.
     let blockCommissionPct = null;

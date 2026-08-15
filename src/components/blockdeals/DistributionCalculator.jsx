@@ -5,8 +5,10 @@ import { sendBlockProposal } from "../../lib/sendBlockProposal.js";
 import UnitPicker from "../shared/UnitPicker.jsx";
 import { rollUpBlockStatus } from "../../lib/rollUpBlockStatus.js";
 import { PAYMENT_PLAN_PRESETS } from "../../modules/constants.js";
+import { useAsk } from "../shared/AskDialog.jsx";
 
 export default function DistributionCalculator({ block, currentUser, showToast, onClose, onLocked }) {
+  const ask = useAsk();  // Day 92: in-app gates
   const [lines, setLines] = useState([]);
   const [blockMode, setBlockMode] = useState("pct");
   const [blockValue, setBlockValue] = useState("");
@@ -35,7 +37,13 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
       .eq("block_deal_id", block.id).order("version", { ascending: false }).limit(1);
     const latest = (props || [])[0];
     if (!latest) { showToast("Nothing has been offered yet", "error"); return; }
-    if (!window.confirm("Record that the buyer has accepted?\n\nHe is accepting version " + latest.version + " - AED " + Math.round(latest.structured_data?.total_value || 0).toLocaleString() + " across " + (latest.structured_data?.unit_count || 0) + " unit(s).")) return;
+    if (!(await ask({
+      title: "Record that the buyer has accepted?",
+      body: "This is what he agreed to. Confirm becomes available once it is recorded.",
+      detail: "Offer " + latest.version + " \u00b7 AED " + Math.round(latest.structured_data?.total_value || 0).toLocaleString() + " across " + (latest.structured_data?.unit_count || 0) + " unit(s)",
+      confirmLabel: "He accepted",
+      cancelLabel: "Not yet",
+    }))) return;
     const { error } = await supabase.from("block_deals").update({
       status: "accepted", accepted_at: new Date().toISOString(),
       accepted_by: currentUser?.id || null, accepted_proposal_id: latest.id,
@@ -54,7 +62,14 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
   // accepted shortfall and the block cancel. Founder: "always at manager level to unfreeze and
   // hand it back to the broker."
   const onReopen = async () => {
-    const why = window.prompt("Reopening a negotiation the buyer had accepted.\n\nWhy? (recorded)");
+    const why = await ask({
+      title: "Reopen a negotiation the buyer had accepted?",
+      body: "He has already agreed these terms. Reopening replaces them, and the record should say why.",
+      tone: "warning",
+      needsReason: true,
+      reasonLabel: "Why reopen it?",
+      confirmLabel: "Reopen",
+    });
     if (!why || !why.trim()) return;
     const { error } = await supabase.from("block_deals").update({
       status: "negotiating", accepted_at: null, accepted_by: null, accepted_proposal_id: null,
@@ -206,7 +221,16 @@ export default function DistributionCalculator({ block, currentUser, showToast, 
       showToast(x.unit_ref + " removed from the block", "success");
       return;
     }
-    const reason = window.prompt((mode === "detach" ? "DETACH " : "DROP ") + x.unit_ref + "\n\n" + (mode === "detach" ? "Deal survives standalone (keeps stage, loses block terms)." : "Deal -> Closed Lost, unit freed.") + "\n\nReason (audited):");
+    const reason = await ask({
+      title: (mode === "detach" ? "Detach " : "Drop ") + x.unit_ref + " from this block?",
+      body: mode === "detach"
+        ? "The deal survives on its own - it keeps its stage but loses the block's terms."
+        : "The deal closes as Lost and the unit is freed.",
+      tone: mode === "detach" ? "warning" : "danger",
+      needsReason: true,
+      reasonLabel: "Reason (audited)",
+      confirmLabel: mode === "detach" ? "Detach it" : "Drop it",
+    });
     if (reason === null || !reason.trim()) return;
     const cid = currentUser.company_id;
     if (x.line_id) await supabase.from("block_deal_units").update({ status: "dropped", status_reason: mode + ": " + reason.trim(), updated_at: new Date().toISOString() }).eq("id", x.line_id);

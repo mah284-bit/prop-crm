@@ -14,8 +14,10 @@ import { readBookingClock, releaseBookingHold } from "../../lib/bookingClock.js"
 import { lockBlockPayment, amendBlockPayment, acceptShortCollection } from "../../lib/lockBlockPayment.js";
 import { canDo } from "../../lib/permissions.js";
 import BlockTermsForm from "./BlockTermsForm.jsx";
+import { useAsk } from "../shared/AskDialog.jsx";
 
 export default function BlockWorkspace({ block, leads, currentUser, showToast, onClose, onOpenCalculator, onRecordApproval, onConfirm, onReload }) {
+  const ask = useAsk();  // Day 92: in-app gates
   const [dLatest, setDLatest] = useState(null);
   const [childRows, setChildRows] = useState([]);
   const [wsTab, setWsTab] = useState("children");
@@ -71,7 +73,16 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
     const msg = "CANCEL " + block.title + "\n\n" + live.length + " live deal" + (live.length === 1 ? "" : "s")
       + " will be closed lost and their units freed. Deals already at SPA Signed or Closed Won are NOT touched."
       + "\n\nReason (audited, and shown to everyone on this block):";
-    const reason = window.prompt(msg);
+    // Day 92: in-app, and it cannot be silenced by the browser.
+    const reason = await ask({
+      title: "Cancel this block?",
+      body: msg,
+      tone: "danger",
+      needsReason: true,
+      reasonLabel: "Why is it being cancelled?",
+      confirmLabel: "Cancel the block",
+      cancelLabel: "Keep it",
+    });
     if (reason === null || !reason.trim()) return;
     setCancelling(true);
     try {
@@ -468,7 +479,14 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
                 if ((kids||[]).some(k => k.child_opportunity_id)) {
                   showToast("This block has deals behind it - cancel it instead of deleting", "error"); return;
                 }
-                if (!window.confirm("Delete this draft block and release its " + (kids||[]).length + " unit line(s)?\n\nNothing has been confirmed and no deal exists, so nothing is lost.")) return;
+                if (!(await ask({
+                  title: "Delete this draft block?",
+                  body: "Its " + (kids||[]).length + " unit line(s) are released back to inventory.",
+                  detail: "Nothing has been confirmed and no deal exists, so nothing is lost.",
+                  tone: "danger",
+                  confirmLabel: "Delete it",
+                  cancelLabel: "Keep it",
+                }))) return;
                 try {
                   await supabase.from("block_distributions").delete().eq("block_deal_id", block.id);
                   await supabase.from("block_deal_units").delete().eq("block_deal_id", block.id);
