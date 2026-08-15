@@ -1614,3 +1614,14 @@ The data exists on pp_commission_invoices already; this is reporting, not engine
 ALSO NOTED: Manage (per invoice) and Settle (per developer) are two doors to recording a payment,
 and the founder nearly used the wrong one. KEEP BOTH - Manage also carries Dispute, which has no
 other home - but the usage pattern should make Settle the obvious path when a developer pays.
+   ⭐ AND THE PAYOUT IS NOT TWO PARTIES (founder, Day 92): the app splits a commission into
+   agent_commission and company_net - one agent, one company. A PROFESSIONALLY SET UP BROKERAGE IS A
+   HIERARCHY: a group with branches across the emirates, or areas, each with a BRANCH MANAGER who
+   takes an override on his branch's deals, and possibly a GROUP MANAGER above them all. Several
+   shares come off ONE commission, following the org chart.
+   ⚠️ NOT TOO LATE, and the engine does not change: the invoice already holds the gross and the
+   agent's share, so overrides are MORE ROWS OFF THE SAME FIGURE, not a different figure. A payout
+   model sits BESIDE the invoice rather than inside it.
+   The org chart and group view already exist; the money simply does not follow them yet.
+   DESIGN IT WITH THE RECEIPTS & PAYOUTS VIEW - that is where "what does the brokerage owe whom" is
+   answered, and the hierarchy is the same question one level deeper.
