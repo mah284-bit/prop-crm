@@ -111,6 +111,35 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
     }
   }
 
+  // Day 92: THE INVOICE NUMBER IS SUGGESTED, NOT DEMANDED.
+  // A tax invoice needs a unique sequential number and the broker was being asked to invent one.
+  // Three kinds of user, one answer: an established brokerage raises the invoice in their ERP and
+  // records THAT reference here, so the field stays editable - but a small licensed broker has no
+  // accounting system at all, and for him PropCRM IS the invoicing system.
+  // ONE COMPANY-WIDE SERIES, not per developer: sequential numbering is the compliance requirement
+  // and a single series is unambiguously compliant. The developer is named on the invoice anyway.
+  // The unique index on (company_id, invoice_number) prevents a collision when two people issue at
+  // the same moment; this only proposes.
+  async function nextInvoiceNumber() {
+    const year = new Date().getFullYear();
+    try {
+      const { data: co } = await supabase.from("companies")
+        .select("name, invoice_prefix").eq("id", currentUser.company_id).maybeSingle();
+      const prefix = (co?.invoice_prefix || "")
+        || (co?.name || "INV").split(/\s+/).map(w => w[0]).join("").toUpperCase().slice(0, 4);
+      const stem = prefix + "-" + year + "-";
+      const { data: rows } = await supabase.from("pp_commission_invoices")
+        .select("invoice_number").eq("company_id", currentUser.company_id)
+        .not("invoice_number", "is", null).like("invoice_number", stem + "%");
+      let top = 0;
+      (rows || []).forEach(r => {
+        const m = String(r.invoice_number).match(/(\d+)\s*$/);
+        if (m) top = Math.max(top, parseInt(m[1], 10));
+      });
+      return stem + String(top + 1).padStart(4, "0");
+    } catch (e) { return ""; }
+  }
+
   // Issue Invoice — flip draft to issued with invoice number + date
   async function submitIssueInvoice() {
     if (!issueModal) return;
