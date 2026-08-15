@@ -1489,3 +1489,21 @@ FIXED: the constraint now includes it.
 ⚠️ THE LESSON, and it is general: a new status in code needs the constraint extended in the same
 cut. Worth checking the OTHER enums and checks touched since Day 85 - opportunities.stage,
 proposals.status, pp_payments.status - for the same gap.
+
+## ⚠️ FOUND DAY 92 - THE `accepted` STATUS WAS NEVER IN THE DATABASE CONSTRAINT
+Day 87 built buyer acceptance and gated Confirm on it. The CODE set status='accepted'; the CHECK
+CONSTRAINT on block_deals listed only seven values, so every attempt was rejected at the write. NO
+BLOCK HAD EVER REACHED `accepted` since it was built - the gate worked in the UI and failed in the
+database, and nothing surfaced it because no walk had gone that far. FIXED.
+⚠️ GENERAL LESSON: a new status in code needs the constraint extended in the same cut. Worth
+checking the other checks touched since Day 85.
+
+## ✅ DONE (Day 92) - THE BLOCK CHILD'S TWO WRITERS: NOT A FAULT, AND NOW PROVEN
+The Day-90 worry was that postAllocationsToChild (block money) and syncLedgerFromPayments (deal
+money) both write pre_spa_payments and could double-count. THEY NEVER RUN ON THE SAME DEAL:
+postAllocationsToChild is called only from lockBlockPayment and recordBlockCollection - both block
+paths - while syncLedgerFromPayments is called only from recordPayment, and a block child cannot
+reach it because moneyLocked hides the money entry.
+PROVEN ON CLEAN DATA: a 150,000 block payment landed 51,657.43 and 48,445.71 in the two children's
+ledgers, matching their allocations EXACTLY, and pp_payments held ZERO rows for either child.
+ITEM 2 OF THE LINE IS CLOSED.
