@@ -1359,6 +1359,18 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           }
         }
 
+        // Day 92: TELL HIM WHEN THE INVOICE CANNOT NAME WHO TO BILL, OR WHEN THE RATE IS A GUESS.
+        // Two Six Senses deals reached Closed Won, raised invoices and computed commission at the
+        // company's FALLBACK 4% - with no developer and no master agreement - and nothing said so.
+        // The project simply had no pp_developer_id. A broker would have sent an invoice quoting a
+        // rate the developer never agreed, to nobody in particular, and found out in a dispute.
+        if (!lookedUpDeveloperId) {
+          showToast("This invoice has no developer to bill - the unit's project has no developer set. Fix it before issuing.", "warning");
+        }
+        if (!opp.master_agreement_id) {
+          showToast("No master agreement on this deal, so commission is at the company default of " +
+            commissionPct + "%. Confirm the rate before issuing the invoice.", "warning");
+        }
         // Stage 6 — FREEZE the agent split onto the invoice at SPA-Signed (same resolution the SM saw).
         // Computed on the GROSS commission (pre-VAT) — the agent's cut is of earned commission, not VAT.
         const _frozen = resolveCommission(opp, agent, companyStd, commissionGross);
