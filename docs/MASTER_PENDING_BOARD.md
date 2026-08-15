@@ -1271,7 +1271,8 @@ FIX SHAPE: a one-off backfill calling the same helper for every block child at R
 with no closure row. It already reads the block's allocations, so it would credit them correctly.
 Cheap, and it belongs in the go-live checklist rather than the app.
 
-## ⚠️ ADDED DAY 90 - A BLOCK CHILD'S LEDGER NOW HAS TWO WRITERS
+## ✅ DONE - ⚠️ ADDED DAY 90 - A BLOCK CHILD'S LEDGER NOW HAS TWO WRITERS
+Closed Day 92: not a fault. The two writers never run on the same deal - proven on clean data, allocations matching ledgers exactly and zero pp_payments rows on either child.
 Day 89's migration read every pp_sales_closures row and made a pp_payments row per funded
 particular - INCLUDING block children, which got five rows each carrying "Block allocation" as the
 mode. Correct as history, but it leaves a block child's ledger with TWO writers:
@@ -1306,7 +1307,8 @@ whether a block-level payment lands once or twice in a child's ledger.
    the header's own count, which is what made the whole row look broken. Both now respect the type
    filter, and the chip reads "All stages" so two different filters stop both saying "All".
 
-## TO VERIFY ON CLEAN DATA (Day 90) - DO THE GATES ACTUALLY HOLD?
+## ✅ DONE - TO VERIFY ON CLEAN DATA (Day 90) - DO THE GATES ACTUALLY HOLD?
+Closed Day 92: both walked end to end. The block acceptance gate was found BROKEN AT THE DATABASE (the `accepted` status was never in the constraint) - fixed, and no block had ever reached it.
 The founder asked how so many deals closed without a formal proposal. Answer: those records predate
 the gates - the block ACCEPTANCE gate was built Day 87, after Vinayak and Raees were confirmed - and
 gates can be overridden (a KYC override is on the Vinayak deal's timeline).
@@ -1391,7 +1393,8 @@ WHY ONLY OFF-PLAN - the four reasons given, and the fourth is the one that lande
 TO CHECK: the Property OS story is believed to be in the docs already - find it and see whether it
 predates or postdates this meeting.
 
-## ⭐ REPLACE window.prompt WITH A REAL DIALOG (Day 91 - the cheap half is done, the proper half is not)
+## ✅ DONE - ⭐ REPLACE window.prompt WITH A REAL DIALOG (Day 91 - the cheap half is done, the proper half is not)
+Closed Day 92: AskDialog. Ten gates across the deal ladder and the block are now in-app dialogs - branded, with the figures and the honest alternative, and no browser setting can silence them.
 DONE: askReason() wraps every gate prompt so a refusal is never silent. A cancel says "nothing was
 changed"; a prompt that returns in under 50ms was never shown to a human, so it says the browser has
 blocked the app's dialogs and to reload. Applied to the four gates that stop work in
@@ -1438,7 +1441,8 @@ days after the signing), so WARN AND ALLOW rather than refuse.
 ⚠️ AND THE DEFAULTS FEED IT: the signing date and the payment received-on both pre-fill with TODAY,
 and a pre-filled field gets accepted. Leaving them blank would make him state the real date.
 
-## ⭐ IN PROGRESS DAY 91 - PAYMENTS STAGE UNTIL SAVE, AND THE ROW GOES BACK TO BEING EDITABLE
+## ✅ DONE - ⭐ IN PROGRESS DAY 91 - PAYMENTS STAGE UNTIL SAVE, AND THE ROW GOES BACK TO BEING EDITABLE
+Closed Day 91-92: payments stage until Save, Cancel discards, and one payment is allocated across the lines rather than entered row by row.
 DONE AND TESTED: each payment is now STAGED in memory rather than written on the spot. FOUNDER: "the
 cancel button is dummy - nothing is happening, because you are already saving at line level. If the
 data is in memory till the button, push to save, or cancel behaviour comes after."
@@ -1464,7 +1468,8 @@ reference, or goes.
    charge the buyer happens to pay can be recorded for tracking without the app pretending it knew
    the sum was due. Nothing to build there.
 
-## ⭐⭐ THE LINE FOR SALES (Day 91, founder-agreed) - THREE THINGS, AND NOTHING ELSE
+## ✅ DONE - ⭐⭐ THE LINE FOR SALES (Day 91, founder-agreed) - THREE THINGS, AND NOTHING ELSE
+⭐ CLOSED DAY 92. All three met: no gate refuses silently · the two writers proven separate · both verticals walked end to end including commission. SALES IS DONE.
 The board has 77 entries and no definition of done, which is why sales feels endless. It is not:
 both verticals walk end to end, the money path has a full trail, and today's findings were a
 duplicate guard and a column header. THREE THINGS MUST BE TRUE before a tester uses it unsupervised:
@@ -1581,7 +1586,8 @@ broker, with a unique index behind it and the field still editable - an establis
 records their ERP's reference, a small licensed broker has no accounting system and needs the app to
 number it.
 
-## ⚠️ ADDED DAY 92 - THREE THINGS THE COMMISSION WALK EXPOSED
+## ✅ DONE - ⚠️ ADDED DAY 92 - THREE THINGS THE COMMISSION WALK EXPOSED
+Closed Day 92: the invoice number is generated in sequence, bulk settlement per developer is built, and the TRN and bank details now read from the company.
  1. ⭐ DEVELOPERS SETTLE IN BULK. One transfer covers several invoices, and Record Payment takes one
     invoice at a time - so 500,000 for eight deals means eight dialogs and the broker splitting it
     himself. SAME PATTERN AS THE DEAL LEDGER (Day 91): one payment in, allocated across what is
@@ -1596,7 +1602,8 @@ number it.
    the unit's project, and whether a deal can reach Closed Won with no developer at all. If it can,
    the rate on that deal came from a fallback and nobody was told.
 
-## ⭐ ADDED DAY 92 - THE MONEY THAT ARRIVED HAS NOWHERE TO BE SEEN, AND NEITHER DOES THE AGENT'S SHARE
+## ✅ DONE - ⭐ ADDED DAY 92 - THE MONEY THAT ARRIVED HAS NOWHERE TO BE SEEN, AND NEITHER DOES THE AGENT'S SHARE
+Built Day 92: Receipts & Payouts. The payouts half shows what is EARNED, not paid - the payout record and the branch/group hierarchy remain boarded.
 Two gaps, both surfaced by walking the bulk settle:
  1. A SETTLED INVOICE DISAPPEARS. Once paid it drops off the dashboard, which is built around what
     is OWED. So "did Aldar pay AMP-2026-0001, and when?" has no answer on screen. What is needed is
