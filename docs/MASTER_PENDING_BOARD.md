@@ -1544,3 +1544,26 @@ The founder hit exactly this and said "this can happen to anyone."
 FIX: show the BLOCK'S ACCEPTED PROPOSAL on the child, read-only, with a line saying where it came
 from - "Terms from 1st Block - Corporate, offer 2, accepted 15 Aug." The record exists; it is simply
 not surfaced where the question is asked.
+
+## ⭐ ADDED DAY 92 - A CORPORATE BUYER NEEDS THREE PEOPLE, AND THE APP MODELS ONE NAME
+Raised while walking the corporate block (Ahmed Rashid Trading LLC). A company cannot sign, so a
+corporate purchase involves THREE DISTINCT ROLES, and today the app has one lead with one name:
+ 1. THE CONTACT - day to day, questions, site visits
+ 2. THE FINANCE PERSON - pays, queries the bill, holds the payment schedule
+ 3. THE SIGNATORY - the only one who can execute the SPA, on the company's authority
+FOUNDER: "the other two settle all the questions and the money. The primary buyer will still be the
+Owner or GM - I am not sure."
+⚠️ SAME UNDERLYING GAP as two entries already boarded: C15 (the buyer is not always the owner - the
+sponsor pays, the owner holds title) and Title_Holders_Design_Capture.md. The app models a DEAL WITH
+A NAME, not the PEOPLE AROUND IT. Three fragments, one design: a PERSON model with roles attached
+to a deal.
+⚠️ OPEN, NOT TO BE ASSUMED - HOW DLD REGISTERS A CORPORATE PURCHASE. The founder recalls that a NAME
+must be attached and a company registration alone is not accepted. This is a PUBLISHED GOVERNMENT
+RULE, the same class as the DLD 4%, Oqood and the VAT treatment - all established from government
+announcements. It was NOT researched here: this session has no web access, and a reconstructed
+answer on a registration rule is where a confident guess does real damage.
+THE QUESTION, PRECISELY:
+ - WHOSE NAME appears on the title for a corporate purchase - the company, a person, or both?
+ - WHAT DOCUMENT authorises the signatory - board resolution, POA, trade licence?
+ - WHAT MUST THE APP RECORD to support registration without a return trip?
+The three-role model stands regardless: it is how the deal is actually worked.
