@@ -1670,3 +1670,27 @@ the commission whatsoever, yet it invoiced. From heavy testing, so possibly chur
 REQUIRED A UNIT and nothing objected. The whole money chain hangs off it.
 ⚠️ ALSO: nothing stops a PROJECT being created without a developer, and nothing flags it on the
 inventory screen. The commission invoice is the last place either gap should surface.
+
+## ⭐ NEXT SESSION - TARGETS SET DAY 92
+SALES IS DONE. The line was met and closed today. What follows is chosen work, not remaining work.
+IN ORDER, and each with an honest sizing:
+ 1. ⭐ THE DEVELOPER FEE TIER - roughly half a day, and BIGGER THAN IT LOOKS. feeSettings.js has
+    anticipated it since Day 78: "a developer-level override tier is designed but its link column
+    does not exist yet - when it lands, it slots between the two." The column now exists
+    (pp_master_agreements.admin_fee_per_unit, set to 2500 on Aldar for testing). Doing it properly
+    means EVERY fee resolves frozen -> developer agreement -> company -> fallback, which settles the
+    admin fee AND the reservation standard the block currently asks for by hand. Doing only the
+    admin fee is two hours but means touching the same code twice.
+ 2. DISPUTE AND WRITE-OFF on a commission invoice - about an hour. Both paths half-exist and neither
+    has ever been walked. What happens after a dispute? Can it come back?
+ 3. THE PPT ON DIFFERENTIATORS - the partner's FIRST ask, and it needs no code. Waiting on his call:
+    the competing product's name, and where their current tool stops.
+ 4. SEND THE RESALE QUESTIONNAIRE (docs/Resale_Practitioner_Questions.docx) to his contact. Two of
+    its nine questions size the whole vertical, so nothing on resale should be designed before they
+    are answered.
+ 5. ⚠️ TWO DESIGN SESSIONS, NOT BUILDS - the CORPORATE THREE-ROLE MODEL (which needs the DLD
+    registration answer, and shares a Person model with C15 and title-holders) and the PAYOUT
+    HIERARCHY (branch and group overrides - needs a founder ruling on what an override is a
+    percentage OF before any of it is code).
+ALSO NOTICED AND UNCHASED: DAMAC's master agreement says 5% but the Khalid deal invoiced at 4%.
+Worth understanding - that is the rate a broker bills on.
