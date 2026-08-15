@@ -1647,3 +1647,19 @@ is now told when the invoice has no developer to bill, and when the rate is the 
 because no master agreement exists.
 ⚠️ STILL OPEN: nothing stops a PROJECT being created without a developer, and nothing flags it on the
 inventory screen. The invoice is the last place that gap should surface.
+
+## ⚠️ FOUND DAY 92 - A DEAL CAN INVOICE AT A GUESSED RATE, TO NOBODY, IN SILENCE
+Two Six Senses deals reached Closed Won, raised invoices and computed 4% of the sale price - with NO
+DEVELOPER and NO MASTER AGREEMENT behind the rate. The dashboard showed "(Unlinked)" and nothing
+else said a word.
+CAUSE WAS DATA: the invoice resolves the developer through the master agreement, then unit ->
+project -> pp_developer_id (GF-19). Both chains were intact; the PROJECT had no developer set.
+Linked to Select Group; existing invoices back-filled. FIXED IN CODE: the broker is now told at SPA
+Signed when the invoice has no developer to bill, and when the rate is the company default because
+no master agreement exists.
+⚠️⚠️ AND A LARGER ONE UNDERNEATH: one invoice has NO unit_id AT ALL - a deal reached Closed Won
+with no unit attached. No unit means no project, no developer, no master agreement and no basis for
+the commission whatsoever, yet it invoiced. From heavy testing, so possibly churn, but NOTHING
+REQUIRED A UNIT and nothing objected. The whole money chain hangs off it.
+⚠️ ALSO: nothing stops a PROJECT being created without a developer, and nothing flags it on the
+inventory screen. The commission invoice is the last place either gap should surface.
