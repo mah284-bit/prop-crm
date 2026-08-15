@@ -468,7 +468,7 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
               ) : (
                 <div style={{display:"flex", flexDirection:"column", gap:6}}>
                   {byDeveloper.map(d => (
-                    <div key={d.developer_id} style={{display:"grid", gridTemplateColumns:"1fr 60px 130px 70px", gap:8, alignItems:"center", padding:"8px 10px", background:"#F8FAFC", borderRadius:8, marginBottom:6}}>
+                    <div key={d.developer_id} style={{display:"grid", gridTemplateColumns:"1fr 56px 120px 44px 62px", gap:8, alignItems:"center", padding:"8px 10px", background:"#F8FAFC", borderRadius:8, marginBottom:6}}>
                       <div style={{fontSize:13, fontWeight:600, color:"#0F2540"}}>{d.developer_name}</div>
                       <div style={{fontSize:11, color:"#718096", textAlign:"center"}}>{d.count} deal{d.count===1?"":"s"}</div>
                       <div style={{fontSize:13, fontWeight:700, color:"#92400E", textAlign:"right"}}>{fmtAED(d.outstanding)}</div>
@@ -476,10 +476,13 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
                       {/* Day 92: A DEVELOPER SETTLES IN BULK - one transfer covering several
                           invoices. Record Payment takes one invoice at a time, so 500,000 for eight
                           deals meant eight dialogs and the broker splitting it in his head. */}
-                      <button onClick={()=>setSettleModal({ developer_id: d.developer_id, developer_name: d.developer_name, outstanding: d.outstanding })}
-                        style={{gridColumn:"1 / -1", marginTop:6, padding:"5px 11px", borderRadius:7, border:"1px solid #0F2540", background:"#fff", color:"#0F2540", fontSize:11, fontWeight:700, cursor:"pointer"}}>
-                        {d.developer_name + " paid \u2014 settle across " + d.count + " invoice" + (d.count===1?"":"s")}
-                      </button>
+                      {d.developer_id !== "unlinked" && (
+                        <button onClick={()=>setSettleModal({ developer_id: d.developer_id, developer_name: d.developer_name, outstanding: d.outstanding })}
+                          title={"Record one transfer from " + d.developer_name + ", settled across " + d.count + " invoice" + (d.count===1?"":"s")}
+                          style={{padding:"4px 10px", borderRadius:6, border:"1px solid #CBD5E0", background:"#fff", color:"#0F2540", fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap"}}>
+                          Settle
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
