@@ -1625,3 +1625,11 @@ other home - but the usage pattern should make Settle the obvious path when a de
    The org chart and group view already exist; the money simply does not follow them yet.
    DESIGN IT WITH THE RECEIPTS & PAYOUTS VIEW - that is where "what does the brokerage owe whom" is
    answered, and the hierarchy is the same question one level deeper.
+
+## ⚠️ NOTED DAY 92 - A NEW NAV TAB PASSES THREE GATES, AND ONE IS SILENT
+Adding Receipts & Payouts took four attempts because the sidebar filters three ways: the TABS entry
+itself · the NAV capability map · and MODE_TABS at App.jsx:154, an EXPLICIT LIST OF IDS per mode
+(sales / leasing / both). A tab absent from MODE_TABS renders nowhere, with no error and nothing in
+the console.
+Worth knowing before the next tab is added - it also explains why a manager's menu looks shorter
+than the TABS array suggests.
