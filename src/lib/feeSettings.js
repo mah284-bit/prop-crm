@@ -102,17 +102,25 @@ export async function getDeveloperAgreement(companyId, developerId) {
   if (!companyId || !developerId) return null;
   const key = companyId + "|" + developerId;
   if (agreementCache.has(key)) return agreementCache.get(key);
-  const { data } = await supabase
-    .from("pp_master_agreements")
-    .select("id, default_spa_fee, default_oqood_fee, default_reservation_fee, default_dld_pct, admin_fee_per_unit, default_dld_payer")
-    .eq("company_id", companyId)
-    .eq("developer_id", developerId)
-    .eq("status", "active")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  agreementCache.set(key, data || null);
-  return data || null;
+  // Day 93: through an RPC, not the table. pp_master_agreements is gated on
+  // can_view_master_agreements() - a sales agent cannot read it, and SHOULD NOT: the row carries the
+  // brokerage's commission rate, bonus thresholds and discount authority. But he DOES need the
+  // buyer-facing fees, which he quotes daily. get_developer_fees is SECURITY DEFINER and returns
+  // ONLY those columns, scoped to his own company. The commercial terms stay behind the capability.
+  // Symptom before this: status 200, empty array, no error - RLS filtering, silent as always.
+  const { data } = await supabase.rpc("get_developer_fees", { p_developer_id: developerId });
+  const row = Array.isArray(data) && data.length ? data[0] : null;
+  const mapped = row ? {
+    id: row.agreement_id,
+    default_spa_fee: row.spa_fee,
+    default_oqood_fee: row.oqood_fee,
+    default_reservation_fee: row.reservation_fee,
+    default_dld_pct: row.dld_pct,
+    admin_fee_per_unit: row.admin_fee_per_unit,
+    default_dld_payer: row.dld_payer,
+  } : null;
+  agreementCache.set(key, mapped);
+  return mapped;
 }
 
 // The whole chain in one call: company policy with the developer's agreement laid over it.
