@@ -7,7 +7,7 @@ import { openPropertyPack } from "../property/propertyPackBus.js";
 import LogActivityModal from "../LogActivityModal.jsx";
 import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { supabase } from "../../lib/supabase.js";
-import { getFees, FALLBACK as FEE_FALLBACK } from "../../lib/feeSettings.js";
+import { getFees, getFeesForDeveloper, developerIdForOpportunity, FALLBACK as FEE_FALLBACK } from "../../lib/feeSettings.js";
 import { dealBill } from "../../lib/dealBill.js";
 import { generateReceiptPDF } from "../../lib/generateReceiptPDF.js";
 import { generatePaymentStatement } from "../../lib/generatePaymentStatement.js";
@@ -213,6 +213,10 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
       dldPct:   Number(frozen?.dldPct   ?? companyFees?.dldPct   ?? FEE_FALLBACK.dldPct),
       spaFee:   Number(frozen?.spaFee   ?? companyFees?.spaFee   ?? FEE_FALLBACK.spaFee),
       oqoodFee: Number(frozen?.oqoodFee ?? companyFees?.oqoodFee ?? FEE_FALLBACK.oqoodFee),
+      // Day 93: the developer's admin charge, per unit. Frozen first - it moves more often than any
+      // company figure, which is exactly why a reserved deal must keep the one it was priced on.
+      adminFeePerUnit: Number(frozen?.adminFeePerUnit ?? companyFees?.adminFeePerUnit ?? 0),
+      reservationFee: Number(frozen?.reservationFee ?? companyFees?.reservationFee ?? FEE_FALLBACK.reservationFee),
     };
   })();
 
@@ -900,7 +904,12 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   useEffect(() => {
     if (showStageGate !== "SPA Signed") return;
     (async () => {
-      const fees = await getFees(currentUser.company_id);
+      // Day 93: the fees now resolve through the DEVELOPER's master agreement before the
+      // company's - an admin charge is the developer's, not the brokerage's, and a developer may
+      // set his own SPA fee, Oqood, DLD split or reservation standard. The FROZEN policy still wins
+      // over both: a reserved deal keeps what it was priced on.
+      const _devId = await developerIdForOpportunity(opp);
+      const fees = await getFeesForDeveloper(currentUser.company_id, _devId);
       setCompanyFees(fees);
       const { data: co } = await supabase.from("companies").select("spa_mode,default_spa_fee,default_oqood_fee").eq("id", currentUser.company_id).maybeSingle();
       if (co?.spa_mode) setSpaMode(co.spa_mode);
@@ -1467,7 +1476,12 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           const { data: existing } = await supabase.from("pp_sales_closures")
             .select("id").eq("opportunity_id", opp.id).maybeSingle();
           if (!existing) {
-            const fees = await getFees(currentUser.company_id);
+            // Day 93: the fees now resolve through the DEVELOPER's master agreement before the
+      // company's - an admin charge is the developer's, not the brokerage's, and a developer may
+      // set his own SPA fee, Oqood, DLD split or reservation standard. The FROZEN policy still wins
+      // over both: a reserved deal keeps what it was priced on.
+      const _devId = await developerIdForOpportunity(opp);
+      const fees = await getFeesForDeveloper(currentUser.company_id, _devId);
             const resAmt = Number(stageGateForm.reservation_fee);
             const price = Number(opp.current_agreed_price || 0);
             // Day 85: READ THE DEAL FRESH. The terms cascade onto the opportunity when a proposal
