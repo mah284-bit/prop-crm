@@ -53,6 +53,11 @@ async function syncLedgerToProposal(oppId, sd) {
       price, planPreset: plan, dldPayer: payer,
       dldSplitPct: opp.current_dld_split_pct || 50,
       dldPct: cl.frozen_fee_policy?.dldPct,
+      // Day 93: from the FROZEN policy, like the DLD percentage above it. A proposal revised after
+      // reservation must quote the fees the deal was priced on - if it quoted the developer's
+      // current figure instead, the proposal and the ledger would disagree, which is the Day-83
+      // fault in a new place.
+      adminFeePerUnit: cl.frozen_fee_policy?.adminFeePerUnit || 0,
     });
     const next = { ...cl.pre_spa_payments };
     const bump = (k, expected, pct) => {
