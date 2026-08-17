@@ -1694,3 +1694,8 @@ IN ORDER, and each with an honest sizing:
     percentage OF before any of it is code).
 ALSO NOTICED AND UNCHASED: DAMAC's master agreement says 5% but the Khalid deal invoiced at 4%.
 Worth understanding - that is the rate a broker bills on.
+   ⚠️ AND THE PORTING ANSWER IS ALREADY A DECK: docs/Supabase_to_OCI_Migration_Presentation.pptx,
+   made 14 Aug and only committed on Day 93. It answers the partner's technical man directly - worth
+   reading before that question is asked again, and worth checking it says what the board says: the
+   schema, the data and the RLS all travel because we are already on Postgres; auth, storage and the
+   client library do not, and that is the real work.
