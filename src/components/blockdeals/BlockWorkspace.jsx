@@ -321,6 +321,8 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
     (childRows || []).forEach(({ line, child }) => {
       if (!child || child.status === "Lost") return;
       const b = dealBill({
+        // Day 93: per unit - each unit registers separately, so each carries the developer's charge.
+        adminFeePerUnit: blockFees.adminFeePerUnit || 0,
         price: Number(child.current_agreed_price || line.list_price || 0),
         planPreset: child.current_payment_plan_preset,
         // Day 92: child.reservation_amount is only filled WHEN THE RESERVATION IS RECORDED, so

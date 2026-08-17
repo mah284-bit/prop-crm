@@ -35,6 +35,11 @@ export function dealBill({
   dldPayer = "buyer",
   dldSplitPct = 50,
   dldPct,
+  // Day 93: THE DEVELOPER'S ADMIN CHARGE, per unit. Defaults to 0 so every existing caller keeps
+  // today's behaviour exactly - a caller that does not pass it gets a dash on the line, as before.
+  // Founder's ruling (Day 92): per unit, per developer, "it may change regularly" - which is why it
+  // resolves through the master agreement and freezes at reservation like every other fee.
+  adminFeePerUnit = 0,
 } = {}) {
   const DPCT = dldPct != null ? Number(dldPct) : FALLBACK.dldPct;
   const p = Number(price || 0);
@@ -67,7 +72,9 @@ export function dealBill({
     spa_fee:   { expected: r2(spaFee != null ? spaFee : FALLBACK_SPA_FEE) },
     dld_fee:   { expected: dldExpected, waived: dldWaived, note: dldNote, full: dldFull },
     oqood_fee: { expected: r2(oqoodFee != null ? oqoodFee : FALLBACK_OQOOD_FEE) },
-    other_fees:{ expected: 0 },
+    // The line took money and never stated what was owed. It does now, when the developer charges
+    // one; a developer who charges nothing still shows a dash, which is the honest difference.
+    other_fees:{ expected: r2(adminFeePerUnit) },
   };
 }
 

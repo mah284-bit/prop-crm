@@ -1496,6 +1496,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
               .select("current_payment_plan_preset, current_dld_payer, current_dld_split_pct, current_agreed_price")
               .eq("id", opp.id).maybeSingle();
             const bill = dealBill({
+              adminFeePerUnit: dealFees.adminFeePerUnit,
               price,
               planPreset: (_fresh?.current_payment_plan_preset) || opp.current_payment_plan_preset,
               reservationAmount: resAmt,
