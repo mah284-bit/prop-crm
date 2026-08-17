@@ -95,6 +95,10 @@ export async function birthChildClosure({ child, block, companyId, currentUser }
       // ceremony freezes it - so a later change to company fees cannot reprice a settled deal.
       frozen_fee_policy: {
         spaFee: fees.spaFee, oqoodFee: fees.oqoodFee, dldPct: fees.dldPct,
+        // Day 93: the developer's admin charge freezes with the rest. It moves more often than any
+        // company figure, which is exactly why a reserved unit must keep the one it was priced on.
+        adminFeePerUnit: fees.adminFeePerUnit || 0,
+        reservationFee: fees.reservationFee,
         frozen_at: new Date().toISOString(),
         source: "block reservation completed",
       },

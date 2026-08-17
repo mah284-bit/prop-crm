@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useFreshData } from "../../lib/useFreshData.js";
 import { supabase } from "../../lib/supabase.js";
 import { dealBill } from "../../lib/dealBill.js";
-import { getFees } from "../../lib/feeSettings.js";
+import { getFees, getFeesForDeveloper, developerIdForOpportunity } from "../../lib/feeSettings.js";
 import BlockPaymentDialog from "./BlockPaymentDialog.jsx";
 import BlockCollectionDialog from "./BlockCollectionDialog.jsx";
 import { sendBlockProposal } from "../../lib/sendBlockProposal.js";
@@ -296,7 +296,15 @@ export default function BlockWorkspace({ block, leads, currentUser, showToast, o
 
   const [blockFees, setBlockFees] = useState(null);
   useEffect(() => { (async () => {
-    if (currentUser?.company_id) setBlockFees(await getFees(currentUser.company_id));
+    if (!currentUser?.company_id) return;
+    // Day 93: a block has ONE developer, but block_deals holds only his NAME - no developer_id, so
+    // it cannot reach a master agreement directly. Resolve through the first child's unit, the same
+    // chain the commission invoice uses. Boarded: the block should carry the link, not infer it.
+    const first = (childRows || []).find(r => r.child)?.child || null;
+    const devId = first ? await developerIdForOpportunity(first) : null;
+    setBlockFees(devId
+      ? await getFeesForDeveloper(currentUser.company_id, devId)
+      : await getFees(currentUser.company_id));
   })(); }, [currentUser?.company_id]);
 
   // Day 80: what has already been collected, per particular and per (particular, unit).

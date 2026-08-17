@@ -1525,7 +1525,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
                 oqood_fee:       row("oqood_fee", bill.oqood_fee.expected),
                 other_fees:      row("other_fees", null),
               },
-              frozen_fee_policy: { spaFee: fees.spaFee, oqoodFee: fees.oqoodFee, dldPct: fees.dldPct, frozen_at: new Date().toISOString() },
+              frozen_fee_policy: { spaFee: fees.spaFee, oqoodFee: fees.oqoodFee, dldPct: fees.dldPct, adminFeePerUnit: fees.adminFeePerUnit || 0, reservationFee: fees.reservationFee, frozen_at: new Date().toISOString() },
               created_by: currentUser.id,
             }).select();
             if (insErr) console.error("LEDGER BIRTH FAILED:", insErr.message, insErr.details, insErr.hint);
