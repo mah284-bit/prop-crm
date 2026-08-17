@@ -43,3 +43,4 @@ src/components/*.bak
 *.bak
 /*.cjs
 docs/*.docx
+docs/files.zip
