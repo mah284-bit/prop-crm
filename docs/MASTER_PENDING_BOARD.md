@@ -1699,3 +1699,13 @@ Worth understanding - that is the rate a broker bills on.
    reading before that question is asked again, and worth checking it says what the board says: the
    schema, the data and the RLS all travel because we are already on Postgres; auth, storage and the
    client library do not, and that is the real work.
+
+## ⚠️ BOARD CORRECTION (Day 93) - THE RESERVATION STANDARD WAS NEVER ON THE MASTER AGREEMENT
+Line 1533 said "pp_master_agreements carries a reservation standard". IT DID NOT. The table was
+listed in full on Day 92 and no reservation column appeared; the claim was written from memory and
+never checked - the precise failure mode the Day-84 audit exists to catch, and the third time this
+week the architect has boarded a fault or a fact he had not verified.
+FIXED: `default_reservation_fee numeric` added Day 93, alongside `admin_fee_per_unit` from Day 92.
+⭐ AND A REAL FIND ALONGSIDE IT: `default_dld_payer` has been on this table per developer all along
+and feeSettings.js never reads it. Every deal takes its DLD payer from the company or the proposal,
+while a per-developer default sits unused. It belongs in the same resolver.

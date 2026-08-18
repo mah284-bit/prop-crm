@@ -1819,3 +1819,53 @@ realization and per-developer outstanding all moving correctly.
    might try to pay it.
  - A NEW NAV TAB PASSES THREE GATES and MODE_TABS is the silent one - absent from it, a tab renders
    nowhere with no error at all.
+
+## ── DAY 93 — THE FEE TIER, AND WHAT IT UNCOVERED ──
+Built on branch `feature/fee-tier`, NOT merged - the last write is unverified.
+⭐ THE TIER LANDED, as feeSettings.js has said it would since Day 78: frozen -> DEVELOPER'S MASTER
+AGREEMENT -> company -> fallback. Columns added to pp_master_agreements for the SPA fee, Oqood, DLD
+percentage, reservation and admin fee per unit; both verticals, both freezes and the proposal all
+resolve through it.
+⚠️ NULL MEANS FALL THROUGH, ZERO MEANS ZERO. admin_fee_per_unit's DEFAULT 0 was dropped - it made
+every developer read as "charges nothing" when most simply had nothing set. Two different facts.
+⭐⭐ AND THE FIND UNDERNEATH IT, worth more than the fee: A SALES AGENT CANNOT READ
+pp_master_agreements AT ALL. The SELECT policy requires can_view_master_agreements(), which he does
+not have - so every query returned status 200 with an EMPTY ARRAY and no error. Silent, as RLS
+always is. That has been true all along, which means the COMMISSION RATE lookup was hitting the same
+wall and falling back to the company default. It explains the 4% fallbacks seen on Day 92.
+SOLVED PROPERLY, not by granting the capability: get_developer_fees(uuid) is SECURITY DEFINER and
+returns ONLY the buyer-facing fees - SPA, Oqood, DLD, reservation, admin - scoped to the caller's own
+company. The commission rate, bonus thresholds and discount authority stay behind the capability,
+because an agent should not read the brokerage's commercial position with a developer.
+⚠️ STILL TO VERIFY, and the reason the branch is unmerged: the resolver is PROVEN in the console
+(2500 for Aldar, the agreement id resolved, developerIdForOpportunity returning the right developer
+from the unit) but the FREEZE AT RESERVATION still wrote 0. Every piece checks out individually, so
+stale code is the remaining explanation - a clean restart and one fresh deal will settle it.
+ALSO NOTICED, unfixed: the ledger is born with other_fees expected NULL, ignoring the bill · the
+block still asks for a reservation the agreement now knows · the block confirmation note says admin
+fees are "collected separately by the developer", which the ledger now contradicts.
+
+## ── DAY 93 — THE FEE TIER, AND WHAT IT UNCOVERED ──
+Built on branch `feature/fee-tier`, NOT merged - the last write is unverified.
+⭐ THE TIER LANDED, as feeSettings.js has said it would since Day 78: frozen -> DEVELOPER'S MASTER
+AGREEMENT -> company -> fallback. Columns added to pp_master_agreements for the SPA fee, Oqood, DLD
+percentage, reservation and admin fee per unit; both verticals, both freezes and the proposal all
+resolve through it.
+⚠️ NULL MEANS FALL THROUGH, ZERO MEANS ZERO. admin_fee_per_unit's DEFAULT 0 was dropped - it made
+every developer read as "charges nothing" when most simply had nothing set. Two different facts.
+⭐⭐ AND THE FIND UNDERNEATH IT, worth more than the fee: A SALES AGENT CANNOT READ
+pp_master_agreements AT ALL. The SELECT policy requires can_view_master_agreements(), which he does
+not have - so every query returned status 200 with an EMPTY ARRAY and no error. Silent, as RLS
+always is. That has been true all along, which means the COMMISSION RATE lookup was hitting the same
+wall and falling back to the company default. It explains the 4% fallbacks seen on Day 92.
+SOLVED PROPERLY, not by granting the capability: get_developer_fees(uuid) is SECURITY DEFINER and
+returns ONLY the buyer-facing fees - SPA, Oqood, DLD, reservation, admin - scoped to the caller's own
+company. The commission rate, bonus thresholds and discount authority stay behind the capability,
+because an agent should not read the brokerage's commercial position with a developer.
+⚠️ STILL TO VERIFY, and the reason the branch is unmerged: the resolver is PROVEN in the console
+(2500 for Aldar, the agreement id resolved, developerIdForOpportunity returning the right developer
+from the unit) but the FREEZE AT RESERVATION still wrote 0. Every piece checks out individually, so
+stale code is the remaining explanation - a clean restart and one fresh deal will settle it.
+ALSO NOTICED, unfixed: the ledger is born with other_fees expected NULL, ignoring the bill · the
+block still asks for a reservation the agreement now knows · the block confirmation note says admin
+fees are "collected separately by the developer", which the ledger now contradicts.

@@ -1,6 +1,6 @@
 import { supabase } from "./supabase.js";
 import { dealBill } from "./dealBill.js";
-import { getFees } from "./feeSettings.js";
+import { getFees, getFeesForDeveloper, developerIdForOpportunity } from "./feeSettings.js";
 
 // Day 86: BIRTH THE CHILD'S COLLECTION LEDGER.
 //
@@ -36,7 +36,13 @@ export async function birthChildClosure({ child, block, companyId, currentUser }
       .from("pp_sales_closures").select("id").eq("opportunity_id", child.id).maybeSingle();
     if (existing) return { ok: true, skipped: "already has a ledger" };
 
-    const fees = await getFees(companyId);
+    // Day 93: through the DEVELOPER's agreement, not just the company's - otherwise the admin
+    // charge freezes as zero on every block child and the tier fails silently on the vertical that
+    // needs it most, since a block is many units each carrying the charge.
+    const _devId = await developerIdForOpportunity(child);
+    const fees = _devId
+      ? await getFeesForDeveloper(companyId, _devId)
+      : await getFees(companyId);
     const price = Number(child.current_agreed_price || child.budget || 0);
 
     // What the BLOCK has already put against this child, by particular. Read once, at birth.
@@ -59,6 +65,7 @@ export async function birthChildClosure({ child, block, companyId, currentUser }
       dldPayer: child.current_dld_payer || "buyer",
       dldSplitPct: child.current_dld_split_pct || 50,
       dldPct: fees.dldPct,
+      adminFeePerUnit: fees.adminFeePerUnit || 0,
     });
 
     const received = (k, expected) => {
@@ -95,6 +102,10 @@ export async function birthChildClosure({ child, block, companyId, currentUser }
       // ceremony freezes it - so a later change to company fees cannot reprice a settled deal.
       frozen_fee_policy: {
         spaFee: fees.spaFee, oqoodFee: fees.oqoodFee, dldPct: fees.dldPct,
+        // Day 93: the developer's admin charge freezes with the rest. It moves more often than any
+        // company figure, which is exactly why a reserved unit must keep the one it was priced on.
+        adminFeePerUnit: fees.adminFeePerUnit || 0,
+        reservationFee: fees.reservationFee,
         frozen_at: new Date().toISOString(),
         source: "block reservation completed",
       },

@@ -7,7 +7,7 @@ import { openPropertyPack } from "../property/propertyPackBus.js";
 import LogActivityModal from "../LogActivityModal.jsx";
 import React, { useState, useEffect, useRef, Fragment } from 'react';
 import { supabase } from "../../lib/supabase.js";
-import { getFees, FALLBACK as FEE_FALLBACK } from "../../lib/feeSettings.js";
+import { getFees, getFeesForDeveloper, developerIdForOpportunity, FALLBACK as FEE_FALLBACK } from "../../lib/feeSettings.js";
 import { dealBill } from "../../lib/dealBill.js";
 import { generateReceiptPDF } from "../../lib/generateReceiptPDF.js";
 import { generatePaymentStatement } from "../../lib/generatePaymentStatement.js";
@@ -213,6 +213,10 @@ function OpportunityDetail({ opp, lead, opps, units, projects, salePricing, user
       dldPct:   Number(frozen?.dldPct   ?? companyFees?.dldPct   ?? FEE_FALLBACK.dldPct),
       spaFee:   Number(frozen?.spaFee   ?? companyFees?.spaFee   ?? FEE_FALLBACK.spaFee),
       oqoodFee: Number(frozen?.oqoodFee ?? companyFees?.oqoodFee ?? FEE_FALLBACK.oqoodFee),
+      // Day 93: the developer's admin charge, per unit. Frozen first - it moves more often than any
+      // company figure, which is exactly why a reserved deal must keep the one it was priced on.
+      adminFeePerUnit: Number(frozen?.adminFeePerUnit ?? companyFees?.adminFeePerUnit ?? 0),
+      reservationFee: Number(frozen?.reservationFee ?? companyFees?.reservationFee ?? FEE_FALLBACK.reservationFee),
     };
   })();
 
@@ -805,7 +809,13 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       showToast("\ud83d\udd12 This deal is closed - stages are read-only. Activities remain open.", "warning");
       return;
     }
-    if ((toStage === "Reserved" || toStage === "SPA Requirements") && !(await proposalGate(toStage))) return;
+    // Day 94: OFFER ACCEPTED WAS NOT GATED, and it is the one that most needs to be. The stage
+    // means the buyer accepted AN OFFER - if none was sent there is nothing to accept, and it is a
+    // claim with no evidence. Worse, everything downstream inherits its terms from that accepted
+    // proposal. Founder found it by advancing a deal straight through.
+    // Still a SOFT gate: a verbal acceptance ahead of the paperwork is real, so a reason lets it
+    // through and the record says so.
+    if ((toStage === "Offer Accepted" || toStage === "Reserved" || toStage === "SPA Requirements") && !(await proposalGate(toStage))) return;
     if ((toStage === "Reserved" || toStage === "SPA Requirements" || toStage === "SPA Signed") && !(await kycGate(toStage))) return;
     // Day 86: A BLOCK CHILD PROCEEDS TO SPA ONLY WHEN THE WHOLE BLOCK IS COLLECTED.
     // Not per unit. The buyer sends ONE lump for the arrangement; the allocator splits it for
@@ -900,7 +910,12 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   useEffect(() => {
     if (showStageGate !== "SPA Signed") return;
     (async () => {
-      const fees = await getFees(currentUser.company_id);
+      // Day 93: the fees now resolve through the DEVELOPER's master agreement before the
+      // company's - an admin charge is the developer's, not the brokerage's, and a developer may
+      // set his own SPA fee, Oqood, DLD split or reservation standard. The FROZEN policy still wins
+      // over both: a reserved deal keeps what it was priced on.
+      const _devId = await developerIdForOpportunity(opp);
+      const fees = await getFeesForDeveloper(currentUser.company_id, _devId);
       setCompanyFees(fees);
       const { data: co } = await supabase.from("companies").select("spa_mode,default_spa_fee,default_oqood_fee").eq("id", currentUser.company_id).maybeSingle();
       if (co?.spa_mode) setSpaMode(co.spa_mode);
@@ -1467,7 +1482,12 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           const { data: existing } = await supabase.from("pp_sales_closures")
             .select("id").eq("opportunity_id", opp.id).maybeSingle();
           if (!existing) {
-            const fees = await getFees(currentUser.company_id);
+            // Day 93: the fees now resolve through the DEVELOPER's master agreement before the
+      // company's - an admin charge is the developer's, not the brokerage's, and a developer may
+      // set his own SPA fee, Oqood, DLD split or reservation standard. The FROZEN policy still wins
+      // over both: a reserved deal keeps what it was priced on.
+      const _devId = await developerIdForOpportunity(opp);
+      const fees = await getFeesForDeveloper(currentUser.company_id, _devId);
             const resAmt = Number(stageGateForm.reservation_fee);
             const price = Number(opp.current_agreed_price || 0);
             // Day 85: READ THE DEAL FRESH. The terms cascade onto the opportunity when a proposal
@@ -1482,6 +1502,12 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
               .select("current_payment_plan_preset, current_dld_payer, current_dld_split_pct, current_agreed_price")
               .eq("id", opp.id).maybeSingle();
             const bill = dealBill({
+              // Day 94: `fees`, not `dealFees`. The freeze fourteen lines below used the local,
+              // developer-resolved `fees` and correctly captured 1500 - while this used the
+              // component-level dealFees, which had not re-resolved at that moment and gave 0. Same
+              // file, two fee objects, and the bill quietly took the wrong one: frozen 1500,
+              // expected null, no error anywhere.
+              adminFeePerUnit: fees.adminFeePerUnit || 0,
               price,
               planPreset: (_fresh?.current_payment_plan_preset) || opp.current_payment_plan_preset,
               reservationAmount: resAmt,
@@ -1508,9 +1534,12 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
                                    ? { status: "waived", amount: "", date: "", notes: bill.dld_fee.note, method: "" }
                                    : row("dld_fee", bill.dld_fee.expected, { notes: bill.dld_fee.note }),
                 oqood_fee:       row("oqood_fee", bill.oqood_fee.expected),
-                other_fees:      row("other_fees", null),
+                // Day 94: the line was born with NO expectation, so the developer's admin charge -
+                // resolved, frozen, and computed by dealBill - was discarded at the last step. It
+                // took money and never stated what was owed.
+                other_fees:      row("other_fees", bill.other_fees?.expected || null),
               },
-              frozen_fee_policy: { spaFee: fees.spaFee, oqoodFee: fees.oqoodFee, dldPct: fees.dldPct, frozen_at: new Date().toISOString() },
+              frozen_fee_policy: { spaFee: fees.spaFee, oqoodFee: fees.oqoodFee, dldPct: fees.dldPct, adminFeePerUnit: fees.adminFeePerUnit || 0, reservationFee: fees.reservationFee, frozen_at: new Date().toISOString() },
               created_by: currentUser.id,
             }).select();
             if (insErr) console.error("LEDGER BIRTH FAILED:", insErr.message, insErr.details, insErr.hint);
