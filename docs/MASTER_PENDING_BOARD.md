@@ -1744,3 +1744,11 @@ still shows no line, which is the honest difference.
 ⚠️ THE PRINCIPLE, worth applying wherever money is quoted: the app must never ask for more than it
 promised. A WAIVER IS A DECISION SOMEONE MAKES AND THE RECORD SHOWS - it is not the same as a charge
 that was never mentioned.
+
+## ⚠️ ADDED DAY 94 - FOUR SURFACES EACH SUM THE BUYER'S OUTFLOW BY HAND
+Adding one fee meant hunting it through the Financials panel, the Proposals tab, the Upfront tab and
+the proposal PDF - each with its own arithmetic. That is how the SPA FEE came to be missing from the
+proposal total while the ledger charged it, unnoticed for weeks.
+⭐ THE DAY-83 LESSON AGAIN: one function - buyerOutflow(deal, fees) - returning every line and the
+total, called by all four. dealBill already does this for the LEDGER; this is its display twin.
+Until then every new fee needs the same four-place hunt, and one will be missed.
