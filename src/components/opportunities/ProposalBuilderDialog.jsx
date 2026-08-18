@@ -493,7 +493,11 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
   const submit = async (sendEmail) => {
       // Ceremony Tier-2: post-Reserve terms changes need a stated reason
       let ceremonyReason = null;
-      if (["Reserved", "SPA Requirements"].includes(opp.stage)) {
+      // Day 94: THE CEREMONY EXISTS BECAUSE MONEY IS HELD, not because of what stage a deal claims
+      // to be at. The stage list missed a deal whose in-memory copy was stale, and a
+      // post-reservation revision went through with no reason recorded. collectedSoFar is read
+      // fresh from the closure when the dialog opens - it is the fact, and the stage is a label.
+      if (collectedSoFar > 0 || ["Reserved", "SPA Requirements", "SPA Signed"].includes(opp.stage)) {
         ceremonyReason = await ask({
           title: "Money is already held on this deal",
           body: "Revising terms after a reservation is a ceremony, not an edit. The record should say why.",
