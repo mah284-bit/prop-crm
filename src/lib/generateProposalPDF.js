@@ -241,7 +241,7 @@ export async function generateProposalPDF({
   try {
     const _price = Number(proposalUnits[0]?.discounted_price || proposalUnits[0]?.asking_price || 0);
     const _payer = dldHandling === 'developer_pays' ? 'developer' : dldHandling === 'split_5050' ? 'split' : 'buyer';
-    const _b = dealBill({ price: _price, planPreset: paymentPlanPreset, dldPayer: _payer,
+    const _b = dealBill({ price: _price, planPreset: selectedPaymentPlan,   // Day 94: the parameter's real name - paymentPlanPreset is undefined here, and dealBill would have quietly returned a zero first instalment on a document claiming to total what the buyer pays dldPayer: _payer,
       spaFee: fees?.spaFee, oqoodFee: fees?.oqoodFee, dldPct: fees?.dldPct,
       adminFeePerUnit: fees?.adminFeePerUnit || 0 });
     const _rows = [
