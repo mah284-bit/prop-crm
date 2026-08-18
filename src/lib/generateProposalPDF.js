@@ -4,6 +4,8 @@ import { jsPDF } from 'jspdf';
  * Phase 2.2 — Professional Branded Proposal PDF
  * Generates rich proposal with images, branding, pricing boxes
  */
+import { dealBill } from './dealBill.js';
+
 export async function generateProposalPDF({
   lead,
   coverNotes,
@@ -231,6 +233,43 @@ export async function generateProposalPDF({
   // INSIDE the grid, between Payment Plan and DLD. Derived from the box count now, so the
   // next term added will not break the layout again.
   yPos += Math.ceil(boxes.length / 2) * 32 - 4;
+
+  // Day 94: WHAT HE ACTUALLY PAYS BEFORE THE SPA, summed. The boxes listed the fees and left the
+  // buyer to add them up, which half-defeats the ruling that every fils goes in the proposal. The
+  // BLOCK proposal has had this since Day 87; the 1-to-1 never got it. Computed by dealBill - the
+  // same function the ledger uses - so the document and the bill it becomes cannot disagree.
+  try {
+    const _price = Number(proposalUnits[0]?.discounted_price || proposalUnits[0]?.asking_price || 0);
+    const _payer = dldHandling === 'developer_pays' ? 'developer' : dldHandling === 'split_5050' ? 'split' : 'buyer';
+    const _b = dealBill({ price: _price, planPreset: paymentPlanPreset, dldPayer: _payer,
+      spaFee: fees?.spaFee, oqoodFee: fees?.oqoodFee, dldPct: fees?.dldPct,
+      adminFeePerUnit: fees?.adminFeePerUnit || 0 });
+    const _rows = [
+      ['First instalment' + (_b.initial_advance.pct ? ' (' + _b.initial_advance.pct + '%)' : ''), _b.initial_advance.expected],
+      ['DLD fee', _b.dld_fee.waived ? 0 : _b.dld_fee.expected],
+      ['Oqood registration', _b.oqood_fee.expected],
+      ['SPA fee', _b.spa_fee.expected],
+      ['Developer admin fee', _b.other_fees.expected],
+    ].filter(r => Number(r[1]) > 0);
+    const _total = _rows.reduce((t, r) => t + Number(r[1] || 0), 0);
+    if (yPos > pageHeight - (34 + _rows.length * 6)) { doc.addPage(); yPos = margin; }
+    doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.setTextColor(15, 37, 64);
+    doc.text('What you pay before the SPA', margin, yPos + 6);
+    yPos += 12;
+    doc.setFontSize(9.5); doc.setFont(undefined, 'normal'); doc.setTextColor(71, 85, 105);
+    _rows.forEach(function (r) {
+      doc.text(r[0], margin + 2, yPos);
+      doc.text('AED ' + Math.round(Number(r[1])).toLocaleString(), pageWidth - margin - 2, yPos, { align: 'right' });
+      yPos += 6;
+    });
+    doc.setDrawColor(200, 208, 218); doc.setLineWidth(0.4);
+    doc.line(margin, yPos - 2, pageWidth - margin, yPos - 2);
+    yPos += 4;
+    doc.setFontSize(10.5); doc.setFont(undefined, 'bold'); doc.setTextColor(15, 37, 64);
+    doc.text('Total before the SPA', margin + 2, yPos);
+    doc.text('AED ' + Math.round(_total).toLocaleString(), pageWidth - margin - 2, yPos, { align: 'right' });
+    yPos += 8;
+  } catch (e) { console.warn('pre-SPA summary skipped:', e); }
 
   // Validity
   if (yPos > pageHeight - 40) {
