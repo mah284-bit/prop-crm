@@ -1709,3 +1709,25 @@ FIXED: `default_reservation_fee numeric` added Day 93, alongside `admin_fee_per_
 ⭐ AND A REAL FIND ALONGSIDE IT: `default_dld_payer` has been on this table per developer all along
 and feeSettings.js never reads it. Every deal takes its DLD payer from the company or the proposal,
 while a per-developer default sits unused. It belongs in the same resolver.
+
+## ✅ DONE (Day 94) - THE DEVELOPER FEE TIER, MERGED
+frozen -> developer's master agreement -> company -> fallback, across both verticals, both freezes
+and the proposal. PROVEN: an Aldar deal carries 2,500 and a DAMAC deal 1,500, each from its own
+agreement, frozen at reservation.
+⭐ THE FIND UNDERNEATH IT: a sales agent cannot read pp_master_agreements at all - the SELECT policy
+needs can_view_master_agreements(), so every query returned status 200 with an EMPTY ARRAY and no
+error. That had been true all along, so the COMMISSION RATE lookup was hitting the same wall.
+Solved with get_developer_fees(uuid), SECURITY DEFINER, returning only the buyer-facing fees.
+ALSO FIXED: Offer Accepted was the one stage the proposal gate did not cover - the stage means the
+buyer accepted AN OFFER, and everything downstream inherits its terms.
+
+## ⚠️ ADDED DAY 94 - THE ADMIN FEE REACHES THE LEDGER AND NOWHERE ELSE
+Founder: "almost all the screens we don't see this." The ledger carries it; these compute their own
+totals and omit it:
+ - the FINANCIALS panel's "Buyers bill to SPA" line
+ - the PAYMENT STATEMENT PDF
+ - the PROPOSAL's Buyer Outflow
+ - the BLOCK BILL's per-particular table (dealBill gets it, the display does not total it)
+⚠️ AND THE BLOCK CONFIRMATION NOTE now contradicts the ledger: "admin fees... collected separately
+by the developer". It is not separate any more.
+⚠️ PLUS, still open from Day 92: the block asks for a reservation the agreement can now supply.
