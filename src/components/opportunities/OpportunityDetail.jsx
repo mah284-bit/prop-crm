@@ -2722,7 +2722,12 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                                 // The SPA fee disagreed with the Money tab, which read 6000 from the company
                                 // setting: the same deal showed two different SPA fees on two panels.
                                 const dldAmt = (opp.current_dld_payer === "developer") ? 0 : Math.round(finalPrice * (dealFees.dldPct / 100) * ((opp.current_dld_payer === "split") ? ((opp.current_dld_split_pct || 50) / 100) : 1));
-                                const bill = (initialAdvance || 0) + dldAmt + dealFees.spaFee + dealFees.oqoodFee;
+                                // Day 94: the developer's admin charge belongs here too. It reached the
+                                // ledger and nowhere else - so the panel a broker QUOTES FROM was
+                                // short by it, which is the Day-83 fault in a new place: four
+                                // surfaces each summing the bill by hand.
+                                const adminAmt = Number(dealFees.adminFeePerUnit || 0);
+                                const bill = (initialAdvance || 0) + dldAmt + dealFees.spaFee + dealFees.oqoodFee + adminAmt;
                                 // Day 90: THIS COUNTED ONLY THE RESERVATION. It read "AED 25,000 already
                                 // credited" on a deal whose Collection strip - six pixels above -
                                 // said 360,643 collected. This is the panel a broker quotes from, so
@@ -2735,7 +2740,7 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                                 return (
                                   <div style={{padding:"10px 12px",background:"#FFFBEB",borderRadius:7,border:"1.5px solid #FCD34D",gridColumn:"span 2"}}>
                                     <div style={{fontSize:9,color:"#92400E",textTransform:"uppercase",letterSpacing:".4px",marginBottom:4}}>{"\ud83e\uddfe Buyers bill to SPA (est.)"}</div>
-                                    <div style={{fontSize:11,fontWeight:600,color:"#78350F"}}>First instalment {initialAdvance ? "AED " + Number(initialAdvance).toLocaleString() : "\u2014"} + DLD {dldAmt ? "AED " + dldAmt.toLocaleString() : "\u2014"} + SPA fee AED {dealFees.spaFee.toLocaleString()} + Oqood AED {dealFees.oqoodFee.toLocaleString()}</div>
+                                    <div style={{fontSize:11,fontWeight:600,color:"#78350F"}}>First instalment {initialAdvance ? "AED " + Number(initialAdvance).toLocaleString() : "\u2014"} + DLD {dldAmt ? "AED " + dldAmt.toLocaleString() : "\u2014"} + SPA fee AED {dealFees.spaFee.toLocaleString()} + Oqood AED {dealFees.oqoodFee.toLocaleString()}{adminAmt > 0 ? " + admin AED " + adminAmt.toLocaleString() : ""}</div>
                                     <div style={{fontSize:14,fontWeight:800,color:"#92400E",marginTop:3}}>AED {bill.toLocaleString()}{credits > 0 ? <span style={{fontSize:10,fontWeight:600,color:"#16A34A"}}>{" \u00b7 AED " + credits.toLocaleString() + " already credited"}</span> : null}</div>
                                   </div>
                                 );
