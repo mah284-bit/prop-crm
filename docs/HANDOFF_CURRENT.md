@@ -1869,3 +1869,19 @@ stale code is the remaining explanation - a clean restart and one fresh deal wil
 ALSO NOTICED, unfixed: the ledger is born with other_fees expected NULL, ignoring the bill · the
 block still asks for a reservation the agreement now knows · the block confirmation note says admin
 fees are "collected separately by the developer", which the ledger now contradicts.
+⭐ THEN THE BUYER'S COPY. FOUNDER'S RULING: "No hidden charges - every fils goes in the proposal.
+After that it is the developer's wish if he wants to waive it."
+FOUR SURFACES each summed the buyer's outflow BY HAND - the Financials panel, the Proposals tab, the
+Upfront tab and the PDF - and THE SPA FEE WAS IN NONE OF THEIR TOTALS. It had been charged by the
+ledger and absent from every quote for weeks. All four corrected, and the PDF gained what the BLOCK
+proposal has had since Day 87 and the 1-to-1 never did: "What you pay before the SPA", itemised and
+SUMMED, with the balance on the payment plan and the property price beneath it. Computed by
+dealBill - the same function the ledger uses - so the document and the bill it becomes cannot drift.
+⚠️ AND THE WORST FAULT OF THE DAY, caught by the founder reading one page: THE PDF CONTRADICTED
+ITSELF. The DLD box read "50/50 split - you pay 12,215" while the summary two inches below printed
+24,429. One document, two figures, and the buyer holds it. Both now compute the DLD from the same
+variables in the same way.
+ALSO: Offer Accepted was the ONE stage the proposal gate did not cover - the stage means the buyer
+accepted AN OFFER, and everything downstream inherits its terms · a revised offer on a deal holding
+money now says what it can and cannot change, and the ceremony that demands a reason FOLLOWS THE
+MONEY rather than a stage label, because a stale in-memory stage let one through unrecorded.
