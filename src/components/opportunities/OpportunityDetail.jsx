@@ -1496,7 +1496,12 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
               .select("current_payment_plan_preset, current_dld_payer, current_dld_split_pct, current_agreed_price")
               .eq("id", opp.id).maybeSingle();
             const bill = dealBill({
-              adminFeePerUnit: dealFees.adminFeePerUnit,
+              // Day 94: `fees`, not `dealFees`. The freeze fourteen lines below used the local,
+              // developer-resolved `fees` and correctly captured 1500 - while this used the
+              // component-level dealFees, which had not re-resolved at that moment and gave 0. Same
+              // file, two fee objects, and the bill quietly took the wrong one: frozen 1500,
+              // expected null, no error anywhere.
+              adminFeePerUnit: fees.adminFeePerUnit || 0,
               price,
               planPreset: (_fresh?.current_payment_plan_preset) || opp.current_payment_plan_preset,
               reservationAmount: resAmt,
