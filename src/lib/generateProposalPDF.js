@@ -252,6 +252,7 @@ export async function generateProposalPDF({
       ['Developer admin fee', _b.other_fees.expected],
     ].filter(r => Number(r[1]) > 0);
     const _total = _rows.reduce((t, r) => t + Number(r[1] || 0), 0);
+
     if (yPos > pageHeight - (34 + _rows.length * 6)) { doc.addPage(); yPos = margin; }
     doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.setTextColor(15, 37, 64);
     doc.text('What you pay before the SPA', margin, yPos + 6);
@@ -268,6 +269,21 @@ export async function generateProposalPDF({
     doc.setFontSize(10.5); doc.setFont(undefined, 'bold'); doc.setTextColor(15, 37, 64);
     doc.text('Total before the SPA', margin + 2, yPos);
     doc.text('AED ' + Math.round(_total).toLocaleString(), pageWidth - margin - 2, yPos, { align: 'right' });
+    yPos += 7;
+    // Day 94: and what happens AFTER. Founder: "also mention the remaining amount, and the total
+    // value." A buyer told 354,695 and nothing else does not know whether that is the deal or the
+    // start of it. The balance and the property's full price belong on the same page.
+    const _bal = Math.max(0, _price - Number(_b.initial_advance.expected || 0));
+    doc.setFontSize(9.5); doc.setFont(undefined, 'normal'); doc.setTextColor(71, 85, 105);
+    doc.text('Balance on the developer\u2019s payment plan', margin + 2, yPos);
+    doc.text('AED ' + Math.round(_bal).toLocaleString(), pageWidth - margin - 2, yPos, { align: 'right' });
+    yPos += 6;
+    doc.setFont(undefined, 'bold'); doc.setTextColor(15, 37, 64);
+    doc.text('Property price', margin + 2, yPos);
+    doc.text('AED ' + Math.round(_price).toLocaleString(), pageWidth - margin - 2, yPos, { align: 'right' });
+    yPos += 7;
+    doc.setFontSize(8.5); doc.setFont(undefined, 'normal'); doc.setTextColor(120, 130, 145);
+    doc.text('Government fees apply at the rate in force on the day of registration.', margin, yPos);
     yPos += 8;
   } catch (e) { console.warn('pre-SPA summary skipped:', e); }
 
