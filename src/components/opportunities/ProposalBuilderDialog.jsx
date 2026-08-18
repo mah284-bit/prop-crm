@@ -32,7 +32,9 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
       if (f) setPropFees(f);
     }
     catch (e) { console.warn("Fee policy not loaded for the proposal:", e); }
-  })(); }, [currentUser?.company_id]);
+  // Day 94: opp.id too - the fees now depend on the DEAL's developer, not just the company, so
+  // resolving once would keep the first deal's developer for every proposal after it.
+  })(); }, [currentUser?.company_id, opp?.id]);
   /* draggable-sendproposal */ const { ref: dragRef, posStyle, handleProps } = useDraggable({ open: true });
   // 21 May 2026 Phase B: Pre-fill from V_latest when broker clicks Edit
   // Pre-fill: discount, plan, DLD, service charge, proposal units
