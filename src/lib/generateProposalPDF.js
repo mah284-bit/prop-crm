@@ -11,6 +11,7 @@ export async function generateProposalPDF({
   selectedPaymentPlan,
   validityDays,
   dldHandling,
+  fees,   // Day 94: the resolved fee policy - developer's agreement over the company's
   dldCustomAmount,
   serviceChargePreset,
   serviceChargeCustom,
@@ -187,6 +188,15 @@ export async function generateProposalPDF({
         if (dldHandling === 'specific_amount') return dldCustomAmount ? (aed(dldCustomAmount) + ' waived \u00b7 you pay ' + aed(Math.max(0, full - Number(dldCustomAmount)))) : 'Specific amount waived';
         return 'To be discussed';
       })() },
+    // Day 94: OQOOD, THE SPA FEE AND THE DEVELOPER'S ADMIN CHARGE were never on the buyer's copy
+    // either - the same fault the DLD had on Day 84, and found the same way. FOUNDER: "no hidden
+    // charges, every fils goes in the proposal. After that it is the developer's wish if he waives
+    // it." A fee the buyer first hears about at the SPA table is an argument the broker did not make.
+    { title: 'Oqood Registration', value: fees?.oqoodFee ? ('AED ' + Number(fees.oqoodFee).toLocaleString()) : 'To be advised' },
+    { title: 'SPA Fee', value: fees?.spaFee ? ('AED ' + Number(fees.spaFee).toLocaleString()) : 'To be advised' },
+    ...(Number(fees?.adminFeePerUnit) > 0
+      ? [{ title: 'Developer Admin Fee', value: 'AED ' + Number(fees.adminFeePerUnit).toLocaleString() }]
+      : []),
     { title: 'Service Charge', value: (() => {
         if (!serviceChargePreset || serviceChargePreset === 'none') return 'Standard - no waiver';
         if (serviceChargePreset === 'custom') return serviceChargeCustom || 'Custom waiver';

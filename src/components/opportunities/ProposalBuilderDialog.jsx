@@ -10,7 +10,7 @@ import { aiInvoke } from '../../lib/aiInvoke.js';
 import { urlToBase64 } from "../../lib/imageToBase64.js";
 import { generateProposalPDF } from "../../lib/generateProposalPDF.js";
 import { uploadProposalPDF } from "../../lib/uploadProposalPDF.js";
-import { getFees, FALLBACK as FEE_FALLBACK } from "../../lib/feeSettings.js";
+import { getFees, getFeesForDeveloper, developerIdForOpportunity, FALLBACK as FEE_FALLBACK } from "../../lib/feeSettings.js";
 import { insertProposalRecord } from "../../lib/createProposal";
 
 function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, currentUser, lastProposal, onClose, onSaved, showToast }) {
@@ -21,7 +21,16 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
   const [propFees, setPropFees] = useState(FEE_FALLBACK);
   useEffect(() => { (async () => {
     if (!currentUser?.company_id) return;
-    try { const f = await getFees(currentUser.company_id); if (f) setPropFees(f); }
+    // Day 94: through the DEVELOPER's agreement. The company has no admin fee - it is the
+    // developer's - so a company-level resolve would print every other fee correctly and silently
+    // omit that one, on the document the buyer keeps.
+    try {
+      const devId = await developerIdForOpportunity(opp);
+      const f = devId
+        ? await getFeesForDeveloper(currentUser.company_id, devId)
+        : await getFees(currentUser.company_id);
+      if (f) setPropFees(f);
+    }
     catch (e) { console.warn("Fee policy not loaded for the proposal:", e); }
   })(); }, [currentUser?.company_id]);
   /* draggable-sendproposal */ const { ref: dragRef, posStyle, handleProps } = useDraggable({ open: true });
@@ -607,6 +616,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         }
         
         const pdfBlob = await generateProposalPDF({
+          fees: propFees,   // Day 94: every fils on the buyer's copy
           lead,
           coverNotes,
           proposalUnits,
@@ -786,6 +796,7 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
           
           // Generate PDF blob
           const pdfBlob = await generateProposalPDF({
+          fees: propFees,   // Day 94: every fils on the buyer's copy
             lead,
             coverNotes,
             proposalUnits,
