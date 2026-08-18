@@ -241,12 +241,23 @@ export async function generateProposalPDF({
   try {
     const _price = Number(proposalUnits[0]?.discounted_price || proposalUnits[0]?.asking_price || 0);
     const _payer = dldHandling === 'developer_pays' ? 'developer' : dldHandling === 'split_5050' ? 'split' : 'buyer';
+
     const _b = dealBill({ price: _price, planPreset: selectedPaymentPlan,   // Day 94: the parameter's real name - paymentPlanPreset is undefined here, and dealBill would have quietly returned a zero first instalment on a document claiming to total what the buyer pays dldPayer: _payer,
       spaFee: fees?.spaFee, oqoodFee: fees?.oqoodFee, dldPct: fees?.dldPct,
       adminFeePerUnit: fees?.adminFeePerUnit || 0 });
     const _rows = [
       ['First instalment' + (_b.initial_advance.pct ? ' (' + _b.initial_advance.pct + '%)' : ''), _b.initial_advance.expected],
-      ['DLD fee', _b.dld_fee.waived ? 0 : _b.dld_fee.expected],
+      // Day 94: computed EXACTLY as the DLD box above computes it, from the same variables, so the
+      // two cannot disagree. They did: the box read "50/50 split - you pay 12,215" while this line
+      // printed 24,429 - on ONE page the buyer holds. A document that contradicts itself is worse
+      // than one that omits, and this overstated what he owed by half the DLD.
+      ['DLD fee', (function () {
+        const full = Math.round(_price * (Number(fees && fees.dldPct != null ? fees.dldPct : 4) / 100));
+        if (dldHandling === 'developer_pays') return 0;
+        if (dldHandling === 'split_5050') return Math.round(full / 2);
+        if (dldHandling === 'specific_amount') return Math.max(0, full - Number(dldCustomAmount || 0));
+        return full;
+      })()],
       ['Oqood registration', _b.oqood_fee.expected],
       ['SPA fee', _b.spa_fee.expected],
       ['Developer admin fee', _b.other_fees.expected],
