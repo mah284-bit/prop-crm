@@ -1731,3 +1731,16 @@ totals and omit it:
 ⚠️ AND THE BLOCK CONFIRMATION NOTE now contradicts the ledger: "admin fees... collected separately
 by the developer". It is not separate any more.
 ⚠️ PLUS, still open from Day 92: the block asks for a reservation the agreement can now supply.
+
+## ⭐ RULING (Day 94) - EVERY FILS GOES IN THE PROPOSAL
+FOUNDER: "No hidden charges, should go with the proposal every fils. After that it is the
+developer's wish if he wants to waive it."
+The proposal's Buyer Outflow totalled net price + DLD + Oqood - the SPA FEE WAS NEVER IN IT, and the
+admin fee joined it today. So the proposal understated by both while the ledger charged them: a
+buyer told 656,632 and later asked for 665,132 has a fair complaint, and the broker did not create
+it.
+FIXED: both now appear as their own lines and in the total. A developer who charges no admin fee
+still shows no line, which is the honest difference.
+⚠️ THE PRINCIPLE, worth applying wherever money is quoted: the app must never ask for more than it
+promised. A WAIVER IS A DECISION SOMEONE MAKES AND THE RECORD SHOWS - it is not the same as a charge
+that was never mentioned.

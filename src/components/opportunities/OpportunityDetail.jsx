@@ -2317,7 +2317,12 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                           const sqft = linkedUnit2?.size_sqft || 0;
                           const scPerSqft = linkedUnit2?.service_charge_per_sqft || 0;
                           const annualMaintenance = Math.round(sqft * scPerSqft);
-                          const oneTimeTotal = netPrice + buyerDldShare + oqoodFee;
+                          // Day 94: the SPA fee was NEVER in this total, and the admin fee joined it today - so the
+                          // proposal understated by both while the ledger charged them. A buyer told 656,632 and
+                          // then asked for 665,132 has a fair complaint, and the broker did not create it.
+                          const spaFeeOut = Number(dealFees.spaFee || 0);
+                          const adminFeeOut = Number(dealFees.adminFeePerUnit || 0);
+                          const oneTimeTotal = netPrice + buyerDldShare + oqoodFee + spaFeeOut + adminFeeOut;
                           const commissionPct = Number(opp.commission_pct || 0);
                           const commission = Math.round(netPrice * commissionPct/100);
                           return (
@@ -2332,6 +2337,8 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                                   <div style={{display:"flex",justifyContent:"space-between",color:"#475569",fontSize:11}}><span>· Booking 10% (within net):</span><span>AED {Number(bookingFee).toLocaleString()}</span></div>
                                   <div style={{display:"flex",justifyContent:"space-between"}}><span>DLD Fee 4% ({dldPayer==="buyer_pays"?"buyer":dldPayer==="developer_pays"?"developer":"shared"}):</span><strong>AED {Number(buyerDldShare).toLocaleString()}</strong></div>
                                   <div style={{display:"flex",justifyContent:"space-between"}}><span>Oqood Fee:</span><strong>AED {Number(oqoodFee).toLocaleString()}</strong></div>
+                                  <div style={{display:"flex",justifyContent:"space-between"}}><span>SPA Fee:</span><strong>AED {spaFeeOut.toLocaleString()}</strong></div>
+                                  {adminFeeOut > 0 && <div style={{display:"flex",justifyContent:"space-between"}}><span>Developer admin fee:</span><strong>AED {adminFeeOut.toLocaleString()}</strong></div>}
                                   <div style={{display:"flex",justifyContent:"space-between",borderTop:"1px solid #BAE6FD",paddingTop:6,marginTop:6,fontWeight:700,color:"#0C4A6E"}}><span>Total one-time:</span><span>AED {Number(oneTimeTotal).toLocaleString()}</span></div>
                                 </div>
                                 {annualMaintenance > 0 && (
@@ -3005,7 +3012,12 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                     const scPerSqft = linkedUnit3?.service_charge_per_sqft || 0;
                     const annualMaintenance = Math.round(sqft * scPerSqft);
                     // Total one-time
-                    const oneTimeTotal = netPrice + buyerDldShare + oqoodFee;
+                    // Day 94: the SPA fee was NEVER in this total, and the admin fee joined it today - so the
+                          // proposal understated by both while the ledger charged them. A buyer told 656,632 and
+                          // then asked for 665,132 has a fair complaint, and the broker did not create it.
+                          const spaFeeOut = Number(dealFees.spaFee || 0);
+                          const adminFeeOut = Number(dealFees.adminFeePerUnit || 0);
+                          const oneTimeTotal = netPrice + buyerDldShare + oqoodFee + spaFeeOut + adminFeeOut;
                     // Broker commission (SEPARATE - shown as note, not in totals)
                     const commissionPctUpf = Number(opp.commission_pct || 0);
                     const commissionAmtUpf = Math.round(netPrice * commissionPctUpf / 100);
