@@ -19,6 +19,22 @@ function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, curren
   // different rate from the one the app would then bill him. Falls back to the declared constants
   // so a slow load never produces a zero on a document.
   const [propFees, setPropFees] = useState(FEE_FALLBACK);
+  // Day 94: WHAT DOES SENDING THIS ACTUALLY CHANGE? Founder asked whether a revised proposal should
+  // even be allowed once collection has started. It should - the developer may concede the DLD
+  // after reservation, a unit may be swapped, a plan renegotiated - and the dangerous parts are
+  // already protected: the PRICE locks once money arrives (Day 91) and the FEES come from the
+  // frozen policy. But nothing told him that, so he was deciding blind on a deal holding money.
+  const [collectedSoFar, setCollectedSoFar] = useState(0);
+  useEffect(() => { (async () => {
+    if (!opp?.id) return;
+    try {
+      const { data } = await supabase.from("pp_sales_closures")
+        .select("pre_spa_payments").eq("opportunity_id", opp.id).maybeSingle();
+      const rows = data?.pre_spa_payments || {};
+      setCollectedSoFar(Object.values(rows).reduce((t, r) =>
+        t + ((r && r.status !== "waived") ? (Number(r.amount) || 0) : 0), 0));
+    } catch (e) { setCollectedSoFar(0); }
+  })(); }, [opp?.id]);
   useEffect(() => { (async () => {
     if (!currentUser?.company_id) return;
     // Day 94: through the DEVELOPER's agreement. The company has no admin fee - it is the
@@ -857,6 +873,20 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
         </div>
 
         <div style={{padding:"1.1rem 1.4rem",flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:18}}>
+          {/* Day 94: on a deal already holding money, say what this changes and what it cannot.
+              Not a gate - a revised offer mid-collection is legitimate (a developer concedes the
+              DLD, a unit is swapped, a plan is renegotiated). But he was deciding blind. */}
+          {collectedSoFar > 0 && (
+            <div style={{padding:"10px 13px",background:"#FFFBEB",border:"1.5px solid #FCD34D",borderRadius:9}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#92400E",marginBottom:3}}>
+                {"AED " + collectedSoFar.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) + " has already been collected on this deal."}
+              </div>
+              <div style={{fontSize:11.5,color:"#78350F",lineHeight:1.5}}>
+                A revised offer can change the payment plan, the DLD arrangement or the units. It will
+                not change the final price or the fees - those were fixed when the money arrived.
+              </div>
+            </div>
+          )}
 
           {/* Linked-unit toggle: opt-in to pre-seeding the opp's linked unit */}
           {linkedUnit && (
