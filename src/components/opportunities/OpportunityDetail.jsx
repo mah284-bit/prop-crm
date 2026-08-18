@@ -3080,6 +3080,25 @@ if (s === "SPA Requirements") { setDashboardTab("financials"); showToast("The bi
                                   </div>
                                   <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>AED {Number(oqoodFee).toLocaleString()}</div>
                                 </div>
+                                {/* Day 94: the SPA fee was in the ledger and on no display surface; the admin fee
+                                    joined it today. Founder: "no hidden charges - every fils goes in the
+                                    proposal. After that it is the developer's wish if he waives it." */}
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                  <div>
+                                    <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>SPA Fee</div>
+                                    <div style={{fontSize:11,color:"#64748B"}}>Charged at signing</div>
+                                  </div>
+                                  <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>AED {spaFeeOut.toLocaleString()}</div>
+                                </div>
+                                {adminFeeOut > 0 && (
+                                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",background:"#fff",borderRadius:7,border:"1px solid #E2E8F0"}}>
+                                    <div>
+                                      <div style={{fontSize:9,color:"#94A3B8",textTransform:"uppercase",letterSpacing:".4px",marginBottom:2}}>Developer Admin Fee</div>
+                                      <div style={{fontSize:11,color:"#64748B"}}>Per unit, set by the developer</div>
+                                    </div>
+                                    <div style={{fontSize:13,fontWeight:700,color:"#0F2540"}}>AED {adminFeeOut.toLocaleString()}</div>
+                                  </div>
+                                )}
                                 {/* Total */}
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:"#EFF6FF",borderRadius:7,border:"2px solid #BFDBFE",marginTop:4}}>
                                   <div style={{fontSize:11,fontWeight:700,color:"#1D4ED8",textTransform:"uppercase",letterSpacing:".5px"}}>Total one-time outflow</div>
