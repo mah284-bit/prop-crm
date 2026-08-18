@@ -12,8 +12,10 @@ import { generateProposalPDF } from "../../lib/generateProposalPDF.js";
 import { uploadProposalPDF } from "../../lib/uploadProposalPDF.js";
 import { getFees, getFeesForDeveloper, developerIdForOpportunity, FALLBACK as FEE_FALLBACK } from "../../lib/feeSettings.js";
 import { insertProposalRecord } from "../../lib/createProposal";
+import { useAsk } from "../shared/AskDialog.jsx";
 
 function ProposalBuilderDialog({ opp, lead, units, projects, salePricing, currentUser, lastProposal, onClose, onSaved, showToast }) {
+  const ask = useAsk();  // Day 94: in-app, like the other gates
   // Day 83: the company's fee policy, loaded once. Until now this dialog computed DLD from a bare
   // 0.04 while the deal ledger read the company setting - a proposal could reach a buyer stating a
   // different rate from the one the app would then bill him. Falls back to the declared constants
@@ -492,7 +494,14 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       // Ceremony Tier-2: post-Reserve terms changes need a stated reason
       let ceremonyReason = null;
       if (["Reserved", "SPA Requirements"].includes(opp.stage)) {
-        ceremonyReason = window.prompt("Post-reservation change: money is already held on this deal.\n\nState the reason for revising terms (mandatory, audited):");
+        ceremonyReason = await ask({
+          title: "Money is already held on this deal",
+          body: "Revising terms after a reservation is a ceremony, not an edit. The record should say why.",
+          tone: "warning",
+          needsReason: true,
+          reasonLabel: "Why are the terms being revised?",
+          confirmLabel: "Send the revised offer",
+        });
         if (ceremonyReason === null || !ceremonyReason.trim()) { showToast("Revision cancelled - a reason is required after reservation", "warning"); return; }
         ceremonyReason = ceremonyReason.trim();
       }
