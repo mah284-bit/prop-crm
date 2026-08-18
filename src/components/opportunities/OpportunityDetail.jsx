@@ -809,7 +809,13 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       showToast("\ud83d\udd12 This deal is closed - stages are read-only. Activities remain open.", "warning");
       return;
     }
-    if ((toStage === "Reserved" || toStage === "SPA Requirements") && !(await proposalGate(toStage))) return;
+    // Day 94: OFFER ACCEPTED WAS NOT GATED, and it is the one that most needs to be. The stage
+    // means the buyer accepted AN OFFER - if none was sent there is nothing to accept, and it is a
+    // claim with no evidence. Worse, everything downstream inherits its terms from that accepted
+    // proposal. Founder found it by advancing a deal straight through.
+    // Still a SOFT gate: a verbal acceptance ahead of the paperwork is real, so a reason lets it
+    // through and the record says so.
+    if ((toStage === "Offer Accepted" || toStage === "Reserved" || toStage === "SPA Requirements") && !(await proposalGate(toStage))) return;
     if ((toStage === "Reserved" || toStage === "SPA Requirements" || toStage === "SPA Signed") && !(await kycGate(toStage))) return;
     // Day 86: A BLOCK CHILD PROCEEDS TO SPA ONLY WHEN THE WHOLE BLOCK IS COLLECTED.
     // Not per unit. The buyer sends ONE lump for the arrangement; the allocator splits it for
