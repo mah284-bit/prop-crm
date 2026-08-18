@@ -1523,7 +1523,10 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
                                    ? { status: "waived", amount: "", date: "", notes: bill.dld_fee.note, method: "" }
                                    : row("dld_fee", bill.dld_fee.expected, { notes: bill.dld_fee.note }),
                 oqood_fee:       row("oqood_fee", bill.oqood_fee.expected),
-                other_fees:      row("other_fees", null),
+                // Day 94: the line was born with NO expectation, so the developer's admin charge -
+                // resolved, frozen, and computed by dealBill - was discarded at the last step. It
+                // took money and never stated what was owed.
+                other_fees:      row("other_fees", bill.other_fees?.expected || null),
               },
               frozen_fee_policy: { spaFee: fees.spaFee, oqoodFee: fees.oqoodFee, dldPct: fees.dldPct, adminFeePerUnit: fees.adminFeePerUnit || 0, reservationFee: fees.reservationFee, frozen_at: new Date().toISOString() },
               created_by: currentUser.id,
