@@ -373,10 +373,25 @@ const confirmBlock = async (b) => {
                     <button key={v} type="button" onClick={()=>setForm(f=>({...f,dld_payer:v}))} style={{padding:"7px 10px",borderRadius:7,border:form.dld_payer===v?"none":"1px solid #D1D5DB",background:form.dld_payer===v?"#16A34A":"#fff",color:form.dld_payer===v?"#fff":"#475569",fontSize:11,fontWeight:600,cursor:"pointer"}}>{lb}</button>
                   ))}
                 </div>
-                {suggestedReservation > 0 && Number(form.reservation_expected || 0) !== suggestedReservation && (
+                {suggestedReservation > 0 && (
                   <div style={{fontSize:11,marginTop:4}}>
                     <span style={{color:"#B45309"}}>{feePolicy?.source?.reservationFee === "developer" ? "Developer\u2019s standard: " : "Company policy: "}{fmt(suggestedReservation)} ({lines.length} {lines.length===1?"unit":"units"} x {fmt(feePolicy.reservationFee)})</span>
-                    <button type="button" onClick={()=>setForm(f=>({...f,reservation_expected:String(suggestedReservation)}))} style={{marginLeft:8,padding:"2px 9px",borderRadius:6,border:"1px solid #B45309",background:"#fff",color:"#B45309",fontSize:11,fontWeight:700,cursor:"pointer"}}>use this</button>
+                    {(() => {
+                      // Day 95: SHOW BOTH, AND THE GAP. The hint used to vanish the moment the broker
+                      // typed a different figure - which is exactly when it matters. FOUNDER: "show
+                      // both the standard and the extra asked because of the risk, so they know it is
+                      // not standard." A difference is a fact worth stating, not a reason to hide the
+                      // baseline: six months later a manager should be able to see whether that extra
+                      // was a deliberate hedge or a typo nobody caught.
+                      const typed = Number(form.reservation_expected || 0);
+                      const gap = typed - suggestedReservation;
+                      if (!typed || Math.abs(gap) < 0.5) {
+                        return <button type="button" onClick={()=>setForm(f=>({...f,reservation_expected:String(suggestedReservation)}))} style={{marginLeft:8,padding:"2px 9px",borderRadius:6,border:"1px solid #B45309",background:"#fff",color:"#B45309",fontSize:11,fontWeight:700,cursor:"pointer"}}>use this</button>;
+                      }
+                      return <span style={{marginLeft:8,fontWeight:700,color: gap > 0 ? "#B91C1C" : "#166534"}}>
+                        {"you have set " + fmt(typed) + " \u00b7 " + fmt(Math.abs(gap)) + (gap > 0 ? " above" : " below")}
+                      </span>;
+                    })()}
                   </div>
                 )}</div>
             </div>
