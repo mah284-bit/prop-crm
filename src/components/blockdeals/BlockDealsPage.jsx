@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useFreshData } from "../../lib/useFreshData.js";
 import { supabase } from "../../lib/supabase.js";
-import { getFees } from "../../lib/feeSettings.js";
+import { getFees, getFeesForDeveloper } from "../../lib/feeSettings.js";
 import { startBookingClock, releaseBookingHold } from "../../lib/bookingClock.js";
 import { PAYMENT_PLAN_PRESETS } from "../../modules/constants.js";
 import DistributionCalculator from "./DistributionCalculator.jsx";
@@ -34,8 +34,27 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   // Founder ruling: "for this you have to sum or multiply with the number of units selected."
   const [feePolicy, setFeePolicy] = useState(null);
   useEffect(() => { (async () => {
-    if (currentUser?.company_id) setFeePolicy(await getFees(currentUser.company_id));
-  })(); }, [currentUser?.company_id]);
+    if (!currentUser?.company_id) return;
+    // Day 95: through the DEVELOPER's agreement when the units name one. Founder, Day 92: "the
+    // per-unit reservation fee is already coming from the settings - this should be read from
+    // there too." It was, but from the COMPANY's policy: a developer who agrees 50,000 a unit
+    // showed the company's 25,000 and the broker retyped it every time.
+    // Resolved from the first selected unit, since no children exist at creation.
+    const firstUnit = (lines || []).find(l => l.unit_id)?.unit_id;
+    let devId = null;
+    if (firstUnit) {
+      const { data: u } = await supabase.from("project_units").select("project_id").eq("id", firstUnit).maybeSingle();
+      if (u?.project_id) {
+        const { data: pr } = await supabase.from("projects").select("pp_developer_id").eq("id", u.project_id).maybeSingle();
+        devId = pr?.pp_developer_id || null;
+      }
+    }
+    setFeePolicy(devId
+      ? await getFeesForDeveloper(currentUser.company_id, devId)
+      : await getFees(currentUser.company_id));
+  // Day 95: lines too - the developer is resolved FROM the selected units, so resolving once
+  // before any unit is picked would always fall back to the company and leave the fix inert.
+  })(); }, [currentUser?.company_id, lines?.length]);
   const [lines, setLines] = useState([]);
   // Day 79: company reservation policy x units. MUST sit after `lines` - const-before-init.
   const suggestedReservation = feePolicy && lines.length
