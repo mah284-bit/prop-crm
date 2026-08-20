@@ -1752,3 +1752,10 @@ proposal total while the ledger charged it, unnoticed for weeks.
 ⭐ THE DAY-83 LESSON AGAIN: one function - buyerOutflow(deal, fees) - returning every line and the
 total, called by all four. dealBill already does this for the LEDGER; this is its display twin.
 Until then every new fee needs the same four-place hunt, and one will be missed.
+
+## ADDED DAY 95 - THE BUYER DROPDOWN NEEDS A SEARCH
+FOUNDER: "need a proper search in this form for buyer - sometimes difficult to look for buyers in
+the dropdown." A plain <select> is fine with six seeded leads and unusable with six hundred. Same
+problem wherever a lead, a unit or a developer is chosen from a list.
+FIX SHAPE: a type-to-filter combo, matching on name and phone, reusable across the forms that pick
+a person. The UnitPicker (Day 84) already solves this for units - the same treatment for people.
