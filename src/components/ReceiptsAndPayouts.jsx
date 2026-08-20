@@ -89,6 +89,31 @@ export default function ReceiptsAndPayouts({ currentUser, showToast }) {
 
   const totalIn = r2(batches.reduce((t, b) => t + b.total, 0));
 
+  // Day 95: WHAT WAS INVOICED AGAINST WHAT ARRIVED. The founder ruled out a dispute workflow - an
+  // invoice is an invoice - but a shortfall can slip through a bulk settlement unnoticed: one
+  // transfer clears eight invoices oldest-first, and a short payment leaves one quietly part-paid
+  // until the aging says sixty days. Sorted by the gap, so what slipped sits at the top.
+  const gaps = useMemo(() => {
+    return invoices
+      .filter((i) => !["draft", "written_off"].includes(i.invoice_status))
+      .map((i) => {
+        const billed = Number(i.commission_net || 0);
+        const got = Number(i.amount_received || 0);
+        const mine = receipts.filter((r) => r.invoice_id === i.id && r.status !== "voided");
+        const batched = mine.filter((r) => r.batch_id);
+        return {
+          id: i.id, number: i.invoice_number || "(no number)",
+          developer: devName(i.developer_id),
+          billed, got, diff: r2(billed - got),
+          receipts: mine.length,
+          viaBatch: batched.length > 0,
+          lastDate: mine.map((r) => r.received_date).filter(Boolean).sort().pop() || null,
+        };
+      })
+      .filter((g) => Math.abs(g.diff) > 0.5)
+      .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
+  }, [invoices, receipts, developers]);
+
   // Earned per agent, from invoices that have been RAISED. Split between what the developer has
   // actually paid and what is still owed - a brokerage usually pays the agent on receipt.
   const payouts = useMemo(() => {
@@ -123,7 +148,7 @@ export default function ReceiptsAndPayouts({ currentUser, showToast }) {
       </div>
 
       <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14, flexWrap: "wrap" }}>
-        {[["receipts", "Money in"], ["payouts", "Owed to agents"]].map(([k, label]) => (
+        {[["receipts", "Money in"], ["payouts", "Owed to agents"], ["gaps", "What does not match"]].map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)}
             style={{ padding: "6px 14px", borderRadius: 8, border: "1.5px solid " + (tab === k ? "#0F2540" : "#E2E8F0"), background: tab === k ? "#0F2540" : "#fff", color: tab === k ? "#fff" : "#475569", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             {label}
@@ -176,6 +201,53 @@ export default function ReceiptsAndPayouts({ currentUser, showToast }) {
               </table>
             </div>
           ))}
+        </div>
+      )}
+
+      {!loading && tab === "gaps" && (
+        <div style={CARD}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#A0AEC0", textTransform: "uppercase", letterSpacing: ".5px" }}>
+              {gaps.length === 0 ? "Everything reconciles" : gaps.length + " invoice" + (gaps.length === 1 ? "" : "s") + " do not match"}
+            </div>
+            {gaps.length > 0 && <div style={{ fontSize: 15, fontWeight: 800, color: "#B45309" }}>{aed(gaps.reduce((t, g) => t + g.diff, 0))}</div>}
+          </div>
+          <div style={{ fontSize: 11, color: "#64748B", marginBottom: 10 }}>
+            What was invoiced against what arrived. A bulk settlement clears the oldest invoices first,
+            so a short transfer can leave one quietly part-paid.
+          </div>
+          {gaps.length === 0 && <div style={{ fontSize: 12, color: "#166534" }}>Every issued invoice has been paid in full.</div>}
+          {gaps.length > 0 && (
+            <table style={T}>
+              <thead>
+                <tr>
+                  <th style={TH}>Invoice</th>
+                  <th style={TH}>Developer</th>
+                  <th style={{ ...TH, textAlign: "right" }}>Invoiced</th>
+                  <th style={{ ...TH, textAlign: "right" }}>Received</th>
+                  <th style={{ ...TH, textAlign: "right" }}>Short by</th>
+                  <th style={TH}>Last payment</th>
+                </tr>
+              </thead>
+              <tbody>
+                {gaps.map((g) => (
+                  <tr key={g.id}>
+                    <td style={{ ...TD, fontWeight: 600 }}>
+                      {g.number}
+                      {g.viaBatch && <span title="settled as part of one transfer covering several invoices" style={{ marginLeft: 6, fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 9, background: "#EEF2FF", color: "#3730A3" }}>BULK</span>}
+                    </td>
+                    <td style={{ ...TD, color: "#64748B" }}>{g.developer}</td>
+                    <td style={{ ...TD, textAlign: "right" }}>{aed(g.billed)}</td>
+                    <td style={{ ...TD, textAlign: "right" }}>{aed(g.got)}</td>
+                    <td style={{ ...TD, textAlign: "right", fontWeight: 700, color: g.diff > 0 ? "#B91C1C" : "#166534" }}>
+                      {g.diff > 0 ? aed(g.diff) : aed(-g.diff) + " over"}
+                    </td>
+                    <td style={{ ...TD, color: "#64748B" }}>{dmy(g.lastDate)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
