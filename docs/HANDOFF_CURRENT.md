@@ -1885,3 +1885,21 @@ ALSO: Offer Accepted was the ONE stage the proposal gate did not cover - the sta
 accepted AN OFFER, and everything downstream inherits its terms · a revised offer on a deal holding
 money now says what it can and cannot change, and the ceremony that demands a reason FOLLOWS THE
 MONEY rather than a stage label, because a stale in-memory stage let one through unrecorded.
+
+## ── DAY 95 — A SHORT EVENING, THREE THINGS ──
+THE BLOCK'S RESERVATION now comes from the developer's own agreement rather than the company's
+policy, and the hint shows BOTH FIGURES AND THE GAP: "Developer's standard: AED 50,000 (2 units x
+AED 25,000) - you have set AED 65,000, AED 15,000 above". It used to vanish the moment the broker
+typed something different, which is exactly when it matters - six months later a manager should be
+able to see whether the extra was a deliberate hedge or a typo nobody caught.
+⭐ AND A RULING THAT UNDOES PART OF DAY 93: the fee tier has FOUR levels, not three. Day 93 put the
+developer's fees on the master agreement - but not every developer has one, and those deals then
+take the company's figures silently. Six Senses had already proved it. The chain must be
+frozen -> AGREEMENT (what we negotiated with him) -> DEVELOPER RECORD (what he charges everyone) ->
+company default -> fallback. The columns move to pp_developers tomorrow, and both forms gain the
+fields - none of the five is reachable through the UI today, which is why they have only ever been
+set by SQL.
+RECONCILIATION BUILT. The founder ruled out a dispute workflow: an invoice is an invoice. What the
+app owes is the DIFFERENCE between what was invoiced and what arrived, per unit - because a bulk
+settlement clears the oldest invoices first and a short transfer can leave one quietly part-paid
+until the aging says sixty days. Proven live: one invoice short by 20,000, everything else silent.
