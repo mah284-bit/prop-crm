@@ -32,6 +32,10 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   const [form, setForm] = useState({ lead_id: "", title: "", developer_name: "", discount_mode: "pct", discount_value: "", reservation_expected: "", payment_plan_preset: "", dld_payer: "buyer" });
   // Day 79: the company's reservation fee POLICY x number of units - computed, not typed.
   // Founder ruling: "for this you have to sum or multiply with the number of units selected."
+  // Day 95: declared ABOVE the fee effect that reads it - it was below, and the whole Block
+  // Deals page threw "Cannot access 'lines' before initialization" on open. A clean build says
+  // nothing about declaration order; only running it does.
+  const [lines, setLines] = useState([]);
   const [feePolicy, setFeePolicy] = useState(null);
   useEffect(() => { (async () => {
     if (!currentUser?.company_id) return;
@@ -55,7 +59,6 @@ export default function BlockDealsPage({ currentUser, showToast, onOpenOpp }) {
   // Day 95: lines too - the developer is resolved FROM the selected units, so resolving once
   // before any unit is picked would always fall back to the company and leave the fix inert.
   })(); }, [currentUser?.company_id, lines?.length]);
-  const [lines, setLines] = useState([]);
   // Day 79: company reservation policy x units. MUST sit after `lines` - const-before-init.
   const suggestedReservation = feePolicy && lines.length
     ? feePolicy.reservationFee * lines.length : 0;
