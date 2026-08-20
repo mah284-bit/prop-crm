@@ -1808,10 +1808,10 @@ opportunities.master_agreement_id is null on nearly every deal. The count is hon
 missing, and that is why the developer resolves through the unit's project instead.
 
 ## ⭐ RULING (Day 95) - A DISPUTE IS NOT A STATE MACHINE; RECONCILIATION IS THE REAL NEED
-The architect proposed a disputed state, a resolution path and a write-off flow. FOUNDER: "an
-invoice is an invoice, a dispute is a dispute. We have to only ensure how to handle if there is any
-DIFFERENCE IN THE AMOUNT RECEIVED against a unit - and a report, because during bulk payments things
-may slip out. Nothing more than that."
+The architect proposed a disputed state, a resolution path and a write-off flow. The founder ruled
+against all three: an invoice is an invoice and a dispute is a conversation held elsewhere. What the
+app must do is show any DIFFERENCE BETWEEN WHAT WAS INVOICED AND WHAT ARRIVED, per unit, and report
+it - because during a bulk settlement a shortfall can slip through unnoticed. Nothing beyond that.
 ⭐ SO: NOT a workflow. A RECONCILIATION VIEW - per unit, what was invoiced against what arrived, and
 the difference where there is one.
 THE RISK IS REAL: one transfer settles eight invoices oldest-first, and a short payment leaves one
