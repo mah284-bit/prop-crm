@@ -1783,3 +1783,26 @@ AGREEMENT from there - so a correction is one click rather than a trip to settin
 ⚠️ SAME INSTINCT AS THE DAY-92 SHORTFALL RULING: the app watches what counterparties actually do,
 rather than only what the settings claim. Worth thinking about what counts as "repeatedly" before
 building - three in a row, or a majority of the last five.
+
+## ⭐⭐ RULING (Day 95) - THE FEE TIER HAS FOUR LEVELS, NOT THREE, AND FRIDAY'S COLUMNS SIT ON THE WRONG ONE
+Day 93 put the developer's fees on pp_master_agreements. FOUNDER: "not all developers will have a
+master agreement - in such cases we lose them all." He is right, and it has already happened: Six
+Senses had no agreement, so its deals took the company's 4% and a zero admin fee with nothing said.
+⭐ THE CORRECT CHAIN, and it applies to EVERY fee uniformly:
+     frozen policy -> MASTER AGREEMENT (if one exists) -> DEVELOPER RECORD -> company default -> fallback
+Each tier means something different:
+  - the AGREEMENT is what WE NEGOTIATED WITH HIM - it may differ from what he charges others
+  - the DEVELOPER RECORD is what HE CHARGES EVERYONE, agreement or not
+  - the COMPANY DEFAULT is our own figure when we know nothing about him
+A developer's SPA fee is a FACT ABOUT THE DEVELOPER; the agreement is about our contract with him.
+Putting the fees only on the agreement made them unreachable for every developer we have not signed.
+THE WORK (about 90 minutes):
+ 1. the same five columns on pp_developers - default_spa_fee, default_oqood_fee, default_dld_pct,
+    default_reservation_fee, admin_fee_per_unit (plus default_dld_payer, which exists on the
+    agreement and is still read nowhere)
+ 2. getFeesForDeveloper resolves agreement -> developer -> company
+ 3. BOTH forms get the fields, with the rule stated on each: BLANK means fall through, ZERO means
+    this developer genuinely charges nothing. Two different facts.
+⚠️ ALSO SEEN ON THE AGREEMENT FORM: "Used in 0 opportunities" is always zero, because
+opportunities.master_agreement_id is null on nearly every deal. The count is honest; the LINK is
+missing, and that is why the developer resolves through the unit's project instead.
