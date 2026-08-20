@@ -1806,3 +1806,16 @@ THE WORK (about 90 minutes):
 ⚠️ ALSO SEEN ON THE AGREEMENT FORM: "Used in 0 opportunities" is always zero, because
 opportunities.master_agreement_id is null on nearly every deal. The count is honest; the LINK is
 missing, and that is why the developer resolves through the unit's project instead.
+
+## ⭐ RULING (Day 95) - A DISPUTE IS NOT A STATE MACHINE; RECONCILIATION IS THE REAL NEED
+The architect proposed a disputed state, a resolution path and a write-off flow. FOUNDER: "an
+invoice is an invoice, a dispute is a dispute. We have to only ensure how to handle if there is any
+DIFFERENCE IN THE AMOUNT RECEIVED against a unit - and a report, because during bulk payments things
+may slip out. Nothing more than that."
+⭐ SO: NOT a workflow. A RECONCILIATION VIEW - per unit, what was invoiced against what arrived, and
+the difference where there is one.
+THE RISK IS REAL: one transfer settles eight invoices oldest-first, and a short payment leaves one
+quietly part-paid. Nobody notices until the aging says 60 days.
+SHAPE: unit · invoice number · invoiced · received · difference · which transfer it came in on
+(batch_id already links them, Day 92). Sorted by difference, so what slipped is at the top.
+The existing `disputed` status stays as a label someone can set. It does not need a lifecycle.
