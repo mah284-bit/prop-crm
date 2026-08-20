@@ -372,7 +372,7 @@ const confirmBlock = async (b) => {
                 </div>
                 {suggestedReservation > 0 && Number(form.reservation_expected || 0) !== suggestedReservation && (
                   <div style={{fontSize:11,marginTop:4}}>
-                    <span style={{color:"#B45309"}}>Company policy: {fmt(suggestedReservation)} ({lines.length} {lines.length===1?"unit":"units"} x {fmt(feePolicy.reservationFee)})</span>
+                    <span style={{color:"#B45309"}}>{feePolicy?.source?.reservationFee === "developer" ? "Developer\u2019s standard: " : "Company policy: "}{fmt(suggestedReservation)} ({lines.length} {lines.length===1?"unit":"units"} x {fmt(feePolicy.reservationFee)})</span>
                     <button type="button" onClick={()=>setForm(f=>({...f,reservation_expected:String(suggestedReservation)}))} style={{marginLeft:8,padding:"2px 9px",borderRadius:6,border:"1px solid #B45309",background:"#fff",color:"#B45309",fontSize:11,fontWeight:700,cursor:"pointer"}}>use this</button>
                   </div>
                 )}</div>
