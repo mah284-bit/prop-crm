@@ -1759,3 +1759,15 @@ the dropdown." A plain <select> is fine with six seeded leads and unusable with 
 problem wherever a lead, a unit or a developer is chosen from a list.
 FIX SHAPE: a type-to-filter combo, matching on name and phone, reusable across the forms that pick
 a person. The UnitPicker (Day 84) already solves this for units - the same treatment for people.
+
+## ⭐ ADDED DAY 95 - WHEN A BROKER OVERRIDES THE SAME STANDARD REPEATEDLY, THE STANDARD IS WRONG
+FOUNDER: "if it keeps repeating, indication to the broker that this guy has changed his reservation
+cost, so he can change it."
+The reservation suggestion now shows the developer's standard and the gap when a broker types
+something else. The next step is NOTICING THE PATTERN: if he sets above Aldar's standard on four of
+the last five blocks, Aldar has moved his price and nobody updated the agreement.
+SHAPE: count recent overrides per developer, and when it repeats, say so with a way to UPDATE THE
+AGREEMENT from there - so a correction is one click rather than a trip to settings.
+⚠️ SAME INSTINCT AS THE DAY-92 SHORTFALL RULING: the app watches what counterparties actually do,
+rather than only what the settings claim. Worth thinking about what counts as "repeatedly" before
+building - three in a row, or a majority of the last five.
