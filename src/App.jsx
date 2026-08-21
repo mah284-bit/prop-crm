@@ -59,6 +59,7 @@ import LeadDetail from "./components/sales/LeadDetail.jsx";
 import ReportsModule from "./components/ReportsModule.jsx";
 import PropPulse from "./components/PropPulse.jsx";
 import MasterAgreements from "./components/MasterAgreements.jsx";
+import Developers from "./components/Developers.jsx";
 import CompanyConfigPage from "./components/admin/CompanyConfigPage.jsx";
 import OpenItemsGuard from "./components/opportunities/OpenItemsGuard.jsx";
 import { PwInput } from "./modules/auth/PwInput.jsx";
@@ -152,9 +153,9 @@ const ROLES = ["super_admin","admin","sales_manager","sales_agent","leasing_mana
 // Stored in localStorage. Set once by admin. Controls which modules are visible.
 // Which tabs each mode shows (enforced on top of role-based visibility)
 const MODE_TABS = {
-  sales:   ["dashboard","projects","builder","leads","customers","opportunities","block_deals","launch","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","settings","company_config","lead_queue","commission_outstanding","receipts_payouts","group_view","org_chart"],
+  sales:   ["dashboard","projects","builder","leads","customers","opportunities","block_deals","launch","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","companies","users","permissions","permsets","master_agreements","settings","company_config","lead_queue","commission_outstanding","receipts_payouts","developers","group_view","org_chart"],
   leasing: ["l_dashboard","l_leads","l_opportunities","l_projects","l_inventory","leasing","l_discounts","l_activity","l_ai","l_reports","l_proppulse","l_companies","l_users","l_permissions","l_permsets","l_group_view"],
-  both:    ["dashboard","projects","builder","leads","customers","opportunities","block_deals","launch","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","settings","company_config","lead_queue","commission_outstanding","receipts_payouts","group_view","org_chart"],
+  both:    ["dashboard","projects","builder","leads","customers","opportunities","block_deals","launch","leasing","l_opportunities","discounts","activity","ai","reports","proppulse","coach_ai","pay_plans","l_reports","companies","users","permissions","permsets","master_agreements","settings","company_config","lead_queue","commission_outstanding","receipts_payouts","developers","group_view","org_chart"],
 };
 // Which roles each mode makes available
 const MODE_ROLES = {
@@ -1032,6 +1033,9 @@ const TABS=[
   // 21 May 2026: Hide duplicate empty Permissions screen
   // {id:"permsets",   label:"Permissions",  icon:"🔐", app:"sales",   roles:["super_admin","admin"]},
   {id:"master_agreements",label:"Master Agreements", icon:"📄", app:"sales", roles:["super_admin","admin"]},
+  // Day 96: what each developer charges the buyer - the tier that catches every developer we have
+  // not signed an agreement with, and until now settable only by SQL.
+  {id:"developers",label:"Developers", icon:"🏗", app:"sales", roles:["super_admin","admin"]},
   {id:"settings",label:"Settings", icon:"⚙️", app:"sales", roles:["super_admin","admin","sales_manager"]},
   {id:"lead_queue",label:"Lead Assignment", icon:"📋", app:"sales", roles:["super_admin","admin","sales_manager"]},
   {id:"company_config", platformOnly:true, label:"Company Config", icon:"🌍", app:"sales", roles:["super_admin"]}, // ← NEW
@@ -2448,6 +2452,7 @@ export default function App(){
           {tab==="ai"          &&<AIAssistant leads={leads} units={aiUnits} projects={aiProjects} salePricing={aiSalePr} leasePricing={aiLeasePr} activities={activities} currentUser={currentUser} showToast={showToast}/>}
           {tab==="reports" && <ReportsModule currentUser={currentUser} showToast={showToast} globalOpps={opps} leads={leads} activities={activities} leasingData={{}} crmContext="sales" preloadedUnits={aiUnits} preloadedProjects={aiProjects} preloadedSalePricing={aiSalePr} preloadedLeasePricing={aiLeasePr} preloadedUsers={users}/>}
           {tab==="master_agreements" && <MasterAgreements currentUser={currentUser} showToast={showToast}/>}
+          {tab==="developers" && <Developers currentUser={currentUser} showToast={showToast}/>}
           {tab==="settings" && <SettingsPage currentUser={currentUser} users={users} showToast={showToast}/>}
           {tab==="company_config" && <CompanyConfigPage appConfig={appConfig} onConfigChange={setAppConfig} showToast={showToast}/>}
           {tab==="lead_queue" && <LeadQueuePage currentUser={currentUser} users={users} showToast={showToast} onNavigateToLead={(leadId)=>{const l=leads.find(x=>x.id===leadId); if(l){setSelLead(l);setView("lead");setTab("leads");}}}/>}

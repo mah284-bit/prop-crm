@@ -1,0 +1,207 @@
+import { useState, useEffect, useMemo } from "react";
+import { supabase } from "../lib/supabase.js";
+import { clearFeeCache } from "../lib/feeSettings.js";
+
+// Day 96: WHAT EACH DEVELOPER CHARGES THE BUYER.
+//
+// The fee chain has four levels: frozen policy -> master agreement -> DEVELOPER RECORD -> company
+// default. Day 93 put a developer's fees on the master agreement alone, and the founder caught the
+// flaw: not every developer has one, and those deals then take the company's figures silently. Six
+// Senses had already proved it - two deals invoiced at a company default nobody had agreed with
+// anyone.
+//
+// So the developer record holds WHAT HE CHARGES EVERYONE, and the agreement holds WHAT WE
+// NEGOTIATED WITH HIM. Two different facts, and until now neither could be set outside SQL: the
+// columns existed on pp_developers since an earlier, abandoned attempt, and nothing ever wrote to
+// them.
+//
+// ⚠️ BLANK AND ZERO ARE DIFFERENT ANSWERS. Blank means "we do not know his figure, use ours"; zero
+// means "he charges nothing for this". A default of 0 on admin_fee_per_unit had to be dropped on
+// Day 93 for exactly this reason - it made every developer read as charging nothing.
+
+const FEES = [
+  ["default_reservation_fee", "Reservation per unit", "AED", "What he asks to hold a unit."],
+  ["default_spa_fee", "SPA fee", "AED", "Charged at signing."],
+  ["default_oqood_fee", "Oqood fee", "AED", "Off-plan registration."],
+  ["default_dld_pct", "DLD", "%", "Usually 4% across the market."],
+  ["admin_fee_per_unit", "Admin fee per unit", "AED", "His own charge, per unit registered."],
+];
+
+const aed = (n) => (n === null || n === undefined || n === "" ? "—" : Number(n).toLocaleString());
+
+export default function Developers({ currentUser, showToast }) {
+  const [devs, setDevs] = useState([]);
+  const [agreements, setAgreements] = useState([]);
+  const [sel, setSel] = useState(null);
+  const [form, setForm] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [q, setQ] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [d, a] = await Promise.all([
+        supabase.from("pp_developers")
+          .select("id, name, logo_url, website, rera_developer_no, ded_licence, city, country, phone, email, is_active, default_spa_fee, default_oqood_fee, default_dld_pct, default_reservation_fee, admin_fee_per_unit, default_dld_payer, fees_updated_at")
+          .order("name"),
+        supabase.from("pp_master_agreements")
+          .select("developer_id, agreement_title, status")
+          .eq("company_id", currentUser.company_id).eq("status", "active"),
+      ]);
+      setDevs(d.data || []);
+      setAgreements(a.data || []);
+    } catch (e) {
+      showToast?.("Could not load developers: " + (e.message || e), "error");
+    } finally { setLoading(false); }
+  };
+  useEffect(() => { load(); }, [currentUser.company_id]);
+
+  const open = (d) => {
+    setSel(d);
+    setForm({
+      default_reservation_fee: d.default_reservation_fee ?? "",
+      default_spa_fee: d.default_spa_fee ?? "",
+      default_oqood_fee: d.default_oqood_fee ?? "",
+      default_dld_pct: d.default_dld_pct ?? "",
+      admin_fee_per_unit: d.admin_fee_per_unit ?? "",
+      default_dld_payer: d.default_dld_payer ?? "",
+    });
+  };
+
+  const save = async () => {
+    if (!sel) return;
+    setSaving(true);
+    // An empty box is NULL, not zero - "we do not know" rather than "he charges nothing".
+    const num = (v) => (v === "" || v === null || v === undefined ? null : Number(v));
+    const payload = {
+      default_reservation_fee: num(form.default_reservation_fee),
+      default_spa_fee: num(form.default_spa_fee),
+      default_oqood_fee: num(form.default_oqood_fee),
+      default_dld_pct: num(form.default_dld_pct),
+      admin_fee_per_unit: num(form.admin_fee_per_unit),
+      default_dld_payer: form.default_dld_payer || null,
+      fees_updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from("pp_developers").update(payload).eq("id", sel.id);
+    setSaving(false);
+    if (error) { showToast?.("Could not save: " + error.message, "error"); return; }
+    clearFeeCache();   // the resolver caches per developer; a saved figure must apply at once
+    showToast?.(sel.name + " updated", "success");
+    await load();
+    setSel((s) => (s ? { ...s, ...payload } : s));
+  };
+
+  const filtered = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    if (!t) return devs;
+    return devs.filter((d) => (d.name || "").toLowerCase().includes(t) || (d.city || "").toLowerCase().includes(t));
+  }, [devs, q]);
+
+  const hasAgreement = (id) => agreements.some((a) => a.developer_id === id);
+  const isSet = (d) => FEES.some(([k]) => d[k] !== null && d[k] !== undefined);
+
+  const L = { fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: 4 };
+  const F = { width: "100%", padding: "7px 9px", border: "1px solid #D1D5DB", borderRadius: 7, fontSize: 13 };
+
+  return (
+    <div style={{ padding: "1.25rem" }}>
+      <div style={{ fontSize: 20, fontWeight: 700, color: "#0F2540" }}>Developers</div>
+      <div style={{ fontSize: 12, color: "#64748B", marginBottom: 14 }}>
+        What each developer charges the buyer &middot; used unless a master agreement with him says otherwise
+      </div>
+
+      <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+        {/* ── The list ─────────────────────────────────────────────────────── */}
+        <div style={{ width: 300, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, overflow: "hidden" }}>
+          <div style={{ padding: 10, borderBottom: "1px solid #E2E8F0" }}>
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search developers" style={{ ...F, fontSize: 12 }} />
+          </div>
+          <div style={{ maxHeight: 520, overflowY: "auto" }}>
+            {loading && <div style={{ padding: 12, fontSize: 12, color: "#94A3B8" }}>Loading…</div>}
+            {!loading && filtered.map((d) => (
+              <button key={d.id} onClick={() => open(d)}
+                style={{ display: "block", width: "100%", textAlign: "left", padding: "9px 12px", border: "none", borderBottom: "1px solid #F1F5F9", background: sel?.id === d.id ? "#F0F5FF" : "#fff", cursor: "pointer" }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2540" }}>{d.name}</div>
+                <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}>
+                  {isSet(d) ? <span style={{ color: "#166534", fontWeight: 700 }}>fees set</span> : "no fees set"}
+                  {hasAgreement(d.id) && <span style={{ marginLeft: 8, color: "#3730A3", fontWeight: 700 }}>agreement</span>}
+                </div>
+              </button>
+            ))}
+            {!loading && filtered.length === 0 && <div style={{ padding: 12, fontSize: 12, color: "#94A3B8" }}>Nothing matches.</div>}
+          </div>
+        </div>
+
+        {/* ── The developer ────────────────────────────────────────────────── */}
+        <div style={{ flex: 1, minWidth: 380 }}>
+          {!sel && (
+            <div style={{ padding: "40px 20px", textAlign: "center", color: "#94A3B8", fontSize: 13, border: "1px dashed #E2E8F0", borderRadius: 10 }}>
+              Pick a developer to see what he charges.
+            </div>
+          )}
+
+          {sel && (
+            <>
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: 14, marginBottom: 14 }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: "#0F2540" }}>{sel.name}</div>
+                <div style={{ fontSize: 11, color: "#64748B", marginTop: 4, lineHeight: 1.7 }}>
+                  {[sel.rera_developer_no && "RERA " + sel.rera_developer_no,
+                    sel.ded_licence && "Licence " + sel.ded_licence,
+                    [sel.city, sel.country].filter(Boolean).join(", "),
+                    sel.website].filter(Boolean).join("  \u00b7  ") || "No registration details recorded."}
+                </div>
+                {hasAgreement(sel.id) && (
+                  <div style={{ marginTop: 9, padding: "7px 10px", background: "#EEF2FF", border: "1px solid #C7D2FE", borderRadius: 7, fontSize: 11.5, color: "#3730A3" }}>
+                    There is an active master agreement with this developer. Anything it states overrides what is set here.
+                  </div>
+                )}
+              </div>
+
+              <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#A0AEC0", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 3 }}>
+                  Fees this developer charges the buyer
+                </div>
+                <div style={{ fontSize: 11.5, color: "#64748B", marginBottom: 12, lineHeight: 1.5 }}>
+                  Leave a box <strong>blank</strong> to use your company&rsquo;s standard. Enter <strong>0</strong> only if he genuinely charges
+                  nothing for it &mdash; those are different answers, and the app treats them differently.
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  {FEES.map(([key, label, unit, hint]) => (
+                    <div key={key}>
+                      <label style={L}>{label} {unit === "%" ? "(%)" : "(AED)"}</label>
+                      <input type="number" value={form[key]} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                        placeholder="company standard" style={F} />
+                      <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 3 }}>{hint}</div>
+                    </div>
+                  ))}
+                  <div>
+                    <label style={L}>Who usually pays the DLD</label>
+                    <select value={form.default_dld_payer} onChange={(e) => setForm((f) => ({ ...f, default_dld_payer: e.target.value }))} style={F}>
+                      <option value="">company standard</option>
+                      <option value="buyer">Buyer pays</option>
+                      <option value="developer">Developer absorbs</option>
+                      <option value="split">Split 50/50</option>
+                    </select>
+                    <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 3 }}>Pre-fills a new deal; still changeable per deal.</div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
+                  <div style={{ fontSize: 10.5, color: "#94A3B8" }}>
+                    {sel.fees_updated_at ? "Last confirmed " + new Date(sel.fees_updated_at).toLocaleDateString("en-GB") : "Never confirmed"}
+                  </div>
+                  <button onClick={save} disabled={saving}
+                    style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#0F2540", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "wait" : "pointer" }}>
+                    {saving ? "Saving…" : "Save"}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
