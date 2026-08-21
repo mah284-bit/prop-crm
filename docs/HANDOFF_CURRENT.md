@@ -1903,3 +1903,27 @@ RECONCILIATION BUILT. The founder ruled out a dispute workflow: an invoice is an
 app owes is the DIFFERENCE between what was invoiced and what arrived, per unit - because a bulk
 settlement clears the oldest invoices first and a short transfer can leave one quietly part-paid
 until the aging says sixty days. Proven live: one invoice short by 20,000, everything else silent.
+
+## ── DAY 96 — THE FEE TIER FINISHED, AND CORRECTED ONTO THE RIGHT TABLE ──
+⭐ THE RULING FROM DAY 95 HELD, AND THEN CORRECTED ITSELF AGAIN. Day 93 put a developer's fees on the
+master agreement; Day 95 saw the flaw - not every developer has one - and moved them to the
+pp_developers catalog. Day 96 found THAT wrong too: the catalog is GLOBAL, "read-only for all" per
+the Access Control spec and the Decision Log, and its UPDATE policy already said super_admin only.
+A brokerage writing its own figures there would push them into every other tenant's deals.
+So the middle tier is pp_developer_fees, keyed on (company_id, developer_id). Aldar's SPA fee as
+recorded by one firm is a fact about THAT FIRM'S dealings with him, not about Aldar.
+PROVEN FIELD BY FIELD: the agreement's 25,000 reservation and 2,500 admin fee beat the brokerage's
+own 30,000 and 4,000, while the brokerage's 7,000 SPA fee applies because the agreement states none,
+and Oqood falls through to the company because neither has one. The coalesce resolves PER FIELD.
+⭐ BOTH ENDS ARE NOW CONFIGURABLE - a Developers screen (searchable, filterable by whether an
+agreement exists) and a fee section on the agreement form. Until today every one of these figures
+could only be set by SQL.
+⭐ AND EVERY CHANGE LEAVES A TRACE. pp_fee_history records what moved, from what, to what, by whom,
+and from which source - because the freeze protects each DEAL, not the policy behind it, and a fee
+that changes often would otherwise leave two deals frozen at different figures with nothing to
+explain the difference. One row per field that actually moved.
+ALSO FIXED: the ledger seed read the company tier alone, so a developer's own SPA fee was ignored
+and a frozen deal was reseeded at today's policy.
+⚠️ FOUR TEMPORAL-DEAD-ZONE BREAKS THIS WEEK, three of them today - paymentTick, lines, hasAgreement -
+plus two duplicate declarations added to a file that already had them. Every one passed the build.
+READ THE DECLARATIONS BEFORE EDITING; the build will not tell you.
