@@ -73,6 +73,9 @@ export default function Developers({ currentUser, showToast }) {
   };
   useEffect(() => { load(); }, [currentUser.company_id]);
 
+  // Day 96: declared ABOVE the memo that filters on it - fourth temporal-dead-zone this week.
+  const hasAgreement = (id) => agreements.some((a) => a.developer_id === id);
+
   const feesFor = (id) => fees.find((f) => f.developer_id === id) || {};
 
   const open = (d) => {
@@ -131,7 +134,7 @@ export default function Developers({ currentUser, showToast }) {
     return byText.filter((d) => agFilter === "with" ? hasAgreement(d.id) : !hasAgreement(d.id));
   }, [devs, q, agFilter, agreements]);
 
-  const hasAgreement = (id) => agreements.some((a) => a.developer_id === id);
+
   const isSet = (d) => { const f = feesFor(d.id); return FEES.some(([k]) => f[k] !== null && f[k] !== undefined); };
 
   const L = { fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: 4 };
@@ -149,14 +152,6 @@ export default function Developers({ currentUser, showToast }) {
         <div style={{ width: 300, background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, overflow: "hidden" }}>
           <div style={{ padding: 10, borderBottom: "1px solid #E2E8F0" }}>
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search developers" style={{ ...F, fontSize: 12 }} />
-            <div style={{ display: "flex", gap: 4, marginTop: 7 }}>
-              {[["all", "All"], ["with", "With agreement"], ["without", "Without"]].map(([k, lbl]) => (
-                <button key={k} onClick={() => setAgFilter(k)}
-                  style={{ flex: 1, padding: "4px 6px", borderRadius: 6, border: "1px solid " + (agFilter === k ? "#0F2540" : "#E2E8F0"), background: agFilter === k ? "#0F2540" : "#fff", color: agFilter === k ? "#fff" : "#64748B", fontSize: 10.5, fontWeight: 700, cursor: "pointer" }}>
-                  {lbl}
-                </button>
-              ))}
-            </div>
             <div style={{ display: "flex", gap: 4, marginTop: 7 }}>
               {[["all", "All"], ["with", "With agreement"], ["without", "Without"]].map(([k, lbl]) => (
                 <button key={k} onClick={() => setAgFilter(k)}
