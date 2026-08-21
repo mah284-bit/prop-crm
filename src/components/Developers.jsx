@@ -145,6 +145,14 @@ export default function Developers({ currentUser, showToast }) {
                 </button>
               ))}
             </div>
+            <div style={{ display: "flex", gap: 4, marginTop: 7 }}>
+              {[["all", "All"], ["with", "With agreement"], ["without", "Without"]].map(([k, lbl]) => (
+                <button key={k} onClick={() => setAgFilter(k)}
+                  style={{ flex: 1, padding: "4px 6px", borderRadius: 6, border: "1px solid " + (agFilter === k ? "#0F2540" : "#E2E8F0"), background: agFilter === k ? "#0F2540" : "#fff", color: agFilter === k ? "#fff" : "#64748B", fontSize: 10.5, fontWeight: 700, cursor: "pointer" }}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
           </div>
           <div style={{ maxHeight: 520, overflowY: "auto" }}>
             {loading && <div style={{ padding: 12, fontSize: 12, color: "#94A3B8" }}>Loading…</div>}
