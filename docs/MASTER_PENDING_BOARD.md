@@ -1833,3 +1833,21 @@ The existing `disputed` status stays as a label someone can set. It does not nee
    PROVEN FIELD BY FIELD on Aldar: the agreement's 25,000 reservation and 2,500 admin fee beat the
    brokerage's own 30,000 and 4,000, while the brokerage's 7,000 SPA fee applies because the
    agreement states none. The coalesce resolves PER FIELD, not per source.
+
+## ⭐⭐ ADDED DAY 96 - CAPABILITIES ANSWER "WHAT MAY I DO", NOTHING ANSWERS "OVER WHOM"
+The D7 arc above makes roles custom. It does not solve the founder's structural question, raised
+again today: a group with branches across the emirates, each with a BRANCH MANAGER reporting to a
+GROUP MANAGER.
+⚠️ TWO BRANCH MANAGERS WITH IDENTICAL CAPABILITIES MUST SEE DIFFERENT DATA. That is SCOPE, not
+permission, and the app has no concept of it: `see_all` is binary - everything, or only mine. There
+is no "my branch", and no "the branches under me".
+THREE PIECES, one question:
+ 1. SCOPE ON A ROLE - own / branch / group / company. Every list query then filters by it.
+ 2. THE ORG CHART must DRIVE that scope rather than only display it. It exists as a screen; nothing
+    reads it.
+ 3. ONE PERSON, TWO ROLES - an admin in a small brokerage who also sells, with his own deals and his
+    own share. A user has exactly one role today. This connects to the PAYOUT HIERARCHY (Day 92):
+    a manager who also sells earns an override AND his own commission.
+⚠️ SEQUENCE: this belongs WITH the payout hierarchy, not after it - an override follows the org
+chart, and the org chart is what defines scope. Designing them separately would mean building the
+same tree twice.
