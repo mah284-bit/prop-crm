@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "../lib/supabase";
+import { recordFeeChanges } from "../lib/feeHistory.js";
+import { clearFeeCache } from "../lib/feeSettings.js";
 
 /**
  * Master Developer Agreements Module - Stage 1 of 6-stage broker workflow.
@@ -887,6 +889,20 @@ function AgreementFormModal({ agreement, developers, currentUser, agreementUsage
         showToast?.(`Agreement created: ${form.agreement_title}`, "success");
       }
 
+      // Day 96: record which fees moved and from what. These figures change often - that is why
+      // they freeze onto a deal at reservation - but the freeze protects the DEAL, not the policy.
+      // On a new agreement everything reads "not set -> X", which is the honest description.
+      try {
+        await recordFeeChanges({
+          companyId: currentUser.company_id,
+          developerId: data.developer_id,
+          source: "agreement",
+          before: isEdit ? (agreement || {}) : {},
+          after: data,
+          currentUser,
+        });
+      } catch (e) { console.warn("fee history:", e); }
+      clearFeeCache();
       onSaved();
     } catch (err) {
       console.error("Save failed:", err);
