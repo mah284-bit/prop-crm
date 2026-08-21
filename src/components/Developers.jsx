@@ -31,6 +31,7 @@ const aed = (n) => (n === null || n === undefined || n === "" ? "—" : Number(n
 
 export default function Developers({ currentUser, showToast }) {
   const [devs, setDevs] = useState([]);
+  const [fees, setFees] = useState([]);   // this brokerage's own figures, per developer
   const [agreements, setAgreements] = useState([]);
   const [sel, setSel] = useState(null);
   const [form, setForm] = useState({});
@@ -41,14 +42,23 @@ export default function Developers({ currentUser, showToast }) {
   const load = async () => {
     setLoading(true);
     try {
-      const [d, a] = await Promise.all([
+      const [d, f, a] = await Promise.all([
+        // Day 96: pp_developers is GLOBAL CATALOG DATA - "read-only for all", per the Access Control
+        // spec and the Decision Log. A brokerage must not write to it: Aldar's SPA fee as recorded by
+        // one firm is not a fact about Aldar, it is a fact about THAT FIRM'S dealings with him, and
+        // writing it to the catalog would push it into every other tenant's deals.
+        // So the fees live in pp_developer_fees, keyed on (company_id, developer_id).
         supabase.from("pp_developers")
-          .select("id, name, logo_url, website, rera_developer_no, ded_licence, city, country, phone, email, is_active, default_spa_fee, default_oqood_fee, default_dld_pct, default_reservation_fee, admin_fee_per_unit, default_dld_payer, fees_updated_at")
+          .select("id, name, logo_url, website, rera_developer_no, ded_licence, city, country, phone, email, is_active")
           .order("name"),
+        supabase.from("pp_developer_fees")
+          .select("developer_id, default_spa_fee, default_oqood_fee, default_dld_pct, default_reservation_fee, admin_fee_per_unit, default_dld_payer, updated_at")
+          .eq("company_id", currentUser.company_id),
         supabase.from("pp_master_agreements")
           .select("developer_id, agreement_title, status")
           .eq("company_id", currentUser.company_id).eq("status", "active"),
       ]);
+      setFees(f.data || []);
       setDevs(d.data || []);
       setAgreements(a.data || []);
     } catch (e) {
@@ -57,15 +67,18 @@ export default function Developers({ currentUser, showToast }) {
   };
   useEffect(() => { load(); }, [currentUser.company_id]);
 
+  const feesFor = (id) => fees.find((f) => f.developer_id === id) || {};
+
   const open = (d) => {
     setSel(d);
+    const own = feesFor(d.id);
     setForm({
-      default_reservation_fee: d.default_reservation_fee ?? "",
-      default_spa_fee: d.default_spa_fee ?? "",
-      default_oqood_fee: d.default_oqood_fee ?? "",
-      default_dld_pct: d.default_dld_pct ?? "",
-      admin_fee_per_unit: d.admin_fee_per_unit ?? "",
-      default_dld_payer: d.default_dld_payer ?? "",
+      default_reservation_fee: own.default_reservation_fee ?? "",
+      default_spa_fee: own.default_spa_fee ?? "",
+      default_oqood_fee: own.default_oqood_fee ?? "",
+      default_dld_pct: own.default_dld_pct ?? "",
+      admin_fee_per_unit: own.admin_fee_per_unit ?? "",
+      default_dld_payer: own.default_dld_payer ?? "",
     });
   };
 
@@ -81,15 +94,20 @@ export default function Developers({ currentUser, showToast }) {
       default_dld_pct: num(form.default_dld_pct),
       admin_fee_per_unit: num(form.admin_fee_per_unit),
       default_dld_payer: form.default_dld_payer || null,
-      fees_updated_at: new Date().toISOString(),
+      company_id: currentUser.company_id,
+      developer_id: sel.id,
+      updated_by: currentUser.id,
+      updated_at: new Date().toISOString(),
     };
-    const { error } = await supabase.from("pp_developers").update(payload).eq("id", sel.id);
+    // One row per brokerage per developer - the unique key makes this a clean upsert.
+    const { error } = await supabase.from("pp_developer_fees")
+      .upsert(payload, { onConflict: "company_id,developer_id" });
     setSaving(false);
     if (error) { showToast?.("Could not save: " + error.message, "error"); return; }
     clearFeeCache();   // the resolver caches per developer; a saved figure must apply at once
     showToast?.(sel.name + " updated", "success");
     await load();
-    setSel((s) => (s ? { ...s, ...payload } : s));
+
   };
 
   const filtered = useMemo(() => {
@@ -99,7 +117,7 @@ export default function Developers({ currentUser, showToast }) {
   }, [devs, q]);
 
   const hasAgreement = (id) => agreements.some((a) => a.developer_id === id);
-  const isSet = (d) => FEES.some(([k]) => d[k] !== null && d[k] !== undefined);
+  const isSet = (d) => { const f = feesFor(d.id); return FEES.some(([k]) => f[k] !== null && f[k] !== undefined); };
 
   const L = { fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: 4 };
   const F = { width: "100%", padding: "7px 9px", border: "1px solid #D1D5DB", borderRadius: 7, fontSize: 13 };
@@ -190,7 +208,7 @@ export default function Developers({ currentUser, showToast }) {
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
                   <div style={{ fontSize: 10.5, color: "#94A3B8" }}>
-                    {sel.fees_updated_at ? "Last confirmed " + new Date(sel.fees_updated_at).toLocaleDateString("en-GB") : "Never confirmed"}
+                    {(() => { const u = feesFor(sel.id).updated_at; return u ? "Last confirmed " + new Date(u).toLocaleDateString("en-GB") : "Never confirmed"; })()}
                   </div>
                   <button onClick={save} disabled={saving}
                     style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#0F2540", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "wait" : "pointer" }}>
