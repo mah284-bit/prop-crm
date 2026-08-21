@@ -1416,7 +1416,7 @@ function AgreementFormModal({ agreement, developers, currentUser, agreementUsage
             </div>
           </Section>
 
-          <Section title="6. Notes" subtitle="Anything else worth recording about this relationship">
+          <Section title="7. Notes" subtitle="Anything else worth recording about this relationship">
             <Field label="" full>
               <textarea
                 value={form.notes}
