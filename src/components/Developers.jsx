@@ -40,6 +40,11 @@ export default function Developers({ currentUser, showToast }) {
   const [q, setQ] = useState("");
   const [agFilter, setAgFilter] = useState("all");   // Day 96: find the developers needing attention
   const [history, setHistory] = useState([]);
+  const [people, setPeople] = useState([]);
+  useEffect(() => { (async () => {
+    const { data } = await supabase.from("profiles").select("id, full_name").eq("company_id", currentUser.company_id);
+    setPeople(data || []);
+  })(); }, [currentUser.company_id]);
   useEffect(() => { (async () => {
     setHistory(sel ? await getFeeHistory(currentUser.company_id, sel.id) : []);
   })(); }, [sel?.id, currentUser.company_id, saving]);
@@ -75,6 +80,10 @@ export default function Developers({ currentUser, showToast }) {
 
   // Day 96: declared ABOVE the memo that filters on it - fourth temporal-dead-zone this week.
   const hasAgreement = (id) => agreements.some((a) => a.developer_id === id);
+
+  // Day 96: who made the change. It has always been recorded; it was simply never shown, and who
+  // is half the point of a record.
+  const personName = (id) => people.find((p) => p.id === id)?.full_name || "\u2014";
 
   const feesFor = (id) => fees.find((f) => f.developer_id === id) || {};
 
@@ -244,6 +253,7 @@ export default function Developers({ currentUser, showToast }) {
                         <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 9, background: h.source === "agreement" ? "#EEF2FF" : "#F1F5F9", color: h.source === "agreement" ? "#3730A3" : "#64748B" }}>
                           {h.source === "agreement" ? "AGREEMENT" : "STANDARD"}
                         </span>
+                        <span style={{ color: "#94A3B8" }}>{personName(h.changed_by)}</span>
                         {h.reason && <span style={{ color: "#94A3B8", fontStyle: "italic" }}>{h.reason}</span>}
                       </div>
                     ))}
