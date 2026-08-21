@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "../lib/supabase.js";
 import { clearFeeCache } from "../lib/feeSettings.js";
+import { recordFeeChanges, getFeeHistory, describeChange } from "../lib/feeHistory.js";
 
 // Day 96: WHAT EACH DEVELOPER CHARGES THE BUYER.
 //
@@ -38,6 +39,10 @@ export default function Developers({ currentUser, showToast }) {
   const [saving, setSaving] = useState(false);
   const [q, setQ] = useState("");
   const [agFilter, setAgFilter] = useState("all");   // Day 96: find the developers needing attention
+  const [history, setHistory] = useState([]);
+  useEffect(() => { (async () => {
+    setHistory(sel ? await getFeeHistory(currentUser.company_id, sel.id) : []);
+  })(); }, [sel?.id, currentUser.company_id, saving]);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -105,6 +110,13 @@ export default function Developers({ currentUser, showToast }) {
       .upsert(payload, { onConflict: "company_id,developer_id" });
     setSaving(false);
     if (error) { showToast?.("Could not save: " + error.message, "error"); return; }
+    // Day 96: record WHAT MOVED. These figures change often - that is why they freeze onto a deal -
+    // but the freeze protects the deal, not the policy. Without this, an edit from 2,500 to 4,000
+    // leaves two deals frozen at different figures and nothing to explain the difference.
+    await recordFeeChanges({
+      companyId: currentUser.company_id, developerId: sel.id, source: "developer",
+      before: feesFor(sel.id), after: payload, currentUser,
+    });
     clearFeeCache();   // the resolver caches per developer; a saved figure must apply at once
     showToast?.(sel.name + " updated", "success");
     await load();
@@ -224,6 +236,24 @@ export default function Developers({ currentUser, showToast }) {
                     <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 3 }}>Pre-fills a new deal; still changeable per deal.</div>
                   </div>
                 </div>
+
+                {/* Day 96: what moved, and when. A figure that changes often needs its own record -
+                    the freeze protects each deal, not the policy behind it. */}
+                {history.length > 0 && (
+                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid #F1F5F9" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "#A0AEC0", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 6 }}>What has changed</div>
+                    {history.slice(0, 6).map((h) => (
+                      <div key={h.id} style={{ display: "flex", gap: 8, alignItems: "baseline", fontSize: 11.5, color: "#475569", padding: "3px 0" }}>
+                        <span style={{ color: "#94A3B8", minWidth: 66 }}>{new Date(h.changed_at).toLocaleDateString("en-GB")}</span>
+                        <span style={{ color: "#0F2540" }}>{describeChange(h)}</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 9, background: h.source === "agreement" ? "#EEF2FF" : "#F1F5F9", color: h.source === "agreement" ? "#3730A3" : "#64748B" }}>
+                          {h.source === "agreement" ? "AGREEMENT" : "STANDARD"}
+                        </span>
+                        {h.reason && <span style={{ color: "#94A3B8", fontStyle: "italic" }}>{h.reason}</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
                   <div style={{ fontSize: 10.5, color: "#94A3B8" }}>
