@@ -580,6 +580,13 @@ function AgreementFormModal({ agreement, developers, currentUser, agreementUsage
     payment_trigger: agreement?.payment_trigger || "",
     payment_days: agreement?.payment_days != null ? String(agreement.payment_days) : "",
     discount_authority_pct: agreement?.discount_authority_pct != null ? String(agreement.discount_authority_pct) : "",
+    // Day 96: the fees WE NEGOTIATED with this developer. Blank falls through to what he charges
+    // everyone (the Developers screen), then to the company default. Zero means he charges nothing.
+    default_reservation_fee: agreement?.default_reservation_fee != null ? String(agreement.default_reservation_fee) : "",
+    default_spa_fee: agreement?.default_spa_fee != null ? String(agreement.default_spa_fee) : "",
+    default_oqood_fee: agreement?.default_oqood_fee != null ? String(agreement.default_oqood_fee) : "",
+    default_dld_pct: agreement?.default_dld_pct != null ? String(agreement.default_dld_pct) : "",
+    admin_fee_per_unit: agreement?.admin_fee_per_unit != null ? String(agreement.admin_fee_per_unit) : "",
     discount_requires_approval_above: agreement?.discount_requires_approval_above != null ? String(agreement.discount_requires_approval_above) : "",
     valid_from: agreement?.valid_from || "",
     valid_until: agreement?.valid_until || "",
@@ -845,6 +852,11 @@ function AgreementFormModal({ agreement, developers, currentUser, agreementUsage
         payment_trigger: form.payment_trigger || null,
         payment_days: form.payment_days === "" ? null : Number(form.payment_days),
         discount_authority_pct: form.discount_authority_pct === "" ? null : Number(form.discount_authority_pct),
+        default_reservation_fee: form.default_reservation_fee === "" ? null : Number(form.default_reservation_fee),
+        default_spa_fee: form.default_spa_fee === "" ? null : Number(form.default_spa_fee),
+        default_oqood_fee: form.default_oqood_fee === "" ? null : Number(form.default_oqood_fee),
+        default_dld_pct: form.default_dld_pct === "" ? null : Number(form.default_dld_pct),
+        admin_fee_per_unit: form.admin_fee_per_unit === "" ? null : Number(form.admin_fee_per_unit),
         discount_requires_approval_above: form.discount_requires_approval_above === "" ? null : Number(form.discount_requires_approval_above),
         valid_from: form.valid_from || null,
         valid_until: form.valid_until || null,
@@ -1139,7 +1151,44 @@ function AgreementFormModal({ agreement, developers, currentUser, agreementUsage
             </Row>
           </Section>
 
-          <Section title="5. Validity & Audit" subtitle="Period covered and signing details">
+          {/* Day 96: what WE negotiated with him, as against what he charges everyone. Blank falls
+              through to the Developers screen, then to the company default. Zero means he charges
+              nothing for it - a different answer from blank, and the app treats them differently. */}
+          <Section title="5. Fees for the buyer" subtitle="What we agreed with this developer. Blank uses his standard; 0 means he charges nothing.">
+            <Row>
+              <Field label="Reservation per unit (AED)" hint="What he asks to hold a unit">
+                <input type="number" step="0.01" min="0" value={form.default_reservation_fee}
+                  onChange={(e) => updateField("default_reservation_fee", e.target.value)}
+                  placeholder="his standard" style={inputStyle()} />
+              </Field>
+              <Field label="SPA fee (AED)" hint="Charged at signing">
+                <input type="number" step="0.01" min="0" value={form.default_spa_fee}
+                  onChange={(e) => updateField("default_spa_fee", e.target.value)}
+                  placeholder="his standard" style={inputStyle()} />
+              </Field>
+            </Row>
+            <Row>
+              <Field label="Oqood fee (AED)" hint="Off-plan registration">
+                <input type="number" step="0.01" min="0" value={form.default_oqood_fee}
+                  onChange={(e) => updateField("default_oqood_fee", e.target.value)}
+                  placeholder="his standard" style={inputStyle()} />
+              </Field>
+              <Field label="DLD %" hint="Usually 4% across the market">
+                <input type="number" step="0.01" min="0" max="100" value={form.default_dld_pct}
+                  onChange={(e) => updateField("default_dld_pct", e.target.value)}
+                  placeholder="his standard" style={inputStyle()} />
+              </Field>
+            </Row>
+            <Row>
+              <Field label="Admin fee per unit (AED)" hint="His own charge, per unit registered">
+                <input type="number" step="0.01" min="0" value={form.admin_fee_per_unit}
+                  onChange={(e) => updateField("admin_fee_per_unit", e.target.value)}
+                  placeholder="his standard" style={inputStyle()} />
+              </Field>
+            </Row>
+          </Section>
+
+          <Section title="6. Validity & Audit" subtitle="Period covered and signing details">
             <Row>
               <Field label="Valid From">
                 <input
