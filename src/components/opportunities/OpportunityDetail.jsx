@@ -1098,11 +1098,16 @@ RESPOND WITH VALID JSON ONLY in this exact shape:
       }
       // Day 78: the COMPANY'S POLICY seeds these, not a constant. companyFees is loaded by the
       // settings effect; the fallbacks apply only until it arrives (or if the company set nothing).
-      seedRow("spa_fee", companyFees?.spaFee ?? FEE_FALLBACK.spaFee);
-      seedRow("oqood_fee", companyFees?.oqoodFee ?? FEE_FALLBACK.oqoodFee);
+      // Day 96: through dealFees, not companyFees. This seeded from the COMPANY tier alone, so a
+      // developer charging his own SPA fee - Emaar's 7,500 against a company default of 6,000 - was
+      // seeded at the wrong figure, and a FROZEN deal was reseeded at today's policy rather than the
+      // one it was priced on. dealFees already resolves frozen -> agreement -> developer -> company.
+      seedRow("spa_fee", dealFees.spaFee);
+      seedRow("oqood_fee", dealFees.oqoodFee);
+      seedRow("other_fees", dealFees.adminFeePerUnit || 0);
       return next;
     });
-  }, [showStageGate, stageGateForm.final_price, stageGateForm.payment_plan_preset, opp.id, companyFees]);
+  }, [showStageGate, stageGateForm.final_price, stageGateForm.payment_plan_preset, opp.id, companyFees, dealFees.spaFee, dealFees.oqoodFee, dealFees.adminFeePerUnit]);
 
   // Phase 3b: auto-calc DLD fee row when final_price OR dldPayer changes
   useEffect(() => {
