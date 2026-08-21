@@ -1851,3 +1851,19 @@ THREE PIECES, one question:
 ⚠️ SEQUENCE: this belongs WITH the payout hierarchy, not after it - an override follows the org
 chart, and the org chart is what defines scope. Designing them separately would mean building the
 same tree twice.
+   ⚠️ RESHAPED DAY 96, AND SMALLER THAN D7 DESCRIBES. Discussing it with the founder narrowed the
+   need considerably:
+    - SCOPE IS ALREADY SETTLED - a branch manager sees his branch, the group manager sees all. Not
+      the open question the entry above assumed.
+    - THE ONE-MAN SHOW IS ALREADY SERVED. He is a super_admin with everything, and that is correct:
+      he IS the brokerage. "Those are the guys making money now."
+    - WHAT IS ACTUALLY WANTED is an ACCOUNTANT and an ADMIN ASSISTANT - people who handle invoices
+      and receipts on a need-to-know basis, without being an admin, because admin means SETUP:
+      users, permissions, standards.
+   ⭐ AND THE SEVEN ROLES SUFFICE. Take `viewer`, grant manage_commissions and
+   see_brokerage_commission, remove the rest - that IS an accountant. The grid already allows it.
+   THE ONLY REAL GAP IS THE NAME: the screen says "Viewer" while the firm means "Accountant".
+   SO THE PIECE IS: a LABEL PER COMPANY (one column, one input) + the nav reading CAPABILITIES
+   rather than role lists. Keep the seven as the skeleton; let each company name them and grant them
+   what it likes. This avoids the trap custom roles invite - a firm inventing twelve roles nobody
+   can reason about, with every policy handling an unknown set.
