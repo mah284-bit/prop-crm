@@ -1827,3 +1827,9 @@ The existing `disputed` status stays as a label someone can set. It does not nee
    authenticated, so no second RPC was needed.
    ⚠️ REMAINING: neither form exposes the fields. Six on the developer record, six on the agreement,
    and every one still set only by SQL.
+   ✅ CORRECTED AND DONE (Day 96): the middle tier is pp_developer_fees, keyed on
+   (company_id, developer_id) - NOT the pp_developers catalog, which is global and read-only for all
+   tenants per the Access Control spec. Its UPDATE policy already said so: super_admin only.
+   PROVEN FIELD BY FIELD on Aldar: the agreement's 25,000 reservation and 2,500 admin fee beat the
+   brokerage's own 30,000 and 4,000, while the brokerage's 7,000 SPA fee applies because the
+   agreement states none. The coalesce resolves PER FIELD, not per source.
