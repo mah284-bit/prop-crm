@@ -45,11 +45,6 @@ export default function Developers({ currentUser, showToast }) {
     const { data } = await supabase.from("profiles").select("id, full_name").eq("company_id", currentUser.company_id);
     setPeople(data || []);
   })(); }, [currentUser.company_id]);
-  const [people, setPeople] = useState([]);
-  useEffect(() => { (async () => {
-    const { data } = await supabase.from("profiles").select("id, full_name").eq("company_id", currentUser.company_id);
-    setPeople(data || []);
-  })(); }, [currentUser.company_id]);
   useEffect(() => { (async () => {
     setHistory(sel ? await getFeeHistory(currentUser.company_id, sel.id) : []);
   })(); }, [sel?.id, currentUser.company_id, saving]);
@@ -88,8 +83,6 @@ export default function Developers({ currentUser, showToast }) {
 
   // Day 96: who made the change. It has always been recorded; it was simply never shown, and who
   // is half the point of a record.
-  const personName = (id) => people.find((p) => p.id === id)?.full_name || "\u2014";
-
   // Day 96: who made the change. It was always recorded and never shown.
   const personName = (id) => people.find((p) => p.id === id)?.full_name || "\u2014";
 
