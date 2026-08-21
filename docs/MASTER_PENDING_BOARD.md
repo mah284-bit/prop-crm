@@ -1819,3 +1819,11 @@ quietly part-paid. Nobody notices until the aging says 60 days.
 SHAPE: unit · invoice number · invoiced · received · difference · which transfer it came in on
 (batch_id already links them, Day 92). Sorted by difference, so what slipped is at the top.
 The existing `disputed` status stays as a label someone can set. It does not need a lifecycle.
+   ✅ DONE (Day 96): the columns are on pp_developers and get_developer_fees now coalesces the
+   agreement over the developer record - so the precedence lives in ONE place, in SQL, rather than
+   being reimplemented in JavaScript. No application code changed.
+   PROVEN: Aldar resolves 2,500 from its agreement; Emaar resolves 7,500 and 1,200 from its
+   DEVELOPER RECORD, because its agreement states neither. pp_developers is readable by anyone
+   authenticated, so no second RPC was needed.
+   ⚠️ REMAINING: neither form exposes the fields. Six on the developer record, six on the agreement,
+   and every one still set only by SQL.
