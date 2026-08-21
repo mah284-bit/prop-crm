@@ -45,6 +45,11 @@ export default function Developers({ currentUser, showToast }) {
     const { data } = await supabase.from("profiles").select("id, full_name").eq("company_id", currentUser.company_id);
     setPeople(data || []);
   })(); }, [currentUser.company_id]);
+  const [people, setPeople] = useState([]);
+  useEffect(() => { (async () => {
+    const { data } = await supabase.from("profiles").select("id, full_name").eq("company_id", currentUser.company_id);
+    setPeople(data || []);
+  })(); }, [currentUser.company_id]);
   useEffect(() => { (async () => {
     setHistory(sel ? await getFeeHistory(currentUser.company_id, sel.id) : []);
   })(); }, [sel?.id, currentUser.company_id, saving]);
@@ -83,6 +88,9 @@ export default function Developers({ currentUser, showToast }) {
 
   // Day 96: who made the change. It has always been recorded; it was simply never shown, and who
   // is half the point of a record.
+  const personName = (id) => people.find((p) => p.id === id)?.full_name || "\u2014";
+
+  // Day 96: who made the change. It was always recorded and never shown.
   const personName = (id) => people.find((p) => p.id === id)?.full_name || "\u2014";
 
   const feesFor = (id) => fees.find((f) => f.developer_id === id) || {};
@@ -253,6 +261,7 @@ export default function Developers({ currentUser, showToast }) {
                         <span style={{ fontSize: 9, fontWeight: 700, padding: "1px 6px", borderRadius: 9, background: h.source === "agreement" ? "#EEF2FF" : "#F1F5F9", color: h.source === "agreement" ? "#3730A3" : "#64748B" }}>
                           {h.source === "agreement" ? "AGREEMENT" : "STANDARD"}
                         </span>
+                        <span style={{ color: "#94A3B8" }}>{personName(h.changed_by)}</span>
                         <span style={{ color: "#94A3B8" }}>{personName(h.changed_by)}</span>
                         {h.reason && <span style={{ color: "#94A3B8", fontStyle: "italic" }}>{h.reason}</span>}
                       </div>
