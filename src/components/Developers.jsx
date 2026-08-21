@@ -125,7 +125,7 @@ export default function Developers({ currentUser, showToast }) {
                 <div style={{ fontSize: 13, fontWeight: 600, color: "#0F2540" }}>{d.name}</div>
                 <div style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}>
                   {isSet(d) ? <span style={{ color: "#166534", fontWeight: 700 }}>fees set</span> : "no fees set"}
-                  {hasAgreement(d.id) && <span style={{ marginLeft: 8, color: "#3730A3", fontWeight: 700 }}>agreement</span>}
+                  {hasAgreement(d.id) && <span style={{ marginLeft: 8, color: "#3730A3", fontWeight: 700 }}>{"\u00b7 agreement"}</span>}
                 </div>
               </button>
             ))}

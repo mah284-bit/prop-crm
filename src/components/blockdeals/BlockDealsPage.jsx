@@ -389,7 +389,7 @@ const confirmBlock = async (b) => {
                         return <button type="button" onClick={()=>setForm(f=>({...f,reservation_expected:String(suggestedReservation)}))} style={{marginLeft:8,padding:"2px 9px",borderRadius:6,border:"1px solid #B45309",background:"#fff",color:"#B45309",fontSize:11,fontWeight:700,cursor:"pointer"}}>use this</button>;
                       }
                       return <span style={{marginLeft:8,fontWeight:700,color: gap > 0 ? "#B91C1C" : "#166534"}}>
-                        {"you have set " + fmt(typed) + " \u00b7 " + fmt(Math.abs(gap)) + (gap > 0 ? " above" : " below")}
+                        {" \u00b7 you have set " + fmt(typed) + " \u00b7 " + fmt(Math.abs(gap)) + (gap > 0 ? " above" : " below")}
                       </span>;
                     })()}
                   </div>
