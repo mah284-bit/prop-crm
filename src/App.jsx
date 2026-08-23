@@ -235,6 +235,10 @@ const ROLE_META = {
   sales_agent:    {label:"Sales Agent",    color:"#1A7F5A",bg:"#E6F4EE",desc:"Own sales leads · request discounts"},
   leasing_manager:{label:"Leasing Mgr",   color:"#5B3FAA",bg:"#EEE8F9",desc:"All leases · approve rent reductions ≤5%"},
   leasing_agent:  {label:"Leasing Agent", color:"#0F6E56",bg:"#D4F1E8",desc:"Own leases · manage tenants & payments"},
+  // Day 97: an accountant RECORDS - receipts, follow-ups, what is owed and by whom - without being
+  // an admin, because admin means setup. Founder: "when it is money, bit of a concern."
+  accountant:     {label:"Accountant",     color:"#0F2540",bg:"#EEF2FF",desc:"Commission invoices & receipts \u00b7 no setup access"},
+  group_gm:       {label:"Group GM",       color:"#7C3AED",bg:"#F3EEFF",desc:"All branches \u00b7 group-wide view"},
   viewer:         {label:"Viewer",         color:"#718096",bg:"#F7F9FC",desc:"Read-only access"},
 };
 
