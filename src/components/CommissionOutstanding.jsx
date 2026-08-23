@@ -19,6 +19,15 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterDeveloper, setFilterDeveloper] = useState("all");
+  // Day 97: an accountant asked "what am I owed?" by a broker should answer it in one click, not by
+  // reading down a list. agent_id is already on every invoice.
+  const [filterAgent, setFilterAgent] = useState("all");
+  const [agents, setAgents] = useState([]);
+  useEffect(() => { (async () => {
+    const { data } = await supabase.from("profiles").select("id, full_name")
+      .eq("company_id", currentUser.company_id).order("full_name");
+    setAgents(data || []);
+  })(); }, [currentUser.company_id]);
   /* stage1-filters */ const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
   const [filterAging, setFilterAging] = useState("all");
@@ -263,6 +272,7 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
     return invoices.filter(inv => {
       if (filterStatus !== "all" && inv.invoice_status !== filterStatus) return false;
       if (filterDeveloper !== "all" && inv.developer_id !== filterDeveloper) return false;
+      if (filterAgent !== "all" && inv.agent_id !== filterAgent) return false;
       if (filterDateFrom || filterDateTo) {
         const d = inv.invoice_date;
         if (!d) return false;
@@ -281,7 +291,7 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
       }
       return true;
     });
-  }, [invoices, filterStatus, filterDeveloper, filterDateFrom, filterDateTo, filterAging, overdueOnly]);
+  }, [invoices, filterStatus, filterDeveloper, filterAgent, filterDateFrom, filterDateTo, filterAging, overdueOnly]);
 
   const kpis = useMemo(() => {
     let totalInvoiced = 0, totalReceived = 0, totalOutstanding = 0, countActive = 0;
@@ -528,6 +538,12 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
             <select value={filterDeveloper} onChange={e=>setFilterDeveloper(e.target.value)} style={{padding:"5px 10px", border:"1px solid #E2E8F0", borderRadius:6, fontSize:12}}>
               <option value="all">All Developers</option>
               {developers.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+            {/* Day 97: "a broker comes and says I want to see my payments outstanding" - the
+                accountant should answer that in one click. */}
+            <select value={filterAgent} onChange={e=>setFilterAgent(e.target.value)} title="Whose deals" style={{padding:"5px 10px", border:"1px solid #E2E8F0", borderRadius:6, fontSize:12}}>
+              <option value="all">All agents</option>
+              {agents.map(a2 => <option key={a2.id} value={a2.id}>{a2.full_name}</option>)}
             </select>
             <input type="date" value={filterDateFrom} onChange={e=>setFilterDateFrom(e.target.value)} title="Invoice date from" style={{padding:"5px 8px", border:"1px solid #E2E8F0", borderRadius:6, fontSize:12, color:"#475569"}} />
             <span style={{fontSize:11, color:"#A0AEC0"}}>–</span>
