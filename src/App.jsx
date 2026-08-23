@@ -2316,6 +2316,14 @@ export default function App(){
   // Nav visibility: platformOnly -> is_super_admin; else capability-gated (TAB_CAPABILITY) via canDo; else visible to all in app-mode.
   const tabVisible = (t) => {
     if (t.platformOnly) return currentUser?.is_super_admin === true;
+    // Day 97: THE ROLE LIST WAS NEVER CHECKED. Every TABS entry carries roles:[...] and tabVisible
+    // read only TAB_CAPABILITY - so any tab without a capability mapping showed to EVERYONE. An
+    // accountant saw Leads, Projects, Inventory and Launch, none of which name him. The lists have
+    // been decorative since they were written.
+    if (Array.isArray(t.roles) && t.roles.length) {
+      const ok = currentUser?.is_super_admin === true || t.roles.includes(currentUser?.role);
+      if (!ok) return false;
+    }
     const cap = TAB_CAPABILITY[t.id];
     return cap ? canDo(currentUser, cap) : true;
   };
