@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { Av } from "../modules/shared/Av.jsx";
 import { RoleBadge } from "../modules/shared/RoleBadge.jsx";
 import { Spinner } from "../modules/shared/Spinner.jsx";
+import { ASSIGNABLE_ROLES, PLATFORM_ASSIGNABLE_ROLES, roleLabel } from "../lib/roles.js";
 
 export default function UsersTab({currentUser, showToast}) {
   const [users,     setUsers]     = useState([]);
@@ -189,7 +190,7 @@ export default function UsersTab({currentUser, showToast}) {
                 {!editUser&&<div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Temporary Password</label><input type="password" value={form.password} onChange={sf("password")} placeholder="Leave blank to auto-generate"/></div>}
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Role</label>
                   <select value={form.role} onChange={sf("role")}>
-                    {(isSuperAdmin?["super_admin","admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"]:["admin","sales_manager","sales_agent","leasing_manager","leasing_agent","viewer"]).map(r=><option key={r} value={r}>{r.replace(/_/g," ")}</option>)}
+                    {(isSuperAdmin?PLATFORM_ASSIGNABLE_ROLES:ASSIGNABLE_ROLES).map(r=><option key={r} value={r}>{roleLabel(r)}</option>)}
                   </select>
                 </div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Status</label>

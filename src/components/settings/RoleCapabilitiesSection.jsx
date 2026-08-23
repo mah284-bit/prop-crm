@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase.js";
 
-const ROLES = ["sales_agent","leasing_agent","sales_manager","leasing_manager","admin","group_gm","viewer"];
+import { ROLES, roleLabel } from "../../lib/roles.js";
 const CAP_GROUPS = [
   { group: "Data Visibility", caps: ["see_own_data","see_branch_data","see_group_data"] },
   { group: "Commission", caps: ["see_own_commission","see_brokerage_commission"] },
@@ -60,7 +60,7 @@ export default function RoleCapabilitiesSection({ currentUser, showToast }) {
           <th style={{ padding: 8, textAlign: "left", fontWeight: 600, borderBottom: "1.5px solid #0F2540" }}>Capability</th>
           {ROLES.map(r => (
             <th key={r} style={{ padding: 8, textAlign: "center", fontWeight: 600, borderBottom: "1.5px solid #0F2540" }}>
-              {r}
+              {roleLabel(r)}
             </th>
           ))}
         </tr>
