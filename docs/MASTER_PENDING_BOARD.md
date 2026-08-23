@@ -1875,3 +1875,11 @@ same tree twice.
       permissions.js maps see_all -> see_branch_data and NOTHING reads see_group_data. So a branch
       manager granted "branch data" sees the WHOLE COMPANY. The vocabulary is there and the filtering
       is not, which is worse than absence: it reads as though scope works.
+   ⚠️ AND TWO THINGS FOUND WHILE ADDING THE ACCOUNTANT (Day 97):
+    - `group_gm` was in the capability grid but NOT in profiles_role_check, so nobody could ever be
+      assigned to it - the insert would be rejected. The same class as Day 92's `accepted` status.
+      Both it and `accountant` added to the constraint.
+    - SCOPE IS NAMED BUT NOT MODELLED. see_branch_data and see_group_data exist as capabilities;
+      permissions.js maps see_all -> see_branch_data and NOTHING reads see_group_data. So a branch
+      manager granted "branch data" sees the WHOLE COMPANY. The vocabulary is there and the filtering
+      is not, which is worse than absence: it reads as though scope works.
