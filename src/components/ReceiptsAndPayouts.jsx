@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "../lib/supabase.js";
+import { canDo } from "../lib/permissions.js";
 
 // Day 92: WHAT CAME IN, AND WHAT IS OWED OUT.
 //
@@ -31,6 +32,36 @@ export default function ReceiptsAndPayouts({ currentUser, showToast }) {
   const [loading, setLoading] = useState(true);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  // Day 97: PER DEAL, not per agent. "Rajesh, 3 deals, 102,639" does not answer the question a
+  // broker actually asks - which deals, and which one is holding my money up.
+  // Day 97: an agent may see HIS share and nothing of the firm's. The capability already governs it.
+  const canSeeFirm = canDo(currentUser, "see_brokerage_commission");
+  const [openAgent, setOpenAgent] = useState(null);
+  const [deals, setDeals] = useState([]);
+  useEffect(() => { (async () => {
+    const ids = [...new Set(invoices.map((i) => i.opportunity_id).filter(Boolean))];
+    if (!ids.length) { setDeals([]); return; }
+    // The BUYER's name, because a broker recognises "Chen Wei" and not "EPR-008".
+    const { data } = await supabase.from("opportunities")
+      .select("id, title, unit_id, lead_id").in("id", ids);
+    const leadIds = [...new Set((data || []).map((d) => d.lead_id).filter(Boolean))];
+    let leads = [];
+    if (leadIds.length) {
+      const { data: l } = await supabase.from("leads").select("id, name").in("id", leadIds);
+      leads = l || [];
+    }
+    const unitIds = [...new Set((data || []).map((d) => d.unit_id).filter(Boolean))];
+    let units = [];
+    if (unitIds.length) {
+      const { data: u } = await supabase.from("project_units").select("id, unit_ref").in("id", unitIds);
+      units = u || [];
+    }
+    setDeals((data || []).map((d) => ({
+      ...d,
+      unit_ref: units.find((u) => u.id === d.unit_id)?.unit_ref || null,
+      buyer: leads.find((l) => l.id === d.lead_id)?.name || null,
+    })));
+  })(); }, [invoices]);
 
   useEffect(() => {
     (async () => {
@@ -275,8 +306,8 @@ export default function ReceiptsAndPayouts({ currentUser, showToast }) {
                 <tr><td style={TD} colSpan={5}><span style={{ color: "#94A3B8" }}>No raised invoices carry an agent share yet.</span></td></tr>
               )}
               {payouts.map((p) => (
-                <tr key={p.agent_id}>
-                  <td style={{ ...TD, fontWeight: 600 }}>{p.name}</td>
+                <tr key={p.agent_id} onClick={() => setOpenAgent(openAgent === p.agent_id ? null : p.agent_id)} style={{ cursor: "pointer" }}>
+                  <td style={{ ...TD, fontWeight: 600 }}>{(openAgent === p.agent_id ? "\u25be " : "\u25b8 ") + p.name}</td>
                   <td style={{ ...TD, textAlign: "center", color: "#64748B" }}>{p.deals}</td>
                   <td style={{ ...TD, textAlign: "right", fontWeight: 700 }}>{aed(p.earned)}</td>
                   <td style={{ ...TD, textAlign: "right", color: "#166534", fontWeight: 700 }}>{aed(p.onReceived)}</td>
@@ -285,6 +316,44 @@ export default function ReceiptsAndPayouts({ currentUser, showToast }) {
               ))}
             </tbody>
           </table>
+          {openAgent && (
+            <div style={{ marginTop: 12, border: "1px solid #E2E8F0", borderRadius: 9, overflow: "hidden" }}>
+              <div style={{ padding: "7px 11px", background: "#F8FAFC", fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: ".5px" }}>
+                {personName(openAgent) + " \u00b7 deal by deal"}
+              </div>
+              <table style={T}>
+                <thead>
+                  <tr>
+                    <th style={TH}>Buyer</th>
+                    <th style={TH}>Unit</th>
+                    <th style={TH}>Invoice</th>
+                    {canSeeFirm && <th style={{ ...TH, textAlign: "right" }}>Firm invoiced</th>}
+                    <th style={{ ...TH, textAlign: "right" }}>Your share</th>
+                    <th style={{ ...TH, textAlign: "right" }}>Still owed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.filter((i) => (i.agent_id || "unassigned") === openAgent && !["draft","written_off"].includes(i.invoice_status)).map((i) => {
+                    const d = deals.find((x) => x.id === i.opportunity_id) || {};
+                    const net = Number(i.commission_net || 0);
+                    const got = Number(i.amount_received || 0);
+                    const share = Number(i.agent_commission || 0);
+                    const owed = r2(share * (1 - (net > 0 ? Math.min(1, got / net) : 0)));
+                    return (
+                      <tr key={i.id}>
+                        <td style={TD}>{d.buyer || "\u2014"}</td>
+                        <td style={{ ...TD, color: "#64748B" }}>{d.unit_ref || "\u2014"}</td>
+                        <td style={{ ...TD, color: "#64748B" }}>{i.invoice_number || "not issued"}</td>
+                        {canSeeFirm && <td style={{ ...TD, textAlign: "right", color: "#64748B" }}>{aed(net)}</td>}
+                        <td style={{ ...TD, textAlign: "right", fontWeight: 700 }}>{aed(share)}</td>
+                        <td style={{ ...TD, textAlign: "right", color: owed > 0.5 ? "#92400E" : "#166534" }}>{owed > 0.5 ? aed(owed) : "paid"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>
