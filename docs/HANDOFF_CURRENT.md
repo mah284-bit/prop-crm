@@ -1927,3 +1927,29 @@ and a frozen deal was reseeded at today's policy.
 ⚠️ FOUR TEMPORAL-DEAD-ZONE BREAKS THIS WEEK, three of them today - paymentTick, lines, hasAgreement -
 plus two duplicate declarations added to a file that already had them. Every one passed the build.
 READ THE DECLARATIONS BEFORE EDITING; the build will not tell you.
+
+## ── DAY 97 — THE ACCOUNTANT, AND TWO THINGS THAT ONLY LOOKED LIKE ACCESS CONTROL ──
+An `accountant` role, read-only: he sees the brokerage's commission position and records nothing.
+The founder considered it both ways and settled there - money entry stays with people who already
+have it, and admin means SETUP, so an accountant should not be one.
+⭐ THE REAL GAIN WAS CONSOLIDATION: four role lists became one (src/lib/roles.js) - the capability
+grid, two inline arrays in the user form, and profiles_role_check. That drift is how `group_gm` came
+to be grantable in the grid and REJECTED by the constraint - nobody could ever be assigned to it.
+⚠️⚠️ AND TWO THINGS THAT LOOKED LIKE ACCESS CONTROL AND WERE NOT:
+ 1. EVERY `roles:[...]` LIST IN THE NAV WAS DECORATIVE. tabVisible() read only TAB_CAPABILITY and
+    returned true for anything without a mapping - so any tab lacking a capability showed to
+    EVERYONE. The accountant saw Leads, Projects, Inventory and Launch, none of which name him.
+ 2. THE COMMISSION POLICY NAMED ROLES, NOT CAPABILITIES. can_see_brokerage_commission() hard-codes
+    admin/sales_manager/leasing_manager/group_gm, so a new role is refused at the database however
+    the grid is set. Replaced with the has_capability() check that already sat beside it - the grid
+    now genuinely governs what it claims to.
+ALSO: an agent filter on Commission Outstanding, so "what am I owed?" is answered in one click; and
+the payouts view expands PER DEAL - buyer, unit, invoice, share, still owed - with the FIRM'S OWN
+COMMISSION HIDDEN unless the viewer holds see_brokerage_commission. An agent sees his share and
+nothing of the firm's, which is what would make that screen safe to give him.
+The deal reference comes through get_invoice_deal_refs(), SECURITY DEFINER: an accountant cannot
+read `opportunities` and does not need the pipeline - only which deal an invoice belongs to.
+⚠️ LEFT OPEN DELIBERATELY: what the brokerage has actually PAID an agent. Manual entry duplicates
+the ERP and drifts; an ERP feed is an integration. A third path worth weighing - the app records the
+payout AUTHORISATION (who, how much, which deals) and the ERP disburses, exactly as it already does
+with commission invoices.
