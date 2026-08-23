@@ -39,28 +39,13 @@ export default function ReceiptsAndPayouts({ currentUser, showToast }) {
   const [openAgent, setOpenAgent] = useState(null);
   const [deals, setDeals] = useState([]);
   useEffect(() => { (async () => {
-    const ids = [...new Set(invoices.map((i) => i.opportunity_id).filter(Boolean))];
-    if (!ids.length) { setDeals([]); return; }
-    // The BUYER's name, because a broker recognises "Chen Wei" and not "EPR-008".
-    const { data } = await supabase.from("opportunities")
-      .select("id, title, unit_id, lead_id").in("id", ids);
-    const leadIds = [...new Set((data || []).map((d) => d.lead_id).filter(Boolean))];
-    let leads = [];
-    if (leadIds.length) {
-      const { data: l } = await supabase.from("leads").select("id, name").in("id", leadIds);
-      leads = l || [];
-    }
-    const unitIds = [...new Set((data || []).map((d) => d.unit_id).filter(Boolean))];
-    let units = [];
-    if (unitIds.length) {
-      const { data: u } = await supabase.from("project_units").select("id, unit_ref").in("id", unitIds);
-      units = u || [];
-    }
-    setDeals((data || []).map((d) => ({
-      ...d,
-      unit_ref: units.find((u) => u.id === d.unit_id)?.unit_ref || null,
-      buyer: leads.find((l) => l.id === d.lead_id)?.name || null,
-    })));
+    // Day 97: through an RPC. An accountant cannot read `opportunities` - he has see_own_data and
+    // owns no deals - so the join found nothing and Buyer and Unit showed dashes. He does not need
+    // the pipeline; he needs to know which deal an invoice belongs to. get_invoice_deal_refs is
+    // SECURITY DEFINER and returns only a buyer name and a unit reference, for invoices he can
+    // already see - so it grants no sight he did not have.
+    const { data } = await supabase.rpc("get_invoice_deal_refs");
+    setDeals((data || []).map((d) => ({ id: d.opportunity_id, buyer: d.buyer, unit_ref: d.unit_ref })));
   })(); }, [invoices]);
 
   useEffect(() => {
