@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import SettleDeveloperDialog from "./SettleDeveloperDialog.jsx";
 import { recordCommissionReceipt } from "../lib/recordCommissionReceipt.js";
 import { supabase } from "../lib/supabase";
-import { canDo } from "../lib/permissions.js";
 
 /**
  * Stage 6 — Commission Outstanding Dashboard (v2 with action modals)
@@ -35,7 +34,6 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
   const [overdueOnly, setOverdueOnly] = useState(false);
 
   // Modal states
-  const canManage = canDo(currentUser, "manage_commissions");
   const [issueModal, setIssueModal] = useState(null); // {invoice, number, date}
   const [settleModal, setSettleModal] = useState(null); // {developer_id, developer_name, outstanding}
   // Day 92: the invoice's letterhead, bank details and TRN come from the COMPANY, not from
@@ -406,10 +404,6 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
 
   // Action button selector based on status
   const actionForInvoice = (inv) => {
-    // Day 97: DO NOT OFFER WHAT HE CANNOT DO. An accountant sees this screen and holds no
-    // manage_commissions - pressing Issue would reach the database and be refused, with nothing on
-    // screen to say why. That is the silent-refusal pattern ten browser prompts were replaced for.
-    if (!canManage) return { label:"View", action:() => showToast("Status: " + inv.invoice_status, "info") };
     if (inv.invoice_status === "draft") return { label:"Issue", action: async () => setIssueModal({ invoice: inv, number: await nextInvoiceNumber(), date: new Date().toISOString().slice(0,10) }) };
     if (inv.invoice_status === "issued" || inv.invoice_status === "partially_paid")
       return { label:"Manage", action:() => setPaymentModal({ invoice: inv, amount:"", date: new Date().toISOString().slice(0,10), action:"payment", reason:"" }) };
@@ -499,7 +493,7 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
                           invoices. Record Payment takes one invoice at a time, so 500,000 for eight
                           deals meant eight dialogs and the broker splitting it in his head. */}
                       {d.developer_id !== "unlinked" && (
-                        {canManage && <button onClick={()=>setSettleModal({ developer_id: d.developer_id, developer_name: d.developer_name, outstanding: d.outstanding })}
+                        <button onClick={()=>setSettleModal({ developer_id: d.developer_id, developer_name: d.developer_name, outstanding: d.outstanding })}
                           title={"Record one transfer from " + d.developer_name + ", settled across " + d.count + " invoice" + (d.count===1?"":"s")}
                           style={{padding:"4px 10px", borderRadius:6, border:"1px solid #CBD5E0", background:"#fff", color:"#0F2540", fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap"}}>
                           Settle
@@ -686,7 +680,7 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
                   {/* actions */}
                   <div style={{display:"flex",justifyContent:"flex-end",gap:8,padding:"14px 26px",borderTop:"1px solid #E8EDF4",background:"#FAFBFE"}}>
                     <button onClick={()=>window.print()} style={{padding:"8px 16px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer",color:"#475569"}}>🖨 Print</button>
-                    {canManage && inv.invoice_status==="draft" && <button onClick={async ()=>{setDocModal(null);setIssueModal({invoice:inv,number: await nextInvoiceNumber(),date:new Date().toISOString().slice(0,10)});}} style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>📤 Issue & Send to Developer</button>}
+                    {inv.invoice_status==="draft" && <button onClick={async ()=>{setDocModal(null);setIssueModal({invoice:inv,number: await nextInvoiceNumber(),date:new Date().toISOString().slice(0,10)});}} style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>📤 Issue & Send to Developer</button>}
                     {inv.invoice_status!=="draft" && <button onClick={()=>setDocModal(null)} style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>Close</button>}
                   </div>
                 </div>
