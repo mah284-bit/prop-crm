@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import SettleDeveloperDialog from "./SettleDeveloperDialog.jsx";
 import { recordCommissionReceipt } from "../lib/recordCommissionReceipt.js";
 import { supabase } from "../lib/supabase";
+import { canDo } from "../lib/permissions.js";
 
 /**
  * Stage 6 — Commission Outstanding Dashboard (v2 with action modals)
@@ -34,6 +35,7 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
   const [overdueOnly, setOverdueOnly] = useState(false);
 
   // Modal states
+  const canManage = canDo(currentUser, "manage_commissions");
   const [issueModal, setIssueModal] = useState(null); // {invoice, number, date}
   const [settleModal, setSettleModal] = useState(null); // {developer_id, developer_name, outstanding}
   // Day 92: the invoice's letterhead, bank details and TRN come from the COMPANY, not from
@@ -404,6 +406,9 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
 
   // Action button selector based on status
   const actionForInvoice = (inv) => {
+    // Day 97: do not offer what he cannot do - an accountant holds no manage_commissions, and
+    // pressing Issue would reach the database and be refused with nothing on screen to say why.
+    if (!canManage) return { label:"View", action:() => showToast("Status: " + inv.invoice_status, "info") };
     if (inv.invoice_status === "draft") return { label:"Issue", action: async () => setIssueModal({ invoice: inv, number: await nextInvoiceNumber(), date: new Date().toISOString().slice(0,10) }) };
     if (inv.invoice_status === "issued" || inv.invoice_status === "partially_paid")
       return { label:"Manage", action:() => setPaymentModal({ invoice: inv, amount:"", date: new Date().toISOString().slice(0,10), action:"payment", reason:"" }) };
