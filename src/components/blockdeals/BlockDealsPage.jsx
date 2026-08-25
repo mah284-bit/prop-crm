@@ -361,7 +361,7 @@ const confirmBlock = async (b) => {
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
               <div><label style={{fontSize:11,fontWeight:600,color:"#64748B",display:"block",marginBottom:4}}>BUYER *</label>
                 <select value={form.lead_id} onChange={e=>setForm(f=>({...f,lead_id:e.target.value}))} style={{width:"100%",padding:"8px 10px",border:"1px solid #D1D5DB",borderRadius:7,fontSize:13}}><option value="">Select buyer...</option>{buyerMatches.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}</select>
-                {leads.length > 8 && (
+                {leads.length > 3 && (
                   <input value={buyerQ} onChange={e=>setBuyerQ(e.target.value)} placeholder={"Type to narrow " + leads.length + " buyers"} style={{width:"100%",marginTop:5,padding:"6px 9px",border:"1px solid #E2E8F0",borderRadius:6,fontSize:12}}/>
                 )}
                 {buyerQ && buyerMatches.length === 0 && <div style={{fontSize:11,color:"#B45309",marginTop:4}}>Nobody matches that.</div>}

@@ -172,9 +172,11 @@ export default function ReceiptsAndPayouts({ currentUser, showToast }) {
         ))}
         {tab === "receipts" && (
           <>
-            <span style={{ marginLeft: 10, fontSize: 11, color: "#94A3B8" }}>From</span>
+            {/* Day 97: this read as dead text - a bare "From" beside the tabs with two empty boxes and
+                nothing to say what it filtered. It is a real date filter; it just never said so. */}
+            <span style={{ marginLeft: 14, fontSize: 11, color: "#64748B", fontWeight: 600 }}>Received between</span>
             <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={{ padding: "5px 8px", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 12 }} />
-            <span style={{ fontSize: 11, color: "#94A3B8" }}>to</span>
+            <span style={{ fontSize: 11, color: "#94A3B8" }}>and</span>
             <input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={{ padding: "5px 8px", border: "1px solid #E2E8F0", borderRadius: 7, fontSize: 12 }} />
             {(from || to) && <button onClick={() => { setFrom(""); setTo(""); }} style={{ padding: "5px 10px", borderRadius: 7, border: "1px solid #E2E8F0", background: "#fff", color: "#475569", fontSize: 11, cursor: "pointer" }}>Clear</button>}
           </>
