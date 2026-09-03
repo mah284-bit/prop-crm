@@ -1883,3 +1883,31 @@ same tree twice.
       permissions.js maps see_all -> see_branch_data and NOTHING reads see_group_data. So a branch
       manager granted "branch data" sees the WHOLE COMPANY. The vocabulary is there and the filtering
       is not, which is worse than absence: it reads as though scope works.
+
+## ⭐⭐⭐ THE RESALE QUESTIONNAIRE CAME BACK (Day 98) - THE VERTICAL CAN NOW BE DESIGNED
+Answers from a practising secondary-market broker, against docs/Resale_Practitioner_Questions.md.
+The full response is in docs/Resale_Practitioner_Answers.md. The three that decide the build:
+ 1. ⚠️ THE BROKERAGE HOLDS MONEY - a booking amount, temporarily, per the developer's policy, then
+    transferred on. So resale needs a REAL LEDGER, not a record of someone else's payments.
+ 2. ⚠️ BOTH SIDES PAY, AND ON ONE DAY. 2% from the seller and 2% from the buyer when the brokerage
+    represents both, COLLECTED AT THE TRUSTEE OFFICE ON TRANSFER DAY. Off-plan's model - one
+    developer, one invoice, paid weeks later - does not transfer. Commission here is a moment.
+ 3. ⭐ WHERE DEALS DIE, in his own words: the BANK NOC DELAY, and "this could be identified earlier
+    if the CRM tracked the bank NOC deadline and followed up automatically." He has described the
+    feature himself. More than 50% of secondary transactions involve a mortgage.
+THE SHAPE OF A RESALE DEAL, four phases each carrying a deadline that can lapse:
+    Form A (seller listing) / Form B (buyer representation) -> FORM F / MOU, which starts a legal
+    countdown -> Phase 1 DEVELOPER NOC (seller applies; 3-7 working days; valid 15-30 days; seller
+    pays AED 500-5,000; service charges must be clear) -> Phase 2 TRUSTEE APPOINTMENT (booked 1-3
+    days ahead) -> Phase 3 TRANSFER DAY (manager's cheques, liability clearance, DLD and trustee
+    requirements) -> Phase 4 HANDOVER.
+⚠️ THE NOC IS THE PIECE THE APP MUST HOLD: it expires, it is single-use, and if the buyer, seller
+or property details change it is void. An expired NOC means reapplying and paying again. That is a
+deadline with a cost attached - exactly what "no gate refuses silently" was built for.
+OTHER DEAL-KILLERS HE NAMES: buyer funds not verified before Form F was signed; and the seller
+changing his mind after signing, tempted by a later offer.
+LEASING, briefly: unified tenancy contract, Ejari registration, ID and ownership verification.
+Commission 5% of annual rent from the TENANT, minimum around AED 5,000, plus VAT. The brokerage's
+involvement ENDS at Ejari registration and commission collection - property management is a
+separate firm with its own RERA agreement. So leasing is a shorter job than resale, not a smaller
+sale.
