@@ -48,7 +48,7 @@ export default function PersonPicker({
   emptyLabel = "\u2014 nobody selected \u2014",
   label,
   disabled = false,
-  autoOpenThreshold = 8,   // below this, no search box - it would only be clutter
+  autoOpenThreshold = 5,   // below this, no search box - it would only be clutter
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
