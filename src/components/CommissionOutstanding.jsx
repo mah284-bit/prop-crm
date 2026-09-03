@@ -497,7 +497,7 @@ export default function CommissionOutstanding({ currentUser, showToast, develope
                       {/* Day 92: A DEVELOPER SETTLES IN BULK - one transfer covering several
                           invoices. Record Payment takes one invoice at a time, so 500,000 for eight
                           deals meant eight dialogs and the broker splitting it in his head. */}
-                      {d.developer_id !== "unlinked" && (
+                      {canManage && d.developer_id !== "unlinked" && (
                         <button onClick={()=>setSettleModal({ developer_id: d.developer_id, developer_name: d.developer_name, outstanding: d.outstanding })}
                           title={"Record one transfer from " + d.developer_name + ", settled across " + d.count + " invoice" + (d.count===1?"":"s")}
                           style={{padding:"4px 10px", borderRadius:6, border:"1px solid #CBD5E0", background:"#fff", color:"#0F2540", fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap"}}>
