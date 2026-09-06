@@ -1911,3 +1911,12 @@ Commission 5% of annual rent from the TENANT, minimum around AED 5,000, plus VAT
 involvement ENDS at Ejari registration and commission collection - property management is a
 separate firm with its own RERA agreement. So leasing is a shorter job than resale, not a smaller
 sale.
+   ⭐ DESIGNED (Day 101): docs/Resale_Design.md. Read that, not this - it carries the object model,
+   the stage chain, the deadlines, the per-side commission, and the build order. Two things in it
+   the architect had not expected: RESALE INVENTORY IS THE BROKER'S OWN (he records a property from
+   the title deed; PropPulse does not supply it), and COMMISSION IS PER SIDE with two agents
+   possible on one deal.
+   ⚠️ ONE STRUCTURAL QUESTION IS OUT WITH THE PRACTITIONER: when two brokerages share a deal, does
+   one collect both commissions and pass the other its share? If so, money can flow OUT of the
+   brokerage for the first time, and Receipts & Payouts needs a third half. Working assumption
+   until he answers: each firm takes its own cheque at the trustee office.
