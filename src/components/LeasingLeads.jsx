@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { canDo } from "../lib/permissions.js";
+import Spinner from "./shared/Spinner.jsx";
+import { LEASE_STAGES, LEASE_STAGE_META } from "../lib/leaseStages.js";
 function LeasingLeads({ currentUser, showToast, users=[] }) {
   const [tenants,    setTenants]    = useState([]);
   const [lOpps,      setLOpps]      = useState([]);
