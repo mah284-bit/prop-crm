@@ -64,3 +64,16 @@ PROCESS. The app's opinion is the value. Hold the line.
 ## CROSS-REF
 - Legacy_Data_Upload_and_Adoption.md (full migration architecture)
 - Decision_Log.md (the decisions behind these principles)
+
+## ⭐ THE APP MUST NEVER BE THE REASON A BROKER SAYS "I CAN'T" (Day 102)
+Founder: "in property, mostly in brokering, unique cases and adaptability are the answer to making
+more money. I can't, or I don't, actually loses dollars."
+Every unusual case is a deal someone else will take if we refuse it. The seller whose deed is still
+with the bank, the buyer paying 1.5% because he is a repeat client, the unit sold before 25% is
+paid - these are not edge cases to be validated away. They are where the money is.
+THE RULE: a gate WARNS AND RECORDS. It does not refuse. Where a figure must hold - a price after
+money is collected - the app locks it and offers the honest alternative (a discount, recorded)
+rather than blocking the work.
+⚠️ AND THE COROLLARY: a field that MUST be filled is a deal that cannot be entered. Require almost
+nothing; capture what is known; let the record show what is missing. A half-recorded deal is worth
+more than a deal recorded on paper because the app would not take it.
