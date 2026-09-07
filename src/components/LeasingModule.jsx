@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { canDo } from "../lib/permissions.js";
+import { VInput, PhoneHint, LeasingChequeManager } from "./leasing/shared.jsx";
 function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=null,initialFilter=null}) {
   const [tab,setTab]               = useState(initialFilter?.type==="tab"&&initialFilter?.value ? initialFilter.value : "dashboard");
   const [tenants,setTenants]       = useState([]);
