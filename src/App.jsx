@@ -63,7 +63,6 @@ import MasterAgreements from "./components/MasterAgreements.jsx";
 // "LeasingModule is not defined" on every click. Shelved work decaying rather than dismantled.
 import LeasingModule from "./components/LeasingModule.jsx";
 import LeasingLeads from "./components/LeasingLeads.jsx";
-import LeasingDashboard from "./components/LeasingDashboard.jsx";
 import Developers from "./components/Developers.jsx";
 import CompanyConfigPage from "./components/admin/CompanyConfigPage.jsx";
 import OpenItemsGuard from "./components/opportunities/OpenItemsGuard.jsx";
