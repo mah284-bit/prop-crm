@@ -198,3 +198,24 @@ In order, and the first is not code:
    it himself. Build it early enough that the rest is designed around it rather than after it.
 6. **Per-side commission**, with two agents.
 7. **Transfer day** — the ceremony where both commissions arrive at once.
+
+## ⭐⭐ ADDED DAY 102 - A RESALE IS TWO SHAPES, AND ONE OF THEM IS THE APP'S BEST ARGUMENT
+A resale is not one transaction type. It depends on whether the DEVELOPER IS STILL OWED.
+ 1. **COMPLETED PROPERTY** - title transferred, the developer is gone. The buyer pays the seller,
+    the trustee registers it, both sides pay commission. Two parties and a clock.
+ 2. ⚠️ **OFF-PLAN, PART PAID** - the developer is STILL A PARTY. The buyer takes over the remaining
+    payment plan, and the developer must ACCEPT HIM as the new debtor. That is part of why the NOC
+    matters: he is not only confirming service charges are clear, he is accepting who pays him next.
+    The practitioner's note that commission is normally taken "when 25% of the property is paid"
+    points the same way - a resale before that may not be permitted at all.
+⭐ THE SECOND CASE IS WHERE THE APP HAS AN ADVANTAGE NOBODY ELSE HAS. Founder's example: a man loses
+his job, wants to leave the country, and is not interested in keeping anything. His first question is
+"what do I actually walk away with?" - and that answer requires: everything he has paid across a
+dozen instalments, the plan the buyer inherits, the DLD and admin fees he will NOT recover, and a
+sale price that may be below what he has put in.
+⚠️ THE APP ALREADY HOLDS EVERY ONE OF THOSE FIGURES, because it recorded them when the unit was sold.
+A broker sitting with a distressed seller can show him his true position in a minute. No competitor
+can compute it, because none of them were there for the first sale. THAT CONVERSATION EITHER WINS
+THE LISTING OR LOSES IT.
+BUILD ORDER NOTE: case 1 is simpler and probably more common. Build it first; the off-plan transfer
+after.
