@@ -162,3 +162,16 @@ supply it.
 ⚠️ **Build the property record ONCE, correctly, for all three businesses.** Doing it three times is
 how a codebase acquires three tables for the same idea — which is exactly what the four role lists
 had become before Day 97.
+
+## ⚠️ CORRECTION (Day 102, same session) - MANAGEMENT IS LARGELY BUILT
+Section 6 above says the management tables exist "empty and unread by any screen." That was wrong,
+and pressing the button found it: `LeasingModule.jsx` is a full PROPERTY MANAGEMENT module with five
+tabs - Dashboard, Tenants, Leases, Payments, Maintenance - holding real tenant records including a
+company tenant with a trade licence. It was unreachable only because the App.jsx render referenced a
+component that was NEVER IMPORTED; every click threw "LeasingModule is not defined". Shelved work
+decaying, not work never done.
+⚠️ SO THE GAP IS NARROWER AND DIFFERENT: the TENANT-FACING machinery is there. What is absent is the
+OWNER SIDE - the owner whose flat it is, the agreement with him, the fee the brokerage takes, and
+the statement it sends him. Which fits: this was built for the LEASING ARM AS PRINCIPAL, where the
+brokerage IS the landlord and there is no owner to report to. Managing someone else's unit for a fee
+needs the owner relationship added on top of machinery that already works.
