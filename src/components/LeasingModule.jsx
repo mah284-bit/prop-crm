@@ -42,6 +42,8 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
       setLoading(false);
       return;
     }
+    // Day 102: another casualty of the App.jsx split - `safe` stayed behind, so every load() threw.
+    const safe=async(q)=>{ try{const r=await q;return{data:(r.data||[])};}catch(e){console.warn("Query error:",e);return{data:[]};} };
     setLoading(true);
     const [t,l,p,m,u]=await Promise.all([
       safe(supabase.from("tenants").select("*").order("full_name")),
