@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase.js";
 import { PHONE_FORMATS } from "../../lib/phoneFormats.js";
+import { FieldError } from "./FieldError.jsx";
 
 // Day 102: extracted from App.jsx, where the split of five months ago (2131570) left them behind.
 // LeasingModule.jsx uses all three and threw "not defined" on the first click - which nobody made

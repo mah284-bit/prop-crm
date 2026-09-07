@@ -380,17 +380,6 @@ const formatPhoneDisplay = (raw, nationality = "") => {
 // Passport validation — basic alphanumeric 6-9 chars
 
 // Inline error display component
-const FieldError = ({ error }) => {
-  if (!error) return null;
-  return (
-    <div style={{
-      fontSize: 11, color: "#B83232", marginTop: 4,
-      display: "flex", alignItems: "center", gap: 4, fontWeight: 500,
-    }}>
-      <span>⚠</span> {error}
-    </div>
-  );
-};
 
 // Validated input component — shows error inline
 
@@ -1032,6 +1021,7 @@ import { VInput, PhoneHint, LeasingChequeManager } from "./components/leasing/sh
 import { Modal } from "./components/leasing/Modal.jsx";
 import { validateEmail, validatePhone, validateEmiratesID, validatePassport } from "./lib/validators.js";
 import { PHONE_FORMATS } from "./lib/phoneFormats.js";
+import { FieldError } from "./components/leasing/FieldError.jsx";
 
 
 // ── Small badge shown on inventory row ─────────────────────────
