@@ -1955,3 +1955,16 @@ the responsibilities; inventing capabilities first and hoping they fit is how th
 up with `see_brokerage_commission` granted to every role including viewer (found Day 90).
 An hour of conversation, business by business - like the Day-102 property session, which produced
 more than a week of building would have.
+   ⚠️ CORRECTION (Day 102): LEASING IS FURTHER ALONG THAN "PART BUILT". Walked the screen with the
+   founder: a real dashboard - rent roll, active leases, 37 of 50 units available and priced for
+   lease, expiring leases, open maintenance - plus a PROPERTY MANAGEMENT tab. 28 write operations
+   across the three files. The founder confirms it was TESTED for some time and then shelved when
+   sales took priority, not left half-finished.
+   ⚠️ SO THE ORDER IS WORTH REVISITING: leasing may be DAYS from usable while resale is five days
+   from nothing. And a leasing-only brokerage is a market segment sellable today.
+   FIRST: WALK IT. Create an enquiry, take it to a signed lease, find what breaks. One hour, and it
+   settles whether the order changes. The same walk found eight faults in sales.
+   ⚠️ ALREADY VISIBLE FROM THE DASHBOARD ALONE: the Recent Activity panel shows SALES activity - KYC
+   overrides and a reservation payment - on the LEASING dashboard. That breaks the Day-102 rule that
+   the property is the only link between the businesses. Also, Quick Actions and Today at a Glance
+   render twice.
