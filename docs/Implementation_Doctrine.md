@@ -77,3 +77,19 @@ rather than blocking the work.
 ⚠️ AND THE COROLLARY: a field that MUST be filled is a deal that cannot be entered. Require almost
 nothing; capture what is known; let the record show what is missing. A half-recorded deal is worth
 more than a deal recorded on paper because the app would not take it.
+
+## ⚠️ CHECK BEFORE CUTTING - THE ARCHITECT KEEPS NOT DOING THIS (standing, Day 102)
+Founder: "I pushed you to check from the background before cutting - this was our principle, don't
+do things before checking and confirming."
+Four times this month a piece turned out to be already built, and each time the architect was about
+to write a duplicate: the block's reservation suggestion (Day 95), the developer fee columns
+(Day 96), pp_listings (Day 102), and an entire PROPERTY MANAGEMENT MODULE the design document had
+just declared non-existent (Day 102). Three build breaks came from adding a declaration a file
+already had.
+THE CHECK, before writing anything:
+  - does the table exist?        information_schema.columns
+  - does anything read it?       grep -rn "<table>" src/
+  - does the screen exist?       ls src/components/ | grep -i <thing>
+  - and PRESS THE BUTTON. The management module was found by clicking a tab, not by reading code.
+⚠️ THE FAILURE MODE IS SPECIFIC: reasoning about the codebase instead of looking at it. A grep costs
+ten seconds; a duplicate costs a day and leaves two places to keep in step.
