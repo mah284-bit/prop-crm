@@ -1987,3 +1987,15 @@ So the live shape is id_type + id_number + id_expiry, and id_type carries "Trade
 company - which is how Tech Solutions FZE's TL-2023-4567 is stored.
 ⚠️ NOT DROPPING THEM YET. Dead columns are harmless; dropping them is a migration with its own risk,
 and nothing reads them. Worth a cleanup pass once leasing is proven, not before.
+
+## ⭐ ADDED DAY 102 - A PROSPECT IS NOT A TENANT
+Founder, looking at the form: "it shows as if he is a tenant in leasing already - two things, right?
+Lead, and then converts to tenant."
+Everything in `tenants` is called a tenant today, whether or not anyone has signed anything. The
+Leads screen says "Tenant enquiries" and its button says "+ Add Tenant", so an ENQUIRY and a TENANT
+are the same record - which is why the dashboard reads "0 active leases" and "5 tenants" in the same
+breath, a contradiction nobody should have to explain.
+⭐ SALES ALREADY MAKES THIS DISTINCTION: a lead becomes a customer at Closed Won.
+THE FIX: the `status` column already exists on the table. Drive it - prospect / tenant / former -
+and let each screen say what it means. The Leads screen shows prospects; Prop. Mgmt shows people
+with a lease. The dashboard then counts something true.
