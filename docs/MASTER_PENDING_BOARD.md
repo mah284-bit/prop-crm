@@ -1936,3 +1936,22 @@ RESALE, roughly five days:
 THEN LEASING - and ⚠️ WALK THE 2,000 EXISTING LINES FIRST. LeasingModule, LeaseOpportunityDetail and
 LeasingLeads exist against four EMPTY tables, built months ago and never tested. Find out whether
 they are a week from working or a rewrite before planning anything.
+
+## ⭐ ROLES AND RESPONSIBILITIES, PER BUSINESS - AND THE FOUNDER ASKED FOR THIS A WEEK AGO
+He proposed it on Day 96 and the architect steered it to the capability grid, which was the wrong
+answer. The right one is the question he actually asked: WHO DOES WHAT, in each of the three
+businesses, and what must each of them see?
+⚠️ THE ROLES DIFFER BY BUSINESS AND NOBODY HAS DECIDED HOW:
+ - SALES: agent, sales manager, admin, accountant. Understood, and built.
+ - LEASING: a leasing agent FILLS UNITS - occupancy is his number, not commission. Someone watches
+   the building's P&L. Someone handles MAINTENANCE, a job that does not exist in sales at all.
+ - MANAGEMENT: a PROPERTY MANAGER deals with tenants and owners, chases rent and sends owner
+   statements. Not a salesperson in any sense.
+⚠️ TODAY `leasing_agent` AND `leasing_manager` EXIST AS NAMES ONLY. permissions.js has one line
+mentioning leasing and it returns true for everyone - "team-scoped, handled elsewhere". So a leasing
+agent has whatever a sales agent has, by default rather than decision.
+SEQUENCE: do this BEFORE the leasing and management modules, not after. The capabilities fall out of
+the responsibilities; inventing capabilities first and hoping they fit is how the sales roles ended
+up with `see_brokerage_commission` granted to every role including viewer (found Day 90).
+An hour of conversation, business by business - like the Day-102 property session, which produced
+more than a week of building would have.
