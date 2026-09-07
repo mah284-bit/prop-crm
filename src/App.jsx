@@ -59,6 +59,9 @@ import LeadDetail from "./components/sales/LeadDetail.jsx";
 import ReportsModule from "./components/ReportsModule.jsx";
 import PropPulse from "./components/PropPulse.jsx";
 import MasterAgreements from "./components/MasterAgreements.jsx";
+// Day 102: the Prop. Mgmt tab rendered this and the import was missing - the screen threw
+// "LeasingModule is not defined" on every click. Shelved work decaying rather than dismantled.
+import LeasingModule from "./components/LeasingModule.jsx";
 import Developers from "./components/Developers.jsx";
 import CompanyConfigPage from "./components/admin/CompanyConfigPage.jsx";
 import OpenItemsGuard from "./components/opportunities/OpenItemsGuard.jsx";
