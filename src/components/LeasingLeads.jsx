@@ -313,7 +313,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
             </div>
             <div style={{padding:"1.25rem 1.5rem",overflowY:"auto"}}>
               <TenantForm currentUser={currentUser} showToast={showToast} tenant={editTenant}
-                onSaved={(t)=>{setShowAddTenant(false);setEditTenant(null);if(t)setTenants(p=>{const o=p.filter(x=>x.id!==t.id);return [...o,t].sort((a,b)=>String(a.full_name||"").localeCompare(String(b.full_name||"")));});}}
+                onSaved={(t)=>{setShowAddTenant(false);setEditTenant(null);if(t)setTenants(p=>{const o=p.filter(x=>x.id!==t.id);return [...o,t].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||"")));});}}
                 onClose={()=>{setShowAddTenant(false);setEditTenant(null);}}/>
             </div>
           </div>

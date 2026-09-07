@@ -46,7 +46,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
     const safe=async(q)=>{ try{const r=await q;return{data:(r.data||[])};}catch(e){console.warn("Query error:",e);return{data:[]};} };
     setLoading(true);
     const [t,l,p,m,u]=await Promise.all([
-      safe(supabase.from("tenants").select("*").order("full_name")),
+      safe(supabase.from("tenants").select("*").order("created_at",{ascending:false})),
       safe(supabase.from("leases").select("*").order("end_date")),
       safe(supabase.from("rent_payments").select("*").order("due_date")),
       safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
@@ -219,7 +219,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
           {showAddTenant&&(
             <Modal title="Add Tenant" onClose={()=>setShowAddTenant(false)} width={520}>
               <TenantForm currentUser={currentUser} showToast={showToast}
-                onSaved={(t)=>{setShowAddTenant(false);if(t)setTenants(p=>[...p,t].sort((a,b)=>String(a.full_name||"").localeCompare(String(b.full_name||""))));}}
+                onSaved={(t)=>{setShowAddTenant(false);if(t)setTenants(p=>[...p,t].sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||""))));}}
                 onClose={()=>setShowAddTenant(false)}/>
             </Modal>
           )}
