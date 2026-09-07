@@ -48,7 +48,10 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
     const [t,l,p,m,u]=await Promise.all([
       safe(supabase.from("tenants").select("*").order("created_at",{ascending:false})),
       safe(supabase.from("leases").select("*").order("end_date")),
-      safe(supabase.from("rent_payments").select("*").order("due_date")),
+      // Day 103: lease_cheques, NOT rent_payments. The cheque manager writes lease_cheques - with a
+      // sequence, a deposit date, a BOUNCE REASON and a REPLACEMENT CHEQUE - while the dashboards
+      // counted rent_payments and therefore counted nothing. Four cheques recorded, "0 overdue".
+      safe(supabase.from("lease_cheques").select("*").order("cheque_date")),
       safe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
       safe(supabase.from("project_units").select("id,unit_ref,sub_type")),
     ]);
@@ -65,7 +68,9 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
   const today=new Date();
   const activeLeases=leases.filter(l=>l.status==="Active");
   const expiring30=activeLeases.filter(l=>{const d=new Date(l.end_date);return d>=today&&(d-today)/(1000*60*60*24)<=30;});
-  const overduePmts=payments.filter(p=>p.status==="Pending"&&new Date(p.due_date)<today);
+  // A cheque is overdue when its date has passed and nobody has banked it. Deposited-but-not-cleared
+  // is a different worry and belongs in its own count, not this one.
+  const overduePmts=payments.filter(p=>p.status==="Pending"&&new Date(p.cheque_date)<today);
   const openMaint=maintenance.filter(m=>m.status==="Open"||m.status==="In Progress");
   const totalRent=activeLeases.reduce((s,l)=>s+(l.annual_rent||0),0);
 

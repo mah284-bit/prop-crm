@@ -1287,7 +1287,8 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
         const [l,t,p,m] = await Promise.all([
           qsafe(cid ? supabase.from("leases").select("*").eq("company_id",cid).order("end_date") : supabase.from("leases").select("*").order("end_date")),
           qsafe(cid ? supabase.from("tenants").select("*").eq("company_id",cid) : supabase.from("tenants").select("*")),
-          qsafe(supabase.from("rent_payments").select("*").order("due_date")),
+          // Day 103: lease_cheques, not rent_payments - the cheque manager writes there.
+          qsafe(supabase.from("lease_cheques").select("*").order("cheque_date")),
           qsafe(supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
         ]);
         setLeases(l.data||[]); setTenants(t.data||[]);
@@ -1304,7 +1305,7 @@ function LeasingDashboard({currentUser, activities=[], units=[], salePricing=[],
   const today         = new Date();
   const activeLeases  = leases.filter(l=>l.status==="Active");
   const expiring30    = activeLeases.filter(l=>{const d=new Date(l.end_date);return d>=today&&(d-today)/864e5<=30;});
-  const overduePmts   = payments.filter(p=>p.status==="Pending"&&new Date(p.due_date)<today);
+  const overduePmts   = payments.filter(p=>p.status==="Pending"&&new Date(p.cheque_date)<today);
   const openMaint     = maintenance.filter(m=>m.status==="Open"||m.status==="In Progress");
   const totalRent     = activeLeases.reduce((s,l)=>s+(l.annual_rent||0),0);
   const leaseUnits    = units.filter(u=>u.purpose==="Lease"||u.purpose==="Both");
@@ -1877,7 +1878,7 @@ export default function App(){
           safe(cid ? supabase.from("unit_lease_pricing").select("*").eq("company_id",cid) : supabase.from("unit_lease_pricing").select("*")),
           safe(cid ? supabase.from("tenants").select("*").eq("company_id",cid).order("full_name") : supabase.from("tenants").select("*").order("full_name")),
           safe(cid ? supabase.from("leases").select("*").eq("company_id",cid).order("end_date") : supabase.from("leases").select("*").order("end_date")),
-          safe(cid ? supabase.from("rent_payments").select("*").order("due_date") : supabase.from("rent_payments").select("*").order("due_date")),
+          safe(supabase.from("lease_cheques").select("*").order("cheque_date")),
           safe(cid ? supabase.from("maintenance").select("*").eq("company_id",cid).order("created_at",{ascending:false}) : supabase.from("maintenance").select("*").order("created_at",{ascending:false})),
         ]);
         if(!live) return;
@@ -1912,7 +1913,7 @@ export default function App(){
         setRefRules(rulesFromRows(refB.data || []));
         const today2=new Date();
         const stale=(l.data||[]).filter(lead=>!["Closed Won","Closed Lost"].includes(lead.stage)&&lead.stage_updated_at&&Math.floor((today2-new Date(lead.stage_updated_at))/(864e5))>=7);
-        const overdueRent=(lp_.data||[]).filter(p=>p.status==="Pending"&&p.due_date&&new Date(p.due_date)<today2);
+        const overdueRent=(lp_.data||[]).filter(p=>p.status==="Pending"&&p.cheque_date&&new Date(p.cheque_date)<today2);
         const expiringLeases30=(ll.data||[]).filter(l2=>l2.status==="Active"&&l2.end_date&&Math.ceil((new Date(l2.end_date)-today2)/864e5)<=30&&Math.ceil((new Date(l2.end_date)-today2)/864e5)>0);
         setFollowupAlerts({staleLeads:stale,overduePayments:overdueRent,expiringLeases:expiringLeases30});
       }catch(e){console.error("Load error:",e);}
