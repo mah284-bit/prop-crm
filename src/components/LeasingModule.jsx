@@ -219,7 +219,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
           {showAddTenant&&(
             <Modal title="Add Tenant" onClose={()=>setShowAddTenant(false)} width={520}>
               <TenantForm currentUser={currentUser} showToast={showToast}
-                onSaved={()=>{setShowAddTenant(false);load(true);}}
+                onSaved={(t)=>{setShowAddTenant(false);if(t)setTenants(p=>[...p,t].sort((a,b)=>String(a.full_name||"").localeCompare(String(b.full_name||""))));}}
                 onClose={()=>setShowAddTenant(false)}/>
             </Modal>
           )}
