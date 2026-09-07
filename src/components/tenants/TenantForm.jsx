@@ -26,6 +26,12 @@ const ID_TYPES = {
   Company: ["Trade License"],
 };
 
+// ⚠️ Day 102: these live OUTSIDE the component. Defined inside it, React treats them as a NEW
+// component type on every keystroke, remounts the whole subtree, and focus jumps back to the first
+// field - which is exactly what happened when typing an email.
+const E = ({ m }) => m ? <div style={{ fontSize: 10.5, color: "#B91C1C", marginTop: 3 }}>{m}</div> : null;
+const Row = ({ children }) => <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>{children}</div>;
+
 const blank = {
   full_name: "", tenant_type: "Individual", nationality: "",
   phone_country: "UAE", phone: "", whatsapp_same: true, whatsapp: "", email: "",
@@ -110,8 +116,6 @@ export default function TenantForm({ currentUser, showToast, tenant = null, onSa
 
   const L = { fontSize: 10, fontWeight: 700, color: "#64748B", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: 4 };
   const I = (bad) => ({ width: "100%", padding: "8px 10px", border: "1px solid " + (bad ? "#FCA5A5" : "#D1D5DB"), borderRadius: 7, fontSize: 13, boxSizing: "border-box" });
-  const E = ({ m }) => m ? <div style={{ fontSize: 10.5, color: "#B91C1C", marginTop: 3 }}>{m}</div> : null;
-  const Row = ({ children }) => <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>{children}</div>;
 
   return (
     <div style={{ maxWidth: 560 }}>
