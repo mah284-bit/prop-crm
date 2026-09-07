@@ -358,14 +358,6 @@ const AuthTabs=({mode,setMode})=>(
 // ─── FIELD VALIDATORS ────────────────────────────────────────────
 
 // Email validation
-const validateEmail = (email) => {
-  if (!email) return null; // optional field — only validate if filled
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-  if (!re.test(email.trim())) return "Invalid email — use format: name@domain.com";
-  const banned = ["@test.","@example.","@fake.","@dummy."];
-  if (banned.some(b => email.includes(b))) return "Please use a real email address";
-  return null;
-};
 
 // Phone formats by country/nationality
 const PHONE_FORMATS = {
@@ -381,32 +373,6 @@ const PHONE_FORMATS = {
   "China":        { prefix:"+86",  pattern:/^\+86[0-9]{11}$/,     example:"+86 138 0013 8000", clean:/[\s\-\(\)]/g },
 };
 
-const validatePhone = (phone, nationality = "") => {
-  if (!phone) return null; // optional field
-  const cleaned = phone.replace(/[\s\-\(\)]/g, "");
-
-  // Must start with +
-  if (!cleaned.startsWith("+")) {
-    const fmt = PHONE_FORMATS[nationality];
-    return `Phone must start with country code. ${fmt ? `For ${nationality}: ${fmt.example}` : "e.g. +971 50 123 4567"}`;
-  }
-
-  // Country-specific validation
-  const fmt = PHONE_FORMATS[nationality];
-  if (fmt) {
-    if (!fmt.pattern.test(cleaned)) {
-      return `Invalid ${nationality} number — should be: ${fmt.example}`;
-    }
-    return null;
-  }
-
-  // Generic: just check it has 7-15 digits after +
-  const digits = cleaned.slice(1).replace(/\D/g, "");
-  if (digits.length < 7 || digits.length > 15) {
-    return "Phone number must have 7-15 digits after the country code";
-  }
-  return null;
-};
 
 // Format phone as you type — add spaces based on country
 const formatPhoneDisplay = (raw, nationality = "") => {
@@ -422,23 +388,8 @@ const formatPhoneDisplay = (raw, nationality = "") => {
 };
 
 // Emirates ID validation — 784-YYYY-XXXXXXX-X format
-const validateEmiratesID = (id) => {
-  if (!id) return null;
-  const cleaned = id.replace(/[\s\-]/g, "");
-  if (!/^784[0-9]{13}$/.test(cleaned)) {
-    return "Emirates ID must be 15 digits starting with 784 — e.g. 784-1990-1234567-1";
-  }
-  return null;
-};
 
 // Passport validation — basic alphanumeric 6-9 chars
-const validatePassport = (passport) => {
-  if (!passport) return null;
-  if (!/^[A-Z0-9]{6,9}$/i.test(passport.trim())) {
-    return "Passport number should be 6-9 alphanumeric characters";
-  }
-  return null;
-};
 
 // Inline error display component
 const FieldError = ({ error }) => {
@@ -1091,6 +1042,7 @@ const SUBTITLES={
 import { MAX_RESERVATION_FEE, RES_COLORS } from "./lib/refData.js";
 import { VInput, PhoneHint, LeasingChequeManager } from "./components/leasing/shared.jsx";
 import { Modal } from "./components/leasing/Modal.jsx";
+import { validateEmail, validatePhone, validateEmiratesID, validatePassport } from "./lib/validators.js";
 
 
 // ── Small badge shown on inventory row ─────────────────────────

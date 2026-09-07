@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import { canDo } from "../lib/permissions.js";
 import { VInput, PhoneHint, LeasingChequeManager } from "./leasing/shared.jsx";
 import { Modal } from "./leasing/Modal.jsx";
+import { validateEmail, validatePhone, validateEmiratesID, validatePassport } from "../lib/validators.js";
 function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=null,initialFilter=null}) {
   const [tab,setTab]               = useState(initialFilter?.type==="tab"&&initialFilter?.value ? initialFilter.value : "dashboard");
   const [tenants,setTenants]       = useState([]);
