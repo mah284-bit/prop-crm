@@ -214,7 +214,7 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
           {showAddTenant&&(
             <Modal title="Add Tenant" onClose={()=>setShowAddTenant(false)} width={520}>
               <TenantForm currentUser={currentUser} showToast={showToast}
-                onSaved={()=>{setShowAddTenant(false);load();}}
+                onSaved={()=>{setShowAddTenant(false);load(true);}}
                 onClose={()=>setShowAddTenant(false)}/>
             </Modal>
           )}
