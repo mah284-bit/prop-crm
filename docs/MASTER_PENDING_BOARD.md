@@ -2010,3 +2010,25 @@ with a lease. The dashboard then counts something true.
    REMAINING IN LEASING, all self-contained: walk the Leases tab and the cheque manager · walk
    leasing Opportunities · the prospect/tenant status · the phone-country fix in every other form ·
    two duplicate Av.jsx files · an orphaned LeasingDashboard.jsx that nothing renders.
+
+## ⚠️⚠️ FOUND DAY 102 BY DIGGING - LEASING IS TWO HALVES THAT NEVER MEET
+Found before writing any code, which is the point of digging first.
+ 1. THE LEASE SPLITS IN TWO. LeaseOpportunityDetail signs a lease into `lease_contracts`;
+    LeasingModule and BOTH dashboards read `leases`. So a lease signed on the deal screen NEVER
+    APPEARS in Prop. Mgmt, and the rent roll stays empty however many are signed.
+ 2. THE CHEQUES ARE ORPHANED. LeasingChequeManager - 200 lines, the heart of a UAE tenancy - writes
+    `lease_cheques`. The dashboards count `rent_payments`. Record four post-dated cheques and the
+    screen still reads "0 overdue payments".
+⚠️ NEITHER IS VISIBLE IN TESTING. Each half works perfectly on its own; only the join is missing.
+This is very likely why leasing "felt" incomplete and was shelved.
+⭐ AND THE DECISION IS EASY, because `lease_cheques` is the better model: cheque_sequence,
+deposit_date, cleared_date, BOUNCE_REASON and REPLACEMENT_CHEQUE_ID. Someone had already thought
+about what happens when a post-dated cheque bounces - which was the one question we were going to
+put to the practitioner. `rent_payments` has none of it.
+THE RULING TO MAKE: one lease table (`leases`, which carries Ejari, RERA, deposit, municipality fee,
+notice period, renewal and termination) and one money table (`lease_cheques`). Point everything at
+those two. `lease_contracts` and `rent_payments` become dead, like the specific ID columns on
+`tenants` - left in place, read by nothing.
+⚠️ ALSO: `leases` carries the same duplicate-column disease as `tenants` - contract_no/contract_number,
+agency_commission/agency_fee, ejari_no/ejari_number, no_of_cheques/number_of_cheques. The INSERT at
+LeasingModule.jsx:95 names agency_fee and number_of_cheques, so those are the live ones.
