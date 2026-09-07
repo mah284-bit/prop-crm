@@ -1920,3 +1920,19 @@ sale.
    one collect both commissions and pass the other its share? If so, money can flow OUT of the
    brokerage for the first time, and Receipts & Payouts needs a third half. Working assumption
    until he answers: each firm takes its own cheque at the trustee office.
+
+## ⭐⭐ THE BUILD ORDER, AGREED DAY 102 - RESALE, THEN LEASING
+Read docs/Property_Model_Design.md first. It reframes the whole vertical: not three products but ONE
+PROPERTY with three businesses touching it, and the property is the ONLY link between them.
+RESALE, roughly five days:
+ 1. ⭐ THE PROPERTY RECORD - 1 day. Create-or-link from the title deed. The foundation for all three
+    businesses, and the one thing that must be built ONCE and correctly.
+ 2. THE LISTING - half a day. Seller, Form A, asking price, exclusive or not, service charges.
+ 3. THE RESALE OPPORTUNITY - 1 day. Buyer found, Form B, qualification with PROOF OF FUNDS, Form F.
+ 4. THE FOUR PHASES - 1 day. NOC, trustee appointment, transfer day, handover.
+ 5. ⭐ THE DEADLINES - 1 day. NOC expiry, bank NOC, the Form F countdown. THE DIFFERENTIATOR, and
+    the practitioner named it himself.
+ 6. PER-SIDE COMMISSION - half a day, pending his answer on who collects.
+THEN LEASING - and ⚠️ WALK THE 2,000 EXISTING LINES FIRST. LeasingModule, LeaseOpportunityDetail and
+LeasingLeads exist against four EMPTY tables, built months ago and never tested. Find out whether
+they are a week from working or a rewrite before planning anything.
