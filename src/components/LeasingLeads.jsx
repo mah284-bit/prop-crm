@@ -32,7 +32,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
   useEffect(()=>{
     const q = x => x.then(r=>r).catch(()=>({data:[]}));
     Promise.all([
-      q(supabase.from("tenants").select("*").order("full_name")),
+      q(supabase.from("tenants").select("*").order("created_at",{ascending:false})),
       q(supabase.from("lease_opportunities").select("*").order("created_at",{ascending:false})),
       q(supabase.from("project_units").select("id,unit_ref,unit_type,sub_type,project_id,status,purpose,floor_number,view,size_sqft,bedrooms,bathrooms,block_or_tower")),
       q(supabase.from("projects").select("id,name")),
