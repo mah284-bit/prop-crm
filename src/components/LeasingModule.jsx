@@ -4,6 +4,7 @@ import { canDo } from "../lib/permissions.js";
 import { VInput, PhoneHint, LeasingChequeManager } from "./leasing/shared.jsx";
 import { Modal } from "./leasing/Modal.jsx";
 import { validateEmail, validatePhone, validateEmiratesID, validatePassport } from "../lib/validators.js";
+import TenantForm from "./tenants/TenantForm.jsx";
 function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=null,initialFilter=null}) {
   const [tab,setTab]               = useState(initialFilter?.type==="tab"&&initialFilter?.value ? initialFilter.value : "dashboard");
   const [tenants,setTenants]       = useState([]);
@@ -212,39 +213,9 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
           </div>
           {showAddTenant&&(
             <Modal title="Add Tenant" onClose={()=>setShowAddTenant(false)} width={520}>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>FULL NAME *</label><input value={tForm.full_name} onChange={e=>setTForm(f=>({...f,full_name:e.target.value}))}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>TYPE</label><select value={tForm.tenant_type} onChange={e=>setTForm(f=>({...f,tenant_type:e.target.value}))}><option>Individual</option><option>Company</option></select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>NATIONALITY</label><select value={tForm.nationality} onChange={e=>setTForm(f=>({...f,nationality:e.target.value}))}><option value="">Select…</option>{["UAE","Saudi Arabia","India","UK","Pakistan","Egypt","Jordan","USA","Russia","China","Other"].map(n=><option key={n}>{n}</option>)}</select></div>
-                <div>
-                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>PHONE</label>
-                <VInput value={tForm.phone} onChange={e=>setTForm(f=>({...f,phone:e.target.value}))} placeholder="+971 50 000 0000" validate={v=>validatePhone(v,tForm.nationality)}/>
-                <PhoneHint nationality={tForm.nationality}/>
-              </div>
-                <div>
-                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>EMAIL</label>
-                <VInput value={tForm.email} onChange={e=>setTForm(f=>({...f,email:e.target.value}))} placeholder="tenant@email.com" validate={validateEmail}/>
-              </div>
-                <div>
-                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>WHATSAPP</label>
-                <VInput value={tForm.whatsapp} onChange={e=>setTForm(f=>({...f,whatsapp:e.target.value}))} placeholder="+971 50 000 0000" validate={v=>v?validatePhone(v,tForm.nationality):null}/>
-              </div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>ID TYPE</label><select value={tForm.id_type} onChange={e=>setTForm(f=>({...f,id_type:e.target.value}))}><option>Emirates ID</option><option>Passport</option><option>Residency Visa</option></select></div>
-                <div>
-                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>ID NUMBER</label>
-                <VInput value={tForm.id_number} onChange={e=>setTForm(f=>({...f,id_number:e.target.value}))} placeholder={tForm.id_type==="Emirates ID"?"784-XXXX-XXXXXXX-X":""} validate={v=>tForm.id_type==="Emirates ID"?validateEmiratesID(v):null}/>
-              </div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>ID EXPIRY</label><input type="date" value={tForm.id_expiry} onChange={e=>setTForm(f=>({...f,id_expiry:e.target.value}))}/></div>
-                <div>
-                <label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>PASSPORT NO.</label>
-                <VInput value={tForm.passport_number} onChange={e=>setTForm(f=>({...f,passport_number:e.target.value}))} placeholder="e.g. AB1234567" validate={validatePassport}/>
-              </div>
-              </div>
-              {tForm.tenant_type==="Company"&&<div style={{marginTop:12,display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}><div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>COMPANY NAME</label><input value={tForm.company_name} onChange={e=>setTForm(f=>({...f,company_name:e.target.value}))}/></div><div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>TRADE LICENSE</label><input value={tForm.trade_license} onChange={e=>setTForm(f=>({...f,trade_license:e.target.value}))}/></div></div>}
-              <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:14}}>
-                <button onClick={()=>setShowAddTenant(false)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                <button onClick={saveTenant} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Add Tenant"}</button>
-              </div>
+              <TenantForm currentUser={currentUser} showToast={showToast}
+                onSaved={()=>{setShowAddTenant(false);load();}}
+                onClose={()=>setShowAddTenant(false)}/>
             </Modal>
           )}
         </div>

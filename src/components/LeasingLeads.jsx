@@ -5,6 +5,7 @@ import Spinner from "./shared/Spinner.jsx";
 import { LEASE_STAGES, LEASE_STAGE_META } from "../lib/leaseStages.js";
 import Av from "./Av.jsx";
 import LeaseOpportunityDetail from "./LeaseOpportunityDetail.jsx";
+import TenantForm from "./tenants/TenantForm.jsx";
 function LeasingLeads({ currentUser, showToast, users=[] }) {
   const [tenants,    setTenants]    = useState([]);
   const [lOpps,      setLOpps]      = useState([]);
@@ -310,24 +311,10 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
               <span style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#fff"}}>{editTenant?"Edit":"New"} Tenant</span>
               <button onClick={()=>{setShowAddTenant(false);setEditTenant(null);}} style={{background:"none",border:"none",fontSize:22,color:"#C9A84C",cursor:"pointer"}}>×</button>
             </div>
-            <div style={{overflowY:"auto",padding:"1.25rem 1.5rem"}}>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Full Name *</label><input value={tForm.full_name} onChange={tf("full_name")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Phone</label><input value={tForm.phone} onChange={tf("phone")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Email</label><input type="email" value={tForm.email} onChange={tf("email")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Nationality</label><input value={tForm.nationality} onChange={tf("nationality")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Tenant Type</label>
-                  <select value={tForm.tenant_type} onChange={tf("tenant_type")}><option>Individual</option><option>Company</option></select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>ID Type</label>
-                  <select value={tForm.id_type} onChange={tf("id_type")}><option>Emirates ID</option><option>Passport</option><option>Trade License</option></select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>ID Number</label><input value={tForm.id_number} onChange={tf("id_number")}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>ID Expiry</label><input type="date" value={tForm.id_expiry} onChange={tf("id_expiry")}/></div>
-                <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>Notes</label><textarea value={tForm.notes} onChange={tf("notes")} rows={2}/></div>
-              </div>
-            </div>
-            <div style={{display:"flex",gap:10,justifyContent:"flex-end",padding:"1rem 1.5rem",borderTop:"1px solid #E2E8F0"}}>
-              <button onClick={()=>{setShowAddTenant(false);setEditTenant(null);}} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-              <button onClick={saveTenant} disabled={saving} style={{padding:"9px 24px",borderRadius:8,border:"none",background:saving?"#A0AEC0":"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:saving?"not-allowed":"pointer"}}>{saving?"Saving…":editTenant?"Save":"Add Tenant"}</button>
+            <div style={{padding:"1.25rem 1.5rem",overflowY:"auto"}}>
+              <TenantForm currentUser={currentUser} showToast={showToast} tenant={editTenant}
+                onSaved={()=>{setShowAddTenant(false);setEditTenant(null);load(true);}}
+                onClose={()=>{setShowAddTenant(false);setEditTenant(null);}}/>
             </div>
           </div>
         </div>
