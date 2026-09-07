@@ -1968,3 +1968,11 @@ more than a week of building would have.
    overrides and a reservation payment - on the LEASING dashboard. That breaks the Day-102 rule that
    the property is the only link between the businesses. Also, Quick Actions and Today at a Glance
    render twice.
+   ⚠️ SEQUENCE CORRECTED (Day 102): the entry above says do the roles work BEFORE the leasing and
+   management modules. The founder's principle is the opposite, and it is the one that worked for
+   sales: BUILD BROAD AS SUPER_ADMIN, THEN RESTRICT. Restricting first means guessing what a leasing
+   agent needs before anyone has watched the work being done. Zafar's accountant role was defined
+   AFTER the commission module existed, and it exposed what should be hidden - dead buttons, a nav
+   that showed everything, a policy naming roles instead of capabilities. None of that would have
+   been visible in advance.
+   SO: walk leasing and property management as super_admin first. The roles conversation follows.
