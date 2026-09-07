@@ -89,6 +89,12 @@ a property sees its tenancies, its rent, its maintenance. He does not see the co
 its sale, the buyer's payment plan, or the developer's terms. The property is the join and nothing
 else crosses it.
 
+⚠️⚠️ **THE PROPERTY IS THE ONLY LINK.** Founder, on how the three connect: "only the property is
+linked, that's all - so any time they want to see it from the leasing point." A leasing user opening
+a property sees its tenancies, its rent, its maintenance. He does not see the commission earned on
+its sale, the buyer's payment plan, or the developer's terms. The property is the join and nothing
+else crosses it.
+
 ⚠️ **AND THE INDEPENDENCE RULE IS ABSOLUTE:** a firm doing only off-plan must never see a head-lease
 screen, a maintenance request or a tenancy. Nothing in one business may require a record from
 another. A letting must not need a management agreement; a resale must not need the property to have
