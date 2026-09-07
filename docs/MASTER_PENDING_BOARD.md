@@ -1999,3 +1999,14 @@ breath, a contradiction nobody should have to explain.
 THE FIX: the `status` column already exists on the table. Drive it - prospect / tenant / former -
 and let each screen say what it means. The Leads screen shows prospects; Prop. Mgmt shows people
 with a lease. The dashboard then counts something true.
+   ⚠️ ORDER INVERTED (Day 102, end of session): LEASING FIRST, resale after. The morning agreed
+   resale-then-leasing; the afternoon changed the facts. Leasing is DAYS from working - twenty-one
+   faults fixed in one session and every screen now opens - while resale is blocked on the
+   practitioner's answer about who collects commission when two brokerages share a deal.
+   So: finish leasing while resale waits. Nothing in leasing needs him, with ONE exception worth
+   asking alongside the resale question: WHAT HAPPENS WHEN A POST-DATED CHEQUE BOUNCES? Four cheques
+   a year is the norm here and the module has a 200-line cheque manager, but nobody has described
+   the workflow - who chases, what the tenant is told, whether it reaches the owner.
+   REMAINING IN LEASING, all self-contained: walk the Leases tab and the cheque manager · walk
+   leasing Opportunities · the prospect/tenant status · the phone-country fix in every other form ·
+   two duplicate Av.jsx files · an orphaned LeasingDashboard.jsx that nothing renders.
