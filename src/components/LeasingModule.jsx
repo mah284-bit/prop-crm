@@ -56,8 +56,11 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
     setTenants(updated.tenants);setLeases(updated.leases);setPayments(updated.payments);setMaintenance(updated.maintenance);setUnits(u.data||[]);
     if(setLeasingData)setLeasingData(updated);
     setLoading(false);
-  },[leasingData]);
-  useEffect(()=>{load();},[load]);
+  // Day 102: NOT [leasingData]. load() writes leasingData, which recreated load, which re-ran the
+  // effect, which called load() WITHOUT force - restoring the very cache the refresh had just
+  // replaced. A saved tenant appeared only after navigating away and back, and the app crawled.
+  },[]);
+  useEffect(()=>{load();},[]);
 
   const today=new Date();
   const activeLeases=leases.filter(l=>l.status==="Active");
