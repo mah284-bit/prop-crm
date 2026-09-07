@@ -360,18 +360,6 @@ const AuthTabs=({mode,setMode})=>(
 // Email validation
 
 // Phone formats by country/nationality
-const PHONE_FORMATS = {
-  "UAE":          { prefix:"+971", pattern:/^\+971[0-9]{8,9}$/, example:"+971 50 123 4567", clean:/[\s\-\(\)]/g },
-  "Saudi Arabia": { prefix:"+966", pattern:/^\+966[0-9]{9}$/,   example:"+966 50 123 4567", clean:/[\s\-\(\)]/g },
-  "India":        { prefix:"+91",  pattern:/^\+91[6-9][0-9]{9}$/,example:"+91 98765 43210",  clean:/[\s\-\(\)]/g },
-  "UK":           { prefix:"+44",  pattern:/^\+44[0-9]{10}$/,    example:"+44 7700 900000",  clean:/[\s\-\(\)]/g },
-  "Pakistan":     { prefix:"+92",  pattern:/^\+92[0-9]{10}$/,    example:"+92 300 1234567",  clean:/[\s\-\(\)]/g },
-  "Egypt":        { prefix:"+20",  pattern:/^\+20[0-9]{10}$/,    example:"+20 10 1234 5678",  clean:/[\s\-\(\)]/g },
-  "Jordan":       { prefix:"+962", pattern:/^\+962[0-9]{8,9}$/,  example:"+962 7 9012 3456",  clean:/[\s\-\(\)]/g },
-  "USA":          { prefix:"+1",   pattern:/^\+1[2-9][0-9]{9}$/,  example:"+1 212 555 0100",  clean:/[\s\-\(\)]/g },
-  "Russia":       { prefix:"+7",   pattern:/^\+7[0-9]{10}$/,      example:"+7 912 345 6789",  clean:/[\s\-\(\)]/g },
-  "China":        { prefix:"+86",  pattern:/^\+86[0-9]{11}$/,     example:"+86 138 0013 8000", clean:/[\s\-\(\)]/g },
-};
 
 
 // Format phone as you type — add spaces based on country
@@ -1043,6 +1031,7 @@ import { MAX_RESERVATION_FEE, RES_COLORS } from "./lib/refData.js";
 import { VInput, PhoneHint, LeasingChequeManager } from "./components/leasing/shared.jsx";
 import { Modal } from "./components/leasing/Modal.jsx";
 import { validateEmail, validatePhone, validateEmiratesID, validatePassport } from "./lib/validators.js";
+import { PHONE_FORMATS } from "./lib/phoneFormats.js";
 
 
 // ── Small badge shown on inventory row ─────────────────────────

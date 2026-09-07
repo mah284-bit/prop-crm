@@ -1,3 +1,4 @@
+import { PHONE_FORMATS } from "./phoneFormats.js";
 // Day 102: extracted from App.jsx. LeasingModule calls all four and threw "validateEmail is not
 // defined" on Add Tenant - the eleventh casualty of the split five months ago, and the first that
 // was a plain FUNCTION rather than a component, which is why the earlier sweep missed it.
