@@ -1976,3 +1976,14 @@ more than a week of building would have.
    that showed everything, a policy naming roles instead of capabilities. None of that would have
    been visible in advance.
    SO: walk leasing and property management as super_admin first. The roles conversation follows.
+
+## ADDED DAY 102 - THE TENANTS TABLE CARRIES THREE GENERATIONS OF THE SAME IDEA
+Twenty-seven columns, and identity is modelled three times over: SPECIFIC (emirates_id,
+passport_no, visa_no, trade_license_no, each with an expiry), GENERIC (id_type, id_number,
+id_expiry), and DUPLICATES of the specific (passport_number beside passport_no, trade_license
+beside trade_license_no).
+⭐ THE GENERIC SET WON: all 13 rows have id_type and id_number; every specific column is EMPTY.
+So the live shape is id_type + id_number + id_expiry, and id_type carries "Trade License" for a
+company - which is how Tech Solutions FZE's TL-2023-4567 is stored.
+⚠️ NOT DROPPING THEM YET. Dead columns are harmless; dropping them is a migration with its own risk,
+and nothing reads them. Worth a cleanup pass once leasing is proven, not before.
