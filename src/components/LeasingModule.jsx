@@ -23,7 +23,8 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
 
   const tBlank={full_name:"",nationality:"",id_type:"Emirates ID",id_number:"",id_expiry:"",passport_number:"",passport_expiry:"",email:"",phone:"",whatsapp:"",tenant_type:"Individual",company_name:"",trade_license:"",notes:""};
   const lBlank={unit_id:"",tenant_id:"",start_date:"",end_date:"",annual_rent:"",security_deposit:"",agency_fee:"",payment_frequency:"Annual",number_of_cheques:"1",ejari_number:"",contract_number:"",status:"Active",notes:""};
-  const pBlank={lease_id:"",amount:"",due_date:"",payment_method:"Cheque",cheque_number:"",status:"Pending",payment_type:"Rent",notes:""};
+  // Day 103: a cheque, not a generic payment.
+  const pBlank={lease_id:"",amount:"",cheque_date:"",cheque_number:"",bank_name:"",cheque_sequence:"",total_cheques:"",status:"Pending",notes:""};
   const mBlank={unit_id:"",title:"",category:"General",priority:"Normal",description:"",assigned_to:"",cost_estimate:"",status:"Open",charged_to:"Landlord",notes:""};
   const [tForm,setTForm]=useState(tBlank);
   const [lForm,setLForm]=useState(lBlank);
@@ -107,13 +108,18 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
   };
 
   const savePmt=async()=>{
-    if(!pForm.lease_id||!pForm.amount||!pForm.due_date){showToast("Lease, amount and due date required","error");return;}
+    if(!pForm.lease_id||!pForm.amount||!pForm.cheque_date){showToast("Lease, amount and cheque date required","error");return;}
     setSaving(true);
     try{
       const lease=leases.find(l=>l.id===pForm.lease_id);
-      const {data,error}=await supabase.from("rent_payments").insert({...pForm,amount:Number(pForm.amount),unit_id:lease?.unit_id||null,tenant_id:lease?.tenant_id||null,created_by:currentUser.id}).select().single();
+      const {data,error}=await supabase.from("lease_cheques").insert({...pForm,
+        amount:Number(pForm.amount),
+        cheque_sequence:pForm.cheque_sequence?Number(pForm.cheque_sequence):null,
+        total_cheques:pForm.total_cheques?Number(pForm.total_cheques):null,
+        unit_id:lease?.unit_id||null,tenant_id:lease?.tenant_id||null,
+        company_id:currentUser.company_id,created_by:currentUser.id}).select().single();
       if(error)throw error;
-      setPayments(p=>[data,...p]);showToast("Payment logged","success");setShowAddPmt(false);setPForm(pBlank);
+      setPayments(p=>[data,...p]);showToast("Cheque logged","success");setShowAddPmt(false);setPForm(pBlank);
     }catch(e){showToast(e.message,"error");}
     setSaving(false);
   };
@@ -129,9 +135,15 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
     setSaving(false);
   };
 
+  // Day 103: a cheque CLEARS, it is not "paid" - and it clears out of lease_cheques. A deposited
+  // cheque that has not cleared is money the brokerage does not have yet, which is the whole reason
+  // the states are separate.
   const markPaid=async(id)=>{
-    await supabase.from("rent_payments").update({status:"Paid",paid_date:today.toISOString().slice(0,10)}).eq("id",id);
-    setPayments(p=>p.map(x=>x.id===id?{...x,status:"Paid"}:x));showToast("Marked paid","success");
+    const d=today.toISOString().slice(0,10);
+    const {error}=await supabase.from("lease_cheques").update({status:"Cleared",cleared_date:d}).eq("id",id);
+    if(error){showToast("Could not update: "+error.message,"error");return;}
+    setPayments(p=>p.map(x=>x.id===id?{...x,status:"Cleared",cleared_date:d}:x));
+    showToast("Cheque cleared","success");
   };
 
   const renewLease=async(lease)=>{
@@ -395,49 +407,50 @@ function LeasingModule({currentUser,showToast,leasingData=null,setLeasingData=nu
         <div style={{flex:1,display:"flex",flexDirection:"column"}}>
           <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}>
             <div style={{display:"flex",gap:12}}><span style={{fontSize:12,color:"#B83232",fontWeight:600}}>Overdue: {overduePmts.length}</span><span style={{fontSize:12,color:"#A0AEC0"}}>Total: {payments.length}</span></div>
-            {canEdit&&<button onClick={()=>{setPForm(pBlank);setShowAddPmt(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Log Payment</button>}
+            {canEdit&&<button onClick={()=>{setPForm(pBlank);setShowAddPmt(true);}} style={{padding:"7px 16px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Log Cheque</button>}
           </div>
           <div style={{flex:1,overflowY:"auto"}}>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
-              <thead style={{position:"sticky",top:0}}><tr style={{background:"#0F2540"}}>{["Tenant","Unit","Type","Amount","Due Date","Paid","Method","Status",""].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
+              <thead style={{position:"sticky",top:0}}><tr style={{background:"#0F2540"}}>{["Tenant","Unit","Cheque","Amount","Dated","Banked","Bank","Status",""].map(h=><th key={h} style={{padding:"9px 12px",textAlign:"left",fontSize:10,fontWeight:600,color:"#C9A84C",textTransform:"uppercase",letterSpacing:".4px",whiteSpace:"nowrap"}}>{h}</th>)}</tr></thead>
               <tbody>
-                {payments.sort((a,b)=>new Date(a.due_date)-new Date(b.due_date)).map((p,i)=>{
+                {payments.sort((a,b)=>new Date(a.cheque_date)-new Date(b.cheque_date)).map((p,i)=>{
                   const lease=leases.find(l=>l.id===p.lease_id);
-                  const isOD=p.status==="Pending"&&new Date(p.due_date)<today;
-                  const SC_P={Paid:{c:"#1A7F5A",bg:"#E6F4EE"},Pending:{c:"#A06810",bg:"#FDF3DC"},Bounced:{c:"#B83232",bg:"#FAEAEA"}};
+                  const isOD=p.status==="Pending"&&new Date(p.cheque_date)<today;
+                  // Day 103: the six states a cheque actually passes through, matching the cheque manager.
+                  const SC_P={Pending:{c:"#8A6200",bg:"#FDF3DC"},Deposited:{c:"#1A5FA8",bg:"#E6EFF9"},Cleared:{c:"#1A7F5A",bg:"#E6F4EE"},Bounced:{c:"#B83232",bg:"#FAEAEA"},Replaced:{c:"#5B3FAA",bg:"#EEE8F9"},Cancelled:{c:"#718096",bg:"#F7F9FC"}};
                   const sc=SC_P[p.status]||{c:"#718096",bg:"#F7F9FC"};
                   return (
                     <tr key={p.id} style={{background:isOD?"#FFF5F5":i%2===0?"#fff":"#FAFBFC",borderBottom:"1px solid #F0F2F5"}}>
                       <td style={{padding:"9px 12px",fontSize:13,fontWeight:600,color:"#0F2540"}}>{tenantName(lease?.tenant_id)}</td>
                       <td style={{padding:"9px 12px",fontSize:12,color:"#4A5568"}}>{unitLabel(p.unit_id||lease?.unit_id)}</td>
-                      <td style={{padding:"9px 12px",fontSize:11,color:"#4A5568"}}>{p.payment_type}</td>
+                      <td style={{padding:"9px 12px",fontSize:11,color:"#4A5568"}}>{p.cheque_number || "\u2014"}{p.cheque_sequence ? <span style={{color:"#94A3B8",fontSize:10}}>{"  " + p.cheque_sequence + " of " + (p.total_cheques||"?")}</span> : null}</td>
                       <td style={{padding:"9px 12px",fontSize:13,fontWeight:700,color:"#0F2540",whiteSpace:"nowrap"}}>AED {Number(p.amount).toLocaleString()}</td>
-                      <td style={{padding:"9px 12px",fontSize:12,color:isOD?"#B83232":"#4A5568",fontWeight:isOD?700:400}}>{new Date(p.due_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"})}</td>
-                      <td style={{padding:"9px 12px",fontSize:12,color:"#1A7F5A"}}>{p.paid_date?new Date(p.paid_date).toLocaleDateString("en-AE",{day:"numeric",month:"short"}):"—"}</td>
-                      <td style={{padding:"9px 12px",fontSize:12,color:"#4A5568"}}>{p.payment_method}</td>
+                      <td style={{padding:"9px 12px",fontSize:12,color:isOD?"#B83232":"#4A5568",fontWeight:isOD?700:400}}>{p.cheque_date?new Date(p.cheque_date).toLocaleDateString("en-AE",{day:"numeric",month:"short",year:"numeric"}):"\u2014"}</td>
+                      <td style={{padding:"9px 12px",fontSize:12,color:"#1A7F5A"}}>{p.cleared_date?new Date(p.cleared_date).toLocaleDateString("en-AE",{day:"numeric",month:"short"}):p.deposit_date?new Date(p.deposit_date).toLocaleDateString("en-AE",{day:"numeric",month:"short"}):"\u2014"}</td>
+                      <td style={{padding:"9px 12px",fontSize:12,color:"#4A5568"}}>{p.bank_name || "\u2014"}</td>
                       <td style={{padding:"9px 12px"}}><span style={{fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:20,background:sc.bg,color:sc.c}}>{p.status}</span></td>
-                      <td style={{padding:"9px 12px"}}>{p.status==="Pending"&&canEdit&&<button onClick={()=>markPaid(p.id)} style={{padding:"4px 10px",borderRadius:8,border:"none",background:"#E6F4EE",color:"#1A7F5A",fontSize:11,fontWeight:600,cursor:"pointer"}}>Paid</button>}</td>
+                      <td style={{padding:"9px 12px"}}>{p.status==="Deposited"&&canEdit&&<button onClick={()=>markPaid(p.id)} style={{padding:"4px 10px",borderRadius:8,border:"none",background:"#E6F4EE",color:"#1A7F5A",fontSize:11,fontWeight:600,cursor:"pointer"}}>Cleared</button>}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
-            {payments.length===0&&<div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}><div style={{fontSize:36,marginBottom:8}}>💰</div><div>No payments logged</div></div>}
+            {payments.length===0&&<div style={{textAlign:"center",padding:"3rem",color:"#A0AEC0"}}><div style={{fontSize:36,marginBottom:8}}>💰</div><div>No cheques recorded</div></div>}
           </div>
           {showAddPmt&&(
-            <Modal title="Log Payment" onClose={()=>setShowAddPmt(false)} width={440}>
+            <Modal title="Log Cheque" onClose={()=>setShowAddPmt(false)} width={440}>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                 <div style={{gridColumn:"1/-1"}}><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>LEASE *</label><select value={pForm.lease_id} onChange={e=>setPForm(f=>({...f,lease_id:e.target.value}))}><option value="">Select…</option>{leases.filter(l=>l.status==="Active").map(l=><option key={l.id} value={l.id}>{tenantName(l.tenant_id)} · Unit {unitLabel(l.unit_id)}</option>)}</select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>TYPE</label><select value={pForm.payment_type} onChange={e=>setPForm(f=>({...f,payment_type:e.target.value}))}>{["Rent","Security Deposit","Agency Fee","Maintenance","Other"].map(t=><option key={t}>{t}</option>)}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>BANK</label><input value={pForm.bank_name} onChange={e=>setPForm(f=>({...f,bank_name:e.target.value}))} placeholder="Emirates NBD"/></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>AMOUNT (AED) *</label><input type="number" value={pForm.amount} onChange={e=>setPForm(f=>({...f,amount:e.target.value}))}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>DUE DATE *</label><input type="date" value={pForm.due_date} onChange={e=>setPForm(f=>({...f,due_date:e.target.value}))}/></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>METHOD</label><select value={pForm.payment_method} onChange={e=>setPForm(f=>({...f,payment_method:e.target.value}))}>{["Cheque","Bank Transfer","Cash","Online"].map(t=><option key={t}>{t}</option>)}</select></div>
-                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>STATUS</label><select value={pForm.status} onChange={e=>setPForm(f=>({...f,status:e.target.value}))}>{["Pending","Paid","Bounced","Waived"].map(s=><option key={s}>{s}</option>)}</select></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>CHEQUE DATE *</label><input type="date" value={pForm.cheque_date} onChange={e=>setPForm(f=>({...f,cheque_date:e.target.value}))}/></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>WHICH CHEQUE</label><div style={{display:"flex",gap:6,alignItems:"center"}}><input type="number" value={pForm.cheque_sequence} onChange={e=>setPForm(f=>({...f,cheque_sequence:e.target.value}))} placeholder="1" style={{width:60}}/><span style={{fontSize:12,color:"#94A3B8"}}>of</span><input type="number" value={pForm.total_cheques} onChange={e=>setPForm(f=>({...f,total_cheques:e.target.value}))} placeholder="4" style={{width:60}}/></div></div>
+                <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>STATUS</label><select value={pForm.status} onChange={e=>setPForm(f=>({...f,status:e.target.value}))}>{["Pending","Deposited","Cleared","Bounced","Replaced","Cancelled"].map(s=><option key={s}>{s}</option>)}</select></div>
                 <div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5}}>CHEQUE/REF</label><input value={pForm.cheque_number} onChange={e=>setPForm(f=>({...f,cheque_number:e.target.value}))}/></div>
               </div>
               <div style={{display:"flex",gap:10,justifyContent:"flex-end",marginTop:14}}>
                 <button onClick={()=>setShowAddPmt(false)} style={{padding:"9px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
-                <button onClick={savePmt} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Log Payment"}</button>
+                <button onClick={savePmt} disabled={saving} style={{padding:"9px 18px",borderRadius:8,border:"none",background:"#0F2540",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>{saving?"Saving…":"Log Cheque"}</button>
               </div>
             </Modal>
           )}
