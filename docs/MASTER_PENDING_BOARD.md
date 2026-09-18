@@ -2032,3 +2032,27 @@ those two. `lease_contracts` and `rent_payments` become dead, like the specific 
 ⚠️ ALSO: `leases` carries the same duplicate-column disease as `tenants` - contract_no/contract_number,
 agency_commission/agency_fee, ejari_no/ejari_number, no_of_cheques/number_of_cheques. The INSERT at
 LeasingModule.jsx:95 names agency_fee and number_of_cheques, so those are the live ones.
+
+## ⚠️ FOUND DAY 104 - CITY AND EMIRATE ARE WRONG ON THE PROJECTS TABLE
+Checked while designing the leasing inventory. On several rows the two are swapped or nonsense:
+"Aldar Grove Residences - city Abu Dhabi, emirate Dubai" · "Yas Acres - city Dubai, emirate Abu
+Dhabi" · "Saadiyat Lagoons - city Dubai, emirate Abu Dhabi". Saadiyat, Yas and Aldar Grove are all
+Abu Dhabi.
+⚠️ THIS MATTERS MORE NOW THAN IT DID. The leasing design makes EMIRATE A BEHAVIOURAL SWITCH: Dubai
+uses Ejari and a 5% housing fee via DEWA; Sharjah attests at the Municipality within 15 days, charges
+4% via SEWA, bans a tenant's renewal fee, and permits a head lease only through an investment
+contract. A wrong emirate means the app applies the wrong law.
+Seed data, presumably - but nothing should read `emirate` for behaviour until it is corrected, and
+the correction should be a one-off pass with a check that city and emirate agree.
+
+## ✅ CHECKED DAY 104 - WHAT THE LEASING INVENTORY CAN BUILD ON
+Three checks before cutting, per the Day-102 rule. Two came back better than expected:
+ - `pp_listings` is EMPTY and read by nothing - free to become the Building table, and it already
+   carries building_name, community, emirate, plot_number, title_deed_no.
+ - ⭐ `unit_lease_pricing` IS RICHER THAN THE DESIGN ASSUMED. It already holds chiller_included,
+   chiller_monthly, cheques_allowed, rent_free_months, escalation_pct, notice_period_months,
+   fit_out_contribution, agency_fee_leasing, min/max_lease_months, security_deposit, municipality_
+   tax_pct. That is most of the "letting-specific attributes" the design lists as missing. The
+   leasing unit does not need inventing - it needs a TENURE BLOCK and a home of its own.
+ - `projects` has 178 rows, only 35 with a company_id - so it is mostly PropPulse catalogue with
+   tenant rows mixed in. That mixture is itself worth untangling.
