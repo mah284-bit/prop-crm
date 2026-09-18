@@ -1953,3 +1953,28 @@ read `opportunities` and does not need the pipeline - only which deal an invoice
 the ERP and drifts; an ERP feed is an integration. A third path worth weighing - the app records the
 payout AUTHORISATION (who, how much, which deals) and the ERP disburses, exactly as it already does
 with commission invoices.
+
+## ── DAYS 103-104 — THE CHEQUE REGISTER, AND LEASING DESIGNED FROM RESEARCH ──
+DAY 103 rewired the money. The cheque manager wrote `lease_cheques` while both dashboards counted
+`rent_payments` - so four cheques recorded still read "0 overdue". Everything now reads
+lease_cheques: the Payments tab is a CHEQUE REGISTER (sequence "3 of 4", bank, dated, banked, and
+the six states - Pending, Deposited, Cleared, Bounced, Replaced, Cancelled), a cheque CLEARS rather
+than being "paid", and the orphaned LeasingDashboard.jsx was deleted.
+⚠️ NONE OF IT IS WALKED YET. It needs a lease to hang from, which is Day 1 of the plan.
+⭐ DAY 104 SETTLED THE LEASING INVENTORY, and it took research rather than reasoning:
+ 1. EJARI SEPARATES OWNER FROM LESSOR BY LAW - the title holder, and the party granting the lease.
+    A brokerage holding a head lease is the LESSOR while the owner stays OWNER. Every tenancy stores
+    TWO PARTIES, always.
+ 2. ⚠️ SHARJAH IS A DIFFERENT REGIME. No Ejari - Municipality attestation within 15 days; 4% housing
+    fee via SEWA; a tenant renewal fee is ILLEGAL; and a head lease is permitted ONLY through a
+    Municipality-ratified investment contract. The emirate is a BEHAVIOURAL SWITCH.
+ 3. TENURE SITS ON THE UNIT - a firm can own floors 1-5, head-lease 6-10 and manage a single flat in
+    the same tower.
+⚠️ TWO MEANINGS OF "SUBLETTING" UNTANGLED: a tenant subletting his flat is banned UAE-wide. A
+licensed company taking a head lease is a registered commercial structure, and a different thing.
+⭐ CHECKING BEFORE CUTTING PAID AGAIN: `unit_lease_pricing` already holds most letting attributes -
+chiller, cheques_allowed, rent_free_months, escalation_pct. And `pp_listings` is empty, so it becomes
+the Building table.
+⚠️ FOUND WHILE CHECKING: city and emirate are wrong on `projects` - Yas Acres reads emirate Abu Dhabi
+with city Dubai. Must be corrected before the emirate drives which law applies.
+PLAN WRITTEN: docs/Leasing_Build_Plan.md - seven days, Day 1 building nothing new.
