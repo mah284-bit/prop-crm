@@ -226,3 +226,21 @@ Following the Day-102 rule, three checks first:
 
 ⚠️ **Steps 1–3 are the foundation.** Everything after depends on a unit record that knows what it
 is and who holds it.
+
+## 8. ⚠️ "Subletting" means two different things
+
+Worth stating plainly, because the two are confused in ordinary speech and are entirely different in
+law. The founder raised it and he was right about the thing he was describing.
+
+**A TENANT subletting his flat** — taking a two-bedroom and putting a family in the spare room — is
+**banned across the UAE**. It breaches the tenancy, it is a ground for eviction, and it happens
+quietly until something goes wrong.
+
+**A LICENSED COMPANY taking a head lease** on a building and letting the units is a **registered
+commercial structure**, not that. In Dubai it runs through a property-management contract registered
+on Ejari; in Sharjah through a Municipality-ratified investment contract. The firm is the lessor of
+record, with the title holder in the Owner field.
+
+⚠️ So when this design says "head lease", it means the second. The app should never be the system of
+record for the first - and where a broker records a tenancy on a unit whose tenure says `managed`
+and whose owner agreement has expired, that is worth a warning, not silence.
