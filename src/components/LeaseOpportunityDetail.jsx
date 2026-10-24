@@ -40,7 +40,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
   useEffect(()=>{
     supabase.from("activities").select("*").eq("lease_opportunity_id",opp.id).order("created_at",{ascending:false}).then(({data})=>setActivities(data||[]));
     supabase.from("lease_payments").select("*").eq("lease_opportunity_id",opp.id).order("created_at").then(({data})=>setPayments(data||[]));
-    supabase.from("lease_contracts").select("*").eq("lease_opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
+    supabase.from("leases").select("*").eq("lease_opportunity_id",opp.id).limit(1).then(({data})=>setContract(data?.[0]||null));
   },[opp.id]);
 
   const LEASE_GATED = ["Offer Made","Reserved","Lease Signed","Lost"];
@@ -631,12 +631,21 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                 {canEdit&&canAccessAgreement&&(
                   <button onClick={async()=>{
                     const terms = prompt("Lease terms / notes (optional):");
-                    const{data,error}=await supabase.from("lease_contracts").insert({
-                      opportunity_id:null, lease_opportunity_id:opp.id, tenant_id:opp.tenant_id||null,
-                      unit_id:opp.unit_id||null, annual_rent:opp.budget||null,
-                      start_date:opp.move_in_date||null, terms:terms||"",
-                      status:"Draft", company_id:currentUser.company_id||null,
-                      created_by:currentUser.id,
+                    if(!currentUser.company_id){showToast("No company on your profile - cannot create a lease","error");return;}
+                    if(!opp.tenant_id){showToast("No tenant on this enquiry","error");return;}
+                    if(!opp.unit_id){showToast("No unit on this enquiry","error");return;}
+                    if(!opp.final_rent && !opp.budget){showToast("Set the rent on the enquiry first","error");return;}
+                    const _start = prompt("Lease start date (YYYY-MM-DD):", new Date().toISOString().slice(0,10));
+                    if(!_start || !/^\d{4}-\d{2}-\d{2}$/.test(_start)){showToast("A valid start date is required (YYYY-MM-DD)","error");return;}
+                    const _ed = new Date(_start); _ed.setMonth(_ed.getMonth()+12); _ed.setDate(_ed.getDate()-1);
+                    const _ar = Number(opp.final_rent || opp.budget);
+                    const{data,error}=await supabase.from("leases").insert({
+                      lease_opportunity_id:opp.id, tenant_id:opp.tenant_id,
+                      unit_id:opp.unit_id, project_id:unit?.project_id||null,
+                      annual_rent:_ar, monthly_rent:Math.round(_ar/12),
+                      start_date:_start, end_date:_ed.toISOString().slice(0,10),
+                      notes:terms||"", status:"Draft", company_id:currentUser.company_id,
+                      assigned_to:opp.assigned_to||null, created_by:currentUser.id,
                     }).select().single();
                     if(!error){setContract(data);showToast("Agreement created","success");}
                     else showToast(error.message,"error");
@@ -651,7 +660,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                   <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#0F2540"}}>📄 Rental Agreement</div>
                   <button onClick={printAgreement} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #718096",background:"transparent",color:"#718096",fontSize:12,fontWeight:600,cursor:"pointer"}}>🖨 Print Agreement</button>
                   <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                    <span style={{padding:"4px 12px",borderRadius:20,background:contract.status==="Signed"?"#E6F4EE":"#FFF9E6",color:contract.status==="Signed"?"#1A7F5A":"#C9A84C",fontSize:11,fontWeight:700}}>{contract.status}</span>
+                    <span style={{padding:"4px 12px",borderRadius:20,background:contract.status==="Active"?"#E6F4EE":"#FFF9E6",color:contract.status==="Active"?"#1A7F5A":"#C9A84C",fontSize:11,fontWeight:700}}>{contract.status}</span>
                     <button onClick={()=>{
                       const w=window.open("","_blank","width=900,height=700");
                       const companyName=localStorage.getItem("propccrm_company_name")||"PropCRM";
@@ -715,8 +724,8 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                 {contract.terms&&<div style={{fontSize:12,color:"#4A5568",background:"#F7F9FC",borderRadius:8,padding:"10px 12px",marginBottom:12}}>{contract.terms}</div>}
                 {canEdit&&contract.status==="Draft"&&(
                   <button onClick={async()=>{
-                    await supabase.from("lease_contracts").update({status:"Signed",signed_at:new Date().toISOString()}).eq("id",contract.id);
-                    setContract(c=>({...c,status:"Signed"}));
+                    await supabase.from("leases").update({status:"Active"}).eq("id",contract.id);
+                    setContract(c=>({...c,status:"Active"}));
                     // Auto-move to Lease Signed
                     await supabase.from("lease_opportunities").update({stage:"Lease Signed",stage_updated_at:new Date().toISOString()}).eq("id",opp.id);
                     if(opp.unit_id) await supabase.from("project_units").update({status:"Leased"}).eq("id",opp.unit_id);
