@@ -66,3 +66,37 @@ NOT YET RULED — needs a grep of what the dashboards actually read.
 ## ALSO SPOTTED
 Two "Print Agreement" buttons in LeaseOpportunityDetail (L652 calls
 printAgreement, L657 builds HTML inline). Separate cleanup.
+
+---
+
+# DUPLICATE COLUMNS — SETTLED BY EVIDENCE (grep, Day 105)
+Live code reads/writes ONLY these. The insert uses the same four.
+  contract_number · ejari_number · number_of_cheques · agency_fee
+DEAD, zero references in src/: contract_no · ejari_no · no_of_cheques ·
+agency_commission. Drop after the join is fixed and walked, not before.
+CAUTION: agency_fee_pct (InventoryModule, OpportunityDetail) is the SALE
+side on unit_sale_pricing. Different fact. Do not conflate.
+
+# ⚠️ R1 VIOLATION ALREADY IN THE CODE
+src/components/leasing/shared.jsx L65,68,131,180 — "Auto-Generate N
+Cheques" computes annual_rent / number_of_cheques. Equal cheques on clean
+dates. That is the assumption R1 overturns. Built before the ruling; live.
+PENDING FOUNDER CALL: delete the button, or demote it to a pre-fill the
+user overwrites with no claim of correctness.
+
+---
+
+# DUPLICATE COLUMNS — SETTLED BY EVIDENCE (grep, Day 105)
+Live code reads/writes ONLY these. The insert uses the same four.
+  contract_number · ejari_number · number_of_cheques · agency_fee
+DEAD, zero references in src/: contract_no · ejari_no · no_of_cheques ·
+agency_commission. Drop after the join is fixed and walked, not before.
+CAUTION: agency_fee_pct (InventoryModule, OpportunityDetail) is the SALE
+side on unit_sale_pricing. Different fact. Do not conflate.
+
+# ⚠️ R1 VIOLATION ALREADY IN THE CODE
+src/components/leasing/shared.jsx L65,68,131,180 — "Auto-Generate N
+Cheques" computes annual_rent / number_of_cheques. Equal cheques on clean
+dates. That is the assumption R1 overturns. Built before the ruling; live.
+PENDING FOUNDER CALL: delete the button, or demote it to a pre-fill the
+user overwrites with no claim of correctness.
