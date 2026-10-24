@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { canDo } from "../lib/permissions.js";
 import ActivitiesList from "./opportunities/ActivitiesList.jsx";
+import { LEASE_STAGES, LEASE_STAGE_META } from "../lib/leaseStages.js";
 function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, users, currentUser, showToast, onBack, onUpdated }) {
   const [activeTab,  setActiveTab]  = useState("details");
   const [activities, setActivities] = useState([]);

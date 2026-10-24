@@ -91,7 +91,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
         budget:oppForm.budget?Number(oppForm.budget):null,
         assigned_to:oppForm.assigned_to||currentUser.id,
         notes:oppForm.notes||null,
-        property_category:oppForm.property_category||"Off-Plan",
+        
         stage:"New Enquiry",status:"Active",
         created_by:currentUser.id,
       };
@@ -100,7 +100,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
       setLOpps(p=>[data,...p]);
       showToast("Lease enquiry created","success");
       setShowAddOpp(false);
-      setOppForm({title:"",unit_id:"",budget:"",assigned_to:"",notes:"",property_category:"Off-Plan"});
+      setOppForm({title:"",unit_id:"",budget:"",assigned_to:"",notes:""});
       setSelOpp(data);setView("opportunity");
     }catch(e){showToast(e.message,"error");}
     setSaving(false);
@@ -334,7 +334,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
         </div>
         <div style={{display:"flex",gap:6}}>
           {canEdit&&<button onClick={()=>{setTForm({...tBlank,...selTenant});setEditTenant(selTenant);setShowAddTenant(true);}} style={{padding:"6px 14px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>✏ Edit</button>}
-          {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Enquiry</button>}
+          {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:""});setShowAddOpp(true);}} style={{padding:"6px 14px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>+ New Enquiry</button>}
         </div>
       </div>
 
@@ -356,7 +356,7 @@ function LeasingLeads({ currentUser, showToast, users=[] }) {
             <div style={{fontSize:36,marginBottom:10}}>🔑</div>
             <div style={{fontSize:14,fontWeight:600,color:"#0F2540",marginBottom:6}}>No enquiries yet</div>
             <div style={{fontSize:12,marginBottom:16}}>Add an enquiry for each unit this tenant is interested in</div>
-            {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:"",property_category:"Off-Plan"});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Enquiry</button>}
+            {canEdit&&<button onClick={()=>{setOppForm({title:"",unit_id:"",budget:"",assigned_to:currentUser.id,notes:""});setShowAddOpp(true);}} style={{padding:"10px 24px",borderRadius:8,border:"none",background:"#5B3FAA",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"}}>+ Add First Enquiry</button>}
           </div>
         )}
         {tenantOpps.map(opp=>{
