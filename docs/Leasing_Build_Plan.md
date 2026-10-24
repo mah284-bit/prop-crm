@@ -181,3 +181,60 @@ money and occupancy is the number that matters — not commission.
    came from moving a component without the constant it read.
 4. **Warn, do not refuse.** A gate states the fact and lets the broker decide. The app must never be
    the reason someone says "I can't".
+
+---
+
+# ⚠️ AMENDMENT — DAY 105 (24 Oct 2026). THE PLAN HAD NO DAY FOR THE DEAL.
+
+## What Day 1 found
+Day 1 said "prove what is already built." It proved that the back half of the
+leasing deal was never built. The stage gate dialog does not exist, so Offer
+Made, Reserved, Lease Signed and Lost are unreachable; no lease can be created
+by any sequence of clicks. Full record: `docs/Leasing_Day105_Findings.md`.
+
+Seven faults were fixed and the detail screen renders for the first time. Day 1
+is otherwise VOID — there was nothing reachable to walk.
+
+## Why the plan missed it
+Days 2-7 design INVENTORY: buildings, units, tenure, owner agreement, emirate,
+import, P&L. All correct, all still needed. But the plan assumed the DEAL
+JOURNEY worked and only the inventory beneath it was missing. It did not.
+`Leasing_Inventory_Design.md` and `Property_Model_Design.md` contain no section
+on the lease deal. It was never designed.
+
+## ⭐ DAY 0 — THE LEASE DEAL JOURNEY (design first, then build)
+Comes BEFORE Day 2. Without it there is no tenancy for the inventory to serve.
+
+### Design, and these are founder rulings — NOT to be assumed
+- What does the broker actually put to the landlord at OFFER MADE? Rent, term,
+  cheques, rent-free months, move-in date — and what else is haggled (deposit,
+  who pays the agency fee, chiller, maintenance)?
+- What does RESERVED capture? The deposit, presumably — how much, and does it
+  credit toward the first cheque the way a sales reservation credits the
+  initial advance?
+- What does LEASE SIGNED do beyond flipping a status — Ejari reference,
+  attestation reference, the signed document?
+- What does LOST record? Sales has loss reasons; leasing has `lost_reason` on
+  the table and nothing driving it.
+- Does the leasing ladder need an EVIDENCE MODEL (finding 9), or do ticks
+  suffice for a shorter cycle?
+
+### Then build
+- The gate dialog itself (the thing that does not exist).
+- ⚠️ The Offer Made gate IS the lease terms form. Capture there and the
+  agreement renders what was agreed instead of prompting for it. One build,
+  not two — and it kills the interim prompts from Day 105.
+- `final_rent` written at Offer Made; the lease then takes `final_rent` ONLY,
+  refusing without it (finding 10).
+
+### Destination, already ruled (Leasing_Inventory_Design 3.4)
+A tenancy carries: owner_party_id AND lessor_party_id (both mandatory) ·
+tenant · unit · term · annual rent · deposit · cheques · agency commission ·
+permitted use · registration reference and status.
+⚠️ `leases` today has NONE of owner/lessor/permitted use/registration. Day 5
+extends it. Day 105's join fix points at the old shape and holds, but it is
+not the finished tenancy.
+
+## Days 2-7 — UNCHANGED, and still right
+The inventory work stands exactly as written. It moves behind Day 0 because a
+building full of units serves no purpose while no tenancy can be signed.
