@@ -100,3 +100,29 @@ Cheques" computes annual_rent / number_of_cheques. Equal cheques on clean
 dates. That is the assumption R1 overturns. Built before the ruling; live.
 PENDING FOUNDER CALL: delete the button, or demote it to a pre-fill the
 user overwrites with no claim of correctness.
+
+---
+
+# DAY 0 RULINGS (Day 106, 25 Oct 2026)
+
+## R6 — BREADTH OVER DEPTH FOR LEASING V1
+Leasing exists because a sales prospect asks "do you do leasing too?" — brokers
+do not want two apps. What loses that evaluation is a MISSING STAGE, not a
+shallow one. So: all four gates exist and capture the few fields that matter.
+None tries to match the sales ceremony. Depth arrives when a real leasing
+brokerage pulls for it.
+
+## R7 — NO NEGOTIATION ROUNDS IN LEASING
+Founder: "rental is high demanding, not much negotiating like sales here —
+either it will be yes or no."
+The agreed rent IS the record. The gate shows the unit's asking rent beside the
+agreed rent so the discount is visible, and nothing else is stored. No rounds,
+no open/applied/declined lifecycle.
+
+## R8 — THE OFFER MADE GATE IS THE LEASE TERMS FORM
+Captured once, at the moment terms are agreed:
+  agreed annual rent (writes final_rent) · start date · term months (default 12)
+  · rent-free months (default 0) · number of cheques · security deposit
+Displays asking rent and the gap. The agreement then RENDERS what was agreed
+rather than prompting for it — one build, not two. Kills the Day-105 interim
+prompts.
