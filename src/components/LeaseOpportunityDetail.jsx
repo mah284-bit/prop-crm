@@ -35,6 +35,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
   const unit  = units.find(u=>u.id===opp.unit_id);
   const proj  = unit ? projects.find(p=>p.id===unit.project_id) : null;
   const lp    = unit ? leasePricing.find(l=>l.unit_id===unit.id) : null;
+  const agreedRent = Number(opp.final_rent ?? opp.budget ?? 0);
   const agent = users.find(u=>u.id===opp.assigned_to);
   const sm    = LEASE_STAGE_META[opp.stage]||LEASE_STAGE_META["New Enquiry"];
 
@@ -49,7 +50,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
   const moveStage = async(toStage) => {
     if(!canAction){showToast("You are not the assigned agent — take ownership first","error");return;}
     if(LEASE_GATED.includes(toStage)){
-      setStageGateForm(toStage==="Offer Made" ? {final_rent:(lp?.annual_rent ?? ""), term_months:12, rent_free_months:0} : {});
+      setStageGateForm(toStage==="Offer Made" ? {final_rent:(lp?.annual_rent ?? ""), term_months:12, rent_free_months:0} : toStage==="Reserved" ? {reserved_at:new Date().toISOString().slice(0,10), hold_until:new Date(Date.now()+3*864e5).toISOString().slice(0,10)} : {});
       setShowStageGate(toStage);
       return;
     }
@@ -224,7 +225,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
       <div class="row"><span class="label">Tenant Name</span><span class="value">${tenant?.full_name||"—"}</span></div>
       <div class="row"><span class="label">Phone</span><span class="value">${tenant?.phone||"—"}</span></div>
       <div class="row"><span class="label">Unit</span><span class="value">${unit?.unit_ref||"—"} — ${unit?.sub_type||""}</span></div>
-      <div class="row"><span class="label">Annual Rent</span><span class="value">AED ${Number(opp.budget||0).toLocaleString()}</span></div>
+      <div class="row"><span class="label">Annual Rent</span><span class="value">AED ${agreedRent.toLocaleString()}</span></div>
       <div class="row"><span class="label">Lease Period</span><span class="value">1 Year</span></div>
     </div>
     <div style="margin-bottom:20px;">
@@ -236,7 +237,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
     </div>
     <div class="total-box">
       <div style="font-size:12px;opacity:.7;margin-bottom:4px;">Agency Fee Received</div>
-      <div style="font-size:36px;font-weight:700;">AED ${totalFee>0?totalFee.toLocaleString():Number(opp.budget||0)*0.05|0}</div>
+      <div style="font-size:36px;font-weight:700;">AED ${totalFee>0?totalFee.toLocaleString():agreedRent*0.05|0}</div>
       <div style="font-size:11px;opacity:.6;margin-top:4px;">${totalFee===0?"(Estimated 5% of annual rent)":""}</div>
     </div>
     <div style="margin-bottom:20px;">
@@ -278,7 +279,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
       <div style="text-align:right;"><div style="font-size:11px;color:#718096;">Date: ${new Date().toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"})}</div></div>
     </div>
     <div style="margin-bottom:16px;">
-      <div style="font-size:13px;"><strong>Tenant:</strong> ${tenant?.full_name||"—"} &nbsp;|&nbsp; <strong>Unit:</strong> ${unit?.unit_ref||"—"} &nbsp;|&nbsp; <strong>Annual Rent:</strong> AED ${Number(opp.budget||0).toLocaleString()}</div>
+      <div style="font-size:13px;"><strong>Tenant:</strong> ${tenant?.full_name||"—"} &nbsp;|&nbsp; <strong>Unit:</strong> ${unit?.unit_ref||"—"} &nbsp;|&nbsp; <strong>Annual Rent:</strong> AED ${agreedRent.toLocaleString()}</div>
     </div>
     <table><thead><tr><th>Type</th><th>Cheque #</th><th>Bank</th><th>Due Date</th><th style="text-align:right;">Amount</th><th>Status</th></tr></thead>
     <tbody>${rows}</tbody></table>
@@ -364,8 +365,8 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
       <div class="section-title">Financial Terms</div>
       <div class="grid">
         <div>
-          <div class="field"><div class="field-label">Annual Rent</div><div class="field-value">AED ${Number(contract?.annual_rent||opp.budget||0).toLocaleString()}</div></div>
-          <div class="field"><div class="field-label">Monthly Equivalent</div><div class="field-value">AED ${Math.round(Number(contract?.annual_rent||opp.budget||0)/12).toLocaleString()}</div></div>
+          <div class="field"><div class="field-label">Annual Rent</div><div class="field-value">AED ${Number(contract?.annual_rent||agreedRent).toLocaleString()}</div></div>
+          <div class="field"><div class="field-label">Monthly Equivalent</div><div class="field-value">AED ${Math.round(Number(contract?.annual_rent||agreedRent)/12).toLocaleString()}</div></div>
         </div>
         <div>
           <div class="field"><div class="field-label">Lease Start Date</div><div class="field-value">${contract?.start_date?new Date(contract.start_date).toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"}):"—"}</div></div>
@@ -435,7 +436,16 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
       {/* Summary strip */}
       <div style={{display:"flex",gap:8,marginBottom:14,flexWrap:"wrap"}}>
         {[
-          ["💰 Budget",opp.budget?`AED ${Number(opp.budget).toLocaleString()}/yr`:"—","#0F2540","#C9A84C"],
+          opp.final_rent
+            ? [String.fromCodePoint(0x1F511)+" Agreed rent", "AED "+agreedRent.toLocaleString()+"/yr"+(opp.term_months?" \u00b7 "+opp.term_months+"m":""), "#0F2540","#C9A84C"]
+            : [String.fromCodePoint(0x1F4B0)+" Budget", opp.budget?("AED "+Number(opp.budget).toLocaleString()+"/yr"):"\u2014", "#0F2540","#C9A84C"],
+          ...(opp.stage==="Reserved" && opp.hold_until ? [(()=>{
+            const _d = Math.round((new Date(opp.hold_until+"T00:00:00") - new Date(new Date().toDateString()))/864e5);
+            const _t = _d<0 ? "EXPIRED" : _d===0 ? "last day" : _d===1 ? "1 day left" : (_d+" days left");
+            const _bg = _d<=0 ? "#FEE2E2" : _d===1 ? "#FEF3C7" : "#F7F9FC";
+            const _c  = _d<=0 ? "#B83232" : _d===1 ? "#92400E" : "#4A5568";
+            return [String.fromCodePoint(0x23F3)+" Held until", new Date(opp.hold_until).toLocaleDateString("en-AE",{day:"numeric",month:"short"})+" \u00b7 "+_t, _bg, _c];
+          })()] : []),
           ["🏠 Unit",unit?`${unit.unit_ref} — ${unit.sub_type}`:"Not linked","#F7F9FC","#4A5568"],
           ["👤 Agent",agent?.full_name||"Unassigned","#F7F9FC","#4A5568"],
           ["💳 Payments",totalDue>0?`${(totalPaid/totalDue*100)|0}% collected`:"No payments","#F7F9FC","#4A5568"],
@@ -635,11 +645,11 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                     if(!currentUser.company_id){showToast("No company on your profile - cannot create a lease","error");return;}
                     if(!opp.tenant_id){showToast("No tenant on this enquiry","error");return;}
                     if(!opp.unit_id){showToast("No unit on this enquiry","error");return;}
-                    if(!opp.final_rent && !opp.budget){showToast("Set the rent on the enquiry first","error");return;}
+                    if(!opp.final_rent){showToast("Agree the rent at Offer Made before creating the agreement","error");return;}
                     const _start = prompt("Lease start date (YYYY-MM-DD):", new Date().toISOString().slice(0,10));
                     if(!_start || !/^\d{4}-\d{2}-\d{2}$/.test(_start)){showToast("A valid start date is required (YYYY-MM-DD)","error");return;}
                     const _ed = new Date(_start); _ed.setMonth(_ed.getMonth()+12); _ed.setDate(_ed.getDate()-1);
-                    const _ar = Number(opp.final_rent || opp.budget);
+                    const _ar = Number(opp.final_rent);
                     const{data,error}=await supabase.from("leases").insert({
                       lease_opportunity_id:opp.id, tenant_id:opp.tenant_id,
                       unit_id:opp.unit_id, project_id:unit?.project_id||null,
@@ -694,7 +704,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                       </div>
                       <div class="section">
                         <div class="section-title">3. LEASE TERMS</div>
-                        <div class="row"><span class="label">Annual Rent</span><span class="value">AED ${Number(contract.annual_rent||opp.budget||0).toLocaleString()}</span></div>
+                        <div class="row"><span class="label">Annual Rent</span><span class="value">AED ${Number(contract.annual_rent||agreedRent).toLocaleString()}</span></div>
                         <div class="row"><span class="label">Start Date</span><span class="value">${contract.start_date?new Date(contract.start_date).toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"}):"—"}</span></div>
                         <div class="row"><span class="label">End Date</span><span class="value">${contract.start_date?new Date(new Date(contract.start_date).setFullYear(new Date(contract.start_date).getFullYear()+1)).toLocaleDateString("en-AE",{day:"numeric",month:"long",year:"numeric"}):"—"}</span></div>
                         <div class="row"><span class="label">Payment Terms</span><span class="value">${payments.filter(p=>p.payment_type==="PDC Cheque").length} cheque(s)</span></div>
@@ -749,7 +759,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
         const off = ask>0 && agreed>0 ? Math.round((1-agreed/ask)*1000)/10 : null;
         const inp = {width:"100%",padding:"8px 10px",border:"1.5px solid #D1D9E6",borderRadius:7,fontSize:13,boxSizing:"border-box"};
         const fld = (label, el) => (<div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>{label}</label>{el}</div>);
-        const ok = showStageGate!=="Offer Made" ? (showStageGate!=="Lost" || !!g.lost_reason) : (agreed>0 && !!g.start_date);
+        const ok = showStageGate==="Offer Made" ? (agreed>0 && !!g.start_date) : showStageGate==="Lost" ? !!g.lost_reason : showStageGate==="Reserved" ? (!!g.reserved_at && !!g.hold_until) : true;
         return (
         <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1300,padding:"1rem"}}>
           <div style={{background:"#fff",borderRadius:14,width:560,maxWidth:"96vw",maxHeight:"92vh",overflow:"auto"}}>
@@ -781,14 +791,22 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
                   <option value="">Select a reason...</option>
                   {["Took another property","Landlord declined","Rent too high","Terms not agreed","Tenant went quiet","Timing changed","Other"].map(r=><option key={r}>{r}</option>)}
                 </select>)}
-              {(showStageGate==="Reserved"||showStageGate==="Lease Signed") && (
-                <div style={{fontSize:13,color:"#4A5568"}}>{showStageGate==="Reserved" ? "The unit will be held as Reserved. Record the deposit on the Payments tab." : "The unit will be marked Leased and the enquiry closed as won."}</div>)}
+              {showStageGate==="Reserved" && (<>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                  {fld("Reserved on *", <input type="date" style={inp} value={g.reserved_at||""} onChange={e=>setG("reserved_at",e.target.value)}/>)}
+                  {fld("Held until *", <input type="date" style={inp} value={g.hold_until||""} onChange={e=>setG("hold_until",e.target.value)}/>)}
+                </div>
+                <div style={{fontSize:11,color:"#94A3B8",marginTop:10}}>A rental hold is a courtesy, not a contract - the landlord takes a better offer. Keep it short and chase it.</div>
+              </>)}
+              {showStageGate==="Lease Signed" && (
+                <div style={{fontSize:13,color:"#4A5568"}}>The unit will be marked Leased and the enquiry closed as won.</div>)}
             </div>
             <div style={{padding:"0 1.25rem 1.25rem",display:"flex",justifyContent:"flex-end",gap:10}}>
               <button onClick={()=>setShowStageGate(null)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",color:"#4A5568",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
               <button disabled={!ok} onClick={async()=>{
                 const t = showStageGate; let extra = {};
                 if(t==="Offer Made") extra = {final_rent:Number(g.final_rent), start_date:g.start_date, term_months:Number(g.term_months??12), rent_free_months:Number(g.rent_free_months??0), no_of_cheques:g.no_of_cheques?Number(g.no_of_cheques):null, security_deposit:g.security_deposit?Number(g.security_deposit):null};
+                if(t==="Reserved") extra = {reserved_at:g.reserved_at, hold_until:g.hold_until};
                 if(t==="Lost") extra = {lost_reason:g.lost_reason, lost_at:new Date().toISOString()};
                 if(t==="Lease Signed") extra = {won_at:new Date().toISOString()};
                 await commitLeaseStageMove(t, extra);
