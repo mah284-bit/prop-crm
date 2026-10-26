@@ -49,7 +49,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
   const moveStage = async(toStage) => {
     if(!canAction){showToast("You are not the assigned agent — take ownership first","error");return;}
     if(LEASE_GATED.includes(toStage)){
-      setStageGateForm({});
+      setStageGateForm(toStage==="Offer Made" ? {final_rent:(lp?.annual_rent ?? ""), term_months:12, rent_free_months:0} : {});
       setShowStageGate(toStage);
       return;
     }
@@ -60,7 +60,7 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
     // Gate: Lease Signed requires signed agreement
     if(toStage==="Lease Signed"){
       if(!contract){showToast("Create a rental agreement before marking as Lease Signed","error");return;}
-      if(contract.status!=="Signed"){showToast("Agreement must be signed before marking as Lease Signed","error");return;}
+      if(contract.status!=="Active"){showToast("Agreement must be signed before marking as Lease Signed","error");return;}
       if(!hasPayments){showToast("Add payments before marking as Lease Signed","error");return;}
     }
     const{error}=await supabase.from("lease_opportunities").update({
@@ -742,6 +742,61 @@ function LeaseOpportunityDetail({ opp, tenant, units, projects, leasePricing, us
         )}
 
       </div>
+
+      {showStageGate && (() => {
+        const g = stageGateForm, setG = (k,v) => setStageGateForm(f=>({...f,[k]:v}));
+        const ask = Number(lp?.annual_rent||0), agreed = Number(g.final_rent||0);
+        const off = ask>0 && agreed>0 ? Math.round((1-agreed/ask)*1000)/10 : null;
+        const inp = {width:"100%",padding:"8px 10px",border:"1.5px solid #D1D9E6",borderRadius:7,fontSize:13,boxSizing:"border-box"};
+        const fld = (label, el) => (<div><label style={{fontSize:11,fontWeight:600,color:"#4A5568",display:"block",marginBottom:5,textTransform:"uppercase",letterSpacing:".5px"}}>{label}</label>{el}</div>);
+        const ok = showStageGate!=="Offer Made" ? (showStageGate!=="Lost" || !!g.lost_reason) : (agreed>0 && !!g.start_date);
+        return (
+        <div style={{position:"fixed",inset:0,background:"rgba(11,31,58,.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1300,padding:"1rem"}}>
+          <div style={{background:"#fff",borderRadius:14,width:560,maxWidth:"96vw",maxHeight:"92vh",overflow:"auto"}}>
+            <div style={{padding:"1rem 1.25rem",borderBottom:"1px solid #E2E8F0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:15,fontWeight:700,color:"#0F2540"}}>Move to {showStageGate}</div>
+                <div style={{fontSize:12,color:"#718096"}}>{tenant?.full_name||"-"} - {unit?.unit_ref||"-"}</div>
+              </div>
+              <button onClick={()=>setShowStageGate(null)} style={{background:"none",border:"none",fontSize:22,color:"#94A3B8",cursor:"pointer"}}>x</button>
+            </div>
+            <div style={{padding:"1.25rem"}}>
+              {showStageGate==="Offer Made" && (<>
+                <div style={{background:"#F7F9FC",borderRadius:10,padding:"10px 14px",marginBottom:14,fontSize:13,color:"#4A5568"}}>
+                  Asking <strong style={{color:"#0F2540"}}>AED {ask.toLocaleString()}</strong>
+                  {off!==null && <span> &rarr; Agreed <strong style={{color:"#1A7F5A"}}>AED {agreed.toLocaleString()}</strong> &middot; {off}% off</span>}
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                  {fld("Agreed annual rent (AED) *", <input type="number" style={inp} value={g.final_rent??""} onChange={e=>setG("final_rent",e.target.value)}/>)}
+                  {fld("Start date *", <input type="date" style={inp} value={g.start_date||""} onChange={e=>setG("start_date",e.target.value)}/>)}
+                  {fld("Term (months)", <input type="number" style={inp} value={g.term_months??12} onChange={e=>setG("term_months",e.target.value)}/>)}
+                  {fld("Rent-free months", <input type="number" style={inp} value={g.rent_free_months??0} onChange={e=>setG("rent_free_months",e.target.value)}/>)}
+                  {fld("Number of cheques", <input type="number" style={inp} value={g.no_of_cheques||""} onChange={e=>setG("no_of_cheques",e.target.value)}/>)}
+                  {fld("Security deposit (AED)", <input type="number" style={inp} value={g.security_deposit||""} onChange={e=>setG("security_deposit",e.target.value)}/>)}
+                </div>
+                <div style={{fontSize:11,color:"#94A3B8",marginTop:10}}>Rent-free extends the term - the tenant pays for the term and occupies term plus free months. Cheque dates and amounts are entered on the register, never divided automatically.</div>
+              </>)}
+              {showStageGate==="Lost" && fld("Reason *",
+                <select style={inp} value={g.lost_reason||""} onChange={e=>setG("lost_reason",e.target.value)}>
+                  <option value="">Select a reason...</option>
+                  {["Took another property","Landlord declined","Rent too high","Terms not agreed","Tenant went quiet","Timing changed","Other"].map(r=><option key={r}>{r}</option>)}
+                </select>)}
+              {(showStageGate==="Reserved"||showStageGate==="Lease Signed") && (
+                <div style={{fontSize:13,color:"#4A5568"}}>{showStageGate==="Reserved" ? "The unit will be held as Reserved. Record the deposit on the Payments tab." : "The unit will be marked Leased and the enquiry closed as won."}</div>)}
+            </div>
+            <div style={{padding:"0 1.25rem 1.25rem",display:"flex",justifyContent:"flex-end",gap:10}}>
+              <button onClick={()=>setShowStageGate(null)} style={{padding:"8px 18px",borderRadius:8,border:"1.5px solid #D1D9E6",background:"#fff",color:"#4A5568",fontSize:13,fontWeight:600,cursor:"pointer"}}>Cancel</button>
+              <button disabled={!ok} onClick={async()=>{
+                const t = showStageGate; let extra = {};
+                if(t==="Offer Made") extra = {final_rent:Number(g.final_rent), start_date:g.start_date, term_months:Number(g.term_months??12), rent_free_months:Number(g.rent_free_months??0), no_of_cheques:g.no_of_cheques?Number(g.no_of_cheques):null, security_deposit:g.security_deposit?Number(g.security_deposit):null};
+                if(t==="Lost") extra = {lost_reason:g.lost_reason, lost_at:new Date().toISOString()};
+                if(t==="Lease Signed") extra = {won_at:new Date().toISOString()};
+                await commitLeaseStageMove(t, extra);
+              }} style={{padding:"8px 18px",borderRadius:8,border:"none",background:ok?"#5B3FAA":"#CBD5E1",color:"#fff",fontSize:13,fontWeight:600,cursor:ok?"pointer":"not-allowed"}}>Confirm {showStageGate}</button>
+            </div>
+          </div>
+        </div>);
+      })()}
 
       {/* Log Task Modal */}
       {showLog&&(
